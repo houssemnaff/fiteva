@@ -1,5 +1,7 @@
+import 'package:fiteva/widgets/home_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fluttermoji/fluttermoji.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../providers/mock_data_provider.dart';
@@ -23,42 +25,7 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () => context.push('/profile'),
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundImage: NetworkImage(user.avatarUrl),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hi, ${user.name}!',
-                          style: Theme.of(context).textTheme.displayMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Phase: ${cycle.name} (Day ${cycle.dayOfCycle})',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.accentColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(LucideIcons.bell),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
+              HomeHeader(),
               const SizedBox(height: 32),
 
               // Progress Card
@@ -122,7 +89,11 @@ class HomeScreen extends ConsumerWidget {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              const Icon(LucideIcons.flame, color: Colors.orange, size: 16),
+                              const Icon(
+                                LucideIcons.flame,
+                                color: Colors.orange,
+                                size: 16,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 '${user.streak} day streak',
@@ -145,10 +116,30 @@ class HomeScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildQuickAction(context, 'Workout', LucideIcons.dumbbell, () {}),
-                  _buildQuickAction(context, 'Cycle', LucideIcons.loader, () {}),
-                  _buildQuickAction(context, 'AI Coach', LucideIcons.bot, () {}),
-                  _buildQuickAction(context, 'Nutrition', LucideIcons.apple, () {}),
+                  _buildQuickAction(
+                    context,
+                    'Workout',
+                    LucideIcons.dumbbell,
+                    () {},
+                  ),
+                  _buildQuickAction(
+                    context,
+                    'Cycle',
+                    LucideIcons.loader,
+                    () {},
+                  ),
+                  _buildQuickAction(
+                    context,
+                    'AI Coach',
+                    LucideIcons.bot,
+                    () {},
+                  ),
+                  _buildQuickAction(
+                    context,
+                    'Nutrition',
+                    LucideIcons.apple,
+                    () {},
+                  ),
                 ],
               ),
               const SizedBox(height: 32),
@@ -159,13 +150,14 @@ class HomeScreen extends ConsumerWidget {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
-              
+
               SizedBox(
                 height: 240,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: workouts.length > 3 ? 3 : workouts.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 16),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 16),
                   itemBuilder: (context, index) {
                     final workout = workouts[index];
                     return _buildWorkoutCard(context, workout);
@@ -196,7 +188,10 @@ class HomeScreen extends ConsumerWidget {
                         color: AppTheme.accentColor.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(LucideIcons.lightbulb, color: AppTheme.accentColor),
+                      child: const Icon(
+                        LucideIcons.lightbulb,
+                        color: AppTheme.accentColor,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -226,7 +221,12 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickAction(BuildContext context, String title, IconData icon, VoidCallback onTap) {
+  Widget _buildQuickAction(
+    BuildContext context,
+    String title,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -249,9 +249,9 @@ class HomeScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             title,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -285,7 +285,10 @@ class HomeScreen extends ConsumerWidget {
               return Container(
                 height: 120,
                 color: Colors.grey[200],
-                child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                child: const Icon(
+                  Icons.image_not_supported,
+                  color: Colors.grey,
+                ),
               );
             },
           ),
@@ -295,7 +298,10 @@ class HomeScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.accentColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -323,7 +329,9 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(width: 4),
                     Text(
                       workout.duration,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey),
                     ),
                   ],
                 ),

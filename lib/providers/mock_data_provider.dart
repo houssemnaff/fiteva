@@ -77,18 +77,28 @@ final nutritionProvider = Provider<NutritionSummary>((ref) {
 // Community Posts Provider
 final postsProvider = Provider<List<PostModel>>((ref) {
   return [
+   PostModel(
+  id: 'p3',
+  username: 'Fit Community',
+  userAvatarUrl: 'https://i.pravatar.cc/150?img=20',
+  content: 'Consistency beats motivation every single time 💯',
+  imageUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500',
+  likes: 210,
+  comments: 34,
+  timeAgo: '6h ago',
+),
+PostModel(
+  id: 'p2',
+  username: 'Jessica Alba',
+  userAvatarUrl: 'https://i.pravatar.cc/150?img=32',
+  content: 'Balanced meals = better energy all day 🌱💚',
+  imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=500',
+  likes: 97,
+  comments: 12,
+  timeAgo: '3h ago',
+),
     PostModel(
-      id: 'p1',
-      username: 'Emma Fit',
-      userAvatarUrl: 'https://i.pravatar.cc/150?img=5',
-      content: 'Just finished my first 5k run! Feeling amazing 💪',
-      imageUrl: 'https://images.unsplash.com/photo-1552674605-db6aea1128d8?w=500',
-      likes: 124,
-      comments: 18,
-      timeAgo: '2h ago',
-    ),
-    PostModel(
-      id: 'p2',
+      id: 'p3',
       username: 'Jessica Alba',
       userAvatarUrl: 'https://i.pravatar.cc/150?img=9',
       content: 'Healthy eating is not a diet, it is a lifestyle. Here is my lunch today 🥗',
