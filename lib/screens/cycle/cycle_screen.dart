@@ -1,5 +1,6 @@
 import 'package:fiteva/widgets/cycle_tracker_circle.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../theme/app_theme.dart';
 
 class CycleScreen extends StatelessWidget {
@@ -11,12 +12,25 @@ class CycleScreen extends StatelessWidget {
       backgroundColor: Colors.white,
 
       appBar: AppBar(
-        title: const Text('Cycle Tracker'),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF2D4A2D),
         elevation: 0,
+        title: const Text(
+          'Cycle Tracker',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            letterSpacing: 2,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.info, color: Colors.white70),
+            onPressed: () {},
+          ),
+        ],
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(

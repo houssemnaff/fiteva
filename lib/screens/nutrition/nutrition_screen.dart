@@ -19,7 +19,7 @@ class NutritionScreen extends ConsumerWidget {
         backgroundColor: const Color(0xFF2D4A2D),
         elevation: 0,
         title: const Text(
-          'FITEVA',
+          'Nutrition',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,

@@ -5,6 +5,7 @@ class WorkoutModel {
   final String duration;
   final String level;
   final String imageUrl;
+  final String calories;
   final List<String> exercises;
 
   WorkoutModel({
@@ -15,5 +16,6 @@ class WorkoutModel {
     required this.level,
     required this.imageUrl,
     required this.exercises,
+    required this.calories,
   });
 }

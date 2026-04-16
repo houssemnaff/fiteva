@@ -27,32 +27,108 @@ final avatarProvider = NotifierProvider<AvatarNotifier, int>(AvatarNotifier.new)
 // Workouts Provider
 final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
   return [
+    // HIIT
     WorkoutModel(
       id: 'w1',
       title: 'Full Body HIIT',
       category: 'HIIT',
       duration: '45 min',
       level: 'Intermediate',
+      calories: '700',
       imageUrl: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500',
       exercises: ['Jumping Jacks', 'Burpees', 'Mountain Climbers', 'Squat Jumps'],
     ),
+
+    // PILATES
     WorkoutModel(
       id: 'w2',
       title: 'Morning Pilates',
       category: 'Pilates',
       duration: '30 min',
       level: 'Beginner',
+      calories: '500',
       imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=500',
       exercises: ['The Hundred', 'Roll Up', 'Single Leg Circle', 'Rolling Like a Ball'],
     ),
+
+    WorkoutModel(
+      id: 'w12',
+      title: 'Core Pilates',
+      category: 'Pilates',
+      duration: '20 min',
+      level: 'Intermediate',
+      calories: '400',
+      imageUrl: 'https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=500',
+      exercises: ['Plank', 'Leg Stretch', 'Side Kick', 'Teaser'],
+    ),
+
+    // MUSCULATION (Strength)
     WorkoutModel(
       id: 'w3',
       title: 'Strength Training',
-      category: 'Strength',
+      category: 'musculation',
       duration: '60 min',
       level: 'Advanced',
+      calories: '600',
       imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500',
       exercises: ['Deadlifts', 'Squats', 'Bench Press', 'Pull-ups'],
+    ),
+
+    WorkoutModel(
+      id: 'w13',
+      title: 'Upper Body Workout',
+      category: 'musculation',
+      duration: '40 min',
+      level: 'Intermediate',
+      calories: '550',
+      imageUrl: 'https://images.unsplash.com/photo-1599058917765-a780eda07a3e?w=500',
+      exercises: ['Push-ups', 'Dumbbell Press', 'Bicep Curls', 'Tricep Dips'],
+    ),
+
+    // DANSE
+    WorkoutModel(
+      id: 'w14',
+      title: 'Dance Cardio',
+      category: 'Dance',
+      duration: '35 min',
+      level: 'Beginner',
+      calories: '450',
+      imageUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500',
+      exercises: ['Warm-up Groove', 'Hip Hop Moves', 'Zumba Steps', 'Cool Down'],
+    ),
+
+    WorkoutModel(
+      id: 'w15',
+      title: 'Zumba Energy',
+      category: 'Dance',
+      duration: '50 min',
+      level: 'Intermediate',
+      calories: '650',
+      imageUrl: 'https://images.unsplash.com/photo-1524594154908-edd3dcb1c6b4?w=500',
+      exercises: ['Salsa Steps', 'Reggaeton', 'Freestyle Dance', 'Stretch'],
+    ),
+
+    // RUNNING
+    WorkoutModel(
+      id: 'w16',
+      title: 'Morning Run',
+      category: 'Running',
+      duration: '25 min',
+      level: 'Beginner',
+      calories: '300',
+      imageUrl: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=500',
+      exercises: ['Light Jog', 'Breathing', 'Cooldown Walk'],
+    ),
+
+    WorkoutModel(
+      id: 'w17',
+      title: 'Endurance Run',
+      category: 'Running',
+      duration: '60 min',
+      level: 'Advanced',
+      calories: '800',
+      imageUrl: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=500',
+      exercises: ['Warm-up', 'Long Distance Run', 'Sprint Finish'],
     ),
   ];
 });
@@ -77,6 +153,26 @@ final nutritionProvider = Provider<NutritionSummary>((ref) {
 // Community Posts Provider
 final postsProvider = Provider<List<PostModel>>((ref) {
   return [
+    PostModel(
+      id: 'p_event_1',
+      username: 'Sarah',
+      userAvatarUrl: 'https://i.pravatar.cc/150?img=1',
+      content: 'EVENT: Tennis match this Saturday at 9:00 AM in City Court. Need 3 friends to join. All levels welcome!',
+      imageUrl: '',
+      likes: 42,
+      comments: 18,
+      timeAgo: '35m ago',
+    ),
+    PostModel(
+      id: 'p_text_1',
+      username: 'Nora Fit',
+      userAvatarUrl: 'https://i.pravatar.cc/150?img=33',
+      content: 'Small win today: I finished my workout even with low motivation. Progress over perfection.',
+      imageUrl: '',
+      likes: 63,
+      comments: 11,
+      timeAgo: '1h ago',
+    ),
    PostModel(
   id: 'p3',
   username: 'Fit Community',
