@@ -34,7 +34,7 @@ const List<CyclePhase> kPhases = [
   CyclePhase(
     name: 'Ovulation',
     description: 'Pic de fertilité · Humeur au top',
-    color: Color(0xFFE8A030),
+    color: Color(0xFF7DE2D1),
     days: [14, 15, 16],
   ),
   CyclePhase(

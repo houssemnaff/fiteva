@@ -1,5 +1,6 @@
+import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart';
 import 'package:flutter/material.dart';
-import 'cycle_wheel.dart'; // pour phaseForDay + kPhases
+ // pour phaseForDay + kPhases
 
 class CycleHeader extends StatelessWidget {
   final int currentDay;
@@ -48,16 +49,15 @@ class CycleHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                   Text(
-  'MON CYCLE',
-  style: TextStyle(
-    fontSize: 11,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 1.2,
-    color: Colors.white.withOpacity(0.6),
-    fontFamily: '.SF Pro Text',
-  ),
-),
+                    Text(
+                      'MON CYCLE',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.8,
+                        color: Colors.white.withOpacity(0.55),
+                      ),
+                    ),
                     const SizedBox(height: 5),
                     // Badge phase animé
                     AnimatedSwitcher(
@@ -118,11 +118,10 @@ class CycleHeader extends StatelessWidget {
             child: Text(
               'Jour $currentDay / 30',
               style: TextStyle(
-  fontSize: 11,
-  fontWeight: FontWeight.w400,
-  fontFamily: '.SF Pro Text',
-  color: Colors.white.withOpacity(0.6),
-),
+                fontSize: 11,
+                color: Colors.white.withOpacity(0.60),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
 
@@ -153,9 +152,9 @@ class _PhaseBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.15),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.25)),
+        border: Border.all(color: Colors.white.withOpacity(0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -175,14 +174,13 @@ class _PhaseBadge extends StatelessWidget {
           ),
           const SizedBox(width: 7),
           Text(
-  name,
-  style: TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    fontFamily: '.SF Pro Display',
-    color: Colors.white.withOpacity(0.9),
-  ),
-),
+            name,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -190,7 +188,7 @@ class _PhaseBadge extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.black.withOpacity(0.70),
+                color: Colors.white.withOpacity(0.70),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -222,9 +220,9 @@ class _ToggleBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.13),
+        color: Colors.white.withOpacity(0.13),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withOpacity(0.20)),
+        border: Border.all(color: Colors.white.withOpacity(0.20)),
       ),
       child: Row(
         children: [
@@ -273,7 +271,7 @@ class _ToggleItem extends StatelessWidget {
           curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
-            color: isActive ? Colors.black.withOpacity(0.25) : Colors.transparent,
+            color: isActive ? Colors.white.withOpacity(0.25) : Colors.transparent,
             borderRadius: BorderRadius.circular(11),
           ),
           child: Row(
@@ -282,7 +280,7 @@ class _ToggleItem extends StatelessWidget {
               Icon(
                 icon,
                 size: 14,
-                color: isActive ? Colors.black : Colors.black.withOpacity(0.50),
+                color: isActive ? Colors.white : Colors.white.withOpacity(0.50),
               ),
               const SizedBox(width: 6),
               Text(
@@ -290,7 +288,7 @@ class _ToggleItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive ? Colors.black : Colors.black.withOpacity(0.50),
+                  color: isActive ? Colors.white : Colors.white.withOpacity(0.50),
                 ),
               ),
             ],
@@ -382,8 +380,8 @@ class _PhaseProgressBar extends StatelessWidget {
                   fontSize: 8,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
                   color: isActive
-                      ? Colors.black.withOpacity(0.90)
-                      : Colors.black.withOpacity(0.35),
+                      ? Colors.white.withOpacity(0.90)
+                      : Colors.white.withOpacity(0.35),
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -418,10 +416,10 @@ class _IconButton extends StatelessWidget {
         height: 34,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withOpacity(0.15),
-          border: Border.all(color: Colors.black.withOpacity(0.25)),
+          color: Colors.white.withOpacity(0.15),
+          border: Border.all(color: Colors.white.withOpacity(0.25)),
         ),
-        child: Icon(icon, size: 17, color: Colors.black.withOpacity(0.85)),
+        child: Icon(icon, size: 17, color: Colors.white.withOpacity(0.85)),
       ),
     );
   }
