@@ -1,9 +1,10 @@
+import 'package:fiteva/cycle/homecyle.dart';
 import 'package:fiteva/widgets/chatbot_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import 'home/home_screen.dart';
-import 'cycle/cycle_screen.dart';
+
 import 'workout/workout_screen.dart';
 import 'nutrition/nutrition_screen.dart';
 import 'community/community_screen.dart';
@@ -24,7 +25,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const CycleScreen(),
+    const CycleApp(),
     const WorkoutScreen(),
     const NutritionScreen(),
     const CommunityScreen(),
