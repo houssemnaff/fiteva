@@ -265,96 +265,69 @@ Widget build(BuildContext context) {
   const totalDays = 30;
   final phase = phaseForDay(widget.currentDay);
 
-  return LayoutBuilder(
-    builder: (context, constraints) {final size = min(constraints.maxWidth, constraints.maxHeight) * 0.95;
+ return LayoutBuilder(
+  builder: (context, constraints) {
+    final size = constraints.maxWidth * 0.95; // utilise largeur seulement
 
-      return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-
-        children: [
-          Flexible(
-  child:AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              return SizedBox(
-                width: size,
-                height: size,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // ── WHEEL ───────────────────────
-                    GestureDetector(
-                      onTapDown: (d) {
-                        final day = _dayFromTap(
-                          d.localPosition,
-                          Size(size, size),
-                          totalDays,
-                        );
-                        if (day != null) widget.onDaySelected(day);
-                      },
-                      child: CustomPaint(
-                        size: Size(size, size),
-                        painter: _PetalWheelPainter(
-                          currentDay: widget.currentDay,
-                          pulseValue: _controller.value * 2 * pi,
-                        ),
-                      ),
+    return Center(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                GestureDetector(
+                  onTapDown: (d) {
+                    final day = _dayFromTap(
+                      d.localPosition,
+                      Size(size, size),
+                      totalDays,
+                    );
+                    if (day != null) widget.onDaySelected(day);
+                  },
+                  child: CustomPaint(
+                    size: Size(size, size),
+                    painter: _PetalWheelPainter(
+                      currentDay: widget.currentDay,
+                      pulseValue: _controller.value * 2 * pi,
                     ),
-
-                    // ── CENTER ───────────────────────
-                    Container(
-                      width: size * 0.28,
-                      height: size * 0.28,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        border: Border.all(
-                          color: const Color(0xFFF3E8EF),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: phase.color.withOpacity(0.12),
-                            blurRadius: 16,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${widget.currentDay}',
-                            style: TextStyle(
-                              fontSize: size * 0.09,
-                              fontWeight: FontWeight.w600,
-                              color: phase.color,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            'JOUR',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Color(0xFFB07A9A),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              );
-            },
-  ),
-          ),
 
-          const SizedBox(height: 18),
-
-          // ── INFO CARD ─────────────────────
-         
-        ],
-      );
-    },
-  );
+                Container(
+                  width: size * 0.30,
+                  height: size * 0.30,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: phase.color.withOpacity(0.15),
+                        blurRadius: 20,
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${widget.currentDay}',
+                      style: TextStyle(
+                        fontSize: size * 0.10,
+                        fontWeight: FontWeight.bold,
+                        color: phase.color,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  },
+);
 }
     }
