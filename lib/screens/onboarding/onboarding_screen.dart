@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/onboarding_provider.dart';
 import '../../services/storage_service.dart';
-import '../../theme/app_theme.dart';
 import 'steps/onboarding_steps.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -17,19 +16,22 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  static const int _totalPages = 7;
 
+  // ✅ Controllers partagés
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
 
+  // ✅ Keys
   static const String _goalsKey = 'goals';
   static const String _fitnessLevelKey = 'fitness_level';
   static const String _equipmentKey = 'equipment';
-  static const String _cycleKey = 'cycle_info';
+  static const String _frequencyKey = 'frequency';
 
-  List<String> _goals = <String>[];
-  String _fitnessLevel = '';
-  List<String> _equipment = <String>[];
-  String _cycleInfo = '';
+  // ✅ State
+  List<String> _goals = [];
+  String? _fitnessLevel;
+  List<String> _equipment = [];
+  String? _frequency;
 
   @override
   void initState() {
@@ -37,51 +39,58 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _loadSavedOnboardingData();
   }
 
+  // ─────────────────────────────────────────────
+  // LOAD DATA
+  // ─────────────────────────────────────────────
   Future<void> _loadSavedOnboardingData() async {
     final data = StorageService.getOnboardingData();
-    _nameController.text = data['username']?.toString() ?? '';
-    _goals = (data[_goalsKey] is List)
-        ? (data[_goalsKey] as List).map((e) => e.toString()).toList()
-        : <String>[];
-    _fitnessLevel = data[_fitnessLevelKey]?.toString() ?? '';
-    _equipment = (data[_equipmentKey] is List)
-        ? (data[_equipmentKey] as List).map((e) => e.toString()).toList()
-        : <String>[];
-    _cycleInfo = data[_cycleKey]?.toString() ?? '';
 
-    if (mounted) {
-      setState(() {});
-    }
+    _nameController.text = data['username'] ?? '';
+
+    _goals = (data[_goalsKey] is List)
+        ? List<String>.from(data[_goalsKey])
+        : [];
+
+    _fitnessLevel = data[_fitnessLevelKey];
+
+    _equipment = (data[_equipmentKey] is List)
+        ? List<String>.from(data[_equipmentKey])
+        : [];
+
+    _frequency = data[_frequencyKey]?.toString();
+
+    if (mounted) setState(() {});
   }
 
-  Map<String, dynamic> _collectOnboardingData() {
+  // ─────────────────────────────────────────────
+  // SAVE DATA
+  // ─────────────────────────────────────────────
+  Map<String, dynamic> _collectData() {
     return {
       'username': _nameController.text.trim(),
+      'age': _ageController.text.trim(),
       _goalsKey: _goals,
       _fitnessLevelKey: _fitnessLevel,
       _equipmentKey: _equipment,
-      _cycleKey: _cycleInfo,
+      _frequencyKey: _frequency,
     };
   }
 
-  Future<void> _persistOnboardingData() async {
-    await StorageService.saveOnboardingData(_collectOnboardingData());
+  Future<void> _saveData() async {
+    await StorageService.saveOnboardingData(_collectData());
   }
 
-  Future<void> _finishOnboarding() async {
-    await _persistOnboardingData();
-    ref.read(onboardingProvider.notifier).completeOnboarding();
-    if (!mounted) {
-      return;
-    }
-    context.go('/');
-  }
-
+  // ─────────────────────────────────────────────
+  // NAVIGATION
+  // ─────────────────────────────────────────────
   Future<void> _nextPage() async {
-    await _persistOnboardingData();
+    await _saveData();
 
-    if (_currentPage < _totalPages - 1) {
-      await _pageController.nextPage(
+    if (!mounted) return;
+
+    if (_currentPage < 6) {
+      _pageController.animateToPage(
+        _currentPage + 1,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
@@ -90,119 +99,111 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  void _previousPage() {
+    if (!mounted) return;
+    if (_currentPage > 0) {
+      _pageController.animateToPage(
+        _currentPage - 1,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  Future<void> _finishOnboarding() async {
+    await _saveData();
+    ref.read(onboardingProvider.notifier).completeOnboarding();
+
+    if (!mounted) return;
+    context.go('/');
+  }
+
+  // ─────────────────────────────────────────────
   @override
   void dispose() {
     _pageController.dispose();
     _nameController.dispose();
+    _ageController.dispose();
     super.dispose();
   }
 
+  // ─────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Progress Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                children: List.generate(
-                  _totalPages,
-                  (index) => Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 2),
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color:
-                            index <= _currentPage ? AppTheme.primaryColor : Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Page Content
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(), // Prevent swipe to force button clicks
-                onPageChanged: (index) {
-                  setState(() => _currentPage = index);
-                },
-                children: [
-                  StepWelcome(onNext: () {
-                    _nextPage();
-                  }),
-                  StepAvatar(onNext: () {
-                    _nextPage();
-                  }),
-                  StepName(
-                    controller: _nameController,
-                    onChanged: (_) => setState(() {}),
-                    onNext: () {
-                      _nextPage();
-                    },
-                  ),
-                  StepGoals(
-                    selectedGoals: _goals,
-                    onToggleGoal: (goal) {
-                      setState(() {
-                        if (_goals.contains(goal)) {
-                          _goals.remove(goal);
-                        } else {
-                          _goals.add(goal);
-                        }
-                      });
-                    },
-                    onNext: () {
-                      _nextPage();
-                    },
-                  ),
-                  StepFitnessLevel(
-                    selectedLevel: _fitnessLevel,
-                    onChanged: (level) {
-                      setState(() {
-                        _fitnessLevel = level;
-                      });
-                    },
-                    onNext: () {
-                      _nextPage();
-                    },
-                  ),
-                  StepEquipment(
-                    selectedEquipment: _equipment,
-                    onToggleEquipment: (item) {
-                      setState(() {
-                        if (_equipment.contains(item)) {
-                          _equipment.remove(item);
-                        } else {
-                          _equipment.add(item);
-                        }
-                      });
-                    },
-                    onNext: () {
-                      _nextPage();
-                    },
-                  ),
-                  StepCycle(
-                    selectedCycle: _cycleInfo,
-                    onChanged: (value) {
-                      setState(() {
-                        _cycleInfo = value;
-                      });
-                    },
-                    onNext: () {
-                      _nextPage();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      body: PageView(
+        controller: _pageController,
+        // ynajm yscroli le page bil swipe
+        physics: const BouncingScrollPhysics(),
+        onPageChanged: (index) {
+          setState(() => _currentPage = index);
+        },
+        children: [
+          //step 0
+            StepIntro(onNext: _nextPage), // 👈 AJOUT ICI
+
+          // ✅ STEP 1
+          StepWelcome(
+            onNext: _nextPage,
+            onBack: _previousPage,
+            nameController: _nameController,
+            ageController: _ageController,
+          ),
+
+          // ✅ STEP 2
+          StepGoals(
+            selectedGoals: _goals,
+            onBack: _previousPage,
+            onToggleGoal: (goal) {
+              setState(() {
+                _goals.contains(goal)
+                    ? _goals.remove(goal)
+                    : _goals.add(goal);
+              });
+            },
+            onNext: _nextPage,
+          ),
+
+          // ✅ STEP 3
+          StepFitnessLevel(
+            selectedLevel: _fitnessLevel,
+            onBack: _previousPage,
+            onChanged: (level) {
+              setState(() => _fitnessLevel = level);
+            },
+            onNext: _nextPage,
+          ),
+
+          // ✅ STEP 4
+          StepEquipment(
+            selectedEquipment: _equipment,
+            onBack: _previousPage,
+            onToggleEquipment: (item) {
+              setState(() {
+                _equipment.contains(item)
+                    ? _equipment.remove(item)
+                    : _equipment.add(item);
+              });
+            },
+            onNext: _nextPage,
+          ),
+
+          // ✅ STEP 5
+          StepFrequency(
+            selectedFrequency: _frequency,
+            onBack: _previousPage,
+            onChanged: (value) {
+              setState(() => _frequency = value);
+            },
+            onNext: _nextPage,
+          ),
+
+          // ✅ STEP 6
+          StepHealthProfile(onNext: _nextPage, onBack: _previousPage),
+
+          // ✅ STEP 7
+          StepCycle(onNext: _nextPage, onBack: _previousPage),
+        ],
       ),
     );
   }

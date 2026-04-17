@@ -83,6 +83,7 @@ class ProfileScreen extends ConsumerWidget {
                 Expanded(child: _buildStatCard(context, 'Streak', '${user.streak}', LucideIcons.flame)),
               ],
             ),
+            /*
             const SizedBox(height: 40),
 
             // Badges
@@ -107,7 +108,10 @@ class ProfileScreen extends ConsumerWidget {
                 _buildBadge(context, 'Strength', LucideIcons.dumbbell, true),
                 _buildBadge(context, 'Expert', LucideIcons.award, false),
               ],
-            ),
+              
+            ),*/
+             const SizedBox(height: 40),
+            _buildSettingsSection(context),
           ],
         ),
       ),
@@ -176,4 +180,202 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
+    Widget _buildSettingsSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Paramètres',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildSettingsCard(
+          context,
+          items: [
+            _SettingsItemData(
+              icon: LucideIcons.bell,
+              title: 'Notifications',
+              onTap: () {},
+            ),
+            _SettingsItemData(
+              icon: LucideIcons.moon,
+              title: 'Mode sombre',
+              onTap: () {},
+            ),
+            _SettingsItemData(
+              icon: LucideIcons.lock,
+              title: 'Confidentialité',
+              onTap: () {},
+            ),
+            _SettingsItemData(
+              icon: LucideIcons.languages,
+              title: 'Langue',
+              onTap: () {},
+            ),
+            _SettingsItemData(
+              icon: LucideIcons.heart,
+              title: 'Santé connectée',
+              onTap: () {},
+            ),
+            _SettingsItemData(
+              icon: LucideIcons.share2,
+              title: "Partager l'app",
+              onTap: () {},
+            ),
+            _SettingsItemData(
+              icon: LucideIcons.helpCircle,
+              title: 'Aide & FAQ',
+              onTap: () {},
+            ),
+            _SettingsItemData(
+              icon: LucideIcons.info,
+              title: 'À propos',
+              onTap: () {},
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Bouton "Rejoindre la communauté"
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton.icon(
+            onPressed: () {},
+            icon: const Icon(LucideIcons.users),
+            label: const Text('Rejoindre la communauté'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1B5E3B), // vert foncé proche de l'image
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Bouton "Se déconnecter"
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: OutlinedButton.icon(
+            onPressed: () {},
+            icon: const Icon(LucideIcons.logOut),
+            label: const Text('Se déconnecter'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.redAccent,
+              side: BorderSide(color: Colors.grey.withOpacity(0.35)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettingsCard(
+    BuildContext context, {
+    required List<_SettingsItemData> items,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: List.generate(items.length, (index) {
+          final item = items[index];
+          final isLast = index == items.length - 1;
+
+          return Column(
+            children: [
+              _buildSettingsRow(
+                context,
+                icon: item.icon,
+                title: item.title,
+                onTap: item.onTap,
+              ),
+              if (!isLast)
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Colors.grey.withOpacity(0.15),
+                ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildSettingsRow(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                icon,
+                color: const Color(0xFF1B5E3B),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+            Icon(
+              LucideIcons.chevronRight,
+              color: Colors.grey.withOpacity(0.7),
+              size: 22,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+
+class _SettingsItemData {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  _SettingsItemData({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+}
+
