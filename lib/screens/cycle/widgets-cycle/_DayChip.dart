@@ -261,12 +261,15 @@
     final int currentDay;
     final Function(int) onDaySelected;
     final int totalDays;
+  final Color phaseColor; // 👈 AJOUT
 
     const DaySlider({
       super.key,
       required this.currentDay,
       required this.onDaySelected,
       this.totalDays = 30,
+          required this.phaseColor, // 👈 AJOUT
+
     });
 
     @override
