@@ -101,14 +101,9 @@ class CycleHeader extends StatelessWidget {
             phaseColor: phaseColor,
           ),
 
-          const SizedBox(height: 10),
+       
 
-          // ── Ligne 3 : barre de progression des phases ──
-          _PhaseProgressBar(
-            currentDay: currentDay,
-            phaseColors: _phaseColors,
-            phaseDays: _phaseDays,
-          ),
+        
 
           const SizedBox(height: 4),
 

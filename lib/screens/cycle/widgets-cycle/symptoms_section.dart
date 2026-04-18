@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Pour le retour haptique
+import 'package:flutter/services.dart';
 
 class SymptomsSection extends StatelessWidget {
   final List<String> symptoms;
@@ -24,17 +24,17 @@ class SymptomsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // On enveloppe le titre pour s'assurer qu'il a un look premium
           DefaultTextStyle(
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 20, // ⬆️ augmenté
               fontWeight: FontWeight.w700,
               color: Color(0xFF1A1A1A),
               letterSpacing: -0.5,
             ),
             child: title,
           ),
-          const SizedBox(height: 20),
+
+          const SizedBox(height: 22),
 
           Wrap(
             spacing: 12,
@@ -44,38 +44,37 @@ class SymptomsSection extends StatelessWidget {
 
               return GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact(); // Petit feedback de luxe
+                  HapticFeedback.lightImpact();
                   onToggle(i);
                 },
-               child: AnimatedContainer(
-  duration: const Duration(milliseconds: 400), // Augmenté un peu pour apprécier la courbe
-  curve: Curves.easeOutQuart, // Correction ici
-  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-  decoration: BoxDecoration(
-    borderRadius: BorderRadius.circular(16),
-    color: isSelected 
-        ? phaseColor.withOpacity(0.08) 
-        : const Color(0xFFF9FAFB),
-    border: Border.all(
-      color: isSelected 
-          ? phaseColor.withOpacity(0.5) 
-          : Colors.black.withOpacity(0.05),
-      width: 1.5,
-    ),
-    // ... reste du code (boxShadow, etc.)
-
-                    // Ombre très diffuse (Soft UI)
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOutQuart,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    color: isSelected
+                        ? phaseColor.withOpacity(0.10)
+                        : const Color(0xFFF9FAFB),
+                    border: Border.all(
+                      color: isSelected
+                          ? phaseColor.withOpacity(0.6)
+                          : Colors.black.withOpacity(0.05),
+                    ),
                     boxShadow: [
                       if (isSelected)
                         BoxShadow(
-                          color: phaseColor.withOpacity(0.15),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
+                          color: phaseColor.withOpacity(0.18),
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
                         )
                       else
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 4,
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
                     ],
@@ -83,11 +82,10 @@ class SymptomsSection extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Point indicateur optionnel pour le style
                       AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        width: isSelected ? 8 : 0,
-                        height: 8,
+                        duration: const Duration(milliseconds: 250),
+                        width: isSelected ? 10 : 0,
+                        height: 10,
                         margin: EdgeInsets.only(right: isSelected ? 8 : 0),
                         decoration: BoxDecoration(
                           color: phaseColor,
@@ -97,9 +95,12 @@ class SymptomsSection extends StatelessWidget {
                       AnimatedDefaultTextStyle(
                         duration: const Duration(milliseconds: 200),
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                          color: isSelected ? phaseColor : const Color(0xFF4B5563),
+                          fontSize: 16, // ⬆️ augmenté (iOS feel)
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isSelected
+                              ? phaseColor
+                              : const Color(0xFF4B5563),
                           letterSpacing: -0.2,
                         ),
                         child: Text(symptoms[i]),

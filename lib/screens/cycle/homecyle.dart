@@ -169,6 +169,15 @@ class _CycleScreenState extends State<CycleScreen> {
                   physics: const BouncingScrollPhysics(),
                   child: Column(
                     children: [
+ Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: DaySlider(
+                          currentDay: _currentDay,
+                          onDaySelected: (d) =>
+                              setState(() => _currentDay = d),
+                          phaseColor: theme.primary,
+                        ),
+                      ),
 
                       // ── ② ROUE CENTRÉE ────────────────────────
                       const SizedBox(height: 8),
@@ -196,16 +205,7 @@ class _CycleScreenState extends State<CycleScreen> {
                       ),
 
                       // ── ③ DAY SLIDER ──────────────────────────
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: DaySlider(
-                          currentDay: _currentDay,
-                          onDaySelected: (d) =>
-                              setState(() => _currentDay = d),
-                          phaseColor: theme.primary,
-                        ),
-                      ),
-
+                     
                       const SizedBox(height: 16),
 
                       // ── ④ ÉNERGIE ─────────────────────────────
