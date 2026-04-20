@@ -1,13 +1,13 @@
 
-import 'package:fiteva/cycle/widgets-cycle/_DayChip.dart';
-import 'package:fiteva/cycle/widgets-cycle/calendar_screen.dart';
-import 'package:fiteva/cycle/widgets-cycle/cycle_header.dart';
-import 'package:fiteva/cycle/widgets-cycle/cycle_wheel.dart';
-import 'package:fiteva/cycle/widgets-cycle/energy_section.dart';
-import 'package:fiteva/cycle/widgets-cycle/insight_section.dart';
-import 'package:fiteva/cycle/widgets-cycle/mood_section.dart';
-import 'package:fiteva/cycle/widgets-cycle/recommendations_section.dart';
-import 'package:fiteva/cycle/widgets-cycle/symptoms_section.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/_DayChip.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/calendar_screen.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/cycle_header.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/energy_section.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/insight_section.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/mood_section.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/recommendations_section.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/symptoms_section.dart';
 import 'package:flutter/material.dart';
 
 
