@@ -18,13 +18,13 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 
   Color _categoryColor(String label) {
     switch (label.toUpperCase()) {
-    case 'MUSCULATION': return const Color(0xFFE57373);
-    case 'PILATES': return const Color(0xFFB39DDB);
-    case 'HIIT': return const Color(0xFFFFCA28);
-    case 'DANCE': return const Color(0xFFFF8DA1);
-    case 'YOGA': return const Color(0xFF80CBC4);
-    case 'RUNNING': return const Color(0xFF64B5F6);
-    default: return const Color(0xFFB0BEC5);
+      case 'MUSCULATION': return const Color(0xFFEF5350); // rouge
+      case 'PILATES': return const Color(0xFF9575CD); // violet soft
+      case 'HIIT': return const Color(0xFFFFB300); // jaune/orange
+      case 'DANCE': return const Color(0xFFFF6F91); // rose
+      case 'YOGA': return const Color(0xFF4DB6AC); // teal
+      case 'RUNNING': return const Color(0xFF42A5F5); // bleu
+      default: return const Color(0xFF90A4AE); // gris
     }
   }
 
@@ -41,7 +41,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     final catColor = _categoryColor(cat);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
+      // Match the background color to the program's category color (as visually requested)
+      backgroundColor: catColor.withOpacity(0.08), // Using a soft 8% opacity tint of the primary color for the background
       body: Column(
         children: [
           // Hero image header
@@ -53,16 +54,16 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 child: Image.network(
                   widget.workout.imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(color: Colors.grey[800]),
+                  errorBuilder: (_, __, ___) => Container(color: catColor),
                 ),
               ),
               Container(
                 height: 280,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.black38, Colors.black87],
+                    colors: [Colors.black38, catColor.withOpacity(0.8)],
                   ),
                 ),
               ),
@@ -72,7 +73,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   padding: const EdgeInsets.all(16),
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, color: Colors.white, size: 26),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                      child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                    ),
                   ),
                 ),
               ),
@@ -87,7 +92,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: catColor,
+                        color: Colors.white.withOpacity(0.25),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -129,8 +134,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
             ],
           ),
 
-         
-
           const SizedBox(height: 8),
 
           // Exercises list
@@ -141,12 +144,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Exercices',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
-                      color: Color(0xFF1A2E1A),
+                      color: catColor.withOpacity(0.9), // Match category color
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -158,12 +161,15 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: isActive ? catColor.withOpacity(0.12) : Colors.white,
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isActive ? catColor : Colors.transparent,
-                            width: 1.5,
+                            width: 2,
                           ),
+                          boxShadow: [
+                            if (!isActive) BoxShadow(color: catColor.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+                          ],
                         ),
                         child: Row(
                           children: [
@@ -171,14 +177,14 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               width: 34,
                               height: 34,
                               decoration: BoxDecoration(
-                                color: isActive ? catColor : Colors.grey[200],
+                                color: isActive ? catColor : catColor.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
                                 child: Text(
                                   '${index + 1}',
                                   style: TextStyle(
-                                    color: isActive ? Colors.white : Colors.grey[600],
+                                    color: isActive ? Colors.white : catColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -238,9 +244,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       ),
       bottomSheet: Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -4))],
+          boxShadow: [BoxShadow(color: catColor.withOpacity(0.15), blurRadius: 15, offset: const Offset(0, -5))],
         ),
         child: SizedBox(
           width: double.infinity,
@@ -249,9 +255,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: widget.workout)),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2D4A2D),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              backgroundColor: catColor, // The button now entirely matches the category color!
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             child: const Text(
               'COMMENCER LE WORKOUT',

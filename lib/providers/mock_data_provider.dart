@@ -222,3 +222,29 @@ final cycleProvider = Provider<CyclePhase>((ref) {
     advice: 'High energy phase! Great time for HIIT and challenging workouts.',
   );
 });
+
+// Body Zones Provider
+final bodyZonesProvider = Provider<List<Map<String, dynamic>>>((ref) {
+  return [
+    {
+      'title': 'Abdos Express',
+      'imageUrl': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=500',
+      'exercises': ['Crunch basique', 'Planche dynamique', 'Russian Twists', 'Levé de jambes'],
+    },
+    {
+      'title': 'Bas du corps',
+      'imageUrl': 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=500',
+      'exercises': ['Squats', 'Fentes arrières', 'Glute Bridges', 'Soulevé de terre roumain'],
+    },
+    {
+      'title': 'Full body HIIT',
+      'imageUrl': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500',
+      'exercises': ['Burpees', 'Jumping Jacks', 'Mountain Climbers', 'High Knees'],
+    },
+    {
+      'title': 'Haut du corps',
+      'imageUrl': 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=500',
+      'exercises': ['Pompes', 'Dips triceps', 'Planche commando', 'Superman'],
+    },
+  ];
+});

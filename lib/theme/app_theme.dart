@@ -44,14 +44,8 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           fontSize: 16,
         ),
-        bodyLarge: GoogleFonts.inter(
-          color: textPrimaryColor,
-          fontSize: 16,
-        ),
-        bodyMedium: GoogleFonts.inter(
-          color: textSecondaryColor,
-          fontSize: 14,
-        ),
+        bodyLarge: GoogleFonts.inter(color: textPrimaryColor, fontSize: 16),
+        bodyMedium: GoogleFonts.inter(color: textSecondaryColor, fontSize: 14),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: backgroundColor,
@@ -68,9 +62,7 @@ class AppTheme {
         color: surfaceColor,
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.05),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -109,15 +101,16 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryColor,
-          textStyle: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
