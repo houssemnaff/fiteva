@@ -37,7 +37,7 @@
     CyclePhase(
       name: 'Ovulation',
       description: 'Pic de fertilité',
-      color: Color(0xFFE8A030),
+      color: Color(0xFF7DE2D1),
       lightColor: Color(0xFFFDF0DC),
       days: [14, 15, 16],
     ),
@@ -261,12 +261,15 @@
     final int currentDay;
     final Function(int) onDaySelected;
     final int totalDays;
+  final Color phaseColor; // 👈 AJOUT
 
     const DaySlider({
       super.key,
       required this.currentDay,
       required this.onDaySelected,
       this.totalDays = 30,
+          required this.phaseColor, // 👈 AJOUT
+
     });
 
     @override

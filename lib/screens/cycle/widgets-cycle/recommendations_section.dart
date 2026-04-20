@@ -15,126 +15,134 @@ class RecommendationsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "SUR MESURE",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 2.0,
-              color: Color(0xFFADB5BD),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label compact
+        Text(
+          'SUR MESURE',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
+            color: Colors.white.withOpacity(0.55),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            "Votre programme exclusif",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A1A),
-              letterSpacing: -0.8,
-            ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Programme exclusif',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withOpacity(0.90),
           ),
-          const SizedBox(height: 24),
-
-          // Liste horizontale ou Row pour un aspect "Magazine"
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                _buildPremiumCard(
-                  'PERFORMANCE',
-                  'Pilates & Flow',
-                  Icons.fitness_center_rounded,
-                  sportColor,
-                ),
-                const SizedBox(width: 16),
-                _buildPremiumCard(
-                  'NUTRITION',
-                  'Équilibre Vital',
-                  Icons.auto_awesome_rounded,
-                  nutritionColor,
-                ),
-                const SizedBox(width: 16),
-                _buildPremiumCard(
-                  'RÉCUPÉRATION',
-                  'Sommeil Profond',
-                  Icons.wb_twilight_rounded,
-                  restColor,
-                ),
-              ],
+        ),
+        const SizedBox(height: 12),
+        // 3 cards horizontales dans la largeur disponible
+        Row(
+          children: [
+            Expanded(
+              child: _RecommendationCard(
+                category: 'SPORT',
+                title: 'Pilates\n& Flow',
+                icon: Icons.fitness_center_rounded,
+                color: sportColor,
+              ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _RecommendationCard(
+                category: 'NUTRI',
+                title: 'Équilibre\nVital',
+                icon: Icons.auto_awesome_rounded,
+                color: nutritionColor,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _RecommendationCard(
+                category: 'REPOS',
+                title: 'Sommeil\nProfond',
+                icon: Icons.wb_twilight_rounded,
+                color: restColor,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
+}
 
-  Widget _buildPremiumCard(String category, String title, IconData icon, Color color) {
+class _RecommendationCard extends StatelessWidget {
+  final String category;
+  final String title;
+  final IconData icon;
+  final Color color;
+
+  const _RecommendationCard({
+    required this.category,
+    required this.title,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => HapticFeedback.lightImpact(),
       child: Container(
-        width: 160,
-        height: 190,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.black.withOpacity(0.04), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.06),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          ],
+          color: Colors.white.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: color.withOpacity(0.25),
+            width: 1.0,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icône stylisée
+            // Icône
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(icon, color: color, size: 16),
             ),
-            const Spacer(),
-            // Catégorie en petit
+            const SizedBox(height: 10),
+            // Catégorie
             Text(
               category,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.0,
-                color: color.withOpacity(0.8),
+                color: color.withOpacity(0.85),
               ),
             ),
-            const SizedBox(height: 4),
-            // Titre principal
+            const SizedBox(height: 3),
+            // Titre
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A),
-                height: 1.2,
+                color: Colors.white.withOpacity(0.90),
+                height: 1.3,
               ),
             ),
-            const SizedBox(height: 12),
-            // Petit bouton "Découvrir" minimaliste
+            const SizedBox(height: 8),
+            // Barre déco
             Container(
-              width: 32,
-              height: 4,
+              width: 20,
+              height: 3,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.3),
+                color: color.withOpacity(0.40),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

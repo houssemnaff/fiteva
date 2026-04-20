@@ -6,15 +6,6 @@ class MoodSection extends StatelessWidget {
   final Color phaseColor;
   final void Function(int index) onSelect;
 
-  // Contenu repensé pour un style Luxury / Wellness
-  final List<Map<String, String>> moodData = const [
-    {'emoji': '✨', 'label': 'Épanouie'},
-    {'emoji': '☁️', 'label': 'Sereine'},
-    {'emoji': '🌙', 'label': 'Fatiguée'},
-    {'emoji': '🌪️', 'label': 'Sensible'},
-    {'emoji': '🔥', 'label': 'Énergie'},
-  ];
-
   const MoodSection({
     super.key,
     required this.selectedMood,
@@ -22,112 +13,111 @@ class MoodSection extends StatelessWidget {
     required this.onSelect,
   });
 
+  final List<_MoodItem> moods = const [
+    _MoodItem(icon: Icons.sentiment_very_satisfied_rounded, label: 'Great'),
+    _MoodItem(icon: Icons.sentiment_satisfied_rounded, label: 'Good'),
+    _MoodItem(icon: Icons.sentiment_neutral_rounded, label: 'Okay'),
+    _MoodItem(icon: Icons.sentiment_dissatisfied_rounded, label: 'Low'),
+    _MoodItem(icon: Icons.self_improvement_rounded, label: 'Calm'),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "VOTRE ÉTAT D'ESPRIT", // Contenu plus formel et élégant
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 2.0,
-              color: Color(0xFFADB5BD),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Mood',
+          style: TextStyle(
+            fontSize: 20,
+             letterSpacing: -0.2, // 👈 iOS style trick
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+             fontFamily: '.SF Pro Display',
           ),
-          const SizedBox(height: 8),
-          Text(
-            "Comment vous sentez-vous ?",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1A1A1A),
-              letterSpacing: -0.8,
-              // Une petite touche de serif pour le côté luxury si disponible
-              fontFamily: 'Playfair Display', 
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(moodData.length, (i) {
-              final isSelected = selectedMood == i;
-
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.mediumImpact();
-                  onSelect(i);
-                },
-                child: Column(
-                  children: [
-                   // ... dans le build de MoodSection
-AnimatedContainer(
-  duration: const Duration(milliseconds: 500),
-  // Utilisation d'une courbe standard ultra-fluide
-  curve: Curves.easeOutExpo, 
-  width: isSelected ? 62 : 58, // La largeur change selon la sélection
-  height: 78,
-  decoration: BoxDecoration(
-    // On garde le reste identique
-    gradient: isSelected
-        ? LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              phaseColor.withOpacity(0.15),
-              phaseColor.withOpacity(0.05),
-            ],
-          )
-        : null,
-    color: isSelected ? null : const Color(0xFFF8F9FA),
-    borderRadius: BorderRadius.circular(22),
-    border: Border.all(
-      color: isSelected 
-          ? phaseColor.withOpacity(0.4) 
-          : Colors.transparent,
-      width: 1.5,
-    ),
-    boxShadow: [
-      if (isSelected)
-        BoxShadow(
-          color: phaseColor.withOpacity(0.12),
-          blurRadius: 20,
-          offset: const Offset(0, 10),
         ),
-    ],
-  ),
-  child: Center(
-    child: Text(
-      moodData[i]['emoji']!,
-      style: TextStyle(
-        fontSize: isSelected ? 28 : 24,
-      ),
-    ),
-  ),
-),
-                    const SizedBox(height: 12),
-                    AnimatedOpacity(
-                      duration: const Duration(milliseconds: 300),
-                      opacity: isSelected ? 1.0 : 0.5,
-                      child: Text(
-                        moodData[i]['label']!,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? phaseColor : const Color(0xFF495057),
-                        ),
+
+        const SizedBox(height: 10),
+
+        // ✅ FIX ABSOLU overflow
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final size = (constraints.maxWidth / 3) - 10;
+
+            return Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: List.generate(moods.length, (i) {
+                final isSelected = selectedMood == i;
+
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onSelect(i);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    width: size,
+                    height: size,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: isSelected
+                          ? phaseColor.withOpacity(0.20)
+                          : Colors.white.withOpacity(0.06),
+                      border: Border.all(
+                        color: isSelected
+                            ? phaseColor.withOpacity(0.6)
+                            : Colors.transparent,
                       ),
                     ),
-                  ],
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            moods[i].icon,
+                            size: 36,
+                            
+                            color: isSelected
+                                ? phaseColor
+                                : Colors.white.withOpacity(0.6),
+                                
+                          ),
+                          const SizedBox(height: 4),
+
+                          // 🔥 label SAFE (no overflow)
+                          Text(
+                            moods[i].label,
+                            style: TextStyle(
+                                fontFamily: '.SF Pro Display',
+                              fontSize: 10,
+                              color: Colors.white.withOpacity(0.8),
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            );
+          },
+        ),
+      ],
     );
   }
+}
+
+class _MoodItem {
+  final IconData icon;
+  final String label;
+
+  const _MoodItem({
+    required this.icon,
+    required this.label,
+  });
 }

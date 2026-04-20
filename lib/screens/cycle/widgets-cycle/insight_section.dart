@@ -24,17 +24,24 @@ class _InsightSectionState extends State<InsightSection>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      vsync: this, 
-      duration: const Duration(milliseconds: 1000) // Plus lent = plus luxueux
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
     );
-
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _slide = Tween<Offset>(
-      begin: const Offset(0, 0.05),
+      begin: const Offset(0, 0.04),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutQuart));
-
+    ).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutQuart));
     _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(InsightSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.insight != widget.insight) {
+      _controller.forward(from: 0);
+    }
   }
 
   @override
@@ -45,98 +52,90 @@ class _InsightSectionState extends State<InsightSection>
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
-      child: FadeTransition(
-        opacity: _fade,
-        child: SlideTransition(
-          position: _slide,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "INTELLIGENCE",
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 2.0,
-                  color: Color(0xFFADB5BD),
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(
+        position: _slide,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Label compact
+          Text(
+  'INTELLIGENCE',
+  style: TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 1.2,
+    color: Colors.white.withOpacity(0.45),
+    fontFamily: '.SF Pro Display',
+  ),
+),
+            const SizedBox(height: 4),
+            Text(
+              'Analyse FitEva',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withOpacity(0.90),  fontFamily: '.SF Pro Display',
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Insight card compacte
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: widget.phaseColor.withOpacity(0.25),
+                  width: 1.0,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                "L'analyse de FitEva",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A1A),
-                  letterSpacing: -0.8,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(32),
-                  border: Border.all(
-                    color: widget.phaseColor.withOpacity(0.2),
-                    width: 1.5,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    color: widget.phaseColor,
+                    size: 16,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.phaseColor.withOpacity(0.08),
-                      blurRadius: 40,
-                      offset: const Offset(0, 15),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Petit badge icône flottant
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      color: widget.phaseColor,
-                      size: 28,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      widget.insight.isEmpty 
-                        ? "Analyse de vos données en cours pour personnaliser votre expérience..."
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.insight.isEmpty
+                        ? 'Analyse en cours...'
                         : widget.insight,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1.6,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
-                        fontStyle: FontStyle.italic,
-                        letterSpacing: -0.2,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.5,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withOpacity(0.85),
+                      fontStyle: FontStyle.italic,
+                        fontFamily: '.SF Pro Display',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: widget.phaseColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'CONSEIL DU JOUR',
+                      style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w800,
+                        color: widget.phaseColor,
+                        letterSpacing: 0.8,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    // Signature Premium
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: widget.phaseColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      child: Text(
-                        "CONSEIL DU JOUR",
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: widget.phaseColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -34,7 +34,7 @@ const List<CyclePhase> kPhases = [
   CyclePhase(
     name: 'Ovulation',
     description: 'Pic de fertilité · Humeur au top',
-    color: Color(0xFF7DE2D1),
+    color: Color(0xFF7DE2D10),
     days: [14, 15, 16],
   ),
   CyclePhase(
@@ -54,13 +54,17 @@ CyclePhase phaseForDay(int day) =>
 class _PetalWheelPainter extends CustomPainter {
   final int currentDay;
   final int totalDays;
-  final double pulseValue; // 0..1 animation for selected petal glow
+  final Color phaseColor;
+  final double pulseValue; // 0..2π animation for selected petal glow
+  final double flowValue;  // 0..1 easeInOutSine for règles flow animation
 
-  _PetalWheelPainter({
-    required this.currentDay,
-    this.totalDays = 30,
-    this.pulseValue = 0,
-  });
+_PetalWheelPainter({
+  required this.currentDay,
+  required this.phaseColor,
+  this.totalDays = 30,
+  this.pulseValue = 0,
+  this.flowValue = 0,
+});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -68,10 +72,10 @@ class _PetalWheelPainter extends CustomPainter {
     final cy = size.height / 2;
 
     // Subtle outer glow ring
-    final glowPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..color = const Color(0xFFD94F6B).withOpacity(0.06)
-      ..strokeWidth = 20;
+ final glowPaint = Paint()
+  ..style = PaintingStyle.stroke
+  ..color = phaseColor.withOpacity(0.08 + sin(flowValue * pi) * 0.03)
+  ..strokeWidth = 20;
     canvas.drawCircle(Offset(cx, cy), cx * 0.80, glowPaint);
 
     // Draw each day petal
@@ -81,17 +85,32 @@ class _PetalWheelPainter extends CustomPainter {
       final phase = phaseForDay(day);
       final color = phase.color;
 
+      // Is this a règles day?
+      final isRegles = kPhases[0].days.contains(day);
+
+      // Sequential wave offset — each règles petal is slightly phase-shifted
+      // creating a cascading "flow" effect across the 5 petals
+      final waveOffset = isRegles
+          ? sin((flowValue * pi) + (i / totalDays) * 2 * pi)
+          : 0.0;
+
       final angle = -pi / 2 + (2 * pi / totalDays) * i;
 
-      // Petal dimensions: selected petal blooms larger
-      final outerR = isSelected ? cx * 0.795 + sin(pulseValue) * 4 : cx * 0.695;
+      // Petal dimensions
+      final outerR = isSelected
+          ? cx * 0.795 + sin(pulseValue) * 4
+          : isRegles
+              ? cx * 0.695 + waveOffset * 8  // undulating bloom for règles
+              : cx * 0.695;
+
       final innerR = cx * 0.32;
       final segW = (2 * pi * outerR / totalDays);
       final halfW = segW * (isSelected ? 0.40 : 0.31);
 
       _drawPetal(
         canvas: canvas,
-        cx: cx, cy: cy,
+        cx: cx,
+        cy: cy,
         angle: angle,
         outerR: outerR,
         innerR: innerR,
@@ -99,6 +118,8 @@ class _PetalWheelPainter extends CustomPainter {
         color: color,
         isSelected: isSelected,
         pulseValue: pulseValue,
+        isRegles: isRegles,
+        flowWave: waveOffset,
       );
 
       // Day number label
@@ -112,7 +133,11 @@ class _PetalWheelPainter extends CustomPainter {
           style: TextStyle(
             fontSize: isSelected ? 10.5 : 8.5,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? Colors.white : color.withOpacity(0.85),
+            color: isSelected
+                ? Colors.white
+                : isRegles
+                    ? color.withOpacity(0.90 + waveOffset * 0.10)
+                    : color.withOpacity(0.85),
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -133,29 +158,26 @@ class _PetalWheelPainter extends CustomPainter {
     required Color color,
     required bool isSelected,
     required double pulseValue,
+    required bool isRegles,
+    required double flowWave,
   }) {
     final cosA = cos(angle);
     final sinA = sin(angle);
-    // Perpendicular direction
     final perpX = -sinA;
     final perpY = cosA;
 
-    // Anchor points
     final ix = cx + innerR * cosA;
     final iy = cy + innerR * sinA;
     final ox = cx + outerR * cosA;
     final oy = cy + outerR * sinA;
 
-    // Bezier bulge factor – organic petal curve
     const bulge = 1.15;
 
-    // Control points: left side (going out)
     final ctrl1x = cx + (innerR + (outerR - innerR) * 0.35) * cosA + perpX * halfWidth * bulge;
     final ctrl1y = cy + (innerR + (outerR - innerR) * 0.35) * sinA + perpY * halfWidth * bulge;
     final ctrl2x = cx + (innerR + (outerR - innerR) * 0.65) * cosA + perpX * halfWidth * bulge;
     final ctrl2y = cy + (innerR + (outerR - innerR) * 0.65) * sinA + perpY * halfWidth * bulge;
 
-    // Control points: right side (coming back)
     final ctrl3x = cx + (innerR + (outerR - innerR) * 0.65) * cosA - perpX * halfWidth * bulge;
     final ctrl3y = cy + (innerR + (outerR - innerR) * 0.65) * sinA - perpY * halfWidth * bulge;
     final ctrl4x = cx + (innerR + (outerR - innerR) * 0.35) * cosA - perpX * halfWidth * bulge;
@@ -187,7 +209,35 @@ class _PetalWheelPainter extends CustomPainter {
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
       );
       canvas.drawPath(path, paint);
+    } else if (isRegles) {
+      // ── FLOW animation for règles phase ─────────────────────────
+
+      // 1. Outer droplet halo — soft pulsing red glow
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = color.withOpacity(0.12 + flowWave * 0.10)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+      );
+
+      // 2. Fill that "breathes" — opacity oscillates with the wave
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = color.withOpacity(0.22 + flowWave * 0.18)
+          ..style = PaintingStyle.fill,
+      );
+
+      // 3. Luminous thin border — stroke width pulses with wave
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = color.withOpacity(0.45 + flowWave * 0.30)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0 + flowWave * 0.8,
+      );
     } else {
+      // Other phases — flat render
       canvas.drawPath(
         path,
         Paint()
@@ -199,7 +249,9 @@ class _PetalWheelPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PetalWheelPainter old) =>
-      old.currentDay != currentDay || old.pulseValue != pulseValue;
+      old.currentDay != currentDay ||
+      old.pulseValue != pulseValue ||
+      old.flowValue != flowValue;
 }
 
 // ──────────────────────────────────────────────
@@ -241,93 +293,140 @@ class CycleWheel extends StatefulWidget {
 }
 
 class _CycleWheelState extends State<CycleWheel>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+    with TickerProviderStateMixin {  // ← TickerProviderStateMixin (pas Single)
+late AnimationController _colorCtrl;
+late Animation<Color?> _phaseColorAnim;
+
+Color _currentPhaseColor = kPhases[0].color;
+  late AnimationController _pulse;  // existing global glow
+  late AnimationController _flow;   // new: règles wave flow
+  late Animation<double> _flowAnim;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+_colorCtrl = AnimationController(
+  vsync: this,
+  duration: const Duration(milliseconds: 700),
+);
+    _pulse = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat();
+
+    // Slow organic wave for règles petals
+    _flow = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
+
+    _flowAnim = CurvedAnimation(
+      parent: _flow,
+      curve: Curves.easeInOutSine,
+    );
   }
+  void _updatePhaseColor() {
+  final newColor = phaseForDay(widget.currentDay).color;
+
+  _phaseColorAnim = ColorTween(
+    begin: _currentPhaseColor,
+    end: newColor,
+  ).animate(CurvedAnimation(
+    parent: _colorCtrl,
+    curve: Curves.easeInOut,
+  ));
+
+  _colorCtrl.forward(from: 0);
+
+  _currentPhaseColor = newColor;
+}
+@override
+void didUpdateWidget(covariant CycleWheel oldWidget) {
+  super.didUpdateWidget(oldWidget);
+
+  if (oldWidget.currentDay != widget.currentDay) {
+    _updatePhaseColor();
+  }
+}
+@override
+void dispose() {
+  _pulse.dispose();
+  _flow.dispose();
+  _colorCtrl.dispose();
+  super.dispose();
+}
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  Widget build(BuildContext context) {
+    const totalDays = 30;
+    final phase = phaseForDay(widget.currentDay);
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.maxWidth * 0.95;
 
-@override
-Widget build(BuildContext context) {
-  const totalDays = 30;
-  final phase = phaseForDay(widget.currentDay);
-
- return LayoutBuilder(
-  builder: (context, constraints) {
-    final size = constraints.maxWidth * 0.95; // utilise largeur seulement
-
-    return Center(
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) {
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                GestureDetector(
-                  onTapDown: (d) {
-                    final day = _dayFromTap(
-                      d.localPosition,
-                      Size(size, size),
-                      totalDays,
-                    );
-                    if (day != null) widget.onDaySelected(day);
-                  },
-                  child: CustomPaint(
-                    size: Size(size, size),
-                    painter: _PetalWheelPainter(
-                      currentDay: widget.currentDay,
-                      pulseValue: _controller.value * 2 * pi,
-                    ),
-                  ),
-                ),
-
-                Container(
-                  width: size * 0.30,
-                  height: size * 0.30,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: phase.color.withOpacity(0.15),
-                        blurRadius: 20,
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${widget.currentDay}',
-                      style: TextStyle(
-                        fontSize: size * 0.10,
-                        fontWeight: FontWeight.bold,
-                        color: phase.color,
+        return Center(
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: AnimatedBuilder(
+              animation: Listenable.merge([_pulse, _flow]),  // merge both
+              builder: (context, _) {
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    GestureDetector(
+                      onTapDown: (d) {
+                        final day = _dayFromTap(
+                          d.localPosition,
+                          Size(size, size),
+                          totalDays,
+                        );
+                        if (day != null) widget.onDaySelected(day);
+                      },
+                      child: CustomPaint(
+                        size: Size(size, size),
+                       painter: _PetalWheelPainter(
+  currentDay: widget.currentDay,
+  pulseValue: _pulse.value * 2 * pi,
+  flowValue: _flowAnim.value,
+  phaseColor: _phaseColorAnim.value ?? phase.color,
+),
                       ),
                     ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+
+                    // Center bubble
+                    Container(
+                      width: size * 0.30,
+                      height: size * 0.30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: phase.color.withOpacity(0.15),
+                            blurRadius: 20,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${widget.currentDay}',
+                          style: TextStyle(
+                            fontSize: size * 0.10,
+                            fontWeight: FontWeight.bold,
+                            color: phase.color,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
-  },
-);
+  }
 }
-    }

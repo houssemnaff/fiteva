@@ -49,7 +49,7 @@ class AppTheme {
 
   static TextStyle get logoStyle {
     return const TextStyle(
-      fontFamily: 'Georgia',
+   fontFamily: '.SF Pro Text',
       fontStyle: FontStyle.italic,
       fontWeight: FontWeight.bold,
       fontSize: 24,

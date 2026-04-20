@@ -62,7 +62,7 @@ class HeroCycleSection extends StatelessWidget {
                     style: const TextStyle(
                       color: FitEvaColors.text,
                       fontSize: 28,
-                      fontFamily: 'Georgia',
+                     fontFamily: '.SF Pro Text',
                       fontStyle: FontStyle.italic,
                       fontWeight: FontWeight.w200,
                     ),
