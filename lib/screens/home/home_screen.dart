@@ -1,4 +1,5 @@
 import 'package:fiteva/core/theme.dart';
+import 'package:fiteva/widgets/home_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -85,37 +86,7 @@ class _HeroWorkoutCard extends StatelessWidget {
       right: 0,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'GOOD MORNING',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 10,
-                    letterSpacing: 2,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  user.name.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-            const CircleAvatar(
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.person, color: Colors.white),
-            )
-          ],
-        ),
+        child: const HomeHeader(),
       ),
     ),
 

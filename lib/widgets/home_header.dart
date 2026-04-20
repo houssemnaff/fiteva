@@ -42,7 +42,10 @@ class HomeHeader extends ConsumerWidget {
             children: [
               Text(
                 'Hi, ${user.name}!',
-                style: Theme.of(context).textTheme.displayMedium,
+                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                  color: AppTheme.accentColor,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
