@@ -21,7 +21,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen>
 
   Color _categoryColor(String label) {
     switch (label.toUpperCase()) {
-     case 'MUSCULATION': return const Color(0xFFE57373);
+     case 'MUSCULATION': return const Color.fromARGB(255, 115, 229, 216);
     case 'PILATES': return const Color(0xFFB39DDB);
     case 'HIIT': return const Color(0xFFFFCA28);
     case 'DANCE': return const Color(0xFFFF8DA1);
