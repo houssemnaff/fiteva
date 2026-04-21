@@ -207,53 +207,54 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     );
   }
 
-  Widget _buildBodyZoneCard(Map<String, dynamic> zone, BuildContext context) {
+  Widget _buildGridZoneCard(String label, IconData iconData, List<Map<String, dynamic>> providerZones, BuildContext context) {
+    
+    // Attempt to match the provider item based on the label, default to first item if not found
+    final zoneContent = providerZones.firstWhere(
+        (z) => z['title'].toString().toLowerCase().contains(label.toLowerCase().split(' ').first), 
+        orElse: () => providerZones[0]);
+
     return GestureDetector(
       onTap: () {
         final workout = WorkoutModel(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: zone['title'],
+          title: zoneContent['title'],
           category: 'Zone',
           duration: '15 min',
           level: 'Tous niveaux',
           calories: '150',
-          imageUrl: zone['imageUrl'],
-          exercises: List<String>.from(zone['exercises']),
+          imageUrl: zoneContent['imageUrl'],
+          exercises: List<String>.from(zoneContent['exercises']),
         );
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => WorkoutDetailScreen(workout: workout)),
         );
       },
       child: Container(
-        width: 140,
-        margin: const EdgeInsets.only(right: 12),
+        height: 80,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           image: DecorationImage(
-            image: NetworkImage(zone['imageUrl']),
+            image: NetworkImage(zoneContent['imageUrl']),
             fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.4), BlendMode.darken),
+            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.5), BlendMode.darken),
           ),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), shape: BoxShape.circle),
-                child: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(iconData, color: Colors.white, size: 22),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              const Spacer(),
-              Text(
-                zone['title'],
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -283,7 +284,79 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Banner
-          
+          Padding(
+  padding: const EdgeInsets.all(16),
+  child: Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: const Color(0xFFE8F5E9),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: const Color(0xFFB2DFB2), width: 0.5),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: Color(0xFF4CAF50),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'PHASE ${cycle.name.toUpperCase()}',
+              style: const TextStyle(
+                color: Color(0xFF5A8A5A),
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.4,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          cycle.advice,
+          style: const TextStyle(
+            color: Color(0xFF1A3A1A),
+            fontWeight: FontWeight.w500,
+            fontSize: 15,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+      /*  Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.55),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.access_time_rounded,
+                  size: 14, color: Color(0xFF3A7A3A)),
+              const SizedBox(width: 6),
+              Text(
+                'Jours ${cycle.startDay} – ${cycle.endDay}',
+                style: const TextStyle(
+                  color: Color(0xFF3A7A3A),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),*/
+      ],
+    ),
+  ),
+),
 
             // Chips
             SizedBox(
@@ -330,9 +403,19 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    _selectedCategory == 0 ? 'Programmes recommandés' : '${categories[_selectedCategory]['label']} workouts',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1A2E1A)),
+                  Expanded(
+                    child: Text(
+                      _selectedCategory == 0
+                          ? 'Programmes recommandés'
+                          : '${categories[_selectedCategory]['label']} workouts',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Color(0xFF1A2E1A),
+                      ),
+                    ),
                   ),
                   GestureDetector(
                     onTap: () => setState(() => _showAllWorkouts = !_showAllWorkouts),
@@ -374,21 +457,38 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Body Zones
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('Vidéos par zone du corps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1A2E1A))),
+              // Body Zones Grid
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Vidéos par zone du corps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1A2E1A))),
+                    Text('Tout voir ›', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryColor)),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                height: 140,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: bodyZones.length,
-                  itemBuilder: (context, index) {
-                    return _buildBodyZoneCard(bodyZones[index], context);
-                  },
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: _buildGridZoneCard('Abdos', Icons.health_and_safety, bodyZones, context)),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildGridZoneCard('Haut du corps', Icons.fitness_center, bodyZones, context)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(child: _buildGridZoneCard('Bas du corps', Icons.directions_walk, bodyZones, context)),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildGridZoneCard('Full body', Icons.accessibility_new, bodyZones, context)),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 40),
