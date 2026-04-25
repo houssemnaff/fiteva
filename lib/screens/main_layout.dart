@@ -43,7 +43,7 @@ class _MainLayoutState extends State<MainLayout> {
     const HomeScreen(),
     const CycleApp(),
     const WorkoutScreen(),
-    const NutritionScreen(),
+    const NutritionHomeScreen(),
     const CommunityScreen(),
   ];
 

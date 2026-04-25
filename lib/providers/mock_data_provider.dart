@@ -153,9 +153,7 @@ final nutritionProvider = Provider<NutritionSummary>((ref) {
       MealModel(id: 'm4', name: 'Salmon & Quinoa', calories: 450, type: 'dinner', time: '07:30 PM'),
     ],
   );
-});
-
-// Community Posts Provider
+});// Community Posts Provider
 final postsProvider = Provider<List<PostModel>>((ref) {
   return [
     PostModel(
@@ -167,24 +165,7 @@ final postsProvider = Provider<List<PostModel>>((ref) {
       likes: 42,
       comments: 18,
       timeAgo: '35m ago',
-      isEvent: true,
-      eventTitle: 'Saturday Tennis Match',
-      eventDate: 'Sat, 26 Apr 2026',
-      eventTime: '09:00 AM - 11:00 AM',
-      eventLocation: 'City Court, Downtown',
-      maxParticipants: 6,
-      initialParticipants: const [
-        EventParticipant(
-          id: 'u_1',
-          name: 'Sarah',
-          avatarUrl: 'https://i.pravatar.cc/150?img=1',
-        ),
-        EventParticipant(
-          id: 'u_12',
-          name: 'Lina',
-          avatarUrl: 'https://i.pravatar.cc/150?img=12',
-        ),
-      ],
+      category: 'Challenge',
     ),
     PostModel(
       id: 'p_text_1',
@@ -195,29 +176,32 @@ final postsProvider = Provider<List<PostModel>>((ref) {
       likes: 63,
       comments: 11,
       timeAgo: '1h ago',
+      category: 'Workout',
     ),
-   PostModel(
-  id: 'p3',
-  username: 'Fit Community',
-  userAvatarUrl: 'https://i.pravatar.cc/150?img=20',
-  content: 'Consistency beats motivation every single time 💯',
-  imageUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500',
-  likes: 210,
-  comments: 34,
-  timeAgo: '6h ago',
-),
-PostModel(
-  id: 'p2',
-  username: 'Jessica Alba',
-  userAvatarUrl: 'https://i.pravatar.cc/150?img=32',
-  content: 'Balanced meals = better energy all day 🌱💚',
-  imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=500',
-  likes: 97,
-  comments: 12,
-  timeAgo: '3h ago',
-),
     PostModel(
       id: 'p3',
+      username: 'Fit Community',
+      userAvatarUrl: 'https://i.pravatar.cc/150?img=20',
+      content: 'Consistency beats motivation every single time 💯',
+      imageUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500',
+      likes: 210,
+      comments: 34,
+      timeAgo: '6h ago',
+      category: 'Workout',
+    ),
+    PostModel(
+      id: 'p2',
+      username: 'Jessica Alba',
+      userAvatarUrl: 'https://i.pravatar.cc/150?img=32',
+      content: 'Balanced meals = better energy all day 🌱💚',
+      imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=500',
+      likes: 97,
+      comments: 12,
+      timeAgo: '3h ago',
+      category: 'Nutrition',
+    ),
+    PostModel(
+      id: 'p4',
       username: 'Jessica Alba',
       userAvatarUrl: 'https://i.pravatar.cc/150?img=9',
       content: 'Healthy eating is not a diet, it is a lifestyle. Here is my lunch today 🥗',
@@ -225,66 +209,13 @@ PostModel(
       likes: 89,
       comments: 5,
       timeAgo: '5h ago',
+      category: 'Nutrition',
     ),
   ];
 });
 
-class EventJoinStateNotifier extends Notifier<Map<String, List<EventParticipant>>> {
-  @override
-  Map<String, List<EventParticipant>> build() {
-    final posts = ref.read(postsProvider);
-    final data = <String, List<EventParticipant>>{};
 
-    for (final post in posts) {
-      if (post.isEvent) {
-        data[post.id] = List<EventParticipant>.from(post.initialParticipants);
-      }
-    }
 
-    return data;
-  }
-
-  bool isJoined({required String postId, required String userId}) {
-    final users = state[postId] ?? <EventParticipant>[];
-    return users.any((user) => user.id == userId);
-  }
-
-  bool isFull({required String postId, required int? maxParticipants}) {
-    if (maxParticipants == null) {
-      return false;
-    }
-    final users = state[postId] ?? <EventParticipant>[];
-    return users.length >= maxParticipants;
-  }
-
-  bool joinEvent({
-    required String postId,
-    required EventParticipant participant,
-    required int? maxParticipants,
-  }) {
-    final users = List<EventParticipant>.from(state[postId] ?? <EventParticipant>[]);
-    final alreadyJoined = users.any((user) => user.id == participant.id);
-    if (alreadyJoined) {
-      return true;
-    }
-
-    if (maxParticipants != null && users.length >= maxParticipants) {
-      return false;
-    }
-
-    users.add(participant);
-    state = {
-      ...state,
-      postId: users,
-    };
-    return true;
-  }
-}
-
-final eventJoinStateProvider =
-    NotifierProvider<EventJoinStateNotifier, Map<String, List<EventParticipant>>>(
-  EventJoinStateNotifier.new,
-);
 
 // Cycle Tracking Mock Provider
 class CyclePhase {

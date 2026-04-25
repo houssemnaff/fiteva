@@ -19,15 +19,9 @@ class PostModel {
   final int likes;
   final int comments;
   final String timeAgo;
-  final bool isEvent;
-  final String? eventTitle;
-  final String? eventDate;
-  final String? eventTime;
-  final String? eventLocation;
-  final int? maxParticipants;
-  final List<EventParticipant> initialParticipants;
+  final String category;
 
-  PostModel({
+  const PostModel({
     required this.id,
     required this.username,
     required this.userAvatarUrl,
@@ -36,12 +30,6 @@ class PostModel {
     required this.likes,
     required this.comments,
     required this.timeAgo,
-    this.isEvent = false,
-    this.eventTitle,
-    this.eventDate,
-    this.eventTime,
-    this.eventLocation,
-    this.maxParticipants,
-    this.initialParticipants = const [],
+    this.category = '',
   });
 }

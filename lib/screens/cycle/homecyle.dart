@@ -1,11 +1,13 @@
 
 
+import 'package:fiteva/screens/cycle/widgets-cycle/calendar_screen.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/cycle_header.dart';
 import 'package:flutter/material.dart';
 import '../../theme/FitEvaColors.dart';
 
-import 'widgets-cycle/_DayChip.dart';
-import 'widgets-cycle/calendar_screen.dart';
-import 'widgets-cycle/cycle_header.dart';
+
+
+
 import 'widgets-cycle/cycle_wheel.dart' as wheel;
 import 'widgets-cycle/energy_section.dart';
 import 'widgets-cycle/insight_section.dart';
@@ -156,12 +158,7 @@ class _CycleScreenState extends State<CycleScreen> {
                     children: [
  Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: DaySlider(
-                          currentDay: _currentDay,
-                          onDaySelected: (d) =>
-                              setState(() => _currentDay = d),
-                          phaseColor: theme.primary,
-                        ),
+                      
                       ),
 
                       // ── ② ROUE CENTRÉE ────────────────────────

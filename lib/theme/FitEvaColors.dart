@@ -26,10 +26,7 @@ class FitEvaColors {
   // ── Texte secondaire (dérivé de la palette) ────────────────────────────────
   /// Vert bouteille adouci — labels, sous-titres, textes muets
   static const Color textMuted = Color(0xFF5A6B62);
-
-  // ── Couleurs sémantiques de phase ──────────────────────────────────────────
-  /// Phase menstruelle — rouge rosé
-  static const Color phaseMenstrual = Color(0xFFD94F6B);
+    static const Color phaseMenstrual = Color(0xFFD94F6B);
 
   /// Phase folliculaire — vert menthe (= accent)
   static const Color phaseFolliculaire = Color(0xFF7ABB98);
@@ -39,4 +36,7 @@ class FitEvaColors {
 
   /// Phase lutéale — bleu doux
   static const Color phaseLuteal = Color(0xFF5A7FC2);
+
+  // ── Couleurs sémantiques de phase ──────────────────────────────────────────
+ 
 }

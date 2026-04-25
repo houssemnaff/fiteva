@@ -1,365 +1,426 @@
-  import 'package:flutter/material.dart';
-  import '../../../theme/FitEvaColors.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart';
+import 'package:flutter/material.dart';
+ // pour phaseForDay + kPhases
 
-  // ──────────────────────────────────────────────
-  //  Reuse your phase model (or import from cycle_wheel.dart)
-  // ──────────────────────────────────────────────
-  class CyclePhase {
-    final String name;
-    final String description;
-    final Color color;
-    final Color lightColor;
-    final List<int> days;
+class CycleHeader extends StatelessWidget {
+  final int currentDay;
+  final bool showWheel;
+  final VoidCallback onShowWheel;
+  final VoidCallback onShowCalendar;
+  final VoidCallback onClose;
 
-    const CyclePhase({
-      required this.name,
-      required this.description,
-      required this.color,
-      required this.lightColor,
-      required this.days,
-    });
-  }
+  const CycleHeader({
+    super.key,
+    required this.currentDay,
+    required this.showWheel,
+    required this.onShowWheel,
+    required this.onShowCalendar,
+    required this.onClose,
+  });
 
-  const List<CyclePhase> kPhases = [
-    CyclePhase(
-      name: 'Règles',
-      description: 'Corps au repos',
-      color: FitEvaColors.phaseMenstrual,
-      lightColor: Color(0xFFFDE8EC),
-      days: [1, 2, 3, 4, 5],
-    ),
-    CyclePhase(
-      name: 'Folliculaire',
-      description: 'Énergie en hausse',
-      color: FitEvaColors.phaseFolliculaire,
-      lightColor: Color(0xFFE0F5EC),
-      days: [6, 7, 8, 9, 10, 11, 12, 13],
-    ),
-    CyclePhase(
-      name: 'Ovulation',
-      description: 'Pic de fertilité',
-      color: FitEvaColors.phaseOvulatoire,
-      lightColor: Color(0xFFFDF0DC),
-      days: [14, 15, 16],
-    ),
-    CyclePhase(
-      name: 'Lutéale',
-      description: 'Corps se prépare',
-      color: FitEvaColors.phaseLuteal,
-      lightColor: Color(0xFFE4ECFB),
-      days: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
-    ),
+  // Couleurs fixes des 4 phases
+  static const _phaseColors = [
+    Color(0xFFD94F6B), // Règles
+    Color(0xFF5BAE8A), // Folliculaire
+    Color(0xFF7DE2D1), // Ovulation
+    Color(0xFF6B8FD4), // Lutéale
   ];
 
-  CyclePhase phaseForDay(int day) =>
-      kPhases.firstWhere((p) => p.days.contains(day), orElse: () => kPhases.last);
+  static const _phaseDays = [5, 8, 3, 14]; // durées proportionnelles
 
-  // ──────────────────────────────────────────────
-  //  Day Chip
-  // ──────────────────────────────────────────────
-  class _DayChip extends StatelessWidget {
-    final int day;
-    final bool isSelected;
-    final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final phase = phaseForDay(currentDay);
+    final phaseColor = phase.color;
 
-    const _DayChip({
-      required this.day,
-      required this.isSelected,
-      required this.onTap,
-    });
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
 
-    @override
-    Widget build(BuildContext context) {
-      final phase = phaseForDay(day);
-
-      return GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          width: 40,
-          height: 52,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          transform: isSelected
-              ? (Matrix4.identity()..translate(0.0, -4.0))
-              : Matrix4.identity(),
-          decoration: BoxDecoration(
-            color: isSelected ? phase.color : FitEvaColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? phase.color : const Color(0xFFECE0E8),
-              width: isSelected ? 1.5 : 1,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: phase.color.withOpacity(0.28),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          // ── Ligne 1 : titre + badge phase + icônes ─────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Phase dot indicator
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSelected
-                      ? Colors.white.withOpacity(0.6)
-                      : phase.color,
+
+              // Titre + badge phase
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'MON CYCLE',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.8,
+                        color: Colors.white.withOpacity(0.55),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    // Badge phase animé
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      child: _PhaseBadge(
+                        key: ValueKey(phase.name),
+                        name: phase.name,
+                        description: phase.description,
+                        color: phaseColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 5),
-              // Day number
+
+              const SizedBox(width: 12),
+
+              // Bouton calendrier
+              _IconButton(
+                icon: Icons.calendar_month_rounded,
+                onTap: () {},
+                color: phaseColor,
+              ),
+              const SizedBox(width: 8),
+              // Bouton close / retour
+              _IconButton(
+                icon: Icons.close_rounded,
+                onTap: onClose,
+                color: phaseColor,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Ligne 2 : toggle Roue / Calendrier ─────────
+          _ToggleBar(
+            showWheel: showWheel,
+            onShowWheel: onShowWheel,
+            onShowCalendar: onShowCalendar,
+            phaseColor: phaseColor,
+          ),
+
+          const SizedBox(height: 10),
+
+          // ── Ligne 3 : barre de progression des phases ──
+          _PhaseProgressBar(
+            currentDay: currentDay,
+            phaseColors: _phaseColors,
+            phaseDays: _phaseDays,
+          ),
+
+          const SizedBox(height: 4),
+
+          // Jour / total
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'Jour $currentDay / 30',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.white.withOpacity(0.60),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 6),
+        ],
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+//  Badge phase (nom + description + point couleur)
+// ──────────────────────────────────────────────
+class _PhaseBadge extends StatelessWidget {
+  final String name;
+  final String description;
+  final Color color;
+
+  const _PhaseBadge({
+    super.key,
+    required this.name,
+    required this.description,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Point couleur de la phase
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: color.withOpacity(0.5), blurRadius: 4),
+              ],
+            ),
+          ),
+          const SizedBox(width: 7),
+          Text(
+            name,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              '· ${description.split('·').first.trim()}',
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.white.withOpacity(0.70),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+//  Toggle Roue / Calendrier
+// ──────────────────────────────────────────────
+class _ToggleBar extends StatelessWidget {
+  final bool showWheel;
+  final VoidCallback onShowWheel;
+  final VoidCallback onShowCalendar;
+  final Color phaseColor;
+
+  const _ToggleBar({
+    required this.showWheel,
+    required this.onShowWheel,
+    required this.onShowCalendar,
+    required this.phaseColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.13),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.20)),
+      ),
+      child: Row(
+        children: [
+          _ToggleItem(
+            label: 'Roue',
+            icon: Icons.donut_large_rounded,
+            isActive: showWheel,
+            onTap: onShowWheel,
+            phaseColor: phaseColor,
+          ),
+          _ToggleItem(
+            label: 'Calendrier',
+            icon: Icons.calendar_today_rounded,
+            isActive: !showWheel,
+            onTap: onShowCalendar,
+            phaseColor: phaseColor,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToggleItem extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isActive;
+  final VoidCallback onTap;
+  final Color phaseColor;
+
+  const _ToggleItem({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+    required this.onTap,
+    required this.phaseColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: isActive ? Colors.white.withOpacity(0.25) : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: isActive ? Colors.white : Colors.white.withOpacity(0.50),
+              ),
+              const SizedBox(width: 6),
               Text(
-                '$day',
+                label,
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : FitEvaColors.text,
+                  fontSize: 12,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: isActive ? Colors.white : Colors.white.withOpacity(0.50),
                 ),
               ),
             ],
           ),
         ),
-      );
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+//  Barre de progression des 4 phases
+// ──────────────────────────────────────────────
+class _PhaseProgressBar extends StatelessWidget {
+  final int currentDay;
+  final List<Color> phaseColors;
+  final List<int> phaseDays;
+
+  const _PhaseProgressBar({
+    required this.currentDay,
+    required this.phaseColors,
+    required this.phaseDays,
+  });
+
+  static const _phaseNames = ['Règles', 'Follic.', 'Ovul.', 'Lutéale'];
+
+  // Calcule le jour de début de chaque phase
+  int _startDay(int phaseIndex) {
+    int start = 1;
+    for (int i = 0; i < phaseIndex; i++) {
+      start += phaseDays[i];
     }
+    return start;
   }
 
-  // ──────────────────────────────────────────────
-  //  Phase progress bar
-  // ──────────────────────────────────────────────
-  class _PhaseBar extends StatelessWidget {
-    final int currentDay;
+  int _endDay(int phaseIndex) => _startDay(phaseIndex) + phaseDays[phaseIndex] - 1;
 
-    const _PhaseBar({required this.currentDay});
-
-    @override
-    Widget build(BuildContext context) {
-      final activePhase = phaseForDay(currentDay);
-
-      return Row(
-        children: kPhases.map((phase) {
-          final isActive = phase == activePhase;
-          return Expanded(
-            flex: phase.days.length,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: phase.color.withOpacity(isActive ? 1.0 : 0.22),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: isActive ? FitEvaColors.text : FitEvaColors.textMuted,
-                    ),
-                    child: Text(phase.name, overflow: TextOverflow.ellipsis),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      );
+  int _activePhaseIndex() {
+    int day = 1;
+    for (int i = 0; i < phaseDays.length; i++) {
+      day += phaseDays[i];
+      if (currentDay < day) return i;
     }
+    return phaseDays.length - 1;
   }
 
-  // ──────────────────────────────────────────────
-  //  Day info header
-  // ──────────────────────────────────────────────
-  class _DayInfoHeader extends StatelessWidget {
-    final int currentDay;
+  @override
+  Widget build(BuildContext context) {
+    final activeIndex = _activePhaseIndex();
 
-    const _DayInfoHeader({required this.currentDay});
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Segments
+        Row(
+          children: List.generate(phaseDays.length, (i) {
+            final isActive = i == activeIndex;
+            final color = phaseColors[i];
 
-    @override
-    Widget build(BuildContext context) {
-      final phase = phaseForDay(currentDay);
-
-      return Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  transitionBuilder: (child, anim) => FadeTransition(
-                    opacity: anim,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.3),
-                        end: Offset.zero,
-                      ).animate(anim),
-                      child: child,
-                    ),
-                  ),
-                  child: Text(
-                    'Jour $currentDay',
-                    key: ValueKey(currentDay),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      color: FitEvaColors.text,
-                      height: 1.1,
-                    ),
+            return Expanded(
+              flex: phaseDays[i],
+              child: Padding(
+                padding: EdgeInsets.only(right: i < phaseDays.length - 1 ? 3 : 0),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  height: isActive ? 5 : 3,
+                  decoration: BoxDecoration(
+                    color: isActive ? color : color.withOpacity(0.35),
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: isActive
+                        ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 6)]
+                        : null,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  '${phase.name} · ${phase.description}',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: FitEvaColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Phase badge
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: phase.color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              phase.name,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: phase.color,
               ),
-            ),
-          ),
-        ],
-      );
-    }
+            );
+          }),
+        ),
+        const SizedBox(height: 4),
+        // Labels sous les segments
+        Row(
+          children: List.generate(phaseDays.length, (i) {
+            final isActive = i == activeIndex;
+            return Expanded(
+              flex: phaseDays[i],
+              child: Text(
+                _phaseNames[i],
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                  color: isActive
+                      ? Colors.white.withOpacity(0.90)
+                      : Colors.white.withOpacity(0.35),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }),
+        ),
+      ],
+    );
   }
+}
 
-  // ──────────────────────────────────────────────
-  //  Public DaySlider widget
-  // ──────────────────────────────────────────────
-  class DaySlider extends StatefulWidget {
-    final int currentDay;
-    final Function(int) onDaySelected;
-    final int totalDays;
-  final Color phaseColor; // 👈 AJOUT
+// ──────────────────────────────────────────────
+//  Bouton icône générique
+// ──────────────────────────────────────────────
+class _IconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color color;
 
-    const DaySlider({
-      super.key,
-      required this.currentDay,
-      required this.onDaySelected,
-      this.totalDays = 30,
-          required this.phaseColor, // 👈 AJOUT
+  const _IconButton({
+    required this.icon,
+    required this.onTap,
+    required this.color,
+  });
 
-    });
-
-    @override
-    State<DaySlider> createState() => _DaySliderState();
-  }
-
-  class _DaySliderState extends State<DaySlider> {
-    late ScrollController _scrollController;
-
-    @override
-    void initState() {
-      super.initState();
-      _scrollController = ScrollController();
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
-    }
-
-    @override
-    void didUpdateWidget(DaySlider old) {
-      super.didUpdateWidget(old);
-      if (old.currentDay != widget.currentDay) {
-        _scrollToSelected();
-      }
-    }
-
-    void _scrollToSelected() {
-      // Each chip is 40px wide + 6px margin = 46px
-      const chipWidth = 46.0;
-      final targetOffset = (widget.currentDay - 1) * chipWidth -
-          (MediaQuery.of(context).size.width / 2) +
-          chipWidth / 2;
-      _scrollController.animateTo(
-        targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-      );
-    }
-
-    @override
-    void dispose() {
-      _scrollController.dispose();
-      super.dispose();
-    }
-
-    @override
-    Widget build(BuildContext context) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
-          color: FitEvaColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          shape: BoxShape.circle,
+          color: Colors.white.withOpacity(0.15),
+          border: Border.all(color: Colors.white.withOpacity(0.25)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Info header ─────────────────────
-            _DayInfoHeader(currentDay: widget.currentDay),
-            const SizedBox(height: 16),
-
-            // ── Phase progress bar ───────────────
-            _PhaseBar(currentDay: widget.currentDay),
-            const SizedBox(height: 14),
-
-            // ── Scrollable chips ─────────────────
-            SizedBox(
-              height: 62,
-              child: ListView.builder(
-                controller: _scrollController,
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                itemCount: widget.totalDays,
-                itemBuilder: (context, i) {
-                  final day = i + 1;
-                  return _DayChip(
-                    day: day,
-                    isSelected: day == widget.currentDay,
-                    onTap: () => widget.onDaySelected(day),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+        child: Icon(icon, size: 17, color: Colors.white.withOpacity(0.85)),
+      ),
+    );
   }
+}

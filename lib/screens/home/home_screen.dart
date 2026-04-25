@@ -75,7 +75,7 @@ class HomeScreen extends ConsumerWidget {
 
   void _openNutrition(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const NutritionScreen()),
+      MaterialPageRoute(builder: (_) => const NutritionHomeScreen()),
     );
   }
 
