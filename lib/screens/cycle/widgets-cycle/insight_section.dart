@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/FitEvaColors.dart';
 
 class InsightSection extends StatefulWidget {
   final String insight;
@@ -56,36 +57,39 @@ class _InsightSectionState extends State<InsightSection>
       opacity: _fade,
       child: SlideTransition(
         position: _slide,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
             // Label compact
           Text(
   'INTELLIGENCE',
   style: TextStyle(
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: FontWeight.w600,
-    letterSpacing: 1.2,
-    color: Colors.white.withOpacity(0.45),
+    letterSpacing: 1.0,
+    color: FitEvaColors.textMuted.withOpacity(0.5),
     fontFamily: '.SF Pro Display',
   ),
 ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               'Analyse FitEva',
-              style: TextStyle(
-                fontSize: 15,
+              style: const TextStyle(
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Colors.white.withOpacity(0.90),  fontFamily: '.SF Pro Display',
+                color: FitEvaColors.text,  fontFamily: '.SF Pro Display',
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             // Insight card compacte
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
+                color: FitEvaColors.cardBg,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: widget.phaseColor.withOpacity(0.25),
@@ -94,30 +98,33 @@ class _InsightSectionState extends State<InsightSection>
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.auto_awesome_rounded,
                     color: widget.phaseColor,
-                    size: 16,
+                    size: 14,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     widget.insight.isEmpty
                         ? 'Analyse en cours...'
                         : widget.insight,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 12,
-                      height: 1.5,
+                      fontSize: 11,
+                      height: 1.3,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white.withOpacity(0.85),
+                      color: FitEvaColors.text,
                       fontStyle: FontStyle.italic,
                         fontFamily: '.SF Pro Display',
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                        horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: widget.phaseColor.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
@@ -125,17 +132,18 @@ class _InsightSectionState extends State<InsightSection>
                     child: Text(
                       'CONSEIL DU JOUR',
                       style: TextStyle(
-                        fontSize: 8,
+                        fontSize: 7,
                         fontWeight: FontWeight.w800,
                         color: widget.phaseColor,
-                        letterSpacing: 0.8,
+                        letterSpacing: 0.6,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

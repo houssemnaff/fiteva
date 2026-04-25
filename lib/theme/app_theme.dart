@@ -2,12 +2,124 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
+  // ---------------------------------------------------------------------------
+  // Core Brand Colors (main design system)
+  // ---------------------------------------------------------------------------
   static const Color primaryColor = Color(0xFF1C4D30); // #1C4D30
   static const Color accentColor = Color(0xFF7ABB98); // #7ABB98
   static const Color backgroundColor = Color(0xFFF4F4F2); // #F4F4F2
   static const Color surfaceColor = Colors.white;
   static const Color textPrimaryColor = Color(0xFF1A1A1A);
   static const Color textSecondaryColor = Color(0xFF757575);
+
+  // ---------------------------------------------------------------------------
+  // Legacy / Alias Names (for progressive migration of old files)
+  // ---------------------------------------------------------------------------
+  static const Color background = backgroundColor;
+  static const Color cardColor = surfaceColor;
+  static const Color borderLight = Color(0xFFECECEC);
+  static const Color primaryActive = primaryColor;
+  static const Color inactiveGrey = Colors.grey;
+  static const Color primaryText = textPrimaryColor;
+  static const Color secondaryText = Color(0xFF666666);
+
+  // ----------------------------------- ----------------------------------------
+  // Neutral / Utility
+  // ---------------------------------------------------------------------------
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color black = Color(0xFF000000);
+  static const Color neutral50 = Color(0xFFF7F8FC);
+  static const Color neutral100 = Color(0xFFF5F5F0);
+  static const Color neutral200 = Color(0xFFF2F2F2);
+  static const Color neutral300 = Color(0xFFE8EDE8);
+  static const Color neutral400 = Color(0xFFE5E5E0);
+  static const Color neutral600 = Color(0xFF5A6B62);
+  static const Color neutral900 = Color(0xFF0D0D0D);
+
+  // ---------------------------------------------------------------------------
+  // Onboarding Palette
+  // ---------------------------------------------------------------------------
+  static const Color onboardingGreen = Color(0xFF2D4A2D);
+  static const Color onboardingBg = Color(0xFFF0F0EC);
+  static const Color onboardingPrimary = Color(0xFF1C4D30);
+  static const Color onboardingLight = Color(0xFF7ABB98);
+  static const Color onboardingDeep = Color(0xFF7ABB98);
+  static const Color onboardingPale = Color(0xFFFCE4EC);
+  static const Color onboardingCircleDark = Color(0xFF2E5E35);
+  static const Color onboardingHeroGreen = Color(0xFF244D2A);
+  static const Color onboardingNeon = Color.fromARGB(255, 149, 239, 47);
+
+  // ---------------------------------------------------------------------------
+  // Home / Global Accent Extras
+  // ---------------------------------------------------------------------------
+  static const Color successMint = Color(0xFF52B788);
+  static const Color darkTitle = Color(0xFF333333);
+  static const Color profileButtonGreen = Color(0xFF1B5E3B);
+  static const Color chatbotGradientStart = Color(0xFF5CD57A);
+  static const Color chatbotGradientEnd = Color(0xFF1C4D30);
+
+  // ---------------------------------------------------------------------------
+  // Workout Palette
+  // ---------------------------------------------------------------------------
+  static const Color workoutMusculation = Color(0xFFEF5350);
+  static const Color workoutPilates = Color(0xFF9575CD);
+  static const Color workoutHiit = Color.fromARGB(255, 255, 0, 0);
+  static const Color workoutDance = Color(0xFFFF6F91);
+  static const Color workoutYoga = Color(0xFF4DB6AC);
+  static const Color workoutRunning = Color(0xFF42A5F5);
+  static const Color workoutDefault = Color(0xFF90A4AE);
+  static const Color workoutHeaderBg = Color(0xFF2D4A2D);
+  static const Color workoutPageBg = Color(0xFFF2F2F2);
+  static const Color workoutCardSoftBg = Color(0xFFE8F5E9);
+  static const Color workoutCardSoftBorder = Color(0xFFB2DFB2);
+  static const Color workoutSuccess = Color(0xFF4CAF50);
+  static const Color workoutTextDark = Color(0xFF1A2E1A);
+  static const Color workoutTextMedium = Color(0xFF3A7A3A);
+  static const Color workoutTextSoft = Color(0xFF5A8A5A);
+
+  // ---------------------------------------------------------------------------
+  // Nutrition Palette
+  // ---------------------------------------------------------------------------
+  static const Color nutritionBg = Color(0xFFF5F5F0);
+  static const Color nutritionPrimary = Color(0xFF2D4A2D);
+  static const Color nutritionMacro = Color(0xFF8BC34A);
+  static const Color nutritionRisk = Color(0xFFCDDC39);
+
+  // ---------------------------------------------------------------------------
+  // Community Palette
+  // ---------------------------------------------------------------------------
+  static const Color communityBg = Color(0xFFF7F8FC);
+  static const Color communityBgAlt = Color(0xFFF8FAFF);
+
+  // ---------------------------------------------------------------------------
+  // Cycle Palette
+  // ---------------------------------------------------------------------------
+  static const Color phaseMenstrual = Color(0xFFD94F6B);
+  static const Color phaseFolliculaire = Color(0xFF7ABB98);
+  static const Color phaseOvulatoire = Color(0xFFF4A940);
+  static const Color phaseLuteal = Color(0xFF5A7FC2);
+
+  static const Color cycleMenstrualLight = Color(0xFFFFD6E0);
+  static const Color cycleMenstrualMid = Color(0xFFFF9BB3);
+  static const Color cycleFollicularLight = Color(0xFFE8FDF3);
+  static const Color cycleFollicularMid = Color(0xFF7BE0B5);
+  static const Color cycleFollicularPrimary = Color(0xFF2FBF91);
+  static const Color cycleOvulationLight = Color(0xFFE8FFFB);
+  static const Color cycleOvulationMid = Color(0xFFB8F2E6);
+  static const Color cycleOvulationStrong = Color(0xFF7DE2D1);
+  static const Color cycleOvulationPrimary = Color(0xFF5FD3C4);
+  static const Color cycleLutealLight = Color(0xFFE3ECFF);
+  static const Color cycleLutealMid = Color(0xFF8FAFFF);
+  static const Color cycleLutealPrimary = Color(0xFF4A6CF7);
+  static const Color cyclePinkText = Color(0xFF3D2033);
+  static const Color cycleIconMuted = Color(0xFFB07A9A);
+
+  // ---------------------------------------------------------------------------
+  // Overlay / Transparency Helpers (same values used across UI)
+  // ---------------------------------------------------------------------------
+  static const Color overlayBlack = Color(0xFF000000);
+  static const Color overlayWhite = Color(0xFFFFFFFF);
+  static const Color transparent = Colors.transparent;
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -18,8 +130,8 @@ class AppTheme {
         secondary: accentColor,
         surface: surfaceColor,
         background: backgroundColor,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
+        onPrimary: white,
+        onSecondary: white,
         onSurface: textPrimaryColor,
         onBackground: textPrimaryColor,
       ),
@@ -44,14 +156,8 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           fontSize: 16,
         ),
-        bodyLarge: GoogleFonts.inter(
-          color: textPrimaryColor,
-          fontSize: 16,
-        ),
-        bodyMedium: GoogleFonts.inter(
-          color: textSecondaryColor,
-          fontSize: 14,
-        ),
+        bodyLarge: GoogleFonts.inter(color: textPrimaryColor, fontSize: 16),
+        bodyMedium: GoogleFonts.inter(color: textSecondaryColor, fontSize: 14),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: backgroundColor,
@@ -68,9 +174,7 @@ class AppTheme {
         color: surfaceColor,
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.05),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -109,15 +213,16 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryColor,
-          textStyle: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,

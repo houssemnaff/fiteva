@@ -133,6 +133,11 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
   ];
 });
 
+final joinedProgramsProvider = Provider<List<WorkoutModel>>((ref) {
+  final workouts = ref.watch(workoutsProvider);
+  return workouts.take(3).toList();
+});
+
 // Nutrition Provider
 final nutritionProvider = Provider<NutritionSummary>((ref) {
   return NutritionSummary(
@@ -162,6 +167,24 @@ final postsProvider = Provider<List<PostModel>>((ref) {
       likes: 42,
       comments: 18,
       timeAgo: '35m ago',
+      isEvent: true,
+      eventTitle: 'Saturday Tennis Match',
+      eventDate: 'Sat, 26 Apr 2026',
+      eventTime: '09:00 AM - 11:00 AM',
+      eventLocation: 'City Court, Downtown',
+      maxParticipants: 6,
+      initialParticipants: const [
+        EventParticipant(
+          id: 'u_1',
+          name: 'Sarah',
+          avatarUrl: 'https://i.pravatar.cc/150?img=1',
+        ),
+        EventParticipant(
+          id: 'u_12',
+          name: 'Lina',
+          avatarUrl: 'https://i.pravatar.cc/150?img=12',
+        ),
+      ],
     ),
     PostModel(
       id: 'p_text_1',
@@ -206,6 +229,63 @@ PostModel(
   ];
 });
 
+class EventJoinStateNotifier extends Notifier<Map<String, List<EventParticipant>>> {
+  @override
+  Map<String, List<EventParticipant>> build() {
+    final posts = ref.read(postsProvider);
+    final data = <String, List<EventParticipant>>{};
+
+    for (final post in posts) {
+      if (post.isEvent) {
+        data[post.id] = List<EventParticipant>.from(post.initialParticipants);
+      }
+    }
+
+    return data;
+  }
+
+  bool isJoined({required String postId, required String userId}) {
+    final users = state[postId] ?? <EventParticipant>[];
+    return users.any((user) => user.id == userId);
+  }
+
+  bool isFull({required String postId, required int? maxParticipants}) {
+    if (maxParticipants == null) {
+      return false;
+    }
+    final users = state[postId] ?? <EventParticipant>[];
+    return users.length >= maxParticipants;
+  }
+
+  bool joinEvent({
+    required String postId,
+    required EventParticipant participant,
+    required int? maxParticipants,
+  }) {
+    final users = List<EventParticipant>.from(state[postId] ?? <EventParticipant>[]);
+    final alreadyJoined = users.any((user) => user.id == participant.id);
+    if (alreadyJoined) {
+      return true;
+    }
+
+    if (maxParticipants != null && users.length >= maxParticipants) {
+      return false;
+    }
+
+    users.add(participant);
+    state = {
+      ...state,
+      postId: users,
+    };
+    return true;
+  }
+}
+
+final eventJoinStateProvider =
+    NotifierProvider<EventJoinStateNotifier, Map<String, List<EventParticipant>>>(
+  EventJoinStateNotifier.new,
+);
+
 // Cycle Tracking Mock Provider
 class CyclePhase {
   final String name;
@@ -221,4 +301,30 @@ final cycleProvider = Provider<CyclePhase>((ref) {
     dayOfCycle: 8,
     advice: 'High energy phase! Great time for HIIT and challenging workouts.',
   );
+});
+
+// Body Zones Provider
+final bodyZonesProvider = Provider<List<Map<String, dynamic>>>((ref) {
+  return [
+    {
+      'title': 'Abdos Express',
+      'imageUrl': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=500',
+      'exercises': ['Crunch basique', 'Planche dynamique', 'Russian Twists', 'Levé de jambes'],
+    },
+    {
+      'title': 'Bas du corps',
+      'imageUrl': 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=500',
+      'exercises': ['Squats', 'Fentes arrières', 'Glute Bridges', 'Soulevé de terre roumain'],
+    },
+    {
+      'title': 'Full body HIIT',
+      'imageUrl': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500',
+      'exercises': ['Burpees', 'Jumping Jacks', 'Mountain Climbers', 'High Knees'],
+    },
+    {
+      'title': 'Haut du corps',
+      'imageUrl': 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=500',
+      'exercises': ['Pompes', 'Dips triceps', 'Planche commando', 'Superman'],
+    },
+  ];
 });

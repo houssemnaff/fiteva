@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../theme/FitEvaColors.dart';
 
 class RecommendationsSection extends StatelessWidget {
   final Color sportColor;
@@ -19,22 +20,22 @@ class RecommendationsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Label compact
-        Text(
+        const Text(
           'SUR MESURE',
           style: TextStyle(
             fontSize: 10,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             letterSpacing: 1.5,
-            color: Colors.white.withOpacity(0.55),
+            color: FitEvaColors.accent, // Use accent color for label
           ),
         ),
         const SizedBox(height: 4),
-        Text(
+        const Text(
           'Programme exclusif',
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.white.withOpacity(0.90),
+            fontWeight: FontWeight.w700,
+            color: FitEvaColors.text,
           ),
         ),
         const SizedBox(height: 12),
@@ -94,10 +95,10 @@ class _RecommendationCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.10),
+          color: FitEvaColors.cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: color.withOpacity(0.25),
+            color: color.withOpacity(0.1),
             width: 1.0,
           ),
         ),
@@ -109,7 +110,7 @@ class _RecommendationCard extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 16),
@@ -122,17 +123,17 @@ class _RecommendationCard extends StatelessWidget {
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.0,
-                color: color.withOpacity(0.85),
+                color: color,
               ),
             ),
             const SizedBox(height: 3),
             // Titre
             Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Colors.white.withOpacity(0.90),
+                color: FitEvaColors.text,
                 height: 1.3,
               ),
             ),

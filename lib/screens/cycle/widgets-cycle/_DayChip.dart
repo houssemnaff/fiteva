@@ -1,4 +1,5 @@
   import 'package:flutter/material.dart';
+  import '../../../theme/FitEvaColors.dart';
 
   // ──────────────────────────────────────────────
   //  Reuse your phase model (or import from cycle_wheel.dart)
@@ -23,28 +24,28 @@
     CyclePhase(
       name: 'Règles',
       description: 'Corps au repos',
-      color: Color(0xFFD94F6B),
+      color: FitEvaColors.phaseMenstrual,
       lightColor: Color(0xFFFDE8EC),
       days: [1, 2, 3, 4, 5],
     ),
     CyclePhase(
       name: 'Folliculaire',
       description: 'Énergie en hausse',
-      color: Color(0xFF5BAE8A),
+      color: FitEvaColors.phaseFolliculaire,
       lightColor: Color(0xFFE0F5EC),
       days: [6, 7, 8, 9, 10, 11, 12, 13],
     ),
     CyclePhase(
       name: 'Ovulation',
       description: 'Pic de fertilité',
-      color: Color(0xFF7DE2D1),
+      color: FitEvaColors.phaseOvulatoire,
       lightColor: Color(0xFFFDF0DC),
       days: [14, 15, 16],
     ),
     CyclePhase(
       name: 'Lutéale',
       description: 'Corps se prépare',
-      color: Color(0xFF6B8FD4),
+      color: FitEvaColors.phaseLuteal,
       lightColor: Color(0xFFE4ECFB),
       days: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
     ),
@@ -83,7 +84,7 @@
               ? (Matrix4.identity()..translate(0.0, -4.0))
               : Matrix4.identity(),
           decoration: BoxDecoration(
-            color: isSelected ? phase.color : Colors.white,
+            color: isSelected ? phase.color : FitEvaColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected ? phase.color : const Color(0xFFECE0E8),
@@ -121,7 +122,7 @@
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : const Color(0xFF3D2033),
+                  color: isSelected ? Colors.white : FitEvaColors.text,
                 ),
               ),
             ],
@@ -167,7 +168,7 @@
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
-                      color: phase.color.withOpacity(isActive ? 1.0 : 0.35),
+                      color: isActive ? FitEvaColors.text : FitEvaColors.textMuted,
                     ),
                     child: Text(phase.name, overflow: TextOverflow.ellipsis),
                   ),
@@ -216,7 +217,7 @@
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF3D2033),
+                      color: FitEvaColors.text,
                       height: 1.1,
                     ),
                   ),
@@ -226,7 +227,7 @@
                   '${phase.name} · ${phase.description}',
                   style: TextStyle(
                     fontSize: 12.5,
-                    color: const Color(0xFF3D2033).withOpacity(0.5),
+                    color: FitEvaColors.textMuted,
                   ),
                 ),
               ],
@@ -237,7 +238,7 @@
             duration: const Duration(milliseconds: 300),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: phase.lightColor,
+              color: phase.color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -318,9 +319,15 @@
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: FitEvaColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFF0D9E6), width: 0.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

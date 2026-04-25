@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../theme/FitEvaColors.dart';
 
 class MoodSection extends StatelessWidget {
   final int selectedMood;
@@ -32,7 +33,7 @@ class MoodSection extends StatelessWidget {
             fontSize: 20,
              letterSpacing: -0.2, // 👈 iOS style trick
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: FitEvaColors.text,
              fontFamily: '.SF Pro Display',
           ),
         ),
@@ -63,7 +64,7 @@ class MoodSection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       color: isSelected
                           ? phaseColor.withOpacity(0.20)
-                          : Colors.white.withOpacity(0.06),
+                          : FitEvaColors.cardBg,
                       border: Border.all(
                         color: isSelected
                             ? phaseColor.withOpacity(0.6)
@@ -81,7 +82,7 @@ class MoodSection extends StatelessWidget {
                             
                             color: isSelected
                                 ? phaseColor
-                                : Colors.white.withOpacity(0.6),
+                                : FitEvaColors.text.withOpacity(0.4),
                                 
                           ),
                           const SizedBox(height: 4),
@@ -92,7 +93,7 @@ class MoodSection extends StatelessWidget {
                             style: TextStyle(
                                 fontFamily: '.SF Pro Display',
                               fontSize: 10,
-                              color: Colors.white.withOpacity(0.8),
+                              color: isSelected ? phaseColor : FitEvaColors.textMuted,
                               fontWeight: isSelected
                                   ? FontWeight.w600
                                   : FontWeight.w400,

@@ -12,18 +12,10 @@ class CommunityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final posts = ref.watch(postsProvider);
-    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FC),
-     /* floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        icon: const Icon(LucideIcons.plus, size: 18),
-        label: const Text('Add post'),
-        onPressed: () => _showComposerSheet(context),
-      ),*/
+    
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -255,15 +247,19 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _PostCard extends StatelessWidget {
+class _PostCard extends ConsumerWidget {
   final PostModel post;
 
   const _PostCard({required this.post});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasImage = post.imageUrl.trim().isNotEmpty;
-    final isEvent = _looksLikeEvent(post.content);
+    final joinedState = ref.watch(eventJoinStateProvider);
+    final currentUser = ref.watch(userProvider);
+    final participants = joinedState[post.id] ?? post.initialParticipants;
+    final isJoined = participants.any((user) => user.id == currentUser.id);
+    final isFull = post.maxParticipants != null && participants.length >= post.maxParticipants!;
 
     return Container(
       decoration: BoxDecoration(
@@ -326,29 +322,36 @@ class _PostCard extends StatelessWidget {
                   ),
             ),
           ),
-          if (isEvent) ...[
+          if (post.isEvent) ...[
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(LucideIcons.calendarDays, size: 14, color: AppTheme.primaryColor),
-                    SizedBox(width: 8),
-                    Text(
-                      'Community event',
-                      style: TextStyle(
-                        color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.w700,
-                      ),
+              child: _EventInfoCard(
+                post: post,
+                participants: participants,
+                isJoined: isJoined,
+                isFull: isFull,
+                onJoin: () {
+                  final joined = ref.read(eventJoinStateProvider.notifier).joinEvent(
+                    postId: post.id,
+                    participant: EventParticipant(
+                      id: currentUser.id,
+                      name: currentUser.name,
+                      avatarUrl: currentUser.avatarUrl,
                     ),
-                  ],
+                    maxParticipants: post.maxParticipants,
+                  );
+
+                  if (!joined) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Event is full now.')),
+                    );
+                  }
+                },
+                onViewDetails: () => _showEventDetailsSheet(
+                  context: context,
+                  post: post,
+                  participants: participants,
                 ),
               ),
             ),
@@ -382,12 +385,219 @@ class _PostCard extends StatelessWidget {
     );
   }
 
-  bool _looksLikeEvent(String content) {
-    final lower = content.toLowerCase();
-    return lower.contains('event') ||
-        lower.contains('match') ||
-        lower.contains('tennis') ||
-        lower.contains('join');
+}
+
+void _showEventDetailsSheet({
+  required BuildContext context,
+  required PostModel post,
+  required List<EventParticipant> participants,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => _EventDetailsSheet(
+      post: post,
+      participants: participants,
+    ),
+  );
+}
+
+class _EventInfoCard extends StatelessWidget {
+  final PostModel post;
+  final List<EventParticipant> participants;
+  final bool isJoined;
+  final bool isFull;
+  final VoidCallback onJoin;
+  final VoidCallback onViewDetails;
+
+  const _EventInfoCard({
+    required this.post,
+    required this.participants,
+    required this.isJoined,
+    required this.isFull,
+    required this.onJoin,
+    required this.onViewDetails,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(LucideIcons.calendarDays, size: 16, color: AppTheme.primaryColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  post.eventTitle ?? 'Community event',
+                  style: const TextStyle(
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                '${participants.length}/${post.maxParticipants ?? '-'}',
+                style: const TextStyle(
+                  color: AppTheme.primaryColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text('Date: ${post.eventDate ?? '-'}'),
+          Text('Heure: ${post.eventTime ?? '-'}'),
+          Text('Lieu: ${post.eventLocation ?? '-'}'),
+          Text('Max participants: ${post.maxParticipants ?? '-'}'),
+          const SizedBox(height: 10),
+          if (participants.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: participants
+                  .map(
+                    (user) => Chip(
+                      avatar: CircleAvatar(backgroundImage: NetworkImage(user.avatarUrl)),
+                      label: Text(user.name),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  )
+                  .toList(),
+            ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              if (!isJoined)
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: isFull ? null : onJoin,
+                    icon: const Icon(Icons.person_add_alt_1, size: 18),
+                    label: Text(isFull ? 'Complet' : 'Join event'),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onViewDetails,
+                    icon: const Icon(Icons.check_circle_outline, size: 18),
+                    label: const Text('View full details'),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EventDetailsSheet extends StatelessWidget {
+  final PostModel post;
+  final List<EventParticipant> participants;
+
+  const _EventDetailsSheet({
+    required this.post,
+    required this.participants,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                post.eventTitle ?? 'Event details',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(post.content),
+              const SizedBox(height: 14),
+              _EventDetailRow(icon: LucideIcons.calendarDays, text: post.eventDate ?? '-'),
+              const SizedBox(height: 8),
+              _EventDetailRow(icon: LucideIcons.clock3, text: post.eventTime ?? '-'),
+              const SizedBox(height: 8),
+              _EventDetailRow(icon: LucideIcons.mapPin, text: post.eventLocation ?? '-'),
+              const SizedBox(height: 8),
+              _EventDetailRow(
+                icon: LucideIcons.users,
+                text: 'Participants: ${participants.length}/${post.maxParticipants ?? '-'}',
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Joined users',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 10),
+              if (participants.isEmpty)
+                const Text(
+                  'No users joined yet.',
+                  style: TextStyle(color: AppTheme.textSecondaryColor),
+                )
+              else
+                ...participants.map(
+                  (user) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(backgroundImage: NetworkImage(user.avatarUrl)),
+                    title: Text(user.name),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EventDetailRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _EventDetailRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppTheme.primaryColor),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text)),
+      ],
+    );
   }
 }
 

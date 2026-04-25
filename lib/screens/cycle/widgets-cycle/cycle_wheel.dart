@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../../theme/FitEvaColors.dart';
 
 // ──────────────────────────────────────────────
 //  Phase model
@@ -22,25 +23,25 @@ const List<CyclePhase> kPhases = [
   CyclePhase(
     name: 'Règles',
     description: 'Corps au repos · Prends soin de toi',
-    color: Color(0xFFD94F6B),
+    color: FitEvaColors.phaseMenstrual,
     days: [1, 2, 3, 4, 5],
   ),
   CyclePhase(
     name: 'Folliculaire',
     description: 'Énergie en hausse · Peau lumineuse',
-    color: Color(0xFF5BAE8A),
+    color: FitEvaColors.phaseFolliculaire,
     days: [6, 7, 8, 9, 10, 11, 12, 13],
   ),
   CyclePhase(
     name: 'Ovulation',
     description: 'Pic de fertilité · Humeur au top',
-    color: Color(0xFF7DE2D1),
+    color: FitEvaColors.phaseOvulatoire,
     days: [14, 15, 16],
   ),
   CyclePhase(
     name: 'Lutéale',
     description: 'Corps se prépare · Écoute tes besoins',
-    color: Color(0xFF6B8FD4),
+    color: FitEvaColors.phaseLuteal,
     days: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
   ),
 ];

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/FitEvaColors.dart';
 import 'cycle_wheel.dart'; // pour phaseForDay + kPhases
 
 class CycleHeader extends StatelessWidget {
@@ -19,10 +20,10 @@ class CycleHeader extends StatelessWidget {
 
   // Couleurs fixes des 4 phases
   static const _phaseColors = [
-    Color(0xFFD94F6B), // Règles
-    Color(0xFF5BAE8A), // Folliculaire
-    Color(0xFF7DE2D1), // Ovulation
-    Color(0xFF6B8FD4), // Lutéale
+    FitEvaColors.phaseMenstrual,
+    FitEvaColors.phaseFolliculaire,
+    FitEvaColors.phaseOvulatoire,
+    FitEvaColors.phaseLuteal,
   ];
 
   static const _phaseDays = [5, 8, 3, 14]; // durées proportionnelles
@@ -54,7 +55,7 @@ class CycleHeader extends StatelessWidget {
     fontSize: 11,
     fontWeight: FontWeight.w600,
     letterSpacing: 1.2,
-    color: Colors.white.withOpacity(0.6),
+    color: FitEvaColors.textMuted,
     fontFamily: '.SF Pro Text',
   ),
 ),
@@ -75,7 +76,7 @@ class CycleHeader extends StatelessWidget {
 
               const SizedBox(width: 12),
 
-              // Bouton calendrier
+            /*  // Bouton calendrier
               _IconButton(
                 icon: Icons.calendar_month_rounded,
                 onTap: () {},
@@ -87,7 +88,7 @@ class CycleHeader extends StatelessWidget {
                 icon: Icons.close_rounded,
                 onTap: onClose,
                 color: phaseColor,
-              ),
+              ),*/
             ],
           ),
 
@@ -116,7 +117,7 @@ class CycleHeader extends StatelessWidget {
   fontSize: 11,
   fontWeight: FontWeight.w400,
   fontFamily: '.SF Pro Text',
-  color: Colors.white.withOpacity(0.6),
+  color: FitEvaColors.textMuted,
 ),
             ),
           ),
@@ -148,9 +149,9 @@ class _PhaseBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.15),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.25)),
+        border: Border.all(color: color.withOpacity(0.12)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -164,18 +165,18 @@ class _PhaseBadge extends StatelessWidget {
               color: color,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(color: color.withOpacity(0.5), blurRadius: 4),
+                BoxShadow(color: color.withOpacity(0.3), blurRadius: 4),
               ],
             ),
           ),
           const SizedBox(width: 7),
           Text(
   name,
-  style: TextStyle(
+  style: const TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     fontFamily: '.SF Pro Display',
-    color: Colors.white.withOpacity(0.9),
+    color: FitEvaColors.text,
   ),
 ),
           const SizedBox(width: 6),
@@ -185,7 +186,7 @@ class _PhaseBadge extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.black.withOpacity(0.70),
+                color: FitEvaColors.textMuted,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -217,9 +218,9 @@ class _ToggleBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.13),
+        color: FitEvaColors.primary,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withOpacity(0.20)),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
       ),
       child: Row(
         children: [
@@ -268,8 +269,15 @@ class _ToggleItem extends StatelessWidget {
           curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
-            color: isActive ? Colors.black.withOpacity(0.25) : Colors.transparent,
+            color: isActive ? FitEvaColors.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(11),
+            boxShadow: isActive ? [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              )
+            ] : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -277,15 +285,15 @@ class _ToggleItem extends StatelessWidget {
               Icon(
                 icon,
                 size: 14,
-                color: isActive ? Colors.black : Colors.black.withOpacity(0.50),
+                color: isActive ? FitEvaColors.text : const Color.fromARGB(255, 255, 255, 255),
               ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive ? Colors.black : Colors.black.withOpacity(0.50),
+                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
+                  color: isActive ? FitEvaColors.text : const Color.fromARGB(255, 248, 248, 248),
                 ),
               ),
             ],
@@ -377,8 +385,8 @@ class _PhaseProgressBar extends StatelessWidget {
                   fontSize: 8,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
                   color: isActive
-                      ? Colors.black.withOpacity(0.90)
-                      : Colors.black.withOpacity(0.35),
+                      ? FitEvaColors.text
+                      : FitEvaColors.textMuted,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -413,10 +421,17 @@ class _IconButton extends StatelessWidget {
         height: 34,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withOpacity(0.15),
-          border: Border.all(color: Colors.black.withOpacity(0.25)),
+          color: FitEvaColors.surface,
+          border: Border.all(color: Colors.black.withOpacity(0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            )
+          ],
         ),
-        child: Icon(icon, size: 17, color: Colors.black.withOpacity(0.85)),
+        child: Icon(icon, size: 17, color: FitEvaColors.text),
       ),
     );
   }
