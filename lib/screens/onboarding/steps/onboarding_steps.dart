@@ -307,10 +307,6 @@ class StepIntro extends StatelessWidget {
             
                         const SizedBox(height: 16),
             
-                        const Text(
-                          "J'ai déjà un compte",
-                          style: TextStyle(color: Colors.white70),
-                        ),
                       ],
                     ),
                   ),
@@ -344,631 +340,581 @@ class StepIntro extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // STEP 1 — Bienvenue (Prénom + Âge)
 // ══════════════════════════════════════════════════════════════════════════════
+
+
+// ── Brand colors ───────────────────────────────────────────────────────────
+const _kGreenLight = Color(0xFF2E7D4F);
+const _kGreenPale  = Color(0xFFE8F5EE);
+const _kGreenAccent= Color(0xFF5CD57A);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// StepWelcome
+// ══════════════════════════════════════════════════════════════════════════════
 class StepWelcome extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
-  final TextEditingController nameController;
-  final TextEditingController ageController;
- 
+  final TextEditingController nameController;      // pseudo / display name
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+
   const StepWelcome({
     super.key,
     required this.onNext,
     this.onBack,
     required this.nameController,
-    required this.ageController,
+    required this.emailController,
+    required this.passwordController,
   });
- 
+
   @override
   State<StepWelcome> createState() => _StepWelcomeState();
 }
-  
+
 class _StepWelcomeState extends State<StepWelcome>
     with TickerProviderStateMixin {
 
   late final AnimationController _entranceCtrl;
-  late final AnimationController _ringCtrl;
-  late final AnimationController _orbCtrl;
-  late final AnimationController _petalCtrl;
-  late final AnimationController _btnPulseCtrl;
- 
-  // ── Staggered entrance animations ─────────────────────────────────────────
-  late final Animation<double> _badgeFade;
-  late final Animation<Offset> _badgeSlide;
-  late final Animation<double> _titleFade;
-  late final Animation<Offset> _titleSlide;
-  late final Animation<double> _avatarFade;
-  late final Animation<double> _avatarScale;
-  late final Animation<double> _fieldsFade;
-  late final Animation<Offset> _fieldsSlide;
-  late final Animation<double> _socialFade;
-  late final Animation<double> _btnFade;
-  late final Animation<Offset> _btnSlide;
- 
-  // ── Petal particles ────────────────────────────────────────────────────────
-  final List<_Petal> _petals = [];
-  final Random _rng = Random();
- 
-  bool get _canContinue =>
-      widget.nameController.text.trim().isNotEmpty &&
-      widget.ageController.text.trim().isNotEmpty;
- 
-  String get _initial =>
-      widget.nameController.text.trim().isNotEmpty
-          ? widget.nameController.text.trim()[0].toUpperCase()
-          : 'S';
- 
+
+  Animation<double> _logoFade = const AlwaysStoppedAnimation<double>(1);
+  Animation<Offset> _logoSlide = const AlwaysStoppedAnimation<Offset>(Offset.zero);
+  Animation<double> _titleFade = const AlwaysStoppedAnimation<double>(1);
+  Animation<Offset> _titleSlide = const AlwaysStoppedAnimation<Offset>(Offset.zero);
+  Animation<double> _fieldsFade = const AlwaysStoppedAnimation<double>(1);
+  Animation<Offset> _fieldsSlide = const AlwaysStoppedAnimation<Offset>(Offset.zero);
+  Animation<double> _dividerFade = const AlwaysStoppedAnimation<double>(1);
+  Animation<double> _socialFade = const AlwaysStoppedAnimation<double>(1);
+  Animation<Offset> _socialSlide = const AlwaysStoppedAnimation<Offset>(Offset.zero);
+  Animation<double> _btnFade = const AlwaysStoppedAnimation<double>(1);
+  Animation<Offset> _btnSlide = const AlwaysStoppedAnimation<Offset>(Offset.zero);
+
+  bool _obscure = true;
+  bool _emailMode = false; // toggle email/password form
+
+  bool get _canContinue {
+    if (_emailMode) {
+      return widget.nameController.text.trim().isNotEmpty &&
+             widget.emailController.text.trim().isNotEmpty &&
+             widget.passwordController.text.trim().isNotEmpty;
+    }
+    return widget.nameController.text.trim().isNotEmpty;
+  }
+
   @override
   void initState() {
     super.initState();
- 
-    // ── Entrance (2 s total, staggered) ─────────────────────────────────────
+
     _entranceCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 1400),
     )..forward();
- 
-    _badgeFade  = _curve(_entranceCtrl, 0.00, 0.20);
-    _badgeSlide = _slideY(_entranceCtrl, 0.00, 0.20);
-    _titleFade  = _curve(_entranceCtrl, 0.12, 0.35);
-    _titleSlide = _slideY(_entranceCtrl, 0.12, 0.35);
-    _avatarFade = _curve(_entranceCtrl, 0.28, 0.55);
-    _avatarScale = CurvedAnimation(
-      parent: _entranceCtrl,
-      curve: const Interval(0.28, 0.60, curve: Curves.elasticOut),
-    );
-    _fieldsFade  = _curve(_entranceCtrl, 0.48, 0.72);
-    _fieldsSlide = _slideY(_entranceCtrl, 0.48, 0.72);
-    _socialFade  = _curve(_entranceCtrl, 0.62, 0.82);
-    _btnFade     = _curve(_entranceCtrl, 0.72, 0.95);
-    _btnSlide    = _slideY(_entranceCtrl, 0.72, 0.95);
- 
-    // ── Infinite ring rotation ───────────────────────────────────────────────
-    _ringCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 12),
-    )..repeat();
- 
-    // ── Orb float ────────────────────────────────────────────────────────────
-    _orbCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 5),
-    )..repeat(reverse: true);
- 
-    // ── Petal loop ───────────────────────────────────────────────────────────
-    _petalCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat();
-    _spawnPetals();
- 
-    // ── Button pulse ─────────────────────────────────────────────────────────
-    _btnPulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
+
+    _logoFade   = _c(0.00, 0.22);
+    _logoSlide  = _s(0.00, 0.22);
+    _titleFade  = _c(0.15, 0.38);
+    _titleSlide = _s(0.15, 0.38);
+    _fieldsFade  = _c(0.30, 0.55);
+    _fieldsSlide = _s(0.30, 0.55);
+    _dividerFade = _c(0.45, 0.65);
+    _socialFade  = _c(0.55, 0.78);
+    _socialSlide = _s(0.55, 0.78);
+    _btnFade    = _c(0.68, 0.92);
+    _btnSlide   = _s(0.68, 0.92);
   }
- 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-  Animation<double> _curve(AnimationController c, double s, double e) =>
-      CurvedAnimation(parent: c, curve: Interval(s, e, curve: Curves.easeOut));
- 
-  Animation<Offset> _slideY(AnimationController c, double s, double e) =>
-      Tween<Offset>(begin: const Offset(0, 0.35), end: Offset.zero).animate(
-        CurvedAnimation(parent: c, curve: Interval(s, e, curve: Curves.easeOut)),
+
+  Animation<double> _c(double s, double e) => CurvedAnimation(
+    parent: _entranceCtrl,
+    curve: Interval(s, e, curve: Curves.easeOut),
+  );
+
+  Animation<Offset> _s(double s, double e) =>
+      Tween<Offset>(begin: const Offset(0, 0.28), end: Offset.zero).animate(
+        CurvedAnimation(parent: _entranceCtrl,
+            curve: Interval(s, e, curve: Curves.easeOut)),
       );
- 
-  void _spawnPetals() {
-    for (int i = 0; i < 18; i++) {
-      _petals.add(_Petal(
-        x: _rng.nextDouble(),
-        delay: _rng.nextDouble() * 6,
-        duration: 4 + _rng.nextDouble() * 5,
-        size: 5 + _rng.nextDouble() * 8,
-        angle: _rng.nextDouble() * pi * 2,
-        colorIndex: _rng.nextInt(4),
-      ));
-    }
-  }
- 
+
   @override
   void dispose() {
     _entranceCtrl.dispose();
-    _ringCtrl.dispose();
-    _orbCtrl.dispose();
-    _petalCtrl.dispose();
-    _btnPulseCtrl.dispose();
     super.dispose();
   }
- 
-  // ══════════════════════════════════════════════════════════════════════════
-  // BUILD
+
   // ══════════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 149, 239, 47),
-      body: Stack(
-        children: [
-          // ── Background gradient ─────────────────────────────────────────
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                     Color(0xFF1C4D30),
-                                    Color(0xFF1C4D30),
-                 Color(0xFF1C4D30),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
- 
-          // ── Animated orbs ───────────────────────────────────────────────
-          AnimatedBuilder(
-            animation: _orbCtrl,
-            builder: (_, __) {
-              final t = _orbCtrl.value;
-              return Stack(children: [
-                Positioned(
-                  top: -80 + t * 30,
-                  left: -60 + t * 20,
-                  child: _orb(280, _kPink.withOpacity(0.18)),
-                ),
-                Positioned(
-                  bottom: 60 + t * 40,
-                  right: -70 + t * 15,
-                  child: _orb(220, _kPinkLight.withOpacity(0.12)),
-                ),
-                Positioned(
-                  top: 280 + t * 20,
-                  left: 10 + t * 10,
-                  child: _orb(140, _kPinkPale.withOpacity(0.06)),
-                ),
-              ]);
-            },
-          ),
- 
-          // ── Floating petals ─────────────────────────────────────────────
-      
- 
-          // ── Main content ────────────────────────────────────────────────
-          Column(
-            children: [
-              // TOP BAR
-              SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: widget.onBack ?? () => Navigator.pop(context),
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.06),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white.withOpacity(0.08)),
-                          ),
-                          child: const Icon(Icons.arrow_back_ios_new,
-                              color: Colors.white70, size: 16),
-                        ),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Top bar ──────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: _emailMode
+                        ? () => setState(() => _emailMode = false)
+                        : (widget.onBack ?? () => Navigator.pop(context)),
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: _kGreenPale,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      Row(
-                        children: List.generate(7, (i) => _stepDot(i == 0)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
- 
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 16),
- 
-                        // ── BADGE ──────────────────────────────────────────
-                        FadeTransition(
-                          opacity: _badgeFade,
-                          child: SlideTransition(
-                            position: _badgeSlide,
-                            child: _buildBadge(),
-                          ),
-                        ),
- 
-                        const SizedBox(height: 16),
- 
-                        // ── HEADLINE ───────────────────────────────────────
-                        FadeTransition(
-                          opacity: _titleFade,
-                          child: SlideTransition(
-                            position: _titleSlide,
-                            child: _buildHeadline(),
-                          ),
-                        ),
- 
-                        const SizedBox(height: 32),
- 
-                        // ── AVATAR ─────────────────────────────────────────
-                        FadeTransition(
-                          opacity: _avatarFade,
-                          child: ScaleTransition(
-                            scale: _avatarScale,
-                            child: _buildAvatar(),
-                          ),
-                        ),
- 
-                        const SizedBox(height: 32),
- 
-                        // ── FIELDS ─────────────────────────────────────────
-                        FadeTransition(
-                          opacity: _fieldsFade,
-                          child: SlideTransition(
-                            position: _fieldsSlide,
-                            child: Column(children: [
-                              _premiumField(
-                                controller: widget.nameController,
-                                hint: "Ton prénom",
-                                icon: Icons.auto_awesome,
-                              ),
-                              const SizedBox(height: 12),
-                              _premiumField(
-                                controller: widget.ageController,
-                                hint: "Ton âge",
-                                isNumber: true,
-                                icon: Icons.cake_outlined,
-                              ),
-                            ]),
-                          ),
-                        ),
- 
-                        const SizedBox(height: 24),
- 
-                        // ── SOCIAL ─────────────────────────────────────────
-                        FadeTransition(
-                          opacity: _socialFade,
-                          child: _buildSocial(),
-                        ),
- 
-                        const SizedBox(height: 24),
-                      ],
+                      child: Icon(Icons.arrow_back_ios_new,
+                          color: _kGreen, size: 15),
                     ),
                   ),
-                ),
-              ),
- 
-              // ── BUTTON ──────────────────────────────────────────────────
-              FadeTransition(
-                opacity: _btnFade,
-                child: SlideTransition(
-                  position: _btnSlide,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 36),
-                    child: _buildButton(),
+                  // Step dots
+                  Row(
+                    children: List.generate(
+                      7,
+                      (i) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: i == 0 ? 18 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: i == 0 ? _kGreen : const Color(0xFFD8E8DF),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
                   ),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+
+                  
+
+                    const SizedBox(height: 28),
+
+                    // ── Headline ───────────────────────────────────────────
+                    FadeTransition(
+                      opacity: _titleFade,
+                      child: SlideTransition(
+                        position: _titleSlide,
+                        child: _buildHeadline(),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // ── Pseudo field (always visible) ──────────────────────
+                    FadeTransition(
+                      opacity: _fieldsFade,
+                      child: SlideTransition(
+                        position: _fieldsSlide,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _label("Comment FitEva t'appelle ?"),
+                            const SizedBox(height: 8),
+                            _inputField(
+                              controller: widget.nameController,
+                              hint: "Ton pseudo dans l'app",
+                              icon: Icons.badge_outlined,
+                              onChanged: (_) => setState(() {}),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "Ce nom sera visible dans la communauté.",
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: Colors.grey.shade400,
+                                height: 1.4,
+                              ),
+                            ),
+
+                            // ── Email/password fields (conditional) ─────────
+                            if (_emailMode) ...[
+                              const SizedBox(height: 20),
+                              _label("Email"),
+                              const SizedBox(height: 8),
+                              _inputField(
+                                controller: widget.emailController,
+                                hint: "ton@email.com",
+                                icon: Icons.mail_outline_rounded,
+                                keyboardType: TextInputType.emailAddress,
+                                onChanged: (_) => setState(() {}),
+                              ),
+                              const SizedBox(height: 16),
+                              _label("Mot de passe"),
+                              const SizedBox(height: 8),
+                              _inputField(
+                                controller: widget.passwordController,
+                                hint: "••••••••",
+                                icon: Icons.lock_outline_rounded,
+                                obscure: _obscure,
+                                suffix: GestureDetector(
+                                  onTap: () =>
+                                      setState(() => _obscure = !_obscure),
+                                  child: Icon(
+                                    _obscure
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    size: 18,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
+                                onChanged: (_) => setState(() {}),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // ── Divider ────────────────────────────────────────────
+                    FadeTransition(
+                      opacity: _dividerFade,
+                      child: _buildDivider(),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // ── Social login buttons ───────────────────────────────
+                    FadeTransition(
+                      opacity: _socialFade,
+                      child: SlideTransition(
+                        position: _socialSlide,
+                        child: _buildSocialButtons(),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
- 
-  // ══════════════════════════════════════════════════════════════════════════
-  // WIDGETS
-  // ══════════════════════════════════════════════════════════════════════════
- 
-  Widget _orb(double size, Color color) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [color, Colors.transparent]),
-        ),
-      );
- 
-  Widget _stepDot(bool active) => AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        margin: const EdgeInsets.only(left: 5),
-        width: active ? 20 : 6,
-        height: 6,
-        decoration: BoxDecoration(
-          color: active ? _kPinkLight : Colors.white.withOpacity(0.18),
-          borderRadius: BorderRadius.circular(3),
-        ),
-      );
- 
-  Widget _buildBadge() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: _kPink.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _kPink.withOpacity(0.35)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _PulsingDot(),
-            const SizedBox(width: 7),
-            const Text(
-              "FITNESS · FÉMININ",
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: _kPinkLight,
-                letterSpacing: 1.8,
+            ),
+
+            // ── CTA button ───────────────────────────────────────────────
+            FadeTransition(
+              opacity: _btnFade,
+              child: SlideTransition(
+                position: _btnSlide,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 32),
+                  child: _buildCTA(),
+                ),
               ),
             ),
           ],
         ),
-      );
+      ),
+    );
+  }
+
+  // ── Logo ─────────────────────────────────────────────────────────────────
  
-  Widget _buildHeadline() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          RichText(
-            text: const TextSpan(
-              style: TextStyle(
-                fontSize: 40,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                height: 1.05,
-                letterSpacing: -0.5,
-              ),
-              children: [
-                TextSpan(text: "Ton corps,\nta "),
-                TextSpan(
-                  text: "force.",
-                  style: TextStyle(
-                    color: _kPinkLight,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            "Conçu par des femmes, pour des femmes.",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white38,
-              fontWeight: FontWeight.w300,
-              height: 1.6,
-            ),
-          ),
-        ],
-      );
- 
-  Widget _buildAvatar() => Center(
-        child: AnimatedBuilder(
-          animation: _ringCtrl,
-          builder: (_, child) => Stack(
-            alignment: Alignment.center,
-            children: [
-              // Outer ring (slow clockwise)
-              Transform.rotate(
-                angle: _ringCtrl.value * 2 * pi,
-                child: Container(
-                  width: 128,
-                  height: 128,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _kPinkLight.withOpacity(0.18),
-                      width: 1,
-                    ),
-                  ),
-                ),
-              ),
-              // Middle ring (medium counter-clockwise)
-              Transform.rotate(
-                angle: -_ringCtrl.value * 2 * pi * 1.5,
-                child: Container(
-                  width: 112,
-                  height: 112,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _kPink.withOpacity(0.30),
-                      width: 1,
-                      // dashed via custom paint below
-                    ),
-                  ),
-                ),
-              ),
-              // Inner ring (fast clockwise)
-              Transform.rotate(
-                angle: _ringCtrl.value * 2 * pi * 3,
-                child: Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _kPinkLight.withOpacity(0.10),
-                      width: 0.8,
-                    ),
-                  ),
-                ),
-              ),
-              // Avatar core
-              child!,
-            ],
-          ),
-          child: Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [_kPink, _kPinkDeep],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: _kPink.withOpacity(0.45),
-                  blurRadius: 28,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, anim) =>
-                    ScaleTransition(scale: anim, child: child),
-                child: Text(
-                  _initial,
-                  key: ValueKey(_initial),
-                  style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
+  // ── Headline ──────────────────────────────────────────────────────────────
+  Widget _buildHeadline() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _emailMode ? "Crée ton compte" : "Bienvenue ",
+          style: const TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF0F1A14),
+            height: 1.15,
+            letterSpacing: -0.8,
           ),
         ),
-      );
- 
-  Widget _premiumField({
+        const SizedBox(height: 6),
+        Text(
+          _emailMode
+              ? "Remplis les infos pour commencer."
+              : "Comment veux-tu rejoindre FitEva ?",
+          style: TextStyle(
+            fontSize: 14.5,
+            color: Colors.grey.shade500,
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Label ─────────────────────────────────────────────────────────────────
+  Widget _label(String text) => Text(
+    text,
+    style: TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: Colors.grey.shade700,
+      letterSpacing: 0.1,
+    ),
+  );
+
+  // ── Input field ───────────────────────────────────────────────────────────
+  Widget _inputField({
     required TextEditingController controller,
     required String hint,
     required IconData icon,
+    bool obscure = false,
     bool isNumber = false,
+    TextInputType? keyboardType,
+    Widget? suffix,
+    required ValueChanged<String> onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _kPinkLight.withOpacity(0.12)),
+        color: const Color(0xFFF7FAF8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2EDE7), width: 1.2),
       ),
       child: TextField(
         controller: controller,
-        onChanged: (_) => setState(() {}),
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        style: const TextStyle(color: Color.fromARGB(255, 0, 0, 0), fontSize: 15),
+        obscureText: obscure,
+        keyboardType: keyboardType ??
+            (isNumber ? TextInputType.number : TextInputType.text),
+        onChanged: onChanged,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: Color(0xFF0F1A14),
+        ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: const Color.fromARGB(255, 9, 9, 9).withOpacity(0.28), fontWeight: FontWeight.w300),
-          prefixIcon: Icon(icon, color: _kPinkLight.withOpacity(0.6), size: 18),
+          hintStyle: TextStyle(
+            color: Colors.grey.shade400,
+            fontWeight: FontWeight.w400,
+            fontSize: 14.5,
+          ),
+          prefixIcon: Icon(icon, color: _kGreenLight, size: 19),
+          suffixIcon: suffix != null
+              ? Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: suffix,
+                )
+              : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
         ),
       ),
     );
   }
- 
-  Widget _buildSocial() => Column(
-        children: [
-          Row(children: [
-            Expanded(child: Divider(color: Colors.white.withOpacity(0.08))),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Text("ou continuer avec",
-                  style: TextStyle(
-                      color: Colors.white.withOpacity(0.25),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w300)),
+
+  // ── Divider ───────────────────────────────────────────────────────────────
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: Colors.grey.shade200, thickness: 1)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Text(
+            "ou continuer avec",
+            style: TextStyle(
+              fontSize: 12.5,
+              color: Colors.grey.shade400,
+              fontWeight: FontWeight.w500,
             ),
-            Expanded(child: Divider(color: Colors.white.withOpacity(0.08))),
-          ]),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _socialBtn(Icons.g_mobiledata, "G"),
-              const SizedBox(width: 14),
-              _socialBtn(Icons.apple, ""),
-              const SizedBox(width: 14),
-          
-            ],
           ),
-        ],
-      );
- 
-  Widget _socialBtn(IconData icon, String _) => Container(
-        width: 52,
+        ),
+        Expanded(child: Divider(color: Colors.grey.shade200, thickness: 1)),
+      ],
+    );
+  }
+
+  // ── Social buttons ────────────────────────────────────────────────────────
+  Widget _buildSocialButtons() {
+    return Column(
+      children: [
+        // Email button
+        _socialBtn(
+          label: "Continuer avec Email",
+          icon: Icons.mail_outline_rounded,
+          iconColor: _kGreen,
+          bgColor: _kGreenPale,
+          textColor: _kGreen,
+          borderColor: const Color(0xFFB8D9C5),
+          onTap: () => setState(() => _emailMode = true),
+        ),
+        const SizedBox(height: 12),
+        // Google button
+        _socialBtn(
+          label: "Continuer avec Google",
+          customIcon: _googleIcon(),
+          bgColor: Colors.white,
+          textColor: const Color(0xFF1A1A1A),
+          borderColor: const Color(0xFFE0E0E0),
+          onTap: () {/* TODO: Google Sign-In */},
+        ),
+        const SizedBox(height: 12),
+        // Apple button
+        _socialBtn(
+          label: "Continuer avec Apple",
+          icon: Icons.apple_rounded,
+          iconColor: Colors.white,
+          bgColor: const Color(0xFF1A1A1A),
+          textColor: Colors.white,
+          borderColor: Colors.transparent,
+          onTap: () {/* TODO: Apple Sign-In */},
+        ),
+      ],
+    );
+  }
+
+  Widget _socialBtn({
+    required String label,
+    IconData? icon,
+    Widget? customIcon,
+    Color iconColor = Colors.black,
+    required Color bgColor,
+    required Color textColor,
+    required Color borderColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
         height: 52,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
+          color: bgColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: borderColor, width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Icon(icon, color: Colors.white70, size: 22),
-      );
- 
-  Widget _buildButton() => AnimatedOpacity(
-        duration: const Duration(milliseconds: 300),
-        opacity: _canContinue ? 1.0 : 0.4,
-        child: GestureDetector(
-          onTap: _canContinue ? widget.onNext : null,
-          child: AnimatedBuilder(
-            animation: _btnPulseCtrl,
-            builder: (_, child) => Container(
-              width: double.infinity,
-              height: 58,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: const LinearGradient(
-                  colors: [_kPink, Color.fromARGB(255, 171, 251, 203)],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            customIcon ??
+                Icon(icon, color: iconColor, size: 20),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Google "G" icon
+  Widget _googleIcon() {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: CustomPaint(painter: _GoogleGPainter()),
+    );
+  }
+
+  // ── CTA Button ────────────────────────────────────────────────────────────
+  Widget _buildCTA() {
+    final enabled = _canContinue;
+    return GestureDetector(
+      onTap: enabled ? widget.onNext : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: enabled
+              ? const LinearGradient(
+                  colors: [_kGreenLight, _kGreen],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                ),
-                boxShadow: _canContinue
-                    ? [
-                        BoxShadow(
-                          color: _kPink.withOpacity(
-                              0.35 + _btnPulseCtrl.value * 0.15),
-                          blurRadius: 20 + _btnPulseCtrl.value * 10,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : [],
-              ),
-              child: child,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "Continuer",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.arrow_forward,
-                      color: Colors.white, size: 14),
-                ),
-              ],
+                )
+              : null,
+          color: enabled ? null : const Color(0xFFE8EDE9),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: _kGreen.withOpacity(0.30),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  )
+                ]
+              : [],
+        ),
+        child: Center(
+          child: Text(
+            "Continuer →",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: enabled ? Colors.white : Colors.grey.shade400,
+              letterSpacing: 0.2,
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Google G painter ─────────────────────────────────────────────────────────
+class _GoogleGPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // Ring segments
+    final segments = [
+      (0.0,  90.0, const Color(0xFF4285F4)),
+      (90.0, 180.0, const Color(0xFF34A853)),
+      (180.0,270.0, const Color(0xFFFBBC05)),
+      (270.0,360.0, const Color(0xFFEA4335)),
+    ];
+
+    for (final (s, e, color) in segments) {
+      final paint = Paint()
+        ..color = color
+        ..strokeWidth = size.width * 0.22
+        ..style = PaintingStyle.stroke;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius * 0.72),
+        s * pi / 180,
+        (e - s) * pi / 180,
+        false,
+        paint,
       );
+    }
+
+    // White cut for the "G" bar
+    final whitePaint = Paint()..color = Colors.white;
+    canvas.drawRect(
+      Rect.fromLTWH(size.width * 0.5, size.height * 0.38,
+          size.width * 0.5, size.height * 0.24),
+      whitePaint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(size.width * 0.62, size.height * 0.44,
+          size.width * 0.38, size.height * 0.12),
+      Paint()..color = const Color(0xFF4285F4),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
 }
  
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1081,7 +1027,7 @@ class StepGoals extends StatelessWidget {
                         crossAxisCount: 2,
                         mainAxisSpacing: 14,
                         crossAxisSpacing: 14,
-                        childAspectRatio: 1.1,
+                        childAspectRatio: 1.0,
                       ),
                       itemBuilder: (_, i) {
                         final item = options[i];
@@ -1091,7 +1037,7 @@ class StepGoals extends StatelessWidget {
                           onTap: () => onToggleGoal(item.label),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 250),
-                            padding: const EdgeInsets.all(18),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: selected ? _kGreen : Colors.white,
                               borderRadius: BorderRadius.circular(20),
@@ -1143,12 +1089,14 @@ class StepGoals extends StatelessWidget {
                                 // TEXT
                                 Text(
                                   item.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: selected
                                         ? Colors.white
                                         : Colors.black87,
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 15,
+                                    fontSize: 14,
                                   ),
                                 ),
 
@@ -1727,30 +1675,83 @@ class StepHealthProfile extends StatefulWidget {
 }
 
 class _StepHealthProfileState extends State<StepHealthProfile> {
-  final _heightCtrl = TextEditingController();
-  final _weightCtrl = TextEditingController();
+  double _heightCm = 165;
+  double _weightKg = 60;
 
-  bool get _canContinue =>
-      _heightCtrl.text.trim().isNotEmpty &&
-      _weightCtrl.text.trim().isNotEmpty;
+  bool get _canContinue => _heightCm >= 140 && _heightCm <= 210 && _weightKg >= 35 && _weightKg <= 150;
 
-  @override
-  void dispose() {
-    _heightCtrl.dispose();
-    _weightCtrl.dispose();
-    super.dispose();
+  double get _bmi => _weightKg / pow(_heightCm / 100, 2);
+
+  int get _zoneIndex {
+    if (_bmi < 18.5) return 0;
+    if (_bmi < 25) return 1;
+    return 2;
+  }
+
+  String get _zoneTitle {
+    switch (_zoneIndex) {
+      case 0:
+        return 'Zone 1: Poids leger';
+      case 1:
+        return 'Zone 2: Poids equilibre';
+      default:
+        return 'Zone 3: Surpoids';
+    }
+  }
+
+  String get _zoneAdvice {
+    switch (_zoneIndex) {
+      case 0:
+        return 'Objectif: renforcement musculaire et energie.';
+      case 1:
+        return 'Objectif: maintien et progression reguliere.';
+      default:
+        return 'Objectif: perdre du poids progressivement.';
+    }
+  }
+
+  String get _avatarAsset {
+    if (_weightKg < 55) {
+      return 'assets/images/slim1.png';
+    }
+    if (_weightKg < 75) {
+      return 'assets/images/average1.png';
+    }
+    return 'assets/images/chubby1.png';
+  }
+
+  double get _avatarScale {
+    switch (_zoneIndex) {
+      case 0:
+        return 0.92;
+      case 1:
+        return 1.0;
+      default:
+        return 0.98;
+    }
+  }
+
+  Color? get _avatarTint {
+    switch (_zoneIndex) {
+      case 0:
+        return const Color(0x337ABB98);
+      case 1:
+        return null;
+      default:
+        return const Color(0x33D68C6C);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // EXACT same base
+      backgroundColor: Colors.white,
       body: Column(
         children: [
           _OnboardingTopBar(step: 6, total: 7, onBack: widget.onBack),
 
           Expanded(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1760,21 +1761,42 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
                     subtitle: 'Taille & poids pour personnaliser ton plan',
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
 
-                  // ───── INPUT CARD (same style as StepFrequency card) ─────
-                  _inputCard(
-                    label: "Taille (cm)",
-                    controller: _heightCtrl,
-                    hint: "165",
+                  SizedBox(
+                    height: 330,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _avatarPanel(),
+                        ),
+                        const SizedBox(width: 16),
+                        SizedBox(
+                          width: 84,
+                          child: _heightPanel(),
+                        ),
+                      ],
+                    ),
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
 
-                  _inputCard(
-                    label: "Poids (kg)",
-                    controller: _weightCtrl,
-                    hint: "60",
+                  _weightPanel(),
+
+                 
+
+                
+
+                  const SizedBox(height: 18),
+
+                  Text(
+                    'IMC: ${_bmi.toStringAsFixed(1)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -1791,18 +1813,103 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
     );
   }
 
-  // 💎 SAME CARD STYLE AS FREQUENCY ITEM
-  Widget _inputCard({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-  }) {
+  Widget _avatarPanel() {
+    return Center(
+      child: Transform.scale(
+        scale: _avatarScale,
+        child: _avatarTint == null
+            ? Image.asset(
+                _avatarAsset,
+                fit: BoxFit.contain,
+                width: 190,
+                height: 250,
+                errorBuilder: (_, __, ___) {
+                  return const Icon(
+                    Icons.person,
+                    size: 90,
+                    color: _kGreen,
+                  );
+                },
+              )
+            : ColorFiltered(
+                colorFilter: ColorFilter.mode(_avatarTint!, BlendMode.srcATop),
+                child: Image.asset(
+                  _avatarAsset,
+                  fit: BoxFit.contain,
+                  width: 190,
+                  height: 250,
+                  errorBuilder: (_, __, ___) {
+                    return const Icon(
+                      Icons.person,
+                      size: 90,
+                      color: _kGreen,
+                    );
+                  },
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _heightPanel() {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAF8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFDCE7E0)),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'Height',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${_heightCm.round()} cm',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: RotatedBox(
+              quarterTurns: 3,
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: _kGreen,
+                  inactiveTrackColor: Colors.grey.shade300,
+                  thumbColor: _kGreen,
+                  overlayColor: _kGreen.withOpacity(0.15),
+                ),
+                child: Slider(
+                  value: _heightCm,
+                  min: 140,
+                  max: 210,
+                  onChanged: (v) => setState(() => _heightCm = v),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _weightPanel() {
+    return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20), // SAME
-        border: Border.all(color: Colors.grey.shade200), // SAME
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -1815,35 +1922,44 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            'Weight',
             style: const TextStyle(
               fontSize: 13,
               color: Colors.black54,
               fontWeight: FontWeight.w500,
             ),
           ),
-
-          const SizedBox(height: 10),
-
-          TextField(
-            controller: controller,
-            onChanged: (_) => setState(() {}),
-            keyboardType: TextInputType.number,
+          const SizedBox(height: 8),
+          Text(
+            '${_weightKg.round()} kg',
             style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey.shade400),
-              border: InputBorder.none,
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: _kGreen,
+              inactiveTrackColor: Colors.grey.shade300,
+              thumbColor: _kGreen,
+              overlayColor: _kGreen.withOpacity(0.15),
+            ),
+            child: Slider(
+              value: _weightKg,
+              min: 35,
+              max: 150,
+              onChanged: (v) => setState(() => _weightKg = v),
             ),
           ),
         ],
       ),
     );
   }
+
+ 
+
+
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

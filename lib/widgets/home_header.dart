@@ -42,17 +42,24 @@ class HomeHeader extends ConsumerWidget {
             children: [
               Text(
                 'Hi, ${user.name}!',
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                style:TextStyle(
+                  fontSize: 20,
                   color: AppTheme.accentColor,
-                  fontWeight: FontWeight.bold,
+                   fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
+
                 ),
               ),
+
+              
               const SizedBox(height: 4),
               Text(
                 'Phase: ${cycle.name} (Day ${cycle.dayOfCycle})',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                style: TextStyle(
+                  fontSize: 10,
                   color: AppTheme.accentColor,
-                  fontWeight: FontWeight.bold,
+                   fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
                 ),
               ),
             ],
@@ -60,7 +67,7 @@ class HomeHeader extends ConsumerWidget {
         ),
 
         /// 🔔 Notification
-        IconButton(icon: const Icon(LucideIcons.bell), onPressed: () {}),
+        IconButton(icon: const Icon(LucideIcons.bell,  color: AppTheme.accentColor,), onPressed: () {}),
       ],
     );
   }

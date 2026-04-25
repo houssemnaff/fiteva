@@ -29,18 +29,18 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
   Color _categoryColor(String label) {
     switch (label.toUpperCase()) {
-      case 'MUSCULATION': return const Color(0xFFEF5350);
-      case 'PILATES': return const Color(0xFF9575CD);
-      case 'HIIT': return const Color(0xFFFFB300);
-      case 'DANCE': return const Color(0xFFFF6F91);
-      case 'YOGA': return const Color(0xFF4DB6AC);
-      case 'RUNNING': return const Color(0xFF42A5F5);
-      default: return const Color(0xFF90A4AE);
+      case 'MUSCULATION': return AppTheme.workoutMusculation;
+      case 'PILATES': return AppTheme.workoutPilates;
+      case 'HIIT': return AppTheme.workoutHiit;
+      case 'DANCE': return AppTheme.workoutDance;
+      case 'YOGA': return AppTheme.workoutYoga;
+      case 'RUNNING': return AppTheme.workoutRunning;
+      default: return AppTheme.workoutDefault;
     }
   }
 
   Color _getCategoryChipColor(int index) {
-    if (index == 0) return const Color(0xFF2D4A2D);
+    if (index == 0) return AppTheme.workoutHeaderBg;
     String label = categories[index]['label'];
     return _categoryColor(_mapLabelToCategory(label));
   }
@@ -272,12 +272,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     final swipeWorkouts = _getOnePerCategory(filteredWorkouts);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
+      backgroundColor: AppTheme.workoutPageBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2D4A2D),
+        backgroundColor: const Color.fromARGB(255, 249, 251, 249),
         elevation: 0,
-        title: const Text('Workouts', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
-        centerTitle: true,
+        title: const Text('Workouts', style: TextStyle(color: Color.fromARGB(255, 3, 3, 3), fontWeight: FontWeight.bold, fontSize: 20)),
+        centerTitle: false,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -290,9 +290,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     width: double.infinity,
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: const Color(0xFFE8F5E9),
+      color: AppTheme.workoutCardSoftBg,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: const Color(0xFFB2DFB2), width: 0.5),
+      border: Border.all(color: AppTheme.workoutCardSoftBorder, width: 0.5),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,7 +303,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               width: 6,
               height: 6,
               decoration: const BoxDecoration(
-                color: Color(0xFF4CAF50),
+                color: AppTheme.workoutSuccess,
                 shape: BoxShape.circle,
               ),
             ),
@@ -311,7 +311,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
             Text(
               'PHASE ${cycle.name.toUpperCase()}',
               style: const TextStyle(
-                color: Color(0xFF5A8A5A),
+                color: AppTheme.workoutTextSoft,
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 1.4,
@@ -323,7 +323,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         Text(
           cycle.advice,
           style: const TextStyle(
-            color: Color(0xFF1A3A1A),
+            color: AppTheme.workoutTextDark,
             fontWeight: FontWeight.w500,
             fontSize: 15,
             height: 1.5,
@@ -411,9 +411,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                         fontSize: 18,
-                        color: Color(0xFF1A2E1A),
+                        color: AppTheme.workoutTextDark,
                       ),
                     ),
                   ),
@@ -421,10 +421,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                     onTap: () => setState(() => _showAllWorkouts = !_showAllWorkouts),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: const Color(0xFF1A2E1A).withOpacity(0.08), borderRadius: BorderRadius.circular(20)),
+                      decoration: BoxDecoration(color: AppTheme.workoutTextDark.withOpacity(0.08), borderRadius: BorderRadius.circular(20)),
                       child: Text(
                         _showAllWorkouts ? 'Voir moins' : 'Voir tout',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A2E1A), fontSize: 13),
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.workoutTextDark, fontSize: 13),
                       ),
                     ),
                   ),
@@ -463,7 +463,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Vidéos par zone du corps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1A2E1A))),
+                    const Text('Vidéos par zone du corps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.workoutTextDark)),
                     Text('Tout voir ›', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryColor)),
                   ],
                 ),
@@ -491,8 +491,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
-            ]
+const SizedBox(height: 110),            ]
           ],
         ),
       ),

@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/material.dart';
+import '../../theme/FitEvaColors.dart';
 
 import 'widgets-cycle/_DayChip.dart';
 import 'widgets-cycle/calendar_screen.dart';
@@ -24,7 +25,7 @@ class CycleApp extends StatelessWidget {
       title: 'Cycle Tracker',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: Colors.white,
+        scaffoldBackgroundColor: FitEvaColors.bgApp,
         fontFamily: 'SF Pro Display',
       ),
       home: const CycleScreen(),
@@ -48,35 +49,31 @@ class CycleTheme {
 }
 
 CycleTheme getTheme(int day) {
-  final phase = phaseForDay(day);
+  final phase = wheel.phaseForDay(day);
   switch (phase.name) {
     case 'Règles':
       return const CycleTheme(
-        gradient: [Color(0xFFFFD6E0), Color(0xFFFF9BB3), Color(0xFFD94F6B)],
-        primary: Color(0xFFD94F6B),
-        glow: Color(0x66FF4D6D),
+        gradient: [FitEvaColors.phaseMenstrual, FitEvaColors.phaseMenstrual, FitEvaColors.phaseMenstrual],
+        primary: FitEvaColors.phaseMenstrual,
+        glow: Color(0x66D94F6B),
       );
     case 'Folliculaire':
       return const CycleTheme(
-        gradient: [Color(0xFFE8FDF3), Color(0xFF7BE0B5), Color(0xFF2FBF91)],
-        primary: Color(0xFF2FBF91),
-        glow: Color(0x662FBF91),
+        gradient: [FitEvaColors.phaseFolliculaire, FitEvaColors.phaseFolliculaire, FitEvaColors.phaseFolliculaire],
+        primary: FitEvaColors.phaseFolliculaire,
+        glow: Color(0x667ABB98),
       );
     case 'Ovulation':
-  return const CycleTheme(
-    gradient: [
-      Color(0xFFE8FFFB),
-      Color(0xFFB8F2E6),
-      Color(0xFF7DE2D1),
-    ],
-    primary: Color(0xFF5FD3C4),
-    glow: Color(0x665FD3C4),
-  );
+      return const CycleTheme(
+        gradient: [FitEvaColors.phaseOvulatoire, FitEvaColors.phaseOvulatoire, FitEvaColors.phaseOvulatoire],
+        primary: FitEvaColors.phaseOvulatoire,
+        glow: Color(0x66F4A940),
+      );
     default:
       return const CycleTheme(
-        gradient: [Color(0xFFE3ECFF), Color(0xFF8FAFFF), Color(0xFF4A6CF7)],
-        primary: Color(0xFF4A6CF7),
-        glow: Color(0x664A6CF7),
+        gradient: [FitEvaColors.phaseLuteal, FitEvaColors.phaseLuteal, FitEvaColors.phaseLuteal],
+        primary: FitEvaColors.phaseLuteal,
+        glow: Color(0x665A7FC2),
       );
   }
 }
@@ -121,13 +118,12 @@ class _CycleScreenState extends State<CycleScreen> {
   }
 
   BoxDecoration _cardDecoration() => BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        color: FitEvaColors.surface,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
             offset: const Offset(0, 6),
           ),
         ],
@@ -139,21 +135,8 @@ class _CycleScreenState extends State<CycleScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      body: AnimatedContainer(
-        duration: const Duration(milliseconds: 800),
-        curve: Curves.easeInOutCubic,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.gradient[0].withOpacity(0.95),
-              theme.gradient[1].withOpacity(0.65),
-              theme.gradient[2].withOpacity(0.85),
-            ],
-          ),
-        ),
-        child: SafeArea(
+      backgroundColor: FitEvaColors.bgApp,
+      body: SafeArea(
           child: Column(
             children: [
 
@@ -232,9 +215,9 @@ class _CycleScreenState extends State<CycleScreen> {
                               const SizedBox(height: 6),
                               Text(
                                 _getMoodText(),
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 12,
-                                  color: Colors.white.withOpacity(0.6),
+                                  color: FitEvaColors.textMuted,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -344,7 +327,6 @@ class _CycleScreenState extends State<CycleScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 }

@@ -66,5 +66,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Pedometer & Motion Permission -->
+	<key>NSMotionUsageDescription</key>
+	<string>FitEva needs access to your motion data to count your steps accurately.</string>
 </dict>
 </plist>
