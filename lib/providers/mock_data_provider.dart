@@ -35,7 +35,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       duration: '45 min',
       level: 'Intermediate',
       calories: '700',
-      imageUrl: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500',
+      imageUrl: 'assets/images/fullbody.jpg',
       exercises: ['Jumping Jacks', 'Burpees', 'Mountain Climbers', 'Squat Jumps'],
     ),
 
@@ -47,7 +47,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       duration: '30 min',
       level: 'Beginner',
       calories: '500',
-      imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=500',
+      imageUrl: 'assets/images/pilates.jpg',
       exercises: ['The Hundred', 'Roll Up', 'Single Leg Circle', 'Rolling Like a Ball'],
     ),
 
@@ -58,7 +58,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       duration: '20 min',
       level: 'Intermediate',
       calories: '400',
-      imageUrl: 'https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=500',
+      imageUrl: 'assets/images/Core.jpg',
       exercises: ['Plank', 'Leg Stretch', 'Side Kick', 'Teaser'],
     ),
 
@@ -70,7 +70,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       duration: '60 min',
       level: 'Advanced',
       calories: '600',
-      imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500',
+      imageUrl: 'assets/images/strength.jpg',
       exercises: ['Deadlifts', 'Squats', 'Bench Press', 'Pull-ups'],
     ),
 
@@ -81,7 +81,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       duration: '40 min',
       level: 'Intermediate',
       calories: '550',
-      imageUrl: 'https://images.unsplash.com/photo-1599058917765-a780eda07a3e?w=500',
+      imageUrl: 'assets/images/upper.jpg',
       exercises: ['Push-ups', 'Dumbbell Press', 'Bicep Curls', 'Tricep Dips'],
     ),
 
@@ -93,7 +93,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       duration: '35 min',
       level: 'Beginner',
       calories: '450',
-      imageUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500',
+      imageUrl: 'assets/images/cardio.jpg',
       exercises: ['Warm-up Groove', 'Hip Hop Moves', 'Zumba Steps', 'Cool Down'],
     ),
 
@@ -104,7 +104,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       duration: '50 min',
       level: 'Intermediate',
       calories: '650',
-      imageUrl: 'https://images.unsplash.com/photo-1524594154908-edd3dcb1c6b4?w=500',
+      imageUrl: 'assets/images/Zumba.jpeg',
       exercises: ['Salsa Steps', 'Reggaeton', 'Freestyle Dance', 'Stretch'],
     ),
 
@@ -116,7 +116,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       duration: '25 min',
       level: 'Beginner',
       calories: '300',
-      imageUrl: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=500',
+      imageUrl: 'assets/images/Morning.jpg',
       exercises: ['Light Jog', 'Breathing', 'Cooldown Walk'],
     ),
 
@@ -127,7 +127,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       duration: '60 min',
       level: 'Advanced',
       calories: '800',
-      imageUrl: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=500',
+      imageUrl: 'assets/images/Endurance.jpg',
       exercises: ['Warm-up', 'Long Distance Run', 'Sprint Finish'],
     ),
   ];
@@ -249,7 +249,7 @@ final bodyZonesProvider = Provider<List<Map<String, dynamic>>>((ref) {
     },
     {
       'title': 'Full body HIIT',
-      'imageUrl': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500',
+      'imageUrl': 'assets/images/fullbody.jpg',
       'exercises': ['Burpees', 'Jumping Jacks', 'Mountain Climbers', 'High Knees'],
     },
     {
