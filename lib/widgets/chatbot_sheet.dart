@@ -39,7 +39,6 @@ class _ChatbotSheetState extends ConsumerState<ChatbotSheet> {
   Widget build(BuildContext context) {
     final messages = ref.watch(chatProvider);
 
-    // Initial scroll
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
@@ -47,138 +46,296 @@ class _ChatbotSheetState extends ConsumerState<ChatbotSheet> {
     });
 
     return Container(
-      margin: const EdgeInsets.only(top: kToolbarHeight), // Leaves space at top
+      margin: const EdgeInsets.only(top: kToolbarHeight),
       decoration: const BoxDecoration(
-        color: AppTheme.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: Color(0xFFF2F2F7),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
-          // Header
+          // ── Drag handle ──
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 6),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD1D1D6),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // ── Header ──
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(20, 8, 8, 12),
             decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              color: Color(0xFFF2F2F7),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
-                  children: [
-                    Icon(Icons.auto_awesome, color: AppTheme.primaryActive),
-                    SizedBox(width: 8),
-                    Text(
-                      'AI Assistant',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                // Avatar icon
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5EE),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Color(0xFF1B5E3B),
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI Assistant',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 17,
+                          color: Color(0xFF1C1C1E),
+                          letterSpacing: -0.3,
+                        ),
                       ),
+                      Text(
+                        'Toujours disponible',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF8E8E93),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Close button
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE5E5EA),
+                      shape: BoxShape.circle,
                     ),
-                  ],
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFF3C3C43),
+                      size: 16,
+                    ),
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
+                const SizedBox(width: 8),
               ],
             ),
           ),
-          const Divider(height: 1),
-          // Chat list
+
+          // Separator
+          const Divider(height: 0.5, thickness: 0.5, color: Color(0xFFE5E5EA)),
+
+          // ── Chat list ──
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final msg = messages[index];
-                return Align(
-                  alignment: msg.isUser
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: msg.isUser ? AppTheme.primaryActive : Colors.white,
-                      borderRadius: BorderRadius.circular(16).copyWith(
-                        bottomRight: msg.isUser
-                            ? const Radius.circular(0)
-                            : const Radius.circular(16),
-                        bottomLeft: !msg.isUser
-                            ? const Radius.circular(0)
-                            : const Radius.circular(16),
-                      ),
-                      border: msg.isUser
-                          ? null
-                          : Border.all(color: AppTheme.borderLight),
-                    ),
-                    child: Text(
-                      msg.text,
-                      style: TextStyle(
-                        color: msg.isUser ? Colors.white : AppTheme.primaryText,
-                      ),
-                    ),
+            child: messages.isEmpty
+                ? _buildEmptyState()
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = messages[index];
+                      final isUser = msg.isUser;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          mainAxisAlignment: isUser
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            // AI avatar dot
+                            if (!isUser) ...[
+                              Container(
+                                width: 28,
+                                height: 28,
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE8F5EE),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.auto_awesome_rounded,
+                                  color: Color(0xFF1B5E3B),
+                                  size: 14,
+                                ),
+                              ),
+                            ],
+                            // Bubble
+                            Flexible(
+                              child: Container(
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width * 0.70,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isUser
+                                      ? const Color(0xFF1B5E3B)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(18),
+                                    topRight: const Radius.circular(18),
+                                    bottomLeft: Radius.circular(isUser ? 18 : 4),
+                                    bottomRight: Radius.circular(isUser ? 4 : 18),
+                                  ),
+                                ),
+                                child: Text(
+                                  msg.text,
+                                  style: TextStyle(
+                                    color: isUser
+                                        ? Colors.white
+                                        : const Color(0xFF1C1C1E),
+                                    fontSize: 15,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
-          // Input area
+
+          // ── Input area ──
           Container(
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
-              top: 12,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 12,
+              top: 10,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
             ),
-            color: Colors.white,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF2F2F7),
+              border: Border(
+                top: BorderSide(color: Color(0xFFE5E5EA), width: 0.5),
+              ),
+            ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                // Text field
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    onSubmitted: (_) => _sendMessage(),
-                    decoration: InputDecoration(
-                      hintText: 'Posez-moi une question...',
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 44),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: const Color(0xFFE5E5EA), width: 0.5),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      onSubmitted: (_) => _sendMessage(),
+                      maxLines: 5,
+                      minLines: 1,
+                      textCapitalization: TextCapitalization.sentences,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF1C1C1E),
                       ),
-                      filled: true,
-                      fillColor: AppTheme.background,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
+                      decoration: const InputDecoration(
+                        hintText: 'Posez-moi une question…',
+                        hintStyle: TextStyle(
+                          color: Color(0xFFAEAEB2),
+                          fontSize: 15,
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 11,
+                        ),
+                        border: InputBorder.none,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
+                // Send button
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _controller,
                   builder: (context, value, child) {
                     final canSend = value.text.trim().isNotEmpty;
                     return GestureDetector(
                       onTap: canSend ? _sendMessage : null,
-                      child: CircleAvatar(
-                        backgroundColor: canSend
-                            ? AppTheme.primaryActive
-                            : AppTheme.inactiveGrey.withOpacity(0.3),
-                        radius: 24,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: canSend
+                              ? const Color(0xFF1B5E3B)
+                              : const Color(0xFFE5E5EA),
+                          shape: BoxShape.circle,
+                        ),
                         child: Icon(
-                          Icons.send,
-                          color: canSend ? Colors.white : Colors.grey,
+                          Icons.arrow_upward_rounded,
+                          color: canSend ? Colors.white : const Color(0xFFAEAEB2),
+                          size: 20,
                         ),
                       ),
                     );
                   },
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5EE),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: Color(0xFF1B5E3B),
+              size: 30,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Comment puis-je vous aider ?',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1C1C1E),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Posez une question sur votre entraînement\nou votre nutrition.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF8E8E93),
+              height: 1.4,
             ),
           ),
         ],
