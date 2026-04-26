@@ -43,6 +43,8 @@ dependencies:
   pedometer: ^4.2.0
   permission_handler: ^12.0.1
   showcaseview: ^5.0.2
+  video_player: ^2.11.1
+  chewie: ^1.14.0
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +72,8 @@ flutter:
   assets:
       - assets/images/logfiteva.jpeg
       - assets/images/
+      - assets/videos/workout1.mp4
+      - assets/videos/workout2.mp4
 
       - assets/images/workout.jpeg
       

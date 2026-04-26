@@ -6,6 +6,7 @@ import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
 import '../../theme/app_theme.dart';
 import 'workout_detail_screen.dart';
+import 'corpszone_playerscreen.dart';
 
 class WorkoutScreen extends ConsumerStatefulWidget {
   const WorkoutScreen({super.key});
@@ -227,7 +228,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           exercises: List<String>.from(zoneContent['exercises']),
         );
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => WorkoutDetailScreen(workout: workout)),
+          MaterialPageRoute(
+            builder: (_) => CorpsZonePlayerScreen(
+              workout: workout,
+              zoneName: label,
+            ),
+          ),
         );
       },
       child: Container(

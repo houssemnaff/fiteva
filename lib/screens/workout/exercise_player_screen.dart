@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 import '../../theme/app_theme.dart';
 
 class ExercisePlayerScreen extends StatefulWidget {
@@ -25,6 +27,55 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen> with Single
   bool _isPlaying = false;
   bool _isDone = false;
   double _buttonScale = 1.0;
+  
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  bool _isVideoReady = false;
+
+  final List<String> _videoUrls = [
+    'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+    'https://samplelib.com/lib/preview/mp4/sample-5s.mp4',
+    'https://samplelib.com/lib/preview/mp4/sample-10s.mp4',
+    'https://samplelib.com/lib/preview/mp4/sample-10s.mp4',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    final url = _videoUrls[widget.exerciseIndex % _videoUrls.length];
+    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(url));
+
+    try {
+      await _videoPlayerController!.initialize();
+      if (mounted) {
+        _chewieController = ChewieController(
+          videoPlayerController: _videoPlayerController!,
+          autoPlay: true,
+          looping: true,
+          showControls: true,
+          aspectRatio: 16 / 9,
+          placeholder: Container(color: Colors.black),
+        );
+        setState(() {
+          _isVideoReady = true;
+          _isPlaying = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error initializing video: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _chewieController?.dispose();
+    _videoPlayerController?.dispose();
+    super.dispose();
+  }
   
   void _markAsDone() async {
     if (_isDone) return;
@@ -112,52 +163,13 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen> with Single
                     aspectRatio: 16 / 9,
                     child: Container(
                       color: const Color(0xFF1A1A1A),
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: GestureDetector(
-                              onTap: () => setState(() => _isPlaying = !_isPlaying),
-                              child: Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), shape: BoxShape.circle),
-                                child: Icon(
-                                  _isPlaying ? Icons.pause : Icons.play_arrow,
-                                  color: const Color(0xFF1A1A1A),
-                                  size: 32,
-                                ),
+                      child: _isVideoReady && _chewieController != null
+                          ? Chewie(controller: _chewieController!)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             ),
-                          ),
-                          const Positioned(
-                            top: 16,
-                            right: 16,
-                            child: Icon(Icons.volume_up, color: Colors.white70, size: 24),
-                          ),
-                          Positioned(
-                            bottom: 12,
-                            left: 16,
-                            right: 16,
-                            child: Row(
-                              children: [
-                                const Text('0:23', style: TextStyle(color: Colors.white, fontSize: 12)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: LinearProgressIndicator(
-                                    value: 0.2, // Mock progress
-                                    backgroundColor: Colors.white30,
-                                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Text('1:45', style: TextStyle(color: Colors.white, fontSize: 12)),
-                                const SizedBox(width: 12),
-                                const Icon(Icons.fullscreen, color: Colors.white, size: 20),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
 

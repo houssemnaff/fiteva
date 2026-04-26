@@ -13,7 +13,7 @@ class WorkoutDetailScreen extends StatefulWidget {
 }
 
 class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
-  int _currentTab = 1; // 0: À propos, 1: Les séances
+  int _currentTab = 0; // 0: À propos, 1: Les séances
   int _selectedWeek = 0; // For week selector (Sem 1, Sem 2, etc.)
 
   Widget _buildGoalTag(String label) {
