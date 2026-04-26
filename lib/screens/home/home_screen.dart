@@ -44,7 +44,7 @@ class HomeScreen extends ConsumerWidget {
 
               // ── Joined Programs ───────────────────────────────────
                // ── Cycle of the day ──────────────────────────────────
-              _CycleSection(cycle: cycle),
+             // _CycleSection(cycle: cycle),
               _JoinedProgramsSection(
                 programs: joinedPrograms,
                 onResumeTap: () => _showProgramsSummary(context, joinedPrograms),

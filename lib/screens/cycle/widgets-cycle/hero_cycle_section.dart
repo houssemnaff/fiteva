@@ -1,17 +1,7 @@
-import 'dart:math';
+/*import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:fiteva/theme/FitEvaColors.dart';
 
-// ─── HeroCycleSection ──────────────────────────────────────────────────────
-//
-// Adapté pour la Fleur de 28 Pétales (PetalWheelPainter).
-//
-// Changements vs la version cercle :
-// • Le Squircle blanc est remplacé par un fond circulaire très léger
-//   (juste une lueur subtile) pour laisser les pétales "respirer" dans l'espace
-// • L'aura de fond est légèrement plus grande pour donner de la profondeur à la fleur
-// • La rotation est gardée mais 4× plus lente (120s) pour un effet quasi-imperceptible
-// • Le CustomPaint est un peu plus grand (260px) pour loger les pétales confortablement
 
 class HeroCycleSection extends StatelessWidget {
   final Animation<double> rotation;
@@ -136,9 +126,7 @@ class HeroCycleSection extends StatelessWidget {
                   ),
                 ),
 
-                // 4. CŒUR DE L'INTERFACE (WheelCenter)
-                //    Le WheelCenter affiche "Jour 8 / Folliculaire" etc.
-                //    Il est placé AU-DESSUS de la fleur, sur le cercle blanc central.
+              
                 Material(
                   color: Colors.transparent,
                   child: wheelCenter,
@@ -176,4 +164,4 @@ class HeroCycleSection extends StatelessWidget {
       ),
     );
   }
-}
+}*/

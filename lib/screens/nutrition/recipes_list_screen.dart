@@ -945,7 +945,7 @@ class _RecipeGridCard extends StatelessWidget {
             // ── Body ────────────────────────────────────────────────────────
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 11),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -962,7 +962,7 @@ class _RecipeGridCard extends StatelessWidget {
                         height: 1.3,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
                     // Stat chips: kcal + proteins
                     Row(
@@ -988,7 +988,7 @@ class _RecipeGridCard extends StatelessWidget {
                     // Tags
                     Wrap(
                       spacing: 4,
-                      runSpacing: 4,
+                      runSpacing: 2,
                       children: recipe.tags
                           .take(2)
                           .map(

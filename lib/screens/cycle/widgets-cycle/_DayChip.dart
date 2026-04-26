@@ -1,4 +1,4 @@
-import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart';
+/*import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart';
 import 'package:flutter/material.dart';
  // pour phaseForDay + kPhases
 
@@ -55,7 +55,7 @@ class CycleHeader extends StatelessWidget {
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.8,
-                        color: Colors.white.withOpacity(0.55),
+                        color: const Color.fromARGB(255, 200, 41, 41).withOpacity(0.55),
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -220,9 +220,9 @@ class _ToggleBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.13),
+        color: const Color(0xFF2E7D52),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.20)),
+        border: Border.all(color: const Color(0xFF3B9566)),
       ),
       child: Row(
         children: [
@@ -271,7 +271,7 @@ class _ToggleItem extends StatelessWidget {
           curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
-            color: isActive ? Colors.white.withOpacity(0.25) : Colors.transparent,
+            color: isActive ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(11),
           ),
           child: Row(
@@ -280,7 +280,7 @@ class _ToggleItem extends StatelessWidget {
               Icon(
                 icon,
                 size: 14,
-                color: isActive ? Colors.white : Colors.white.withOpacity(0.50),
+                color: isActive ? Colors.black : Colors.white,
               ),
               const SizedBox(width: 6),
               Text(
@@ -288,7 +288,7 @@ class _ToggleItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive ? Colors.white : Colors.white.withOpacity(0.50),
+                  color: isActive ? Colors.black : Colors.white,
                 ),
               ),
             ],
@@ -423,4 +423,4 @@ class _IconButton extends StatelessWidget {
       ),
     );
   }
-}
+}*/

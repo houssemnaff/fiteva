@@ -6,7 +6,7 @@ import 'widgets/home/home_widgets.dart';
 import 'suivi_nutrition_screen.dart';
 import 'recipes_list_screen.dart';
 import 'ajout_rapide_screen.dart';
-import 'recipe_detail_screen.dart';
+import 'nutruition_detail_screen.dart';
 
 class NutritionHomeScreen extends StatefulWidget {
   const NutritionHomeScreen({super.key});
@@ -85,8 +85,11 @@ class _NutritionHomeScreenState extends State<NutritionHomeScreen>
     super.dispose();
   }
 
-  void _goToSuivi() => Navigator.push(
-      context, MaterialPageRoute(builder: (_) => const SuiviNutritionScreen()));
+  void _goToSuivi(String mealId) => Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SuiviNutritionScreen(initialMealId: mealId),
+      ));
 
   void _goToRecipes() => Navigator.push(
       context, MaterialPageRoute(builder: (_) => const RecipesListScreen()));
@@ -109,7 +112,7 @@ class _NutritionHomeScreenState extends State<NutritionHomeScreen>
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: DailyTrackingCard(
                 anim: _anim,
-                onConsulter: _goToSuivi,
+                onConsulter: () => _goToSuivi('lunch'),
                 onCamera: _goToAjout,
                 onBarcode: _goToAjout,
                 onRecipes: _goToRecipes,
@@ -120,22 +123,24 @@ class _NutritionHomeScreenState extends State<NutritionHomeScreen>
             ),
           ),
 
-          // ── Grille repas ─────────────────────────────────────────
+          // ── Liste repas en colonne ──────────────────────────────
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            sliver: SliverGrid(
+            sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
-                (ctx, i) => MealCategoryCard(
-                  data: _categories[i],
-                  onTap: _goToSuivi,
+                (ctx, i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: MealCategoryCard(
+                    data: _categories[i],
+                    onTap: () => _goToSuivi([
+                      'breakfast',
+                      'lunch',
+                      'snack',
+                      'dinner',
+                    ][i]),
+                  ),
                 ),
                 childCount: _categories.length,
-              ),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.2,
               ),
             ),
           ),
