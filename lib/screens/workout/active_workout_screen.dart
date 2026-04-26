@@ -246,7 +246,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                                     SizedBox(
                                       width: 90,
                                       height: 64,
-                                      child: Image.network(
+                                      child: Image.asset(
                                         widget.workout.imageUrl,
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) => Container(

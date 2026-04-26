@@ -120,7 +120,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     fit: StackFit.expand,
                     children: [
                       // Hero image
-                      Image.network(
+                      Image.asset(
                         workout.imageUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade800),
@@ -407,7 +407,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                     child: SizedBox(
                                       width: 60,
                                       height: 60,
-                                      child: Image.network(
+                                      child: Image.asset(
                                         workout.imageUrl,
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) => Container(color: AppTheme.accentColor),
