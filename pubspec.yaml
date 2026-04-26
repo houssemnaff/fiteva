@@ -74,16 +74,7 @@ flutter:
       - assets/images/
       - assets/videos/workout1.mp4
       - assets/videos/workout2.mp4
-      - assets/images/pilates.jpg
-      - assets/images/Core.jpg
-      - assets/images/fullbody.jpg
-      - assets/images/strength.jpg
-      - assets/images/upper.jpg
-      - assets/images/cardio.jpg
-      - assets/images/Zumba.jpg
-      - assets/images/Morning.jpg
-      - assets/images/Endurance.jpg
-      - assets/images/workout.jpeg
+     
       
   #   - images/a_dot_ham.jpeg
 

@@ -159,7 +159,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(
+              Image.asset(
                 workout.imageUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade800),
