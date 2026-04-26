@@ -14,265 +14,376 @@ class ProfileScreen extends ConsumerWidget {
     final user = ref.watch(userProvider);
 
     return Scaffold(
+      backgroundColor:  Colors.white,
       appBar: AppBar(
-        title: const Text('Profile'),
-        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.5,
+            color: Color(0xFF1C1C1E),
+          ),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.settings),
-            onPressed: () {},
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE5E5EA),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: const Icon(LucideIcons.settings, size: 18, color: Color(0xFF3C3C43)),
+              onPressed: () {},
+            ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Avatar and Name
+            const SizedBox(height: 8),
+
+            // ── Avatar + identity ──
             Center(
               child: Column(
                 children: [
-                  Consumer(
-                    builder: (context, ref, child) {
-                      ref.watch(avatarProvider);
-                      return FluttermojiCircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.grey[200],
-                      );
-                    },
+                  Stack(
+                    children: [
+                      Consumer(
+                        builder: (context, ref, child) {
+                          ref.watch(avatarProvider);
+                          return FluttermojiCircleAvatar(
+                            radius: 44,
+                            backgroundColor: Colors.grey[200],
+                          );
+                        },
+                      ),
+                      Positioned(
+                        bottom: 2,
+                        right: 2,
+                        child: GestureDetector(
+                          onTap: () async {
+                            await context.push('/edit-avatar');
+                            ref.read(avatarProvider.notifier).increment();
+                          },
+                          child: Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: const Icon(LucideIcons.edit3, size: 12, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () async {
-                      await context.push('/edit-avatar');
-                      ref.read(avatarProvider.notifier).increment();
-                    },
-                    icon: const Icon(LucideIcons.edit3, size: 16),
-                    label: const Text('Edit Avatar'),
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     user.name,
-                    style: Theme.of(context).textTheme.displayMedium,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1C1C1E),
+                      letterSpacing: -0.3,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 2),
+                  Text(
+                    'sarah.martin@icloud.com',
+                    style: const TextStyle(fontSize: 14, color: Color(0xFF8E8E93)),
+                  ),
+                  const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentColor.withOpacity(0.1),
+                      color: const Color(0xFFE8F5EE),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      'Level ${user.level}',
-                      style: const TextStyle(
-                        color: AppTheme.accentColor,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.star, size: 13, color: Color(0xFF1B5E3B)),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Level ${user.level} · Elite',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1B5E3B),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
 
-            // Stats Grid
+            // ── 3 stat cards ──
             Row(
               children: [
-                Expanded(child: _buildStatCard(context, 'XP', '${user.xp}', LucideIcons.star)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildStatCard(context, 'Streak', '${user.streak}', LucideIcons.flame)),
+                Expanded(
+                  child: _buildStatCard(
+                    context,
+                    label: 'XP total',
+                    value: '${user.xp}',
+                    icon: LucideIcons.star,
+                    iconColor: AppTheme.primaryColor,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildStatCard(
+                    context,
+                    label: 'Streak',
+                    value: '${user.streak}',
+                    icon: LucideIcons.flame,
+                    iconColor: const Color(0xFFFF6B35),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildStatCard(
+                    context,
+                    label: 'Séances',
+                    value: '48',
+                    icon: LucideIcons.calendar,
+                    iconColor: const Color(0xFF007AFF),
+                  ),
+                ),
               ],
-            ),
-            /*
-            const SizedBox(height: 40),
-
-            // Badges
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Badges',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              children: [
-                _buildBadge(context, '7 Day Streak', LucideIcons.flame, true),
-                _buildBadge(context, 'Early Bird', LucideIcons.sunrise, true),
-                _buildBadge(context, 'Marathon', LucideIcons.footprints, false),
-                _buildBadge(context, 'Strength', LucideIcons.dumbbell, true),
-                _buildBadge(context, 'Expert', LucideIcons.award, false),
-              ],
-              
-            ),*/
-             const SizedBox(height: 40),
+
+            // ── Weekly progress ──
+            _buildWeeklyProgress(context),
+            const SizedBox(height: 20),
+
+            // ── Badges ──
+            _buildBadgesSection(context),
+            const SizedBox(height: 20),
+
+            // ── Settings ──
             _buildSettingsSection(context),
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon) {
+  // ── Stat card ──
+  Widget _buildStatCard(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color iconColor,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          Icon(icon, color: AppTheme.primaryColor, size: 32),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-              color: AppTheme.primaryColor,
-            ),
-          ),
+          Icon(icon, color: iconColor, size: 22),
           const SizedBox(height: 4),
           Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1C1C1E),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: const TextStyle(fontSize: 11, color: Color(0xFF8E8E93), fontWeight: FontWeight.w500),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBadge(BuildContext context, String name, IconData icon, bool earned) {
+  // ── Weekly progress ──
+  Widget _buildWeeklyProgress(BuildContext context) {
+    const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    const completed = [true, true, true, true, true, false, false];
+
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: earned ? AppTheme.accentColor.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-        shape: BoxShape.circle,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: earned ? AppTheme.primaryColor : Colors.grey,
-            size: 32,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Objectif hebdo',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1C1C1E)),
+              ),
+              const Text(
+                '5/6 jours',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1B5E3B)),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 10,
-              color: earned ? AppTheme.primaryColor : Colors.grey,
-              fontWeight: FontWeight.bold,
-            ),
+          const SizedBox(height: 12),
+          Row(
+            children: List.generate(7, (i) {
+              return Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(right: i < 6 ? 6 : 0),
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: completed[i] ? const Color(0xFF1B5E3B) : const Color(0xFFE5E5EA),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: List.generate(7, (i) {
+              return Expanded(
+                child: Text(
+                  days[i],
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 10, color: Color(0xFF8E8E93)),
+                ),
+              );
+            }),
           ),
         ],
       ),
     );
   }
-    Widget _buildSettingsSection(BuildContext context) {
+
+  // ── Badges ──
+  Widget _buildBadgesSection(BuildContext context) {
+    final badges = [
+      _BadgeData(icon: LucideIcons.flame, label: '14 jours', color: const Color(0xFFFF6B35), bg: const Color(0xFFFFF3EE), earned: true),
+      _BadgeData(icon: LucideIcons.trophy, label: 'Top 10%', color: const Color(0xFF1B5E3B), bg: const Color(0xFFE8F5EE), earned: true),
+      _BadgeData(icon: LucideIcons.zap, label: '50 séances', color: const Color(0xFF5B5FEF), bg: const Color(0xFFEEEEFF), earned: true),
+      _BadgeData(icon: LucideIcons.medal, label: 'Marathon', color: const Color(0xFF8E8E93), bg: const Color(0xFFF2F2F7), earned: false),
+      _BadgeData(icon: LucideIcons.flag, label: 'Pionnier', color: const Color(0xFF8E8E93), bg: const Color(0xFFF2F2F7), earned: false),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Paramètres',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Badges',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1C1C1E)),
+            ),
+            Text(
+              'Voir tout',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.primaryColor),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: badges.map((b) => _buildBadge(context, b)).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBadge(BuildContext context, _BadgeData badge) {
+    return Opacity(
+      opacity: badge.earned ? 1.0 : 0.4,
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: badge.bg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(badge.icon, color: badge.color, size: 24),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            badge.label,
+            style: const TextStyle(fontSize: 10, color: Color(0xFF3C3C43), fontWeight: FontWeight.w500),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Settings ──
+  Widget _buildSettingsSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Paramètres',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1C1C1E)),
+        ),
+        const SizedBox(height: 12),
         _buildSettingsCard(
           context,
           items: [
-            _SettingsItemData(
-              icon: LucideIcons.bell,
-              title: 'Notifications',
-              onTap: () {},
-            ),
-            _SettingsItemData(
-              icon: LucideIcons.moon,
-              title: 'Mode sombre',
-              onTap: () {},
-            ),
-            _SettingsItemData(
-              icon: LucideIcons.lock,
-              title: 'Confidentialité',
-              onTap: () {},
-            ),
-            _SettingsItemData(
-              icon: LucideIcons.languages,
-              title: 'Langue',
-              onTap: () {},
-            ),
-            _SettingsItemData(
-              icon: LucideIcons.heart,
-              title: 'Santé connectée',
-              onTap: () {},
-            ),
-            _SettingsItemData(
-              icon: LucideIcons.share2,
-              title: "Partager l'app",
-              onTap: () {},
-            ),
-            _SettingsItemData(
-              icon: LucideIcons.helpCircle,
-              title: 'Aide & FAQ',
-              onTap: () {},
-            ),
-            _SettingsItemData(
-              icon: LucideIcons.info,
-              title: 'À propos',
-              onTap: () {},
-            ),
+            _SettingsItemData(icon: LucideIcons.bell, title: 'Notifications', iconBg: const Color(0xFFE8F5EE), iconColor: const Color(0xFF1B5E3B), onTap: () {}),
+            _SettingsItemData(icon: LucideIcons.moon, title: 'Mode sombre', iconBg: const Color(0xFFEEEEFF), iconColor: const Color(0xFF5B5FEF), onTap: () {}),
+            _SettingsItemData(icon: LucideIcons.heart, title: 'Santé connectée', iconBg: const Color(0xFFFFF3EE), iconColor: const Color(0xFFFF6B35), onTap: () {}),
+            _SettingsItemData(icon: LucideIcons.globe, title: 'Langue', iconBg: const Color(0xFFE8F5EE), iconColor: const Color(0xFF1B5E3B), trailing: 'Français', onTap: () {}),
+            _SettingsItemData(icon: LucideIcons.lock, title: 'Confidentialité', iconBg: const Color(0xFFF5F5F5), iconColor: const Color(0xFF8E8E93), onTap: () {}),
+            _SettingsItemData(icon: LucideIcons.share2, title: "Partager l'app", iconBg: const Color(0xFFF5F5F5), iconColor: const Color(0xFF8E8E93), onTap: () {}),
+            _SettingsItemData(icon: LucideIcons.helpCircle, title: 'Aide & FAQ', iconBg: const Color(0xFFF5F5F5), iconColor: const Color(0xFF8E8E93), onTap: () {}),
+            _SettingsItemData(icon: LucideIcons.info, title: 'À propos', iconBg: const Color(0xFFF5F5F5), iconColor: const Color(0xFF8E8E93), trailing: 'v2.4.1', onTap: () {}),
           ],
         ),
         const SizedBox(height: 16),
 
-        // Bouton "Rejoindre la communauté"
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            onPressed: () {},
-            icon: const Icon(LucideIcons.users),
-            label: const Text('Rejoindre la communauté'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1B5E3B), // vert foncé proche de l'image
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
+        // Community button
+      
+        const SizedBox(height: 10),
 
-        // Bouton "Se déconnecter"
+        // Logout button
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 52,
           child: OutlinedButton.icon(
             onPressed: () {},
-            icon: const Icon(LucideIcons.logOut),
-            label: const Text('Se déconnecter'),
+            icon: const Icon(LucideIcons.logOut, size: 18),
+            label: const Text(
+              'Se déconnecter',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.redAccent,
-              side: BorderSide(color: Colors.grey.withOpacity(0.35)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+              foregroundColor: const Color(0xFFFF3B30),
+              side: const BorderSide(color: Color(0xFFE5E5EA)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              backgroundColor: Colors.white,
             ),
           ),
         ),
@@ -280,40 +391,24 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingsCard(
-    BuildContext context, {
-    required List<_SettingsItemData> items,
-  }) {
+  Widget _buildSettingsCard(BuildContext context, {required List<_SettingsItemData> items}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: List.generate(items.length, (index) {
           final item = items[index];
           final isLast = index == items.length - 1;
-
           return Column(
             children: [
-              _buildSettingsRow(
-                context,
-                icon: item.icon,
-                title: item.title,
-                onTap: item.onTap,
-              ),
+              _buildSettingsRow(context, item: item),
               if (!isLast)
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Colors.grey.withOpacity(0.15),
+                Container(
+                  height: 0.5,
+                  margin: const EdgeInsets.only(left: 60),
+                  color: const Color(0xFFE5E5EA),
                 ),
             ],
           );
@@ -322,44 +417,37 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingsRow(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildSettingsRow(BuildContext context, {required _SettingsItemData item}) {
     return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
+      onTap: item.onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(14),
+                color: item.iconBg,
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                icon,
-                color: const Color(0xFF1B5E3B),
-                size: 22,
-              ),
+              child: Icon(item.icon, color: item.iconColor, size: 16),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
-                title,
-                style: Theme.of(context).textTheme.bodyLarge,
+                item.title,
+                style: const TextStyle(fontSize: 15, color: Color(0xFF1C1C1E)),
               ),
             ),
-            Icon(
-              LucideIcons.chevronRight,
-              color: Colors.grey.withOpacity(0.7),
-              size: 22,
-            ),
+            if (item.trailing != null) ...[
+              Text(
+                item.trailing!,
+                style: const TextStyle(fontSize: 13, color: Color(0xFF8E8E93)),
+              ),
+              const SizedBox(width: 6),
+            ],
+            const Icon(LucideIcons.chevronRight, color: Color(0xFFC7C7CC), size: 16),
           ],
         ),
       ),
@@ -367,15 +455,29 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
+class _BadgeData {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color bg;
+  final bool earned;
+  _BadgeData({required this.icon, required this.label, required this.color, required this.bg, required this.earned});
+}
+
 class _SettingsItemData {
   final IconData icon;
   final String title;
+  final Color iconBg;
+  final Color iconColor;
+  final String? trailing;
   final VoidCallback onTap;
 
   _SettingsItemData({
     required this.icon,
     required this.title,
+    required this.iconBg,
+    required this.iconColor,
+    this.trailing,
     required this.onTap,
   });
 }
-
