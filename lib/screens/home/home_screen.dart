@@ -1,3 +1,4 @@
+import 'package:fiteva/screens/home/cerclecaloriespourhome.dart';
 import 'package:fiteva/theme/app_theme.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
@@ -10,11 +11,14 @@ import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
 import '../community/community_screen.dart';
 import '../nutrition/nutrition_screen.dart';
+import '../nutrition/widgets/home/home_widgets.dart';
 
 
 
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onOpenNutritionTab;
+
+  const HomeScreen({super.key, this.onOpenNutritionTab});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,9 +55,15 @@ class HomeScreen extends ConsumerWidget {
               ),
 
               // ── Daily Calories ────────────────────────────────────
-              _CaloriesSection(
-                nutrition: nutrition,
-                onOpenNutrition: () => _openNutrition(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                child: DailyTrackingCardhome(
+                  anim: AlwaysStoppedAnimation(1.0),
+                 
+                
+                  caloriesConsumed: nutrition.currentCalories,
+                  caloriesGoal: nutrition.targetCalories,
+                ),
               ),
 
             
@@ -74,6 +84,10 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _openNutrition(BuildContext context) {
+    if (onOpenNutritionTab != null) {
+      onOpenNutritionTab!();
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const NutritionHomeScreen()),
     );
@@ -585,172 +599,7 @@ class _JoinedProgramTile extends StatelessWidget {
   }
 }
 
-class _CaloriesSection extends StatelessWidget {
-  final NutritionSummary nutrition;
-  final VoidCallback onOpenNutrition;
 
-  const _CaloriesSection({
-    required this.nutrition,
-    required this.onOpenNutrition,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = nutrition.targetCalories == 0
-        ? 0.0
-        : nutrition.currentCalories / nutrition.targetCalories;
-
-    return Container(
-      color: AppTheme.surfaceColor,
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF7FAF8),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppTheme.primaryColor.withOpacity(0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'TODAY CALORIES',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.8,
-                  ),
-                ),
-                Text(
-                  '${nutrition.currentCalories}/${nutrition.targetCalories} kcal',
-                  style: TextStyle(
-                    color: Colors.black.withOpacity(0.55),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                SizedBox(
-                  width: 78,
-                  height: 78,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CircularProgressIndicator(
-                        value: progress.clamp(0.0, 1.0),
-                        strokeWidth: 10,
-                        backgroundColor: AppTheme.primaryColor.withOpacity(0.12),
-                        valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
-                      ),
-                      Center(
-                        child: Text(
-                          '${(progress * 100).round()}%',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${nutrition.currentCalories} kcal consommées',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${nutrition.targetCalories - nutrition.currentCalories} kcal restantes',
-                        style: TextStyle(
-                          color: Colors.black.withOpacity(0.55),
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          _MiniStat(label: 'Prot', value: '${nutrition.protein}g'),
-                          const SizedBox(width: 8),
-                          _MiniStat(label: 'Gluc', value: '${nutrition.carbs}g'),
-                          const SizedBox(width: 8),
-                          _MiniStat(label: 'Lip', value: '${nutrition.fat}g'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onOpenNutrition,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text('ALLER À NUTRITION'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MiniStat({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(fontSize: 10, color: Colors.black.withOpacity(0.45)),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _CycleSection extends StatelessWidget {
   final CyclePhase cycle;

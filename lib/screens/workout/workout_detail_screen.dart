@@ -36,7 +36,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     );
   }
 
-  Widget _buildStatCard(String emoji, String title) {
+  Widget _buildStatCard(IconData icon, String title) {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -54,7 +54,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         ),
         child: Column(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 20)),
+            Icon(icon, size: 24, color: AppTheme.primaryColor),
             const SizedBox(height: 8),
             Text(
               title,
@@ -241,9 +241,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         // Stats row
                         Row(
                           children: [
-                            _buildStatCard('🗓', '4 semaines'),
-                            _buildStatCard('⚡', workout.level),
-                            _buildStatCard('⏱', '20-40 min\n/ séance'),
+                            _buildStatCard(Icons.calendar_today_rounded, '4 semaines'),
+                            _buildStatCard(Icons.bolt_rounded, workout.level),
+                            _buildStatCard(Icons.schedule_rounded, '20-40 min\n/ séance'),
                           ],
                         ),
                         const SizedBox(height: 24),

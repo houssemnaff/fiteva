@@ -108,7 +108,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                                   const SizedBox(width: 6),
                                   Flexible(
                                     child: Text(
-                                      'Semaine 1 · Séance 1',
+                                      'Semaine 1 ',
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: AppTheme.textPrimaryColor,
@@ -116,7 +116,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                                         fontSize: 13,
                                       ),
                                     ),
+
                                   ),
+                                  
                                 ],
                               ),
                             ),
@@ -146,9 +148,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                             Flexible(
                               child: Row(
                                 children: [
-                                  const Text(
-                                    '🔥🔥',
-                                    style: TextStyle(fontSize: 12),
+                                  Icon(
+                                    Icons.local_fire_department_rounded,
+                                    size: 14,
+                                    color: AppTheme.primaryColor,
                                   ),
                                   const SizedBox(width: 4),
                                   Flexible(

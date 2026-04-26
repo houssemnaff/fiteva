@@ -134,10 +134,17 @@ class _CycleScreenState extends State<CycleScreen> {
   }
 
   String _getMoodText() {
-    if (_symptomScore == 0) return 'Feeling great today ✨';
-    if (_symptomScore <= 2) return 'Light symptoms detected 🌿';
-    if (_symptomScore <= 4) return 'Take care of your body 💛';
-    return 'Rest recommended 🧘‍♀️';
+    if (_symptomScore == 0) return 'Feeling great today';
+    if (_symptomScore <= 2) return 'Light symptoms detected';
+    if (_symptomScore <= 4) return 'Take care of your body';
+    return 'Rest recommended';
+  }
+
+  IconData _getMoodIcon() {
+    if (_symptomScore == 0) return Icons.star_rounded;
+    if (_symptomScore <= 2) return Icons.nature_rounded;
+    if (_symptomScore <= 4) return Icons.favorite_rounded;
+    return Icons.self_improvement_rounded;
   }
 
   BoxDecoration _cardDecoration() => BoxDecoration(
@@ -236,14 +243,24 @@ class _CycleScreenState extends State<CycleScreen> {
                               title: 'Energy',
                               onChanged: (val) => setState(() => _energy = val),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              _getMoodText(),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: FitEvaColors.textMuted,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Icon(
+                                  _getMoodIcon(),
+                                  size: 16,
+                                  color: theme.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _getMoodText(),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: FitEvaColors.textMuted,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

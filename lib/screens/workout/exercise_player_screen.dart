@@ -99,7 +99,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen> with Single
     }
   }
 
-  Widget _buildPill(String text, {Color? bgColor}) {
+  Widget _buildPill(String text, {Color? bgColor, IconData? icon}) {
     return Container(
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -107,13 +107,22 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen> with Single
         color: bgColor ?? AppTheme.accentColor.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: AppTheme.textPrimaryColor,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: Colors.orange),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              color: AppTheme.textPrimaryColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -198,7 +207,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen> with Single
                                 children: [
                                   _buildPill('Fessiers'),
                                   _buildPill('Tapis', bgColor: Colors.grey.shade200),
-                                  _buildPill('🔥🔥 Modéré', bgColor: Colors.orange.withOpacity(0.1)),
+                                  _buildPill('Modéré', icon: Icons.local_fire_department_rounded, bgColor: Colors.orange.withOpacity(0.1)),
                                 ],
                               ),
                               const SizedBox(height: 16),

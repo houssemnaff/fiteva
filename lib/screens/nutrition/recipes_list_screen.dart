@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'models/models.dart';
-import 'recipe_detail_screen.dart';
+import 'nutruition_detail_screen.dart';
 import 'theme/app_colors.dart';
 import 'widgets/shared/shared_widgets.dart';
 

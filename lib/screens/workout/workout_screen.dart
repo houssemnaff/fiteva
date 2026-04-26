@@ -8,6 +8,33 @@ import '../../theme/app_theme.dart';
 import 'workout_detail_screen.dart';
 import 'corpszone_playerscreen.dart';
 
+class _Cat {
+  final String label;
+  final String category;
+  final Color color;
+  final IconData icon;
+
+  const _Cat(this.label, this.category, this.color, this.icon);
+}
+
+class _T {
+  static const Color accent = AppTheme.workoutHeaderBg;
+  static const Color muscu = AppTheme.workoutMusculation;
+  static const Color hiit = AppTheme.workoutHiit;
+  static const Color pilates = AppTheme.workoutPilates;
+  static const Color dance = AppTheme.workoutDance;
+  static const Color running = AppTheme.workoutRunning;
+}
+
+const List<_Cat> _cats = [
+  _Cat('Tout', '', _T.accent, Icons.bolt_rounded),
+  _Cat('Muscu', 'MUSCULATION', _T.muscu, Icons.fitness_center_rounded),
+  _Cat('HIIT', 'HIIT', _T.hiit, Icons.local_fire_department_rounded),
+  _Cat('Pilates', 'PILATES', _T.pilates, Icons.self_improvement_rounded),
+  _Cat('Danse', 'DANCE', _T.dance, Icons.music_note_rounded),
+  _Cat('Running', 'RUNNING', _T.running, Icons.directions_run_rounded),
+];
+
 class WorkoutScreen extends ConsumerStatefulWidget {
   const WorkoutScreen({super.key});
 
@@ -19,47 +46,29 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   int _selectedCategory = 0;
   bool _showAllWorkouts = false;
 
-  final List<Map<String, dynamic>> categories = [
-    {'label': 'Tout', 'emoji': '⚡'},
-    {'label': 'Muscu', 'emoji': '💪'},
-    {'label': 'Pilates', 'emoji': '🧘'},
-    {'label': 'HIIT', 'emoji': '🔥'},
-    {'label': 'Danse', 'emoji': '💃'},
-    {'label': 'Running', 'emoji': '🏃'},
-  ];
-
-  Color _categoryColor(String label) {
-    switch (label.toUpperCase()) {
-      case 'MUSCULATION': return AppTheme.workoutMusculation;
-      case 'PILATES': return AppTheme.workoutPilates;
-      case 'HIIT': return AppTheme.workoutHiit;
-      case 'DANCE': return AppTheme.workoutDance;
-      case 'YOGA': return AppTheme.workoutYoga;
-      case 'RUNNING': return AppTheme.workoutRunning;
-      default: return AppTheme.workoutDefault;
-    }
-  }
-
   Color _getCategoryChipColor(int index) {
-    if (index == 0) return AppTheme.workoutHeaderBg;
-    String label = categories[index]['label'];
-    return _categoryColor(_mapLabelToCategory(label));
+    return _cats[index].color;
   }
 
   String _mapLabelToCategory(String label) {
-    switch (label) {
-      case 'Muscu': return 'MUSCULATION';
-      case 'Pilates': return 'PILATES';
-      case 'HIIT': return 'HIIT';
-      case 'Danse': return 'DANCE';
-      case 'Running': return 'RUNNING';
-      default: return '';
+    try {
+      return _cats.firstWhere((cat) => cat.label == label).category;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  Color _getColorByCategory(String category) {
+    try {
+      return _cats.firstWhere((cat) => cat.category.isEmpty || cat.category.toUpperCase() == category.toUpperCase()).color;
+    } catch (e) {
+      return AppTheme.workoutDefault;
     }
   }
 
   List<WorkoutModel> _getFilteredWorkouts(List<WorkoutModel> workouts) {
     if (_selectedCategory == 0) return workouts;
-    String categoryFilter = _mapLabelToCategory(categories[_selectedCategory]['label']);
+    String categoryFilter = _cats[_selectedCategory].category;
     return workouts.where((w) => w.category.toUpperCase() == categoryFilter).toList();
   }
 
@@ -136,7 +145,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   }
 
   Widget _buildWorkoutCard(WorkoutModel workout, {required bool isLarge, double? width, double? height}) {
-    final color = _categoryColor(workout.category);
+    final color = _getColorByCategory(workout.category);
 
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
@@ -370,9 +379,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: categories.length,
+                itemCount: _cats.length,
                 itemBuilder: (context, index) {
-                  final cat = categories[index];
+                  final cat = _cats[index];
                   final isSelected = _selectedCategory == index;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
@@ -390,9 +399,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         ),
                         child: Row(
                           children: [
-                            Text(cat['emoji']),
+                            Icon(cat.icon, color: isSelected ? Colors.white : Colors.black87, size: 20),
                             const SizedBox(width: 8),
-                            Text(cat['label'], style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
+                            Text(cat.label, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
                           ],
                         ),
                       ),
@@ -413,7 +422,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                     child: Text(
                       _selectedCategory == 0
                           ? 'Programmes recommandés'
-                          : '${categories[_selectedCategory]['label']} workouts',
+                          : '${_cats[_selectedCategory].label} workouts',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
