@@ -39,23 +39,7 @@ class NutritionHeader extends StatelessWidget {
                             letterSpacing: -0.5,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE1F5EE),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Beta',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF085041),
-                            ),
-                          ),
-                        ),
+                       
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -77,45 +61,10 @@ class NutritionHeader extends StatelessWidget {
                 const Spacer(),
 
                 // Bouton journal
-                _HeaderIconBtn(
-                  icon: Icons.assignment_outlined,
-                  onTap: () {},
-                ),
-                const SizedBox(width: 8),
-
+                
+            
                 // Avatar
-                GestureDetector(
-                  onTap: () {},
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFE1F5EE),
-                          border: Border.all(
-                              color: const Color(0xFF5DCAA5), width: 2),
-                        ),
-                        child: const Icon(Icons.person_outline,
-                            size: 20, color: Color(0xFF085041)),
-                      ),
-                      Positioned(
-                        bottom: 1,
-                        right: 1,
-                        child: Container(
-                          width: 9,
-                          height: 9,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1D9E75),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              
               ],
             ),
 
