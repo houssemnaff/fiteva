@@ -513,7 +513,7 @@ class _JoinedProgramTile extends StatelessWidget {
           SizedBox(
             height: 84,
             width: double.infinity,
-            child: Image.network(
+            child: Image.asset(
               program.imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(color: AppTheme.surfaceColor),
@@ -772,7 +772,7 @@ class _WorkoutTile extends StatelessWidget {
         children: [
           SizedBox(
             height: 110,
-            child: Image.network(
+            child: Image.asset(
               workout.imageUrl,
               fit: BoxFit.cover,
               width: double.infinity,
