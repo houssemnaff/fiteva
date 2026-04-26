@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
@@ -8,84 +8,6 @@ import '../../theme/app_theme.dart';
 import 'workout_detail_screen.dart';
 import 'corpszone_playerscreen.dart';
 
-// ─────────────────────────────────────────────
-// DESIGN TOKENS  — iOS Light
-// ─────────────────────────────────────────────
-class _T {
-  // Backgrounds  (iOS system grouped palette)
-  static const bg       = Colors.white;   // systemGroupedBackground
-  static const surface  = Colors.white; // secondarySystemGroupedBackground
-  static const surface2 = Colors.white; // subtle fill / separator
-
-  // Borders
-  static const border   = Color(0x1A000000);   // ~10 % black separator
-
-  // Text  (iOS label scale)
-  static const text     = Color(0xFF000000);   // label
-  static const textSec  = Color(0xFF636366);   // secondaryLabel
-  static const muted    = Color(0xFFAEAEB2);   // tertiaryLabel
-
-  // Accent — iOS blue
-  static const accent   = Color.fromARGB(255, 68, 212, 126);
-
-  // Category colours — native iOS palette
-  static const hiit     = Color(0xFFFF3B30);   // iOS red
-  static const muscu    = Color(0xFF1C4D30);   // iOS blue
-  static const pilates  = Color(0xFFAF52DE);   // iOS purple
-  static const dance    = Color(0xFFFF2D55);   // iOS pink
-  static const running  = Color(0xFF34C759);   // iOS green
-  static const yoga     = Color(0xFFFF9500);   // iOS orange
-
-  // ── SF Pro text styles ──────────────────────
-  static const tsLargeTitle = TextStyle(
-    color: text, fontSize: 34, fontWeight: FontWeight.w700,
-    letterSpacing: 0.37, height: 1.21,
-  );
-  static const tsTitle3 = TextStyle(
-    color: text, fontSize: 20, fontWeight: FontWeight.w600,
-    letterSpacing: 0.38, height: 1.3,
-  );
-  static const tsHeadline = TextStyle(
-    color: text, fontSize: 17, fontWeight: FontWeight.w600,
-    letterSpacing: -0.41, height: 1.29,
-  );
-  static const tsCallout = TextStyle(
-    color: textSec, fontSize: 16, fontWeight: FontWeight.w400,
-    letterSpacing: -0.32, height: 1.31,
-  );
-  static const tsSubhead = TextStyle(
-    color: textSec, fontSize: 15, fontWeight: FontWeight.w400,
-    letterSpacing: -0.24, height: 1.33,
-  );
-  static const tsFootnote = TextStyle(
-    color: muted, fontSize: 13, fontWeight: FontWeight.w400,
-    letterSpacing: -0.08, height: 1.38,
-  );
-}
-
-// ─────────────────────────────────────────────
-// CATEGORY CONFIG
-// ─────────────────────────────────────────────
-class _Cat {
-  final String   label;
-  final String   key;
-  final Color    color;
-  final IconData icon;
-  const _Cat(this.label, this.key, this.color, this.icon);
-}
-
-const _cats = [
-  _Cat('Tout',    '',             _T.accent,  Icons.bolt_rounded),
-  _Cat('Muscu',   'MUSCULATION',  _T.muscu,   Icons.fitness_center_rounded),
-  _Cat('HIIT',    'HIIT',         _T.hiit,    Icons.local_fire_department_rounded),
-  _Cat('Pilates', 'PILATES',      _T.pilates, Icons.self_improvement_rounded),
-  _Cat('Danse',   'DANCE',        _T.dance,   Icons.music_note_rounded),
-  _Cat('Running', 'RUNNING',      _T.running, Icons.directions_run_rounded),
-];
-
-// ─────────────────────────────────────────────
-// MAIN SCREEN
-// ─────────────────────────────────────────────
 class WorkoutScreen extends ConsumerStatefulWidget {
   const WorkoutScreen({super.key});
 
@@ -94,655 +16,489 @@ class WorkoutScreen extends ConsumerStatefulWidget {
 }
 
 class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
-  int  _selectedCat = 0;
-  bool _showAll     = false;
+  int _selectedCategory = 0;
+  bool _showAllWorkouts = false;
 
-  Color _colorFor(String category) {
-    switch (category.toUpperCase()) {
-      case 'MUSCULATION': return _T.muscu;
-      case 'HIIT':        return _T.hiit;
-      case 'PILATES':     return _T.pilates;
-      case 'DANCE':       return _T.dance;
-      case 'RUNNING':     return _T.running;
-      case 'YOGA':        return _T.yoga;
-      default:            return _T.accent;
+  final List<Map<String, dynamic>> categories = [
+    {'label': 'Tout', 'emoji': '⚡'},
+    {'label': 'Muscu', 'emoji': '💪'},
+    {'label': 'Pilates', 'emoji': '🧘'},
+    {'label': 'HIIT', 'emoji': '🔥'},
+    {'label': 'Danse', 'emoji': '💃'},
+    {'label': 'Running', 'emoji': '🏃'},
+  ];
+
+  Color _categoryColor(String label) {
+    switch (label.toUpperCase()) {
+      case 'MUSCULATION': return AppTheme.workoutMusculation;
+      case 'PILATES': return AppTheme.workoutPilates;
+      case 'HIIT': return AppTheme.workoutHiit;
+      case 'DANCE': return AppTheme.workoutDance;
+      case 'YOGA': return AppTheme.workoutYoga;
+      case 'RUNNING': return AppTheme.workoutRunning;
+      default: return AppTheme.workoutDefault;
     }
   }
 
-  List<WorkoutModel> _filtered(List<WorkoutModel> all) {
-    if (_selectedCat == 0) return all;
-    final key = _cats[_selectedCat].key;
-    return all.where((w) => w.category.toUpperCase() == key).toList();
+  Color _getCategoryChipColor(int index) {
+    if (index == 0) return AppTheme.workoutHeaderBg;
+    String label = categories[index]['label'];
+    return _categoryColor(_mapLabelToCategory(label));
   }
 
-  List<WorkoutModel> _onePerCategory(List<WorkoutModel> all) {
-    final Map<String, WorkoutModel> seen = {};
-    for (final w in all) seen.putIfAbsent(w.category.toUpperCase(), () => w);
-    return seen.values.toList();
+  String _mapLabelToCategory(String label) {
+    switch (label) {
+      case 'Muscu': return 'MUSCULATION';
+      case 'Pilates': return 'PILATES';
+      case 'HIIT': return 'HIIT';
+      case 'Danse': return 'DANCE';
+      case 'Running': return 'RUNNING';
+      default: return '';
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final workouts  = ref.watch(workoutsProvider);
-    final cycle     = ref.watch(cycleProvider);
-    final bodyZones = ref.watch(bodyZonesProvider);
-    final filtered  = _filtered(workouts);
-    final swipe     = _onePerCategory(filtered);
-
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,   // dark icons on white bg
-      child: Scaffold(
-        backgroundColor: _T.bg,
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-
-            // ── iOS LARGE TITLE APP BAR ─────────
-            SliverAppBar(
-              pinned: true,
-              expandedHeight: 96,
-              backgroundColor: _T.bg,
-              surfaceTintColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              elevation: 0,
-              scrolledUnderElevation: 0.5,
-              flexibleSpace: FlexibleSpaceBar(
-                expandedTitleScale: 1.0,
-                titlePadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('Workouts', style: _T.tsLargeTitle),
-                    Container(
-                      width: 32, height: 32,
-                      decoration: const BoxDecoration(
-                        color: _T.surface2,
-                        shape: BoxShape.circle,
-                      ),
-                    
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _PhaseBanner(cycle: cycle),
-                  const SizedBox(height: 20),
-                  _CategoryChips(
-                    selected: _selectedCat,
-                    onSelect: (i) => setState(() {
-                      _selectedCat = i;
-                      _showAll     = false;
-                    }),
-                  ),
-                  const SizedBox(height: 28),
-                  _SectionHeader(
-                    title: _selectedCat == 0
-                        ? 'Programmes recommandés'
-                        : '${_cats[_selectedCat].label} workouts',
-                    action: _showAll ? 'Voir moins' : 'Voir tout',
-                    onAction: () => setState(() => _showAll = !_showAll),
-                  ),
-                  const SizedBox(height: 14),
-
-                  if (_showAll)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _BentoGrid(
-                        workouts: filtered,
-                        colorFor: _colorFor,
-                        onTap: _openDetail,
-                      ),
-                    )
-                  else ...[
-                    SizedBox(
-                      height: 280,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: swipe.length,
-                        itemBuilder: (_, i) => Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: _WorkoutCard(
-                            workout: swipe[i],
-                            color: _colorFor(swipe[i].category),
-                            width: 210,
-                            height: 280,
-                            onTap: () => _openDetail(swipe[i]),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    _SectionHeader(
-                      title: 'Par zone du corps',
-                      action: 'Tout voir',
-                      onAction: () {},
-                    ),
-                    const SizedBox(height: 14),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _BodyZonesGrid(
-                        zones: bodyZones,
-                        onTap: (zone) => _openDetail(WorkoutModel(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          title: zone['title'] as String,
-                          category: 'Zone',
-                          duration: '15 min',
-                          level: 'Tous niveaux',
-                          calories: '150',
-                          imageUrl: zone['imageUrl'] as String,
-                          exercises: List<String>.from(zone['exercises'] as List),
-                        )),
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 110),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  List<WorkoutModel> _getFilteredWorkouts(List<WorkoutModel> workouts) {
+    if (_selectedCategory == 0) return workouts;
+    String categoryFilter = _mapLabelToCategory(categories[_selectedCategory]['label']);
+    return workouts.where((w) => w.category.toUpperCase() == categoryFilter).toList();
   }
 
-  void _openDetail(WorkoutModel w) => Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => WorkoutDetailScreen(workout: w)),
-  );
-}
-
-// ─────────────────────────────────────────────
-// PHASE BANNER
-// ─────────────────────────────────────────────
-class _PhaseBanner extends StatelessWidget {
-  final dynamic cycle;
-  const _PhaseBanner({required this.cycle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-        decoration: BoxDecoration(
-          color: _T.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _T.border, width: 0.5),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 6, height: 6,
-                  decoration: const BoxDecoration(
-                    color: _T.accent, shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'PHASE ${cycle.name.toUpperCase()}',
-                  style: const TextStyle(
-                    color: _T.accent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(cycle.advice, style: _T.tsCallout),
-            const SizedBox(height: 14),
-            
-          ],
-        ),
-      ),
-    );
+  List<String> _recommendedCategoriesForPhase(String phaseName) {
+    final phase = phaseName.toLowerCase();
+    if (phase.contains('follic')) return ['MUSCULATION', 'PILATES', 'DANCE'];
+    if (phase.contains('ovul')) return ['HIIT', 'RUNNING', 'DANCE'];
+    if (phase.contains('lute') || phase.contains('luteal')) return ['PILATES', 'RUNNING'];
+    if (phase.contains('menstr') || phase.contains('period')) return ['PILATES'];
+    return ['PILATES', 'RUNNING'];
   }
-}
 
-// ─────────────────────────────────────────────
-// CATEGORY CHIPS
-// ─────────────────────────────────────────────
-class _CategoryChips extends StatelessWidget {
-  final int selected;
-  final ValueChanged<int> onSelect;
-  const _CategoryChips({required this.selected, required this.onSelect});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        physics: const BouncingScrollPhysics(),
-        itemCount: _cats.length,
-        itemBuilder: (_, i) {
-          final cat    = _cats[i];
-          final active = selected == i;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => onSelect(i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                decoration: BoxDecoration(
-                  color: active ? cat.color : _T.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: active ? cat.color : _T.border,
-                    width: 0.5,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(cat.icon, size: 13,
-                        color: active ? Colors.white : _T.textSec),
-                    const SizedBox(width: 6),
-                    Text(
-                      cat.label,
-                      style: TextStyle(
-                        color: active ? Colors.white : _T.textSec,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
+  List<WorkoutModel> _getPhaseRecommendedWorkouts(List<WorkoutModel> workouts, String phaseName) {
+    final recommendedCategories = _recommendedCategoriesForPhase(phaseName);
+    return workouts
+        .where((workout) => recommendedCategories.contains(workout.category.toUpperCase()))
+        .toList();
   }
-}
 
-// ─────────────────────────────────────────────
-// SECTION HEADER  — iOS "Voir tout" in blue
-// ─────────────────────────────────────────────
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final String action;
-  final VoidCallback onAction;
-  const _SectionHeader({
-    required this.title,
-    required this.action,
-    required this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(title, style: _T.tsTitle3,
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-          GestureDetector(
-            onTap: onAction,
-            child: Text(
-              action,
-              style: const TextStyle(
-                color: _T.accent,
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-                letterSpacing: -0.24,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  // Gets 1 workout from each available category based on the current filter
+  List<WorkoutModel> _getOnePerCategory(List<WorkoutModel> workouts) {
+    final Map<String, WorkoutModel> unique = {};
+    for (var w in workouts) {
+      if (!unique.containsKey(w.category.toUpperCase())) {
+        unique[w.category.toUpperCase()] = w;
+      }
+    }
+    return unique.values.toList();
   }
-}
 
-// ─────────────────────────────────────────────
-// WORKOUT CARD
-// ─────────────────────────────────────────────
-class _WorkoutCard extends StatelessWidget {
-  final WorkoutModel workout;
-  final Color        color;
-  final double       width;
-  final double       height;
-  final VoidCallback onTap;
-  const _WorkoutCard({
-    required this.workout,
-    required this.color,
-    required this.width,
-    required this.height,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: SizedBox(
-          width: width, height: height,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Real photo
-              Image.network(
-                workout.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: _T.surface2),
-              ),
-              // Bottom gradient overlay
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Color(0xCC000000)],
-                    stops: [0.4, 1.0],
-                  ),
-                ),
-              ),
-              // Category badge — white pill, coloured text
-              Positioned(
-                top: 12, left: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.92),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    workout.category.toUpperCase(),
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-              // Title + meta + play
-              Positioned(
-                left: 14, right: 14, bottom: 14,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      workout.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                        height: 1.2,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _MetaPill(icon: Icons.timer_outlined, label: workout.duration),
-                        const SizedBox(width: 6),
-                        _MetaPill(icon: Icons.bar_chart_rounded, label: workout.level),
-                        const Spacer(),
-                        // White circle play button, icon coloured by category
-                        Container(
-                          width: 36, height: 36,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.play_arrow_rounded,
-                            color: color, size: 22,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MetaPill extends StatelessWidget {
-  final IconData icon;
-  final String   label;
-  const _MetaPill({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.28),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white70, size: 10),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              letterSpacing: -0.1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// BENTO GRID  (Voir tout mode)
-// ─────────────────────────────────────────────
-class _BentoGrid extends StatelessWidget {
-  final List<WorkoutModel>          workouts;
-  final Color Function(String)      colorFor;
-  final void Function(WorkoutModel) onTap;
-  const _BentoGrid({required this.workouts, required this.colorFor, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final groups = <List<WorkoutModel>>[];
+  Widget _buildGroupedCards(List<WorkoutModel> workouts, BuildContext context) {
+    final List<List<WorkoutModel>> groups = [];
     for (int i = 0; i < workouts.length; i += 3) {
       groups.add(workouts.sublist(i, (i + 3).clamp(0, workouts.length)));
     }
     return Column(
-      children: groups.map((g) =>
-          _BentoRow(group: g, colorFor: colorFor, onTap: onTap)).toList(),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: groups.map((group) => _buildGroup(group, context)).toList(),
     );
   }
-}
 
-class _BentoRow extends StatelessWidget {
-  final List<WorkoutModel>          group;
-  final Color Function(String)      colorFor;
-  final void Function(WorkoutModel) onTap;
-  const _BentoRow({required this.group, required this.colorFor, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final large  = group[0];
+  Widget _buildGroup(List<WorkoutModel> group, BuildContext context) {
+    final large = group[0];
     final smalls = group.length > 1 ? group.sublist(1) : <WorkoutModel>[];
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              flex: 11,
-              child: _WorkoutCard(
-                workout: large, color: colorFor(large.category),
-                width: double.infinity, height: 224,
-                onTap: () => onTap(large),
-              ),
-            ),
-            const SizedBox(width: 8),
+            Expanded(flex: 11, child: _buildWorkoutCard(large, isLarge: true)),
+            const SizedBox(width: 6),
             Expanded(
               flex: 10,
-              child: Column(children: [
-                if (smalls.isNotEmpty)
-                  Expanded(child: _WorkoutCard(
-                    workout: smalls[0], color: colorFor(smalls[0].category),
-                    width: double.infinity, height: 108,
-                    onTap: () => onTap(smalls[0]),
-                  )),
-                if (smalls.length > 1) ...[
-                  const SizedBox(height: 8),
-                  Expanded(child: _WorkoutCard(
-                    workout: smalls[1], color: colorFor(smalls[1].category),
-                    width: double.infinity, height: 108,
-                    onTap: () => onTap(smalls[1]),
-                  )),
+              child: Column(
+                children: [
+                  if (smalls.isNotEmpty) Expanded(child: _buildWorkoutCard(smalls[0], isLarge: false)),
+                  if (smalls.length > 1) ...[
+                    const SizedBox(height: 6),
+                    Expanded(child: _buildWorkoutCard(smalls[1], isLarge: false)),
+                  ],
+                  if (smalls.length == 1) ...[
+                    const SizedBox(height: 6),
+                    const Expanded(child: SizedBox.shrink()),
+                  ],
                 ],
-                if (smalls.length == 1) const Expanded(child: SizedBox.shrink()),
-              ]),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-}
 
-// ─────────────────────────────────────────────
-// BODY ZONES GRID
-// ─────────────────────────────────────────────
-class _BodyZonesGrid extends StatelessWidget {
-  final List<Map<String, dynamic>>          zones;
-  final void Function(Map<String, dynamic>) onTap;
-  const _BodyZonesGrid({required this.zones, required this.onTap});
-
-  static const _cfg = <Map<String, Object>>[
-    {'label': 'Abdos',         'icon': Icons.radio_button_checked_rounded, 'color': _T.hiit},
-    {'label': 'Haut du corps', 'icon': Icons.fitness_center_rounded,       'color': _T.muscu},
-    {'label': 'Bas du corps',  'icon': Icons.directions_run_rounded,       'color': _T.running},
-    {'label': 'Full body',     'icon': Icons.accessibility_new_rounded,    'color': _T.accent},
-  ];
-
-  Map<String, dynamic> _zoneFor(String label) => zones.firstWhere(
-    (z) => z['title'].toString().toLowerCase()
-        .contains(label.toLowerCase().split(' ').first),
-    orElse: () => zones[0],
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(children: [
-      Row(children: [
-        Expanded(child: _ZoneCard(cfg: _cfg[0], zone: _zoneFor('Abdos'), onTap: onTap)),
-        const SizedBox(width: 10),
-        Expanded(child: _ZoneCard(cfg: _cfg[1], zone: _zoneFor('Haut'),  onTap: onTap)),
-      ]),
-      const SizedBox(height: 10),
-      Row(children: [
-        Expanded(child: _ZoneCard(cfg: _cfg[2], zone: _zoneFor('Bas'),   onTap: onTap)),
-        const SizedBox(width: 10),
-        Expanded(child: _ZoneCard(cfg: _cfg[3], zone: _zoneFor('Full'),  onTap: onTap)),
-      ]),
-    ]);
-  }
-}
-
-class _ZoneCard extends StatelessWidget {
-  final Map<String, Object>                 cfg;
-  final Map<String, dynamic>                zone;
-  final void Function(Map<String, dynamic>) onTap;
-  const _ZoneCard({required this.cfg, required this.zone, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = cfg['color'] as Color;
-    final icon  = cfg['icon']  as IconData;
-    final label = cfg['label'] as String;
+  Widget _buildWorkoutCard(WorkoutModel workout, {required bool isLarge, double? width, double? height}) {
+    final color = _categoryColor(workout.category);
 
     return GestureDetector(
-      onTap: () => onTap(zone),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => WorkoutDetailScreen(workout: workout)),
+      ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: SizedBox(
-          height: 88,
+          width: width,
+          height: height ?? (isLarge ? 220 : 107),
           child: Stack(
             fit: StackFit.expand,
             children: [
               Image.network(
-                zone['imageUrl'] as String,
+                workout.imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: _T.surface2),
+                errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade800),
               ),
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.black.withOpacity(0.68),
-                      Colors.black.withOpacity(0.28),
-                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.72)],
+                    stops: const [0.4, 1.0],
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(children: [
-                  Container(
-                    width: 32, height: 32,
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(icon, color: color, size: 15),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
+                  child: Text(
+                    workout.category.toUpperCase(),
+                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Text(
-                      label,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                      ),
-                      maxLines: 2,
+                ),
+              ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      workout.title,
+                      style: TextStyle(color: Colors.white, fontSize: isLarge ? 16 : 13, fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ]),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${workout.duration} · ${workout.level}',
+                      style: TextStyle(color: Colors.white70, fontSize: isLarge ? 12 : 10),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridZoneCard(String label, IconData iconData, List<Map<String, dynamic>> providerZones, BuildContext context) {
+    
+    // Attempt to match the provider item based on the label, default to first item if not found
+    final zoneContent = providerZones.firstWhere(
+        (z) => z['title'].toString().toLowerCase().contains(label.toLowerCase().split(' ').first), 
+        orElse: () => providerZones[0]);
+
+    return GestureDetector(
+      onTap: () {
+        final workout = WorkoutModel(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: zoneContent['title'],
+          category: 'Zone',
+          duration: '15 min',
+          level: 'Tous niveaux',
+          calories: '150',
+          imageUrl: zoneContent['imageUrl'],
+          exercises: List<String>.from(zoneContent['exercises']),
+        );
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CorpsZonePlayerScreen(
+              workout: workout,
+              zoneName: label,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        height: 80,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          image: DecorationImage(
+            image: NetworkImage(zoneContent['imageUrl']),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.5), BlendMode.darken),
+          ),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(iconData, color: Colors.white, size: 22),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final workouts = ref.watch(workoutsProvider);
+    final cycle = ref.watch(cycleProvider);
+    final filteredWorkouts = _getFilteredWorkouts(workouts);
+    final phaseRecommendedWorkouts = _getPhaseRecommendedWorkouts(workouts, cycle.name);
+    final bodyZones = ref.watch(bodyZonesProvider);
+    
+    // Core UI Lists
+    final swipeWorkouts = _getOnePerCategory(filteredWorkouts);
+
+    return Scaffold(
+      backgroundColor: AppTheme.workoutPageBg,
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(255, 249, 251, 249),
+        elevation: 0,
+        title: const Text('Workouts', style: TextStyle(color: Color.fromARGB(255, 3, 3, 3), fontWeight: FontWeight.bold, fontSize: 20)),
+        centerTitle: false,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Banner
+          Padding(
+  padding: const EdgeInsets.all(16),
+  child: Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: AppTheme.workoutCardSoftBg,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: AppTheme.workoutCardSoftBorder, width: 0.5),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: AppTheme.workoutSuccess,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'PHASE ${cycle.name.toUpperCase()}',
+              style: const TextStyle(
+                color: AppTheme.workoutTextSoft,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.4,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          cycle.advice,
+          style: const TextStyle(
+            color: AppTheme.workoutTextDark,
+            fontWeight: FontWeight.w500,
+            fontSize: 15,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+      /*  Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.55),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.access_time_rounded,
+                  size: 14, color: Color(0xFF3A7A3A)),
+              const SizedBox(width: 6),
+              Text(
+                'Jours ${cycle.startDay} – ${cycle.endDay}',
+                style: const TextStyle(
+                  color: Color(0xFF3A7A3A),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),*/
+      ],
+    ),
+  ),
+),
+
+            // Chips
+            SizedBox(
+              height: 48,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final cat = categories[index];
+                  final isSelected = _selectedCategory == index;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() {
+                        _selectedCategory = index;
+                        _showAllWorkouts = false; // Reset to modern view on filter
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected ? _getCategoryChipColor(index) : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: isSelected ? _getCategoryChipColor(index) : Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(cat['emoji']),
+                            const SizedBox(width: 8),
+                            Text(cat['label'], style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Recommended Section Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _selectedCategory == 0
+                          ? 'Programmes recommandés'
+                          : '${categories[_selectedCategory]['label']} workouts',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        color: AppTheme.workoutTextDark,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _showAllWorkouts = !_showAllWorkouts),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(color: AppTheme.workoutTextDark.withOpacity(0.08), borderRadius: BorderRadius.circular(20)),
+                      child: Text(
+                        _showAllWorkouts ? 'Voir moins' : 'Voir tout',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.workoutTextDark, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Content logic
+            if (_showAllWorkouts)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildGroupedCards(filteredWorkouts, context),
+              )
+            else ...[
+              // Modern Horizontal Swipe
+              SizedBox(
+                height: 260,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: swipeWorkouts.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: _buildWorkoutCard(swipeWorkouts[index], isLarge: true, width: 220),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Body Zones Grid
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Vidéos par zone du corps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.workoutTextDark)),
+                    Text('Tout voir ›', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryColor)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: _buildGridZoneCard('Abdos', Icons.health_and_safety, bodyZones, context)),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildGridZoneCard('Haut du corps', Icons.fitness_center, bodyZones, context)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(child: _buildGridZoneCard('Bas du corps', Icons.directions_walk, bodyZones, context)),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildGridZoneCard('Full body', Icons.accessibility_new, bodyZones, context)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+const SizedBox(height: 110),            ]
+          ],
         ),
       ),
     );
