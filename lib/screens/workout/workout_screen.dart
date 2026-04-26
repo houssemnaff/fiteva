@@ -6,6 +6,7 @@ import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
 import '../../theme/app_theme.dart';
 import 'workout_detail_screen.dart';
+import 'corpszone_playerscreen.dart';
 
 // ─────────────────────────────────────────────
 // DESIGN TOKENS  — iOS Light
