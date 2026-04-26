@@ -13,12 +13,80 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
+class SwipeHintOverlay extends StatefulWidget {
+  final bool visible;
 
+  const SwipeHintOverlay({super.key, required this.visible});
+
+  @override
+  State<SwipeHintOverlay> createState() => _SwipeHintOverlayState();
+}
+
+class _SwipeHintOverlayState extends State<SwipeHintOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<Offset> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _animation = Tween<Offset>(
+      begin: const Offset(0, 0),
+      end: const Offset(-0.25, 0), // 👈 mouvement vers la gauche
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.visible) return const SizedBox.shrink();
+
+    return IgnorePointer(
+      child: Align(
+        alignment: Alignment.centerRight, // 👈 PAS au centre
+        child: Padding(
+          padding: const EdgeInsets.only(left: 24.0),
+          child: SlideTransition(
+            position: _animation,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.swipe_left, size: 55, color: Colors.white70),
+                SizedBox(height: 6),
+                Text(
+                  "Swipe right",
+                  style: TextStyle(
+                    color: Colors.white60,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
-  final GlobalKey _swipeShowcaseKey = GlobalKey();
   int _currentPage = 0;
-  bool _didShowSwipeHint = false;
+
+  bool _showSwipeHint = true;
+  bool _loadedHintFlag = false;
 
   // ✅ Controllers partagés
   final TextEditingController _nameController = TextEditingController();
@@ -27,10 +95,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   // ✅ Keys
-  static const String _goalsKey = 'goals';
+static const String _goalsKey = 'goals';
   static const String _fitnessLevelKey = 'fitness_level';
   static const String _equipmentKey = 'equipment';
   static const String _frequencyKey = 'frequency';
+  static const String _seenSwipeHintKey = 'seen_swipe_hint';
 
   // ✅ State
   List<String> _goals = [];
@@ -50,14 +119,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _loadSavedOnboardingData();
   }
 
+ 
   Future<void> _loadSavedOnboardingData() async {
     final data = StorageService.getOnboardingData();
+    final seen = StorageService.getBool(_seenSwipeHintKey) ?? false;
+
     _nameController.text = data['username'] ?? '';
-    _goals = (data[_goalsKey] is List) ? List<String>.from(data[_goalsKey]) : [];
+
+    _goals = (data[_goalsKey] is List)
+        ? List<String>.from(data[_goalsKey])
+        : [];
+
     _fitnessLevel = data[_fitnessLevelKey];
-    _equipment = (data[_equipmentKey] is List) ? List<String>.from(data[_equipmentKey]) : [];
+
+    _equipment = (data[_equipmentKey] is List)
+        ? List<String>.from(data[_equipmentKey])
+        : [];
+
     _frequency = data[_frequencyKey]?.toString();
-    if (mounted) setState(() {});
+
+    if (mounted) {
+      setState(() {
+        _showSwipeHint = !seen;
+        _loadedHintFlag = true;
+      });
+    }
   }
 
   Map<String, dynamic> _collectData() {
@@ -99,7 +185,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       );
     }
   }
+    Future<void> _markSwipeHintSeen() async {
+    if (_loadedHintFlag && _showSwipeHint) {
+      await StorageService.setBool(_seenSwipeHintKey, true);
+      setState(() => _showSwipeHint = false);
+    }
+  }
+  void _onPageChanged(int index) {
+    setState(() => _currentPage = index);
 
+    if (index > 0) {
+      _markSwipeHintSeen();
+    }
+  }
   Future<void> _finishOnboarding() async {
     await _saveData();
     ref.read(onboardingProvider.notifier).completeOnboarding();
@@ -119,135 +217,68 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ShowCaseWidget(
-      // 🎨 Overlay sombre élégant
-    
-      builder: (showcaseContext) {
-        if (!_didShowSwipeHint) {
-          _didShowSwipeHint = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            ShowCaseWidget.of(showcaseContext).startShowCase([_swipeShowcaseKey]);
-          });
-        }
-
-        return Scaffold(
-          body: Showcase(
-            key: _swipeShowcaseKey,
-
-            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            // 🎨 DESIGN MODERNE BESTACH
-            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-            // Bulle tooltip avec fond vert bestach
-            tooltipBackgroundColor: _bestachGreen,
-
-            // Bordure lumineuse autour de l'élément mis en avant
-           
-            // Titre moderne
-            title: '✦  Navigation rapide',
-            titleTextStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.4,
-            ),
-
-            // Description claire et minimaliste
-            description: 'Glisse à gauche ou à droite pour passer d\'une étape à l\'autre.',
-            descTextStyle: const TextStyle(
-              color: Color(0xFFDCF5EB),  // blanc verdâtre doux
-              fontSize: 13.5,
-              fontWeight: FontWeight.w400,
-              height: 1.5,
-            ),
-
-            // Bouton "OK / Got it" stylisé
-            tooltipActionConfig: TooltipActionConfig(
-              position: TooltipActionPosition.outside,
-              alignment: MainAxisAlignment.end,
-            ),
-            tooltipActions: [
-              TooltipActionButton(
-                type: TooltipDefaultActionType.skip,
-                name: 'Compris  ✓',
-                textStyle: const TextStyle(
-                  color: _bestachGreen,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                ),
-                backgroundColor: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+    return Scaffold(
+      body: Stack(
+        children: [
+          PageView(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            onPageChanged: _onPageChanged,
+            children: [
+              StepIntro(onNext: _nextPage),
+              StepWelcome(
+                onNext: _nextPage,
+                onBack: _previousPage,
+                nameController: _nameController,
+                emailController: _emailController,
+                passwordController: _passwordController,
               ),
+              StepGoals(
+                selectedGoals: _goals,
+                onBack: _previousPage,
+                onToggleGoal: (goal) {
+                  setState(() {
+                    _goals.contains(goal)
+                        ? _goals.remove(goal)
+                        : _goals.add(goal);
+                  });
+                },
+                onNext: _nextPage,
+              ),
+              StepFitnessLevel(
+                selectedLevel: _fitnessLevel,
+                onBack: _previousPage,
+                onChanged: (level) => setState(() => _fitnessLevel = level),
+                onNext: _nextPage,
+              ),
+              StepEquipment(
+                selectedEquipment: _equipment,
+                onBack: _previousPage,
+                onToggleEquipment: (item) {
+                  setState(() {
+                    _equipment.contains(item)
+                        ? _equipment.remove(item)
+                        : _equipment.add(item);
+                  });
+                },
+                onNext: _nextPage,
+              ),
+              StepFrequency(
+                selectedFrequency: _frequency,
+                onBack: _previousPage,
+                onChanged: (value) => setState(() => _frequency = value),
+                onNext: _nextPage,
+              ),
+              StepHealthProfile(onNext: _nextPage, onBack: _previousPage),
+              StepCycle(onNext: _nextPage, onBack: _previousPage),
             ],
-
-            // Bordure verte autour du widget showcased
-            targetBorderRadius: BorderRadius.circular(20),
-            targetPadding: const EdgeInsets.all(10),
-
-            // Flèche pointant vers l'élément
-            disableMovingAnimation: false,
-            disableScaleAnimation: false,
-
-            // Ombre portée sur le tooltip
-            toolTipSlideEndDistance: 12,
-            tooltipBorderRadius: BorderRadius.circular(20),
-
-            child: PageView(
-              controller: _pageController,
-              physics: const BouncingScrollPhysics(),
-              onPageChanged: (index) {
-                setState(() => _currentPage = index);
-              },
-              children: [
-                StepIntro(onNext: _nextPage),
-                StepWelcome(
-                  onNext: _nextPage,
-                  onBack: _previousPage,
-                  nameController: _nameController,
-                  emailController: _emailController,
-                  passwordController: _passwordController,
-                ),
-                StepGoals(
-                  selectedGoals: _goals,
-                  onBack: _previousPage,
-                  onToggleGoal: (goal) {
-                    setState(() {
-                      _goals.contains(goal) ? _goals.remove(goal) : _goals.add(goal);
-                    });
-                  },
-                  onNext: _nextPage,
-                ),
-                StepFitnessLevel(
-                  selectedLevel: _fitnessLevel,
-                  onBack: _previousPage,
-                  onChanged: (level) => setState(() => _fitnessLevel = level),
-                  onNext: _nextPage,
-                ),
-                StepEquipment(
-                  selectedEquipment: _equipment,
-                  onBack: _previousPage,
-                  onToggleEquipment: (item) {
-                    setState(() {
-                      _equipment.contains(item) ? _equipment.remove(item) : _equipment.add(item);
-                    });
-                  },
-                  onNext: _nextPage,
-                ),
-                StepFrequency(
-                  selectedFrequency: _frequency,
-                  onBack: _previousPage,
-                  onChanged: (value) => setState(() => _frequency = value),
-                  onNext: _nextPage,
-                ),
-                StepHealthProfile(onNext: _nextPage, onBack: _previousPage),
-                StepCycle(onNext: _nextPage, onBack: _previousPage),
-              ],
-            ),
           ),
-        );
-      },
+
+          SwipeHintOverlay(
+            visible: _currentPage == 0 && _showSwipeHint,
+          ),
+        ],
+      ),
     );
   }
 }

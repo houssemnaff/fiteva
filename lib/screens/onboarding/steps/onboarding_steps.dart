@@ -5,7 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 // ─── Shared Design Constants ───────────────────────────────────────────────
 const _kGreen = Color(0xFF2D4A2D);
-const _kBg = Color(0xFFF0F0EC);
+const _kBg = Colors.white;
 const Color _kPink       = Color(0xFF1C4D30);
 const Color _kPinkLight  = Color(0xFF7ABB98);
 const Color _kPinkDeep   = Color(0xFF7ABB98);
