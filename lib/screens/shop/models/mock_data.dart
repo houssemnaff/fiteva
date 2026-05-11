@@ -1,0 +1,73 @@
+import 'package:flutter/material.dart';
+import '../models/boutique_item.dart';
+
+final mockItems = [
+  BoutiqueItem(
+    id: '1',
+    brand: 'BAÏJA',
+    title: '-20% sur le site',
+    discount: '-20%',
+    discountValue: 20,
+    etoiles: 50,
+    daysLeft: 39,
+    primaryColor: const Color(0xFF1C4D30),
+    secondaryColor: const Color(0xFF1C4D30),
+    imageUrl:
+        'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&q=80',
+    promoCode: 'BAIJA20ETE',
+    validUntil: '19/07/2026',
+    siteUrl: 'https://www.baija.fr',
+    description: 'Bougies, bains moussants et cosmétiques naturels.',
+  ),
+  BoutiqueItem(
+    id: '2',
+    brand: 'LA CANOPÉE',
+    title: '-20% sur le site',
+    discount: '-20%',
+    discountValue: 20,
+    etoiles: 50,
+    daysLeft: 76,
+    primaryColor: const Color(0xFF3E6B47),
+    secondaryColor: const Color(0xFF1E3D24),
+    imageUrl:
+        'https://images.unsplash.com/photo-1611403570720-162d8829689a?w=600&q=80',
+    promoCode: 'CANOP20ETE',
+    validUntil: '19/07/2026',
+    siteUrl: 'https://www.lacanopee.fr',
+    description: 'Compléments alimentaires à base de plantes adaptogènes.',
+  ),
+  BoutiqueItem(
+    id: '3',
+    brand: 'NUTRI&CO',
+    title: '-15% sur le site',
+    discount: '-15%',
+    discountValue: 15,
+    etoiles: 40,
+    daysLeft: 21,
+    primaryColor: const Color(0xFF1E4D6B),
+    secondaryColor: const Color(0xFF0D2E42),
+    imageUrl:
+        'https://images.unsplash.com/photo-1626197031507-c17099753214?w=600&q=80',
+    promoCode: 'NUTRI15ETE',
+    validUntil: '19/07/2026',
+    siteUrl: 'https://www.nutriandco.com',
+    description: 'Nutrition de précision, certifiée et transparente.',
+  ),
+  BoutiqueItem(
+    id: '4',
+    brand: 'BIOCYTE',
+    title: '-25% sur le site',
+    discount: '-25%',
+    discountValue: 25,
+    etoiles: 60,
+    daysLeft: 55,
+    primaryColor: const Color(0xFF8B3A6B),
+    secondaryColor: const Color(0xFF57204A),
+    imageUrl:
+        'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=600&q=80',
+    promoCode: 'BIOCYTE25',
+    validUntil: '19/07/2026',
+    siteUrl: 'https://www.biocyte.com',
+    description: 'Beauté & bien-être, laboratoire français.',
+  ),
+];

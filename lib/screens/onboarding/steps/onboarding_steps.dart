@@ -1961,7 +1961,295 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
 
 
 }
+// ══════════════════════════════════════════════════════════════════════════
+// STEP 8 — Grossesse
+// ══════════════════════════════════════════════════════════════════════════
+class StepPregnancy extends StatefulWidget {
+  final VoidCallback onNext;
+  final VoidCallback? onBack;
+  final void Function(bool isPregnant, int? weekSA) onChanged; // ← add this
 
+  const StepPregnancy({
+    super.key,
+    required this.onNext,
+    this.onBack,
+    required this.onChanged, // ← add this
+  });
+
+  @override
+  State<StepPregnancy> createState() => _StepPregnancyState();
+}
+
+class _StepPregnancyState extends State<StepPregnancy> {
+  bool? _isPregnant;
+  double _week = 12;
+
+  bool get _canContinue => _isPregnant != null;
+
+  int get _trimester {
+    if (_week <= 13) return 1;
+    if (_week <= 27) return 2;
+    return 3;
+  }
+
+  String get _trimesterLabel {
+    switch (_trimester) {
+      case 1: return '1er trimestre (S1–S13)';
+      case 2: return '2e trimestre (S14–S27)';
+      default: return '3e trimestre (S28–S42)';
+    }
+  }
+
+  String get _trimesterAdvice {
+    switch (_trimester) {
+      case 1:
+        return 'Privilégie la marche et le yoga prénatal. Évite les abdominaux et les efforts intenses.';
+      case 2:
+        return 'La natation et le Pilates prénatal sont idéaux. Évite les positions sur le dos après 16 SA.';
+      default:
+        return 'Privilégie la mobilité douce et la respiration. L\'intensité doit rester très modérée.';
+    }
+  }
+
+  Color get _trimesterColor {
+    switch (_trimester) {
+      case 1: return const Color(0xFFE8F5EE);
+      case 2: return const Color(0xFFFFF3E0);
+      default: return const Color(0xFFFCE4EC);
+    }
+  }
+
+  Color get _trimesterTextColor {
+    switch (_trimester) {
+      case 1: return _kGreen;
+      case 2: return const Color(0xFF8A5A00);
+      default: return const Color(0xFF7B1040);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          _OnboardingTopBar(step: 8, total: 8, onBack: widget.onBack),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _StepIcon(Icons.pregnant_woman),
+                  const SizedBox(height: 18),
+                  const _StepHeader(
+                    title: 'Grossesse',
+                    subtitle: 'On adapte ton programme selon ton état de santé',
+                  ),
+                  const SizedBox(height: 28),
+
+                  // ── Yes / No cards ──────────────────────────────────────
+                  Row(
+                    children: [
+                      Expanded(child: _pregnancyCard(false, 'Non', 'Je ne suis pas enceinte')),
+                      const SizedBox(width: 14),
+                      Expanded(child: _pregnancyCard(true, 'Oui', 'Je suis enceinte')),
+                    ],
+                  ),
+
+                  // ── Week selector (visible only if pregnant) ─────────────
+                  if (_isPregnant == true) ...[
+                    const SizedBox(height: 28),
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF7FAF8),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFDCE7E0)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'À quelle semaine es-tu ?',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                '${_week.round()}',
+                                style: const TextStyle(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.w800,
+                                  color: _kGreen,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'SA',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.black45,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: _kGreen,
+                              inactiveTrackColor: Colors.grey.shade300,
+                              thumbColor: _kGreen,
+                              overlayColor: _kGreen.withOpacity(0.15),
+                            ),
+                            child: Slider(
+                              value: _week,
+                              min: 1,
+                              max: 42,
+                              divisions: 41,
+                              onChanged: (v) => setState(() => _week = v),
+                              
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: const [
+                              Text('1 SA', style: TextStyle(fontSize: 11, color: Colors.black38)),
+                              Text('42 SA', style: TextStyle(fontSize: 11, color: Colors.black38)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // ── Trimester badge ─────────────────────────────────────
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _trimesterColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _trimesterLabel,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          color: _trimesterTextColor,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // ── Advice card ─────────────────────────────────────────
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.info_outline, color: _kGreen, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _trimesterAdvice,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                color: Colors.black54,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+          _CtaButton(
+            label: 'Continuer',
+            trailingIcon: Icons.arrow_forward,
+            onPressed: _canContinue ? widget.onNext : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pregnancyCard(bool value, String label, String sub) {
+    final selected = _isPregnant == value;
+    return GestureDetector(
+      onTap: () => setState(() => _isPregnant = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 12),
+        decoration: BoxDecoration(
+          color: selected ? _kGreen : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? _kGreen : Colors.grey.shade200,
+          ),
+          boxShadow: selected
+              ? [BoxShadow(color: _kGreen.withOpacity(0.25), blurRadius: 18, offset: const Offset(0, 8))]
+              : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 3))],
+        ),
+        child: Column(
+          children: [
+            Icon(
+              value ? Icons.pregnant_woman : Icons.do_not_disturb_alt_outlined,
+              color: selected ? Colors.white : _kGreen,
+              size: 32,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: selected ? Colors.white : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              sub,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: selected ? Colors.white70 : Colors.black45,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 // ══════════════════════════════════════════════════════════════════════════════
 // STEP 7 — Cycle menstruel
 // ══════════════════════════════════════════════════════════════════════════════

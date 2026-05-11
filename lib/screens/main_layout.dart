@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:fiteva/screens/cycle/homecyle.dart';
+
+import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
 import 'package:fiteva/widgets/chatbot_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,9 +22,11 @@ class _NavItem {
 const _navItems = [
   _NavItem(LucideIcons.home, 'Home'),
   _NavItem(LucideIcons.loader, 'Cycle'),
+    _NavItem(LucideIcons.shoppingBag, 'Shop'),
   _NavItem(LucideIcons.dumbbell, 'Workouts'),
   _NavItem(LucideIcons.apple, 'Nutrition'),
   _NavItem(LucideIcons.users, 'social'),
+
 ];
 
 // ── Main Layout ───────────────────────────────────────────────────────
@@ -42,9 +46,11 @@ class _MainLayoutState extends State<MainLayout> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const CycleApp(),
+      const BoutiqueScreen(),
     const WorkoutScreen(),
     const NutritionHomeScreen(),
     const CommunityScreen(),
+  
   ];
 
   void _openChatbot() {

@@ -106,6 +106,8 @@ static const String _goalsKey = 'goals';
   String? _fitnessLevel;
   List<String> _equipment = [];
   String? _frequency;
+  bool? _isPregnant;
+int? _pregnancyWeekSA;
 
   // 🎨 Couleurs bestach (vert menthe professionnel)
   static const Color _bestachGreen = Color(0xFF4CAF7D);       // vert principal
@@ -154,6 +156,8 @@ static const String _goalsKey = 'goals';
       _fitnessLevelKey: _fitnessLevel,
       _equipmentKey: _equipment,
       _frequencyKey: _frequency,
+       'is_pregnant': _isPregnant,
+    'pregnancy_week': _pregnancyWeekSA,
     };
   }
 
@@ -164,7 +168,7 @@ static const String _goalsKey = 'goals';
   Future<void> _nextPage() async {
     await _saveData();
     if (!mounted) return;
-    if (_currentPage < 7) {
+    if (_currentPage < 8) {
       _pageController.animateToPage(
         _currentPage + 1,
         duration: const Duration(milliseconds: 300),
@@ -270,6 +274,16 @@ static const String _goalsKey = 'goals';
                 onNext: _nextPage,
               ),
               StepHealthProfile(onNext: _nextPage, onBack: _previousPage),
+              StepPregnancy(
+  onNext: _nextPage,
+  onBack: _previousPage,
+  onChanged: (isPregnant, weekSA) {
+    setState(() {
+      _isPregnant = isPregnant;
+      _pregnancyWeekSA = weekSA;
+    });
+  },
+),
               StepCycle(onNext: _nextPage, onBack: _previousPage),
             ],
           ),

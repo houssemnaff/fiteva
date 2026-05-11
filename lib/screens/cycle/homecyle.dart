@@ -1,5 +1,7 @@
+import 'package:fiteva/screens/cycle/pregnancy/pregnancy_screen.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/calendar_screen.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/cycle_header.dart';
+import 'package:fiteva/screens/cycle/pregnancy/pregnancy_header.dart'; // 👈 add this
 import 'package:flutter/material.dart';
 import '../../theme/FitEvaColors.dart';
 
@@ -109,6 +111,7 @@ class _CycleScreenState extends State<CycleScreen> {
   bool _showWheel = true;
   final Set<int> _selectedSymptoms = {};
 
+
   final List<String> _symptoms = [
     'Fatigue',
     'Cramps',
@@ -159,222 +162,200 @@ class _CycleScreenState extends State<CycleScreen> {
     ],
   );
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = getTheme(_currentDay);
-    final screenWidth = MediaQuery.of(context).size.width;
+@override
+Widget build(BuildContext context) {
+  final theme = getTheme(_currentDay);
+  final screenWidth = MediaQuery.of(context).size.width;
 
-    return Scaffold(
-      backgroundColor: FitEvaColors.bgApp,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            children: [
-              // ── ① HEADER (phase badge + toggle + progress bar) ──
-              CycleHeader(
-                currentDay: _currentDay,
-                showWheel: _showWheel,
-                onShowWheel: () => setState(() => _showWheel = true),
-                onShowCalendar: () => setState(() => _showWheel = false),
-                onClose: () => Navigator.maybePop(context),
+  return Scaffold(
+    backgroundColor: FitEvaColors.bgApp,
+    body: SafeArea(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          children: [
+            // ── HEADER ──────────────────────────────────
+            CycleHeader(
+              currentDay: _currentDay,
+              showWheel: _showWheel,
+              onShowWheel: () => setState(() => _showWheel = true),
+              onShowCalendar: () => setState(() => _showWheel = false),
+              onClose: () => Navigator.maybePop(context),
+              onSwitchToPregnancy: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PregnancyScreen()),
               ),
+            ),
 
-              // ── CYCLE INFO CARD (Day Slider + Progress) ──────
-              CycleInfoCard(
-                currentDay: _currentDay,
-                onDaySelected: (d) => setState(() => _currentDay = d),
+            CycleInfoCard(
+              currentDay: _currentDay,
+              onDaySelected: (d) => setState(() => _currentDay = d),
+            ),
+
+            const SizedBox(height: 16),
+
+            const SizedBox(height: 8),
+            Center(
+              child: SizedBox(
+                width: screenWidth * 0.88,
+                height: screenWidth * 0.88,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  child: _showWheel
+                      ? wheel.CycleWheel(
+                          key: const ValueKey('wheel'),
+                          currentDay: _currentDay,
+                          onDaySelected: (d) => setState(() => _currentDay = d),
+                        )
+                      : _CalendarPage(
+                          key: const ValueKey('cal'),
+                          currentDay: _currentDay,
+                          onDaySelected: (d) => setState(() => _currentDay = d),
+                        ),
+                ),
               ),
+            ),
 
-              const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-              // ── ② ROUE CENTRÉE ────────────────────────
-              const SizedBox(height: 8),
-              Center(
-                child: SizedBox(
-                  width: screenWidth * 0.88,
-                  height: screenWidth * 0.88,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
-                    child:
-                        _showWheel
-                            ? wheel.CycleWheel(
-                              key: const ValueKey('wheel'),
-                              currentDay: _currentDay,
-                                    onDaySelected:
-                                        (d) => setState(() => _currentDay = d),
-                                  )
-                                  : _CalendarPage(
-                                    key: const ValueKey('cal'),
-                                    currentDay: _currentDay,
-                                    onDaySelected:
-                                        (d) => setState(() => _currentDay = d),
-                                  ),
+            // ── ÉNERGIE ──────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOutCubic,
+                padding: const EdgeInsets.all(16),
+                decoration: _cardDecoration(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    EnergySection(
+                      energy: (_energy - (_symptomScore * 0.05)).clamp(0.0, 1.0),
+                      phaseColor: theme.primary,
+                      title: 'Energy',
+                      onChanged: (val) => setState(() => _energy = val),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(_getMoodIcon(), size: 16, color: theme.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          _getMoodText(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: FitEvaColors.textMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-/*  //  CYCLE INFO CARD (Day Slider + Progress) ──────
-                    CycleInfoCard(
-                      currentDay: _currentDay,
-                      onDaySelected: (d) => setState(() => _currentDay = d),
-                    ),
-*/
-                   
-
-                    const SizedBox(height: 16),
-
-                    // ── ④ ÉNERGIE ─────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOutCubic,
-                        padding: const EdgeInsets.all(16),
-                        decoration: _cardDecoration(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            EnergySection(
-                              energy: (_energy - (_symptomScore * 0.05)).clamp(
-                                0.0,
-                                1.0,
-                              ),
-                              phaseColor: theme.primary,
-                              title: 'Energy',
-                              onChanged: (val) => setState(() => _energy = val),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Icon(
-                                  _getMoodIcon(),
-                                  size: 16,
-                                  color: theme.primary,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _getMoodText(),
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: FitEvaColors.textMuted,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // ── ⑤ HUMEUR + INSIGHT (2 colonnes) ───────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.25,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 500),
-                                curve: Curves.easeInOutCubic,
-                                padding: const EdgeInsets.all(14),
-                                decoration: _cardDecoration(),
-                                child: MoodSection(
-                                  selectedMood: _selectedMood,
-                                  phaseColor: theme.primary,
-                                  onSelect:
-                                      (i) => setState(() => _selectedMood = i),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 500),
-                                curve: Curves.easeInOutCubic,
-                                padding: const EdgeInsets.all(14),
-                                decoration: _cardDecoration(),
-                                child: InsightSection(
-                                  insight: _getInsight(),
-                                  phaseColor: theme.primary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // ── ⑥ RECOMMANDATIONS ─────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOutCubic,
-                        padding: const EdgeInsets.all(14),
-                        decoration: _cardDecoration(),
-                        child: RecommendationsSection(
-                          sportColor:
-                              _symptomScore > 3
-                                  ? theme.primary.withOpacity(0.8)
-                                  : const Color(0xFF6C63FF),
-                          nutritionColor:
-                              _symptomScore > 2
-                                  ? const Color(0xFFFF6B6B)
-                                  : const Color(0xFFFFB703),
-                          restColor:
-                              _symptomScore >= 3
-                                  ? const Color(0xFF4CC9F0)
-                                  : const Color(0xFF38B000),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // ── ⑦ SYMPTÔMES ───────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOutCubic,
-                        padding: const EdgeInsets.all(14),
-                        decoration: _cardDecoration(),
-                        child: SymptomsSection(
-                          symptoms: _symptoms,
-                          selectedSymptoms: _selectedSymptoms,
-                          phaseColor: theme.primary,
-                          title: const Text('Symptoms'),
-                          onToggle: (index) {
-                            setState(() {
-                              if (_selectedSymptoms.contains(index)) {
-                                _selectedSymptoms.remove(index);
-                              } else {
-                                _selectedSymptoms.add(index);
-                              }
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
                   ],
                 ),
               ),
-      ),
-      );
-   
-           
-     
-  }
-}
+            ),
 
+            const SizedBox(height: 10),
+
+            // ── HUMEUR + INSIGHT ──────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.25,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOutCubic,
+                        padding: const EdgeInsets.all(14),
+                        decoration: _cardDecoration(),
+                        child: MoodSection(
+                          selectedMood: _selectedMood,
+                          phaseColor: theme.primary,
+                          onSelect: (i) => setState(() => _selectedMood = i),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOutCubic,
+                        padding: const EdgeInsets.all(14),
+                        decoration: _cardDecoration(),
+                        child: InsightSection(
+                          insight: _getInsight(),
+                          phaseColor: theme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // ── RECOMMANDATIONS ───────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOutCubic,
+                padding: const EdgeInsets.all(14),
+                decoration: _cardDecoration(),
+                child: RecommendationsSection(
+                  sportColor: _symptomScore > 3
+                      ? theme.primary.withOpacity(0.8)
+                      : const Color(0xFF6C63FF),
+                  nutritionColor: _symptomScore > 2
+                      ? const Color(0xFFFF6B6B)
+                      : const Color(0xFFFFB703),
+                  restColor: _symptomScore >= 3
+                      ? const Color(0xFF4CC9F0)
+                      : const Color(0xFF38B000),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // ── SYMPTÔMES ─────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOutCubic,
+                padding: const EdgeInsets.all(14),
+                decoration: _cardDecoration(),
+                child: SymptomsSection(
+                  symptoms: _symptoms,
+                  selectedSymptoms: _selectedSymptoms,
+                  phaseColor: theme.primary,
+                  title: const Text('Symptoms'),
+                  onToggle: (index) {
+                    setState(() {
+                      if (_selectedSymptoms.contains(index)) {
+                        _selectedSymptoms.remove(index);
+                      } else {
+                        _selectedSymptoms.add(index);
+                      }
+                    });
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+}
 // ──────────────────────────────────────────────
 //  Calendar page wrapper
 // ──────────────────────────────────────────────

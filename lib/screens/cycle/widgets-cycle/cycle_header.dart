@@ -8,6 +8,7 @@ class CycleHeader extends StatelessWidget {
   final VoidCallback onShowWheel;
   final VoidCallback onShowCalendar;
   final VoidCallback onClose;
+  final VoidCallback? onSwitchToPregnancy; // 👈 NEW
 
   const CycleHeader({
     super.key,
@@ -16,6 +17,7 @@ class CycleHeader extends StatelessWidget {
     required this.onShowWheel,
     required this.onShowCalendar,
     required this.onClose,
+    this.onSwitchToPregnancy, // 👈 NEW
   });
 
   // Couleurs fixes des 4 phases
@@ -39,10 +41,9 @@ class CycleHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Ligne 1 : titre + badge phase + icônes ─────
-          Row(
+         Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Titre + badge phase
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +58,6 @@ class CycleHeader extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 5),
-                    // Badge phase animé
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
                       child: PhaseBadge(
@@ -73,9 +73,12 @@ class CycleHeader extends StatelessWidget {
 
               const SizedBox(width: 12),
 
-             
+              // 👇 NEW: Pregnancy switch button
+              if (onSwitchToPregnancy != null)
+                _PregnancySwitchButton(onTap: onSwitchToPregnancy!),
             ],
           ),
+
 
           const SizedBox(height: 12),
 
@@ -108,7 +111,44 @@ class CycleHeader extends StatelessWidget {
     );
   }
 }
+class _PregnancySwitchButton extends StatelessWidget {
+  final VoidCallback onTap;
 
+  const _PregnancySwitchButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8A0BF).withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFE8A0BF).withOpacity(0.45),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🤰', style: TextStyle(fontSize: 14)),
+            const SizedBox(width: 5),
+            Text(
+              'Grossesse',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFFE8A0BF).withOpacity(0.9),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 // Le Badge est maintenant dans cycle_common_widgets.dart
 
 // ──────────────────────────────────────────────
