@@ -1,5 +1,6 @@
 import 'package:fiteva/models/post_model.dart';
 import 'package:fiteva/providers/mock_data_provider.dart';
+import 'package:fiteva/screens/community/UserProfileScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -300,9 +301,31 @@ class _PostCardState extends State<_PostCard>
     if (_liked) _heartController.forward(from: 0);
   }
 
+  /// Navigates to the profile of the post author.
+  /// Uses [widget.post.username] as the userId fallback if your PostModel
+  /// doesn't have a dedicated userId field yet — swap to widget.post.userId
+  /// once you add it.
+  void _openProfile() {
+    // ⚠️  Change widget.post.username → widget.post.userId once that field exists
+    final userId = widget.post.username;
+    final heroTag = 'avatar_$userId';
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UserProfileScreen(
+          userId: userId,
+          heroTag: heroTag,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasImage = widget.post.imageUrl.trim().isNotEmpty;
+    // ⚠️  Same note: swap to widget.post.userId once that field exists
+    final userId = widget.post.username;
+    final heroTag = 'avatar_$userId';
 
     return Container(
       color: Colors.white,
@@ -314,72 +337,81 @@ class _PostCardState extends State<_PostCard>
             padding: const EdgeInsets.fromLTRB(14, 13, 8, 10),
             child: Row(
               children: [
-                // Avatar
-                CircleAvatar(
-                  radius: 19,
-                  backgroundImage: NetworkImage(widget.post.userAvatarUrl),
+                // ── Avatar (tappable → profile) ───────────────
+                GestureDetector(
+                  onTap: _openProfile,
+                  child: Hero(
+                    tag: heroTag,
+                    child: CircleAvatar(
+                      radius: 19,
+                      backgroundImage: NetworkImage(widget.post.userAvatarUrl),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 10),
 
-                // Name + meta row
+                // ── Name + meta (tappable → profile) ──────────
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.post.username,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1C1C1E),
-                          letterSpacing: -0.2,
+                  child: GestureDetector(
+                    onTap: _openProfile,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.post.username,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1C1C1E),
+                            letterSpacing: -0.2,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Text(
-                            widget.post.timeAgo,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF8E8E93),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 3,
-                            height: 3,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xFFC7C7CC),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          // Category tag badge
-if ((widget.post.category ?? '').isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEF2FF),
-                                borderRadius: BorderRadius.circular(5),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Text(
+                              widget.post.timeAgo,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF8E8E93),
                               ),
-                              child: Text(
-  widget.post.category ?? '',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1C4D30),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 3,
+                              height: 3,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFFC7C7CC),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            // Category tag badge
+                            if ((widget.post.category ?? '').isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEEF2FF),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: Text(
+                                  widget.post.category ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1C4D30),
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
-                // More button
+                // ── More button ───────────────────────────────
                 CupertinoButton(
                   padding: const EdgeInsets.all(6),
                   minSize: 0,
@@ -408,7 +440,7 @@ if ((widget.post.category ?? '').isNotEmpty)
             ),
           ),
 
-          // ── Image ─────────────────────────────────────────
+          // ── Image ────────────────────────────────────────────
           if (hasImage)
             GestureDetector(
               onDoubleTap: _toggleLike,
@@ -422,7 +454,7 @@ if ((widget.post.category ?? '').isNotEmpty)
               ),
             ),
 
-          // ── Actions ─────────────────────────────────────────
+          // ── Actions ──────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 12, 10),
             child: Row(
