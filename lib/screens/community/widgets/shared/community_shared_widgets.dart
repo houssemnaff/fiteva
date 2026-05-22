@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../theme/app_theme.dart';
 
 // ─── Filter Pill ──────────────────────────────────────────────
 class FilterPill extends StatelessWidget {
@@ -18,6 +17,7 @@ class FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -27,14 +27,14 @@ class FilterPill extends StatelessWidget {
           vertical: compact ? 4 : 0,
         ),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.primaryColor : Colors.white,
+          color: selected ? colorScheme.primary : colorScheme.surface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: selected ? AppTheme.primaryColor : Colors.grey.shade200,
+            color: selected ? colorScheme.primary : colorScheme.outlineVariant,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: colorScheme.shadow.withOpacity(0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -45,7 +45,7 @@ class FilterPill extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: compact ? 12 : 14,
-              color: selected ? Colors.white : AppTheme.textPrimaryColor,
+              color: selected ? colorScheme.onPrimary : colorScheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -99,25 +99,19 @@ class InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F2FF),
+        color: colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: AppTheme.primaryColor),
+          Icon(icon, size: 13, color: colorScheme.primary),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimaryColor,
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: colorScheme.onSecondaryContainer)),
         ],
       ),
     );
@@ -130,12 +124,13 @@ class SheetHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Container(
         width: 42,
         height: 5,
         decoration: BoxDecoration(
-          color: Colors.grey.shade300,
+          color: colorScheme.outlineVariant,
           borderRadius: BorderRadius.circular(999),
         ),
       ),
@@ -184,27 +179,25 @@ class ComposerInfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FC),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppTheme.primaryColor),
+          Icon(icon, size: 18, color: colorScheme.primary),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppTheme.textSecondaryColor)),
+                Text(label, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 2),
-                Text(value,
-                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(value, style: TextStyle(fontWeight: FontWeight.w700, color: colorScheme.onSurface)),
               ],
             ),
           ),

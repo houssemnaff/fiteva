@@ -19,15 +19,16 @@ class CommunityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tabIndex = ref.watch(communityTabProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor:  Colors.white,
+      backgroundColor: colorScheme.surface,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.white, Colors.white],
+            colors: [Color(0xFFF8FAFC), Color(0xFFF3F6FB)],
           ),
         ),
         child: NestedScrollView(
@@ -36,14 +37,17 @@ class CommunityScreen extends ConsumerWidget {
               pinned: true,
               floating: false,
               elevation: 0,
-              backgroundColor: Colors.white.withOpacity(0.95),
-              surfaceTintColor: Colors.transparent,
-              title: const Text('Communauté'),
+              backgroundColor: colorScheme.surface.withOpacity(0.95),
+              surfaceTintColor: colorScheme.surface,
+              title: Text(
+                'Communauté',
+                style: TextStyle(color: colorScheme.onSurface),
+              ),
               centerTitle: false,
               actions: [
                 IconButton(
                   onPressed: () => _openComposer(context, tabIndex),
-                  icon: const Icon(LucideIcons.penTool, size: 20),
+                  icon: Icon(LucideIcons.penTool, size: 20, color: colorScheme.onSurface),
                 ),
               ],
               bottom: PreferredSize(
@@ -80,7 +84,7 @@ class CommunityScreen extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => sheet,
     );
   }

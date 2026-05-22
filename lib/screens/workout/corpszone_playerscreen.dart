@@ -30,12 +30,11 @@ class _CorpsZonePlayerScreenState extends State<CorpsZonePlayerScreen>
   bool _isVideoReady = false;
   String _currentVideoPath = '';
   
-final List<String> _videoUrls = [
-  'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
-  'https://samplelib.com/lib/preview/mp4/sample-5s.mp4',
-  'https://samplelib.com/lib/preview/mp4/sample-10s.mp4',
-   'https://samplelib.com/lib/preview/mp4/sample-10s.mp4',
-];
+  final List<String> _videoUrls = [
+    'assets/videos/workout1.mp4',
+    'assets/videos/workout2.mp4',
+    'assets/videos/workout3.mp4',
+  ];
 
   @override
   void initState() {
@@ -134,7 +133,7 @@ final List<String> _videoUrls = [
       return cached;
     }
 
-    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    final controller = VideoPlayerController.asset(url);
     await controller.initialize();
     _controllerCache[url] = controller;
     return controller;
@@ -150,7 +149,7 @@ final List<String> _videoUrls = [
     }
 
     try {
-      _nextController = VideoPlayerController.networkUrl(Uri.parse(nextUrl));
+      _nextController = VideoPlayerController.asset(nextUrl);
       await _nextController!.initialize();
       _controllerCache[nextUrl] = _nextController!;
       debugPrint('⏭️ Preloaded next video: $nextUrl');

@@ -1,4 +1,3 @@
-import 'package:fiteva/screens/nutrition/theme/app_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../models/mock_data.dart';
@@ -23,8 +22,10 @@ class _AllPartenairesScreenState extends State<AllPartenairesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -35,18 +36,14 @@ class _AllPartenairesScreenState extends State<AllPartenairesScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(
-                          CupertinoIcons.chevron_left,
-                          color: kAccent,
-                          size: 18,
-                        ),
+                        Icon(CupertinoIcons.chevron_left, color: colorScheme.primary, size: 18),
                         SizedBox(width: 4),
                         Text(
                           'Boutique',
                           style: TextStyle(
-                            color: kAccent,
+                            color: colorScheme.primary,
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
                           ),
@@ -55,12 +52,12 @@ class _AllPartenairesScreenState extends State<AllPartenairesScreen> {
                     ),
                   ),
                   const Spacer(),
-                  const Text(
+                  Text(
                     'Partenaires',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: CupertinoColors.label,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const Spacer(),
@@ -90,10 +87,10 @@ class _AllPartenairesScreenState extends State<AllPartenairesScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   '${_filtered.length} partenaire${_filtered.length > 1 ? 's' : ''}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: CupertinoColors.secondaryLabel,
+                    color: colorScheme.onSurfaceVariant,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -143,22 +140,19 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            CupertinoIcons.search,
-            size: 40,
-            color: CupertinoColors.systemGrey3,
-          ),
-          SizedBox(height: 12),
+          Icon(CupertinoIcons.search, size: 40, color: colorScheme.onSurfaceVariant),
+          const SizedBox(height: 12),
           Text(
             'Aucun partenaire trouvé',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: CupertinoColors.secondaryLabel,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],

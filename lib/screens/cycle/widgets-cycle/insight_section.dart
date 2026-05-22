@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../theme/FitEvaColors.dart';
+import '../../../theme/app_theme.dart';
 
 class InsightSection extends StatefulWidget {
   final String insight;

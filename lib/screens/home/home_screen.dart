@@ -55,7 +55,7 @@ class HomeScreen extends ConsumerWidget {
               ),
 
               // ── Daily Calories ────────────────────────────────────
-              Padding(
+            /*  Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                 child: DailyTrackingCardhome(
                   anim: AlwaysStoppedAnimation(1.0),
@@ -64,7 +64,7 @@ class HomeScreen extends ConsumerWidget {
                   caloriesConsumed: nutrition.currentCalories,
                   caloriesGoal: nutrition.targetCalories,
                 ),
-              ),
+              ),*/
 
             
              
@@ -100,6 +100,12 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _showProgramsSummary(BuildContext context, List<WorkoutModel> programs) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final surface = colorScheme.surface;
+    final textPrimary = colorScheme.onSurface;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withOpacity(0.72);
+
     final totalMinutes = programs.fold<int>(
       0,
       (sum, program) => sum + _parseMinutes(program.duration),
@@ -114,8 +120,8 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
@@ -127,20 +133,20 @@ class HomeScreen extends ConsumerWidget {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.12),
+                  color: colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
             ),
             const SizedBox(height: 18),
-            const Text(
+            Text(
               'Résumé de tes programmes',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textPrimary),
             ),
             const SizedBox(height: 6),
             Text(
               '${programs.length} programmes, $totalMinutes min, $totalCalories kcal estimées',
-              style: TextStyle(color: Colors.black.withOpacity(0.55)),
+              style: TextStyle(color: textSecondary),
             ),
             const SizedBox(height: 16),
             ...programs.map(
@@ -164,18 +170,18 @@ class HomeScreen extends ConsumerWidget {
                         children: [
                           Text(
                             program.title,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            style: TextStyle(fontWeight: FontWeight.w700, color: textPrimary),
                           ),
                           Text(
                             '${program.category} • ${program.duration}',
-                            style: TextStyle(color: Colors.black.withOpacity(0.5)),
+                            style: TextStyle(color: textSecondary),
                           ),
                         ],
                       ),
                     ),
                     Text(
                       '${program.calories} kcal',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                      style: TextStyle(fontWeight: FontWeight.w700, color: textPrimary),
                     ),
                   ],
                 ),
@@ -202,6 +208,8 @@ class _HeroWorkoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Stack(
   children: [
     // ── IMAGE BACKGROUND ──
@@ -222,9 +230,9 @@ class _HeroWorkoutCard extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.black.withOpacity(0.1),
-            Colors.black.withOpacity(0.6),
-            Colors.black.withOpacity(0.9),
+            colorScheme.scrim.withOpacity(0.06),
+            colorScheme.scrim.withOpacity(0.24),
+            colorScheme.scrim.withOpacity(0.4),
           ],
         ),
       ),
@@ -256,13 +264,13 @@ class _HeroWorkoutCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
+                color: colorScheme.primary,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
+              child: Text(
                 "TODAY'S WORKOUT",
                 style: TextStyle(
-                  color: Colors.white,
+                  color: colorScheme.onPrimary,
                   fontSize: 9,
                   letterSpacing: 2,
                   fontWeight: FontWeight.w800,
@@ -272,10 +280,10 @@ class _HeroWorkoutCard extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            const Text(
+            Text(
               'FULL BODY\nSTRENGTH',
               style: TextStyle(
-                color: Colors.white,
+                color: colorScheme.onSurface,
                 fontSize: 34,
                 fontWeight: FontWeight.w800,
                 height: 1.05,
@@ -287,7 +295,7 @@ class _HeroWorkoutCard extends StatelessWidget {
             Text(
               '45 MIN • INTERMEDIATE • COACH NIKKI',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: colorScheme.onSurface.withOpacity(0.72),
                 fontSize: 11,
                 letterSpacing: 1,
               ),
@@ -301,18 +309,18 @@ class _HeroWorkoutCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: colorScheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'START WORKOUT',
                   style: TextStyle(
                     letterSpacing: 2,
                     fontWeight: FontWeight.w800,
-                    
+                    color: colorScheme.onPrimary,
                   ),
                 ),
               ),
@@ -341,8 +349,9 @@ class _WeeklyProgressSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: AppTheme.surfaceColor,
+      color: colorScheme.surface,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,10 +359,11 @@ class _WeeklyProgressSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+                  const Text(
                 'THIS WEEK',
                 style: TextStyle(
-                  color: AppTheme.black,
+                  // color resolved below for runtime
+                  color: null,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.5,
@@ -361,8 +371,8 @@ class _WeeklyProgressSection extends StatelessWidget {
               ),
               Text(
                 '$doneCount/5 DONE',
-                style: const TextStyle(
-                  color: AppTheme.successMint,
+                style: TextStyle(
+                  color: colorScheme.secondary,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
@@ -383,9 +393,9 @@ class _WeeklyProgressSection extends StatelessWidget {
                         duration: Duration(milliseconds: 200 + i * 60),
                         height: 4,
                         decoration: BoxDecoration(
-                          color: done
-                              ? AppTheme.successMint
-                              : AppTheme.darkTitle,
+                            color: done
+                              ? colorScheme.secondary
+                              : colorScheme.onSurface.withOpacity(0.28),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -394,8 +404,8 @@ class _WeeklyProgressSection extends StatelessWidget {
                         days[i],
                         style: TextStyle(
                           color: done
-                              ? Colors.black.withOpacity(0.5)
-                              : Colors.black.withOpacity(0.2),
+                              ? colorScheme.onSurface.withOpacity(0.6)
+                              : colorScheme.onSurface.withOpacity(0.28),
                           fontSize: 9,
                           letterSpacing: 1,
                         ),
@@ -409,12 +419,12 @@ class _WeeklyProgressSection extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              const Icon(LucideIcons.flame, color: AppTheme.successMint, size: 14),
+              Icon(LucideIcons.flame, color: colorScheme.secondary, size: 14),
               const SizedBox(width: 8),
               Text(
                 '${user.streak} DAY STREAK',
                 style: TextStyle(
-                  color: AppTheme.successMint,
+                  color: colorScheme.secondary,
                   fontSize: 11,
                   letterSpacing: 1,
                 ),
@@ -438,8 +448,9 @@ class _JoinedProgramsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: AppTheme.surfaceColor,
+      color: colorScheme.surface,
       padding: const EdgeInsets.fromLTRB(24, 8, 0, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,10 +460,10 @@ class _JoinedProgramsSection extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'MY PROGRAMS',
                   style: TextStyle(
-                    color: AppTheme.black,
+                    color: colorScheme.onSurface,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 2,
@@ -491,15 +502,16 @@ class _JoinedProgramTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clampedProgress = progress.clamp(0.1, 0.95);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: 190,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: colorScheme.shadow.withOpacity(0.05),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -513,7 +525,7 @@ class _JoinedProgramTile extends StatelessWidget {
           SizedBox(
             height: 84,
             width: double.infinity,
-            child: Image.asset(
+              child: Image.asset(
               program.imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(color: AppTheme.surfaceColor),
@@ -527,14 +539,14 @@ class _JoinedProgramTile extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.12),
+                    decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     program.category.toUpperCase(),
-                    style: const TextStyle(
-                      color: AppTheme.primaryColor,
+                    style: TextStyle(
+                      color: colorScheme.primary,
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.1,
@@ -556,18 +568,18 @@ class _JoinedProgramTile extends StatelessWidget {
                 Text(
                   '${program.duration} • ${program.level}',
                   style: TextStyle(
-                    color: Colors.black.withOpacity(0.5),
+                    color: colorScheme.onSurface.withOpacity(0.5),
                     fontSize: 10,
                   ),
                 ),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
+                    child: LinearProgressIndicator(
                     value: clampedProgress,
                     minHeight: 6,
-                    backgroundColor: AppTheme.surfaceColor,
-                    valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
+                    backgroundColor: colorScheme.surface,
+                    valueColor: AlwaysStoppedAnimation(colorScheme.primary),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -575,11 +587,11 @@ class _JoinedProgramTile extends StatelessWidget {
                   width: double.infinity,
                   child: OutlinedButton(
                     onPressed: () {},
-                    style: OutlinedButton.styleFrom(
+                      style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(34),
                       padding: EdgeInsets.zero,
-                      foregroundColor: AppTheme.primaryColor,
-                      side: const BorderSide(color: AppTheme.primaryColor),
+                      foregroundColor: colorScheme.primary,
+                      side: BorderSide(color: colorScheme.primary),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -601,100 +613,6 @@ class _JoinedProgramTile extends StatelessWidget {
 
 
 
-class _CycleSection extends StatelessWidget {
-  final CyclePhase cycle;
-
-  const _CycleSection({required this.cycle});
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = _cycleAccent(cycle.name);
-
-    return Container(
-      color: AppTheme.surfaceColor,
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [accent.withOpacity(0.16), Colors.white],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: accent.withOpacity(0.15)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: accent.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(LucideIcons.loader, color: accent, size: 18),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'CYCLE DU JOUR',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.8,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${cycle.name} • Jour ${cycle.dayOfCycle}',
-                        style: TextStyle(
-                          color: Colors.black.withOpacity(0.65),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Text(
-              cycle.advice,
-              style: const TextStyle(
-                fontSize: 14,
-                height: 1.45,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _cycleAccent(String name) {
-    switch (name.toLowerCase()) {
-      case 'follicular':
-      case 'folliculaire':
-        return const Color(0xFF2FBF91);
-      case 'ovulation':
-        return const Color(0xFF5FD3C4);
-      case 'règles':
-      case 'regles':
-        return const Color(0xFFD94F6B);
-      default:
-        return const Color(0xFF4A6CF7);
-    }
-  }
-}
-
 // ─────────────────────────────────────────────────────────────
 // RECOMMENDED WORKOUTS
 // ─────────────────────────────────────────────────────────────
@@ -704,8 +622,9 @@ class _RecommendedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: AppTheme.surfaceColor,
+      color: colorScheme.surface,
       padding: const EdgeInsets.fromLTRB(24, 28, 0, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -715,10 +634,10 @@ class _RecommendedSection extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'RECOMMENDED',
                   style: TextStyle(
-                    color: AppTheme.black,
+                    color: colorScheme.onSurface,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 2,
@@ -727,7 +646,7 @@ class _RecommendedSection extends StatelessWidget {
                 Text(
                   'SEE ALL',
                   style: TextStyle(
-                    color: Colors.black.withOpacity(0.4),
+                    color: colorScheme.onSurface.withOpacity(0.4),
                     fontSize: 11,
                     letterSpacing: 1,
                   ),
@@ -760,10 +679,11 @@ class _WorkoutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: 160,
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias,
@@ -776,8 +696,8 @@ class _WorkoutTile extends StatelessWidget {
               workout.imageUrl,
               fit: BoxFit.cover,
               width: double.infinity,
-              errorBuilder: (_, __, ___) =>
-                  Container(color: AppTheme.surfaceColor),
+                errorBuilder: (_, __, ___) =>
+                  Container(color: colorScheme.surface),
             ),
           ),
           Padding(
@@ -787,8 +707,8 @@ class _WorkoutTile extends StatelessWidget {
               children: [
                 Text(
                   workout.category.toUpperCase(),
-                  style: const TextStyle(
-                    color: AppTheme.successMint,
+                  style: TextStyle(
+                    color: colorScheme.secondary,
                     fontSize: 8,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.5,
@@ -797,8 +717,8 @@ class _WorkoutTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   workout.title.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.black,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
@@ -811,7 +731,7 @@ class _WorkoutTile extends StatelessWidget {
                 Text(
                   workout.duration.toUpperCase(),
                   style: TextStyle(
-                    color: Colors.black.withOpacity(0.4),
+                    color: colorScheme.onSurface.withOpacity(0.4),
                     fontSize: 10,
                     letterSpacing: 0.5,
                   ),
@@ -833,13 +753,14 @@ class _CycleTipCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: AppTheme.surfaceColor,
+      color: colorScheme.surface,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -849,12 +770,12 @@ class _CycleTipCard extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.15),
+                color: colorScheme.primary.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Icon(
+              child: Icon(
                 LucideIcons.info,
-                color: AppTheme.primaryColor,
+                color: colorScheme.primary,
                 size: 16,
               ),
             ),
@@ -866,17 +787,17 @@ class _CycleTipCard extends StatelessWidget {
                   Text(
                     'CYCLE TIP',
                     style: TextStyle(
-                      color: Colors.black.withOpacity(0.5),
+                      color: colorScheme.onSurface.withOpacity(0.5),
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 2,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Boost iron intake during your menstrual phase — leafy greens and red meat help recovery.',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                       fontSize: 12,
                       height: 1.5,
                     ),

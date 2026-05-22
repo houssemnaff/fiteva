@@ -6,13 +6,14 @@ class TimerBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isUrgent = days <= 25;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isUrgent
-            ? Colors.red.withOpacity(0.85)
-            : Colors.black.withOpacity(0.5),
+            ? colorScheme.error.withOpacity(0.85)
+            : colorScheme.scrim.withOpacity(0.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -20,14 +21,14 @@ class TimerBadge extends StatelessWidget {
         children: [
           Icon(
             isUrgent ? Icons.local_fire_department : Icons.access_time,
-            color: Colors.white,
+            color: colorScheme.onError,
             size: 11,
           ),
           const SizedBox(width: 3),
           Text(
             '$days j',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colorScheme.onError,
               fontSize: 10,
               fontWeight: FontWeight.w700,
             ),

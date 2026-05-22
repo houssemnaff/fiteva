@@ -4,21 +4,7 @@ import 'package:flutter/services.dart';
 // ─────────────────────────────────────────────
 //  DESIGN TOKENS
 // ─────────────────────────────────────────────
-class _C {
-  static const bg = Colors.white;
-  static const surface = Colors.white;
-  static const card = Colors.white;
-  static const border = Colors.white;
-  static const borderHigh = Colors.white;
-  static const accent = Color(0xFF1C4D30); // electric lime
-  static const accentDim = Colors.white;
-  static const textPrimary = Color(0xFF2E2E34);
-  static const textSecondary = Color(0xFF2E2E34);
-  static const textTertiary = Color(0xFF4A4A52);
-  static const success = Color(0xFF1C4D30);
-  static const danger = Color(0xFFFF4757);
-  static const warning = Color(0xFFFFAA00);
-}
+// Colors and tokens come from Theme.of(context).colorScheme at runtime.
 
 // ─────────────────────────────────────────────
 //  ENTRY POINT (show the sheet)
@@ -27,7 +13,7 @@ void showCreateEventSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     barrierColor: Colors.black87,
     builder: (_) => const CreateEventSheet(),
   );
@@ -107,13 +93,14 @@ class _CreateEventSheetState extends State<CreateEventSheet>
   }
 
   static void _showSuccessToast(BuildContext ctx) {
+    final colorScheme = Theme.of(ctx).colorScheme;
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: _C.card,
+        backgroundColor: colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: _C.border),
+          side: BorderSide(color: colorScheme.outlineVariant),
         ),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         duration: const Duration(seconds: 3),
@@ -123,26 +110,25 @@ class _CreateEventSheetState extends State<CreateEventSheet>
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: _C.success.withOpacity(0.15),
+                color: colorScheme.secondary.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(_ProIcons.checkCircle,
-                  color: _C.success, size: 16),
+              child: Icon(_ProIcons.checkCircle,
+                  color: colorScheme.secondary, size: 16),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('Événement publié',
                       style: TextStyle(
-                          color: _C.textPrimary,
+                          color: colorScheme.onSurface,
                           fontSize: 13,
                           fontWeight: FontWeight.w600)),
                   Text('La communauté peut désormais s\'inscrire.',
-                      style:
-                          TextStyle(color: _C.textSecondary, fontSize: 11)),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 11)),
                 ],
               ),
             ),
@@ -166,9 +152,9 @@ class _CreateEventSheetState extends State<CreateEventSheet>
         ).animate(_fadeAnim),
         child: Container(
           margin: EdgeInsets.only(bottom: bottom),
-          decoration: const BoxDecoration(
-            color: _C.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -229,10 +215,13 @@ class _CreateEventSheetState extends State<CreateEventSheet>
   // ── Sub-builders ─────────────────────────
 
   Widget _buildHeader() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: _C.bg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
       child: Column(
@@ -243,7 +232,7 @@ class _CreateEventSheetState extends State<CreateEventSheet>
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: _C.border,
+                color: colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -255,31 +244,30 @@ class _CreateEventSheetState extends State<CreateEventSheet>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _C.accentDim,
+                  color: colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: _C.accent.withOpacity(0.25), width: 0.5),
+                      color: colorScheme.primary.withOpacity(0.25), width: 0.5),
                 ),
-                child: const Icon(_ProIcons.zap, color: _C.accent, size: 18),
+                child: Icon(_ProIcons.zap, color: colorScheme.primary, size: 18),
               ),
               const SizedBox(width: 14),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Créer un événement',
-                    style: TextStyle(
-                      color: _C.textPrimary,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
                     'Organise ta session, invite la communauté',
-                    style:
-                        TextStyle(color: _C.textSecondary, fontSize: 12),
+                    style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant, fontSize: 12),
                   ),
                 ],
               ),
@@ -306,18 +294,18 @@ class _CreateEventSheetState extends State<CreateEventSheet>
                 HapticFeedback.selectionClick();
                 setState(() => _selectedTypeIndex = i);
               },
-              child: AnimatedContainer(
+                child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOut,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 decoration: BoxDecoration(
-                  color: selected ? _C.accentDim : _C.card,
+                  color: selected ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: selected
-                        ? _C.accent.withOpacity(0.6)
-                        : _C.border,
+                        ? Theme.of(context).colorScheme.primary.withOpacity(0.6)
+                        : Theme.of(context).colorScheme.outlineVariant,
                     width: selected ? 1 : 0.5,
                   ),
                 ),
@@ -326,7 +314,7 @@ class _CreateEventSheetState extends State<CreateEventSheet>
                   children: [
                     IconTheme(
                       data: IconThemeData(
-                        color: selected ? _C.accent : _C.textSecondary,
+                        color: selected ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                         size: 14,
                       ),
                       child: _types[i].icon,
@@ -335,7 +323,7 @@ class _CreateEventSheetState extends State<CreateEventSheet>
                     Text(
                       _types[i].label,
                       style: TextStyle(
-                        color: selected ? _C.accent : _C.textSecondary,
+                        color: selected ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 13,
                         fontWeight: selected
                             ? FontWeight.w600
@@ -379,9 +367,9 @@ class _CreateEventSheetState extends State<CreateEventSheet>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _C.border, width: 0.5),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
       ),
       child: Row(
         children: [
@@ -389,24 +377,23 @@ class _CreateEventSheetState extends State<CreateEventSheet>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: _C.bg,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(9),
             ),
-            child: const Icon(_ProIcons.users,
-                color: _C.textSecondary, size: 16),
+            child: Icon(_ProIcons.users,
+                color: Theme.of(context).colorScheme.onSurfaceVariant, size: 16),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Places disponibles',
-                    style: TextStyle(
-                        color: _C.textSecondary, fontSize: 11)),
+                Text('Places disponibles',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11)),
                 Text(
                   '$_spots participants',
-                  style: const TextStyle(
-                    color: _C.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.3,
@@ -428,8 +415,8 @@ class _CreateEventSheetState extends State<CreateEventSheet>
             child: Text(
               '$_spots',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: _C.textPrimary,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -483,11 +470,11 @@ class _CreateEventSheetState extends State<CreateEventSheet>
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: _C.bg,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(9),
-            border: Border.all(color: _C.border, width: 0.5),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
           ),
-          child: Icon(icon, color: _C.textTertiary, size: 15),
+          child: Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 15),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -495,13 +482,13 @@ class _CreateEventSheetState extends State<CreateEventSheet>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label,
-                  style: const TextStyle(
-                      color: _C.textPrimary,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 13,
                       fontWeight: FontWeight.w500)),
               Text(sub,
-                  style: const TextStyle(
-                      color: _C.textTertiary, fontSize: 11)),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11)),
             ],
           ),
         ),
@@ -511,8 +498,8 @@ class _CreateEventSheetState extends State<CreateEventSheet>
   }
 
   Widget _buildDivider() => Container(
-        height: 0.5,
-        color: _C.border,
+      height: 0.5,
+      color: Theme.of(context).colorScheme.outlineVariant,
       );
 
   Widget _buildActions() {
@@ -520,8 +507,8 @@ class _CreateEventSheetState extends State<CreateEventSheet>
       padding: EdgeInsets.fromLTRB(
           20, 14, 20, 14 + MediaQuery.of(context).padding.bottom),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: _C.border, width: 0.5)),
-        color: _C.surface,
+        border: Border(top: BorderSide(color: Color(0x00000000), width: 0.5)),
+        color: Color(0x00000000),
       ),
       child: Row(
         children: [
@@ -542,7 +529,7 @@ class _CreateEventSheetState extends State<CreateEventSheet>
   static Widget _label(String text) => Text(
         text.toUpperCase(),
         style: const TextStyle(
-          color: _C.textTertiary,
+          color: Color(0xFF8A8A96),
           fontSize: 10,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.9,
@@ -572,30 +559,30 @@ class _DateTimeCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
-          color: _C.card,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _C.border, width: 0.5),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
         ),
         child: Row(
           children: [
-            Icon(icon, color: _C.textTertiary, size: 15),
+            Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 15),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: const TextStyle(
-                        color: _C.textTertiary, fontSize: 10)),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10)),
                 Text(value,
-                    style: const TextStyle(
-                      color: _C.textPrimary,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.3,
                     )),
                 Text(sub,
-                    style: const TextStyle(
-                        color: _C.textTertiary, fontSize: 10)),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10)),
               ],
             ),
           ],
@@ -632,29 +619,28 @@ class _ProTextFieldState extends State<_ProTextField> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: _C.card,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _focused ? _C.accent.withOpacity(0.45) : _C.border,
+            color: _focused ? Theme.of(context).colorScheme.primary.withOpacity(0.45) : Theme.of(context).colorScheme.outlineVariant,
             width: _focused ? 1 : 0.5,
           ),
         ),
         child: TextField(
           controller: widget.controller,
           maxLines: widget.maxLines,
-          style: const TextStyle(
-            color: _C.textPrimary,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 14,
             letterSpacing: -0.2,
           ),
           decoration: InputDecoration(
             hintText: widget.hint,
-            hintStyle:
-                const TextStyle(color: _C.textTertiary, fontSize: 14),
+            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14),
             prefixIcon: Padding(
               padding: const EdgeInsets.only(left: 14, right: 10),
               child: Icon(widget.icon,
-                  color: _focused ? _C.accent.withOpacity(0.7) : _C.textTertiary,
+                  color: _focused ? Theme.of(context).colorScheme.primary.withOpacity(0.7) : Theme.of(context).colorScheme.onSurfaceVariant,
                   size: 15),
             ),
             prefixIconConstraints:
@@ -688,11 +674,11 @@ class _ProSwitch extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         width: 44,
         height: 26,
-        decoration: BoxDecoration(
-          color: value ? _C.accent : _C.bg,
+          decoration: BoxDecoration(
+          color: value ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(13),
           border: Border.all(
-            color: value ? Colors.transparent : _C.border,
+            color: value ? Colors.transparent : Theme.of(context).colorScheme.outlineVariant,
             width: 0.5,
           ),
         ),
@@ -701,12 +687,12 @@ class _ProSwitch extends StatelessWidget {
           curve: Curves.easeInOut,
           alignment:
               value ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
+            child: Container(
             width: 20,
             height: 20,
             margin: const EdgeInsets.symmetric(horizontal: 3),
             decoration: BoxDecoration(
-              color: value ? _C.bg : _C.textTertiary,
+              color: value ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
               shape: BoxShape.circle,
             ),
           ),
@@ -730,11 +716,11 @@ class _StepperButton extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: _C.bg,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: _C.borderHigh, width: 0.5),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
         ),
-        child: Icon(icon, color: _C.textSecondary, size: 14),
+        child: Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 14),
       ),
     );
   }
@@ -749,17 +735,17 @@ class _CancelButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: _C.card,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _C.border, width: 0.5),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
         ),
-        child: const Text(
+        child: Text(
           'Annuler',
           style: TextStyle(
-            color: _C.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -777,34 +763,36 @@ class _PublishButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+        final colorScheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: _C.accent,
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: isLoading
-              ? const SizedBox(
+              ?  SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: _C.bg,
+                    color: colorScheme.onSurface,
                   ),
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(_ProIcons.send, color: _C.bg, size: 15),
+                  children:  [
+                    Icon(_ProIcons.send, color: colorScheme.onSurface, size: 15),
                     SizedBox(width: 8),
                     Text(
                       'Publier l\'événement',
                       style: TextStyle(
-                        color: _C.bg,
+                        color: colorScheme.onSurface,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.2,

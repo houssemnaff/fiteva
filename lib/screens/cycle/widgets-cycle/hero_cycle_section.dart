@@ -1,6 +1,6 @@
 /*import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:fiteva/theme/FitEvaColors.dart';
+import 'package:fiteva/theme/app_theme.dart';
 
 
 class HeroCycleSection extends StatelessWidget {

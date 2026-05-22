@@ -19,13 +19,14 @@ class BoutiqueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final canAfford = userEtoiles >= item.etoiles;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: kSurface,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -65,7 +66,7 @@ class BoutiqueCard extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.65),
+                          colorScheme.scrim.withOpacity(0.65),
                         ],
                         stops: const [0.35, 1.0],
                       ),
@@ -84,11 +85,11 @@ class BoutiqueCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 7, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.55),
+                          color: colorScheme.scrim.withOpacity(0.55),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.lock_outline,
-                            color: Colors.white70, size: 13),
+                        child: Icon(Icons.lock_outline,
+                            color: colorScheme.onPrimary.withOpacity(0.85), size: 13),
                       ),
                     ),
                   Positioned(
@@ -101,8 +102,8 @@ class BoutiqueCard extends StatelessWidget {
                       children: [
                         Text(
                           item.brand,
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: colorScheme.onPrimary.withOpacity(0.85),
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2,
@@ -110,17 +111,17 @@ class BoutiqueCard extends StatelessWidget {
                         ),
                         Text(
                           item.discount,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onPrimary,
                             fontSize: 30,
                             fontWeight: FontWeight.w900,
                             height: 1,
                             letterSpacing: -1,
                           ),
                         ),
-                        const Text(
+                        Text(
                           'sur le site',
-                          style: TextStyle(color: Colors.white70, fontSize: 11),
+                          style: TextStyle(color: colorScheme.onPrimary.withOpacity(0.85), fontSize: 11),
                         ),
                       ],
                     ),
@@ -135,10 +136,10 @@ class BoutiqueCard extends StatelessWidget {
                 children: [
                   Text(
                     item.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: kTextPrimary,
+                      color: colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -149,12 +150,12 @@ class BoutiqueCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.water_drop, color: kDrop, size: 14),
+                          Icon(Icons.water_drop, color: colorScheme.primary, size: 14),
                           const SizedBox(width: 3),
                           Text(
                             '${item.etoiles}',
-                            style: const TextStyle(
-                              color: kDrop,
+                            style: TextStyle(
+                              color: colorScheme.primary,
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
                             ),
@@ -166,14 +167,14 @@ class BoutiqueCard extends StatelessWidget {
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: canAfford
-                              ? kAccent.withOpacity(0.12)
-                              : Colors.grey.withOpacity(0.1),
+                              ? colorScheme.primary.withOpacity(0.12)
+                              : colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           canAfford ? 'Échanger' : 'Insuffisant',
                           style: TextStyle(
-                            color: canAfford ? kAccent : kTextSecondary,
+                            color: canAfford ? colorScheme.primary : colorScheme.onSurfaceVariant,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),

@@ -1,4 +1,3 @@
-import 'package:fiteva/screens/nutrition/theme/app_colors.dart';
 import 'package:fiteva/screens/shop/widgets/promo_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -21,8 +20,9 @@ class BoutiqueDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFFFF),
+      backgroundColor: colorScheme.background,
       body: Column(
         children: [
           Expanded(
@@ -35,30 +35,30 @@ class BoutiqueDetailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildBrandChip(),
+                        _buildBrandChip(context),
                         const SizedBox(height: 12),
                         Text(
                           item.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
-                            color: kTextPrimary,
+                            color: colorScheme.onSurface,
                             letterSpacing: -0.5,
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           item.description,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: kTextSecondary,
+                            color: colorScheme.onSurfaceVariant,
                             height: 1.6,
                           ),
                         ),
                         const SizedBox(height: 20),
-                        _buildInfoCard(),
+                        _buildInfoCard(context),
                         const SizedBox(height: 16),
-                        _buildHowToUseCard(),
+                        _buildHowToUseCard(context),
                         const SizedBox(height: 32),
                       ],
                     ),
@@ -74,6 +74,7 @@ class BoutiqueDetailScreen extends StatelessWidget {
   }
 
   Widget _buildSliverAppBar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
@@ -86,11 +87,11 @@ class BoutiqueDetailScreen extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
+              color: colorScheme.scrim.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.arrow_back_ios_new,
-                color: Colors.white, size: 18),
+            child: Icon(Icons.arrow_back_ios_new,
+                color: colorScheme.onPrimary, size: 18),
           ),
         ),
       ),
@@ -101,11 +102,11 @@ class BoutiqueDetailScreen extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
+                color: colorScheme.scrim.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.share_outlined,
-                color: Colors.white, size: 18),
+              child: Icon(Icons.share_outlined,
+                  color: colorScheme.onPrimary, size: 18),
           ),
         ),
       ],
@@ -135,7 +136,7 @@ class BoutiqueDetailScreen extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.7),
+                    colorScheme.scrim.withOpacity(0.7),
                   ],
                   stops: const [0.4, 1.0],
                 ),
@@ -151,8 +152,8 @@ class BoutiqueDetailScreen extends StatelessWidget {
                 children: [
                   Text(
                     item.brand,
-                    style: const TextStyle(
-                      color: Colors.white60,
+                    style: TextStyle(
+                      color: colorScheme.onPrimary.withOpacity(0.8),
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 2,
@@ -160,18 +161,18 @@ class BoutiqueDetailScreen extends StatelessWidget {
                   ),
                   Text(
                     item.discount,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colorScheme.onPrimary,
                       fontSize: 64,
                       fontWeight: FontWeight.w900,
                       height: 1,
                       letterSpacing: -3,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'sur le site',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: colorScheme.onPrimary.withOpacity(0.85),
                       fontSize: 20,
                       fontWeight: FontWeight.w300,
                     ),
@@ -185,7 +186,8 @@ class BoutiqueDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBrandChip() {
+  Widget _buildBrandChip(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -195,7 +197,7 @@ class BoutiqueDetailScreen extends StatelessWidget {
       child: Text(
         item.brand,
         style: TextStyle(
-          color: item.primaryColor,
+          color: colorScheme.primary,
           fontSize: 12,
           fontWeight: FontWeight.w800,
           letterSpacing: 1,
@@ -204,15 +206,16 @@ class BoutiqueDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard() {
+  Widget _buildInfoCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Theme.of(context).shadowColor.withOpacity(0.05),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -222,40 +225,41 @@ class BoutiqueDetailScreen extends StatelessWidget {
         children: [
           InfoRow(
             icon: Icons.water_drop,
-            iconColor: kDrop,
+            iconColor: colorScheme.primary,
             label: 'Coût',
             value: '${item.etoiles} etoiles',
-            valueColor: kDrop,
+            valueColor: colorScheme.primary,
           ),
           const Divider(height: 24, thickness: 0.5),
           InfoRow(
             icon: Icons.calendar_today_outlined,
-            iconColor: kTextSecondary,
+            iconColor: colorScheme.onSurfaceVariant,
             label: 'Valable jusqu\'au',
             value: item.validUntil,
           ),
           const Divider(height: 24, thickness: 0.5),
           InfoRow(
             icon: Icons.account_balance_wallet_outlined,
-            iconColor: _canAfford ? const Color(0xFF3E6B47) : Colors.orange,
+            iconColor: _canAfford ? colorScheme.primary : colorScheme.tertiary,
             label: 'Mes etoiles',
             value: '$userEtoiles disponibles',
-            valueColor: _canAfford ? const Color(0xFF3E6B47) : Colors.orange,
+            valueColor: _canAfford ? colorScheme.primary : colorScheme.tertiary,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHowToUseCard() {
+  Widget _buildHowToUseCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).shadowColor.withOpacity(0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -269,7 +273,6 @@ class BoutiqueDetailScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: kTextPrimary,
             ),
           ),
           const SizedBox(height: 14),
@@ -287,13 +290,14 @@ class BoutiqueDetailScreen extends StatelessWidget {
   }
 
   Widget _buildCTABar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: EdgeInsets.fromLTRB(
           20, 12, 20, MediaQuery.of(context).padding.bottom + 16),
       decoration: BoxDecoration(
-        color: kSurface,
+        color: colorScheme.surface,
         border: Border(
-          top: BorderSide(color: Colors.black.withOpacity(0.06), width: 1),
+          top: BorderSide(color: colorScheme.outlineVariant, width: 1),
         ),
       ),
       child: Column(
@@ -305,12 +309,12 @@ class BoutiqueDetailScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.info_outline, size: 14, color: Colors.orange[700]),
+                  Icon(Icons.info_outline, size: 14, color: colorScheme.tertiary),
                   const SizedBox(width: 6),
                   Text(
                     'Il te manque ${item.etoiles - userEtoiles} etoiles',
                     style: TextStyle(
-                        color: Colors.orange[700],
+                        color: colorScheme.tertiary,
                         fontSize: 13,
                         fontWeight: FontWeight.w500),
                   ),
@@ -323,8 +327,8 @@ class BoutiqueDetailScreen extends StatelessWidget {
             child: ElevatedButton(
               onPressed: _canAfford ? () => _showPromoModal(context) : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: kAccent,
-                disabledBackgroundColor: Colors.grey.shade300,
+                backgroundColor: colorScheme.primary,
+                disabledBackgroundColor: colorScheme.surfaceContainerHighest,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28)),
                 elevation: 0,
@@ -334,7 +338,7 @@ class BoutiqueDetailScreen extends StatelessWidget {
                 children: [
                   Icon(
                     _canAfford ? Icons.water_drop : Icons.lock_outline,
-                    color: _canAfford ? Colors.white : Colors.grey,
+                    color: _canAfford ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
@@ -343,7 +347,7 @@ class BoutiqueDetailScreen extends StatelessWidget {
                         ? 'Échanger ${item.etoiles} etoiles'
                         : 'etoiles insuffisantes',
                     style: TextStyle(
-                      color: _canAfford ? Colors.white : Colors.grey,
+                      color: _canAfford ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),

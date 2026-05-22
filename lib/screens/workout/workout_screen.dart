@@ -1,40 +1,26 @@
+import 'package:fiteva/models/home_program_model.dart';
+import 'package:fiteva/screens/workout/widgets/DanceSection.dart';
+import 'package:fiteva/screens/workout/widgets/GrossesseSection.dart';
+import 'package:fiteva/screens/workout/widgets/MaisonSection.dart';
+import 'package:fiteva/screens/workout/widgets/RecuperationSection.dart';
+import 'package:fiteva/screens/workout/widgets/SalleSection.dart';
+import 'package:fiteva/screens/workout/widgets/ZonesSection.dart';
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
-import '../../theme/app_theme.dart';
+import 'theme/color.dart';
 import 'workout_detail_screen.dart';
 import 'corpszone_playerscreen.dart';
 
-class _Cat {
-  final String label;
-  final String category;
-  final Color color;
-  final IconData icon;
 
-  const _Cat(this.label, this.category, this.color, this.icon);
-}
 
-class _T {
-  static const Color accent = AppTheme.workoutHeaderBg;
-  static const Color muscu = AppTheme.workoutMusculation;
-  static const Color hiit = AppTheme.workoutHiit;
-  static const Color pilates = AppTheme.workoutPilates;
-  static const Color dance = AppTheme.workoutDance;
-  static const Color running = AppTheme.workoutRunning;
-}
 
-const List<_Cat> _cats = [
-  _Cat('Tout', '', _T.accent, Icons.bolt_rounded),
-  _Cat('Muscu', 'MUSCULATION', _T.muscu, Icons.fitness_center_rounded),
-  _Cat('HIIT', 'HIIT', _T.hiit, Icons.local_fire_department_rounded),
-  _Cat('Pilates', 'PILATES', _T.pilates, Icons.self_improvement_rounded),
-  _Cat('Danse', 'DANCE', _T.dance, Icons.music_note_rounded),
-  _Cat('Running', 'RUNNING', _T.running, Icons.directions_run_rounded),
-];
-
+// ═══════════════════════════════════════════════════════════
+// MAIN SCREEN — HomeWorkoutScreen
+// ═══════════════════════════════════════════════════════════
 class WorkoutScreen extends ConsumerStatefulWidget {
   const WorkoutScreen({super.key});
 
@@ -42,471 +28,331 @@ class WorkoutScreen extends ConsumerStatefulWidget {
   ConsumerState<WorkoutScreen> createState() => _WorkoutScreenState();
 }
 
-class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
-  int _selectedCategory = 0;
-  bool _showAllWorkouts = false;
+class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
+    with SingleTickerProviderStateMixin {
 
-  Color _getCategoryChipColor(int index) {
-    return _cats[index].color;
+  final Set<String> _favorites = {};
+  int _selectedChip = 0;
+
+  final _scrollController = ScrollController();
+
+  // GlobalKeys pour scroll par section
+  final _keySalle     = GlobalKey();
+  final _keyMaison    = GlobalKey();
+  final _keyDance     = GlobalKey();
+  final _keyRecup     = GlobalKey();
+  final _keyZones     = GlobalKey();
+  final _keyGrossesse = GlobalKey();
+
+  final List<String>   _chipLabels = ['Tout','Salle','Maison','Danse','Récup.','Grossesse'];
+  final List<Color>    _chipColors = [
+    WorkoutColors.zone, WorkoutColors.salle, WorkoutColors.maison, WorkoutColors.dance, WorkoutColors.recuperation, WorkoutColors.grossesse,
+  ];
+  final List<IconData> _chipIcons  = [
+    Icons.bolt_rounded, Icons.fitness_center_rounded, Icons.home_rounded,
+    Icons.music_note_rounded, Icons.self_improvement_rounded, Icons.favorite_rounded,
+  ];
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
-  String _mapLabelToCategory(String label) {
-    try {
-      return _cats.firstWhere((cat) => cat.label == label).category;
-    } catch (e) {
-      return '';
+  void _scrollToKey(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(ctx,
+        duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
+  }
+
+  void _onChipTap(int index) {
+    setState(() => _selectedChip = index);
+    final keys = [
+      null, _keySalle, _keyMaison, _keyDance, _keyRecup, _keyGrossesse,
+    ];
+    if (index < keys.length && keys[index] != null) {
+      Future.delayed(const Duration(milliseconds: 100),
+          () => _scrollToKey(keys[index]!));
+    } else if (index == 0) {
+      _scrollController.animateTo(0,
+          duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
     }
   }
 
-  Color _getColorByCategory(String category) {
-    try {
-      return _cats.firstWhere((cat) => cat.category.isEmpty || cat.category.toUpperCase() == category.toUpperCase()).color;
-    } catch (e) {
-      return AppTheme.workoutDefault;
-    }
-  }
-
-  List<WorkoutModel> _getFilteredWorkouts(List<WorkoutModel> workouts) {
-    if (_selectedCategory == 0) return workouts;
-    String categoryFilter = _cats[_selectedCategory].category;
-    return workouts.where((w) => w.category.toUpperCase() == categoryFilter).toList();
-  }
-
-  List<String> _recommendedCategoriesForPhase(String phaseName) {
-    final phase = phaseName.toLowerCase();
-    if (phase.contains('follic')) return ['MUSCULATION', 'PILATES', 'DANCE'];
-    if (phase.contains('ovul')) return ['HIIT', 'RUNNING', 'DANCE'];
-    if (phase.contains('lute') || phase.contains('luteal')) return ['PILATES', 'RUNNING'];
-    if (phase.contains('menstr') || phase.contains('period')) return ['PILATES'];
-    return ['PILATES', 'RUNNING'];
-  }
-
-  List<WorkoutModel> _getPhaseRecommendedWorkouts(List<WorkoutModel> workouts, String phaseName) {
-    final recommendedCategories = _recommendedCategoriesForPhase(phaseName);
-    return workouts
-        .where((workout) => recommendedCategories.contains(workout.category.toUpperCase()))
-        .toList();
-  }
-
-  // Gets 1 workout from each available category based on the current filter
-  List<WorkoutModel> _getOnePerCategory(List<WorkoutModel> workouts) {
-    final Map<String, WorkoutModel> unique = {};
-    for (var w in workouts) {
-      if (!unique.containsKey(w.category.toUpperCase())) {
-        unique[w.category.toUpperCase()] = w;
-      }
-    }
-    return unique.values.toList();
-  }
-
-  Widget _buildGroupedCards(List<WorkoutModel> workouts, BuildContext context) {
-    final List<List<WorkoutModel>> groups = [];
-    for (int i = 0; i < workouts.length; i += 3) {
-      groups.add(workouts.sublist(i, (i + 3).clamp(0, workouts.length)));
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: groups.map((group) => _buildGroup(group, context)).toList(),
-    );
-  }
-
-  Widget _buildGroup(List<WorkoutModel> group, BuildContext context) {
-    final large = group[0];
-    final smalls = group.length > 1 ? group.sublist(1) : <WorkoutModel>[];
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(flex: 11, child: _buildWorkoutCard(large, isLarge: true)),
-            const SizedBox(width: 6),
-            Expanded(
-              flex: 10,
-              child: Column(
-                children: [
-                  if (smalls.isNotEmpty) Expanded(child: _buildWorkoutCard(smalls[0], isLarge: false)),
-                  if (smalls.length > 1) ...[
-                    const SizedBox(height: 6),
-                    Expanded(child: _buildWorkoutCard(smalls[1], isLarge: false)),
-                  ],
-                  if (smalls.length == 1) ...[
-                    const SizedBox(height: 6),
-                    const Expanded(child: SizedBox.shrink()),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWorkoutCard(WorkoutModel workout, {required bool isLarge, double? width, double? height}) {
-    final color = _getColorByCategory(workout.category);
-
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => WorkoutDetailScreen(workout: workout)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: SizedBox(
-          width: width,
-          height: height ?? (isLarge ? 220 : 107),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.asset(
-                workout.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade800),
-              ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.72)],
-                    stops: const [0.4, 1.0],
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
-                  child: Text(
-                    workout.category.toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 12,
-                right: 12,
-                bottom: 12,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      workout.title,
-                      style: TextStyle(color: Colors.white, fontSize: isLarge ? 16 : 13, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${workout.duration} · ${workout.level}',
-                      style: TextStyle(color: Colors.white70, fontSize: isLarge ? 12 : 10),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGridZoneCard(String label, IconData iconData, List<Map<String, dynamic>> providerZones, BuildContext context) {
-    
-    // Attempt to match the provider item based on the label, default to first item if not found
-    final zoneContent = providerZones.firstWhere(
-        (z) => z['title'].toString().toLowerCase().contains(label.toLowerCase().split(' ').first), 
-        orElse: () => providerZones[0]);
-
-    return GestureDetector(
-      onTap: () {
-        final workout = WorkoutModel(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: zoneContent['title'],
-          category: 'Zone',
-          duration: '15 min',
-          level: 'Tous niveaux',
-          calories: '150',
-          imageUrl: zoneContent['imageUrl'],
-          exercises: List<String>.from(zoneContent['exercises']),
-        );
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => CorpsZonePlayerScreen(
-              workout: workout,
-              zoneName: label,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        height: 80,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          image: DecorationImage(
-            image: NetworkImage(zoneContent['imageUrl']),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.5), BlendMode.darken),
-          ),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(iconData, color: Colors.white, size: 22),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  void _toggleFav(String id) {
+    setState(() {
+      _favorites.contains(id) ? _favorites.remove(id) : _favorites.add(id);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final workouts = ref.watch(workoutsProvider);
-    final cycle = ref.watch(cycleProvider);
-    final filteredWorkouts = _getFilteredWorkouts(workouts);
-    final phaseRecommendedWorkouts = _getPhaseRecommendedWorkouts(workouts, cycle.name);
-    final bodyZones = ref.watch(bodyZonesProvider);
-    
-    // Core UI Lists
-    final swipeWorkouts = _getOnePerCategory(filteredWorkouts);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final workouts     = ref.watch(workoutsProvider);
+    final cycle        = ref.watch(cycleProvider);
+    final bodyZones    = ref.watch(bodyZonesProvider);
+    final sallePrograms = ref.watch(salleProgramsProvider);
+    final homePrograms = ref.watch(homeProgramsProvider);
+
+    final screenH  = MediaQuery.of(context).size.height;
+    final bottomGap = screenH < 700 ? 80.0 : 110.0;
+
+    // Filtrage par catégorie
+    List<WorkoutModel> byCat(String cat) =>
+        workouts.where((w) => w.category.toUpperCase() == cat).toList();
 
     return Scaffold(
-      backgroundColor: AppTheme.workoutPageBg,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 249, 251, 249),
+        backgroundColor: colorScheme.surface,
         elevation: 0,
-        title: const Text('Workouts', style: TextStyle(color: Color.fromARGB(255, 3, 3, 3), fontWeight: FontWeight.bold, fontSize: 20)),
+        title: Text(
+          'Workouts',
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
         centerTitle: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Stack(
+              alignment: Alignment.topRight,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.favorite_rounded,
+                    color: WorkoutColors.grossesse,
+                    size: 26,
+                  ),
+                  onPressed: () {},
+                ),
+                if (_favorites.isNotEmpty)
+                  Positioned(
+                    top: 6, right: 6,
+                    child: Container(
+                      width: 16, height: 16,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text('${_favorites.length}',
+                            style: TextStyle(
+                              color: colorScheme.onPrimary,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            )),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Banner
-          Padding(
-  padding: const EdgeInsets.all(16),
-  child: Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: AppTheme.workoutCardSoftBg,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: AppTheme.workoutCardSoftBorder, width: 0.5),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: AppTheme.workoutSuccess,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'PHASE ${cycle.name.toUpperCase()}',
-              style: const TextStyle(
-                color: AppTheme.workoutTextSoft,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.4,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          cycle.advice,
-          style: const TextStyle(
-            color: AppTheme.workoutTextDark,
-            fontWeight: FontWeight.w500,
-            fontSize: 15,
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 12),
-      /*  Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.55),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.access_time_rounded,
-                  size: 14, color: Color(0xFF3A7A3A)),
-              const SizedBox(width: 6),
-              Text(
-                'Jours ${cycle.startDay} – ${cycle.endDay}',
-                style: const TextStyle(
-                  color: Color(0xFF3A7A3A),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+
+            // ── Phase Banner ──────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                        colorScheme.primary.withOpacity(0.9),
+                        colorScheme.secondary.withOpacity(0.9),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                          color: colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Container(
+                                width: 6, height: 6,
+                              decoration: BoxDecoration(
+                                color: colorScheme.onPrimary,
+                                shape: BoxShape.circle)),
+                            const SizedBox(width: 6),
+                            Text('PHASE ${cycle.name.toUpperCase()}',
+                              style: TextStyle(
+                                color: colorScheme.onPrimary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.5)),
+                          ]),
+                          const SizedBox(height: 6),
+                          Text(cycle.advice,
+                              style: TextStyle(
+                                color: colorScheme.onPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                height: 1.5)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                            color: colorScheme.onPrimary.withOpacity(0.15),
+                          shape: BoxShape.circle),
+                      child: const Text('🌿',
+                          style: TextStyle(fontSize: 22)),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),*/
-      ],
-    ),
-  ),
-),
+            ),
 
-            // Chips
+            // ── Chips de navigation ───────────────────
+            const SizedBox(height: 16),
             SizedBox(
-              height: 48,
+              height: 44,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _cats.length,
-                itemBuilder: (context, index) {
-                  final cat = _cats[index];
-                  final isSelected = _selectedCategory == index;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () => setState(() {
-                        _selectedCategory = index;
-                        _showAllWorkouts = false; // Reset to modern view on filter
-                      }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected ? _getCategoryChipColor(index) : Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: isSelected ? _getCategoryChipColor(index) : Colors.grey.shade300),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(cat.icon, color: isSelected ? Colors.white : Colors.black87, size: 20),
-                            const SizedBox(width: 8),
-                            Text(cat.label, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
-                          ],
-                        ),
+                itemCount: _chipLabels.length,
+                itemBuilder: (_, i) {
+                  final sel = _selectedChip == i;
+                  return GestureDetector(
+                    onTap: () => _onChipTap(i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: sel ? _chipColors[i] : colorScheme.surface,
+                        borderRadius: BorderRadius.circular(50),
+                        border: Border.all(
+                          color: sel ? _chipColors[i] : colorScheme.outlineVariant),
+                        boxShadow: sel
+                            ? [
+                                BoxShadow(
+                                    color: _chipColors[i].withOpacity(0.35),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2))
+                              ]
+                            : [],
                       ),
+                      child: Row(children: [
+                        Icon(_chipIcons[i],
+                          color: sel
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface.withOpacity(0.72),
+                            size: 16),
+                        const SizedBox(width: 6),
+                        Text(_chipLabels[i],
+                            style: TextStyle(
+                            color: sel
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurface.withOpacity(0.82),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13)),
+                      ]),
                     ),
                   );
                 },
               ),
             ),
-            const SizedBox(height: 24),
 
-            // Recommended Section Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      _selectedCategory == 0
-                          ? 'Programmes recommandés'
-                          : '${_cats[_selectedCategory].label} workouts',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                        color: AppTheme.workoutTextDark,
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => setState(() => _showAllWorkouts = !_showAllWorkouts),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: AppTheme.workoutTextDark.withOpacity(0.08), borderRadius: BorderRadius.circular(20)),
-                      child: Text(
-                        _showAllWorkouts ? 'Voir moins' : 'Voir tout',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.workoutTextDark, fontSize: 13),
-                      ),
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 8),
+
+            // ── Section Salle ─────────────────────────
+            KeyedSubtree(
+              key: _keySalle,
+              child: SalleSection(
+                sallePrograms: sallePrograms,
+                favorites: _favorites,
+                onToggleFav: _toggleFav,
               ),
             ),
-            const SizedBox(height: 16),
 
-            // Content logic
-            if (_showAllWorkouts)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildGroupedCards(filteredWorkouts, context),
-              )
-            else ...[
-              // Modern Horizontal Swipe
-              SizedBox(
-                height: 260,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: swipeWorkouts.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: _buildWorkoutCard(swipeWorkouts[index], isLarge: true, width: 220),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 32),
+            const SizedBox(height: 8),
 
-              // Body Zones Grid
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Vidéos par zone du corps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.workoutTextDark)),
-                    Text('Tout voir ›', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryColor)),
-                  ],
-                ),
+            // ── Section Maison ────────────────────────
+            KeyedSubtree(
+              key: _keyMaison,
+              child: MaisonSection(
+                homePrograms: homePrograms,
+                favorites: _favorites,
+                onToggleFav: _toggleFav,
               ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: _buildGridZoneCard('Abdos', Icons.health_and_safety, bodyZones, context)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _buildGridZoneCard('Haut du corps', Icons.fitness_center, bodyZones, context)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(child: _buildGridZoneCard('Bas du corps', Icons.directions_walk, bodyZones, context)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _buildGridZoneCard('Full body', Icons.accessibility_new, bodyZones, context)),
-                      ],
-                    ),
-                  ],
-                ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // ── Section Danse ─────────────────────────
+            KeyedSubtree(
+              key: _keyDance,
+              child: DanceSection(
+                danceWorkouts: byCat('DANCE'),
+                favorites: _favorites,
+                onToggleFav: _toggleFav,
               ),
-const SizedBox(height: 110),            ]
+            ),
+
+            const SizedBox(height: 8),
+
+            // ── Section Récupération ──────────────────
+            KeyedSubtree(
+              key: _keyRecup,
+              child: RecuperationSection(
+                recupWorkouts: byCat('RECUPERATION'),
+                favorites: _favorites,
+                onToggleFav: _toggleFav,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+           
+
+              // ── Section Grossesse ─────────────────────
+            KeyedSubtree(
+              key: _keyGrossesse,
+              child: GrossesseSection(
+                grossesseWorkouts: byCat('GROSSESSE'),
+                favorites: _favorites,
+                onToggleFav: _toggleFav,
+              ),
+            ),
+
+
+            const SizedBox(height: 8),
+
+           // ── Section Zones du corps ────────────────
+            KeyedSubtree(
+              key: _keyZones,
+              child: ZonesSection(bodyZones: bodyZones),
+            ),
+
+
+            SizedBox(height: bottomGap),
           ],
         ),
       ),

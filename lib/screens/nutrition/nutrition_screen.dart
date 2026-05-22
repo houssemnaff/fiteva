@@ -1,6 +1,5 @@
 import 'package:fiteva/screens/nutrition/health_nutrition_widgets.dart';
 import 'package:flutter/material.dart';
-import 'theme/app_colors.dart';
 import 'models/models.dart';
 import 'widgets/shared/shared_widgets.dart';
 import 'widgets/home/home_widgets.dart';
@@ -8,7 +7,7 @@ import 'widgets/home/home_widgets.dart';
 import 'suivi_nutrition_screen.dart';
 import 'recipes_list_screen.dart';
 import 'ajout_rapide_screen.dart';
-import 'nutruition_detail_screen.dart';
+import 'recette_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────
 // Enum onglet
@@ -159,8 +158,9 @@ class _NutritionHomeScreenState extends State<NutritionHomeScreen>
   // ── Build ─────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F3EE),
+      backgroundColor: colorScheme.background,
       body: CustomScrollView(
         slivers: [
           // ── Header avec tabs ──────────────────────────────────
@@ -319,12 +319,13 @@ class _NutritionTabHeader extends StatelessWidget {
     final topPad = MediaQuery.of(context).padding.top;
     // hauteur expandée = padding status bar + titre + tabs + marges
     final expandedH = topPad + 130.0;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return SliverAppBar(
       pinned: true,
       expandedHeight: expandedH,
       collapsedHeight: topPad + 56, // tabs toujours visibles
-      backgroundColor: const Color(0xFFF5F3EE),
+      backgroundColor: colorScheme.background,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -335,7 +336,7 @@ class _NutritionTabHeader extends StatelessWidget {
               1 - ((constraints.maxHeight - (topPad + 56)) / 74).clamp(0.0, 1.0);
 
           return Container(
-            color: const Color(0xFFF5F3EE),
+            color: colorScheme.background,
             padding: EdgeInsets.only(
               top: topPad + 12,
               left: 20,
@@ -354,21 +355,21 @@ class _NutritionTabHeader extends StatelessWidget {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               'Bonjour, Yasmine 👋',
                               style: TextStyle(
                                   fontSize: 13,
-                                  color: Color(0xFF888780),
+                                  color: colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w400),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               'Mon espace santé',
                               style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2C2C2A),
+                                  color: colorScheme.onSurface,
                                   letterSpacing: -0.3),
                             ),
                           ],
@@ -379,18 +380,18 @@ class _NutritionTabHeader extends StatelessWidget {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE1F5EE),
+                            color: colorScheme.primary.withOpacity(0.12),
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: const Color(0xFF1D9E75).withOpacity(0.3),
+                              color: colorScheme.primary.withOpacity(0.3),
                               width: 1.5),
                         ),
-                        child: const Center(
+                          child: Center(
                           child: Text('Y',
                               style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF0F6E56))),
+                                color: colorScheme.primary)),
                         ),
                       ),
                     ],
@@ -421,11 +422,12 @@ class _TabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 40,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: const Color(0xFFE3E1DB),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -434,14 +436,14 @@ class _TabBar extends StatelessWidget {
             label: '🥗  Nutrition',
             selected: activeTab == _Tab.nutrition,
             onTap: () => onTab(_Tab.nutrition),
-            activeTextColor: const Color(0xFF2C2C2A),
+            activeTextColor: colorScheme.onSurface,
           ),
           const SizedBox(width: 3),
           _TabPill(
             label: '🩺  Santé',
             selected: activeTab == _Tab.sante,
             onTap: () => onTab(_Tab.sante),
-            activeTextColor: const Color(0xFF185FA5),
+            activeTextColor: colorScheme.primary,
           ),
         ],
       ),
@@ -464,6 +466,7 @@ class _TabPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -472,12 +475,12 @@ class _TabPill extends StatelessWidget {
           curve: Curves.easeOutCubic,
           height: double.infinity,
           decoration: BoxDecoration(
-            color: selected ? Colors.white : Colors.transparent,
+            color: selected ? colorScheme.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.07),
+                      color: Theme.of(context).shadowColor.withOpacity(0.07),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     )
@@ -490,7 +493,7 @@ class _TabPill extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? activeTextColor : const Color(0xFF888780),
+              color: selected ? activeTextColor : colorScheme.onSurfaceVariant,
             ),
           ),
         ),

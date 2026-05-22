@@ -229,10 +229,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final profileAsync = ref.watch(userProfileProvider(widget.userId));
 
     return Scaffold(
-      backgroundColor: _C.bg,
+      backgroundColor: colorScheme.surface,
       body: profileAsync.when(
         loading: () => const _ProfileSkeleton(),
         error: (e, _) => _ProfileError(error: e.toString()),
@@ -262,26 +263,27 @@ class _ProfileContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return NestedScrollView(
       headerSliverBuilder: (context, innerBoxIsScrolled) => [
         SliverAppBar(
           pinned: true,
           floating: false,
           elevation: 0,
-          backgroundColor: _C.bg,
-          surfaceTintColor: Colors.transparent,
+          backgroundColor: colorScheme.surface,
+          surfaceTintColor: colorScheme.surface,
           leading: CupertinoButton(
             padding: EdgeInsets.zero,
             onPressed: () => Navigator.of(context).pop(),
-            child: const Icon(CupertinoIcons.chevron_back,
-                color: _C.textPrimary, size: 22),
+            child: Icon(CupertinoIcons.chevron_back,
+                color: colorScheme.onSurface, size: 22),
           ),
           actions: [
             CupertinoButton(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               onPressed: () => _showOptions(context),
-              child: const Icon(CupertinoIcons.ellipsis_circle,
-                  color: _C.textSecondary, size: 22),
+              child: Icon(CupertinoIcons.ellipsis_circle,
+                  color: colorScheme.onSurfaceVariant, size: 22),
             ),
           ],
           bottom: PreferredSize(
@@ -289,13 +291,13 @@ class _ProfileContent extends StatelessWidget {
             child: Container(
               decoration: const BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(color: _C.separator, width: 0.5),
+                  bottom: BorderSide(color: Color(0x1F000000), width: 0.5),
                 ),
               ),
               child: TabBar(
                 controller: tabController,
-                labelColor: _C.textPrimary,
-                unselectedLabelColor: _C.textSecondary,
+                labelColor: colorScheme.onSurface,
+                unselectedLabelColor: colorScheme.onSurfaceVariant,
                 indicator: const UnderlineTabIndicator(
                   borderSide: BorderSide(color: _C.move, width: 2),
                   insets: EdgeInsets.symmetric(horizontal: 24),
@@ -375,10 +377,11 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final profile = widget.profile;
 
     return Container(
-      color: _C.bg,
+      color: colorScheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -441,19 +444,19 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                     children: [
                       Text(
                         profile.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
-                          color: _C.textPrimary,
+                          color: colorScheme.onSurface,
                           letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         profile.username,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: _C.textSecondary,
+                          color: colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -474,9 +477,9 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 profile.bio!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: _C.textSecondary,
+                  color: colorScheme.onSurface,
                   height: 1.5,
                 ),
               ),
@@ -512,6 +515,7 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Hero(
       tag: heroTag ?? 'avatar_${profile.id}',
       child: Container(
@@ -519,7 +523,7 @@ class _Avatar extends StatelessWidget {
         height: 84,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: _C.bg, width: 3),
+          border: Border.all(color: colorScheme.surface, width: 3),
           boxShadow: [
             BoxShadow(
               color: const Color.fromARGB(255, 6, 61, 25).withOpacity(0.35),
@@ -532,14 +536,14 @@ class _Avatar extends StatelessWidget {
           child: profile.avatarUrl != null
               ? Image.network(profile.avatarUrl!, fit: BoxFit.cover)
               : Container(
-                  color: _C.surface,
+                  color: colorScheme.surfaceContainerHighest,
                   child: Center(
                     child: Text(
                       profile.name[0].toUpperCase(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 34,
                         fontWeight: FontWeight.w700,
-                        color: _C.textPrimary,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -582,12 +586,13 @@ class _NiveauXpCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final progress = (xp / maxXp).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _C.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _accent.withOpacity(0.25)),
       ),
@@ -609,9 +614,9 @@ class _NiveauXpCard extends StatelessWidget {
               const Spacer(),
               Text(
                 '$xp / $maxXp XP',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: _C.textSecondary,
+                  color: colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -622,7 +627,8 @@ class _NiveauXpCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: _C.surfaceElevated,
+             // backgroundColor: _C.surfaceElevated,
+              backgroundColor: colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(_accent),
               minHeight: 6,
             ),
@@ -651,6 +657,7 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final reach = profile.reach;
 
     return ListView(
@@ -773,10 +780,11 @@ class _RingStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
       decoration: BoxDecoration(
-        color: _C.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -843,9 +851,10 @@ class _GroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: _C.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(children: children),
@@ -868,6 +877,7 @@ class _StatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
@@ -885,9 +895,9 @@ class _StatRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 14,
-                color: _C.textPrimary,
+                color:colorScheme.onSurface,
                 fontWeight: FontWeight.w400,
               ),
             ),
@@ -921,6 +931,7 @@ class _DistributionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
@@ -940,9 +951,9 @@ class _DistributionRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontSize: 14,
-                    color: _C.textPrimary,
+                    color: colorScheme.onSurface,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -975,9 +986,12 @@ class _DistributionRow extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+        final colorScheme = Theme.of(context).colorScheme;
+
+    return  Padding(
       padding: EdgeInsets.only(left: 60),
-      child: Divider(height: 0, thickness: 0.5, color: _C.separator),
+      //child: Divider(height: 0, thickness: 0.5, color: _C.separator),
+      child: Divider(height: 0, thickness: 0.5, color: colorScheme.outlineVariant),
     );
   }
 }
@@ -1044,10 +1058,11 @@ class _PostCardState extends State<_PostCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _C.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1055,9 +1070,9 @@ class _PostCardState extends State<_PostCard> {
         children: [
           Text(
             widget.post.content,
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 15,
-              color: _C.textPrimary,
+              color: colorScheme.onSurface,
               height: 1.5,
               letterSpacing: -0.1,
             ),
@@ -1203,6 +1218,7 @@ class _EventRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Opacity(
       opacity: isPast ? 0.5 : 1.0,
       child: Padding(
@@ -1215,7 +1231,7 @@ class _EventRow extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: isPast
-                    ? _C.surfaceElevated
+                  ? colorScheme.onSurface
                     : _C.move.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -1249,10 +1265,10 @@ class _EventRow extends StatelessWidget {
                 children: [
                   Text(
                     event.title,
-                    style: const TextStyle(
+                    style:  TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: _C.textPrimary,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -1311,10 +1327,11 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: _C.surfaceElevated,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -1341,6 +1358,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1369,10 +1387,11 @@ class _ProfileSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: _C.bg,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: _C.bg,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         leading: const CupertinoButton(
           padding: EdgeInsets.zero,
@@ -1443,6 +1462,7 @@ class _ShimmerState extends State<_Shimmer>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: _anim,
       builder: (_, __) => Container(
@@ -1450,7 +1470,7 @@ class _ShimmerState extends State<_Shimmer>
         height: widget.height,
         decoration: BoxDecoration(
           color: Color.lerp(
-              _C.surface, _C.surfaceElevated, _anim.value),
+              colorScheme.surface, colorScheme.surfaceContainerHighest, _anim.value),
           borderRadius: BorderRadius.circular(widget.radius),
         ),
       ),
@@ -1468,6 +1488,7 @@ class _ProfileError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),

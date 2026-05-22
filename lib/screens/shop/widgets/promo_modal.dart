@@ -239,10 +239,11 @@ class _PromoModalState extends State<PromoModal> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final item = widget.item;
     return Container(
-      decoration: const BoxDecoration(
-        color: kBg,
+      decoration: BoxDecoration(
+        color: colorScheme.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(
@@ -255,7 +256,7 @@ class _PromoModalState extends State<PromoModal> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.15),
+              color: colorScheme.onSurface.withOpacity(0.15),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -266,14 +267,13 @@ class _PromoModalState extends State<PromoModal> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w900,
-              color: kTextPrimary,
               letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Utilise le code ou le QR code sur le site partenaire.',
-            style: TextStyle(fontSize: 13, color: kTextSecondary),
+            style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
@@ -310,7 +310,7 @@ class _PromoModalState extends State<PromoModal> {
                         CachedNetworkImage(
                           imageUrl: item.imageUrl,
                           fit: BoxFit.cover,
-                          color: Colors.black.withOpacity(0.3),
+                          color: colorScheme.scrim.withOpacity(0.3),
                           colorBlendMode: BlendMode.darken,
                           placeholder: (_, __) => Container(),
                           errorWidget: (_, __, ___) => Container(),
@@ -323,8 +323,8 @@ class _PromoModalState extends State<PromoModal> {
                             children: [
                               Text(
                                 item.brand,
-                                style: const TextStyle(
-                                  color: Colors.white70,
+                                style: TextStyle(
+                                  color: colorScheme.onPrimary.withOpacity(0.85),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 1.5,
@@ -332,17 +332,17 @@ class _PromoModalState extends State<PromoModal> {
                               ),
                               Text(
                                 item.discount,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: colorScheme.onPrimary,
                                   fontSize: 48,
                                   fontWeight: FontWeight.w900,
                                   height: 1,
                                   letterSpacing: -2,
                                 ),
                               ),
-                              const Text(
+                              Text(
                                 'sur le site',
-                                style: TextStyle(color: Colors.white70, fontSize: 16),
+                                style: TextStyle(color: colorScheme.onPrimary.withOpacity(0.85), fontSize: 16),
                               ),
                             ],
                           ),
@@ -351,7 +351,7 @@ class _PromoModalState extends State<PromoModal> {
                     ),
                   ),
                   Container(
-                    color: kSurface,
+                    color: colorScheme.surface,
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
@@ -359,7 +359,7 @@ class _PromoModalState extends State<PromoModal> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
-                            color: kBg,
+                            color: colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -368,18 +368,18 @@ class _PromoModalState extends State<PromoModal> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Code promo',
                                       style: TextStyle(
-                                          fontSize: 11, color: kTextSecondary),
+                                          fontSize: 11, color: colorScheme.onSurfaceVariant),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       item.promoCode,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.w900,
-                                        color: kTextPrimary,
+                                        color: colorScheme.onSurface,
                                         letterSpacing: 2,
                                       ),
                                     ),
@@ -404,8 +404,8 @@ class _PromoModalState extends State<PromoModal> {
                                       horizontal: 14, vertical: 8),
                                   decoration: BoxDecoration(
                                     color: _copied
-                                        ? const Color(0xFF3E6B47)
-                                        : kAccent,
+                                        ? colorScheme.primary
+                                        : colorScheme.secondary,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Row(
@@ -414,14 +414,14 @@ class _PromoModalState extends State<PromoModal> {
                                         _copied
                                             ? Icons.check
                                             : Icons.copy_rounded,
-                                        color: Colors.white,
+                                        color: colorScheme.onPrimary,
                                         size: 15,
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
                                         _copied ? 'Copié !' : 'Copier',
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: colorScheme.onPrimary,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -441,17 +441,17 @@ class _PromoModalState extends State<PromoModal> {
                               height: 72,
                               padding: const EdgeInsets.all(5),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: colorScheme.surface,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                    color: Colors.black.withOpacity(0.08)),
+                                    color: colorScheme.outlineVariant),
                               ),
                               child: QrImageView(
                                 data:
                                     'https://validate.tse.app/${item.promoCode}',
                                 version: QrVersions.auto,
                                 size: 62,
-                                backgroundColor: Colors.white,
+                                backgroundColor: colorScheme.surface,
                               ),
                             ),
                             const SizedBox(width: 14),
@@ -459,28 +459,28 @@ class _PromoModalState extends State<PromoModal> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                    Text(
                                     'Scanne le QR code',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
-                                      color: kTextPrimary,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                        color: colorScheme.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 3),
-                                  const Text(
+                                    Text(
                                     'Ou saisis le code manuellement lors de ta commande.',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: kTextSecondary,
-                                      height: 1.5,
-                                    ),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colorScheme.onSurfaceVariant,
+                                        height: 1.5,
+                                      ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     'Valable jusqu\'au ${item.validUntil}',
-                                    style: const TextStyle(
-                                        fontSize: 11, color: kTextSecondary),
+                                      style: TextStyle(
+                                          fontSize: 11, color: colorScheme.onSurfaceVariant),
                                   ),
                                 ],
                               ),
@@ -501,31 +501,31 @@ class _PromoModalState extends State<PromoModal> {
             child: ElevatedButton(
               onPressed: _generating ? null : _downloadPDF,
               style: ElevatedButton.styleFrom(
-                backgroundColor: kDarkCard,
+                backgroundColor: colorScheme.primary,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28)),
                 elevation: 0,
               ),
               child: _generating
-                  ? const SizedBox(
+                  ?  SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
+                              AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
                       ),
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.picture_as_pdf_outlined,
-                            color: Colors.white, size: 20),
+                              color: colorScheme.onPrimary, size: 20),
                         SizedBox(width: 8),
                         Text(
                           'Télécharger en PDF',
                           style: TextStyle(
-                            color: Colors.white,
+                              color: colorScheme.onPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
@@ -537,10 +537,10 @@ class _PromoModalState extends State<PromoModal> {
           const SizedBox(height: 10),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Fermer',
               style: TextStyle(
-                color: kTextSecondary,
+                color: colorScheme.onSurfaceVariant,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),

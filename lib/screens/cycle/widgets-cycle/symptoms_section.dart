@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../theme/FitEvaColors.dart';
+import '../../../theme/app_theme.dart';
 
 class SymptomsSection extends StatelessWidget {
   final List<String> symptoms;

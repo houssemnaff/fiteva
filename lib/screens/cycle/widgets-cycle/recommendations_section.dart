@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../theme/FitEvaColors.dart';
+import '../../../theme/app_theme.dart';
 
 class RecommendationsSection extends StatelessWidget {
   final Color sportColor;

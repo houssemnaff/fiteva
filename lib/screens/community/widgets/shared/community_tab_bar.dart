@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../../../theme/app_theme.dart';
 
 class CommunityTabBar extends StatelessWidget {
   final int selectedIndex;
@@ -20,8 +19,9 @@ class CommunityTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: Colors.white.withOpacity(0.95),
+      color: colorScheme.surface.withOpacity(0.95),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Row(
         children: List.generate(_tabs.length, (i) {
@@ -35,7 +35,7 @@ class CommunityTabBar extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
-                  color: selected ? AppTheme.primaryColor : Colors.transparent,
+                  color: selected ? colorScheme.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
@@ -45,8 +45,8 @@ class CommunityTabBar extends StatelessWidget {
                       tab.icon,
                       size: 15,
                       color: selected
-                          ? Colors.white
-                          : AppTheme.textSecondaryColor,
+                          ? colorScheme.onPrimary
+                          : colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -55,8 +55,8 @@ class CommunityTabBar extends StatelessWidget {
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: selected
-                            ? Colors.white
-                            : AppTheme.textSecondaryColor,
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],

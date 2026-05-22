@@ -1,4 +1,3 @@
-  import 'package:fiteva/screens/nutrition/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 
@@ -9,14 +8,15 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w900,
-            color: kTextPrimary,
+            color: colorScheme.onSurface,
             letterSpacing: -0.3,
           ),
         ),
@@ -26,21 +26,21 @@ class SectionHeader extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: kAccent.withOpacity(0.1),
+              color: colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Text(
                   'Tout voir',
                   style: TextStyle(
-                    color: kAccent,
+                    color: colorScheme.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 SizedBox(width: 2),
-                Icon(Icons.arrow_forward, color: kAccent, size: 13),
+                Icon(Icons.arrow_forward, color: colorScheme.primary, size: 13),
               ],
             ),
           ),

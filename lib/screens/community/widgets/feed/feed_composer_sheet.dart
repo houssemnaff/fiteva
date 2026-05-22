@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../../../theme/app_theme.dart';
+// Theme values are obtained from Theme.of(context).colorScheme
 import '../shared/community_shared_widgets.dart';
 
 class FeedComposerSheet extends StatefulWidget {
@@ -28,13 +28,15 @@ class _FeedComposerSheetState extends State<FeedComposerSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SafeArea(
           top: false,
@@ -53,21 +55,31 @@ class _FeedComposerSheetState extends State<FeedComposerSheet> {
                       ?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Partage ta progression, ton workout ou ton repas.',
-                  style: TextStyle(color: AppTheme.textSecondaryColor),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 18),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
                   children: _types
-                      .map((t) => ChoiceChip(
-                            label: Text(t),
-                            selected: _selectedType == t,
-                            onSelected: (_) =>
-                                setState(() => _selectedType = t),
-                          ))
+                      .map((t) {
+                        final selected = _selectedType == t;
+                        return ChoiceChip(
+                          label: Text(t),
+                          selected: selected,
+                          onSelected: (_) => setState(() => _selectedType = t),
+                          selectedColor: colorScheme.primaryContainer,
+                          backgroundColor: colorScheme.surfaceVariant,
+                          labelStyle: TextStyle(
+                            color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      })
                       .toList(),
                 ),
                 const SizedBox(height: 18),
@@ -96,20 +108,18 @@ class _FeedComposerSheetState extends State<FeedComposerSheet> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF7F8FC),
+                      color: colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: colorScheme.outlineVariant),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(LucideIcons.imagePlus,
-                            color: AppTheme.primaryColor),
-                        SizedBox(width: 12),
+                        Icon(LucideIcons.imagePlus, color: colorScheme.primary),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Ajouter une photo (démo statique)',
-                            style: TextStyle(
-                                color: AppTheme.textSecondaryColor),
+                            style: TextStyle(color: colorScheme.onSurfaceVariant),
                           ),
                         ),
                       ],

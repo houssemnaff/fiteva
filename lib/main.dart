@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'theme/app_theme.dart';
 import 'router/app_router.dart';
+import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,14 +14,14 @@ void main() async {
   runApp(const ProviderScope(child: FitevaApp()));
 }
 
-class FitevaApp extends StatefulWidget {
+class FitevaApp extends ConsumerStatefulWidget {
   const FitevaApp({super.key});
 
   @override
-  State<FitevaApp> createState() => _FitevaAppState();
+  ConsumerState<FitevaApp> createState() => _FitevaAppState();
 }
 
-class _FitevaAppState extends State<FitevaApp> {
+class _FitevaAppState extends ConsumerState<FitevaApp> {
   @override
   void initState() {
     super.initState();
@@ -39,9 +40,13 @@ class _FitevaAppState extends State<FitevaApp> {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp.router(
       title: 'FITEVA',
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
     );

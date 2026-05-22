@@ -239,4 +239,143 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: primaryColor,
+      scaffoldBackgroundColor: const Color(0xFF0F1115),
+      colorScheme: const ColorScheme.dark(
+        primary: accentColor,
+        secondary: primaryColor,
+        surface: Color(0xFF171A21),
+        background: Color(0xFF0F1115),
+        onPrimary: white,
+        onSecondary: white,
+        onSurface: white,
+        onBackground: white,
+      ),
+      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
+        displayLarge: GoogleFonts.outfit(
+          color: white,
+          fontWeight: FontWeight.bold,
+          fontSize: 32,
+        ),
+        displayMedium: GoogleFonts.outfit(
+          color: white,
+          fontWeight: FontWeight.bold,
+          fontSize: 28,
+        ),
+        titleLarge: GoogleFonts.outfit(
+          color: white,
+          fontWeight: FontWeight.w600,
+          fontSize: 22,
+        ),
+        titleMedium: GoogleFonts.inter(
+          color: white,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
+        bodyLarge: GoogleFonts.inter(color: white, fontSize: 16),
+        bodyMedium: GoogleFonts.inter(color: const Color(0xFFB8C1CC), fontSize: 14),
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFF0F1115),
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: const IconThemeData(color: white),
+        titleTextStyle: GoogleFonts.outfit(
+          color: white,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF171A21),
+        elevation: 0,
+        shadowColor: Colors.black.withOpacity(0.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: EdgeInsets.zero,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF171A21),
+        selectedItemColor: accentColor,
+        unselectedItemColor: Color(0xFFB8C1CC),
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        elevation: 10,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: white,
+          side: const BorderSide(color: accentColor),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: accentColor,
+          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF171A21),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: accentColor, width: 2),
+        ),
+        hintStyle: GoogleFonts.inter(color: const Color(0xFFB8C1CC)),
+      ),
+    );
+  }
+}
+
+/// Single source of truth for legacy cycle screens that still reference the old palette name.
+/// Keep this here so the app only needs one theme file.
+class FitEvaColors {
+  FitEvaColors._();
+
+  static const Color primary = AppTheme.primaryColor;
+  static const Color accent = AppTheme.accentColor;
+  static const Color cardBg = Color(0xFFEAF3EC);
+  static const Color bgApp = AppTheme.backgroundColor;
+  static const Color text = AppTheme.neutral900;
+  static const Color surface = AppTheme.surfaceColor;
+  static const Color textMuted = AppTheme.neutral600;
+
+  static const Color phaseMenstrual = AppTheme.phaseMenstrual;
+  static const Color phaseFolliculaire = AppTheme.phaseFolliculaire;
+  static const Color phaseOvulatoire = AppTheme.phaseOvulatoire;
+  static const Color phaseLuteal = AppTheme.phaseLuteal;
 }

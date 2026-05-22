@@ -1,8 +1,8 @@
-import 'package:fiteva/screens/nutrition/nutruition_detail_screen.dart';
+import 'package:fiteva/screens/nutrition/recette_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'models/models.dart';
-import 'nutruition_detail_screen.dart';
+import 'recette_detail_screen.dart';
 import 'theme/app_colors.dart';
 import 'widgets/shared/shared_widgets.dart';
 
@@ -196,13 +196,14 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filtered;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: _kCream,
+        backgroundColor: colorScheme.background,
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
@@ -374,6 +375,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Row(
@@ -391,25 +393,16 @@ class _Header extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Overline
-                const Text(
-                  'COLLECTION',
-                  style: TextStyle(
-                    fontFamily: _kSansFont,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 2.5,
-                    color: _kTextLight,
-                  ),
-                ),
+               
                 const SizedBox(height: 2),
                 // Title with italic accent
                 RichText(
-                  text: const TextSpan(
+                  text:  TextSpan(
                     style: TextStyle(
                       fontFamily: _kSerifFont,
                       fontSize: 30,
                       fontWeight: FontWeight.w300,
-                      color: _kTextDark,
+                      color: colorScheme.onSurface,
                       height: 1,
                       letterSpacing: -0.5,
                     ),
@@ -419,7 +412,7 @@ class _Header extends StatelessWidget {
                         text: 'Recettes',
                         style: TextStyle(
                           fontStyle: FontStyle.italic,
-                          color: _kBrown,
+                          color: colorScheme.primary,
                         ),
                       ),
                     ],
@@ -461,17 +454,18 @@ class _CircleIconBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           shape: BoxShape.circle,
-          border: Border.all(color: _kBorderMid),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
-        child: Icon(icon, size: 16, color: _kTextDark),
+        child: Icon(icon, size: 16, color: colorScheme.onSurface),
       ),
     );
   }
@@ -492,32 +486,33 @@ class _LuxurySearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kBorderColor),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, color: _kTextLight, size: 18),
+          Icon(Icons.search_rounded, color: colorScheme.onSurfaceVariant, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: controller,
               onChanged: onChanged,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: _kSansFont,
                 fontSize: 13,
-                color: _kTextDark,
+                color: colorScheme.onSurface,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Recette, ingrédient, objectif…',
                 hintStyle: TextStyle(
                   fontFamily: _kSansFont,
-                  color: _kTextLight,
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 13,
                 ),
                 border: InputBorder.none,
@@ -531,12 +526,12 @@ class _LuxurySearchBar extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: _kBrown,
+              color: colorScheme.primary,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.tune_rounded,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
               size: 13,
             ),
           ),
@@ -556,6 +551,7 @@ class _FeaturedHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: SizedBox(
@@ -574,14 +570,14 @@ class _FeaturedHero extends StatelessWidget {
                       child: const Center(
                         child: CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          color: _kBrown,
+                          color: Color(0xFF1C4D30),
                         ),
                       ),
                     ),
               errorBuilder: (_, __, ___) => Container(
                 color: recipe.accent.withOpacity(0.2),
                 child: const Center(
-                  child: Icon(Icons.restaurant, size: 60, color: _kTextLight),
+                  child: Icon(Icons.restaurant, size: 60, color: Color(0xFFA09080)),
                 ),
               ),
             ),
@@ -625,11 +621,11 @@ class _FeaturedHero extends StatelessWidget {
                   children: [
                     Text(
                       recipe.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: _kSerifFont,
                         fontSize: 22,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: colorScheme.onPrimary,
                         height: 1.15,
                       ),
                     ),
@@ -639,7 +635,7 @@ class _FeaturedHero extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: _kSansFont,
                         fontSize: 11,
-                        color: Colors.white.withOpacity(0.65),
+                        color: colorScheme.onPrimary.withOpacity(0.65),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -678,12 +674,13 @@ class _GlassBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: colorScheme.onPrimary.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.25)),
+        border: Border.all(color: colorScheme.onPrimary.withOpacity(0.25)),
       ),
       child: Text(
         label,
@@ -705,15 +702,16 @@ class _GlassIconBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: colorScheme.onPrimary.withOpacity(0.15),
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withOpacity(0.25)),
+        border: Border.all(color: colorScheme.onPrimary.withOpacity(0.25)),
       ),
-      child: Icon(icon, size: 15, color: Colors.white),
+      child: Icon(icon, size: 15, color: colorScheme.onPrimary),
     );
   }
 }
@@ -725,17 +723,18 @@ class _FeaturedPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: colorScheme.onPrimary.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: colorScheme.onPrimary.withOpacity(0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 9, color: Colors.white.withOpacity(0.8)),
+          Icon(icon, size: 9, color: colorScheme.onPrimary.withOpacity(0.8)),
           const SizedBox(width: 4),
           Text(
             label,
@@ -769,6 +768,7 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -776,10 +776,10 @@ class _FilterChip extends StatelessWidget {
         curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? _kBrownDark : Colors.white,
+          color: active ? colorScheme.primary : colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: active ? _kBrownDark : _kBorderMid,
+            color: active ? colorScheme.primary : colorScheme.outlineVariant,
           ),
         ),
         child: Text(
@@ -788,7 +788,7 @@ class _FilterChip extends StatelessWidget {
             fontFamily: _kSansFont,
             fontSize: 11.5,
             fontWeight: FontWeight.w400,
-            color: active ? Colors.white : _kTextMid,
+            color: active ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -808,11 +808,13 @@ class _RecipeGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+         final colorScheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.background,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _kBorderColor),
         ),
@@ -946,7 +948,7 @@ class _RecipeGridCard extends StatelessWidget {
             // ── Body ────────────────────────────────────────────────────────
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -955,15 +957,15 @@ class _RecipeGridCard extends StatelessWidget {
                       recipe.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style:  TextStyle(
                         fontFamily: _kSerifFont,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w500,
-                        color: _kTextDark,
+                        color: colorScheme.onSurface,
                         height: 1.3,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
 
                     // Stat chips: kcal + proteins
                     Row(
@@ -984,36 +986,22 @@ class _RecipeGridCard extends StatelessWidget {
                       ],
                     ),
 
-                    const Spacer(),
+                    const SizedBox(height: 4),
 
                     // Tags
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 2,
-                      children: recipe.tags
-                          .take(2)
-                          .map(
-                            (t) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: _kBorderMid),
-                              ),
-                              child: Text(
-                                t,
-                                style: const TextStyle(
-                                  fontFamily: _kSansFont,
-                                  fontSize: 8.5,
-                                  color: _kTextMid,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
+                  /*  if (recipe.tags.isNotEmpty)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _RecipeTagPill(label: recipe.tags.first),
+                          ),
+                          if (recipe.tags.length > 1) const SizedBox(width: 4),
+                          if (recipe.tags.length > 1)
+                            Expanded(
+                              child: _RecipeTagPill(label: recipe.tags[1]),
                             ),
-                          )
-                          .toList(),
-                    ),
+                        ],
+                      ),*/
                   ],
                 ),
               ),
@@ -1037,10 +1025,11 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 5),
       decoration: BoxDecoration(
-        color: _kParchment,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(7),
       ),
       child: Column(
@@ -1052,21 +1041,51 @@ class _StatChip extends StatelessWidget {
               fontFamily: _kSansFont,
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: _kBrownDark,
+              color: Color(0xFF4A7C5F),
               height: 1,
             ),
           ),
           const SizedBox(height: 1),
           Text(
             label,
-            style: const TextStyle(
+            style:  TextStyle(
               fontFamily: _kSansFont,
               fontSize: 8.5,
-              color: _kTextLight,
+              color: colorScheme.onSurfaceVariant,
               height: 1,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RecipeTagPill extends StatelessWidget {
+  final String label;
+
+  const _RecipeTagPill({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style:  TextStyle(
+          fontFamily: _kSansFont,
+          fontSize: 8.5,
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w400,
+        ),
       ),
     );
   }

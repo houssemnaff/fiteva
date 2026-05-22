@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models/workout_model.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'active_workout_screen.dart';
-import '../../theme/app_theme.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
   final WorkoutModel workout;
@@ -16,19 +15,26 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   int _currentTab = 0; // 0: À propos, 1: Les séances
   int _selectedWeek = 0; // For week selector (Sem 1, Sem 2, etc.)
 
-  Widget _buildGoalTag(String label) {
+  Widget _buildGoalTag(BuildContext context, String label) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(right: 8, bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: AppTheme.textPrimaryColor,
+          color: colorScheme.onSurface,
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
@@ -36,17 +42,18 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     );
   }
 
-  Widget _buildStatCard(IconData icon, String title) {
+  Widget _buildStatCard(BuildContext context, IconData icon, String title) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: colorScheme.shadow.withOpacity(0.03),
               blurRadius: 8,
               offset: const Offset(0, 2),
             )
@@ -54,13 +61,13 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         ),
         child: Column(
           children: [
-            Icon(icon, size: 24, color: AppTheme.primaryColor),
+            Icon(icon, size: 24, color: colorScheme.primary),
             const SizedBox(height: 8),
             Text(
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppTheme.textPrimaryColor,
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
                 fontSize: 11,
               ),
@@ -74,9 +81,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final workout = widget.workout;
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withOpacity(0.72);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: colorScheme.background,
       body: Stack(
         children: [
           CustomScrollView(
@@ -85,17 +95,17 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               SliverAppBar(
                 expandedHeight: 240,
                 pinned: true,
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: colorScheme.primary,
                 leading: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      decoration: BoxDecoration(
+                        color: colorScheme.onPrimary,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.arrow_back, color: AppTheme.primaryColor, size: 20),
+                      child: Icon(Icons.arrow_back, color: colorScheme.primary, size: 20),
                     ),
                   ),
                 ),
@@ -106,11 +116,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       onTap: () {},
                       child: Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: colorScheme.onPrimary,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.more_vert, color: AppTheme.primaryColor, size: 20),
+                        child: Icon(Icons.more_vert, color: colorScheme.primary, size: 20),
                       ),
                     ),
                   ),
@@ -123,7 +133,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       Image.asset(
                         workout.imageUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade800),
+                        errorBuilder: (_, __, ___) => Container(color: colorScheme.surfaceContainerHighest),
                       ),
                       // Overlay gradient
                       Container(
@@ -131,7 +141,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+                            colors: [Colors.transparent, colorScheme.onSurface.withOpacity(0.8)],
                             stops: const [0.4, 1.0],
                           ),
                         ),
@@ -146,8 +156,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                           children: [
                             Text(
                               workout.title,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: colorScheme.onPrimary,
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -174,11 +184,32 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
+                  decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.shadow.withOpacity(0.06),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                
+                /*    decoration: BoxDecoration(
+  color: colorScheme.surface.withOpacity(0.95), // light grey effect
+  borderRadius: BorderRadius.circular(16),
+  border: Border.all(
+    color: Colors.grey.withOpacity(0.15),
+  ),
+  boxShadow: [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.06),
+      blurRadius: 8,
+      offset: const Offset(0, 2),
+    ),
+  ],
+),*/
                     child: Row(
                       children: [
                         Expanded(
@@ -187,14 +218,14 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: _currentTab == 0 ? AppTheme.accentColor.withOpacity(0.3) : Colors.transparent,
+                                color: _currentTab == 0 ? colorScheme.primaryContainer : Colors.transparent,
                                 borderRadius: BorderRadius.circular(28),
                               ),
                               child: Text(
                                 'À propos',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: _currentTab == 0 ? AppTheme.primaryColor : Colors.grey.shade600,
+                                  color: _currentTab == 0 ? colorScheme.onPrimaryContainer : textSecondary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
@@ -208,14 +239,14 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: _currentTab == 1 ? AppTheme.accentColor.withOpacity(0.3) : Colors.transparent,
+                                color: _currentTab == 1 ? colorScheme.primaryContainer : Colors.transparent,
                                 borderRadius: BorderRadius.circular(28),
                               ),
                               child: Text(
                                 'Les séances',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: _currentTab == 1 ? AppTheme.primaryColor : Colors.grey.shade600,
+                                  color: _currentTab == 1 ? colorScheme.onPrimaryContainer : textSecondary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
@@ -241,9 +272,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         // Stats row
                         Row(
                           children: [
-                            _buildStatCard(Icons.calendar_today_rounded, '4 semaines'),
-                            _buildStatCard(Icons.bolt_rounded, workout.level),
-                            _buildStatCard(Icons.schedule_rounded, '20-40 min\n/ séance'),
+                              _buildStatCard(context, Icons.calendar_today_rounded, '4 semaines'),
+                              _buildStatCard(context, Icons.bolt_rounded, workout.level),
+                              _buildStatCard(context, Icons.schedule_rounded, '20-40 min\n/ séance'),
                           ],
                         ),
                         const SizedBox(height: 24),
@@ -252,7 +283,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         Text(
                           'Ce programme complet de musculation et cardio vous aidera à sculpter votre corps et améliorer votre endurance globale. Mêlant des exercices variés pour éviter la monotonie, chaque séance est pensée pour des résultats optimaux.',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: textSecondary,
                             fontSize: 14,
                             height: 1.5,
                           ),
@@ -263,9 +294,15 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: colorScheme.surface,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorScheme.shadow.withOpacity(0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Row(
                             children: [
@@ -280,7 +317,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                   Text(
                                     'Coach Sarah',
                                     style: TextStyle(
-                                      color: AppTheme.textPrimaryColor,
+                                      color: colorScheme.onSurface,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
@@ -288,7 +325,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                   Text(
                                     'Expert Fitness & Nutrition',
                                     style: TextStyle(
-                                      color: Colors.grey.shade600,
+                                      color: textSecondary,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -303,7 +340,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         Text(
                           'Objectifs',
                           style: TextStyle(
-                            color: AppTheme.textPrimaryColor,
+                            color: colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
@@ -311,11 +348,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         const SizedBox(height: 12),
                         Wrap(
                           children: [
-                            _buildGoalTag('Tonification'),
-                            _buildGoalTag('Cardio'),
-                            _buildGoalTag('Minceur'),
-                            _buildGoalTag('Fessiers'),
-                            _buildGoalTag('Ventre plat'),
+                            _buildGoalTag(context, 'Tonification'),
+                            _buildGoalTag(context, 'Cardio'),
+                            _buildGoalTag(context, 'Minceur'),
+                            _buildGoalTag(context, 'Fessiers'),
+                            _buildGoalTag(context, 'Ventre plat'),
                           ],
                         ),
                         const SizedBox(height: 100), // Padding for CTA
@@ -341,7 +378,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               decoration: BoxDecoration(
                                 border: Border(
                                   bottom: BorderSide(
-                                    color: isSelected ? Colors.black : Colors.transparent,
+                                    color: isSelected ? colorScheme.primary : Colors.transparent,
                                     width: 2,
                                   ),
                                 ),
@@ -349,7 +386,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               child: Text(
                                 'Sem ${index + 1}',
                                 style: TextStyle(
-                                  color: isSelected ? Colors.black : Colors.grey.shade500,
+                                  color: isSelected ? colorScheme.onSurface : textSecondary,
                                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                                   fontSize: 14,
                                 ),
@@ -377,9 +414,15 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: colorScheme.surface,
                                 borderRadius: BorderRadius.circular(20),
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8)],
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colorScheme.shadow.withOpacity(0.06),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
                               child: Row(
                                 children: [
@@ -388,15 +431,20 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                     width: 24,
                                     height: 24,
                                     decoration: BoxDecoration(
-                                      color: isDone ? AppTheme.primaryColor : Colors.transparent,
+                                      color: isDone ? colorScheme.primary : Colors.transparent,
                                       shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isDone ? AppTheme.primaryColor : Colors.grey.shade300,
-                                        width: 2,
-                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: isDone
+                                              ? colorScheme.primary.withOpacity(0.18)
+                                              : colorScheme.shadow.withOpacity(0.05),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
                                     child: isDone
-                                        ? const Icon(Icons.check, color: Colors.white, size: 16)
+                                        ? Icon(Icons.check, color: colorScheme.onPrimary, size: 16)
                                         : null,
                                   ),
                                   const SizedBox(width: 12),
@@ -410,7 +458,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                       child: Image.asset(
                                         workout.imageUrl,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(color: AppTheme.accentColor),
+                                        errorBuilder: (_, __, ___) => Container(color: colorScheme.surfaceContainerHighest),
                                       ),
                                     ),
                                   ),
@@ -424,7 +472,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                         Text(
                                           'Séance ${index + 1}: ${workout.exercises[index]}',
                                           style: TextStyle(
-                                            color: AppTheme.textPrimaryColor,
+                                            color: colorScheme.onSurface,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
                                           ),
@@ -435,7 +483,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                         Text(
                                           'Tapis • Haltères',
                                           style: TextStyle(
-                                            color: Colors.grey.shade500,
+                                            color: textSecondary,
                                             fontSize: 12,
                                           ),
                                         ),
@@ -443,7 +491,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                         Text(
                                           index % 2 == 0 ? '25 min' : '40 min',
                                           style: TextStyle(
-                                            color: Colors.grey.shade500,
+                                            color: textSecondary,
                                             fontSize: 12,
                                           ),
                                         ),
@@ -452,7 +500,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                   ),
                                   
                                   // Right chevron
-                                  Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 24),
+                                  Icon(Icons.chevron_right, color: colorScheme.outlineVariant, size: 24),
                                 ],
                               ),
                             ),
@@ -478,15 +526,15 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    AppTheme.backgroundColor,
-                    AppTheme.backgroundColor.withOpacity(0.0),
+                    colorScheme.background,
+                    colorScheme.background.withOpacity(0.0),
                   ],
                 ),
               ),
               child: ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: colorScheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                   elevation: 0,
@@ -508,17 +556,18 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   }
 
   Widget _buildHeaderTag(String label) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: colorScheme.onSurface.withOpacity(0.35),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: colorScheme.onPrimary,
           fontSize: 11,
           fontWeight: FontWeight.w600,
         ),

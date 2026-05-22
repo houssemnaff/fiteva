@@ -6,15 +6,16 @@ class EtoilesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white, // ✅ toujours blanc
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Theme.of(context).shadowColor.withOpacity(0.06),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -27,13 +28,13 @@ class EtoilesCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFFF9F0A).withOpacity(0.15),
+              color: colorScheme.tertiary.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Center(
+            child: Center(
               child: Icon(
                 CupertinoIcons.star_fill,
-                color: Color(0xFFFF9F0A),
+                color: colorScheme.tertiary,
                 size: 22,
               ),
             ),
@@ -46,10 +47,10 @@ class EtoilesCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Étoiles disponibles',
                   style: TextStyle(
-                    color: Colors.black54, // ✅ noir soft
+                    color: colorScheme.onSurfaceVariant,
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
                   ),
@@ -61,18 +62,18 @@ class EtoilesCard extends StatelessWidget {
                   children: [
                     Text(
                       '$etoiles',
-                      style: const TextStyle(
-                        color: Colors.black, // ✅ noir
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
                         letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(width: 5),
-                    const Text(
+                    Text(
                       'étoiles',
                       style: TextStyle(
-                        color: Colors.black45, // ✅ gris noir
+                        color: colorScheme.onSurfaceVariant,
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
                       ),
@@ -86,10 +87,10 @@ class EtoilesCard extends StatelessWidget {
           /// LINK
           GestureDetector(
             onTap: () {},
-            child: const Text(
+            child: Text(
               'Historique',
               style: TextStyle(
-                color: Color(0xFF007AFF),
+                color: colorScheme.primary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),

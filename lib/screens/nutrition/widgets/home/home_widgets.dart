@@ -12,10 +12,11 @@ class NutritionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.of(context).padding.top;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return SliverToBoxAdapter(
       child: Container(
-        color: Colors.white,
+        color: colorScheme.background,
         padding: EdgeInsets.fromLTRB(20, top + 12, 20, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,12 +31,12 @@ class NutritionHeader extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           'Nutrition',
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
-                            color: kTextDark,
+                            color: colorScheme.onSurface,
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -48,10 +49,10 @@ class NutritionHeader extends StatelessWidget {
                         const Icon(Icons.trending_up_rounded,
                             size: 12, color: Color(0xFF1D9E75)),
                         const SizedBox(width: 4),
-                        const Text(
+                        Text(
                           'Nourris tes objectifs',
                           style: TextStyle(
-                              fontSize: 12, color: kTextGrey),
+                              fontSize: 12, color: colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -73,33 +74,33 @@ class NutritionHeader extends StatelessWidget {
             Divider(
                 height: 1,
                 thickness: 0.5,
-                color: Colors.black.withOpacity(0.07)),
+              color: colorScheme.outlineVariant),
             const SizedBox(height: 10),
 
             // ── Ligne 2 : date + statut ────────────────────────
             Row(
               children: [
-                const Icon(Icons.calendar_today_outlined,
-                    size: 13, color: kTextGrey),
+                Icon(Icons.calendar_today_outlined,
+                    size: 13, color: colorScheme.onSurfaceVariant),
                 const SizedBox(width: 5),
                 Text(
                   _todayLabel(),
-                  style: const TextStyle(fontSize: 12, color: kTextGrey),
+                  style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
                 ),
                 const Spacer(),
                 Container(
                   width: 6,
                   height: 6,
-                  decoration: const BoxDecoration(
-                      color: Color(0xFF1D9E75), shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                      color: colorScheme.primary, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 5),
-                const Text(
+                    Text(
                   'Sur la bonne voie',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF085041)),
+                      color: colorScheme.primary),
                 ),
               ],
             ),
@@ -131,23 +132,24 @@ class _HeaderIconBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: const Color(0xFFF1EFE8),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: Colors.black.withOpacity(0.07), width: 0.5),
+              color: colorScheme.outlineVariant, width: 0.5),
         ),
-        child: Icon(icon, size: 18, color: kTextGrey),
+        child: Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
       ),
     );
   }
 }
-
+// carde mta cercle calories
 class DailyTrackingCard extends StatelessWidget {
   final Animation<double> anim;
   final VoidCallback onConsulter;
@@ -171,16 +173,17 @@ class DailyTrackingCard extends StatelessWidget {
   });
 @override
 Widget build(BuildContext context) {
+  final colorScheme = Theme.of(context).colorScheme;
   final int remaining = caloriesGoal - caloriesConsumed;
 
   return Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: kWhite,
+      color: colorScheme.surface,
       borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.06),
+          color: colorScheme.shadow.withOpacity(0.06),
           blurRadius: 16,
           offset: const Offset(0, 4),
         )
@@ -203,22 +206,22 @@ Widget build(BuildContext context) {
                     Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: kBg,
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.trending_up,
-                        color: kBrown,
+                        color: colorScheme.primary,
                         size: 15,
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Text(
+                    Text(
                       'Suivi journalier',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: kGreen,
+                        color: colorScheme.primary,
                       ),
                     ),
                   ],
@@ -233,22 +236,22 @@ Widget build(BuildContext context) {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
-                  color: kGreen,
+                  color: colorScheme.primary,
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Text(
                       'Consulter',
                       style: TextStyle(
-                        color: kWhite,
+                        color: colorScheme.onPrimary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     SizedBox(width: 3),
                     Icon(Icons.chevron_right,
-                        color: kWhite, size: 14),
+                        color: colorScheme.onPrimary, size: 14),
                   ],
                 ),
               ),
@@ -284,16 +287,16 @@ Widget build(BuildContext context) {
                           children: [
                             Text(
                               '$caloriesConsumed',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w800,
-                                color: kTextDark,
+                                color: colorScheme.onSurface,
                               ),
                             ),
-                            const Text(
+                             Text(
                               'kcal',
                               style: TextStyle(
-                                  fontSize: 11, color: kTextGrey),
+                                  fontSize: 11, color: colorScheme.onSurfaceVariant),
                             ),
                           ],
                         ),
@@ -306,9 +309,9 @@ Widget build(BuildContext context) {
 
                 Text(
                   'Objectif: $caloriesGoal kcal',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: kTextGrey,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
 
@@ -321,7 +324,7 @@ Widget build(BuildContext context) {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: remaining >= 0 ? kGreen : Colors.red,
+                    color: remaining >= 0 ? colorScheme.primary : colorScheme.error,
                   ),
                 ),
               ],
@@ -333,11 +336,11 @@ Widget build(BuildContext context) {
             Expanded(
               child: Column(
                 children: [
-                  MacroRow('Protéines', '25 g', kPink),
-                  const Divider(height: 14, color: Color(0xFFEEE8E0)),
-                  MacroRow('Glucides', '128 g', kBlue),
-                  const Divider(height: 14, color: Color(0xFFEEE8E0)),
-                  MacroRow('Lipides', '26 g', kLime),
+                  MacroRow('Protéines', '25 g', colorScheme.primary),
+                  Divider(height: 14, color: colorScheme.outlineVariant),
+                  MacroRow('Glucides', '128 g', colorScheme.secondary),
+                  Divider(height: 14, color: colorScheme.outlineVariant),
+                  MacroRow('Lipides', '26 g', colorScheme.tertiary),
                 ],
               ),
             ),
@@ -374,35 +377,40 @@ class _ActionBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: kBg,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, color: kBrown),
+        child: Icon(icon, color: colorScheme.primary),
       ),
     );
   }
-}class MealCategoryCard extends StatelessWidget {
+}
+
+
+class MealCategoryCard extends StatelessWidget {
   final MealCategoryData data;
   final VoidCallback onTap;
   const MealCategoryCard({super.key, required this.data, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final over = data.remaining < 0;
-    final progressColor = over ? const Color(0xFFD85A30) : const Color(0xFF1D9E75);
+    final progressColor = over ? colorScheme.tertiary : colorScheme.primary;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.black.withOpacity(0.08), width: 0.5),
+          border: Border.all(color: colorScheme.outlineVariant, width: 0.5),
         ),
         clipBehavior: Clip.hardEdge,
         child: Column(
@@ -438,7 +446,7 @@ class _ActionBtn extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: data.pct.clamp(0.0, 1.0),
                       minHeight: 5,
-                      backgroundColor: const Color(0xFFF2F2F2),
+                      backgroundColor: colorScheme.surfaceContainerHighest,
                       valueColor: AlwaysStoppedAnimation(progressColor),
                     ),
                   ),
@@ -453,11 +461,11 @@ class _ActionBtn extends StatelessWidget {
                               ? '+${-data.remaining} kcal dépassés'
                               : '${data.remaining} kcal restantes',
                           color: over
-                              ? const Color(0xFF712B13)
-                              : const Color(0xFF085041),
+                              ? colorScheme.tertiary
+                              : colorScheme.primary,
                           bg: over
-                              ? const Color(0xFFFAECE7)
-                              : const Color(0xFFE1F5EE),
+                              ? colorScheme.tertiaryContainer.withOpacity(0.3)
+                              : colorScheme.secondaryContainer.withOpacity(0.3),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -466,8 +474,8 @@ class _ActionBtn extends StatelessWidget {
                           icon: Icons.align_horizontal_left_rounded,
                           label:
                               '${(data.proteinBudget - data.proteinConsumed).toStringAsFixed(1)}g prot. restantes',
-                          color: const Color(0xFF5F5E5A),
-                          bg: const Color(0xFFF1EFE8),
+                          color: colorScheme.onSurfaceVariant,
+                          bg: colorScheme.surfaceContainerHighest,
                         ),
                       ),
                     ],
@@ -489,6 +497,7 @@ class _MealHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       height: 80,
       width: double.infinity,
@@ -500,7 +509,7 @@ class _MealHero extends StatelessWidget {
             data.imageUrl,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) =>
-                Container(color: const Color(0xFFF1EFE8)),
+                Container(color: colorScheme.surfaceContainerHighest),
           ),
           // Gradient sombre en bas
           DecoratedBox(
@@ -509,8 +518,8 @@ class _MealHero extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.08),
-                  Colors.black.withOpacity(0.55),
+                  colorScheme.scrim.withOpacity(0.08),
+                  colorScheme.scrim.withOpacity(0.55),
                 ],
               ),
             ),
@@ -567,7 +576,7 @@ class _MealHero extends StatelessWidget {
                             '${data.recipeCount} recettes',
                             style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.white.withOpacity(0.7)),
+                              color: Colors.white.withOpacity(0.7)),
                           ),
                         ],
                       ),
@@ -584,7 +593,7 @@ class _MealHero extends StatelessWidget {
                               fontSize: 18,
                               fontWeight: FontWeight.w500,
                               color: over
-                                  ? const Color(0xFFF0997B)
+                                ? colorScheme.tertiaryContainer
                                   : Colors.white,
                               height: 1),
                         ),
@@ -703,8 +712,8 @@ class RecipeCard extends StatelessWidget {
                 color: Colors.white.withOpacity(0.85),
                 borderRadius: BorderRadius.circular(7)),
             child: Text(recipe.label,
-                style: const TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.w600, color: kTextDark),
+              style: const TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
                     
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),

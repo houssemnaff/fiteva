@@ -1,4 +1,3 @@
-import 'package:fiteva/screens/nutrition/theme/app_colors.dart';
 import 'package:fiteva/screens/shop/screens/all_partenaires_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -12,11 +11,13 @@ class BoutiqueScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     // Affiche seulement les 4 premiers sur la home
     final preview = mockItems.take(4).toList();
 
     return Scaffold(
-      backgroundColor:Colors.white,
+      backgroundColor: colorScheme.background,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
@@ -37,7 +38,6 @@ class BoutiqueScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: CupertinoColors.secondaryLabel,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -51,11 +51,7 @@ class BoutiqueScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     'Voir plus',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: kAccent,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
                   ),
                 ),
               ],
@@ -103,24 +99,19 @@ class BoutiqueScreen extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Voir tous les partenaires',
-                      style: TextStyle(
-                        color: kAccent,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                     ),
                     SizedBox(width: 6),
                     Icon(
                       CupertinoIcons.chevron_right,
-                      color: kAccent,
                       size: 15,
                     ),
                   ],
@@ -141,10 +132,12 @@ class _BoutiqueHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -153,7 +146,7 @@ class _BoutiqueHeader extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: CupertinoColors.label,
+                  color: colorScheme.onSurface,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -162,7 +155,7 @@ class _BoutiqueHeader extends StatelessWidget {
                 'Échange tes étoiles contre des récompenses.',
                 style: TextStyle(
                   fontSize: 13,
-                  color: CupertinoColors.secondaryLabel,
+                  color: colorScheme.onSurfaceVariant,
                   height: 1.4,
                 ),
               ),
@@ -173,13 +166,13 @@ class _BoutiqueHeader extends StatelessWidget {
         Container(
           width: 36,
           height: 36,
-          decoration: const BoxDecoration(
-            color: kAccent,
+          decoration: BoxDecoration(
+            color: colorScheme.primary,
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             CupertinoIcons.person_fill,
-            color: Colors.white,
+            color: colorScheme.onPrimary,
             size: 18,
           ),
         ),

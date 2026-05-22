@@ -176,12 +176,13 @@ class _AlertTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: alert.type.bg,
-        border: Border.all(color: alert.type.border, width: 0.5),
+        color: colorScheme.surface,
+        border: Border.all(color: alert.type.border.withOpacity(0.55), width: 0.5),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -194,7 +195,7 @@ class _AlertTile extends StatelessWidget {
               alert.text,
               style: TextStyle(
                 fontSize: 13,
-                color: alert.type.text,
+                color: colorScheme.onSurface,
                 height: 1.5,
               ),
             ),
@@ -249,11 +250,12 @@ class _WaterTrackerCardState extends State<WaterTrackerCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE0DDD6), width: 0.5),
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outlineVariant, width: 0.5),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -261,18 +263,20 @@ class _WaterTrackerCardState extends State<WaterTrackerCard> {
         children: [
           Row(
             children: [
-              const Icon(Icons.water_drop_outlined,
-                  color: Color(0xFF378ADD), size: 18),
+              Icon(Icons.water_drop_outlined,
+                  color: colorScheme.primary, size: 18),
               const SizedBox(width: 8),
-              const Text('Hydratation',
-                  style:
-                      TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+              Text('Hydratation',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                      color: colorScheme.onSurface)),
               const Spacer(),
               Text(
                 '${(_currentMl / 1000).toStringAsFixed(1)} L / ${(widget.goalMl / 1000).toStringAsFixed(1)} L',
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF185FA5),
+                    color: colorScheme.primary,
                     fontWeight: FontWeight.w500),
               ),
             ],
@@ -301,20 +305,19 @@ class _WaterTrackerCardState extends State<WaterTrackerCard> {
                   decoration: BoxDecoration(
                     color: filled
                         ? const Color(0xFF378ADD)
-                        : const Color(0xFFF1EFE8),
+                        : colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: filled
-                          ? const Color(0xFF185FA5)
-                          : const Color(0xFFD3D1C7),
+                          ? colorScheme.primary
+                          : colorScheme.outlineVariant,
                       width: 0.5,
                     ),
                   ),
                   child: Icon(
                     Icons.local_drink_outlined,
                     size: 16,
-                    color:
-                        filled ? Colors.white : const Color(0xFF888780),
+                    color: filled ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
                   ),
                 ),
               );
@@ -326,7 +329,7 @@ class _WaterTrackerCardState extends State<WaterTrackerCard> {
             child: LinearProgressIndicator(
               value: _pct,
               minHeight: 8,
-              backgroundColor: const Color(0xFFF1EFE8),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(_barColor),
             ),
           ),
@@ -334,7 +337,7 @@ class _WaterTrackerCardState extends State<WaterTrackerCard> {
           Text(
             '${(_pct * 100).round()}% de l\'objectif journalier',
             style:
-                const TextStyle(fontSize: 12, color: Color(0xFF888780)),
+                TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -358,35 +361,36 @@ class DailyRecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAEEDA),
+        color: colorScheme.tertiaryContainer.withOpacity(0.35),
         border:
-            Border.all(color: const Color(0xFFFAC775).withOpacity(0.5), width: 0.5),
+            Border.all(color: colorScheme.tertiary.withOpacity(0.25), width: 0.5),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
+            children: [
               Icon(Icons.auto_awesome_rounded,
-                  color: Color(0xFF854F0B), size: 18),
-              SizedBox(width: 8),
+                  color: colorScheme.tertiary, size: 18),
+              const SizedBox(width: 8),
               Text('Recommandation du jour',
                   style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
-                      color: Color(0xFF854F0B))),
+                      color: colorScheme.tertiary)),
             ],
           ),
           const SizedBox(height: 8),
           RichText(
             text: TextSpan(
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF633806),
+                  color: colorScheme.onSurface,
                   height: 1.6),
               children: [
                 TextSpan(
@@ -407,15 +411,15 @@ class DailyRecommendationCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEF9F27).withOpacity(0.13),
-                        border: Border.all(
-                            color: const Color(0xFFEF9F27).withOpacity(0.4),
-                            width: 0.5),
+                  color: colorScheme.tertiary.withOpacity(0.12),
+                  border: Border.all(
+                    color: colorScheme.tertiary.withOpacity(0.35),
+                    width: 0.5),
                         borderRadius: BorderRadius.circular(999),
                       ),
-                      child: Text(t,
-                          style: const TextStyle(
-                              fontSize: 12, color: Color(0xFF633806))),
+                  child: Text(t,
+                    style: TextStyle(
+                      fontSize: 12, color: colorScheme.onSurface)),
                     ))
                 .toList(),
           ),
@@ -485,15 +489,16 @@ class _PhaseTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? phase.bg : Colors.white,
+          color: selected ? phase.bg : colorScheme.surface,
           border: Border.all(
-            color: selected ? phase.color : const Color(0xFFE0DDD6),
+            color: selected ? phase.color : colorScheme.outlineVariant,
             width: selected ? 1.5 : 0.5,
           ),
           borderRadius: BorderRadius.circular(10),
@@ -508,10 +513,10 @@ class _PhaseTab extends StatelessWidget {
                 style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: selected ? phase.color : const Color(0xFF2C2C2A))),
+                color: selected ? phase.color : colorScheme.onSurface)),
             Text(phase.days,
-                style: const TextStyle(
-                    fontSize: 10, color: Color(0xFF888780))),
+              style: TextStyle(
+                fontSize: 10, color: colorScheme.onSurfaceVariant)),
           ],
         ),
       ),
@@ -525,6 +530,7 @@ class _PhaseDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -560,7 +566,7 @@ class _PhaseDetailCard extends StatelessWidget {
                   children: [
                     Row(children: const [
                       Icon(Icons.check_circle_outline_rounded,
-                          color: Color(0xFF3B6D11), size: 14),
+                        color: Color(0xFF3B6D11), size: 14),
                       SizedBox(width: 4),
                       Text('À privilégier',
                           style: TextStyle(
@@ -613,6 +619,7 @@ class _FoodItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.only(left: 6),
@@ -620,8 +627,7 @@ class _FoodItem extends StatelessWidget {
         border: Border(left: BorderSide(color: borderColor, width: 2)),
       ),
       child: Text(text,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF2C2C2A),
-              height: 1.4)),
+          style: TextStyle(fontSize: 12, color: colorScheme.onSurface, height: 1.4)),
     );
   }
 }
@@ -653,12 +659,13 @@ class _ExpertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE0DDD6), width: 0.5),
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outlineVariant, width: 0.5),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -686,8 +693,8 @@ class _ExpertCard extends StatelessWidget {
                         style: const TextStyle(
                             fontWeight: FontWeight.w500, fontSize: 13)),
                     Text(expert.role,
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF888780))),
+                      style: TextStyle(
+                        fontSize: 12, color: colorScheme.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -722,20 +729,20 @@ class _ExpertCard extends StatelessWidget {
                   fontWeight: FontWeight.w500, fontSize: 13)),
           const SizedBox(height: 6),
           Text(expert.body,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF5F5E5A),
+                  color: colorScheme.onSurfaceVariant,
                   height: 1.6)),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1EFE8),
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text('# ${expert.tag}',
-                style: const TextStyle(
-                    fontSize: 11, color: Color(0xFF5F5E5A))),
+                style: TextStyle(
+                    fontSize: 11, color: colorScheme.onSurfaceVariant)),
           ),
         ],
       ),
@@ -753,12 +760,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Text(
       text.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: Color(0xFF888780),
+        color: colorScheme.onSurfaceVariant,
         letterSpacing: 0.8,
       ),
     );

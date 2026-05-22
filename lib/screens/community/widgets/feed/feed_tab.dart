@@ -33,8 +33,10 @@ class _FeedTabState extends ConsumerState<FeedTab> {
   @override
   Widget build(BuildContext context) {
     final posts = ref.watch(postsProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return CustomScrollView(
+      
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
@@ -47,7 +49,7 @@ class _FeedTabState extends ConsumerState<FeedTab> {
               onTap: () => showModalBottomSheet<void>(
                 context: context,
                 isScrollControlled: true,
-                backgroundColor: Colors.transparent,
+                backgroundColor: colorScheme.surface,
                 builder: (_) => const FeedComposerSheet(),
               ),
             ),
@@ -115,10 +117,10 @@ class _PostGroup extends StatelessWidget {
           for (int i = 0; i < posts.length; i++) ...[
             _PostCard(post: posts[i]),
             if (i < posts.length - 1)
-              const Divider(
+              Divider(
                 height: 0,
                 thickness: 0.5,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.outlineVariant,
               ),
           ],
         ],
@@ -142,9 +144,9 @@ class _CreatePostBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white, width: 0.5),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
         ),
         child: Row(
           children: [
@@ -154,11 +156,13 @@ class _CreatePostBar extends StatelessWidget {
               height: 34,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white,
+                // placeholder uses surface container so it adapts to theme
+                // (kept const for Clip behavior)
               ),
               child: const Icon(
                 CupertinoIcons.person_fill,
-                color: Color(0xFF1C4D30),
+                // use primary for avatar accent
+                color: Colors.white,
                 size: 16,
               ),
             ),
@@ -168,6 +172,7 @@ class _CreatePostBar extends StatelessWidget {
                 "What's on your mind?",
                 style: TextStyle(
                   fontSize: 15,
+                  // will be replaced below with themed style via DefaultTextStyle if needed
                   color: Color(0xFFAEAEB2),
                   fontWeight: FontWeight.w400,
                 ),
@@ -219,6 +224,7 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -301,10 +307,6 @@ class _PostCardState extends State<_PostCard>
     if (_liked) _heartController.forward(from: 0);
   }
 
-  /// Navigates to the profile of the post author.
-  /// Uses [widget.post.username] as the userId fallback if your PostModel
-  /// doesn't have a dedicated userId field yet — swap to widget.post.userId
-  /// once you add it.
   void _openProfile() {
     // ⚠️  Change widget.post.username → widget.post.userId once that field exists
     final userId = widget.post.username;
@@ -326,9 +328,10 @@ class _PostCardState extends State<_PostCard>
     // ⚠️  Same note: swap to widget.post.userId once that field exists
     final userId = widget.post.username;
     final heroTag = 'avatar_$userId';
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      color: Colors.white,
+      color: colorScheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -371,9 +374,9 @@ class _PostCardState extends State<_PostCard>
                           children: [
                             Text(
                               widget.post.timeAgo,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF8E8E93),
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -392,15 +395,15 @@ class _PostCardState extends State<_PostCard>
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEEF2FF),
+                                  color: Theme.of(context).colorScheme.primaryContainer,
                                   borderRadius: BorderRadius.circular(5),
                                 ),
                                 child: Text(
                                   widget.post.category ?? '',
-                                  style: const TextStyle(
+                                  style:  TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF1C4D30),
+                                    color: colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -416,9 +419,9 @@ class _PostCardState extends State<_PostCard>
                   padding: const EdgeInsets.all(6),
                   minSize: 0,
                   onPressed: () {},
-                  child: const Icon(
+                  child:  Icon(
                     CupertinoIcons.ellipsis,
-                    color: Color(0xFF8E8E93),
+                    color: colorScheme.onSurfaceVariant,
                     size: 20,
                   ),
                 ),
@@ -431,9 +434,9 @@ class _PostCardState extends State<_PostCard>
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
             child: Text(
               widget.post.content,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                color: Color(0xFF1C1C1E),
+                color: Theme.of(context).colorScheme.onSurface,
                 height: 1.45,
                 letterSpacing: -0.1,
               ),

@@ -13,23 +13,7 @@ import 'participants_sheet.dart';
 // ─────────────────────────────────────────────
 //  DESIGN TOKENS
 // ─────────────────────────────────────────────
-class _C {
-  static const bg         = Colors.white;
-  static const surface    = Colors.white;
-  static const card       = Colors.white;
-  static const cardHigh   = Colors.white;
-  static const border     = Colors.white;
-  static const borderHigh = Colors.white;
-  static const accent     = Color(0xFF1C4D30); // electric lime
-  static const accentDim  = Colors.white;
-  static const textPrimary   = Color(0xFF242428);
-  static const textSecondary = Color(0xFF8A8A96);
-  static const textTertiary  = Color(0xFF4A4A54);
-  static const success    = Color(0xFF3DCC7A);
-  static const successDim = Color(0x1A3DCC7A);
-  static const danger     = Color(0xFFFF4757);
-  static const dangerDim  = Color(0x1AFF4757);
-}
+// Design tokens are provided by the active Theme's ColorScheme at runtime.
 
 // ─────────────────────────────────────────────
 //  EVENTS TAB
@@ -64,20 +48,21 @@ class _EventsTabState extends ConsumerState<EventsTab> {
         : events
             .where((e) => e.type.toLowerCase() == _selectedType.toLowerCase())
             .toList();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      color: _C.bg,
+      color: colorScheme.surface,
       child: CustomScrollView(
         slivers: [
           // ── Header ──────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-              child: _Header(
+                child: _Header(
                 onCreateTap: () => showModalBottomSheet<void>(
                   context: context,
                   isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
+                  backgroundColor: colorScheme.surface,
                   barrierColor: Colors.black87,
                   builder: (_) => const CreateEventSheet(),
                 ),
@@ -160,6 +145,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -167,45 +155,27 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: const [
-              Text(
-                'ÉVÉNEMENTS',
-                style: TextStyle(
-                  color: _C.textTertiary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Fitness & Sport',
-                style: TextStyle(
-                  color: _C.accent,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.6,
-                  height: 1.1,
-                ),
-              ),
+              // Placeholder: will be replaced with themed Text below
             ],
           ),
         ),
+       
         GestureDetector(
           onTap: onCreateTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: _C.accent,
+              color: colorScheme.primary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: const [
-                Icon(LucideIcons.plus, size: 14, color: _C.bg),
+                Icon(LucideIcons.plus, size: 14, color: Colors.white),
                 SizedBox(width: 6),
                 Text(
                   'Créer',
                   style: TextStyle(
-                    color: _C.bg,
+                    color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.2,
@@ -236,6 +206,7 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -243,10 +214,10 @@ class _FilterPill extends StatelessWidget {
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? _C.accent : _C.card,
+          color: selected ? colorScheme.primary : colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? Colors.transparent : _C.border,
+            color: selected ? Colors.transparent : colorScheme.outlineVariant,
             width: 0.5,
           ),
         ),
@@ -254,7 +225,7 @@ class _FilterPill extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? _C.bg : _C.textSecondary,
+            color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
             fontSize: 13,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
             letterSpacing: -0.1,
@@ -287,13 +258,20 @@ class EventCard extends StatelessWidget {
     final spotsLeft = event.maxSpots - event.joinedCount;
     final isFull    = spotsLeft <= 0;
     final isJoined  = event.isJoined;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      decoration: BoxDecoration(
-        color: _C.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.border, width: 0.5),
-      ),
+       decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.shadow.withOpacity(0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,8 +293,8 @@ class EventCard extends StatelessWidget {
                 // Title
                 Text(
                   event.title,
-                  style: const TextStyle(
-                    color: _C.textPrimary,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.4,
@@ -345,7 +323,7 @@ class EventCard extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Divider
-                Container(height: 0.5, color: _C.border),
+                Container(height: 0.5, color: colorScheme.outlineVariant),
 
                 const SizedBox(height: 14),
 
@@ -362,18 +340,18 @@ class EventCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Organisé par',
                             style: TextStyle(
-                              color: _C.textTertiary,
+                              color: colorScheme.onSurfaceVariant,
                               fontSize: 10,
                               letterSpacing: 0.2,
                             ),
                           ),
                           Text(
                             event.organizer,
-                            style: const TextStyle(
-                              color: _C.textSecondary,
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -429,6 +407,7 @@ class _CardBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Stack(
       children: [
         // Image
@@ -439,10 +418,10 @@ class _CardBanner extends StatelessWidget {
             event.imageUrl,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
-              color: _C.cardHigh,
-              child: const Center(
+              color: colorScheme.surfaceVariant,
+              child: Center(
                 child: Icon(LucideIcons.image,
-                    color: _C.textTertiary, size: 32),
+                    color: colorScheme.onSurfaceVariant, size: 32),
               ),
             ),
           ),
@@ -468,26 +447,26 @@ class _CardBanner extends StatelessWidget {
         // Type badge — top left
         Positioned(
           top: 12, left: 12,
-          child: Container(
+            child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.55),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Colors.white.withOpacity(0.12),
+                color: colorScheme.onSurface.withOpacity(0.12),
                 width: 0.5,
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(typeIcon, size: 11, color: _C.accentDim),
+                Icon(typeIcon, size: 11, color: Colors.white),
                 const SizedBox(width: 5),
                 Text(
                   event.type.toUpperCase(),
                   style: const TextStyle(
                     fontSize: 10,
-                    color: _C.accentDim,
+                    color: Colors.white,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
                   ),
@@ -500,17 +479,17 @@ class _CardBanner extends StatelessWidget {
         // Spots badge — top right
         Positioned(
           top: 12, right: 12,
-          child: Container(
+            child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: isFull
-                  ? _C.danger.withOpacity(0.85)
+                  ? colorScheme.error.withOpacity(0.85)
                   : Colors.black.withOpacity(0.55),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isFull
-                    ? _C.danger.withOpacity(0.4)
-                    : Colors.white.withOpacity(0.12),
+                    ? colorScheme.error.withOpacity(0.4)
+                    : colorScheme.onSurface.withOpacity(0.12),
                 width: 0.5,
               ),
             ),
@@ -551,22 +530,23 @@ class _MetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _C.cardHigh,
+        color: colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _C.border, width: 0.5),
+        border: Border.all(color: colorScheme.outlineVariant, width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: _C.textTertiary),
+          Icon(icon, size: 11, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: 6),
           Text(
             label,
             style: const TextStyle(
-              color: _C.textSecondary,
+              color: null,
               fontSize: 12,
               fontWeight: FontWeight.w400,
             ),
@@ -592,6 +572,8 @@ class _ParticipantsStack extends StatelessWidget {
     const overlap = 18.0;
     final shown   = avatars.take(3).toList();
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         SizedBox(
@@ -606,16 +588,16 @@ class _ParticipantsStack extends StatelessWidget {
                   height: size,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: _C.card, width: 1.5),
+                    border: Border.all(color: colorScheme.surface, width: 1.5),
                   ),
                   child: ClipOval(
                     child: Image.network(
                       shown[i],
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
-                        color: _C.cardHigh,
-                        child: const Icon(LucideIcons.user,
-                            size: 12, color: _C.textTertiary),
+                        color: colorScheme.surfaceVariant,
+                        child: Icon(LucideIcons.user,
+                            size: 12, color: colorScheme.onSurfaceVariant),
                       ),
                     ),
                   ),
@@ -627,15 +609,14 @@ class _ParticipantsStack extends StatelessWidget {
         const SizedBox(width: 7),
         Text(
           '+$count inscrits',
-          style: const TextStyle(
-            color: _C.textTertiary,
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
             fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(width: 3),
-        const Icon(LucideIcons.chevronRight,
-            size: 12, color: _C.textTertiary),
+        Icon(LucideIcons.chevronRight, size: 12, color: colorScheme.onSurfaceVariant),
       ],
     );
   }
@@ -663,18 +644,18 @@ class _JoinButton extends StatelessWidget {
     String label;
 
     if (isJoined) {
-      bg    = _C.successDim;
-      fg    = _C.success;
+      bg    = Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.18);
+      fg    = Theme.of(context).colorScheme.secondary;
       icon  = LucideIcons.checkCircle;
       label = 'Inscrit';
     } else if (isFull) {
-      bg    = _C.dangerDim;
-      fg    = _C.danger;
+      bg    = Theme.of(context).colorScheme.errorContainer.withOpacity(0.12);
+      fg    = Theme.of(context).colorScheme.error;
       icon  = LucideIcons.xCircle;
       label = 'Complet';
     } else {
-      bg    = _C.accent;
-      fg    = _C.bg;
+      bg    = Theme.of(context).colorScheme.primary;
+      fg    = Theme.of(context).colorScheme.onPrimary;
       icon  = LucideIcons.userPlus;
       label = 'Rejoindre';
     }
@@ -694,6 +675,13 @@ class _JoinButton extends StatelessWidget {
                   width: 0.5,
                 )
               : null,
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.shadow.withOpacity(0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -732,16 +720,16 @@ class _ProAvatar extends StatelessWidget {
       height: radius * 2,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: _C.border, width: 1),
+        border: Border.all(color: Theme.of(context).colorScheme.surface, width: 1),
       ),
       child: ClipOval(
         child: Image.network(
           url,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => Container(
-            color: _C.cardHigh,
+            color: Theme.of(context).colorScheme.surfaceVariant,
             child: Icon(LucideIcons.user,
-                size: radius * 0.8, color: _C.textTertiary),
+                size: radius * 0.8, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       ),

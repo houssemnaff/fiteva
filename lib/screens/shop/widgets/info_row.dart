@@ -1,4 +1,3 @@
-import 'package:fiteva/screens/nutrition/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 
@@ -20,6 +19,7 @@ class InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
@@ -34,7 +34,7 @@ class InfoRow extends StatelessWidget {
         const SizedBox(width: 12),
         Text(
           label,
-          style: const TextStyle(fontSize: 13, color: kTextSecondary),
+          style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
         ),
         const Spacer(),
         Text(
@@ -42,7 +42,7 @@ class InfoRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: valueColor ?? kTextPrimary,
+            color: valueColor ?? colorScheme.onSurface,
           ),
         ),
       ],
@@ -57,20 +57,21 @@ class StepItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
           width: 24,
           height: 24,
           decoration: BoxDecoration(
-            color: kAccent,
+            color: colorScheme.primary,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Center(
             child: Text(
               number,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colorScheme.onPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
               ),
@@ -81,9 +82,9 @@ class StepItem extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: kTextPrimary,
+              color: colorScheme.onSurface,
               height: 1.4,
             ),
           ),

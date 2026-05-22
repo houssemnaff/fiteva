@@ -101,15 +101,16 @@ class _MesPasCardState extends State<MesPasCard>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE0EDE6), width: 1),
+        color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: colorScheme.shadow.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -137,11 +138,11 @@ class _MesPasCardState extends State<MesPasCard>
             // Bottom row: label + sync button
             Row(
               children: [
-                const Text(
+                Text(
                   'Journée en cours',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF6B9E7A),
+                    color: colorScheme.secondary,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -152,16 +153,16 @@ class _MesPasCardState extends State<MesPasCard>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFFA8C9B5),
+                      color: colorScheme.outlineVariant,
                       width: 1,
                     ),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'i',
                       style: TextStyle(
                         fontSize: 9,
-                        color: Color(0xFF6B9E7A),
+                        color: colorScheme.secondary,
                         fontStyle: FontStyle.italic,
                         fontWeight: FontWeight.w800,
                       ),
@@ -179,7 +180,7 @@ class _MesPasCardState extends State<MesPasCard>
                             height: 15,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                                color: Colors.white,
                             ),
                           )
                         : const Icon(Icons.sync_rounded, size: 16),
@@ -192,10 +193,10 @@ class _MesPasCardState extends State<MesPasCard>
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1C4D30),
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: const Color(0xFFD6EAE0),
-                      disabledForegroundColor: const Color(0xFF6B9E7A),
+                        backgroundColor: colorScheme.secondary,
+                        foregroundColor: colorScheme.onSecondary,
+                        disabledBackgroundColor: colorScheme.surfaceVariant,
+                        disabledForegroundColor: colorScheme.onSurface.withOpacity(0.6),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -216,6 +217,8 @@ class _MesPasCardState extends State<MesPasCard>
   }
 
   Widget _buildStepsDisplay() {
+        final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -226,13 +229,13 @@ class _MesPasCardState extends State<MesPasCard>
             Container(
               width: 50,
               height: 50,
-              decoration: const BoxDecoration(
-                color: Color(0xFFEEF7F2),
+              decoration: BoxDecoration(
+                color: colorScheme.secondary.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.directions_walk_rounded,
-                color: Color(0xFF1C4D30),
+                color: colorScheme.secondary,
                 size: 26,
               ),
             ),
@@ -242,11 +245,11 @@ class _MesPasCardState extends State<MesPasCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Aujourd'hui",
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: Color(0xFF7BAF8A),
+                      color: colorScheme.secondary,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -257,28 +260,28 @@ class _MesPasCardState extends State<MesPasCard>
                     children: [
                       Text(
                         StepService.formatNumber(_stepsToday),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1A1A),
+                          color: colorScheme.onSurface,
                           height: 1,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Text(
+                      Text(
                         '/ 10 000',
                         style: TextStyle(
                           fontSize: 15,
-                          color: Color(0xFFB0C8BA),
+                          color: colorScheme.onSurface.withOpacity(0.6),
                           fontWeight: FontWeight.w400,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Text(
+                      Text(
                         'pas',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF7BAF8A),
+                          color: colorScheme.secondary,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -295,18 +298,17 @@ class _MesPasCardState extends State<MesPasCard>
           borderRadius: BorderRadius.circular(8),
           child: LinearProgressIndicator(
             value: _progress,
-            backgroundColor: const Color(0xFFE8F4EE),
-            valueColor:
-                const AlwaysStoppedAnimation<Color>(Color(0xFF1C4D30)),
+            backgroundColor: colorScheme.secondaryContainer,
+            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.secondary),
             minHeight: 7,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           "${(_progress * 100).toStringAsFixed(0)}% de l'objectif atteint",
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11.5,
-            color: Color(0xFF7BAF8A),
+            color: colorScheme.secondary,
           ),
         ),
       ],
@@ -339,32 +341,41 @@ class _MesPasCardState extends State<MesPasCard>
   }
 
   Widget _buildStatChip({required String label, required String value}) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFDDEDE4), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: Color(0xFF7BAF8A),
+                color: colorScheme.secondary,
                 fontWeight: FontWeight.w400,
               ),
             ),
             const SizedBox(height: 3),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A),
+                color: colorScheme.onSurface,
               ),
             ),
           ],
@@ -374,29 +385,30 @@ class _MesPasCardState extends State<MesPasCard>
   }
 
   Widget _buildLoadingState() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
           width: 50,
           height: 50,
-          decoration: const BoxDecoration(
-            color: Color(0xFFEEF7F2),
+          decoration: BoxDecoration(
+            color: colorScheme.secondary.withOpacity(0.12),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.directions_walk_rounded,
-            color: Color(0xFF1C4D30),
+            color: colorScheme.secondary,
             size: 26,
           ),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 "Aujourd'hui",
-                style: TextStyle(fontSize: 12.5, color: Color(0xFF7BAF8A)),
+                style: TextStyle(fontSize: 12.5, color: colorScheme.secondary),
               ),
               SizedBox(height: 4),
               Text(
@@ -404,7 +416,7 @@ class _MesPasCardState extends State<MesPasCard>
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF7BAF8A),
+                  color: colorScheme.secondary,
                 ),
               ),
             ],
@@ -415,29 +427,31 @@ class _MesPasCardState extends State<MesPasCard>
   }
 
   Widget _buildErrorState(String error) {
+        final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Container(
           width: 50,
           height: 50,
-          decoration: const BoxDecoration(
-            color: Color(0xFFFFEEEE),
+          decoration: BoxDecoration(
+            color: colorScheme.errorContainer,
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.warning_outlined,
-            color: Color(0xFFE05C5C),
+            color: colorScheme.error,
             size: 26,
           ),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Erreur',
-                style: TextStyle(fontSize: 12, color: Color(0xFFE05C5C)),
+                style: TextStyle(fontSize: 12, color: colorScheme.error),
               ),
               SizedBox(height: 4),
               Text(
@@ -445,13 +459,13 @@ class _MesPasCardState extends State<MesPasCard>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF9E8A7A),
+                  color: colorScheme.onErrorContainer.withOpacity(0.9),
                 ),
               ),
               SizedBox(height: 2),
               Text(
                 'Vérifiez les permissions',
-                style: TextStyle(fontSize: 11, color: Color(0xFF9E8A7A)),
+                style: TextStyle(fontSize: 11, color: colorScheme.onErrorContainer.withOpacity(0.9)),
               ),
             ],
           ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'cycle_common_widgets.dart';
 import 'cycle_wheel.dart'; 
-import '../../../theme/FitEvaColors.dart';
+import '../../../theme/app_theme.dart';
 
 class CycleInfoCard extends StatefulWidget {
   final int currentDay;

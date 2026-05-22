@@ -1,4 +1,4 @@
-import 'package:fiteva/screens/nutrition/nutruition_detail_screen.dart';
+import 'package:fiteva/screens/nutrition/recette_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'ajout_rapide_screen.dart';
 import 'models/models.dart';
@@ -220,9 +220,10 @@ class _SuiviNutritionScreenState extends State<SuiviNutritionScreen> {
   Widget build(BuildContext context) {
     final top = MediaQuery.of(context).padding.top;
     final selectedGroup = _selectedGroup;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: _C.bg,
+      backgroundColor: colorScheme.background,
       body: Column(
         children: [
           // ── Header ────────────────────────────────────────────
@@ -283,8 +284,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: _C.white,
+      color: colorScheme.background,
       padding: EdgeInsets.fromLTRB(20, top + 12, 20, 14),
       child: Column(
         children: [
@@ -296,25 +298,31 @@ class _Header extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: _C.pill,
+                    color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _C.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.shadow.withOpacity(0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.chevron_left,
-                    color: _C.textDark,
+                    color: colorScheme.onSurface,
                     size: 22,
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Suivi nutrition',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: _C.textDark,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -322,14 +330,20 @@ class _Header extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: _C.pill,
+                  color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _C.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.shadow.withOpacity(0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.info_outline,
                   size: 16,
-                  color: _C.textGrey,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -347,18 +361,24 @@ class _Header extends StatelessWidget {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: _C.pill,
+                    color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _C.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.shadow.withOpacity(0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(
                         Icons.calendar_today_outlined,
                         size: 13,
-                        color: _C.textGrey,
+                        color: colorScheme.onSurfaceVariant,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           "Aujourd'hui · Vendredi 25 avril",
@@ -367,7 +387,7 @@ class _Header extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: _C.textDark,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -390,15 +410,22 @@ class _DateArrow extends StatelessWidget {
   const _DateArrow({required this.icon});
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: 34,
       height: 34,
       decoration: BoxDecoration(
-        color: _C.white,
+        color: colorScheme.surface,
         shape: BoxShape.circle,
-        border: Border.all(color: _C.border),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Icon(icon, size: 18, color: _C.textDark),
+      child: Icon(icon, size: 18, color: colorScheme.onSurface),
     );
   }
 }
@@ -416,15 +443,22 @@ class _DailySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final pct = (total / goal).clamp(0.0, 1.0);
     final over = remaining < 0;
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _C.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.border),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,9 +469,9 @@ class _DailySummaryCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Calories aujourd\'hui',
-                      style: TextStyle(fontSize: 12, color: _C.textGrey),
+                      style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -446,18 +480,18 @@ class _DailySummaryCard extends StatelessWidget {
                       children: [
                         Text(
                           '$total',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
-                            color: _C.textDark,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '/ $goal kcal',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: _C.textGrey,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -471,7 +505,7 @@ class _DailySummaryCard extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: over ? _C.orangeBg : _C.greenBg,
+                  color: over ? colorScheme.tertiaryContainer.withOpacity(0.35) : colorScheme.secondaryContainer.withOpacity(0.35),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -481,7 +515,7 @@ class _DailySummaryCard extends StatelessWidget {
                       width: 6,
                       height: 6,
                       decoration: BoxDecoration(
-                        color: over ? _C.orange : _C.green,
+                        color: over ? colorScheme.tertiary : colorScheme.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -493,7 +527,7 @@ class _DailySummaryCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: over ? _C.orange : _C.greenDark,
+                        color: over ? colorScheme.tertiary : colorScheme.primary,
                       ),
                     ),
                   ],
@@ -510,8 +544,8 @@ class _DailySummaryCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: pct,
               minHeight: 7,
-              backgroundColor: _C.pill,
-              valueColor: AlwaysStoppedAnimation(over ? _C.orange : _C.green),
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation(over ? colorScheme.tertiary : colorScheme.primary),
             ),
           ),
 
@@ -520,18 +554,18 @@ class _DailySummaryCard extends StatelessWidget {
           // Macros
           Row(
             children: [
-              _MacroStat(label: 'Protéines', value: '20g', color: _C.green),
+              _MacroStat(label: 'Protéines', value: '20g', color: colorScheme.primary),
               const SizedBox(width: 8),
               _MacroStat(
                 label: 'Glucides',
                 value: '90g',
-                color: Color(0xFF378ADD),
+                color: colorScheme.secondary,
               ),
               const SizedBox(width: 8),
               _MacroStat(
                 label: 'Lipides',
                 value: '12g',
-                color: Color(0xFFBA7517),
+                color: colorScheme.tertiary,
               ),
             ],
           ),
@@ -551,6 +585,7 @@ class _MacroStat extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -571,7 +606,7 @@ class _MacroStat extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(fontSize: 10, color: _C.textGrey),
+              style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -596,12 +631,19 @@ class _SelectedMealDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final over = group.isOver;
     return Container(
       decoration: BoxDecoration(
-        color: _C.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _C.border),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(
@@ -616,7 +658,7 @@ class _SelectedMealDetailCard extends StatelessWidget {
                 Image.network(
                   group.imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(color: _C.greenBg),
+                  errorBuilder: (_, __, ___) => Container(color: colorScheme.secondaryContainer.withOpacity(0.35)),
                 ),
                 DecoratedBox(
                   decoration: BoxDecoration(
@@ -624,8 +666,8 @@ class _SelectedMealDetailCard extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.05),
-                        Colors.black.withOpacity(0.55),
+                        colorScheme.scrim.withOpacity(0.05),
+                        colorScheme.scrim.withOpacity(0.55),
                       ],
                     ),
                   ),
@@ -642,14 +684,14 @@ class _SelectedMealDetailCard extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.3),
+                          color: colorScheme.scrim.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           group.time,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -657,10 +699,10 @@ class _SelectedMealDetailCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         group.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: colorScheme.onPrimary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -668,7 +710,7 @@ class _SelectedMealDetailCard extends StatelessWidget {
                         '${group.totalKcal} / ${group.budgetKcal} kcal',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withOpacity(0.85),
+                          color: colorScheme.onPrimary.withOpacity(0.85),
                         ),
                       ),
                     ],
@@ -684,7 +726,7 @@ class _SelectedMealDetailCard extends StatelessWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: _C.orange.withOpacity(0.9),
+                        color: colorScheme.tertiary.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text(
@@ -711,9 +753,10 @@ class _SelectedMealDetailCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: group.pct.clamp(0.0, 1.0),
                       minHeight: 5,
-                      backgroundColor: _C.pill,
+                      //backgroundColor: _C.pill,
+                      backgroundColor: colorScheme.surfaceContainerHighest,
                       valueColor: AlwaysStoppedAnimation(
-                        over ? _C.orange : _C.green,
+                        over ? colorScheme.tertiary : colorScheme.primary,
                       ),
                     ),
                   ),
@@ -726,7 +769,7 @@ class _SelectedMealDetailCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: over ? _C.orange : _C.green,
+                    color: over ? colorScheme.tertiary : colorScheme.primary,
                   ),
                 ),
               ],
@@ -775,14 +818,21 @@ class _MealEntryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: _C.pill,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _C.border),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -798,10 +848,10 @@ class _MealEntryRow extends StatelessWidget {
                     (_, __, ___) => Container(
                       width: 48,
                       height: 48,
-                      color: _C.greenBg,
+                      color: colorScheme.secondaryContainer.withOpacity(0.4),
                       child: const Icon(
                         Icons.restaurant,
-                        color: _C.green,
+                        color: Color(0xFF1D9E75),
                         size: 20,
                       ),
                     ),
@@ -897,9 +947,15 @@ class _EmptyMealSlot extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: _C.pill,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _C.border, width: 0.5),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.shadow.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: const Column(
           children: [
@@ -934,9 +990,15 @@ class _AddMealBtn extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 11),
         decoration: BoxDecoration(
-          color: _C.greenBg,
+          color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.35),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _C.green.withOpacity(0.25)),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -975,7 +1037,7 @@ class _BudgetRow extends StatelessWidget {
               ? Icons.warning_amber_rounded
               : Icons.check_circle_outline_rounded,
           size: 14,
-          color: over ? _C.orange : _C.green,
+          color: over ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(width: 6),
         Text(
@@ -985,7 +1047,7 @@ class _BudgetRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: over ? _C.orange : _C.greenDark,
+            color: over ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
           ),
         ),
       ],

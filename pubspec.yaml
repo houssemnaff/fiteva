@@ -43,6 +43,8 @@ flutter:
     - assets/images/
     - assets/videos/workout1.mp4
     - assets/videos/workout2.mp4
+    - assets/videos/workout3.mp4
+
 
 flutter_launcher_icons:
   android: true
