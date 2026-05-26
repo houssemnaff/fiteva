@@ -244,12 +244,12 @@ class AppTheme {
     return ThemeData(
       brightness: Brightness.dark,
       primaryColor: primaryColor,
-      scaffoldBackgroundColor: const Color(0xFF0F1115),
+      scaffoldBackgroundColor: const Color(0xFF0A0A0A ),
       colorScheme: const ColorScheme.dark(
         primary: accentColor,
         secondary: primaryColor,
-        surface: Color(0xFF171A21),
-        background: Color(0xFF0F1115),
+        surface: Color(0xFF141414),
+        background: Color(0xFF0A0A0A),
         onPrimary: white,
         onSecondary: white,
         onSurface: white,
@@ -277,7 +277,7 @@ class AppTheme {
           fontSize: 16,
         ),
         bodyLarge: GoogleFonts.inter(color: white, fontSize: 16),
-        bodyMedium: GoogleFonts.inter(color: const Color(0xFFB8C1CC), fontSize: 14),
+        bodyMedium: GoogleFonts.inter(color: const Color(0xFFAAAAAA), fontSize: 14),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: const Color(0xFF0F1115),
@@ -291,16 +291,16 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF171A21),
+        color: const Color(0xFF141414),
         elevation: 0,
         shadowColor: Colors.black.withOpacity(0.2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF171A21),
+        backgroundColor: Color(0xFF141414),
         selectedItemColor: accentColor,
-        unselectedItemColor: Color(0xFFB8C1CC),
+        unselectedItemColor: Color(0xFF888888),
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
         elevation: 10,
@@ -338,7 +338,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF171A21),
+        fillColor: const Color(0xFF141414 ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
@@ -355,7 +355,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: accentColor, width: 2),
         ),
-        hintStyle: GoogleFonts.inter(color: const Color(0xFFB8C1CC)),
+        hintStyle: GoogleFonts.inter(color: const Color(0xFF888888)),
       ),
     );
   }
