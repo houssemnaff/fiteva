@@ -2,53 +2,35 @@ name: Build iOS IPA
 
 on:
   push:
-    branches: [main]
 
 jobs:
-  build_ios:
+  build-ios:
     runs-on: macos-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: true
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Patch Xcode project - disable code signing
+      - name: Clean iOS folder
         run: |
-          sed -i '' 's/DEVELOPMENT_TEAM = [^;]*;/DEVELOPMENT_TEAM = "";/g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = [^;]*;/PROVISIONING_PROFILE_SPECIFIER = "";/g' ios/Runner.xcodeproj/project.pbxproj
+          cd ios
+          rm -rf Pods
+          rm -f Podfile.lock
 
-      - name: Generate Flutter iOS build files
-        run: flutter build ios --release --no-codesign --config-only
-
-      - name: Build with xcodebuild
-        run: |
-          xcodebuild \
-            -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -sdk iphoneos \
-            -derivedDataPath $PWD/build/DerivedData \
-            DEVELOPMENT_TEAM="" \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER=""
+      - name: Build iOS (no signing)
+        run: flutter build ios --release --no-codesign
 
       - name: Create IPA
         run: |
           mkdir Payload
-          cp -r build/DerivedData/Build/Products/Release-iphoneos/Runner.app Payload/
+          cp -R build/ios/iphoneos/Runner.app Payload/
           zip -r app.ipa Payload
 
       - name: Upload IPA artifact
