@@ -1,7 +1,12 @@
-import 'package:fiteva/screens/cycle/pregnancy/pregnancy_screen.dart';
+import 'package:fiteva/screens/cycle/pregnancy/PregnancyHubScreen.dart';
+import 'package:fiteva/screens/cycle/pregnancy/living_thread_screen.dart';
+
+import 'package:fiteva/screens/cycle/pregnancy/pregnancy_week.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/calendar_screen.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/cycle_header.dart';
-import 'package:fiteva/screens/cycle/pregnancy/pregnancy_header.dart'; // 👈 add this
+// 👈 add this
+import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/symptom/symptoms_section.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
@@ -10,7 +15,7 @@ import 'widgets-cycle/energy_section.dart';
 import 'widgets-cycle/insight_section.dart';
 import 'widgets-cycle/mood_section.dart';
 import 'widgets-cycle/recommendations_section.dart';
-import 'widgets-cycle/symptoms_section.dart';
+
 import 'widgets-cycle/cycle_info_card.dart';
 
 // ──────────────────────────────────────────────
@@ -47,49 +52,53 @@ class CycleTheme {
     required this.glow,
   });
 }
-
 CycleTheme getTheme(int day) {
   final phase = wheel.phaseForDay(day);
+
   switch (phase.name) {
+
     case 'Règles':
       return const CycleTheme(
         gradient: [
-          FitEvaColors.phaseMenstrual,
-          FitEvaColors.phaseMenstrual,
-          FitEvaColors.phaseMenstrual,
+          Color(0xFFE58F8A),
+          Color(0xFFDE7A7A),
+          Color(0xFFF2B6B2),
         ],
-        primary: FitEvaColors.phaseMenstrual,
-        glow: Color(0x66D94F6B),
+        primary: Color(0xFFE58F8A),
+        glow: Color(0x66E58F8A),
       );
+
     case 'Folliculaire':
       return const CycleTheme(
         gradient: [
-          FitEvaColors.phaseFolliculaire,
-          FitEvaColors.phaseFolliculaire,
-          FitEvaColors.phaseFolliculaire,
+          Color(0xFF7ABB98),
+          Color(0xFF5FAE87),
+          Color(0xFFBFE6D2),
         ],
-        primary: FitEvaColors.phaseFolliculaire,
+        primary: Color(0xFF7ABB98),
         glow: Color(0x667ABB98),
       );
+
     case 'Ovulation':
       return const CycleTheme(
         gradient: [
-          FitEvaColors.phaseOvulatoire,
-          FitEvaColors.phaseOvulatoire,
-          FitEvaColors.phaseOvulatoire,
+          Color(0xFF1C4D30),
+          Color(0xFF2E6B45),
+          Color(0xFF4A8F66),
         ],
-        primary: FitEvaColors.phaseOvulatoire,
-        glow: Color(0x66F4A940),
+        primary: Color(0xFF1C4D30),
+        glow: Color(0x661C4D30),
       );
-    default:
+
+    default: // Luteal
       return const CycleTheme(
         gradient: [
-          FitEvaColors.phaseLuteal,
-          FitEvaColors.phaseLuteal,
-          FitEvaColors.phaseLuteal,
+          Color(0xFFA7B8AD),
+          Color(0xFF8FA79A),
+          Color(0xFFD6E2DB),
         ],
-        primary: FitEvaColors.phaseLuteal,
-        glow: Color(0x665A7FC2),
+        primary: Color(0xFFA7B8AD),
+        glow: Color(0x66A7B8AD),
       );
   }
 }
@@ -183,142 +192,25 @@ Widget build(BuildContext context) {
               onClose: () => Navigator.maybePop(context),
               onSwitchToPregnancy: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const PregnancyScreen()),
-              ),
+                MaterialPageRoute(builder: (_) => const PregnancyHubScreen(currentWeek:14)),
+              ),  
             ),
 
-            CycleInfoCard(
-              currentDay: _currentDay,
-              onDaySelected: (d) => setState(() => _currentDay = d),
-            ),
+
 
             const SizedBox(height: 16),
 
-            const SizedBox(height: 8),
-            Center(
-              child: SizedBox(
-                width: screenWidth * 0.88,
-                height: screenWidth * 0.88,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 350),
-                  child: _showWheel
-                      ? wheel.CycleWheel(
-                          key: const ValueKey('wheel'),
-                          currentDay: _currentDay,
-                          onDaySelected: (d) => setState(() => _currentDay = d),
-                        )
-                      : _CalendarPage(
-                          key: const ValueKey('cal'),
-                          currentDay: _currentDay,
-                          onDaySelected: (d) => setState(() => _currentDay = d),
-                        ),
-                ),
-              ),
-            ),
+            CycleRoomWidget(
+  currentDay: _currentDay,
+  onDaySelected: (d) => setState(() => _currentDay = d),
+),
 
-            const SizedBox(height: 16),
+           
+           
 
-            // ── ÉNERGIE ──────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOutCubic,
-                padding: const EdgeInsets.all(16),
-                decoration: _cardDecoration(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    EnergySection(
-                      energy: (_energy - (_symptomScore * 0.05)).clamp(0.0, 1.0),
-                      phaseColor: theme.primary,
-                      title: 'Energy',
-                      onChanged: (val) => setState(() => _energy = val),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Icon(_getMoodIcon(), size: 16, color: theme.primary),
-                        const SizedBox(width: 6),
-                        Text(
-                          _getMoodText(),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: FitEvaColors.textMuted,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          
 
-            const SizedBox(height: 10),
-
-            // ── HUMEUR + INSIGHT ──────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.25,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOutCubic,
-                        padding: const EdgeInsets.all(14),
-                        decoration: _cardDecoration(),
-                        child: MoodSection(
-                          selectedMood: _selectedMood,
-                          phaseColor: theme.primary,
-                          onSelect: (i) => setState(() => _selectedMood = i),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOutCubic,
-                        padding: const EdgeInsets.all(14),
-                        decoration: _cardDecoration(),
-                        child: InsightSection(
-                          insight: _getInsight(),
-                          phaseColor: theme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // ── RECOMMANDATIONS ───────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOutCubic,
-                padding: const EdgeInsets.all(14),
-                decoration: _cardDecoration(),
-                child: RecommendationsSection(
-                  sportColor: _symptomScore > 3
-                      ? theme.primary.withOpacity(0.8)
-                      : const Color(0xFF6C63FF),
-                  nutritionColor: _symptomScore > 2
-                      ? const Color(0xFFFF6B6B)
-                      : const Color(0xFFFFB703),
-                  restColor: _symptomScore >= 3
-                      ? const Color(0xFF4CC9F0)
-                      : const Color(0xFF38B000),
-                ),
-              ),
-            ),
+            
 
             const SizedBox(height: 10),
 
@@ -331,19 +223,11 @@ Widget build(BuildContext context) {
                 padding: const EdgeInsets.all(14),
                 decoration: _cardDecoration(),
                 child: SymptomsSection(
-                  symptoms: _symptoms,
-                  selectedSymptoms: _selectedSymptoms,
+                 previousDayCount:3,
+                 
                   phaseColor: theme.primary,
-                  title: const Text('Symptoms'),
-                  onToggle: (index) {
-                    setState(() {
-                      if (_selectedSymptoms.contains(index)) {
-                        _selectedSymptoms.remove(index);
-                      } else {
-                        _selectedSymptoms.add(index);
-                      }
-                    });
-                  },
+
+                 
                 ),
               ),
             ),

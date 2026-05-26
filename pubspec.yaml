@@ -23,13 +23,14 @@ dependencies:
   showcaseview: ^5.0.2
   video_player: ^2.11.1
   chewie: ^1.14.0
-
-  # Boutique – PDF & QR
+  lottie: ^3.1.0
+  flutter_animate: ^4.5.0
+  # Boutique – PDF & QRicacls "%TEMP%" /grant "%USERDOMAIN%\%USERNAME%":F /T
   pdf: ^3.10.8
   printing: ^5.12.0
   qr_flutter: ^4.1.0
   cached_network_image: ^3.3.1
-
+  flutter_tts: ^4.0.2 
 dev_dependencies:
   flutter_test:
     sdk: flutter
