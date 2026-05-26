@@ -5,7 +5,7 @@ import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
 import 'package:fiteva/widgets/chatbot_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'home/home_screen.dart';
 import 'workout/workout_screen.dart';

@@ -75,7 +75,7 @@ CycleTheme getTheme(int day) {
           Color(0xFF5FAE87),
           Color(0xFFBFE6D2),
         ],
-        primary: Color(0xFF7ABB98),
+        primary: Color(0xFF7ABB98), 
         glow: Color(0x667ABB98),
       );
 
@@ -205,12 +205,72 @@ Widget build(BuildContext context) {
   onDaySelected: (d) => setState(() => _currentDay = d),
 ),
 
-           
-           
+            const SizedBox(height: 16),
+
+            // ── ÉNERGIE ──────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOutCubic,
+                padding: const EdgeInsets.all(16),
+                decoration: _cardDecoration(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    EnergySection(
+                      energy: (_energy - (_symptomScore * 0.05)).clamp(0.0, 1.0),
+                      phaseColor: theme.primary,
+                      title: 'Energy',
+                      onChanged: (val) => setState(() => _energy = val),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(_getMoodIcon(), size: 16, color: theme.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          _getMoodText(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: FitEvaColors.textMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
 
           
 
-            
+            const SizedBox(height: 10),
+
+            // ── RECOMMANDATIONS ───────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOutCubic,
+                padding: const EdgeInsets.all(14),
+                decoration: _cardDecoration(),
+                child: RecommendationsSection(
+                  sportColor: _symptomScore > 3
+                      ? theme.primary.withOpacity(0.8)
+                      : const Color(0xFF6C63FF),
+                  nutritionColor: _symptomScore > 2
+                      ? const Color(0xFFFF6B6B)
+                      : const Color(0xFFFFB703),
+                  restColor: _symptomScore >= 3
+                      ? const Color(0xFF4CC9F0)
+                      : const Color(0xFF38B000),
+                ),
+              ),
+            ),
 
             const SizedBox(height: 10),
 

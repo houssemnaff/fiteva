@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/workout_model.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'active_workout_screen.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
