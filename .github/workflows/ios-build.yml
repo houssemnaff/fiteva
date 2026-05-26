@@ -18,23 +18,32 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Clean iOS folder
-        run: |
-          cd ios
-          rm -rf Pods
-          rm -f Podfile.lock
+      - name: Generate Flutter build files
+        run: flutter build ios --release --no-codesign --config-only
 
-      - name: Build iOS (no signing)
-        run: flutter build ios --release --no-codesign
+      - name: Build with xcodebuild
+        run: |
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath $PWD/build/DerivedData \
+            DEVELOPMENT_TEAM="" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER=""
 
       - name: Create IPA
         run: |
           mkdir Payload
-          cp -R build/ios/iphoneos/Runner.app Payload/
+          cp -r build/DerivedData/Build/Products/Release-iphoneos/Runner.app Payload/
           zip -r app.ipa Payload
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: app.ipa
+          path: app.ipa 
