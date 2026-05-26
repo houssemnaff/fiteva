@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:fiteva/screens/cycle/pregnancy/theme.dart';
+
 
 /// Animated heartbeat pulse that plays when the user long-presses the
 /// current week knot. Renders concentric expanding rings at the knot position.

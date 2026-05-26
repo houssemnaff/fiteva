@@ -53,6 +53,16 @@ static const Color bg = Colors.white;        // soft ivory base
     }
   }
 
+
+
+static Color threadForWeek(int week) {
+    if (week <= 13) return const Color(0xFF7DAF8A);
+    if (week <= 27) return const Color(0xFFB97A8A);
+    if (week <= 36) return const Color(0xFF9B7DAF);
+    return const Color(0xFFB8916E);
+  }
+
+
   static int strandCountForWeek(int week) {
     if (week <= 13) return 1;
     if (week <= 27) return 2;

@@ -118,21 +118,13 @@ class _Body extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Baby size
-         Row(
-  children: [
-    _InfoChip(
-      label: 'Taille d’un',
-      value: data.babySize,
-      color: color,
-    ),
-    const SizedBox(width: 12),
-    _InfoChip(
-      label: 'Longueur',
-      value: '${data.lengthCm.toStringAsFixed(1)} cm',
-      color: color,
-    ),
-  ],
-),
+          Row(
+            children: [
+              _InfoChip(label: 'Size of a', value: data.babySize, color: color),
+              const SizedBox(width: 12),
+              _InfoChip(label: 'Length', value: '${data.lengthCm.toStringAsFixed(1)} cm', color: color),
+            ],
+          ),
           const SizedBox(height: 16),
 
           // Milestone
