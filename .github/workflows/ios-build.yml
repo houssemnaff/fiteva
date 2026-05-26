@@ -21,13 +21,20 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Disable code signing in Xcode project
+        run: |
+          cd ios
+          # Remove automatic signing and team references from pbxproj
+          sed -i '' 's/DEVELOPMENT_TEAM = [^;]*;/DEVELOPMENT_TEAM = "";/g' Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = [^;]*;/PROVISIONING_PROFILE_SPECIFIER = "";/g' Runner.xcodeproj/project.pbxproj
+          # Add explicit no-signing settings
+          sed -i '' 's/CODE_SIGN_IDENTITY = "iPhone Developer";/CODE_SIGN_IDENTITY = "";/g' Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_IDENTITY = "iPhone Distribution";/CODE_SIGN_IDENTITY = "";/g' Runner.xcodeproj/project.pbxproj
+
       - name: Build iOS (no codesign)
         run: |
-          flutter build ios --release --no-codesign \
-            --dart-define=FLUTTER_XCODE_CODE_SIGN_IDENTITY="" \
-            --dart-define=FLUTTER_XCODE_CODE_SIGNING_REQUIRED=NO \
-            --dart-define=FLUTTER_XCODE_CODE_SIGN_ENTITLEMENTS="" \
-            --dart-define=FLUTTER_XCODE_PROVISIONING_PROFILE_SPECIFIER=""
+          flutter build ios --release --no-codesign
 
       - name: Create IPA
         run: |
@@ -39,4 +46,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: app.ipa
+          path: app.ipa 
