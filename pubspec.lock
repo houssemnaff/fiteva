@@ -500,10 +500,10 @@ packages:
     dependency: "direct main"
     description:
       name: lucide_icons
-      sha256: "5a98c817e57e2d3472c7404574de809031e6dd96f9dc7130b677a7570030a2ba"
+      sha256: ffd3d63b74d4c5a1664f4ab8f97e9e390c3d1513c8edc719f3307aaaad6f5774
       url: "https://pub.dev"
     source: hosted
-    version: "0.230.0"
+    version: "0.204.0"
   matcher:
     dependency: transitive
     description:
