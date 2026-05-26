@@ -9,7 +9,7 @@ import 'package:fiteva/screens/community/widgets/shared/community_shared_widgets
 import 'package:fiteva/screens/community/widgets/shared/community_tab_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 
 

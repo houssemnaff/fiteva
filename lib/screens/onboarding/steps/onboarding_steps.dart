@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ─── Design Tokens — Mint/Sage Palette ────────────────────────────────────
 const _kBgMint       = Color(0xFFB8CFC4); // fond principal mint sauge
