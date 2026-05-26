@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // Theme values are obtained from Theme.of(context).colorScheme
 import '../shared/community_shared_widgets.dart';

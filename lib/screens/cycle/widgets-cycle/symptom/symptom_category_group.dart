@@ -108,7 +108,7 @@ class _SymptomCategoryGroupState extends State<SymptomCategoryGroup>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
-                      color: widget.phaseColor.withOpacity(0.18),
+                      color: Colors.white.withOpacity(0.18),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
