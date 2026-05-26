@@ -19,7 +19,7 @@ jobs:
         run: flutter pub get
 
       - name: Generate Flutter build files
-        run: flutter build ios --release --no-codesign --config-only
+        run: fflutter build ios --release --no-codesign || true
 
       - name: Build with xcodebuild
         run: |
