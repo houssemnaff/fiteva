@@ -245,7 +245,7 @@ class _WaterTrackerCardState extends State<WaterTrackerCard> {
   Color get _barColor => _pct >= 0.8
       ? const Color(0xFF1D9E75)
       : _pct >= 0.5
-          ? const Color(0xFF378ADD)
+          ? const Color.fromARGB(255, 101, 86, 0)
           : const Color(0xFFE24B4A);
 
   @override

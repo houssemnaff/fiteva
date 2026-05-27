@@ -30,9 +30,9 @@ class EnergySection extends StatelessWidget {
               title.toUpperCase(),
               style: const TextStyle(
                 fontSize: 12,
-                letterSpacing: 1.3,
+                letterSpacing: 1.4,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF7A7A7A),
+                color: Color(0xFF8E8E93),
               ),
             ),
             Text(
@@ -48,31 +48,31 @@ class EnergySection extends StatelessWidget {
 
         const SizedBox(height: 14),
 
-        // ───────── CONTROL BAR ─────────
+        // ───────── FLOATING CONTROL BAR ─────────
         Container(
           height: 72,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F8F7), // soft green-white surface
-            borderRadius: BorderRadius.circular(18),
+            color: const Color.fromARGB(255, 215, 215, 255),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: phaseColor.withOpacity(0.08),
+              color: Colors.white.withOpacity(0.05),  
             ),
           ),
           child: Row(
             children: [
-              _IconButton(
-                icon: Icons.bolt_rounded,
+              _SoftIcon(
+                icon: Icons.remove_rounded,
+                active: energy > 0.1,
                 color: phaseColor,
-                active: energy > 0.2,
               ),
 
               Expanded(
                 child: SliderTheme(
                   data: SliderThemeData(
                     trackHeight: 4,
-                    activeTrackColor: phaseColor.withOpacity(0.85),
-                    inactiveTrackColor: phaseColor.withOpacity(0.12),
+                    activeTrackColor: phaseColor.withOpacity(0.9),
+                    inactiveTrackColor: Colors.white.withOpacity(0.08),
                     thumbColor: Colors.white,
                     overlayColor: phaseColor.withOpacity(0.08),
                     thumbShape: const RoundSliderThumbShape(
@@ -92,10 +92,10 @@ class EnergySection extends StatelessWidget {
                 ),
               ),
 
-              _IconButton(
-                icon: Icons.local_fire_department_rounded,
+              _SoftIcon(
+                icon: Icons.add_rounded,
+                active: energy > 0.7,
                 color: phaseColor,
-                active: energy > 0.75,
               ),
             ],
           ),
@@ -105,13 +105,12 @@ class EnergySection extends StatelessWidget {
   }
 }
 
-// ───────── ICON COMPONENT ─────────
-class _IconButton extends StatelessWidget {
+class _SoftIcon extends StatelessWidget {
   final IconData icon;
   final bool active;
   final Color color;
 
-  const _IconButton({
+  const _SoftIcon({
     required this.icon,
     required this.active,
     required this.color,
@@ -121,18 +120,18 @@ class _IconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
-      width: 38,
-      height: 38,
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
         color: active
             ? color.withOpacity(0.12)
-            : Colors.transparent,
+            : Colors.white.withOpacity(0.03),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(
         icon,
         size: 20,
-        color: active ? color : const Color(0xFFB0B0B0),
+        color: active ? color : const Color(0xFF8E8E93),
       ),
     );
   }

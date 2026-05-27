@@ -39,7 +39,7 @@ class SymptomSummaryCard extends StatelessWidget {
       case SymptomTrend.decreasing:
         return const Color(0xFF6BCFB0);
       case SymptomTrend.stable:
-        return const Color.fromARGB(255, 255, 213, 213).withOpacity(0.5);
+        return Colors.black.withOpacity(0.5);
       case SymptomTrend.newToday:
         return phaseColor;
     }

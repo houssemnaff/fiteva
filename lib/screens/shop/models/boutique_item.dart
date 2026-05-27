@@ -15,6 +15,7 @@ class BoutiqueItem {
   final String validUntil;
   final String siteUrl;
   final String description;
+  final String category;
 
   const BoutiqueItem({
     required this.id,
@@ -31,5 +32,7 @@ class BoutiqueItem {
     required this.validUntil,
     required this.siteUrl,
     required this.description,
+      required this.category, // 👈 ADD THIS
+
   });
 }
