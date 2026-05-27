@@ -243,7 +243,7 @@ class _PromoModalState extends State<PromoModal> {
     final item = widget.item;
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.background,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(
