@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ─── Design Tokens — Mint/Sage Palette ────────────────────────────────────
@@ -454,13 +456,50 @@ class StepIntro extends StatelessWidget {
       );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 1 — StepWelcome (inchangé visuellement, mais fond mint)
-// ══════════════════════════════════════════════════════════════════════════════
-const _kGreenLight  = Color(0xFF2E7D4F);
-const _kGreenPale   = Color(0xFFE8F5EE);
-const _kGreen       = Color(0xFF2D4A2D);
 
+// ─── Colors ───────────────────────────────────────────────────────────────────
+const _kPrimary     = Color(0xFFFF2D6B);   // SWEAT pink-red
+const _kDark        = Color(0xFF0A0A0A);
+const _kGrey        = Color(0xFF8A8A8A);
+const _kSurface     = Color(0xFFF2F2F2);
+const _kBorder      = Color(0xFFE0E0E0);
+
+// ─── Slide data ───────────────────────────────────────────────────────────────
+class _SlideData {
+  final String imagePath;
+  final String title;
+  final String subtitle;
+  const _SlideData({
+    required this.imagePath,
+    required this.title,
+    required this.subtitle,
+  });
+}
+
+const _slides = [
+  _SlideData(
+    imagePath: 'assets/images/slide_gym1.jpg',
+    title: 'Welcome to FitEva!',
+    subtitle: 'With support from millions, tap into our motivation and find your strength.',
+  ),
+  _SlideData(
+    imagePath: 'assets/images/slide_gym2.jpg',
+    title: 'Workouts',
+    subtitle: 'Resistance, cardio and recovery workouts. Anytime, anywhere.',
+  ),
+ _SlideData(
+  imagePath: 'assets/images/slide_gym3.jpg',
+  title: 'cycle',
+  subtitle: 'Track your menstrual cycle, understand your body better, and stay informed about your health and well-being.',
+),
+  _SlideData(
+    imagePath: 'assets/images/slide_gym4.jpg',
+    title: 'nutrition',
+  subtitle: 'Build healthy habits with personalized nutrition guidance to support your fitness goals.',
+  ),
+];
+
+// ─── Widget ───────────────────────────────────────────────────────────────────
 class StepWelcome extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
@@ -484,20 +523,15 @@ class StepWelcome extends StatefulWidget {
 class _StepWelcomeState extends State<StepWelcome>
     with TickerProviderStateMixin {
 
-  late final AnimationController _entranceCtrl;
+  final PageController _pageCtrl = PageController();
+  int _currentPage = 0;
+  Timer? _autoSlideTimer;
 
-  Animation<double> _titleFade  = const AlwaysStoppedAnimation<double>(1);
-  Animation<Offset> _titleSlide = const AlwaysStoppedAnimation<Offset>(Offset.zero);
-  Animation<double> _fieldsFade  = const AlwaysStoppedAnimation<double>(1);
-  Animation<Offset> _fieldsSlide = const AlwaysStoppedAnimation<Offset>(Offset.zero);
-  Animation<double> _dividerFade = const AlwaysStoppedAnimation<double>(1);
-  Animation<double> _socialFade  = const AlwaysStoppedAnimation<double>(1);
-  Animation<Offset> _socialSlide = const AlwaysStoppedAnimation<Offset>(Offset.zero);
-  Animation<double> _btnFade    = const AlwaysStoppedAnimation<double>(1);
-  Animation<Offset> _btnSlide   = const AlwaysStoppedAnimation<Offset>(Offset.zero);
-
-  bool _obscure    = true;
   bool _emailMode  = false;
+  bool _obscure    = true;
+
+  late final AnimationController _fadeCtrl;
+  late final Animation<double>   _fadeAnim;
 
   bool get _canContinue {
     if (_emailMode) {
@@ -511,157 +545,172 @@ class _StepWelcomeState extends State<StepWelcome>
   @override
   void initState() {
     super.initState();
-    _entranceCtrl = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1400),
+    _fadeCtrl = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 600),
     )..forward();
-
-    _titleFade  = _c(0.15, 0.38);
-    _titleSlide = _s(0.15, 0.38);
-    _fieldsFade  = _c(0.30, 0.55);
-    _fieldsSlide = _s(0.30, 0.55);
-    _dividerFade = _c(0.45, 0.65);
-    _socialFade  = _c(0.55, 0.78);
-    _socialSlide = _s(0.55, 0.78);
-    _btnFade    = _c(0.68, 0.92);
-    _btnSlide   = _s(0.68, 0.92);
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _startAutoSlide();
   }
 
-  Animation<double> _c(double s, double e) => CurvedAnimation(
-    parent: _entranceCtrl, curve: Interval(s, e, curve: Curves.easeOut),
-  );
-
-  Animation<Offset> _s(double s, double e) =>
-      Tween<Offset>(begin: const Offset(0, 0.28), end: Offset.zero).animate(
-        CurvedAnimation(parent: _entranceCtrl,
-            curve: Interval(s, e, curve: Curves.easeOut)),
+  void _startAutoSlide() {
+    _autoSlideTimer?.cancel();
+    _autoSlideTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted || _emailMode) return;
+      final next = (_currentPage + 1) % _slides.length;
+      _pageCtrl.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
       );
+    });
+  }
 
   @override
   void dispose() {
-    _entranceCtrl.dispose();
+    _autoSlideTimer?.cancel();
+    _pageCtrl.dispose();
+    _fadeCtrl.dispose();
     super.dispose();
   }
 
+  // ─── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: _emailMode
-                        ? () => setState(() => _emailMode = false)
-                        : (widget.onBack ?? () => Navigator.pop(context)),
-                    child: Container(
-                      width: 38, height: 38,
-                      decoration: BoxDecoration(
-                        color: _kGreenPale,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.arrow_back_ios_new,
-                          color: _kGreen, size: 15),
-                    ),
-                  ),
-                  Row(
-                    children: List.generate(7, (i) => Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: i == 0 ? 18 : 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: i == 0 ? _kGreen : const Color(0xFFD8E8DF),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    )),
-                  ),
-                ],
-              ),
+      backgroundColor: _kDark,
+      body: Stack(
+        children: [
+          // ── Background image carousel ──────────────────────────────────────
+          Positioned.fill(
+            child: PageView.builder(
+              controller: _pageCtrl,
+              physics: const PageScrollPhysics(),
+              itemCount: _slides.length,
+              onPageChanged: (i) {
+                setState(() => _currentPage = i);
+                _startAutoSlide(); // reset timer after manual swipe
+              },
+              itemBuilder: (_, i) => _buildSlideBackground(_slides[i]),
             ),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 28),
-                    FadeTransition(opacity: _titleFade,
-                      child: SlideTransition(position: _titleSlide,
-                        child: _buildHeadline())),
-                    const SizedBox(height: 32),
-                    FadeTransition(opacity: _fieldsFade,
-                      child: SlideTransition(position: _fieldsSlide,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _label("Comment FitEva t'appelle ?"),
-                            const SizedBox(height: 8),
-                            _inputField(
-                              controller: widget.nameController,
-                              hint: "Ton pseudo dans l'app",
-                              icon: Icons.badge_outlined,
-                              onChanged: (_) => setState(() {}),
-                            ),
-                            const SizedBox(height: 6),
-                            Text("Ce nom sera visible dans la communauté.",
-                              style: TextStyle(fontSize: 11.5,
-                                  color: Colors.grey.shade400, height: 1.4)),
-                            if (_emailMode) ...[
-                              const SizedBox(height: 20),
-                              _label("Email"),
-                              const SizedBox(height: 8),
-                              _inputField(
-                                controller: widget.emailController,
-                                hint: "ton@email.com",
-                                icon: Icons.mail_outline_rounded,
-                                keyboardType: TextInputType.emailAddress,
-                                onChanged: (_) => setState(() {}),
-                              ),
-                              const SizedBox(height: 16),
-                              _label("Mot de passe"),
-                              const SizedBox(height: 8),
-                              _inputField(
-                                controller: widget.passwordController,
-                                hint: "••••••••",
-                                icon: Icons.lock_outline_rounded,
-                                obscure: _obscure,
-                                suffix: GestureDetector(
-                                  onTap: () => setState(() => _obscure = !_obscure),
-                                  child: Icon(
-                                    _obscure ? Icons.visibility_off_outlined
-                                             : Icons.visibility_outlined,
-                                    size: 18, color: Colors.grey.shade400,
-                                  ),
-                                ),
-                                onChanged: (_) => setState(() {}),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    FadeTransition(opacity: _dividerFade, child: _buildDivider()),
-                    const SizedBox(height: 24),
-                    FadeTransition(opacity: _socialFade,
-                      child: SlideTransition(position: _socialSlide,
-                        child: _buildSocialButtons())),
-                    const SizedBox(height: 32),
+          ),
+
+          // ── Dark gradient overlay ──────────────────────────────────────────
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.0, 0.35, 0.60, 1.0],
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    _kDark.withOpacity(0.55),
+                    _kDark.withOpacity(0.98),
                   ],
                 ),
               ),
             ),
-            FadeTransition(opacity: _btnFade,
-              child: SlideTransition(position: _btnSlide,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 32),
-                  child: _buildCTA(),
+          ),
+
+          // ── Content ────────────────────────────────────────────────────────
+          SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 24),
+                _buildLogo(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    reverse: true,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 24),
+                        _buildSlideText(),
+                        const SizedBox(height: 16),
+                        _buildDots(),
+                        const SizedBox(height: 28),
+                        FadeTransition(
+                          opacity: _fadeAnim,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: _emailMode ? _buildEmailForm() : _buildAuthButtons(),
+                          ),
+                        ),
+                        if (!_emailMode) _buildLoginRow(),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Slide background ──────────────────────────────────────────────────────
+  Widget _buildSlideBackground(_SlideData slide) {
+    return Image.asset(
+      slide.imagePath,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        color: const Color(0xFF1A1A1A),
+        child: const Icon(Icons.fitness_center, color: Colors.white12, size: 80),
+      ),
+    );
+  }
+
+  // ─── Logo ──────────────────────────────────────────────────────────────────
+  Widget _buildLogo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'FitEva',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
+            color: _kWhite,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Icon(Icons.water_drop, color: _kWhite, size: 26),
+      ],
+    );
+  }
+
+  // ─── Slide text ────────────────────────────────────────────────────────────
+  Widget _buildSlideText() {
+    final slide = _slides[_currentPage];
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      child: Padding(
+        key: ValueKey(_currentPage),
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(
+          children: [
+            Text(
+              slide.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: _kWhite,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              slide.subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: _kWhite,
+                height: 1.5,
               ),
             ),
           ],
@@ -670,28 +719,185 @@ class _StepWelcomeState extends State<StepWelcome>
     );
   }
 
-  Widget _buildHeadline() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        _emailMode ? "Crée ton compte" : "Bienvenue ",
-        style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800,
-            color: Color(0xFF0F1A14), height: 1.15, letterSpacing: -0.8),
-      ),
-      const SizedBox(height: 6),
-      Text(
-        _emailMode ? "Remplis les infos pour commencer."
-                   : "Comment veux-tu rejoindre FitEva ?",
-        style: TextStyle(fontSize: 14.5, color: Colors.grey.shade500, height: 1.5),
-      ),
-    ],
-  );
+  // ─── Dots ──────────────────────────────────────────────────────────────────
+  Widget _buildDots() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_slides.length, (i) {
+        final active = i == _currentPage;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: active ? 20 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: active ? _kWhite : _kWhite.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        );
+      }),
+    );
+  }
 
-  Widget _label(String text) => Text(text,
-    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-        color: Colors.grey.shade700, letterSpacing: 0.1));
+  // ─── Auth buttons ──────────────────────────────────────────────────────────
+  Widget _buildAuthButtons() {
+    return Column(
+      children: [
+        _authBtn(
+          label: 'Sign Up with Google',
+          bgColor: _kWhite,
+          textColor: _kDark,
+          borderColor: _kBorder,
+          leading: _googleIcon(),
+          onTap: () {},
+        ),
+        const SizedBox(height: 12),
+        _authBtn(
+          label: 'Sign Up with Apple',
+          bgColor: _kDark,
+          textColor: _kWhite,
+          borderColor: Colors.transparent,
+          leading: Icon(Icons.apple_rounded, color: _kWhite, size: 22),
+          onTap: () {},
+        ),
+        const SizedBox(height: 12),
+        _authBtn(
+          label: 'Sign Up with Email',
+          bgColor: _kPrimary,
+          textColor: _kWhite,
+          borderColor: Colors.transparent,
+          leading: Icon(Icons.mail_outline_rounded, color: _kWhite, size: 20),
+          onTap: () => setState(() => _emailMode = true),
+        ),
+      ],
+    );
+  }
 
-  Widget _inputField({
+  Widget _authBtn({
+    required String label,
+    required Color bgColor,
+    required Color textColor,
+    required Color borderColor,
+    required Widget leading,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 54,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: borderColor, width: 1.2),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            leading,
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+                letterSpacing: 0.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Email form ────────────────────────────────────────────────────────────
+  Widget _buildEmailForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Back row
+        GestureDetector(
+          onTap: () => setState(() => _emailMode = false),
+          child: Row(
+            children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: _kWhite.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.arrow_back_ios_new,
+                    color: _kWhite, size: 14),
+              ),
+              const SizedBox(width: 10),
+              Text('Create your account',
+                  style: TextStyle(color: _kWhite,
+                      fontWeight: FontWeight.w700, fontSize: 16)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        _formField(
+          controller: widget.nameController,
+          hint: 'Your username',
+          icon: Icons.badge_outlined,
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 12),
+        _formField(
+          controller: widget.emailController,
+          hint: 'your@email.com',
+          icon: Icons.mail_outline_rounded,
+          keyboardType: TextInputType.emailAddress,
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 12),
+        _formField(
+          controller: widget.passwordController,
+          hint: '••••••••',
+          icon: Icons.lock_outline_rounded,
+          obscure: _obscure,
+          suffix: GestureDetector(
+            onTap: () => setState(() => _obscure = !_obscure),
+            child: Icon(
+              _obscure ? Icons.visibility_off_outlined
+                       : Icons.visibility_outlined,
+              color: _kGrey, size: 18,
+            ),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 20),
+
+        // CTA
+        GestureDetector(
+          onTap: _canContinue ? widget.onNext : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            height: 54,
+            decoration: BoxDecoration(
+              color: _canContinue ? _kPrimary : _kGrey.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Center(
+              child: Text(
+                'Continue →',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: _canContinue ? _kWhite : _kGrey,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _formField({
     required TextEditingController controller,
     required String hint,
     required IconData icon,
@@ -702,141 +908,65 @@ class _StepWelcomeState extends State<StepWelcome>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF7FAF8),
+        color: _kWhite.withOpacity(0.12),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2EDE7), width: 1.2),
+        border: Border.all(color: _kWhite.withOpacity(0.18), width: 1),
       ),
       child: TextField(
-        controller: controller, obscureText: obscure,
-        keyboardType: keyboardType, onChanged: onChanged,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500,
-            color: Color(0xFF0F1A14)),
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: keyboardType,
+        onChanged: onChanged,
+        style: const TextStyle(fontSize: 15, color: _kWhite,
+            fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey.shade400,
-              fontWeight: FontWeight.w400, fontSize: 14.5),
-          prefixIcon: Icon(icon, color: _kGreenLight, size: 19),
+          hintStyle: TextStyle(color: _kWhite.withOpacity(0.45), fontSize: 14),
+          prefixIcon: Icon(icon, color: _kWhite.withOpacity(0.7), size: 20),
           suffixIcon: suffix != null
               ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix)
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
         ),
       ),
     );
   }
 
-  Widget _buildDivider() => Row(children: [
-    Expanded(child: Divider(color: Colors.grey.shade200, thickness: 1)),
-    Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Text("ou continuer avec",
-          style: TextStyle(fontSize: 12.5, color: Colors.grey.shade400,
-              fontWeight: FontWeight.w500)),
-    ),
-    Expanded(child: Divider(color: Colors.grey.shade200, thickness: 1)),
-  ]);
-
-  Widget _buildSocialButtons() => Column(children: [
-    _socialBtn(label: "Continuer avec Email", icon: Icons.mail_outline_rounded,
-        iconColor: _kGreen, bgColor: _kGreenPale, textColor: _kGreen,
-        borderColor: const Color(0xFFB8D9C5),
-        onTap: () => setState(() => _emailMode = true)),
-    const SizedBox(height: 12),
-    _socialBtn(label: "Continuer avec Google", customIcon: _googleIcon(),
-        bgColor: Colors.white, textColor: const Color(0xFF1A1A1A),
-        borderColor: const Color(0xFFE0E0E0), onTap: () {}),
-    const SizedBox(height: 12),
-    _socialBtn(label: "Continuer avec Apple", icon: Icons.apple_rounded,
-        iconColor: Colors.white, bgColor: const Color(0xFF1A1A1A),
-        textColor: Colors.white, borderColor: Colors.transparent, onTap: () {}),
-  ]);
-
-  Widget _socialBtn({
-    required String label,
-    IconData? icon, Widget? customIcon,
-    Color iconColor = Colors.black,
-    required Color bgColor, required Color textColor,
-    required Color borderColor, required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          color: bgColor, borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: borderColor, width: 1.2),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04),
-              blurRadius: 8, offset: const Offset(0, 2))],
-        ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          customIcon ?? Icon(icon, color: iconColor, size: 20),
-          const SizedBox(width: 10),
-          Text(label, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
-              color: textColor, letterSpacing: -0.1)),
-        ]),
+  // ─── Already have account ──────────────────────────────────────────────────
+  Widget _buildLoginRow() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text('Already have an account? ',
+              style: TextStyle(color: _kWhite.withOpacity(0.6), fontSize: 13)),
+          GestureDetector(
+            onTap: () {},
+            child: Text(
+              'Log In',
+              style: const TextStyle(
+                color: _kWhite,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                decoration: TextDecoration.underline,
+                decorationColor: _kWhite,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _googleIcon() => SizedBox(
-    width: 20, height: 20,
-    child: CustomPaint(painter: _GoogleGPainter()),
+  // ─── Google icon ───────────────────────────────────────────────────────────
+  Widget _googleIcon() => SvgPicture.asset(
+    'assets/images/google-color.svg',
+    width: 22,
+    height: 22,
   );
-
-  Widget _buildCTA() {
-    final enabled = _canContinue;
-    return GestureDetector(
-      onTap: enabled ? widget.onNext : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: enabled ? const LinearGradient(
-            colors: [_kGreenLight, _kGreen],
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-          ) : null,
-          color: enabled ? null : const Color(0xFFE8EDE9),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: enabled ? [BoxShadow(color: _kGreen.withOpacity(0.30),
-              blurRadius: 18, offset: const Offset(0, 6))] : [],
-        ),
-        child: Center(
-          child: Text("Continuer →", style: TextStyle(
-            fontSize: 16, fontWeight: FontWeight.w700,
-            color: enabled ? Colors.white : Colors.grey.shade400,
-            letterSpacing: 0.2,
-          )),
-        ),
-      ),
-    );
-  }
-}
-
-class _GoogleGPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    final segments = [
-      (0.0, 90.0, const Color(0xFF4285F4)),
-      (90.0, 180.0, const Color(0xFF34A853)),
-      (180.0, 270.0, const Color(0xFFFBBC05)),
-      (270.0, 360.0, const Color(0xFFEA4335)),
-    ];
-    for (final (s, e, color) in segments) {
-      final paint = Paint()..color = color
-        ..strokeWidth = size.width * 0.22..style = PaintingStyle.stroke;
-      canvas.drawArc(Rect.fromCircle(center: center, radius: radius * 0.72),
-          s * pi / 180, (e - s) * pi / 180, false, paint);
-    }
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.5, size.height * 0.38,
-        size.width * 0.5, size.height * 0.24), Paint()..color = Colors.white);
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.62, size.height * 0.44,
-        size.width * 0.38, size.height * 0.12),
-        Paint()..color = const Color(0xFF4285F4));
-  }
-  @override bool shouldRepaint(_) => false;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
