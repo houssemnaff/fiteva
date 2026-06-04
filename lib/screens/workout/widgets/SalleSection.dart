@@ -33,12 +33,14 @@ class SalleSection extends StatelessWidget {
   final List<HomeProgramModel> sallePrograms;
   final Set<String> favorites;
   final void Function(String) onToggleFav;
+  final VoidCallback? onSeeAll;
 
   const SalleSection({
     super.key,
     required this.sallePrograms,
     required this.favorites,
     required this.onToggleFav,
+    this.onSeeAll,
   });
 
   @override
@@ -47,7 +49,7 @@ class SalleSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _SalleHeader(onSeeAll: () {}),
+        _SalleHeader(onSeeAll: onSeeAll ?? () {}),
         const SizedBox(height: 16),
         SizedBox(
           height: 295,

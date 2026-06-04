@@ -33,12 +33,14 @@ class MaisonSection extends StatelessWidget {
   final List<HomeProgramModel> homePrograms;
   final Set<String> favorites;
   final void Function(String) onToggleFav;
+  final VoidCallback? onSeeAll;
 
   const MaisonSection({
     super.key,
     required this.homePrograms,
     required this.favorites,
     required this.onToggleFav,
+    this.onSeeAll,
   });
 
   @override
@@ -47,7 +49,7 @@ class MaisonSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _MaisonHeader(onSeeAll: () {}),
+        _MaisonHeader(onSeeAll: onSeeAll ?? () {}),
         const SizedBox(height: 16),
         SizedBox(
           height: 295,
