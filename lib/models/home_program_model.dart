@@ -9,6 +9,7 @@ class HomeProgramModel {
   final Color color;
   final String imageUrl;
   final List<WorkoutModel> workouts;
+  final List<String> compatibleCycles;
 
   HomeProgramModel({
     required this.name,
@@ -18,5 +19,6 @@ class HomeProgramModel {
     required this.color,
     required this.imageUrl,
     required this.workouts,
+    this.compatibleCycles = const [],
   });
 }

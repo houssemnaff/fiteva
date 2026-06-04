@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:fiteva/theme/app_theme.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
@@ -32,7 +35,8 @@ class DayPlan {
     this.workout,
   });
 
-  DayPlan copyWith({DayStatus? status, WorkoutModel? workout, bool clearWorkout = false}) {
+  DayPlan copyWith(
+      {DayStatus? status, WorkoutModel? workout, bool clearWorkout = false}) {
     return DayPlan(
       dayLabel: dayLabel,
       fullDay: fullDay,
@@ -51,7 +55,15 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
     final now = DateTime.now();
     final monday = now.subtract(Duration(days: now.weekday - 1));
     const labels = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
-    const full = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+    const full = [
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+      'Dimanche'
+    ];
     return List.generate(7, (i) {
       final date = monday.add(Duration(days: i));
       final isToday = _isSameDay(date, now);
@@ -103,9 +115,9 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user         = ref.watch(userProvider);
+    final user = ref.watch(userProvider);
     final joinedPrograms = ref.watch(joinedProgramsProvider);
-    final workouts     = ref.watch(workoutsProvider);
+    final workouts = ref.watch(workoutsProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -149,12 +161,45 @@ class HomeScreen extends ConsumerWidget {
 // HERO — full-bleed, editorial, We Rise energy
 // ═══════════════════════════════════════════════════════════
 
-class _HeroSection extends StatelessWidget {
+class _HeroSection extends ConsumerStatefulWidget {
   final dynamic user;
   const _HeroSection({required this.user});
 
   @override
+  ConsumerState<_HeroSection> createState() => _HeroSectionState();
+}
+
+class _HeroSectionState extends ConsumerState<_HeroSection> {
+  int _currentIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    final workouts = ref.read(workoutsProvider);
+    if (workouts.isNotEmpty) {
+      _currentIndex = Random().nextInt(workouts.length);
+    }
+    _timer = Timer.periodic(const Duration(seconds: 6), (_) {
+      final ws = ref.read(workoutsProvider);
+      if (ws.isNotEmpty && mounted) {
+        setState(() => _currentIndex = (_currentIndex + 1) % ws.length);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final workouts = ref.watch(workoutsProvider);
+    if (workouts.isEmpty) return const SizedBox.shrink();
+
+    final workout = workouts[_currentIndex % workouts.length];
     final h = MediaQuery.of(context).size.height * 0.62;
 
     return SizedBox(
@@ -162,72 +207,117 @@ class _HeroSection extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background image
-          Image.asset('assets/images/workout.jpeg', fit: BoxFit.cover),
+          // Background image — crossfade on change
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 800),
+            child: SizedBox.expand(
+              key: ValueKey(workout.id),
+              child: Image.asset(
+                workout.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Image.asset(
+                  'assets/images/workout.jpeg',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
 
           // Deep gradient — bottom heavy
-          DecoratedBox(
+          const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: const [0.0, 0.35, 0.75, 1.0],
+                stops: [0.0, 0.35, 0.75, 1.0],
                 colors: [
-                  Colors.black.withOpacity(0.0),
-                  Colors.black.withOpacity(0.15),
-                  AppTheme.primaryColor.withOpacity(0.55),
-                  AppTheme.primaryColor.withOpacity(0.92),
+                  Color(0x00000000),
+                  Color(0x26000000),
+                  Color(0x8C1C4D30),
+                  Color(0xEB1C4D30),
+                ],
+              ),
+            ),
+          ),
+
+          // Deep gradient — top heavy
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                stops: [0.0, 0.4, 0.75, 1.0],
+                colors: [
+                  Color(0x00000000), // transparent
+                  Color(0x33000000), // soft black shadow
+                  Color(0x990B1A12), // black with slight green tint
+                  Color(0xE6000000), // strong black top
                 ],
               ),
             ),
           ),
 
           // Top bar
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-              child: const HomeHeader(),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: const HomeHeader(),
+              ),
             ),
           ),
 
           // Bottom editorial content
           Positioned(
-            bottom: 0, left: 0, right: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Eyebrow label
+                  // Category eyebrow
                   Row(children: [
                     Container(
-                      width: 28, height: 2,
-                      color: AppTheme.accentColor,
-                    ),
+                        width: 28, height: 2, color: AppTheme.accentColor),
                     const SizedBox(width: 10),
-                    Text(
-                      "TODAY'S FOCUS",
-                      style: GoogleFonts.inter(
-                        color: AppTheme.accentColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 3,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      child: Text(
+                        key: ValueKey('cat_${workout.id}'),
+                        workout.category.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          color: AppTheme.accentColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 3,
+                        ),
                       ),
                     ),
                   ]),
 
                   const SizedBox(height: 10),
 
-                  // Big editorial title
-                  Text(
-                    'FULL BODY\nSTRENGTH',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 46,
-                      fontWeight: FontWeight.w900,
-                      height: 0.95,
-                      letterSpacing: -1,
+                  // Title
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    child: Text(
+                      key: ValueKey('title_${workout.id}'),
+                      workout.title.toUpperCase(),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 40,
+                        fontWeight: FontWeight.w900,
+                        height: 1.0,
+                        letterSpacing: -1,
+                      ),
                     ),
                   ),
 
@@ -237,20 +327,29 @@ class _HeroSection extends StatelessWidget {
                   Wrap(
                     spacing: 8,
                     runSpacing: 6,
-                    children: const [
-                      _MetaPill(label: '45 MIN', icon: LucideIcons.timer),
-                      _MetaPill(label: 'INTERMEDIATE', icon: LucideIcons.zap),
-                      _MetaPill(label: '700 KCAL', icon: LucideIcons.flame),
+                    children: [
+                      _MetaPill(
+                          label: workout.duration, icon: LucideIcons.timer),
+                      _MetaPill(label: workout.level, icon: LucideIcons.zap),
+                      _MetaPill(
+                          label: '${workout.calories} KCAL',
+                          icon: LucideIcons.flame),
                     ],
                   ),
 
                   const SizedBox(height: 20),
 
-                  // CTA — outlined style like We Rise
+                  // CTA
                   Row(children: [
                     Expanded(
                       child: GestureDetector(
-                        onTap: () {},
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                WorkoutDetailScreen(workout: workout),
+                          ),
+                        ),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
@@ -259,7 +358,7 @@ class _HeroSection extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              'START WORKOUT',
+                              'START PROGRAM',
                               style: GoogleFonts.outfit(
                                 color: AppTheme.primaryColor,
                                 fontSize: 13,
@@ -273,13 +372,14 @@ class _HeroSection extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Container(
-                      width: 52, height: 52,
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
                         border: Border.all(
                             color: Colors.white.withOpacity(0.4), width: 1.5),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Icon(LucideIcons.bookmark,
+                      child: const Icon(LucideIcons.bookmark,
                           color: Colors.white, size: 20),
                     ),
                   ]),
@@ -301,24 +401,31 @@ class _MetaPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+  child: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 11, color: Colors.white.withOpacity(0.85)),
+      const SizedBox(width: 4),
+      Text(
+        label,
+        style: GoogleFonts.inter(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          shadows: [
+            Shadow(
+              color: Colors.black.withOpacity(0.6),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
       ),
-      child: Row(children: [
-        Icon(icon, size: 11, color: Colors.white.withOpacity(0.8)),
-        const SizedBox(width: 5),
-        Text(label,
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-            )),
-      ]),
-    );
+    ],
+  ),
+);
   }
 }
 
@@ -330,7 +437,7 @@ class _MotivationStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppTheme.primaryColor,
+      color: const Color.fromARGB(255, 2, 2, 2),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
       child: Row(
         children: [
@@ -410,17 +517,23 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
 
   Color _statusColor(DayStatus s) {
     switch (s) {
-      case DayStatus.done:    return const Color(0xFF52B788);
-      case DayStatus.planned: return AppTheme.primaryColor;
-      case DayStatus.today:   return AppTheme.accentColor;
-      case DayStatus.rest:    return const Color(0xFFE8EDE8);
+      case DayStatus.done:
+        return const Color(0xFF52B788);
+      case DayStatus.planned:
+        return AppTheme.primaryColor;
+      case DayStatus.today:
+        return AppTheme.accentColor;
+      case DayStatus.rest:
+        return const Color(0xFFE8EDE8);
     }
   }
 
   Color _statusTextColor(DayStatus s) {
     switch (s) {
-      case DayStatus.rest: return AppTheme.textSecondaryColor;
-      default: return Colors.white;
+      case DayStatus.rest:
+        return AppTheme.textSecondaryColor;
+      default:
+        return Colors.white;
     }
   }
 
@@ -443,8 +556,8 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
   @override
   Widget build(BuildContext context) {
     final plans = ref.watch(weeklyPlanProvider);
-    final sel   = _selectedDay >= 0 ? plans[_selectedDay] : null;
-    final done  = plans.where((d) => d.status == DayStatus.done).length;
+    final sel = _selectedDay >= 0 ? plans[_selectedDay] : null;
+    final done = plans.where((d) => d.status == DayStatus.done).length;
 
     return Container(
       color: AppTheme.backgroundColor,
@@ -452,7 +565,6 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           // Section header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -487,8 +599,8 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryColor,
                     borderRadius: BorderRadius.circular(50),
@@ -569,7 +681,8 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                           ),
                           const SizedBox(height: 5),
                           Container(
-                            width: 5, height: 5,
+                            width: 5,
+                            height: 5,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: hasWorkout
@@ -601,10 +714,12 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                   plan: sel,
                   dayIndex: _selectedDay,
                   onAddWorkout: () => _showPicker(_selectedDay),
-                  onMarkDone: () =>
-                      ref.read(weeklyPlanProvider.notifier).markAsDone(_selectedDay),
-                  onRemove: () =>
-                      ref.read(weeklyPlanProvider.notifier).removeWorkout(_selectedDay),
+                  onMarkDone: () => ref
+                      .read(weeklyPlanProvider.notifier)
+                      .markAsDone(_selectedDay),
+                  onRemove: () => ref
+                      .read(weeklyPlanProvider.notifier)
+                      .removeWorkout(_selectedDay),
                   onViewDetail: sel.workout == null
                       ? null
                       : () => Navigator.push(
@@ -659,12 +774,14 @@ class _DayDetailCard extends StatelessWidget {
             color: AppTheme.neutral100,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-                color: AppTheme.primaryColor.withOpacity(0.15), width: 1.5,
+                color: AppTheme.primaryColor.withOpacity(0.15),
+                width: 1.5,
                 style: BorderStyle.solid),
           ),
           child: Column(children: [
             Container(
-              width: 44, height: 44,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor.withOpacity(0.08),
                 shape: BoxShape.circle,
@@ -742,7 +859,8 @@ class _DayDetailCard extends StatelessWidget {
                       color: Colors.black.withOpacity(0.35),
                       child: Center(
                         child: Container(
-                          width: 48, height: 48,
+                          width: 48,
+                          height: 48,
                           decoration: BoxDecoration(
                             color: const Color(0xFF52B788),
                             shape: BoxShape.circle,
@@ -755,7 +873,9 @@ class _DayDetailCard extends StatelessWidget {
                   ),
                 // Title on image
                 Positioned(
-                  bottom: 12, left: 14, right: 14,
+                  bottom: 12,
+                  left: 14,
+                  right: 14,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -943,7 +1063,8 @@ class _IconBtnSmall extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 38, height: 38,
+        width: 38,
+        height: 38,
         decoration:
             BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
         child: Icon(icon, color: color, size: 15),
@@ -1055,18 +1176,20 @@ class _ProgramCard extends StatelessWidget {
           Stack(children: [
             Image.asset(
               program.imageUrl,
-              height: 100, width: double.infinity,
+              height: 100,
+              width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
-                height: 100, color: AppTheme.neutral200,
+                height: 100,
+                color: AppTheme.neutral200,
               ),
             ),
             // Category chip
             Positioned(
-              top: 10, left: 10,
+              top: 10,
+              left: 10,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryColor,
                   borderRadius: BorderRadius.circular(6),
@@ -1118,7 +1241,8 @@ class _ProgramCard extends StatelessWidget {
                         value: p,
                         minHeight: 5,
                         backgroundColor: AppTheme.neutral200,
-                        valueColor: AlwaysStoppedAnimation(AppTheme.accentColor),
+                        valueColor:
+                            AlwaysStoppedAnimation(AppTheme.accentColor),
                       ),
                     ),
                   ),
@@ -1282,7 +1406,9 @@ class _WorkoutCard extends StatelessWidget {
             ),
             // Content
             Positioned(
-              bottom: 12, left: 10, right: 10,
+              bottom: 12,
+              left: 10,
+              right: 10,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1360,7 +1486,8 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
       child: Column(children: [
         // Handle
         Container(
-          width: 40, height: 4,
+          width: 40,
+          height: 4,
           margin: const EdgeInsets.only(top: 12, bottom: 16),
           decoration: BoxDecoration(
             color: AppTheme.neutral300,
@@ -1410,15 +1537,13 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 7),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
                     color: sel ? AppTheme.primaryColor : AppTheme.surfaceColor,
                     borderRadius: BorderRadius.circular(50),
                     border: Border.all(
-                      color: sel
-                          ? AppTheme.primaryColor
-                          : AppTheme.borderLight,
+                      color: sel ? AppTheme.primaryColor : AppTheme.borderLight,
                     ),
                   ),
                   child: Text(cat,
@@ -1456,10 +1581,12 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
                       borderRadius: BorderRadius.circular(10),
                       child: Image.asset(
                         w.imageUrl,
-                        width: 54, height: 54,
+                        width: 54,
+                        height: 54,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
-                          width: 54, height: 54,
+                          width: 54,
+                          height: 54,
                           color: AppTheme.neutral200,
                           child: Icon(LucideIcons.dumbbell,
                               color: AppTheme.primaryColor.withOpacity(0.3)),
