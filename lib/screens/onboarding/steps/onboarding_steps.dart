@@ -796,7 +796,7 @@ class _StepWelcomeState extends State<StepWelcome>
 
   void _startAutoSlide() {
     _autoSlideTimer?.cancel();
-    _autoSlideTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+    _autoSlideTimer = Timer.periodic(const Duration(seconds:1), (_) {
       if (!mounted || _emailMode) return;
       final next = (_currentPage + 1) % _slides.length;
       _pageCtrl.animateToPage(
