@@ -131,7 +131,7 @@ class _MaisonHeader extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.w800,
                     fontSize: 19,
-                    color: const Color(0xFF1A1A1A),
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.4,
                   ),
                 ),
@@ -140,7 +140,7 @@ class _MaisonHeader extends StatelessWidget {
                   'Sans matériel · Élastiques · Corps',
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: const Color(0xFF6B7280),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
