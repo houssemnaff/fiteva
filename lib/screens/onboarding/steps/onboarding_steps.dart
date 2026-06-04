@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:fiteva/screens/onboarding/widgets/shared_onboarding_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -667,7 +668,7 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF5CD57A).withValues(alpha: 0.32),
+                color:    const Color.fromARGB(255, 21, 80, 44),
                 blurRadius: 28,
                 offset: const Offset(0, 10),
               ),
@@ -1298,11 +1299,11 @@ class _GoalData {
 }
 
 const _goals = [
-  _GoalData('Build strength\nand feel stronger'),
-  _GoalData('Tone and sculpt\nmy whole body'),
-  _GoalData('Improve\nflexibility\nand mobility'),
-  _GoalData('Reduce stress\nand feel more\nbalanced'),
-  _GoalData('Get back into\na routine'),
+  _GoalData('Prendre de la force\net me sentir plus forte'),
+  _GoalData('Tonifier et sculpter\ntout mon corps'),
+  _GoalData('Améliorer\nma souplesse\net mobilité'),
+  _GoalData('Réduire le stress\net me sentir plus\néquilibrée'),
+  _GoalData('Reprendre\nune routine'),
 ];
 
 class StepGoals extends StatefulWidget {
@@ -1374,17 +1375,17 @@ class _StepGoalsState extends State<StepGoals>
                     onTap: widget.onBack ??
                         () => Navigator.maybePop(context),
                     child: const Icon(Icons.arrow_back,
-                        size: 20, color: Colors.black),
+                        size: 20, color: _kGreenDark),
                   ),
                   const Expanded(
                     child: Center(
                       child: Text(
-                        'GOALS',
+                        'OBJECTIFS',
                         style: TextStyle(
                           fontSize: 11,
                           letterSpacing: 3.5,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: _kGreenDark,
                         ),
                       ),
                     ),
@@ -1406,12 +1407,12 @@ class _StepGoalsState extends State<StepGoals>
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 40),
               child: Text(
-                'What is your primary\nfocus right now?',
+                'Quel est ton objectif\nprincipal en ce moment ?',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: Colors.black,
+                  color: _kGreenDark,
                   height: 1.25,
                   letterSpacing: -0.4,
                 ),
@@ -1536,8 +1537,8 @@ class _CircleGoalState extends State<_CircleGoal>
           height: d,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: sel ? Colors.black : Colors.white,
-            border: Border.all(color: Colors.black, width: 1.2),
+            color: sel ? _kGreenDark : Colors.white,
+            border: Border.all(color: _kGreenDark, width: 1.2),
           ),
           child: Center(
             child: Padding(
@@ -1548,7 +1549,7 @@ class _CircleGoalState extends State<_CircleGoal>
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: sel ? Colors.white : Colors.black,
+                  color: sel ? Colors.white : _kGreenDark,
                   height: 1.4,
                   letterSpacing: -0.1,
                 ),
@@ -1641,12 +1642,12 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
                   const Expanded(
                     child: Center(
                       child: Text(
-                        'LEVEL',
+                        'NIVEAU',
                         style: TextStyle(
                           fontSize: 11,
                           letterSpacing: 3.5,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: _kGreenDark,
                         ),
                       ),
                     ),
@@ -1668,12 +1669,12 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 40),
               child: Text(
-                'What is your current\nfitness level?',
+                'Quel est ton niveau\nde forme actuel ?',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: Colors.black,
+                  color: _kGreenDark,
                   height: 1.25,
                   letterSpacing: -0.4,
                 ),
@@ -1729,7 +1730,7 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
             ),
 
             const Spacer(),
-          ],
+          ],  
         ),
       ),
     );
@@ -1798,21 +1799,21 @@ class equipmentIcon extends StatelessWidget {
         height: diameter,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: selected ? Colors.black : Colors.white,
-          border: Border.all(color: Colors.black12),
+          color: selected ? _kGreenDark : Colors.white,
+          border: Border.all(color: _kGreenDark),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon,
-                color: selected ? Colors.white : Colors.black, size: 28),
+                color: selected ? Colors.white : _kGreenDark, size: 28),
             const SizedBox(height: 6),
             Text(
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 11,
-                color: selected ? Colors.white : Colors.black,
+                color: selected ? Colors.white : _kGreenDark,
               ),
             ),
           ],
@@ -1882,71 +1883,104 @@ class _StepEquipmentState extends State<StepEquipment>
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 16),
+            // ── Top bar ──────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: widget.onBack ?? () => Navigator.maybePop(context),
+                    child: const Icon(Icons.arrow_back, size: 20, color: _kGreenDark),
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'ÉQUIPEMENT',
+                        style: TextStyle(
+                          fontSize: 11,
+                          letterSpacing: 3.5,
+                          fontWeight: FontWeight.w600,
+                          color: _kGreenDark,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                ],
+              ),
+            ),
 
-            const Icon(Icons.sports_gymnastics,
-                size: 38, color: Color(0xFF888888)),
+            const SizedBox(height: 20),
 
-            const SizedBox(height: 16),
+            const Icon(Icons.sports_gymnastics, size: 38, color: Color(0xFF888888)),
+
+            const SizedBox(height: 20),
 
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 40),
               child: Text(
-                'What equipment\ndo you have access to?',
+                'Quel équipement\nas-tu à disposition ?',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: FontWeight.w700,
+                  color: _kGreenDark,
                   height: 1.25,
+                  letterSpacing: -0.4,
                 ),
               ),
             ),
 
             Expanded(
-              child: LayoutBuilder(
-                builder: (_, constraints) {
-                  const double d = 136.0;
-                  const double vStep = 106.0;
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: LayoutBuilder(
+                    builder: (_, constraints) {
+                      const double d = 136.0;
+                      const double vStep = 106.0;
 
-                  final w = constraints.maxWidth;
-                  final lx = d / 2 + 8;
-                  final rx = w - d / 2 - 8;
-                  final cx = w / 2;
+                      final w = constraints.maxWidth;
+                      final lx = d / 2 + 8;
+                      final rx = w - d / 2 - 8;
+                      final cx = w / 2;
 
-                  final offsets = [
-                    Offset(lx, 0),
-                    Offset(rx, 0),
-                    Offset(cx, vStep),
-                    Offset(lx, vStep * 2),
-                    Offset(rx, vStep * 2),
-                    Offset(cx, vStep * 3),
-                  ];
+                      final offsets = [
+                        Offset(lx, 0),
+                        Offset(rx, 0),
+                        Offset(cx, vStep),
+                        Offset(lx, vStep * 2),
+                        Offset(rx, vStep * 2),
+                        Offset(cx, vStep * 3),
+                      ];
 
-                  return SizedBox(
-                    height: vStep * 3 + d,
-                    child: Stack(
-                      children: List.generate(_equipments.length, (i) {
-                        final label = _equipments[i];
-                        final isSel = widget.selectedEquipment.contains(label);
+                      return SizedBox(
+                        height: vStep * 3 + d,
+                        child: Stack(
+                          children: List.generate(_equipments.length, (i) {
+                            final label = _equipments[i];
+                            final isSel = widget.selectedEquipment.contains(label);
 
-                        return Positioned(
-                          left: offsets[i].dx - d / 2,
-                          top: offsets[i].dy,
-                          child: FadeTransition(
-                            opacity: _fades[i],
-                            child: equipmentIcon(
-                              label: label,
-                              icon: equipmentIcons[label]!,
-                              diameter: d,
-                              selected: isSel,
-                              onTap: () => _handleEquipmentTap(label),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                  );
-                },
+                            return Positioned(
+                              left: offsets[i].dx - d / 2,
+                              top: offsets[i].dy,
+                              child: FadeTransition(
+                                opacity: _fades[i],
+                                child: equipmentIcon(
+                                  label: label,
+                                  icon: equipmentIcons[label]!,
+                                  diameter: d,
+                                  selected: isSel,
+                                  onTap: () => _handleEquipmentTap(label),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
 
@@ -1954,21 +1988,21 @@ class _StepEquipmentState extends State<StepEquipment>
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
               child: GestureDetector(
                 onTap: count > 0 ? widget.onNext : null,
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
                   height: 54,
                   decoration: BoxDecoration(
-                    color: count > 0 ? Colors.black : const Color(0xFFE8E8E8),
-                    borderRadius: BorderRadius.circular(16),
+                    color: count > 0 ? _kGreenDark : const Color(0xFFE8EDE8),
+                    borderRadius: BorderRadius.circular(40),
                   ),
                   child: Center(
                     child: Text(
-                      count > 0
-                          ? 'CONTINUE ($count)'
-                          : 'SELECT AT LEAST ONE',
+                      count > 0 ? 'CONTINUER ($count)' : 'SÉLECTIONNE AU MOINS UN',
                       style: TextStyle(
-                        color:
-                            count > 0 ? Colors.white : const Color(0xFF999999),
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
+                        letterSpacing: 1.8,
+                        color: count > 0 ? Colors.white : _kTextMuted,
                       ),
                     ),
                   ),
@@ -2032,38 +2066,33 @@ class _StepFrequencyState extends State<StepFrequency> {
       child: Column(
         children: [
           _OnboardingTopBar(step: 5, total: 7, title: 'Wellbeing', onBack: widget.onBack),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.timer_outlined, size: 48, color: _kTextMuted),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Combien de jours par\nsemaine veux-tu t\'entraîner ?',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w400,
-                      color: _kTextDark,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  _FreqCallout(text: _labels[_index]),
-                  const SizedBox(height: 20),
-                  Center(
-                    child: _FreqDial(
-                      count: _labels.length,
-                      index: _index,
-                      onChanged: _select,
-                    ),
-                  ),
-                ],
+          const SizedBox(height: 20),
+          const Icon(Icons.timer_outlined, size: 38, color: kGreenDark),
+          const SizedBox(height: 20),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'Combien de jours par\nsemaine veux-tu t\'entraîner ?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: kGreenDark,
+                height: 1.25,
+                letterSpacing: -0.4,
               ),
             ),
           ),
+          const Spacer(),
+          Center(
+            child: _FreqDial(
+              count: _labels.length,
+              index: _index,
+              onChanged: _select,
+              label: _labels[_index],
+            ),
+          ),
+          const Spacer(),
           _CtaButton(
             label: 'Suivant',
             onPressed: _hasInteracted ? widget.onNext : null,
@@ -2136,12 +2165,13 @@ class _FreqDial extends StatelessWidget {
   final int count;
   final int index;
   final ValueChanged<int> onChanged;
-
-  const _FreqDial({
-    required this.count,
-    required this.index,
-    required this.onChanged,
-  });
+final String label;
+ const _FreqDial({
+  required this.count,
+  required this.index,
+  required this.onChanged,
+  required this.label,
+});
 
   static const double _r     = 105.0;
   static const double _start = -pi / 6;   // -30° → 2 o'clock
@@ -2189,24 +2219,16 @@ class _FreqDial extends StatelessWidget {
             ),
 
             // Play button — center
-            Positioned(
-              left: _size / 2 - 36, top: _size / 2 - 36,
-              child: Container(
-                width: 72, height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.14),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.play_arrow_rounded, color: _kTextDark, size: 38),
-              ),
-            ),
+ Center(
+  child: Text(
+    label,
+    style: const TextStyle(
+      fontSize: 22,
+      fontWeight: FontWeight.w700,
+      color: kGreenDark,
+    ),
+  ),
+),
 
             // Handle at current position
             AnimatedPositioned(
@@ -2220,7 +2242,7 @@ class _FreqDial extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
+                      color: _kGreenDark.withValues(alpha: 0.12),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -2709,17 +2731,23 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
           _OnboardingTopBar(
               step: 7, total: 7, title: 'Santé féminine',
               onBack: widget.onBack),
+          const SizedBox(height: 20),
+          const _StepIcon(Icons.favorite_border_rounded),
+          const SizedBox(height: 20),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 40),
+            child: _StepHeader(
+              title: 'Santé féminine',
+              subtitle: 'Pour adapter ton plan à ta réalité du moment',
+            ),
+          ),
+          const SizedBox(height: 28),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _StepHeader(
-                    title: 'Santé féminine',
-                    subtitle: 'Pour adapter ton plan à ta réalité du moment',
-                  ),
-                  const SizedBox(height: 24),
                   // ── Toggle cards ──
                   Row(children: [
                     Expanded(child: _statusCard(
