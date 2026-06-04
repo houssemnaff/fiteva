@@ -660,11 +660,7 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
           width: double.infinity,
           height: 58,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF5CD57A), Color(0xFF1A5C26)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+           color: Color.fromARGB(255, 21, 80, 44),
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
