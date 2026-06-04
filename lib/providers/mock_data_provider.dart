@@ -96,6 +96,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Beginner',
       calories: '450',
       imageUrl: 'assets/images/cardio.jpg',
+      phases: 'Follic. + Ovul.',
       exercises: ['Warm-up Groove', 'Hip Hop Moves', 'Zumba Steps', 'Cool Down'],
     ),
 
@@ -106,7 +107,8 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       duration: '50 min',
       level: 'Intermediate',
       calories: '650',
-      imageUrl: 'assets/images/Zumba.jpeg',
+      imageUrl: 'assets/images/Zumba.jpg',
+      phases: 'Ovul.',
       exercises: ['Salsa Steps', 'Reggaeton', 'Freestyle Dance', 'Stretch'],
     ),
 
@@ -119,6 +121,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Beginner',
       calories: '300',
       imageUrl: 'assets/images/Morning.jpg',
+      phases: 'Follic. + Ovul.',
       exercises: ['Light Jog', 'Breathing', 'Cooldown Walk'],
     ),
 
@@ -130,6 +133,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Advanced',
       calories: '800',
       imageUrl: 'assets/images/Endurance.jpg',
+      phases: 'Ovul.',
       exercises: ['Warm-up', 'Long Distance Run', 'Sprint Finish'],
     ),
     // SALLE
@@ -141,6 +145,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Intermédiaire',
       calories: '620',
       imageUrl: 'assets/images/strength.jpg',
+      phases: 'Follic. + Ovul.',
       exercises: ['Deadlift', 'Back Squat', 'Bench Press', 'Row Machine'],
     ),
     WorkoutModel(
@@ -151,6 +156,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Avancé',
       calories: '540',
       imageUrl: 'assets/images/upper.jpg',
+      phases: 'Ovul. + Lut.',
       exercises: ['Pull-ups', 'Dumbbell Press', 'Lat Pulldown', 'Dips'],
     ),
     WorkoutModel(
@@ -161,6 +167,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Débutant',
       calories: '480',
       imageUrl: 'assets/images/workout.jpeg',
+      phases: 'Follic. + Lut.',
       exercises: ['Leg Press', 'Chest Press', 'Cable Rows', 'Ab Crunch Machine'],
     ),
     // MAISON
@@ -172,6 +179,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Tous niveaux',
       calories: '300',
       imageUrl: 'assets/images/fullbody.jpg',
+      phases: 'Follic. + Ovul.',
       exercises: ['Squats', 'Push-ups', 'Mountain Climbers', 'Plank'],
     ),
     WorkoutModel(
@@ -182,6 +190,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Débutant',
       calories: '240',
       imageUrl: 'assets/images/fiteva_girl.jpg',
+      phases: 'Follic. + Lut.',
       exercises: ['Warm-up March', 'Glute Bridge', 'Standing Crunch', 'Side Lunges'],
     ),
     WorkoutModel(
@@ -192,6 +201,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Intermédiaire',
       calories: '220',
       imageUrl: 'assets/images/slim1.png',
+      phases: 'Toutes phases',
       exercises: ['Dead Bug', 'Russian Twist', 'Leg Raise', 'Hollow Hold'],
     ),
     // GROSSESSE
@@ -203,6 +213,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Tous niveaux',
       calories: '120',
       imageUrl: 'assets/images/Endurance.jpg',
+      phases: 'Toutes phases',
       exercises: ['Respiration guidée', 'Étirements doux', 'Mobilité pelvienne'],
     ),
     WorkoutModel(
@@ -213,6 +224,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Débutant',
       calories: '160',
       imageUrl: 'assets/images/Endurance.jpg',
+      phases: 'Toutes phases',
       exercises: ['Ponts fessiers', 'Squats assistés', 'Travail du dos'],
     ),
     WorkoutModel(
@@ -223,6 +235,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Tous niveaux',
       calories: '100',
       imageUrl: 'assets/images/Endurance.jpg',
+      phases: 'Toutes phases',
       exercises: ['Renforcement du périnée', 'Étirements du dos', 'Alignement postural'],
     ),
     // RÉCUPÉRATION
@@ -234,6 +247,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Tous niveaux',
       calories: '90',
       imageUrl: 'assets/images/Endurance.jpg',
+      phases: 'Règles + Lut.',
       exercises: ['Respiration profonde', 'Étirements doux', 'Relaxation guidée'],
     ),
     WorkoutModel(
@@ -244,6 +258,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Débutant',
       calories: '110',
       imageUrl: 'assets/images/Endurance.jpg',
+      phases: 'Règles + Lut.',
       exercises: ['Étirement des ischio-jambiers', 'Étirement du dos', 'Ouverture des hanches'],
     ),
     WorkoutModel(
@@ -254,6 +269,7 @@ final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
       level: 'Tous niveaux',
       calories: '50',
       imageUrl: 'assets/images/Endurance.jpg',
+      phases: 'Règles + Lut.',
       exercises: ['Méditation assise', 'Scan corporel', 'Respiration rythmée'],
     ),
   ];
@@ -594,16 +610,16 @@ final postsProvider = Provider<List<PostModel>>((ref) {
 
 
 // Cycle Tracking Mock Provider
-class CyclePhase {
+class CycleStatus {
   final String name;
   final int dayOfCycle;
   final String advice;
   
-  CyclePhase({required this.name, required this.dayOfCycle, required this.advice});
+  CycleStatus({required this.name, required this.dayOfCycle, required this.advice});
 }
 
-final cycleProvider = Provider<CyclePhase>((ref) {
-  return CyclePhase(
+final cycleProvider = Provider<CycleStatus>((ref) {
+  return CycleStatus(
     name: 'Follicular',
     dayOfCycle: 8,
     advice: 'High energy phase! Great time for HIIT and challenging workouts.',

@@ -1,127 +1,121 @@
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
 import '../../providers/community_providers.dart';
-import 'create_partner_sheet.dart';
 
-// ─── Design Tokens ────────────────────────────────────────────
-class _T {
-  static const bg = Colors.white;
-  static const surface = Colors.white;
-  static const surfaceElevated = Colors.white;
-  static const border = Colors.white;
-  static const borderSubtle = Colors.white;
+// ─── Design tokens ────────────────────────────────────────────
+const _kGreen      = Color(0xFF1C4D30);
+const _kMint       = Color(0xFF7ABB98);
+const _kMintLight  = Color(0xFFEAF3EC);
+const _kBg         = Color(0xFFFEFEFE);
+const _kSurface    = Colors.white;
+const _kBorder     = Color(0xFFECECEC);
+const _kText1      = Color(0xFF1A1A1A);
+const _kText2      = Color(0xFF757575);
+const _kText3      = Color(0xFFAAAAAA);
 
-  static const accent = Color(0xFF1C4D30);
-  static const accentLight = Color(0xFFEAF3E8);
-  static const accentFg = Colors.white;
-
-  static const textPrimary = Color(0xFF111111);
-  static const textSecondary = Color(0xFF6B6B6B);
-  static const textMuted = Color(0xFFAAAAAA);
-
-  static const goalBg = Color(0xFFDCF5E8);
-  static const goalFg = Color(0xFF1C4D30);
-
-  static const begBg = Color(0xFFDCF5E8);
-  static const begFg = Color(0xFF1C4D30);
-
-  static const intBg = Color(0xFFFFF3E0);
-  static const intFg = Color(0xFF9A5F00);
-
-  static const advBg = Color(0xFFFFEBEB);
-  static const advFg = Color(0xFFA32D2D);
-
-  static const av0 = Color(0xFF7C3AED);
-  static const av1 = Color(0xFF059669);
-  static const av2 = Color(0xFFD97706);
-  static const av3 = Color(0xFF2563EB);
-  static const av4 = Color(0xFFDB2777);
-}
+const _avatarColors = [
+  Color(0xFF7C3AED), Color(0xFF059669), Color(0xFFD97706),
+  Color(0xFF2563EB), Color(0xFFDB2777),
+];
 
 // ─── Partners Tab ─────────────────────────────────────────────
 class PartnerTab extends ConsumerStatefulWidget {
   const PartnerTab({super.key});
-
   @override
   ConsumerState<PartnerTab> createState() => _PartnerTabState();
 }
 
 class _PartnerTabState extends ConsumerState<PartnerTab> {
-  String _selectedGoal = 'Tous';
-  String _selectedLevel = 'Tous';
-  String _selectedRegion = 'Tous';
+  String _goal   = 'Tous';
+  String _level  = 'Tous';
+  String _region = 'Tous';
+  bool _filtersOpen = false;
 
-  static const _goals = [
-    'Tous', 'Perdre du poids', 'Tonifier', 'Masse', 'Bien-être',
-  ];
-  static const _levels = ['Tous', 'Débutant', 'Intermédiaire', 'Avancé'];
+  static const _goals   = ['Tous', 'Perdre du poids', 'Tonifier', 'Masse', 'Bien-être'];
+  static const _levels  = ['Tous', 'Débutant', 'Intermédiaire', 'Avancé'];
   static const _regions = ['Tous', 'Sousse', 'Monastir', 'Tunis', 'Sfax'];
 
   @override
   Widget build(BuildContext context) {
     final partners = ref.watch(partnersProvider);
     final filtered = partners.where((p) {
-      final goalOk = _selectedGoal == 'Tous' || p.goal == _selectedGoal;
-      final levelOk = _selectedLevel == 'Tous' || p.level == _selectedLevel;
-      final regionOk = _selectedRegion == 'Tous' || p.region == _selectedRegion;
+      final goalOk   = _goal   == 'Tous' || p.goal   == _goal;
+      final levelOk  = _level  == 'Tous' || p.level  == _level;
+      final regionOk = _region == 'Tous' || p.region == _region;
       return goalOk && levelOk && regionOk;
     }).toList();
 
     return ColoredBox(
-      color: _T.bg,
+      color: _kBg,
       child: CustomScrollView(
         slivers: [
-          // ── Header
+
+          // ── Header ────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(22, 20, 22, 6),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text('PARTNERS', style: GoogleFonts.inter(
+                          color: _kMint, fontSize: 9,
+                          fontWeight: FontWeight.w700, letterSpacing: 3,
+                        )),
+                        const SizedBox(height: 3),
                         RichText(
-                          text: const TextSpan(
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: _T.textPrimary,
-                              height: 1.1,
-                              letterSpacing: -0.8,
+                          text: TextSpan(
+                            style: GoogleFonts.outfit(
+                              fontSize: 26, fontWeight: FontWeight.w800,
+                              color: _kText1, letterSpacing: -0.5, height: 1.1,
                             ),
-                            children: [
-                              TextSpan(text: 'Partenaires\n'),
-                              TextSpan(
-                                text: "d'entraînement",
-                                style: TextStyle(color: _T.accent),
-                              ),
+                            children: const [
+                              TextSpan(text: "Partenaires\n"),
+                              TextSpan(text: "d'entraînement",
+                                  style: TextStyle(color: _kGreen)),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 4),
                         Text(
                           '${filtered.length} partenaire${filtered.length > 1 ? 's' : ''} trouvé${filtered.length > 1 ? 's' : ''}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: _T.textSecondary,
-                            fontWeight: FontWeight.w400,
+                          style: GoogleFonts.inter(
+                            fontSize: 12, color: _kText2,
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 12),
-                  _ProposeButton(
-                    onTap: () => showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => const CreatePartnerSheet(),
+                  // Filter toggle
+                  GestureDetector(
+                    onTap: () => setState(() => _filtersOpen = !_filtersOpen),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _filtersOpen ? _kGreen.withOpacity(0.08) : _kSurface,
+                        borderRadius: BorderRadius.circular(50),
+                        border: Border.all(
+                          color: _filtersOpen ? _kGreen : _kBorder,
+                        ),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(LucideIcons.sliders,
+                            size: 13,
+                            color: _filtersOpen ? _kGreen : _kText2),
+                        const SizedBox(width: 6),
+                        Text('Filtres', style: GoogleFonts.inter(
+                          color: _filtersOpen ? _kGreen : _kText2,
+                          fontSize: 12, fontWeight: FontWeight.w700,
+                        )),
+                      ]),
                     ),
                   ),
                 ],
@@ -129,29 +123,38 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
             ),
           ),
 
-          // ── Filter Panel
+          // ── Filter Panel (collapsible) ─────────────────────
           SliverToBoxAdapter(
-            child: _FilterPanel(
-              selectedGoal: _selectedGoal,
-              selectedLevel: _selectedLevel,
-              selectedRegion: _selectedRegion,
-              goals: _goals,
-              levels: _levels,
-              regions: _regions,
-              onGoalSelect: (v) => setState(() => _selectedGoal = v),
-              onLevelSelect: (v) => setState(() => _selectedLevel = v),
-              onRegionSelect: (v) => setState(() => _selectedRegion = v),
+            child: AnimatedSize(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeInOut,
+              child: _filtersOpen
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      child: _FilterPanel(
+                        selectedGoal:   _goal,
+                        selectedLevel:  _level,
+                        selectedRegion: _region,
+                        goals:   _goals,
+                        levels:  _levels,
+                        regions: _regions,
+                        onGoalSelect:   (v) => setState(() => _goal   = v),
+                        onLevelSelect:  (v) => setState(() => _level  = v),
+                        onRegionSelect: (v) => setState(() => _region = v),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
           ),
 
-          // ── Cards
+          // ── Cards ─────────────────────────────────────────
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
             sliver: SliverList.separated(
               itemCount: filtered.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) =>
-                  PartnerCard(partner: filtered[index], index: index),
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (_, i) =>
+                  PartnerCard(partner: filtered[i], index: i),
             ),
           ),
         ],
@@ -162,15 +165,9 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
 
 // ─── Filter Panel ─────────────────────────────────────────────
 class _FilterPanel extends StatelessWidget {
-  final String selectedGoal;
-  final String selectedLevel;
-  final String selectedRegion;
-  final List<String> goals;
-  final List<String> levels;
-  final List<String> regions;
-  final ValueChanged<String> onGoalSelect;
-  final ValueChanged<String> onLevelSelect;
-  final ValueChanged<String> onRegionSelect;
+  final String selectedGoal, selectedLevel, selectedRegion;
+  final List<String> goals, levels, regions;
+  final ValueChanged<String> onGoalSelect, onLevelSelect, onRegionSelect;
 
   const _FilterPanel({
     required this.selectedGoal,
@@ -187,37 +184,42 @@ class _FilterPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _T.surfaceElevated,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _T.border),
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _kBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16, offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _FilterSection(
+          _FilterRow(
             icon: LucideIcons.target,
             label: 'Objectif',
             items: goals,
             selected: selectedGoal,
             onSelect: onGoalSelect,
           ),
-          const SizedBox(height: 12),
-          const Divider(color: _T.border, height: 1),
-          const SizedBox(height: 12),
-          _FilterSection(
+          const SizedBox(height: 14),
+          Divider(height: 1, color: _kBorder),
+          const SizedBox(height: 14),
+          _FilterRow(
             icon: LucideIcons.barChart2,
             label: 'Niveau',
             items: levels,
             selected: selectedLevel,
             onSelect: onLevelSelect,
           ),
-          const SizedBox(height: 12),
-          const Divider(color: _T.border, height: 1),
-          const SizedBox(height: 12),
-          _FilterSection(
+          const SizedBox(height: 14),
+          Divider(height: 1, color: _kBorder),
+          const SizedBox(height: 14),
+          _FilterRow(
             icon: LucideIcons.mapPin,
             label: 'Région',
             items: regions,
@@ -230,14 +232,14 @@ class _FilterPanel extends StatelessWidget {
   }
 }
 
-class _FilterSection extends StatelessWidget {
+class _FilterRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final List<String> items;
   final String selected;
   final ValueChanged<String> onSelect;
 
-  const _FilterSection({
+  const _FilterRow({
     required this.icon,
     required this.label,
     required this.items,
@@ -250,109 +252,41 @@ class _FilterSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(icon, size: 12, color: _T.accent),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: _T.accent,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ],
-        ),
+        Row(children: [
+          Icon(icon, size: 12, color: _kGreen),
+          const SizedBox(width: 5),
+          Text(label, style: GoogleFonts.inter(
+            fontSize: 11, fontWeight: FontWeight.w700,
+            color: _kGreen, letterSpacing: 0.5,
+          )),
+        ]),
         const SizedBox(height: 8),
         Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: items
-              .map((item) => _ChipItem(
-                    label: item,
-                    selected: selected == item,
-                    onTap: () => onSelect(item),
-                  ))
-              .toList(),
+          spacing: 6, runSpacing: 6,
+          children: items.map((item) {
+            final sel = selected == item;
+            return GestureDetector(
+              onTap: () => onSelect(item),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: sel ? _kGreen : _kBg,
+                  borderRadius: BorderRadius.circular(50),
+                  border: Border.all(
+                      color: sel ? _kGreen : _kBorder),
+                ),
+                child: Text(item, style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: sel ? Colors.white : _kText2,
+                )),
+              ),
+            );
+          }).toList(),
         ),
       ],
-    );
-  }
-}
-
-class _ChipItem extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _ChipItem({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected ? _T.accent : _T.bg,
-          borderRadius: BorderRadius.circular(99),
-          border: Border.all(
-            color: selected ? _T.accent : _T.border,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: selected ? _T.accentFg : _T.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Propose Button ───────────────────────────────────────────
-class _ProposeButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _ProposeButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: _T.accent,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(LucideIcons.plus, size: 13, color: _T.accentFg),
-            SizedBox(width: 5),
-            Text(
-              'Proposer',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: _T.accentFg,
-                letterSpacing: 0.1,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -361,7 +295,6 @@ class _ProposeButton extends StatelessWidget {
 class PartnerCard extends StatefulWidget {
   final PartnerModel partner;
   final int index;
-
   const PartnerCard({super.key, required this.partner, required this.index});
 
   @override
@@ -369,152 +302,139 @@ class PartnerCard extends StatefulWidget {
 }
 
 class _PartnerCardState extends State<PartnerCard> {
-  bool _commented = false;
-
-  static const _avatarColors = [_T.av0, _T.av1, _T.av2, _T.av3, _T.av4];
+  bool _messaged = false;
 
   Color get _avatarColor =>
       _avatarColors[widget.index % _avatarColors.length];
 
   String get _initials {
     final parts = widget.partner.name.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     return parts[0].substring(0, 2).toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
     final p = widget.partner;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _T.surface,
+        color: _kSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _T.border),
+        border: Border.all(color: _kBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14, offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Avatar + name
+
+          // ── Avatar + Name row ────────────────────────────
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Avatar
               Container(
-                width: 48,
-                height: 48,
+                width: 50, height: 50,
                 decoration: BoxDecoration(
                   color: _avatarColor,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  _initials,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
+                child: Text(_initials, style: GoogleFonts.outfit(
+                  fontSize: 16, fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                )),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      p.name,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: _T.textPrimary,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
+                    Text(p.name, style: GoogleFonts.outfit(
+                      fontSize: 15, fontWeight: FontWeight.w800,
+                      color: _kText1, letterSpacing: -0.3,
+                    )),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        _MiniTag(label: p.region, icon: LucideIcons.mapPin),
-                        const SizedBox(width: 10),
-                        _MiniTag(
-                          label: p.frequency,
-                          icon: LucideIcons.calendarDays,
-                        ),
-                      ],
-                    ),
+                    Row(children: [
+                      Icon(LucideIcons.mapPin, size: 11, color: _kText3),
+                      const SizedBox(width: 3),
+                      Text(p.region, style: GoogleFonts.inter(
+                        fontSize: 11, color: _kText3,
+                      )),
+                      const SizedBox(width: 10),
+                      Icon(LucideIcons.calendarDays, size: 11, color: _kText3),
+                      const SizedBox(width: 3),
+                      Text(p.frequency, style: GoogleFonts.inter(
+                        fontSize: 11, color: _kText3,
+                      )),
+                    ]),
                   ],
                 ),
               ),
+              // Level badge
+              _LevelBadge(level: p.level),
             ],
           ),
 
           const SizedBox(height: 12),
 
-          // ── Badges
-          Row(
-            children: [
-              GoalBadge(label: p.goal),
-              const SizedBox(width: 6),
-              LevelBadge(level: p.level),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-
-          // ── Description
-          Text(
-            p.description,
-            style: const TextStyle(
-              fontSize: 13,
-              color: _T.textSecondary,
-              height: 1.5,
+          // ── Goal badge ───────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _kMintLight,
+              borderRadius: BorderRadius.circular(50),
             ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(LucideIcons.target, size: 10, color: _kGreen),
+              const SizedBox(width: 5),
+              Text(p.goal, style: GoogleFonts.inter(
+                fontSize: 10, fontWeight: FontWeight.w700, color: _kGreen,
+              )),
+            ]),
           ),
 
           const SizedBox(height: 10),
 
-          // ── Tags
+          // ── Description ──────────────────────────────────
+          Text(p.description, style: GoogleFonts.inter(
+            fontSize: 13, color: _kText2, height: 1.5,
+          )),
+
+          const SizedBox(height: 10),
+
+          // ── Tags ─────────────────────────────────────────
           Wrap(
-            spacing: 5,
-            runSpacing: 5,
-            children: p.tags
-                .map(
-                  (tag) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _T.accentLight,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    child: Text(
-                      '#$tag',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: _T.accent,
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
+            spacing: 5, runSpacing: 5,
+            children: p.tags.map((tag) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                color: _kGreen.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Text('#$tag', style: GoogleFonts.inter(
+                fontSize: 10, fontWeight: FontWeight.w700, color: _kGreen,
+              )),
+            )).toList(),
           ),
 
-          const SizedBox(height: 13),
+          const SizedBox(height: 14),
 
-          // ── Comment button
+          // ── CTA ──────────────────────────────────────────
           SizedBox(
             width: double.infinity,
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
-              child: _commented
-                  ? _CommentedButton(key: const ValueKey('done'))
-                  : _CommentButton(
+              child: _messaged
+                  ? _MessagedBtn(key: const ValueKey('done'))
+                  : _MessageBtn(
                       key: const ValueKey('idle'),
-                      onTap: () => setState(() => _commented = true),
+                      onTap: () => setState(() => _messaged = true),
                     ),
             ),
           ),
@@ -524,95 +444,96 @@ class _PartnerCardState extends State<PartnerCard> {
   }
 }
 
-// ─── Comment Buttons ──────────────────────────────────────────
-class _CommentButton extends StatelessWidget {
+// ─── Level Badge ──────────────────────────────────────────────
+class _LevelBadge extends StatelessWidget {
+  final String level;
+  const _LevelBadge({required this.level});
+
+  Color get _bg {
+    switch (level) {
+      case 'Débutant':      return const Color(0xFFDCF5E8);
+      case 'Intermédiaire': return const Color(0xFFFFF3E0);
+      case 'Avancé':        return const Color(0xFFFFEBEB);
+      default:              return const Color(0xFFF4F4F2);
+    }
+  }
+
+  Color get _fg {
+    switch (level) {
+      case 'Débutant':      return _kGreen;
+      case 'Intermédiaire': return const Color(0xFF9A5F00);
+      case 'Avancé':        return const Color(0xFFA32D2D);
+      default:              return _kText2;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.circular(50),
+      ),
+      child: Text(level, style: GoogleFonts.inter(
+        fontSize: 10, fontWeight: FontWeight.w700, color: _fg,
+      )),
+    );
+  }
+}
+
+// ─── Message Buttons ──────────────────────────────────────────
+class _MessageBtn extends StatelessWidget {
   final VoidCallback onTap;
-  const _CommentButton({super.key, required this.onTap});
+  const _MessageBtn({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _T.accent),
+          color: _kGreen,
+          borderRadius: BorderRadius.circular(14),
         ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(LucideIcons.messageSquare, size: 13, color: _T.accent),
-            SizedBox(width: 7),
-            Text(
-              'Laisser un commentaire',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: _T.accent,
-                letterSpacing: 0.1,
-              ),
-            ),
-          ],
-        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(LucideIcons.messageSquare, size: 13, color: Colors.white),
+          const SizedBox(width: 8),
+          Text('Envoyer un message', style: GoogleFonts.inter(
+            fontSize: 12, fontWeight: FontWeight.w800,
+            color: Colors.white, letterSpacing: 0.2,
+          )),
+        ]),
       ),
     );
   }
 }
 
-class _CommentedButton extends StatelessWidget {
-  const _CommentedButton({super.key});
+class _MessagedBtn extends StatelessWidget {
+  const _MessagedBtn({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 11),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: _T.begBg,
-        borderRadius: BorderRadius.circular(12),
+        color: _kMintLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kMint.withOpacity(0.4)),
       ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(LucideIcons.checkCircle, size: 13, color: _T.begFg),
-          SizedBox(width: 7),
-          Text(
-            'Commentaire envoyé',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: _T.begFg,
-              letterSpacing: 0.1,
-            ),
-          ),
-        ],
-      ),
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(LucideIcons.checkCircle, size: 13, color: _kGreen),
+        const SizedBox(width: 8),
+        Text('Message envoyé !', style: GoogleFonts.inter(
+          fontSize: 12, fontWeight: FontWeight.w800, color: _kGreen,
+        )),
+      ]),
     );
   }
 }
 
-// ─── Mini helpers ─────────────────────────────────────────────
-class _MiniTag extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  const _MiniTag({required this.label, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 11, color: _T.textMuted),
-        const SizedBox(width: 3),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: _T.textMuted),
-        ),
-      ],
-    );
-  }
-}
-
+// ─── Public re-exports (kept for backward compatibility) ──────
 class GoalBadge extends StatelessWidget {
   final String label;
   const GoalBadge({super.key, required this.label});
@@ -622,25 +543,16 @@ class GoalBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _T.goalBg,
+        color: _kMintLight,
         borderRadius: BorderRadius.circular(99),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(LucideIcons.target, size: 10, color: _T.goalFg),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: _T.goalFg,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(LucideIcons.target, size: 10, color: _kGreen),
+        const SizedBox(width: 4),
+        Text(label, style: GoogleFonts.inter(
+          fontSize: 10, fontWeight: FontWeight.w700, color: _kGreen,
+        )),
+      ]),
     );
   }
 }
@@ -649,41 +561,6 @@ class LevelBadge extends StatelessWidget {
   final String level;
   const LevelBadge({super.key, required this.level});
 
-  Color get _bg {
-    switch (level) {
-      case 'Débutant':     return _T.begBg;
-      case 'Intermédiaire': return _T.intBg;
-      case 'Avancé':       return _T.advBg;
-      default:             return _T.surfaceElevated;
-    }
-  }
-
-  Color get _fg {
-    switch (level) {
-      case 'Débutant':     return _T.begFg;
-      case 'Intermédiaire': return _T.intFg;
-      case 'Avancé':       return _T.advFg;
-      default:             return _T.textSecondary;
-    }
-  }
-
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: _bg,
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Text(
-        level,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: _fg,
-          letterSpacing: 0.2,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => _LevelBadge(level: level);
 }

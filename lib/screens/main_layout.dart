@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:fiteva/screens/cycle/homecyle.dart';
-
 import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
 import 'package:fiteva/widgets/chatbot_sheet.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +11,7 @@ import 'workout/workout_screen.dart';
 import 'nutrition/nutrition_screen.dart';
 import 'community/community_screen.dart';
 
-// ── Nav items data ────────────────────────────────────────────────────
+// ── Nav items ─────────────────────────────────────────────────────────────────
 class _NavItem {
   final IconData icon;
   final String label;
@@ -20,16 +19,15 @@ class _NavItem {
 }
 
 const _navItems = [
-  _NavItem(LucideIcons.home, 'Home'),
-  _NavItem(LucideIcons.loader, 'Cycle'),
-    _NavItem(LucideIcons.shoppingBag, 'Shop'),
-  _NavItem(LucideIcons.dumbbell, 'Workouts'),
-  _NavItem(LucideIcons.apple, 'Nutrition'),
-  _NavItem(LucideIcons.users, 'social'),
-
+  _NavItem(LucideIcons.home,        'Home'),
+  _NavItem(LucideIcons.loader,      'Cycle'),
+  _NavItem(LucideIcons.shoppingBag, 'Shop'),
+  _NavItem(LucideIcons.dumbbell,    'Workouts'),
+  _NavItem(LucideIcons.apple,       'Nutrition'),
+  _NavItem(LucideIcons.users,       'Social'),
 ];
 
-// ── Main Layout ───────────────────────────────────────────────────────
+// ── Main Layout ───────────────────────────────────────────────────────────────
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
 
@@ -39,36 +37,30 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
-
   double _x = 300;
   double _y = 500;
 
   final List<Widget> _screens = [
     const HomeScreen(),
     const CycleApp(),
-      const BoutiqueScreen(),
+    const BoutiqueScreen(),
     const WorkoutScreen(),
     const NutritionHomeScreen(),
     const CommunityScreen(),
-  
   ];
 
-  void _openChatbot() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const ChatbotSheet(),
-    );
-  }
+  void _openChatbot() => showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const ChatbotSheet());
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
+    final size    = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
-
-    const buttonSize = 56.0;
-    const bottomNavHeight = 90.0;
+    const btnSize = 56.0;
+    const navH    = 90.0;
 
     return Scaffold(
       extendBody: true,
@@ -76,261 +68,327 @@ class _MainLayoutState extends State<MainLayout> {
         children: [
           _screens[_currentIndex],
 
-          ///  Draggable Chatbot Button tt
+          // Draggable AI chatbot button
           Positioned(
-            left: _x,
-            top: _y,
+            left: _x, top: _y,
             child: GestureDetector(
-              onPanUpdate: (details) {
-                setState(() {
-                  _x = (_x + details.delta.dx).clamp(
-                    0,
-                    screenSize.width - buttonSize,
-                  );
-                  _y = (_y + details.delta.dy).clamp(
-                    padding.top,
-                    screenSize.height - buttonSize - bottomNavHeight,
-                  );
-                });
-              },
-              onPanEnd: (_) {
-                setState(() {
-                  _x = _x < screenSize.width / 2
-                      ? 0
-                      : screenSize.width - buttonSize;
-                });
-              },
+              onPanUpdate: (d) => setState(() {
+                _x = (_x + d.delta.dx).clamp(0, size.width - btnSize);
+                _y = (_y + d.delta.dy).clamp(padding.top, size.height - btnSize - navH);
+              }),
+              onPanEnd: (_) => setState(() {
+                _x = _x < size.width / 2 ? 0 : size.width - btnSize;
+              }),
               child: FloatingActionButton(
                 onPressed: _openChatbot,
                 heroTag: 'ai_chatbot',
                 backgroundColor: Colors.transparent,
                 elevation: 4,
                 child: Container(
-                  width: buttonSize,
-                  height: buttonSize,
+                  width: btnSize, height: btnSize,
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       colors: [Color(0xFF5CD57A), Color(0xFF1C4D30)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: const Icon(Icons.auto_awesome, color: Colors.white),
-                ),
-              ),
+                      begin: Alignment.topLeft, end: Alignment.bottomRight)),
+                  child: const Icon(Icons.auto_awesome, color: Colors.white))),
             ),
           ),
         ],
       ),
-
-      /// 📌 Glass Bottom Navigation
-      bottomNavigationBar: _GlassNavBar(
+      bottomNavigationBar: _LiquidGlassNavBar(
         currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
-      ),
+        onTap: (i) => setState(() => _currentIndex = i)),
     );
   }
 }
 
-// ── Glass NavBar ──────────────────────────────────────────────────────
-class _GlassNavBar extends StatefulWidget {
+// ══════════════════════════════════════════════════════════════════════════════
+// LIQUID GLASS NAVBAR — iOS 26 style
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _LiquidGlassNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
-
-  const _GlassNavBar({required this.currentIndex, required this.onTap});
+  const _LiquidGlassNavBar({required this.currentIndex, required this.onTap});
 
   @override
-  State<_GlassNavBar> createState() => _GlassNavBarState();
+  State<_LiquidGlassNavBar> createState() => _LiquidGlassNavBarState();
 }
 
-class _GlassNavBarState extends State<_GlassNavBar> {
-  late double _pillIndex;
+class _LiquidGlassNavBarState extends State<_LiquidGlassNavBar> {
   bool _isDragging = false;
-  int _lastHapticIndex = -1;
+  int  _lastHaptic = -1;
 
-  // Flex values — selected item gets more space, others shrink
+  static const double _barH        = 64.0;
+  static const double _pillH        = 44.0;
   static const double _selectedFlex = 3.0;
-  static const double _unselectedFlex = 1.0;
+  static const double _unselFlex    = 1.0;
 
-  static const double _pillH = 44.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pillIndex = widget.currentIndex.toDouble();
-  }
-
-  @override
-  void didUpdateWidget(_GlassNavBar old) {
-    super.didUpdateWidget(old);
-    if (!_isDragging) _pillIndex = widget.currentIndex.toDouble();
-  }
-
-  double _toIndex(double dx, double totalWidth) =>
-      (dx / (totalWidth / _navItems.length))
-          .clamp(0.0, _navItems.length - 1.0);
-
-  void _onPanStart(DragStartDetails d, double w) {
-    setState(() {
-      _isDragging = true;
-      _pillIndex = _toIndex(d.localPosition.dx, w);
-    });
-    _haptic(_pillIndex.round());
-  }
-
-  void _onPanUpdate(DragUpdateDetails d, double w) {
-    final idx = _toIndex(d.localPosition.dx, w);
-    setState(() => _pillIndex = idx);
-    final rounded = idx.round();
-    _haptic(rounded);
-    if (rounded != widget.currentIndex) widget.onTap(rounded);
-  }
-
-  void _onPanEnd(DragEndDetails _) {
-    final snapped = _pillIndex.round();
-    setState(() {
-      _isDragging = false;
-      _pillIndex = snapped.toDouble();
-    });
-    widget.onTap(snapped);
-    _lastHapticIndex = -1;
-  }
-
-  void _haptic(int i) {
-    if (i != _lastHapticIndex) {
-      HapticFeedback.selectionClick();
-      _lastHapticIndex = i;
-    }
-  }
-
-  /// Total flex units across all items
   double get _totalFlex =>
-      _selectedFlex + _unselectedFlex * (_navItems.length - 1);
+      _selectedFlex + _unselFlex * (_navItems.length - 1);
 
-  /// Flex for a given index
-  double _flexFor(int index) =>
-      index == widget.currentIndex ? _selectedFlex : _unselectedFlex;
+  double _flexFor(int i) =>
+      i == widget.currentIndex ? _selectedFlex : _unselFlex;
 
-  /// Pixel width for a given index based on totalWidth
-  double _widthFor(int index, double totalWidth) =>
-      totalWidth * _flexFor(index) / _totalFlex;
+  double _widthFor(int i, double total) =>
+      total * _flexFor(i) / _totalFlex;
 
-  /// Left offset of the pill — sum of widths of items before the selected one
-  double _pillLeft(double totalWidth) {
+  double _pillLeft(double total) {
     double left = 0;
     for (int i = 0; i < _navItems.length; i++) {
       if (i == widget.currentIndex) break;
-      left += _widthFor(i, totalWidth);
+      left += _widthFor(i, total);
     }
-    final selectedWidth = _widthFor(widget.currentIndex, totalWidth);
-    // Center pill inside the selected slot
-    return left + (selectedWidth - _pillWidth(totalWidth)) / 2;
+    final slot = _widthFor(widget.currentIndex, total);
+    final pill = _pillWidth(total);
+    return left + (slot - pill) / 2;
   }
 
-  /// Pill width = selected slot width minus horizontal padding
-  double _pillWidth(double totalWidth) {
-    final slotWidth = _widthFor(widget.currentIndex, totalWidth);
-    return (_isDragging ? slotWidth - 8 : slotWidth - 12).clamp(60.0, 300.0);
+  double _pillWidth(double total) {
+    final slot = _widthFor(widget.currentIndex, total);
+    return (_isDragging ? slot - 6 : slot - 10).clamp(60.0, 300.0);
+  }
+
+  int _indexAt(double dx, double total) =>
+      (dx / (total / _navItems.length)).clamp(0, _navItems.length - 1.0).round();
+
+  void _haptic(int i) {
+    if (i != _lastHaptic) {
+      HapticFeedback.selectionClick();
+      _lastHaptic = i;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            height: 68,
-            decoration: BoxDecoration(
-              //color: const Color.fromARGB(255, 8, 8, 8).withOpacity(0.12),
-                            color: const Color.fromARGB(255, 31, 29, 29).withOpacity(0.5),
+    final bottom = MediaQuery.of(context).padding.bottom;
 
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: const Color.fromARGB(255, 97, 94, 94).withOpacity(0.2),
-                width: 1.0,
+    return Padding(
+      padding: EdgeInsets.fromLTRB(14, 0, 14, bottom + 10),
+      child: SizedBox(
+        height: _barH,
+        child: Stack(
+          children: [
+
+            // ── 1. Drop shadow ───────────────────────────────────
+            Container(
+              height: _barH,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(36),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.24),
+                    blurRadius: 36, offset: const Offset(0, 10),
+                    spreadRadius: -6),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.10),
+                    blurRadius: 10, offset: const Offset(0, 3)),
+                ],
               ),
             ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final totalWidth = constraints.maxWidth;
 
+            // ── 2. Backdrop blur + glass base ────────────────────
+            ClipRRect(
+              borderRadius: BorderRadius.circular(36),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                child: Container(
+                  height: _barH,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.28),
+                        Colors.white.withValues(alpha: 0.14),
+                        Colors.white.withValues(alpha: 0.06),
+                      ],
+                      stops: const [0.0, 0.5, 1.0]),
+                    borderRadius: BorderRadius.circular(36),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      width: 0.5)),
+                ),
+              ),
+            ),
+
+            // ── 3. Specular top highlight ─────────────────────────
+            Positioned(top: 0, left: 24, right: 24,
+              child: Container(
+                height: 0.8,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      Colors.white.withValues(alpha: 0.80),
+                      Colors.white.withValues(alpha: 0.95),
+                      Colors.white.withValues(alpha: 0.80),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.2, 0.5, 0.8, 1.0])))),
+
+            // ── 4. Bottom refraction hint ─────────────────────────
+            Positioned(bottom: 0, left: 24, right: 24,
+              child: Container(
+                height: 0.5,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      Colors.white.withValues(alpha: 0.25),
+                      Colors.transparent,
+                    ])))),
+
+            // ── 5. Nav items + sliding liquid pill ────────────────
+            LayoutBuilder(
+              builder: (ctx, constraints) {
+                final total = constraints.maxWidth;
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onPanStart: (d) => _onPanStart(d, totalWidth),
-                  onPanUpdate: (d) => _onPanUpdate(d, totalWidth),
-                  onPanEnd: _onPanEnd,
+                  onPanStart: (d) {
+                    final i = _indexAt(d.localPosition.dx, total);
+                    setState(() => _isDragging = true);
+                    _haptic(i);
+                    widget.onTap(i);
+                  },
+                  onPanUpdate: (d) {
+                    final i = _indexAt(d.localPosition.dx, total);
+                    _haptic(i);
+                    if (i != widget.currentIndex) widget.onTap(i);
+                  },
+                  onPanEnd: (_) {
+                    setState(() => _isDragging = false);
+                    _lastHaptic = -1;
+                  },
                   onTapUp: (d) {
-                    final i =
-                        _toIndex(d.localPosition.dx, totalWidth).round();
-                    setState(() => _pillIndex = i.toDouble());
+                    final i = _indexAt(d.localPosition.dx, total);
+                    _haptic(i);
                     widget.onTap(i);
                   },
                   child: Stack(
+                    clipBehavior: Clip.none,
                     children: [
-                      /// 💊 Sliding pill — animates to selected slot
+
+                      // Liquid glass pill
                       AnimatedPositioned(
                         duration: _isDragging
                             ? Duration.zero
-                            : const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        left: _pillLeft(totalWidth),
-                        top: (68 - _pillH) / 2,
+                            : const Duration(milliseconds: 340),
+                        curve: Curves.easeOutQuart,
+                        left: _pillLeft(total),
+                        top: (_barH - _pillH) / 2,
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                          width: _pillWidth(totalWidth),
+                          duration: const Duration(milliseconds: 340),
+                          curve: Curves.easeOutQuart,
+                          width: _pillWidth(total),
                           height: _pillH,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(
-                              _isDragging ? 0.22 : 0.20,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
+                          child: _LiquidPill(width: _pillWidth(total), height: _pillH)),
                       ),
 
-                      /// 🗂 Nav items — widths animate via AnimatedContainer
+                      // Nav items row
                       Row(
-                        children: List.generate(
-                          _navItems.length,
-                          (i) => AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            width: _widthFor(i, totalWidth),
-                            child: _NavBarItem(
+                        children: List.generate(_navItems.length, (i) =>
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 340),
+                            curve: Curves.easeOutQuart,
+                            width: _widthFor(i, total),
+                            child: _LiquidNavItem(
                               item: _navItems[i],
                               isSelected: i == widget.currentIndex,
                               onTap: () {
-                                setState(() => _pillIndex = i.toDouble());
+                                _haptic(i);
                                 widget.onTap(i);
-                              },
-                            ),
-                          ),
-                        ),
+                              }))),
                       ),
                     ],
                   ),
                 );
               },
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Individual nav item ───────────────────────────────────────────────
-class _NavBarItem extends StatelessWidget {
+// ── Liquid glass pill ─────────────────────────────────────────────────────────
+class _LiquidPill extends StatelessWidget {
+  final double width, height;
+  const _LiquidPill({required this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // Pill body with blur
+        ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              width: width, height: height,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.58),
+                    Colors.white.withValues(alpha: 0.32),
+                    Colors.white.withValues(alpha: 0.18),
+                  ],
+                  stops: const [0.0, 0.5, 1.0]),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.50),
+                  width: 0.5),
+              ),
+            ),
+          ),
+        ),
+
+        // Pill inner specular highlight (top edge shimmer)
+        Positioned(top: 0, left: 12, right: 12,
+          child: Container(
+            height: 0.8,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.white.withValues(alpha: 0.95),
+                  Colors.white.withValues(alpha: 1.0),
+                  Colors.white.withValues(alpha: 0.95),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.2, 0.5, 0.8, 1.0])))),
+
+        // Pill soft inner shadow (bottom)
+        Positioned(bottom: 0, left: 0, right: 0,
+          child: Container(
+            height: height * 0.4,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.04),
+                ]),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(22))))),
+      ],
+    );
+  }
+}
+
+// ── Individual nav item ───────────────────────────────────────────────────────
+class _LiquidNavItem extends StatelessWidget {
   final _NavItem item;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _NavBarItem({
+  const _LiquidNavItem({
     required this.item,
     required this.isSelected,
     required this.onTap,
@@ -342,56 +400,47 @@ class _NavBarItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        height: 68,
+        height: 64,
         child: Center(
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                /// 🔄 Icon with fade + scale
+
+                // Icon with animated opacity
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
+                  duration: const Duration(milliseconds: 220),
                   transitionBuilder: (child, anim) => ScaleTransition(
                     scale: anim,
-                    child: FadeTransition(opacity: anim, child: child),
-                  ),
+                    child: FadeTransition(opacity: anim, child: child)),
                   child: Icon(
                     item.icon,
                     key: ValueKey(isSelected),
                     size: 20,
                     color: isSelected
-                        ? const Color.fromARGB(255, 251, 250, 250)
-                        : const Color.fromARGB(255, 255, 255, 255)
-                            .withOpacity(0.45),
-                  ),
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.45)),
                 ),
 
-                /// 📝 Label — visible only when selected
-                /// AnimatedSize handles the width expansion smoothly
+                // Label — animates in when selected
                 AnimatedSize(
                   duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
+                  curve: Curves.easeOutQuart,
                   child: isSelected
                       ? Padding(
-                          padding: const EdgeInsets.only(left: 6),
+                          padding: const EdgeInsets.only(left: 7),
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 72),
-                            child: Text(
-                              item.label,
+                            constraints: const BoxConstraints(maxWidth: 70),
+                            child: Text(item.label,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               softWrap: false,
                               style: const TextStyle(
-                                color: Color.fromARGB(255, 252, 252, 252),
+                                color: Colors.white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ),
-                        )
+                                letterSpacing: 0.2))))
                       : const SizedBox.shrink(),
                 ),
               ],

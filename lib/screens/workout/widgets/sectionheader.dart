@@ -1,74 +1,76 @@
-
-import 'package:fiteva/models/home_program_model.dart';
-import 'package:fiteva/models/workout_model.dart';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:google_fonts/google_fonts.dart';
+// ── Design tokens ──────────────────────────────────────────────────────────────
+const _kText1  = Color(0xFF1A1A1A);
+const _kText2  = Color(0xFF6B7280);
 
 Widget buildSectionHeader({
   required BuildContext context,
-  required String emoji,
+  IconData? icon,
+  String? emoji,
   required String title,
   required String subtitle,
   required Color color,
+  String? overline,
   VoidCallback? onSeeAll,
 }) {
-  final theme = Theme.of(context);
-  final colorScheme = theme.colorScheme;
-  final textSecondary = theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withOpacity(0.72);
-
-  final sw = MediaQuery.of(context).size.width;
-  final topPad    = sw < 360 ? 10.0 : 12.0;
-  final bottomPad = sw < 360 ? 6.0  : 8.0;
+  assert(icon != null || emoji != null, 'Provide either icon or emoji');
 
   return Padding(
-    padding: EdgeInsets.fromLTRB(16, topPad, 16, bottomPad),
+    padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
     child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: 42, height: 42,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.25)),
-          ),
-          child: Center(child: Text(emoji, style: const TextStyle(fontSize: 20))),
-        ),
+        // Left accent bar + icon/emoji
+        Row(children: [
+          Container(
+            width: 3, height: 38,
+            decoration: BoxDecoration(
+              color: color, borderRadius: BorderRadius.circular(3))),
+          const SizedBox(width: 12),
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(color: color.withValues(alpha: 0.20))),
+            child: Center(
+              child: icon != null
+                  ? Icon(icon, size: 18, color: color)
+                  : Text(emoji!, style: const TextStyle(fontSize: 18)))),
+        ]),
         const SizedBox(width: 12),
+
+        // Text
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 17,
-                      color: colorScheme.onSurface)),
-              Text(subtitle,
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: textSecondary,
-                      fontWeight: FontWeight.w500)),
+              if (overline != null)
+                Text(overline, style: GoogleFonts.inter(
+                  color: color, fontSize: 9, fontWeight: FontWeight.w700,
+                  letterSpacing: 2)),
+              Text(title, style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w800, fontSize: 18,
+                color: _kText1, letterSpacing: -0.3)),
+              Text(subtitle, style: GoogleFonts.inter(
+                fontSize: 11, color: _kText2, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
+
+        // See all
         if (onSeeAll != null)
           GestureDetector(
             onTap: onSeeAll,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.09),
                 borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text('Voir tout',
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold)),
-            ),
-          ),
+                border: Border.all(color: color.withValues(alpha: 0.18))),
+              child: Text('Voir tout', style: GoogleFonts.inter(
+                color: color, fontSize: 11, fontWeight: FontWeight.w700)))),
       ],
     ),
   );

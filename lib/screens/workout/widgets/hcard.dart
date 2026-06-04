@@ -1,15 +1,11 @@
-import 'package:fiteva/models/home_program_model.dart';
 import 'package:fiteva/models/workout_model.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/workout_detail_screen.dart';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-
-
-
-
+// ── Workout card — full-bleed editorial, 220 × 250 ───────────────────────────
 Widget buildHCard({
   required BuildContext context,
   required WorkoutModel w,
@@ -18,151 +14,116 @@ Widget buildHCard({
   required void Function(String) onToggleFav,
   VoidCallback? onTap,
 }) {
-  final theme = Theme.of(context);
-  final colorScheme = theme.colorScheme;
-  final onSurface = colorScheme.onSurface;
-
   final isFav = favorites.contains(w.id);
+
   return GestureDetector(
     onTap: onTap ??
         () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => WorkoutDetailScreen(workout: w))),
     child: Container(
-      width: 200,
+      width: 220,
       margin: const EdgeInsets.only(right: 14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.18),
-              blurRadius: 12,
-              offset: const Offset(0, 4)),
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: 16, offset: const Offset(0, 6)),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(w.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(color: colorScheme.surfaceContainerHighest)),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    onSurface.withOpacity(0.80),
-                  ],
-                  stops: const [0.35, 1.0],
-                ),
-              ),
-            ),
-            // Top bar
-            Positioned(
-              top: 0, left: 0, right: 0,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Stack(fit: StackFit.expand, children: [
+
+          // ── Background image ────────────────────────────────
+          Image.asset(w.imageUrl, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: accent.withValues(alpha: 0.15),
+              child: Center(child: Icon(LucideIcons.dumbbell,
+                color: accent, size: 36)))),
+
+          // ── Bottom gradient ─────────────────────────────────
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Color(0xEE000000)],
+                stops: [0.35, 1.0]))),
+
+          // ── Top: level badge + heart ────────────────────────
+          Positioned(top: 12, left: 12, right: 12,
+            child: Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [accent.withOpacity(0.55), Colors.transparent],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: onSurface.withOpacity(0.35),
-                        borderRadius: BorderRadius.circular(20),
-                        border:
-                          Border.all(color: colorScheme.onPrimary.withOpacity(0.2)),
-                      ),
-                      child: Row(children: [
-                        Icon(Icons.timer_rounded,
-                          color: colorScheme.onPrimary.withOpacity(0.7), size: 11),
-                        const SizedBox(width: 3),
-                        Text(w.duration,
-                          style: TextStyle(
-                            color: colorScheme.onPrimary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600)),
-                      ]),
-                    ),
-                    GestureDetector(
-                      onTap: () => onToggleFav(w.id),
-                      child: Container(
-                        width: 30, height: 30,
-                        decoration: BoxDecoration(
-                          color: onSurface.withOpacity(0.35),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: colorScheme.onPrimary.withOpacity(0.2)),
-                        ),
-                        child: Icon(
-                          isFav
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          color: isFav ? WorkoutColors.grossesse : colorScheme.onPrimary,
-                          size: 15,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Bottom info
-            Positioned(
-              left: 12, right: 12, bottom: 12,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    margin: const EdgeInsets.only(bottom: 6),
-                    decoration: BoxDecoration(
-                      color: accent.withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(w.level,
-                      style: TextStyle(
-                        color: colorScheme.onPrimary,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                  Text(w.title,
-                      style: TextStyle(
-                        color: colorScheme.onPrimary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          height: 1.2),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 5),
-                  Row(children: [
-                    Icon(Icons.local_fire_department_rounded,
-                      color: colorScheme.primary, size: 13),
-                    const SizedBox(width: 3),
-                    Text('${w.calories} kcal',
-                      style: TextStyle(
-                        color: colorScheme.onPrimary.withOpacity(0.7), fontSize: 11)),
-                  ]),
-                ],
-              ),
-            ),
-          ],
-        ),
+                  color: accent,
+                  borderRadius: BorderRadius.circular(20)),
+                child: Text(w.level, style: GoogleFonts.inter(
+                  color: Colors.white, fontSize: 9,
+                  fontWeight: FontWeight.w700, letterSpacing: 0.5))),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => onToggleFav(w.id),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.20))),
+                  child: Icon(
+                    isFav ? LucideIcons.heart : LucideIcons.heart,
+                    color: isFav ? WorkoutColors.grossesse : Colors.white,
+                    size: 14))),
+            ])),
+
+          // ── Bottom: info ────────────────────────────────────
+          Positioned(left: 14, right: 14, bottom: 14,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(w.title,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white, fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2, letterSpacing: -0.2),
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 8),
+                Row(children: [
+                  Icon(LucideIcons.clock, color: Colors.white60, size: 11),
+                  const SizedBox(width: 4),
+                  Text(w.duration, style: GoogleFonts.inter(
+                    color: Colors.white70, fontSize: 11)),
+                  const SizedBox(width: 10),
+                  Icon(LucideIcons.flame, color: accent, size: 11),
+                  const SizedBox(width: 4),
+                  Text('${w.calories} kcal', style: GoogleFonts.inter(
+                    color: Colors.white70, fontSize: 11)),
+                ]),
+                const SizedBox(height: 10),
+                // Start button
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.30))),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                    Icon(LucideIcons.play, color: Colors.white, size: 12),
+                    const SizedBox(width: 6),
+                    Text('Démarrer', style: GoogleFonts.inter(
+                      color: Colors.white, fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+                  ])),
+              ],
+            )),
+        ]),
       ),
     ),
   );

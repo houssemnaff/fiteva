@@ -7,6 +7,7 @@ class WorkoutModel {
   final String imageUrl;
   final String calories;
   final List<String> exercises;
+  final String phases;
 
   WorkoutModel({
     required this.id,
@@ -17,5 +18,6 @@ class WorkoutModel {
     required this.imageUrl,
     required this.exercises,
     required this.calories,
+    this.phases = '',
   });
 }

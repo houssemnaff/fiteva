@@ -4,14 +4,18 @@ import 'package:fiteva/screens/community/UserProfileScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../theme/app_theme.dart';
-import '../shared/community_shared_widgets.dart';
-import 'feed_composer_sheet.dart';
+// ─── Design tokens ────────────────────────────────────────────
+const _kGreen  = Color(0xFF1C4D30);
+const _kMint   = Color(0xFF7ABB98);
+const _kBg     = Color(0xFFFEFEFE);
+const _kSurface = Colors.white;
+const _kBorder = Color(0xFFECECEC);
+const _kTextPrimary   = Color(0xFF1A1A1A);
+const _kTextSecondary = Color(0xFF757575);
 
-// ─────────────────────────────────────────────────────────────
-// Feed Tab
-// ─────────────────────────────────────────────────────────────
+// ─── Feed Tab ─────────────────────────────────────────────────
 class FeedTab extends ConsumerStatefulWidget {
   const FeedTab({super.key});
 
@@ -22,48 +26,43 @@ class FeedTab extends ConsumerStatefulWidget {
 class _FeedTabState extends ConsumerState<FeedTab> {
   int _selectedFilter = 0;
 
-  static const _feedFilters = [
-    'For you',
-    'Workout',
-    'Nutrition',
-    'Before/After',
-    'Challenge',
-  ];
+  static const _filters = ['For you', 'Workout', 'Nutrition', 'Before/After', 'Challenge'];
 
   @override
   Widget build(BuildContext context) {
     final posts = ref.watch(postsProvider);
-    final colorScheme = Theme.of(context).colorScheme;
 
     return CustomScrollView(
-      
-      physics: const BouncingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      ),
+      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
       slivers: [
-        // ── Create post bar ───────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: _CreatePostBar(
-              onTap: () => showModalBottomSheet<void>(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: colorScheme.surface,
-                builder: (_) => const FeedComposerSheet(),
-              ),
-            ),
-          ),
-        ),
 
         // ── Section header ────────────────────────────────────
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-            child: SectionHeaderComm(
-              title: 'Top posts',
-              actionLabel: 'See all',
-              onActionTap: () {},
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('COMMUNITY', style: GoogleFonts.inter(
+                      color: _kMint, fontSize: 9,
+                      fontWeight: FontWeight.w700, letterSpacing: 3,
+                    )),
+                    const SizedBox(height: 3),
+                    Text('Top Posts', style: GoogleFonts.outfit(
+                      color: _kTextPrimary, fontSize: 24,
+                      fontWeight: FontWeight.w800, letterSpacing: -0.5,
+                    )),
+                  ],
+                ),
+                const Spacer(),
+                Text('See all', style: GoogleFonts.inter(
+                  color: _kGreen, fontSize: 11,
+                  fontWeight: FontWeight.w700, letterSpacing: 0.3,
+                )),
+              ],
             ),
           ),
         ),
@@ -71,16 +70,15 @@ class _FeedTabState extends ConsumerState<FeedTab> {
         // ── Filter pills ──────────────────────────────────────
         SliverToBoxAdapter(
           child: SizedBox(
-            height: 34,
-            child: ListView.separated(
+            height: 38,
+            child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _feedFilters.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) => _FilterPill(
-                label: _feedFilters[index],
-                selected: _selectedFilter == index,
-                onTap: () => setState(() => _selectedFilter = index),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+              itemCount: _filters.length,
+              itemBuilder: (_, i) => _FilterPill(
+                label: _filters[i],
+                selected: _selectedFilter == i,
+                onTap: () => setState(() => _selectedFilter = i),
               ),
             ),
           ),
@@ -88,9 +86,11 @@ class _FeedTabState extends ConsumerState<FeedTab> {
 
         // ── Post list ─────────────────────────────────────────
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-          sliver: SliverToBoxAdapter(
-            child: _PostGroup(posts: posts),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          sliver: SliverList.separated(
+            itemCount: posts.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (_, i) => _PostCard(post: posts[i]),
           ),
         ),
       ],
@@ -98,171 +98,41 @@ class _FeedTabState extends ConsumerState<FeedTab> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Post Group — wraps all cards in one rounded container
-// ─────────────────────────────────────────────────────────────
-class _PostGroup extends StatelessWidget {
-  final List<PostModel> posts;
-
-  const _PostGroup({required this.posts});
-
-  @override
-  Widget build(BuildContext context) {
-    if (posts.isEmpty) return const SizedBox.shrink();
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: Column(
-        children: [
-          for (int i = 0; i < posts.length; i++) ...[
-            _PostCard(post: posts[i]),
-            if (i < posts.length - 1)
-              Divider(
-                height: 0,
-                thickness: 0.5,
-                color: Theme.of(context).colorScheme.outlineVariant,
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Create Post Bar
-// ─────────────────────────────────────────────────────────────
-class _CreatePostBar extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _CreatePostBar({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
-        ),
-        child: Row(
-          children: [
-            // Avatar placeholder
-            Container(
-              width: 34,
-              height: 34,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                // placeholder uses surface container so it adapts to theme
-                // (kept const for Clip behavior)
-              ),
-              child: const Icon(
-                CupertinoIcons.person_fill,
-                // use primary for avatar accent
-                color: Colors.white,
-                size: 16,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                "What's on your mind?",
-                style: TextStyle(
-                  fontSize: 15,
-                  // will be replaced below with themed style via DefaultTextStyle if needed
-                  color: Color(0xFFAEAEB2),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            _ActionIconButton(icon: CupertinoIcons.photo),
-            const SizedBox(width: 6),
-            _ActionIconButton(icon: CupertinoIcons.video_camera_solid),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionIconButton extends StatelessWidget {
-  final IconData icon;
-
-  const _ActionIconButton({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: Color(0xFFF2F2F7),
-      ),
-      child: Icon(icon, size: 14, color: const Color(0xFF3C3C43)),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Filter Pill
-// ─────────────────────────────────────────────────────────────
+// ─── Filter Pill ──────────────────────────────────────────────
 class _FilterPill extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-
-  const _FilterPill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+  const _FilterPill({required this.label, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        height: 30,
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF1C4D30) : Colors.white,
-          borderRadius: BorderRadius.circular(999),
+          color: selected ? _kGreen : _kSurface,
+          borderRadius: BorderRadius.circular(50),
           border: Border.all(
-            color: selected
-                ? const Color(0xFF1C4D30)
-                : const Color(0xFFE5E5EA),
-            width: 0.5,
+            color: selected ? _kGreen : _kBorder,
           ),
         ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : const Color(0xFF3C3C43),
-            ),
-          ),
-        ),
+        child: Text(label, style: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: selected ? Colors.white : _kTextSecondary,
+        )),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Post Card
-// ─────────────────────────────────────────────────────────────
+// ─── Post Card ────────────────────────────────────────────────
 class _PostCard extends StatefulWidget {
   final PostModel post;
-
   const _PostCard({required this.post});
 
   @override
@@ -273,288 +143,251 @@ class _PostCardState extends State<_PostCard>
     with SingleTickerProviderStateMixin {
   bool _liked = false;
   late int _likeCount;
-  late AnimationController _heartController;
+  late AnimationController _heartCtrl;
   late Animation<double> _heartScale;
 
   @override
   void initState() {
     super.initState();
     _likeCount = widget.post.likes;
-    _heartController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 280),
-    );
+    _heartCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 280));
     _heartScale = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.35), weight: 40),
       TweenSequenceItem(tween: Tween(begin: 1.35, end: 0.9), weight: 30),
       TweenSequenceItem(tween: Tween(begin: 0.9, end: 1.0), weight: 30),
-    ]).animate(
-      CurvedAnimation(parent: _heartController, curve: Curves.easeOut),
-    );
+    ]).animate(CurvedAnimation(parent: _heartCtrl, curve: Curves.easeOut));
   }
 
   @override
-  void dispose() {
-    _heartController.dispose();
-    super.dispose();
-  }
+  void dispose() { _heartCtrl.dispose(); super.dispose(); }
 
   void _toggleLike() {
     setState(() {
       _liked = !_liked;
       _likeCount += _liked ? 1 : -1;
     });
-    if (_liked) _heartController.forward(from: 0);
+    if (_liked) _heartCtrl.forward(from: 0);
   }
 
   void _openProfile() {
-    // ⚠️  Change widget.post.username → widget.post.userId once that field exists
-    final userId = widget.post.username;
-    final heroTag = 'avatar_$userId';
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => UserProfileScreen(
-          userId: userId,
-          heroTag: heroTag,
-        ),
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => UserProfileScreen(
+        userId: widget.post.username,
+        heroTag: 'avatar_${widget.post.username}',
       ),
-    );
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
     final hasImage = widget.post.imageUrl.trim().isNotEmpty;
-    // ⚠️  Same note: swap to widget.post.userId once that field exists
-    final userId = widget.post.username;
-    final heroTag = 'avatar_$userId';
-    final colorScheme = Theme.of(context).colorScheme;
+    final category = widget.post.category ?? '';
 
     return Container(
-      color: colorScheme.surface,
+      decoration: BoxDecoration(
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _kBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+
           // ── Header ──────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 13, 8, 10),
-            child: Row(
-              children: [
-                // ── Avatar (tappable → profile) ───────────────
-                GestureDetector(
+            padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
+            child: Row(children: [
+              GestureDetector(
+                onTap: _openProfile,
+                child: Hero(
+                  tag: 'avatar_${widget.post.username}',
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundImage: NetworkImage(widget.post.userAvatarUrl),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: GestureDetector(
                   onTap: _openProfile,
-                  child: Hero(
-                    tag: heroTag,
-                    child: CircleAvatar(
-                      radius: 19,
-                      backgroundImage: NetworkImage(widget.post.userAvatarUrl),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-
-                // ── Name + meta (tappable → profile) ──────────
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _openProfile,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.post.username,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1C1C1E),
-                            letterSpacing: -0.2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.post.username, style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _kTextPrimary,
+                        letterSpacing: -0.2,
+                      )),
+                      const SizedBox(height: 3),
+                      Row(children: [
+                        Text(widget.post.timeAgo, style: GoogleFonts.inter(
+                          fontSize: 11, color: _kTextSecondary,
+                        )),
+                        if (category.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Container(width: 3, height: 3,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle, color: _kBorder)),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _kGreen.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(category, style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: _kGreen,
+                            )),
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            Text(
-                              widget.post.timeAgo,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              width: 3,
-                              height: 3,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xFFC7C7CC),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            // Category tag badge
-                            if ((widget.post.category ?? '').isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 7, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                child: Text(
-                                  widget.post.category ?? '',
-                                  style:  TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: colorScheme.primary,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
+                        ],
+                      ]),
+                    ],
                   ),
                 ),
-
-                // ── More button ───────────────────────────────
-                CupertinoButton(
-                  padding: const EdgeInsets.all(6),
-                  minSize: 0,
-                  onPressed: () {},
-                  child:  Icon(
-                    CupertinoIcons.ellipsis,
-                    color: colorScheme.onSurfaceVariant,
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              CupertinoButton(
+                padding: const EdgeInsets.all(6),
+                minSize: 0,
+                onPressed: () {},
+                child: const Icon(CupertinoIcons.ellipsis,
+                    color: _kTextSecondary, size: 18),
+              ),
+            ]),
           ),
 
           // ── Post text ────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-            child: Text(
-              widget.post.content,
-              style: TextStyle(
-                fontSize: 15,
-                color: Theme.of(context).colorScheme.onSurface,
-                height: 1.45,
-                letterSpacing: -0.1,
-              ),
-            ),
+            child: Text(widget.post.content, style: GoogleFonts.inter(
+              fontSize: 14,
+              color: _kTextPrimary,
+              height: 1.5,
+              letterSpacing: -0.1,
+            )),
           ),
 
           // ── Image ────────────────────────────────────────────
           if (hasImage)
             GestureDetector(
               onDoubleTap: _toggleLike,
-              child: SizedBox(
-                height: 210,
-                width: double.infinity,
-                child: Image.network(
-                  widget.post.imageUrl,
-                  fit: BoxFit.cover,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(0)),
+                child: SizedBox(
+                  height: 200,
+                  width: double.infinity,
+                  child: Image.network(widget.post.imageUrl, fit: BoxFit.cover),
                 ),
               ),
             ),
 
           // ── Actions ──────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 12, 10),
-            child: Row(
-              children: [
-                // Like
-                CupertinoButton(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  minSize: 0,
-                  onPressed: _toggleLike,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ScaleTransition(
-                        scale: _heartScale,
-                        child: Icon(
-                          _liked
-                              ? CupertinoIcons.heart_fill
-                              : CupertinoIcons.heart,
-                          size: 21,
-                          color: _liked
-                              ? const Color(0xFFFF375F)
-                              : const Color(0xFF8E8E93),
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 180),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: _liked
-                              ? const Color(0xFFFF375F)
-                              : const Color(0xFF8E8E93),
-                        ),
-                        child: Text('$_likeCount'),
-                      ),
-                    ],
+            padding: const EdgeInsets.fromLTRB(10, 8, 12, 12),
+            child: Row(children: [
+              // Like
+              GestureDetector(
+                onTap: _toggleLike,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: _liked
+                        ? const Color(0xFFFF375F).withOpacity(0.08)
+                        : const Color(0xFFF4F4F2),
+                    borderRadius: BorderRadius.circular(50),
                   ),
-                ),
-
-                // Comment
-                CupertinoButton(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  minSize: 0,
-                  onPressed: () {},
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        CupertinoIcons.chat_bubble,
-                        size: 20,
-                        color: Color(0xFF8E8E93),
+                  child: Row(children: [
+                    ScaleTransition(
+                      scale: _heartScale,
+                      child: Icon(
+                        _liked ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+                        size: 16,
+                        color: _liked
+                            ? const Color(0xFFFF375F)
+                            : _kTextSecondary,
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        '${widget.post.comments}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF8E8E93),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text('$_likeCount', style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _liked
+                          ? const Color(0xFFFF375F)
+                          : _kTextSecondary,
+                    )),
+                  ]),
                 ),
+              ),
+              const SizedBox(width: 8),
 
-                const Spacer(),
-
-                // Share
-                CupertinoButton(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  minSize: 0,
-                  onPressed: () {},
-                  child: const Icon(
-                    CupertinoIcons.share,
-                    size: 20,
-                    color: Color(0xFF8E8E93),
+              // Comment
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F4F2),
+                    borderRadius: BorderRadius.circular(50),
                   ),
+                  child: Row(children: [
+                    const Icon(CupertinoIcons.chat_bubble,
+                        size: 15, color: _kTextSecondary),
+                    const SizedBox(width: 5),
+                    Text('${widget.post.comments}', style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _kTextSecondary,
+                    )),
+                  ]),
                 ),
+              ),
 
-                // Bookmark
-                CupertinoButton(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  minSize: 0,
-                  onPressed: () {},
-                  child: const Icon(
-                    CupertinoIcons.bookmark,
-                    size: 20,
-                    color: Color(0xFF8E8E93),
+              const Spacer(),
+
+              // Bookmark
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F4F2),
+                    borderRadius: BorderRadius.circular(50),
                   ),
+                  child: const Icon(CupertinoIcons.bookmark,
+                      size: 15, color: _kTextSecondary),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+
+              // Share
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F4F2),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Icon(CupertinoIcons.share,
+                      size: 15, color: _kTextSecondary),
+                ),
+              ),
+            ]),
           ),
         ],
       ),

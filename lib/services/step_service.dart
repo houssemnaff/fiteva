@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:pedometer/pedometer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,7 +16,7 @@ class StepService {
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     await _loadDailyBaseline();
-    _stepStream = Pedometer.stepCountStream;
+    _stepStream = kIsWeb ? const Stream.empty() : Pedometer.stepCountStream;
   }
 
   Stream<StepCount> getStepStream() => _stepStream;
