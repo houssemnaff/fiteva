@@ -168,7 +168,7 @@ int? _pregnancyWeekSA;
   Future<void> _nextPage() async {
     await _saveData();
     if (!mounted) return;
-    if (_currentPage < 8) {
+    if (_currentPage < 7) {
       _pageController.animateToPage(
         _currentPage + 1,
         duration: const Duration(milliseconds: 300),
@@ -274,17 +274,8 @@ int? _pregnancyWeekSA;
                 onNext: _nextPage,
               ),
               StepHealthProfile(onNext: _nextPage, onBack: _previousPage),
-              StepPregnancy(
-  onNext: _nextPage,
-  onBack: _previousPage,
-  onChanged: (isPregnant, weekSA) {
-    setState(() {
-      _isPregnant = isPregnant;
-      _pregnancyWeekSA = weekSA;
-    });
-  },
-),
-              StepCycle(onNext: _nextPage, onBack: _previousPage),
+              StepCycleAndPregnancy(
+                  onNext: _nextPage, onBack: _previousPage),
             ],
           ),
 
