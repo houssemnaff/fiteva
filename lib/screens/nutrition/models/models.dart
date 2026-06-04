@@ -15,7 +15,12 @@ class MealSection {
 class RecipeItem {
   final String emoji, name, label;
   final Color bgColor;
-  const RecipeItem(this.emoji, this.name, this.label, this.bgColor);
+  final String duration;
+  final String difficulty;
+  const RecipeItem(this.emoji, this.name, this.label, this.bgColor, {
+    this.duration = '20 min',
+    this.difficulty = 'Facile',
+  });
 }
 
 class MealCategoryData {

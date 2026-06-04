@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 class CommunityTabBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTap;
@@ -13,15 +15,14 @@ class CommunityTabBar extends StatelessWidget {
   static const _tabs = [
     (icon: LucideIcons.layoutList, label: 'Feed'),
     (icon: LucideIcons.calendarDays, label: 'Événements'),
-    (icon: LucideIcons.users, label: 'Partenaire'),
+    (icon: LucideIcons.users, label: 'Partenaires'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: colorScheme.surface.withOpacity(0.95),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Row(
         children: List.generate(_tabs.length, (i) {
           final tab = _tabs[i];
@@ -30,32 +31,34 @@ class CommunityTabBar extends StatelessWidget {
             child: GestureDetector(
               onTap: () => onTap(i),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
-                  color: selected ? colorScheme.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
+                  color: selected
+                      ? const Color(0xFF1C4D30)
+                      : const Color(0xFFF4F4F2),
+                  borderRadius: BorderRadius.circular(50),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       tab.icon,
-                      size: 15,
+                      size: 13,
                       color: selected
-                          ? colorScheme.onPrimary
-                          : colorScheme.onSurfaceVariant,
+                          ? const Color(0xFF7ABB98)
+                          : const Color(0xFF757575),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       tab.label,
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: selected
-                            ? colorScheme.onPrimary
-                            : colorScheme.onSurfaceVariant,
+                        color: selected ? Colors.white : const Color(0xFF757575),
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ],

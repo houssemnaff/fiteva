@@ -1,23 +1,25 @@
 import 'package:fiteva/screens/nutrition/recette_detail_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'ajout_rapide_screen.dart';
 import 'models/models.dart';
 import 'recipes_list_screen.dart';
 import 'theme/app_colors.dart';
 
-// ─── Tokens locaux ────────────────────────────────────────────────────────────
+// ── We Rise palette ───────────────────────────────────────────────────────────
 abstract class _C {
-  static const bg = Color(0xFFF5F3EE);
-  static const white = Colors.white;
-  static const border = Color(0x14000000);
-  static const green = Color(0xFF1D9E75);
-  static const greenDark = Color(0xFF085041);
-  static const greenBg = Color(0xFFE1F5EE);
+  static const bg       = Color(0xFFFEFEFE);
+  static const white    = Colors.white;
+  static const border   = Color(0xFFECECEC);
+  static const green    = Color(0xFF1C4D30);
+  static const greenBg  = Color(0xFFEAF3EC);
+  static const mint     = Color(0xFF7ABB98);
   static const textDark = Color(0xFF1A1A1A);
-  static const textGrey = Color(0xFF888780);
-  static const pill = Color(0xFFF1EFE8);
-  static const orange = Color(0xFFD85A30);
-  static const orangeBg = Color(0xFFFAECE7);
+  static const textGrey = Color(0xFF6B7280);
+  static const pill     = Color(0xFFF4F4F4);
+  static const red      = Color(0xFFE03050);
+  static const redBg    = Color(0xFFFFEEEE);
 }
 
 // ─── Modèle étendu avec image ─────────────────────────────────────────────────
@@ -275,7 +277,7 @@ class _SuiviNutritionScreenState extends State<SuiviNutritionScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HEADER
+// HEADER — We Rise editorial style
 // ─────────────────────────────────────────────────────────────────────────────
 class _Header extends StatelessWidget {
   final double top;
@@ -283,155 +285,77 @@ class _Header extends StatelessWidget {
   const _Header({required this.top, required this.onBack});
 
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      color: colorScheme.background,
-      padding: EdgeInsets.fromLTRB(20, top + 12, 20, 14),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: onBack,
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.shadow.withOpacity(0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.chevron_left,
-                    color: colorScheme.onSurface,
-                    size: 22,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Suivi nutrition',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.shadow.withOpacity(0.08),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.info_outline,
-                  size: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+  Widget build(BuildContext context) => Container(
+    color: _C.bg,
+    padding: EdgeInsets.fromLTRB(20, top + 14, 20, 12),
+    child: Column(children: [
+      // Title row
+      Row(children: [
+        GestureDetector(
+          onTap: onBack,
+          child: Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: _C.greenBg, borderRadius: BorderRadius.circular(12)),
+            child: const Icon(LucideIcons.chevronLeft,
+              color: _C.green, size: 20)),
+        ),
+        const SizedBox(width: 14),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('SUIVI', style: GoogleFonts.inter(
+            color: _C.mint, fontSize: 9, fontWeight: FontWeight.w700,
+            letterSpacing: 2.5)),
+          Text('Nutrition', style: GoogleFonts.outfit(
+            color: _C.green, fontSize: 20, fontWeight: FontWeight.w800,
+            letterSpacing: -0.4)),
+        ]),
+        const Spacer(),
+      ]),
+      const SizedBox(height: 12),
+      // Date navigation
+      Row(children: [
+        _DateArrow(icon: LucideIcons.chevronLeft),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _C.border)),
+            child: Row(children: [
+              const Icon(LucideIcons.calendarDays, size: 13, color: _C.textGrey),
+              const SizedBox(width: 8),
+              Expanded(child: Text("Aujourd'hui · Vendredi 25 avril",
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 13, fontWeight: FontWeight.w500,
+                  color: _C.textDark))),
+            ]),
           ),
-          const SizedBox(height: 12),
-          // Nav date
-          Row(
-            children: [
-              _DateArrow(icon: Icons.chevron_left),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.shadow.withOpacity(0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 13,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "Aujourd'hui · Vendredi 25 avril",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              _DateArrow(icon: Icons.chevron_right),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(width: 10),
+        _DateArrow(icon: LucideIcons.chevronRight),
+      ]),
+    ]),
+  );
 }
 
 class _DateArrow extends StatelessWidget {
   final IconData icon;
   const _DateArrow({required this.icon});
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Icon(icon, size: 18, color: colorScheme.onSurface),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    width: 34, height: 34,
+    decoration: BoxDecoration(
+      color: Colors.white, shape: BoxShape.circle,
+      border: Border.all(color: _C.border)),
+    child: Icon(icon, size: 16, color: _C.textGrey),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RÉSUMÉ JOURNALIER
+// RÉSUMÉ JOURNALIER — We Rise editorial
 // ─────────────────────────────────────────────────────────────────────────────
 class _DailySummaryCard extends StatelessWidget {
   final int total, goal, remaining;
@@ -443,180 +367,102 @@ class _DailySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final pct = (total / goal).clamp(0.0, 1.0);
+    final pct  = (total / goal).clamp(0.0, 1.0);
     final over = remaining < 0;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _C.border),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 16, offset: const Offset(0, 4))],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Calories aujourd\'hui',
-                      style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          '$total',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '/ $goal kcal',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: over ? colorScheme.tertiaryContainer.withOpacity(0.35) : colorScheme.secondaryContainer.withOpacity(0.35),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: over ? colorScheme.tertiary : colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      over
-                          ? '+${-remaining} kcal dépassés'
-                          : '$remaining kcal restantes',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: over ? colorScheme.tertiary : colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
-          const SizedBox(height: 14),
+        // Overline + number row
+        Text('CALORIES DU JOUR', style: GoogleFonts.inter(
+          color: _C.mint, fontSize: 9, fontWeight: FontWeight.w700,
+          letterSpacing: 2.5)),
+        const SizedBox(height: 8),
+        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text('$total', style: GoogleFonts.outfit(
+            fontSize: 42, fontWeight: FontWeight.w800,
+            color: _C.green, height: 1)),
+          const SizedBox(width: 6),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text('/ $goal kcal', style: GoogleFonts.inter(
+              fontSize: 14, color: _C.textGrey))),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: over ? _C.redBg : _C.greenBg,
+              borderRadius: BorderRadius.circular(20)),
+            child: Text(
+              over ? '+${-remaining} en surplus' : '$remaining restantes',
+              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700,
+                color: over ? _C.red : _C.green))),
+        ]),
 
-          // Barre de progression
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: pct,
-              minHeight: 7,
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              valueColor: AlwaysStoppedAnimation(over ? colorScheme.tertiary : colorScheme.primary),
-            ),
-          ),
+        const SizedBox(height: 14),
 
-          const SizedBox(height: 14),
+        // Progress bar — thin editorial line
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: pct, minHeight: 5,
+            backgroundColor: const Color(0xFFF0F0F0),
+            valueColor: AlwaysStoppedAnimation(
+              over ? _C.red : _C.green))),
 
-          // Macros
-          Row(
-            children: [
-              _MacroStat(label: 'Protéines', value: '20g', color: colorScheme.primary),
-              const SizedBox(width: 8),
-              _MacroStat(
-                label: 'Glucides',
-                value: '90g',
-                color: colorScheme.secondary,
-              ),
-              const SizedBox(width: 8),
-              _MacroStat(
-                label: 'Lipides',
-                value: '12g',
-                color: colorScheme.tertiary,
-              ),
-            ],
-          ),
-        ],
-      ),
+        const SizedBox(height: 14),
+
+        // Macro chips
+        Row(children: [
+          _MacroStat(label: 'Protéines', value: '20g',
+            color: _C.green, bg: _C.greenBg),
+          const SizedBox(width: 8),
+          _MacroStat(label: 'Glucides',  value: '90g',
+            color: const Color(0xFF3B7FD4), bg: const Color(0xFFEBF2FC)),
+          const SizedBox(width: 8),
+          _MacroStat(label: 'Lipides',   value: '12g',
+            color: const Color(0xFFC47A00), bg: const Color(0xFFFFF3DC)),
+        ]),
+      ]),
     );
   }
 }
 
 class _MacroStat extends StatelessWidget {
   final String label, value;
-  final Color color;
+  final Color color, bg;
   const _MacroStat({
-    required this.label,
-    required this.value,
-    required this.color,
+    required this.label, required this.value,
+    required this.color, required this.bg,
   });
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: bg, borderRadius: BorderRadius.circular(10)),
+      child: Column(children: [
+        Text(value, style: GoogleFonts.outfit(
+          fontSize: 16, fontWeight: FontWeight.w800, color: color)),
+        const SizedBox(height: 1),
+        Text(label, style: GoogleFonts.inter(
+          fontSize: 10, color: color.withValues(alpha: 0.7))),
+      ]),
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SELECTED MEAL DETAIL CARD
+// SELECTED MEAL DETAIL CARD — We Rise
 // ─────────────────────────────────────────────────────────────────────────────
 class _SelectedMealDetailCard extends StatelessWidget {
   final _MealGroup group;
@@ -631,185 +477,110 @@ class _SelectedMealDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final over = group.isOver;
+
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        border: Border.all(color: _C.border),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 16, offset: const Offset(0, 4))],
       ),
-      clipBehavior: Clip.hardEdge,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 140,
-            width: double.infinity,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.network(
-                  group.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(color: colorScheme.secondaryContainer.withOpacity(0.35)),
-                ),
-                DecoratedBox(
+      clipBehavior: Clip.antiAlias,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // ── Hero image 150px ────────────────────────────────────
+        SizedBox(
+          height: 150, width: double.infinity,
+          child: Stack(fit: StackFit.expand, children: [
+            Image.network(group.imageUrl, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Container(color: _C.greenBg,
+                    child: const Center(child: Icon(
+                      LucideIcons.salad, color: _C.mint, size: 32)))),
+
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xCC0A2A18)],
+                  stops: [0.2, 1.0]))),
+
+            // Time pill + over badge
+            Positioned(top: 12, left: 14, right: 14,
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        colorScheme.scrim.withOpacity(0.05),
-                        colorScheme.scrim.withOpacity(0.55),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.scrim.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          group.time,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: colorScheme.onPrimary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        group.title,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${group.totalKcal} / ${group.budgetKcal} kcal',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onPrimary.withOpacity(0.85),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (over)
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.tertiary.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Dépassé',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+                    color: Colors.white.withValues(alpha: 0.18),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3), width: 0.5),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Text(group.time, style: GoogleFonts.inter(
+                    fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600))),
+                const Spacer(),
+                if (over) Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _C.red.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Text('Dépassé', style: GoogleFonts.inter(
+                    fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700))),
+              ])),
 
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(5),
-                    child: LinearProgressIndicator(
-                      value: group.pct.clamp(0.0, 1.0),
-                      minHeight: 5,
-                      //backgroundColor: _C.pill,
-                      backgroundColor: colorScheme.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation(
-                        over ? colorScheme.tertiary : colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  over
-                      ? '+${group.totalKcal - group.budgetKcal} kcal'
-                      : '${(group.pct * 100).round()}%',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: over ? colorScheme.tertiary : colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
+            // Meal name + kcal
+            Positioned(bottom: 12, left: 14, right: 14,
+              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Expanded(child: Text(group.title,
+                  style: GoogleFonts.outfit(
+                    fontSize: 22, fontWeight: FontWeight.w800,
+                    color: Colors.white, letterSpacing: -0.4))),
+                const SizedBox(width: 8),
+                Column(crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min, children: [
+                  Text('${group.totalKcal}', style: GoogleFonts.outfit(
+                    fontSize: 20, fontWeight: FontWeight.w800,
+                    color: Colors.white, height: 1)),
+                  Text('/ ${group.budgetKcal} kcal', style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: Colors.white.withValues(alpha: 0.7))),
+                ]),
+              ])),
+          ]),
+        ),
 
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (group.meals.isEmpty)
-                  _EmptyMealSlot(onAdd: onAdd)
-                else ...[
-                  ...group.meals.map(
-                    (meal) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _MealEntryRow(
-                        meal: meal,
-                        onTap: () => onTapMeal(meal),
-                      ),
-                    ),
-                  ),
-                ],
+        // ── Thin progress bar ───────────────────────────────────
+        LinearProgressIndicator(
+          value: group.pct.clamp(0.0, 1.0), minHeight: 3,
+          backgroundColor: _C.border,
+          valueColor: AlwaysStoppedAnimation(over ? _C.red : _C.green)),
 
-                const SizedBox(height: 10),
-                _AddMealBtn(onTap: onAdd),
-                const SizedBox(height: 10),
-                _BudgetRow(group: group),
-              ],
-            ),
-          ),
-        ],
-      ),
+        // ── Meal list + actions ─────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (group.meals.isEmpty)
+              _EmptyMealSlot(onAdd: onAdd)
+            else ...[
+              ...group.meals.map((meal) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _MealEntryRow(meal: meal, onTap: () => onTapMeal(meal)))),
+            ],
+            const SizedBox(height: 10),
+            _AddMealBtn(onTap: onAdd),
+            const SizedBox(height: 10),
+            _BudgetRow(group: group),
+          ]),
+        ),
+      ]),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MEAL ENTRY ROW
+// MEAL ENTRY ROW — We Rise
 // ─────────────────────────────────────────────────────────────────────────────
 class _MealEntryRow extends StatelessWidget {
   final _Meal meal;
@@ -817,211 +588,123 @@ class _MealEntryRow extends StatelessWidget {
   const _MealEntryRow({required this.meal, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Photo
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                meal.imageUrl,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                errorBuilder:
-                    (_, __, ___) => Container(
-                      width: 48,
-                      height: 48,
-                      color: colorScheme.secondaryContainer.withOpacity(0.4),
-                      child: const Icon(
-                        Icons.restaurant,
-                        color: Color(0xFF1D9E75),
-                        size: 20,
-                      ),
-                    ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Nom + macros
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    meal.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _C.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      _MiniMacro('P ${meal.protein}g', _C.green),
-                      const SizedBox(width: 4),
-                      _MiniMacro('G ${meal.carbs}g', const Color(0xFF378ADD)),
-                      const SizedBox(width: 4),
-                      _MiniMacro('L ${meal.fat}g', const Color(0xFFBA7517)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // Kcal
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: _C.greenBg,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${meal.calories} kcal',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _C.greenDark,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F9F9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _C.border)),
+      child: Row(children: [
+        // Thumbnail
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.network(
+            meal.imageUrl, width: 48, height: 48, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              width: 48, height: 48, color: _C.greenBg,
+              child: const Center(child: Icon(
+                LucideIcons.salad, color: _C.mint, size: 20))))),
+        const SizedBox(width: 12),
+        // Name + macros
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(meal.name,
+            maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w600, color: _C.textDark)),
+          const SizedBox(height: 4),
+          Row(children: [
+            _MiniMacro('P ${meal.protein}g', _C.green, _C.greenBg),
+            const SizedBox(width: 4),
+            _MiniMacro('G ${meal.carbs}g',
+              const Color(0xFF3B7FD4), const Color(0xFFEBF2FC)),
+            const SizedBox(width: 4),
+            _MiniMacro('L ${meal.fat}g',
+              const Color(0xFFC47A00), const Color(0xFFFFF3DC)),
+          ]),
+        ])),
+        // Kcal badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: _C.green, borderRadius: BorderRadius.circular(10)),
+          child: Text('${meal.calories}', style: GoogleFonts.outfit(
+            fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white))),
+      ]),
+    ),
+  );
 }
 
 class _MiniMacro extends StatelessWidget {
   final String label;
-  final Color color;
-  const _MiniMacro(this.label, this.color);
+  final Color color, bg;
+  const _MiniMacro(this.label, this.color, this.bg);
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+    child: Text(label, style: GoogleFonts.inter(
+      fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EMPTY SLOT
+// EMPTY SLOT — We Rise
 // ─────────────────────────────────────────────────────────────────────────────
 class _EmptyMealSlot extends StatelessWidget {
   final VoidCallback onAdd;
   const _EmptyMealSlot({required this.onAdd});
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onAdd,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: const Column(
-          children: [
-            Icon(Icons.add_circle_outline_rounded, color: _C.green, size: 24),
-            SizedBox(height: 6),
-            Text(
-              'Ajouter un aliment',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: _C.textGrey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onAdd,
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 18),
+      decoration: BoxDecoration(
+        color: _C.greenBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _C.mint.withValues(alpha: 0.3))),
+      child: Column(children: [
+        const Icon(LucideIcons.plus, color: _C.green, size: 22),
+        const SizedBox(height: 6),
+        Text('Ajouter un aliment', style: GoogleFonts.inter(
+          fontSize: 13, fontWeight: FontWeight.w600, color: _C.green)),
+      ]),
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ADD MEAL BUTTON
+// ADD MEAL BUTTON — We Rise green pill
 // ─────────────────────────────────────────────────────────────────────────────
 class _AddMealBtn extends StatelessWidget {
   final VoidCallback onTap;
   const _AddMealBtn({required this.onTap});
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.35),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_rounded, size: 16, color: _C.green),
-            SizedBox(width: 6),
-            Text(
-              'Ajouter un aliment',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _C.greenDark,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 13),
+      decoration: BoxDecoration(
+        color: _C.green, borderRadius: BorderRadius.circular(50),
+        boxShadow: [BoxShadow(
+          color: _C.green.withValues(alpha: 0.2),
+          blurRadius: 12, offset: const Offset(0, 4))]),
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(LucideIcons.plus, size: 15, color: Colors.white),
+        const SizedBox(width: 7),
+        Text('Ajouter un aliment', style: GoogleFonts.inter(
+          fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+      ]),
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BUDGET ROW
+// BUDGET ROW — We Rise
 // ─────────────────────────────────────────────────────────────────────────────
 class _BudgetRow extends StatelessWidget {
   final _MealGroup group;
@@ -1030,28 +713,19 @@ class _BudgetRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final remaining = group.budgetKcal - group.totalKcal;
     final over = remaining < 0;
-    return Row(
-      children: [
-        Icon(
-          over
-              ? Icons.warning_amber_rounded
-              : Icons.check_circle_outline_rounded,
-          size: 14,
-          color: over ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          over
-              ? '+${-remaining} kcal dépassés pour ce repas'
-              : '$remaining kcal restantes pour ce repas',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: over ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
-          ),
-        ),
-      ],
-    );
+    return Row(children: [
+      Icon(
+        over ? LucideIcons.alertTriangle : LucideIcons.checkCircle,
+        size: 13, color: over ? _C.red : _C.green),
+      const SizedBox(width: 6),
+      Text(
+        over
+            ? '+${-remaining} kcal dépassés pour ce repas'
+            : '$remaining kcal restantes pour ce repas',
+        style: GoogleFonts.inter(
+          fontSize: 12, fontWeight: FontWeight.w600,
+          color: over ? _C.red : _C.green)),
+    ]);
   }
 }
 

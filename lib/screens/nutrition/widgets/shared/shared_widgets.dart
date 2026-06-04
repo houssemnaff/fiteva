@@ -54,36 +54,6 @@ class AppIconBtn extends StatelessWidget {
   }
 }
 
-class SectionHeader extends StatelessWidget {
-  final String title;
-  final VoidCallback? onSeeAll;
-  const SectionHeader({super.key, required this.title, this.onSeeAll});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        GestureDetector(
-          onTap: onSeeAll,
-          child: Text(
-            'Tout voir >',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class AppSearchBar extends StatelessWidget {
   final VoidCallback? onTap;

@@ -6,12 +6,15 @@ import 'package:fiteva/screens/workout/widgets/RecuperationSection.dart';
 import 'package:fiteva/screens/workout/widgets/SalleSection.dart';
 import 'package:fiteva/screens/workout/widgets/ZonesSection.dart';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
+import 'favorites_screen.dart';
 import 'theme/color.dart';
+import 'theme/cycle_theme.dart';
 import 'workout_detail_screen.dart';
 import 'corpszone_playerscreen.dart';
 
@@ -33,6 +36,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
 
   final Set<String> _favorites = {};
   int _selectedChip = 0;
+  CyclePhase? _selectedPhase;
 
   final _scrollController = ScrollController();
 
@@ -44,13 +48,18 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
   final _keyZones     = GlobalKey();
   final _keyGrossesse = GlobalKey();
 
-  final List<String>   _chipLabels = ['Tout','Salle','Maison','Danse','Récup.','Grossesse'];
+  final List<String>   _chipLabels = ['Tout', 'Salle', 'Maison', 'Danse', 'Récup.', 'Grossesse'];
   final List<Color>    _chipColors = [
-    WorkoutColors.zone, WorkoutColors.salle, WorkoutColors.maison, WorkoutColors.dance, WorkoutColors.recuperation, WorkoutColors.grossesse,
+    WorkoutColors.zone, WorkoutColors.salle, WorkoutColors.maison,
+    WorkoutColors.dance, WorkoutColors.recuperation, WorkoutColors.grossesse,
   ];
   final List<IconData> _chipIcons  = [
-    Icons.bolt_rounded, Icons.fitness_center_rounded, Icons.home_rounded,
-    Icons.music_note_rounded, Icons.self_improvement_rounded, Icons.favorite_rounded,
+    LucideIcons.layoutGrid,
+    LucideIcons.dumbbell,
+    LucideIcons.house,
+    LucideIcons.music,
+    LucideIcons.wind,
+    LucideIcons.heart,
   ];
 
   @override
@@ -99,9 +108,21 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     final screenH  = MediaQuery.of(context).size.height;
     final bottomGap = screenH < 700 ? 80.0 : 110.0;
 
-    // Filtrage par catégorie
-    List<WorkoutModel> byCat(String cat) =>
-        workouts.where((w) => w.category.toUpperCase() == cat).toList();
+    // Filtrage par catégorie + phase
+    bool matchesPhase(String phases) {
+      if (_selectedPhase == null) return true;
+      return parseCyclePhases(phases).contains(_selectedPhase);
+    }
+
+    List<WorkoutModel> byCat(String cat) => workouts
+        .where((w) =>
+            w.category.toUpperCase() == cat && matchesPhase(w.phases))
+        .toList();
+
+    final filteredSalle =
+        sallePrograms.where((p) => matchesPhase(p.phases)).toList();
+    final filteredMaison =
+        homePrograms.where((p) => matchesPhase(p.phases)).toList();
 
     return Scaffold(
       backgroundColor: colorScheme.background,
@@ -129,7 +150,15 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                     color: WorkoutColors.grossesse,
                     size: 26,
                   ),
-                  onPressed: () {},
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FavoritesScreen(
+                        initialFavorites: _favorites,
+                        onToggleFav: _toggleFav,
+                      ),
+                    ),
+                  ),
                 ),
                 if (_favorites.isNotEmpty)
                   Positioned(
@@ -229,80 +258,105 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             ),
 
             // ── Chips de navigation ───────────────────
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             SizedBox(
-              height: 44,
+              height: 42,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 itemCount: _chipLabels.length,
                 itemBuilder: (_, i) {
                   final sel = _selectedChip == i;
+                  final color = _chipColors[i];
                   return GestureDetector(
                     onTap: () => _onChipTap(i),
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.only(right: 8),
+                      duration: const Duration(milliseconds: 220),
+                      margin: const EdgeInsets.only(right: 10),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                          horizontal: 16, vertical: 0),
                       decoration: BoxDecoration(
-                        color: sel ? _chipColors[i] : colorScheme.surface,
+                        color: sel
+                            ? color
+                            : color.withValues(alpha: 0.07),
                         borderRadius: BorderRadius.circular(50),
                         border: Border.all(
-                          color: sel ? _chipColors[i] : colorScheme.outlineVariant),
+                          color: sel
+                              ? color
+                              : color.withValues(alpha: 0.25),
+                          width: 1.5,
+                        ),
                         boxShadow: sel
                             ? [
                                 BoxShadow(
-                                    color: _chipColors[i].withOpacity(0.35),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2))
+                                    color: color.withValues(alpha: 0.38),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4))
                               ]
                             : [],
                       ),
-                      child: Row(children: [
-                        Icon(_chipIcons[i],
-                          color: sel
-                            ? colorScheme.onPrimary
-                            : colorScheme.onSurface.withOpacity(0.72),
-                            size: 16),
-                        const SizedBox(width: 6),
-                        Text(_chipLabels[i],
-                            style: TextStyle(
-                            color: sel
-                              ? colorScheme.onPrimary
-                              : colorScheme.onSurface.withOpacity(0.82),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13)),
-                      ]),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _chipIcons[i],
+                            size: 14,
+                            color: sel ? Colors.white : color,
+                          ),
+                          const SizedBox(width: 7),
+                          Text(
+                            _chipLabels[i],
+                            style: GoogleFonts.inter(
+                              color: sel ? Colors.white : color,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
               ),
             ),
 
+            const SizedBox(height: 12),
+
+            // ── Filtre par phase de cycle ─────────────
+            _PhaseFilterRow(
+              selected: _selectedPhase,
+              onSelect: (p) => setState(() =>
+                  _selectedPhase = _selectedPhase == p ? null : p),
+            ),
+
             const SizedBox(height: 8),
 
             // ── Section Salle ─────────────────────────
-            KeyedSubtree(
-              key: _keySalle,
-              child: SalleSection(
-                sallePrograms: sallePrograms,
-                favorites: _favorites,
-                onToggleFav: _toggleFav,
+            if (filteredSalle.isNotEmpty)
+              KeyedSubtree(
+                key: _keySalle,
+                child: SalleSection(
+                  sallePrograms: filteredSalle,
+                  favorites: _favorites,
+                  onToggleFav: _toggleFav,
+                ),
               ),
-            ),
 
-            const SizedBox(height: 8),
+            if (filteredSalle.isNotEmpty) const SizedBox(height: 8),
 
             // ── Section Maison ────────────────────────
-            KeyedSubtree(
-              key: _keyMaison,
-              child: MaisonSection(
-                homePrograms: homePrograms,
-                favorites: _favorites,
-                onToggleFav: _toggleFav,
+            if (filteredMaison.isNotEmpty)
+              KeyedSubtree(
+                key: _keyMaison,
+                child: MaisonSection(
+                  homePrograms: filteredMaison,
+                  favorites: _favorites,
+                  onToggleFav: _toggleFav,
+                ),
               ),
-            ),
+
+            if (filteredMaison.isNotEmpty) const SizedBox(height: 8),
 
             const SizedBox(height: 8),
 
@@ -355,6 +409,127 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             SizedBox(height: bottomGap),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Phase filter row ──────────────────────────────────────────────────────────
+class _PhaseFilterRow extends StatelessWidget {
+  final CyclePhase? selected;
+  final void Function(CyclePhase) onSelect;
+  const _PhaseFilterRow({required this.selected, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label row
+          Row(
+            children: [
+              Container(
+                width: 14,
+                height: 2,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB39DDB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Phase du cycle',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF6B7280),
+                  letterSpacing: 0.2,
+                ),
+              ),
+              if (selected != null) ...[
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => onSelect(selected!),
+                  child: Text(
+                    'Tout afficher',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: selected!.color,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Phase chips
+          Row(
+            children: CyclePhase.values.map((phase) {
+              final isSel = selected == phase;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onSelect(phase),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: EdgeInsets.only(
+                        right: phase != CyclePhase.values.last ? 8 : 0),
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: isSel
+                          ? phase.color
+                          : phase.color.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSel
+                            ? phase.color
+                            : phase.color.withValues(alpha: 0.30),
+                        width: 1.5,
+                      ),
+                      boxShadow: isSel
+                          ? [
+                              BoxShadow(
+                                color: phase.color.withValues(alpha: 0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: isSel
+                                ? Colors.white
+                                : phase.color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          phase.label,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: isSel ? Colors.white : phase.color,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

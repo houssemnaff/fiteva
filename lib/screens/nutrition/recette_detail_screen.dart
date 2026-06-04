@@ -1,7 +1,7 @@
+import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'models/models.dart';
-import 'theme/app_colors.dart';
+import 'package:video_player/video_player.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TOKENS LOCAUX — cohérents avec le reste de l'app
@@ -103,15 +103,38 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
   bool _saved    = false;
 
   late final ScrollController _scroll;
+  VideoPlayerController? _videoCtrl;
+  ChewieController?      _chewieCtrl;
 
   @override
   void initState() {
     super.initState();
     _scroll = ScrollController();
+    _initVideo();
+  }
+
+  Future<void> _initVideo() async {
+    final ctrl = VideoPlayerController.asset('assets/videos/workout1.mp4');
+    try {
+      await ctrl.initialize();
+      final chewie = ChewieController(
+        videoPlayerController: ctrl,
+        autoPlay: false,
+        looping: false,
+        aspectRatio: ctrl.value.aspectRatio,
+        placeholder: Image.network(_heroUrl, fit: BoxFit.cover),
+      );
+      if (!mounted) { ctrl.dispose(); return; }
+      setState(() { _videoCtrl = ctrl; _chewieCtrl = chewie; });
+    } catch (_) {
+      ctrl.dispose();
+    }
   }
 
   @override
   void dispose() {
+    _chewieCtrl?.dispose();
+    _videoCtrl?.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -142,6 +165,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
                   saved: _saved,
                   onSave: () => setState(() => _saved = !_saved),
                   onBack: () => Navigator.maybePop(context),
+                  chewieCtrl: _chewieCtrl,
                 ),
               ),
 
@@ -207,109 +231,104 @@ class _HeroSection extends StatelessWidget {
   final String recipeName;
   final bool saved;
   final VoidCallback onSave, onBack;
+  final ChewieController? chewieCtrl;
+
   const _HeroSection({
-    required this.recipeName, required this.saved,
-    required this.onSave, required this.onBack,
+    required this.recipeName,
+    required this.saved,
+    required this.onSave,
+    required this.onBack,
+    this.chewieCtrl,
   });
 
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.of(context).padding.top;
-    final colorScheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      height: 300 + top,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Photo
-          Image.network(
-            _heroUrl, fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(color: colorScheme.secondaryContainer.withOpacity(0.35)),
-          ),
+    final cs  = Theme.of(context).colorScheme;
 
-          // Gradient bas → fond beige
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: const [0.45, 1.0],
-                colors: [Colors.transparent, colorScheme.background],
-              ),
-            ),
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Video player (or fallback image) ──────────────────
+        SizedBox(
+          height: top + 240,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Video or image
+              chewieCtrl != null
+                  ? Chewie(controller: chewieCtrl!)
+                  : Image.network(
+                      _heroUrl, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: cs.secondaryContainer.withValues(alpha: 0.35)),
+                    ),
 
-          // Overlay top léger pour les boutons
-          Positioned(
-            top: 0, left: 0, right: 0,
-            height: top + 70,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.35),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Boutons top
-          Positioned(
-            top: top + 12, left: 16, right: 16,
-            child: Row(
-              children: [
-                _CircleBtn(
-                  icon: Icons.chevron_left,
-                  onTap: onBack,
-                ),
-                const Spacer(),
-                _CircleBtn(
-                  icon: saved ? Icons.favorite : Icons.favorite_border,
-                  iconColor: saved ? colorScheme.tertiary : colorScheme.onPrimary,
-                  onTap: onSave,
-                ),
-              ],
-            ),
-          ),
-
-          // Titre + tags + meta en bas du hero
-          Positioned(
-            bottom: 16, left: 20, right: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Tags
-                Wrap(spacing: 6, children: const [
-                  _Tag('High Protein'),
-                  _Tag('Sugar-Free'),
-                  _Tag('Gluten-Free'),
-                ]),
-                const SizedBox(height: 10),
-                // Nom
-                Text(
-                  recipeName,
-                  style: TextStyle(
-                    fontSize: 26, fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface, height: 1.15, letterSpacing: -.3,
+              // Top gradient for buttons legibility
+              Positioned(
+                top: 0, left: 0, right: 0,
+                height: top + 70,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.4),
+                        Colors.transparent,
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                // Meta pills
-                Wrap(spacing: 8, children: const [
-                  _MetaPill(icon: Icons.flash_on_rounded,              label: '5 min prep'),
-                  _MetaPill(icon: Icons.schedule_rounded,              label: '20 min total'),
-                  _MetaPill(icon: Icons.local_fire_department_rounded, label: '198 kcal'),
+              ),
+
+              // Back + save buttons
+              Positioned(
+                top: top + 12, left: 16, right: 16,
+                child: Row(children: [
+                  _CircleBtn(icon: Icons.chevron_left, onTap: onBack),
+                  const Spacer(),
+                  _CircleBtn(
+                    icon: saved ? Icons.favorite : Icons.favorite_border,
+                    iconColor: saved ? Colors.red.shade300 : Colors.white,
+                    onTap: onSave,
+                  ),
                 ]),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+
+        // ── Info section below video ───────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Tags
+              Wrap(spacing: 6, children: const [
+                _Tag('High Protein'),
+                _Tag('Sugar-Free'),
+                _Tag('Gluten-Free'),
+              ]),
+              const SizedBox(height: 10),
+              // Recipe name
+              Text(recipeName, style: TextStyle(
+                fontSize: 26, fontWeight: FontWeight.w700,
+                color: cs.onSurface, height: 1.15, letterSpacing: -.3,
+              )),
+              const SizedBox(height: 10),
+              // Meta pills
+              Wrap(spacing: 8, children: const [
+                _MetaPill(icon: Icons.flash_on_rounded,              label: '5 min prep'),
+                _MetaPill(icon: Icons.schedule_rounded,              label: '20 min total'),
+                _MetaPill(icon: Icons.local_fire_department_rounded, label: '198 kcal'),
+              ]),
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -352,17 +371,17 @@ class _Tag extends StatelessWidget {
   const _Tag(this.label);
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: colorScheme.onPrimary.withOpacity(0.18),
+        color: cs.secondaryContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: colorScheme.onPrimary.withOpacity(0.3)),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
       ),
       child: Text(label, style: TextStyle(
         fontSize: 10, fontWeight: FontWeight.w600,
-        color: colorScheme.onPrimary, letterSpacing: .5)),
+        color: cs.primary, letterSpacing: .5)),
     );
   }
 }

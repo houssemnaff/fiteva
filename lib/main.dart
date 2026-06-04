@@ -1,6 +1,7 @@
 import 'package:fiteva/services/storage_service.dart';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -31,6 +32,7 @@ class _FitevaAppState extends ConsumerState<FitevaApp> {
   }
 
   Future<void> _requestMotionPermission() async {
+    if (kIsWeb) return;
     if (Platform.isAndroid) {
       await Permission.activityRecognition.request();
     } else if (Platform.isIOS) {
