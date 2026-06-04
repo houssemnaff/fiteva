@@ -1,4 +1,4 @@
-import 'package:fiteva/models/workout_model.dart';
+/*import 'package:fiteva/models/workout_model.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/widgets/cycle_compatibility.dart';
 import 'package:fiteva/screens/workout/workout_detail_screen.dart';
@@ -247,3 +247,4 @@ class _InfoChip extends StatelessWidget {
     ]),
   );
 }
+*/
