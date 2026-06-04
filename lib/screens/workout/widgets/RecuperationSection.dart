@@ -10,12 +10,14 @@ class RecuperationSection extends StatelessWidget {
   final List<WorkoutModel> recupWorkouts;
   final Set<String> favorites;
   final void Function(String) onToggleFav;
+  final VoidCallback? onSeeAll;
 
   const RecuperationSection({
     super.key,
     required this.recupWorkouts,
     required this.favorites,
     required this.onToggleFav,
+    this.onSeeAll,
   });
 
   @override
@@ -24,7 +26,7 @@ class RecuperationSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _RecupHeader(onSeeAll: () {}),
+        _RecupHeader(onSeeAll: onSeeAll ?? () {}),
         const SizedBox(height: 16),
         SizedBox(
           height: 295,

@@ -764,7 +764,7 @@ class _StepWelcomeState extends State<StepWelcome>
         const SizedBox(height: 12),
         _authBtn(
           label: 'Sign Up with Email',
-          bgColor: _kPrimary,
+          bgColor: const Color.fromARGB(255, 21, 80, 44),
           textColor: _kWhite,
           borderColor: Colors.transparent,
           leading: Icon(Icons.mail_outline_rounded, color: _kWhite, size: 20),
@@ -947,7 +947,7 @@ class _StepWelcomeState extends State<StepWelcome>
           Text('Already have an account? ',
               style: TextStyle(color: _kWhite.withOpacity(0.6), fontSize: 13)),
           GestureDetector(
-            onTap: () {},
+            onTap: _showLoginSheet,
             child: Text(
               'Log In',
               style: const TextStyle(
@@ -960,6 +960,81 @@ class _StepWelcomeState extends State<StepWelcome>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ─── Login bottom sheet ────────────────────────────────────────────────────
+  void _showLoginSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          decoration: const BoxDecoration(
+            color: _kDark,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text(
+                'Welcome back',
+                style: TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.w800,
+                  color: _kWhite, letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Log in to continue',
+                style: TextStyle(fontSize: 14, color: _kGrey),
+              ),
+              const SizedBox(height: 28),
+              _authBtn(
+                label: 'Log In with Google',
+                bgColor: _kWhite,
+                textColor: _kDark,
+                borderColor: _kBorder,
+                leading: _googleIcon(),
+                onTap: () {},
+              ),
+              const SizedBox(height: 12),
+              _authBtn(
+                label: 'Log In with Apple',
+                bgColor: _kDark,
+                textColor: _kWhite,
+                borderColor: Colors.white24,
+                leading: Icon(Icons.apple_rounded, color: _kWhite, size: 22),
+                onTap: () {},
+              ),
+              const SizedBox(height: 12),
+              _authBtn(
+                label: 'Log In with Email',
+                bgColor: _kPrimary,
+                textColor: _kWhite,
+                borderColor: Colors.transparent,
+                leading: Icon(Icons.mail_outline_rounded, color: _kWhite, size: 20),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() => _emailMode = true);
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

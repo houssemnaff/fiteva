@@ -10,12 +10,14 @@ class DanceSection extends StatelessWidget {
   final List<WorkoutModel> danceWorkouts;
   final Set<String> favorites;
   final void Function(String) onToggleFav;
+  final VoidCallback? onSeeAll;
 
   const DanceSection({
     super.key,
     required this.danceWorkouts,
     required this.favorites,
     required this.onToggleFav,
+    this.onSeeAll,
   });
 
   @override
@@ -24,7 +26,7 @@ class DanceSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _DanceHeader(onSeeAll: () {}),
+        _DanceHeader(onSeeAll: onSeeAll ?? () {}),
         const SizedBox(height: 16),
         SizedBox(
           height: 295,
