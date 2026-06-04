@@ -434,58 +434,156 @@ class _MetaPill extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════
 
 class _MotivationStrip extends StatelessWidget {
+  // Variable heights create an organic flame silhouette
+  static const List<double> _barRatios = [0.45, 0.75, 0.55, 0.95, 0.65, 0.38, 0.22];
+
   @override
   Widget build(BuildContext context) {
+    const int streak = 12;
+    const int daysCompleted = 4; // today = index 4
+
     return Container(
-      color: const Color.fromARGB(255, 2, 2, 2),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0B1A0E), Color(0xFF180900), Color(0xFF0B1A0E)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: const Color(0xFFFF7A00).withValues(alpha: 0.20),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF7A00).withValues(alpha: 0.07),
+            blurRadius: 28,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
       child: Row(
         children: [
+          // ── Left: streak count ──────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'YOUR STREAK',
+                  'SÉRIE ACTIVE',
                   style: GoogleFonts.inter(
-                    color: AppTheme.accentColor,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFFF7A00).withValues(alpha: 0.60),
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: 2.5,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '12 DAYS ON FIRE 🔥',
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '$streak',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 54,
+                        fontWeight: FontWeight.w900,
+                        height: 0.95,
+                        letterSpacing: -3,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8, bottom: 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'JOURS',
+                            style: GoogleFonts.inter(
+                              color: Colors.white38,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF5CD57A).withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFF5CD57A).withValues(alpha: 0.30),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              '🔥 EN FEU',
+                              style: GoogleFonts.inter(
+                                color: const Color(0xFF5CD57A),
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          // Week dots
-          Row(
-            children: List.generate(7, (i) {
-              final done = i < 4;
-              final isToday = i == 4;
-              return Container(
-                width: isToday ? 10 : 8,
-                height: isToday ? 10 : 8,
-                margin: const EdgeInsets.only(left: 5),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: done
-                      ? AppTheme.accentColor
-                      : isToday
-                          ? Colors.white
-                          : Colors.white.withOpacity(0.2),
-                ),
-              );
-            }),
+
+          // ── Right: flame equalizer bars ─────────────────
+          SizedBox(
+            height: 64,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (i) {
+                final done = i < daysCompleted;
+                final isToday = i == daysCompleted;
+                final barH = (_barRatios[i] * 52).clamp(8.0, 52.0);
+
+                final Color top = done
+                    ? const Color(0xFFFFD000)
+                    : isToday
+                        ? const Color(0xFF5CD57A)
+                        : Colors.white.withValues(alpha: 0.10);
+                final Color bottom = done
+                    ? const Color(0xFFFF4500)
+                    : isToday
+                        ? const Color(0xFF1A5C26)
+                        : Colors.white.withValues(alpha: 0.04);
+
+                return Container(
+                  width: 7,
+                  height: barH,
+                  margin: const EdgeInsets.only(left: 5),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [bottom, top],
+                    ),
+                    borderRadius: BorderRadius.circular(3),
+                    boxShadow: (done || isToday)
+                        ? [
+                            BoxShadow(
+                              color: top.withOpacity(0.5),
+                              blurRadius: 8,
+                              offset: const Offset(0, -3),
+                            )
+                          ]
+                        : [],
+                  ),
+                );
+              }),
+            ),
           ),
         ],
       ),
