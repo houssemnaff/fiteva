@@ -14,7 +14,7 @@ const _kGoldLight  = Color(0xFFF0DFC0);
 const _kDark       = Color(0xFF1A1A1A);
 const _kGrey       = Color(0xFF6B7280);
 const _kCard       = Color(0xFFF8F8F6);
-const _kBorder     = Color(0xFFECECE8);
+const _kBorder     = Color(0xFF1A1A1A);
 
 class WorkoutDetailScreen extends StatefulWidget {
   final WorkoutModel workout;
