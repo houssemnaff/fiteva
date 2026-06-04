@@ -95,6 +95,130 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     });
   }
 
+  // ── "Voir tout" bottom sheet — programmes (HomeProgramModel) ─────────────────
+  void _showProgramsSheet({
+    required String title,
+    required Color color,
+    required IconData icon,
+    required List<HomeProgramModel> programs,
+    required String category,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              _SheetHandle(title: title, color: color, icon: icon, onClose: () => Navigator.pop(ctx)),
+              Expanded(
+                child: ListView.builder(
+                  controller: controller,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  itemCount: programs.length,
+                  itemBuilder: (_, i) {
+                    final p = programs[i];
+                    return _ProgramTile(
+                      imageUrl: p.imageUrl,
+                      title: p.name,
+                      subtitle: '${p.duration} · ${p.sessions}',
+                      phases: p.phases,
+                      color: color,
+                      isFav: _favorites.contains(p.name),
+                      onToggleFav: () => setState(() => _toggleFav(p.name)),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        final workouts = p.workouts;
+                        final calories = workouts.fold<int>(0, (s, w) => s + (int.tryParse(w.calories) ?? 0));
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => WorkoutDetailScreen(
+                            workout: WorkoutModel(
+                              id: 'prog_${p.name}',
+                              title: p.name,
+                              category: category,
+                              duration: p.duration,
+                              level: workouts.isNotEmpty ? workouts.first.level : 'Tous niveaux',
+                              calories: calories.toString(),
+                              imageUrl: p.imageUrl,
+                              exercises: workouts.map((w) => '${w.title} · ${w.duration}').toList(),
+                            ),
+                          ),
+                        ));
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── "Voir tout" bottom sheet — workouts (WorkoutModel) ───────────────────────
+  void _showWorkoutsSheet({
+    required String title,
+    required Color color,
+    required IconData icon,
+    required List<WorkoutModel> workouts,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              _SheetHandle(title: title, color: color, icon: icon, onClose: () => Navigator.pop(ctx)),
+              Expanded(
+                child: ListView.builder(
+                  controller: controller,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  itemCount: workouts.length,
+                  itemBuilder: (_, i) {
+                    final w = workouts[i];
+                    return _ProgramTile(
+                      imageUrl: w.imageUrl,
+                      title: w.title,
+                      subtitle: '${w.duration} · ${w.level}',
+                      phases: w.phases,
+                      color: color,
+                      isFav: _favorites.contains(w.id),
+                      onToggleFav: () => setState(() => _toggleFav(w.id)),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => WorkoutDetailScreen(workout: w),
+                        ));
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -340,6 +464,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   sallePrograms: filteredSalle,
                   favorites: _favorites,
                   onToggleFav: _toggleFav,
+                  onSeeAll: () => _showProgramsSheet(
+                    title: 'Programmes Salle',
+                    color: WorkoutColors.salle,
+                    icon: LucideIcons.dumbbell,
+                    programs: filteredSalle,
+                    category: 'SALLE',
+                  ),
                 ),
               ),
 
@@ -353,6 +484,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   homePrograms: filteredMaison,
                   favorites: _favorites,
                   onToggleFav: _toggleFav,
+                  onSeeAll: () => _showProgramsSheet(
+                    title: 'Programmes Maison',
+                    color: WorkoutColors.maison,
+                    icon: LucideIcons.house,
+                    programs: filteredMaison,
+                    category: 'MAISON',
+                  ),
                 ),
               ),
 
@@ -367,6 +505,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                 danceWorkouts: byCat('DANCE'),
                 favorites: _favorites,
                 onToggleFav: _toggleFav,
+                onSeeAll: () => _showWorkoutsSheet(
+                  title: 'Danse & Cardio',
+                  color: WorkoutColors.dance,
+                  icon: LucideIcons.music,
+                  workouts: byCat('DANCE'),
+                ),
               ),
             ),
 
@@ -379,20 +523,30 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                 recupWorkouts: byCat('RECUPERATION'),
                 favorites: _favorites,
                 onToggleFav: _toggleFav,
+                onSeeAll: () => _showWorkoutsSheet(
+                  title: 'Récupération',
+                  color: WorkoutColors.recuperation,
+                  icon: LucideIcons.wind,
+                  workouts: byCat('RECUPERATION'),
+                ),
               ),
             ),
 
             const SizedBox(height: 8),
 
-           
-
-              // ── Section Grossesse ─────────────────────
+            // ── Section Grossesse ─────────────────────
             KeyedSubtree(
               key: _keyGrossesse,
               child: GrossesseSection(
                 grossesseWorkouts: byCat('GROSSESSE'),
                 favorites: _favorites,
                 onToggleFav: _toggleFav,
+                onSeeAll: () => _showWorkoutsSheet(
+                  title: 'Grossesse',
+                  color: WorkoutColors.grossesse,
+                  icon: LucideIcons.heart,
+                  workouts: byCat('GROSSESSE'),
+                ),
               ),
             ),
 
@@ -407,6 +561,149 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
 
 
             SizedBox(height: bottomGap),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Sheet header handle ───────────────────────────────────────────────────────
+class _SheetHandle extends StatelessWidget {
+  final String title;
+  final Color color;
+  final IconData icon;
+  final VoidCallback onClose;
+  const _SheetHandle({required this.title, required this.color, required this.icon, required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 40, height: 4,
+          margin: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 38, height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(title, style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w800, fontSize: 20,
+                  color: const Color(0xFF1A1A1A), letterSpacing: -0.3,
+                )),
+              ),
+              GestureDetector(
+                onTap: onClose,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
+                  child: const Icon(Icons.close_rounded, size: 18, color: Colors.black54),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Divider(height: 1, color: Colors.grey[200]),
+      ],
+    );
+  }
+}
+
+// ── Program list tile (utilisé dans les bottom sheets) ───────────────────────
+class _ProgramTile extends StatelessWidget {
+  final String imageUrl;
+  final String title;
+  final String subtitle;
+  final String phases;
+  final Color color;
+  final bool isFav;
+  final VoidCallback onToggleFav;
+  final VoidCallback onTap;
+
+  const _ProgramTile({
+    required this.imageUrl,
+    required this.title,
+    required this.subtitle,
+    required this.phases,
+    required this.color,
+    required this.isFav,
+    required this.onToggleFav,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 3))],
+        ),
+        child: Row(
+          children: [
+            // Image
+            ClipRRect(
+              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+              child: Image.asset(imageUrl, width: 80, height: 80, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(width: 80, height: 80, color: color.withValues(alpha: 0.12))),
+            ),
+            const SizedBox(width: 12),
+            // Info
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 15,
+                        color: const Color(0xFF1A1A1A), letterSpacing: -0.2)),
+                    const SizedBox(height: 3),
+                    Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF6B7280))),
+                    if (phases.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(phases, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: color)),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            // Heart + arrow
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Column(
+                children: [
+                 
+                  const SizedBox(height: 8),
+                  Icon(LucideIcons.chevronRight, size: 16, color: color),
+                ],
+              ),
+            ),
           ],
         ),
       ),
