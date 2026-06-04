@@ -1,5 +1,6 @@
-import 'package:fiteva/models/workout_model.dart';
+/*import 'package:fiteva/models/workout_model.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
+import 'package:fiteva/screens/workout/widgets/cycle_compatibility.dart';
 import 'package:fiteva/screens/workout/workout_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,6 +18,7 @@ Widget buildProgramCard({
   required String duration,
   required String phases,
   required String sessions,
+  required List<String> compatibleCycles,
   required WorkoutModel w,
   required Color color,
   required String imageUrl,
@@ -129,12 +131,92 @@ Widget buildProgramCard({
                         blurRadius: 10, offset: const Offset(0, 4))]),
                     child: Row(mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+<<<<<<< Updated upstream
                       Icon(LucideIcons.play, color: Colors.white, size: 12),
                       const SizedBox(width: 6),
                       Text('Commencer', style: GoogleFonts.inter(
                         color: Colors.white, fontSize: 12,
                         fontWeight: FontWeight.w700)),
                     ])),
+=======
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text('PROGRAMME',
+                              style: TextStyle(
+                                  color: colorScheme.onPrimary,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.8)),
+                        ),
+                        GestureDetector(
+                          onTap: () => onToggleFav(name),
+                          child: Container(
+                            width: 28, height: 28,
+                            decoration: BoxDecoration(
+                              color: onSurface.withOpacity(0.35),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              favorites.contains(name)
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              color: favorites.contains(name)
+                                  ? WorkoutColors.grossesse
+                                  : colorScheme.onPrimary,
+                              size: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name,
+                            style: TextStyle(
+                                color: colorScheme.onPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                height: 1.2),
+                            maxLines: 2),
+                        const SizedBox(height: 8),
+                        _infoRow(context, Icons.calendar_today_rounded, duration),
+                       /* const SizedBox(height: 3),
+                        _infoRow(context, Icons.fitness_center_rounded, sessions),
+                      */
+                        const SizedBox(height: 10),
+                        buildCycleCompatibilityBadges(
+                          context,
+                          compatibleCycles,
+                          compact: true,
+                        ),
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: onStartTap,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            child: Text('Commencer',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: colorScheme.onPrimary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+>>>>>>> Stashed changes
                 ),
               ],
             ),
@@ -165,3 +247,4 @@ class _InfoChip extends StatelessWidget {
     ]),
   );
 }
+*/

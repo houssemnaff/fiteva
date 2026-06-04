@@ -289,6 +289,7 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       sessions: '3 séances / sem.',
       color: const Color(0xFF3B7DD8),
       imageUrl: 'assets/images/fullbody.jpg',
+      compatibleCycles: const ['Folliculaire', 'Ovulation'],
       workouts: [
         WorkoutModel(
           id: 'home_glow_1',
@@ -329,6 +330,7 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       sessions: '3 séances / sem.',
       color: const Color(0xFF1565C0),
       imageUrl: 'assets/images/pilates.jpg',
+      compatibleCycles: const ['Règles', 'Lutéale'],
       workouts: [
         WorkoutModel(
           id: 'pilates_reset_1',
@@ -369,6 +371,7 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       sessions: '4 séances / sem.',
       color: const Color(0xFF283593),
       imageUrl: 'assets/images/strength.jpg',
+      compatibleCycles: const ['Folliculaire', 'Lutéale'],
       workouts: [
         WorkoutModel(
           id: 'booty_home_1',
@@ -402,6 +405,8 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
         ),
       ],
     ),
+  
+  
   ];
 });
 
@@ -414,6 +419,7 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       sessions: '4 séances / sem.',
       color: const Color(0xFF1C4D30),
       imageUrl: 'assets/images/strength.jpg',
+      compatibleCycles: const ['Folliculaire', 'Ovulation'],
       workouts: [
         WorkoutModel(
           id: 'salle_body_1',
@@ -447,6 +453,49 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
         ),
       ],
     ),
+
+  HomeProgramModel(
+      name: 'Body ',
+      duration: '6 semaines',
+      phases: 'Follic. + Ovul.',
+      sessions: '4 séances / sem.',
+      color: const Color(0xFF1C4D30),
+      imageUrl: 'assets/images/strength.jpg',
+      compatibleCycles: const ['Folliculaire', 'Ovulation'],
+      workouts: [
+        WorkoutModel(
+          id: 'salle_body_1',
+          title: 'Heavy Compound',
+          category: 'SALLE',
+          duration: '25 min',
+          level: 'Intermédiaire',
+          calories: '260',
+          imageUrl: 'assets/images/strength.jpg',
+          exercises: ['Deadlift', 'Back Squat', 'Bench Press'],
+        ),
+        WorkoutModel(
+          id: 'salle_body_2',
+          title: 'Pull Focus',
+          category: 'SALLE',
+          duration: '20 min',
+          level: 'Avancé',
+          calories: '230',
+          imageUrl: 'assets/images/upper.jpg',
+          exercises: ['Pull-ups', 'Row Machine', 'Lat Pulldown'],
+        ),
+        WorkoutModel(
+          id: 'salle_body_3',
+          title: 'Leg Power',
+          category: 'SALLE',
+          duration: '22 min',
+          level: 'Débutant',
+          calories: '240',
+          imageUrl: 'assets/images/workout.jpeg',
+          exercises: ['Leg Press', 'Lunges', 'Calf Raises'],
+        ),
+      ],
+    ),
+
     HomeProgramModel(
       name: 'Stronger You',
       duration: '4 semaines',
@@ -454,6 +503,7 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       sessions: '3 séances / sem.',
       color: const Color(0xFF2E7D32),
       imageUrl: 'assets/images/upper.jpg',
+      compatibleCycles: const ['Règles', 'Ovulation'],
       workouts: [
         WorkoutModel(
           id: 'salle_stronger_1',
@@ -494,6 +544,7 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       sessions: '3 séances / sem.',
       color: const Color(0xFF00695C),
       imageUrl: 'assets/images/fullbody.jpg',
+      compatibleCycles: const ['Règles', 'Folliculaire', 'Lutéale'],
       workouts: [
         WorkoutModel(
           id: 'salle_lean_1',
