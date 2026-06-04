@@ -10,12 +10,14 @@ class GrossesseSection extends StatelessWidget {
   final List<WorkoutModel> grossesseWorkouts;
   final Set<String> favorites;
   final void Function(String) onToggleFav;
+  final VoidCallback? onSeeAll;
 
   const GrossesseSection({
     super.key,
     required this.grossesseWorkouts,
     required this.favorites,
     required this.onToggleFav,
+    this.onSeeAll,
   });
 
   @override
@@ -24,7 +26,7 @@ class GrossesseSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _GrossesseHeader(onSeeAll: () {}),
+        _GrossesseHeader(onSeeAll: onSeeAll ?? () {}),
         const SizedBox(height: 16),
         SizedBox(
           height: 295,
