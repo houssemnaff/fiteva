@@ -53,7 +53,6 @@ class MaisonSection extends StatelessWidget {
           height: 295,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-<<<<<<< Updated upstream
             padding: const EdgeInsets.symmetric(horizontal: 20),
             itemCount: homePrograms.length,
             separatorBuilder: (_, __) => const SizedBox(width: 14),
@@ -73,32 +72,6 @@ class MaisonSection extends StatelessWidget {
                 ),
               );
             },
-=======
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: homePrograms
-                .map((program) => buildProgramCard(
-                      context: context,
-                      name: program.name,
-                      duration: program.duration,
-                      phases: program.phases,
-                      sessions: program.sessions,
-                      compatibleCycles: program.compatibleCycles,
-                      w: _programWorkout(program, category: 'MAISON'),
-                      color: program.color,
-                      imageUrl: program.imageUrl,
-                      favorites: favorites,
-                      onToggleFav: onToggleFav,
-                      onStartTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => WorkoutDetailScreen(
-                            workout: _programWorkout(program, category: 'MAISON'),
-                          ),
-                        ),
-                      ),
-                    ))
-                .toList(),
->>>>>>> Stashed changes
           ),
         ),
       ],

@@ -911,11 +911,9 @@ class _StepWelcomeState extends State<StepWelcome>
       decoration: BoxDecoration(
         color: _kWhite.withOpacity(0.12),
         borderRadius: BorderRadius.circular(14),
-<<<<<<< Updated upstream
-        border: Border.all(color: _kWhite.withOpacity(0.18), width: 1),
-=======
+
+
         border: Border.all(color: _kBorderLight, width: 1.2),
->>>>>>> Stashed changes
       ),
       child: TextField(
         controller: controller,
