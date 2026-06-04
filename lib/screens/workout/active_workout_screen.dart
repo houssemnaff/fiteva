@@ -20,14 +20,14 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final colorScheme = theme.colorScheme;
     final exercises = widget.workout.exercises;
     final progressVal = exercises.isEmpty ? 0.0 : _completedExercises / exercises.length;
-    final textSecondary = theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withOpacity(0.72);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha:0.72);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: theme.brightness == Brightness.dark
           ? SystemUiOverlayStyle.light
           : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: colorScheme.background,
+        backgroundColor: colorScheme.surface,
         appBar: AppBar(
           backgroundColor: colorScheme.surface,
           elevation: 0,
@@ -84,17 +84,11 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     // ── Session info banner ──
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colorScheme.shadow.withOpacity(0.08),
-                            blurRadius: 14,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
+                   decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
+          ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -219,8 +213,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                                 boxShadow: [
                                   BoxShadow(
                                     color: isCurrent
-                                        ? colorScheme.primary.withOpacity(0.12)
-                                        : colorScheme.shadow.withOpacity(0.08),
+                                        ? colorScheme.primary.withValues(alpha:0.12)
+                                        : colorScheme.shadow.withValues(alpha:0.08),
                                     blurRadius: 14,
                                     offset: const Offset(0, 5),
                                   ),
@@ -279,7 +273,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                                     Container(
                                       width: 90,
                                       height: 64,
-                                      color: colorScheme.shadow.withOpacity(0.2),
+                                      color: colorScheme.shadow.withValues(alpha:0.2),
                                     ),
                                     Positioned.fill(
                                       child: Center(
@@ -289,7 +283,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                                           decoration: BoxDecoration(
                                             color: isDone
                                                 ? colorScheme.primary
-                                                : colorScheme.onSurface.withOpacity(0.9),
+                                                : colorScheme.onSurface.withValues(alpha:0.9),
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
@@ -367,7 +361,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 color: colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.08),
+                    color: colorScheme.shadow.withValues(alpha:0.08),
                     blurRadius: 16,
                     offset: const Offset(0, -4),
                   ),
@@ -418,7 +412,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: colorScheme.onSurface.withOpacity(0.72)),
+        Icon(icon, size: 13, color: colorScheme.onSurface.withValues(alpha:0.72)),
         const SizedBox(width: 5),
         Text(
           label,

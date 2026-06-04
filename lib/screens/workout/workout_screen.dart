@@ -111,10 +111,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
         initialChildSize: 0.85,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (_, controller) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        builder: (ctx2, controller) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx2).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -179,10 +179,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
         initialChildSize: 0.85,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (_, controller) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        builder: (ctx2, controller) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx2).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -323,8 +323,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                        colorScheme.primary.withOpacity(0.9),
-                        colorScheme.secondary.withOpacity(0.9),
+                      colorScheme.primary.withValues(alpha: 0.92),
+                      colorScheme.secondary.withValues(alpha: 0.92),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -332,9 +332,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                          color: colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4)),
+                      color: colorScheme.primary.withValues(alpha: 0.30),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4)),
                   ],
                 ),
                 child: Row(
@@ -371,10 +371,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                            color: colorScheme.onPrimary.withOpacity(0.15),
-                          shape: BoxShape.circle),
-                      child: const Text('🌿',
-                          style: TextStyle(fontSize: 22)),
+                        color: colorScheme.onPrimary.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Text('🌿', style: TextStyle(fontSize: 22)),
                     ),
                   ],
                 ),
@@ -578,13 +578,17 @@ class _SheetHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 40, height: 4,
           margin: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+          decoration: BoxDecoration(
+            color: cs.onSurface.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(2),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
@@ -602,21 +606,24 @@ class _SheetHandle extends StatelessWidget {
               Expanded(
                 child: Text(title, style: GoogleFonts.outfit(
                   fontWeight: FontWeight.w800, fontSize: 20,
-                  color: const Color(0xFF1A1A1A), letterSpacing: -0.3,
+                  color: cs.onSurface, letterSpacing: -0.3,
                 )),
               ),
               GestureDetector(
                 onTap: onClose,
                 child: Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
-                  child: const Icon(Icons.close_rounded, size: 18, color: Colors.black54),
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.close_rounded, size: 18, color: cs.onSurface.withValues(alpha: 0.55)),
                 ),
               ),
             ],
           ),
         ),
-        Divider(height: 1, color: Colors.grey[200]),
+        Divider(height: 1, color: cs.onSurface.withValues(alpha: 0.10)),
       ],
     );
   }
@@ -646,15 +653,16 @@ class _ProgramTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.15)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 3))],
+          border: Border.all(color: color.withValues(alpha: 0.18)),
+          boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
         ),
         child: Row(
           children: [
@@ -674,9 +682,9 @@ class _ProgramTile extends StatelessWidget {
                   children: [
                     Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 15,
-                        color: const Color(0xFF1A1A1A), letterSpacing: -0.2)),
+                        color: cs.onSurface, letterSpacing: -0.2)),
                     const SizedBox(height: 3),
-                    Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF6B7280))),
+                    Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: cs.onSurface.withValues(alpha: 0.55))),
                     if (phases.isNotEmpty) ...[
                       const SizedBox(height: 5),
                       Container(
@@ -693,16 +701,10 @@ class _ProgramTile extends StatelessWidget {
                 ),
               ),
             ),
-            // Heart + arrow
+            // Arrow
             Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: Column(
-                children: [
-                 
-                  const SizedBox(height: 8),
-                  Icon(LucideIcons.chevronRight, size: 16, color: color),
-                ],
-              ),
+              child: Icon(LucideIcons.chevronRight, size: 16, color: color),
             ),
           ],
         ),
@@ -741,7 +743,7 @@ class _PhaseFilterRow extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF6B7280),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
                   letterSpacing: 0.2,
                 ),
               ),
