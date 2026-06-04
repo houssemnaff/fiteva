@@ -129,11 +129,15 @@ class AppTheme {
         primary: primaryColor,
         secondary: accentColor,
         surface: surfaceColor,
-        background: backgroundColor,
         onPrimary: white,
         onSecondary: white,
         onSurface: textPrimaryColor,
-        onBackground: textPrimaryColor,
+        surfaceContainerHighest: Color(0xFFF5F5F0),
+        outline: Color(0xFFE0E0DA),
+        outlineVariant: Color(0xFFDDDDD8),
+        secondaryContainer: Color(0xFFD6EDE0),
+        onSecondaryContainer: Color(0xFF1C4D30),
+        shadow: Color(0xFF000000),
       ),
       textTheme: GoogleFonts.interTextTheme().copyWith(
         displayLarge: GoogleFonts.outfit(
@@ -173,7 +177,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.05),
+        shadowColor: Color(0x0D000000),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
@@ -249,11 +253,15 @@ class AppTheme {
         primary: accentColor,
         secondary: primaryColor,
         surface: Color(0xFF141414),
-        background: Color(0xFF0A0A0A),
         onPrimary: white,
         onSecondary: white,
         onSurface: white,
-        onBackground: white,
+        surfaceContainerHighest: Color(0xFF1E1E1E),
+        outline: Color(0xFF2C2C2C),
+        outlineVariant: Color(0xFF353535),
+        secondaryContainer: Color(0xFF1A3326),
+        onSecondaryContainer: Color(0xFF7ABB98),
+        shadow: Color(0xFF000000),
       ),
       textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
         displayLarge: GoogleFonts.outfit(
@@ -293,7 +301,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: const Color(0xFF141414),
         elevation: 0,
-        shadowColor: Colors.black.withOpacity(0.2),
+        shadowColor: Color(0x33000000),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),

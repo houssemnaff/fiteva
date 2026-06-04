@@ -1,4 +1,4 @@
-import 'package:fiteva/models/workout_model.dart';
+/*import 'package:fiteva/models/workout_model.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/workout_detail_screen.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +13,7 @@ Widget buildHCard({
   required Set<String> favorites,
   required void Function(String) onToggleFav,
   VoidCallback? onTap,
-}) {
+}) {s
   final isFav = favorites.contains(w.id);
 
   return GestureDetector(
@@ -128,3 +128,4 @@ Widget buildHCard({
     ),
   );
 }
+*/

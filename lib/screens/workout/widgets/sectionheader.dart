@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// ── Design tokens ──────────────────────────────────────────────────────────────
-const _kText1  = Color(0xFF1A1A1A);
-const _kText2  = Color(0xFF6B7280);
 
 Widget buildSectionHeader({
   required BuildContext context,
@@ -15,6 +12,7 @@ Widget buildSectionHeader({
   VoidCallback? onSeeAll,
 }) {
   assert(icon != null || emoji != null, 'Provide either icon or emoji');
+  final cs = Theme.of(context).colorScheme;
 
   return Padding(
     padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
@@ -52,9 +50,11 @@ Widget buildSectionHeader({
                   letterSpacing: 2)),
               Text(title, style: GoogleFonts.outfit(
                 fontWeight: FontWeight.w800, fontSize: 18,
-                color: _kText1, letterSpacing: -0.3)),
+                color: cs.onSurface, letterSpacing: -0.3)),
               Text(subtitle, style: GoogleFonts.inter(
-                fontSize: 11, color: _kText2, fontWeight: FontWeight.w500)),
+                fontSize: 11,
+                color: cs.onSurface.withValues(alpha: 0.55),
+                fontWeight: FontWeight.w500)),
             ],
           ),
         ),
