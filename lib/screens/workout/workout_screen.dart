@@ -1,4 +1,5 @@
 import 'package:fiteva/models/home_program_model.dart';
+import 'package:fiteva/screens/workout/favoritesheet.dart';
 import 'package:fiteva/screens/workout/widgets/DanceSection.dart';
 import 'package:fiteva/screens/workout/widgets/GrossesseSection.dart';
 import 'package:fiteva/screens/workout/widgets/MaisonSection.dart';
@@ -95,6 +96,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -104,6 +106,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     final bodyZones    = ref.watch(bodyZonesProvider);
     final sallePrograms = ref.watch(salleProgramsProvider);
     final homePrograms = ref.watch(homeProgramsProvider);
+    final allPrograms = [...sallePrograms, ...homePrograms];
 
     final screenH  = MediaQuery.of(context).size.height;
     final bottomGap = screenH < 700 ? 80.0 : 110.0;
@@ -150,6 +153,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                     color: WorkoutColors.grossesse,
                     size: 26,
                   ),
+<<<<<<< Updated upstream
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -158,6 +162,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                         onToggleFav: _toggleFav,
                       ),
                     ),
+=======
+                  onPressed: () => openFavoritesSheet(
+                    context,
+                    workouts,
+                    allPrograms,
+                    _favorites,
+>>>>>>> Stashed changes
                   ),
                 ),
                 if (_favorites.isNotEmpty)
