@@ -53,6 +53,7 @@ class SalleSection extends StatelessWidget {
           height: 295,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
+<<<<<<< Updated upstream
             padding: const EdgeInsets.symmetric(horizontal: 20),
             itemCount: sallePrograms.length,
             separatorBuilder: (_, __) => const SizedBox(width: 14),
@@ -72,6 +73,32 @@ class SalleSection extends StatelessWidget {
                 ),
               );
             },
+=======
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: sallePrograms
+                .map((program) => buildProgramCard(
+                      context: context,
+                      name: program.name,
+                      duration: program.duration,
+                      phases: program.phases,
+                      sessions: program.sessions,
+                      compatibleCycles: program.compatibleCycles,
+                      w: _programWorkout(program, category: 'SALLE'),
+                      color: program.color,
+                      imageUrl: program.imageUrl,
+                      favorites: favorites,
+                      onToggleFav: onToggleFav,
+                      onStartTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => WorkoutDetailScreen(
+                            workout: _programWorkout(program, category: 'SALLE'),
+                          ),
+                        ),
+                      ),
+                    ))
+                .toList(),
+>>>>>>> Stashed changes
           ),
         ),
       ],

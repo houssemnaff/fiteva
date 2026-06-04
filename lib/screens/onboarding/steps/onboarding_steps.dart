@@ -6,7 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ─── Design Tokens — Mint/Sage Palette ────────────────────────────────────
-const _kBgMint       = Color(0xFFB8CFC4); // fond principal mint sauge
+const _kBgMint       = Colors.white; // fond principal blanc
 const _kBgLight      = Color(0xFFC8DAD0); // fond légèrement plus clair
 const _kGreenDark    = Color(0xFF2D4A2D); // vert foncé (texte sélectionné, bouton)
 const _kGreenMid     = Color(0xFF4A7A5A); // vert moyen
@@ -14,6 +14,7 @@ const _kCardUnsel    = Color(0xFFD4E4DB); // carte non-sélectionnée
 const _kCardSel      = Color(0xFF2D4A2D); // carte sélectionnée
 const _kTextDark     = Color(0xFF1A2E1A); // texte principal
 const _kTextMuted    = Color(0xFF5A7A65); // texte secondaire
+const _kBorderLight  = Color(0xFFE2EDE7); // bordures claires
 const _kWhite        = Colors.white;
 
 // ─── Shared Widgets ────────────────────────────────────────────────────────
@@ -156,7 +157,7 @@ class _PillCard extends StatelessWidget {
           border: Border.all(
             color: selected
                 ? _kCardSel
-                : Colors.white.withOpacity(0.8),
+                : _kBorderLight,
             width: 1.5,
           ),
           boxShadow: selected
@@ -260,7 +261,7 @@ class _CompactPill extends StatelessWidget {
           color: selected ? _kCardSel : Colors.white.withOpacity(0.55),
           borderRadius: BorderRadius.circular(40),
           border: Border.all(
-            color: selected ? _kCardSel : Colors.white.withOpacity(0.8),
+            color: selected ? _kCardSel : _kBorderLight,
             width: 1.5,
           ),
           boxShadow: selected
@@ -910,7 +911,11 @@ class _StepWelcomeState extends State<StepWelcome>
       decoration: BoxDecoration(
         color: _kWhite.withOpacity(0.12),
         borderRadius: BorderRadius.circular(14),
+<<<<<<< Updated upstream
         border: Border.all(color: _kWhite.withOpacity(0.18), width: 1),
+=======
+        border: Border.all(color: _kBorderLight, width: 1.2),
+>>>>>>> Stashed changes
       ),
       child: TextField(
         controller: controller,
@@ -1281,7 +1286,7 @@ class StepFrequency extends StatelessWidget {
                               border: Border.all(
                                 color: isSel
                                     ? _kCardSel
-                                    : Colors.white.withOpacity(0.8),
+                                    : _kBorderLight,
                                 width: 1.5,
                               ),
                               boxShadow: isSel
@@ -1402,7 +1407,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.55),
                       borderRadius: BorderRadius.circular(40),
-                      border: Border.all(color: Colors.white.withOpacity(0.8)),
+                      border: Border.all(color: _kBorderLight),
                     ),
                     child: Text('IMC : ${_bmi.toStringAsFixed(1)}',
                       style: const TextStyle(fontSize: 13,
@@ -1413,7 +1418,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
             ),
           ),
           _CtaButton(
-            label: 'Continuer',
+            label: 'Next',
             onPressed: _canContinue ? widget.onNext : null,
           ),
         ],
@@ -1440,7 +1445,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.8)),
+        border: Border.all(color: _kBorderLight),
       ),
       child: Column(children: [
         const Text('Height', style: TextStyle(fontSize: 12,
@@ -1471,7 +1476,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.8)),
+        border: Border.all(color: _kBorderLight),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('Weight', style: TextStyle(fontSize: 13,
@@ -1561,7 +1566,7 @@ class _StepCycleState extends State<StepCycle> {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.55),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withOpacity(0.8)),
+                      border: Border.all(color: _kBorderLight),
                     ),
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1601,7 +1606,7 @@ class _StepCycleState extends State<StepCycle> {
                             border: Border.all(
                               color: isSelected
                                   ? _kCardSel
-                                  : Colors.white.withOpacity(0.8),
+                                  : _kBorderLight,
                             ),
                           ),
                           child: Text(d, style: TextStyle(
@@ -1626,7 +1631,7 @@ class _StepCycleState extends State<StepCycle> {
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.55),
                         borderRadius: BorderRadius.circular(40),
-                        border: Border.all(color: Colors.white.withOpacity(0.8)),
+                        border: Border.all(color: _kBorderLight),
                       ),
                       child: Row(children: [
                         const Icon(LucideIcons.calendarDays,
@@ -1738,7 +1743,7 @@ class _StepPregnancyState extends State<StepPregnancy> {
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.55),
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white.withOpacity(0.8)),
+                        border: Border.all(color: _kBorderLight),
                       ),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1797,7 +1802,7 @@ class _StepPregnancyState extends State<StepPregnancy> {
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.55),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.8)),
+                        border: Border.all(color: _kBorderLight),
                       ),
                       child: Row(crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1816,7 +1821,7 @@ class _StepPregnancyState extends State<StepPregnancy> {
             ),
           ),
           _CtaButton(
-            label: 'Continuer',
+            label: 'Next',
             onPressed: _canContinue ? widget.onNext : null,
           ),
         ],
@@ -1835,7 +1840,7 @@ class _StepPregnancyState extends State<StepPregnancy> {
           color: selected ? _kCardSel : Colors.white.withOpacity(0.55),
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: selected ? _kCardSel : Colors.white.withOpacity(0.8),
+            color: selected ? _kCardSel : _kBorderLight,
             width: 1.5,
           ),
           boxShadow: selected
