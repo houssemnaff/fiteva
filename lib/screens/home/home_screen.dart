@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:fiteva/screens/home/library_widget.dart';
+import 'package:fiteva/screens/workout/workout_detail_screen.dart';
 import 'package:fiteva/theme/app_theme.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
@@ -10,9 +12,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
-import '../community/community_screen.dart';
-import '../nutrition/nutrition_screen.dart';
-import '../workout/workout_detail_screen.dart';
+
 
 // ═══════════════════════════════════════════════════════════
 // WEEKLY PLAN — Models & Provider
@@ -117,7 +117,6 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(userProvider);
     final joinedPrograms = ref.watch(joinedProgramsProvider);
-    final workouts = ref.watch(workoutsProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -127,7 +126,7 @@ class HomeScreen extends ConsumerWidget {
           SliverToBoxAdapter(child: _HeroSection(user: user)),
 
           // ── "GOOD TO SEE YOU" motivational strip ──────
-          SliverToBoxAdapter(child: _MotivationStrip()),
+         // SliverToBoxAdapter(child: _MotivationStrip()),
 
           // ── Weekly Plan ───────────────────────────────
           SliverToBoxAdapter(child: _WeeklyPlanSection()),
@@ -145,9 +144,9 @@ class HomeScreen extends ConsumerWidget {
             child: _ProgramsSection(programs: joinedPrograms),
           ),
 
-          // ── Recommended ───────────────────────────────
+          // ── Library ───────────────────────────────────
           SliverToBoxAdapter(
-            child: _RecommendedSection(workouts: workouts),
+            child: LibrarySection(),
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 110)),
@@ -176,14 +175,14 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
   @override
   void initState() {
     super.initState();
-    final workouts = ref.read(workoutsProvider);
-    if (workouts.isNotEmpty) {
-      _currentIndex = Random().nextInt(workouts.length);
+    final programs = ref.read(homeProgramsProvider);
+    if (programs.isNotEmpty) {
+      _currentIndex = Random().nextInt(programs.length);
     }
     _timer = Timer.periodic(const Duration(seconds: 6), (_) {
-      final ws = ref.read(workoutsProvider);
-      if (ws.isNotEmpty && mounted) {
-        setState(() => _currentIndex = (_currentIndex + 1) % ws.length);
+      final ps = ref.read(homeProgramsProvider);
+      if (ps.isNotEmpty && mounted) {
+        setState(() => _currentIndex = (_currentIndex + 1) % ps.length);
       }
     });
   }
@@ -196,10 +195,10 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
 
   @override
   Widget build(BuildContext context) {
-    final workouts = ref.watch(workoutsProvider);
-    if (workouts.isEmpty) return const SizedBox.shrink();
+    final programs = ref.watch(homeProgramsProvider);
+    if (programs.isEmpty) return const SizedBox.shrink();
 
-    final workout = workouts[_currentIndex % workouts.length];
+    final program = programs[_currentIndex % programs.length];
     final h = MediaQuery.of(context).size.height * 0.62;
 
     return SizedBox(
@@ -211,9 +210,9 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 800),
             child: SizedBox.expand(
-              key: ValueKey(workout.id),
+              key: ValueKey(_currentIndex),
               child: Image.asset(
-                workout.imageUrl,
+                program.imageUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Image.asset(
                   'assets/images/workout.jpeg',
@@ -230,11 +229,11 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 stops: [0.0, 0.35, 0.75, 1.0],
-                colors: [
+                 colors: [
                   Color(0x00000000),
-                  Color(0x26000000),
-                  Color(0x8C1C4D30),
-                  Color(0xEB1C4D30),
+                  Color(0x33000000),
+                  Color(0x990B1A12),
+                  Color(0xE6000000),
                 ],
               ),
             ),
@@ -248,10 +247,10 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                 end: Alignment.topCenter,
                 stops: [0.0, 0.4, 0.75, 1.0],
                 colors: [
-                  Color(0x00000000), // transparent
-                  Color(0x33000000), // soft black shadow
-                  Color(0x990B1A12), // black with slight green tint
-                  Color(0xE6000000), // strong black top
+                  Color(0x00000000),
+                  Color(0x33000000),
+                  Color(0x990B1A12),
+                  Color(0xE6000000),
                 ],
               ),
             ),
@@ -291,8 +290,8 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
                       child: Text(
-                        key: ValueKey('cat_${workout.id}'),
-                        workout.category.toUpperCase(),
+                        key: ValueKey('cat_$_currentIndex'),
+                        'PROGRAMME',
                         style: GoogleFonts.inter(
                           color: AppTheme.accentColor,
                           fontSize: 10,
@@ -305,12 +304,12 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
 
                   const SizedBox(height: 10),
 
-                  // Title
+                  // Program name
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 400),
                     child: Text(
-                      key: ValueKey('title_${workout.id}'),
-                      workout.title.toUpperCase(),
+                      key: ValueKey('title_$_currentIndex'),
+                      program.name.toUpperCase(),
                       style: GoogleFonts.outfit(
                         color: Colors.white,
                         fontSize: 40,
@@ -323,17 +322,14 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
 
                   const SizedBox(height: 14),
 
-                  // Meta info row
+                  // Meta info row — program details
                   Wrap(
                     spacing: 8,
                     runSpacing: 6,
                     children: [
-                      _MetaPill(
-                          label: workout.duration, icon: LucideIcons.timer),
-                      _MetaPill(label: workout.level, icon: LucideIcons.zap),
-                      _MetaPill(
-                          label: '${workout.calories} KCAL',
-                          icon: LucideIcons.flame),
+                      _MetaPill(label: program.duration, icon: LucideIcons.timer),
+                      _MetaPill(label: program.sessions, icon: LucideIcons.dumbbell),
+                      _MetaPill(label: program.phases, icon: LucideIcons.activity),
                     ],
                   ),
 
@@ -343,24 +339,26 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                   Row(children: [
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                WorkoutDetailScreen(workout: workout),
-                          ),
-                        ),
+                        onTap: program.workouts.isNotEmpty
+                            ? () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => WorkoutDetailScreen(
+                                        workout: program.workouts.first),
+                                  ),
+                                )
+                            : null,
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentColor,
+                            color: Color(0xFF1C4D30),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Center(
                             child: Text(
                               'START PROGRAM',
                               style: GoogleFonts.outfit(
-                                color: AppTheme.primaryColor,
+                                color: Colors.white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 2,
@@ -1340,7 +1338,7 @@ class _ProgramCard extends StatelessWidget {
                         minHeight: 5,
                         backgroundColor: AppTheme.neutral200,
                         valueColor:
-                            AlwaysStoppedAnimation(AppTheme.accentColor),
+                            AlwaysStoppedAnimation(Color(0xFFFFD89B)),
                       ),
                     ),
                   ),
@@ -1379,170 +1377,6 @@ class _ProgramCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// RECOMMENDED SECTION — stacked cards, editorial
-// ═══════════════════════════════════════════════════════════
-
-class _RecommendedSection extends StatelessWidget {
-  final List<WorkoutModel> workouts;
-  const _RecommendedSection({required this.workouts});
-
-  @override
-  Widget build(BuildContext context) {
-    final list = workouts.take(5).toList();
-    return Padding(
-      padding: const EdgeInsets.only(top: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('FOR YOU',
-                        style: GoogleFonts.inter(
-                          color: AppTheme.accentColor,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 3,
-                        )),
-                    const SizedBox(height: 4),
-                    Text('Recommended',
-                        style: GoogleFonts.outfit(
-                          color: AppTheme.textPrimaryColor,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        )),
-                  ],
-                ),
-                const Spacer(),
-                Text('SEE ALL',
-                    style: GoogleFonts.inter(
-                      color: AppTheme.primaryColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
-                    )),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          SizedBox(
-            height: 170,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: list.length,
-              itemBuilder: (_, i) => _WorkoutCard(workout: list[i]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WorkoutCard extends StatelessWidget {
-  final WorkoutModel workout;
-  const _WorkoutCard({required this.workout});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) => WorkoutDetailScreen(workout: workout)),
-      ),
-      child: Container(
-        width: 145,
-        margin: const EdgeInsets.only(right: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.07),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(workout.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(color: AppTheme.neutral200)),
-            // Gradient
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    AppTheme.primaryColor.withOpacity(0.88),
-                  ],
-                  stops: const [0.3, 1.0],
-                ),
-              ),
-            ),
-            // Content
-            Positioned(
-              bottom: 12,
-              left: 10,
-              right: 10,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    workout.category.toUpperCase(),
-                    style: GoogleFonts.inter(
-                      color: AppTheme.accentColor,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    workout.title,
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      height: 1.1,
-                    ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    workout.duration,
-                    style: GoogleFonts.inter(
-                      color: Colors.white.withOpacity(0.65),
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

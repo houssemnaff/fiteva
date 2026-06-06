@@ -557,35 +557,35 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
       (Icons.fitness_center_rounded,  "Workouts"),
       (Icons.water_drop_outlined,     "Cycle"),
       (Icons.restaurant_menu_rounded, "Nutrition"),
+      (Icons.supervised_user_circle, "Comunauty"),
+
     ];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 10,
+      runSpacing: 10,
       children: features
-          .map((f) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.07),
-                    borderRadius: BorderRadius.circular(40),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.13)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(f.$1,
-                          color: const Color(0xFF5CD57A), size: 15),
-                      const SizedBox(width: 7),
-                      Text(f.$2,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          )),
-                    ],
-                  ),
+          .map((f) => Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(40),
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.13)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(f.$1, color: const Color(0xFF5CD57A), size: 15),
+                    const SizedBox(width: 7),
+                    Text(f.$2,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        )),
+                  ],
                 ),
               ))
           .toList(),
@@ -1157,11 +1157,11 @@ class _StepWelcomeState extends State<StepWelcome>
         obscureText: obscure,
         keyboardType: keyboardType,
         onChanged: onChanged,
-        style: const TextStyle(fontSize: 15, color: _kWhite,
+        style: const TextStyle(fontSize: 15, color: Color.fromARGB(255, 1, 1, 1),
             fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: _kWhite.withOpacity(0.45), fontSize: 14),
+          hintStyle: TextStyle(color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.45), fontSize: 14),
           prefixIcon: Icon(icon, color: _kWhite.withOpacity(0.7), size: 20),
           suffixIcon: suffix != null
               ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix)
@@ -1260,7 +1260,7 @@ class _StepWelcomeState extends State<StepWelcome>
               const SizedBox(height: 12),
               _authBtn(
                 label: 'Log In with Email',
-                bgColor: _kPrimary,
+                bgColor:  Color.fromARGB(255, 21, 80, 44),
                 textColor: _kWhite,
                 borderColor: Colors.transparent,
                 leading: Icon(Icons.mail_outline_rounded, color: _kWhite, size: 20),
@@ -2373,54 +2373,63 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
           _OnboardingTopBar(
               step: 6, total: 7, title: 'Profil santé', onBack: widget.onBack),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 8),
-                  const _StepIcon(Icons.straighten_rounded),
-                  const SizedBox(height: 16),
-                  const _StepHeader(
-                    title: 'Taille & Poids',
-                    subtitle: 'Fais défiler pour entrer tes mesures',
-                  ),
-                  const SizedBox(height: 28),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _DrumPicker(
-                          label: 'TAILLE',
-                          unit: 'cm',
-                          selectedIndex: _hIdx,
-                          controller: _hCtrl,
-                          itemCount: _maxH - _minH + 1,
-                          labelFor: (i) => '${_minH + i}',
-                          onChanged: (i) => setState(() => _hIdx = i),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        const _StepIcon(Icons.straighten_rounded),
+                        const SizedBox(height: 16),
+                        const _StepHeader(
+                          title: 'Taille & Poids',
+                          subtitle: 'Fais défiler pour entrer tes mesures',
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _DrumPicker(
-                          label: 'POIDS',
-                          unit: 'kg',
-                          selectedIndex: _wIdx,
-                          controller: _wCtrl,
-                          itemCount: _wList.length,
-                          labelFor: (i) {
-                            final w = _wList[i];
-                            return w % 1 == 0
-                                ? '${w.toInt()}'
-                                : w.toStringAsFixed(1);
-                          },
-                          onChanged: (i) => setState(() => _wIdx = i),
+                        const SizedBox(height: 28),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _DrumPicker(
+                                label: 'TAILLE',
+                                unit: 'cm',
+                                selectedIndex: _hIdx,
+                                controller: _hCtrl,
+                                itemCount: _maxH - _minH + 1,
+                                labelFor: (i) => '${_minH + i}',
+                                onChanged: (i) => setState(() => _hIdx = i),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _DrumPicker(
+                                label: 'POIDS',
+                                unit: 'kg',
+                                selectedIndex: _wIdx,
+                                controller: _wCtrl,
+                                itemCount: _wList.length,
+                                labelFor: (i) {
+                                  final w = _wList[i];
+                                  return w % 1 == 0
+                                      ? '${w.toInt()}'
+                                      : w.toStringAsFixed(1);
+                                },
+                                onChanged: (i) => setState(() => _wIdx = i),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        _BmiCard(bmi: _bmi, label: _bmiLabel, color: _bmiColor),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
-                  _BmiCard(bmi: _bmi, label: _bmiLabel, color: _bmiColor),
-                ],
-              ),
+                );
+              },
             ),
           ),
           _CtaButton(label: 'Continuer', onPressed: widget.onNext),

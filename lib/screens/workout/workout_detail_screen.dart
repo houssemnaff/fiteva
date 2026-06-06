@@ -119,20 +119,35 @@ class _HeroAppBar extends StatelessWidget {
                 ),
               ),
             ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Row(
-                  children: [
-                    _GlassButton(icon: LucideIcons.arrowLeft, onTap: () => Navigator.pop(context)),
-                    const Spacer(),
-                    _GlassButton(icon: LucideIcons.share2,   onTap: () {}),
-                    const SizedBox(width: 10),
-                    _GlassButton(icon: LucideIcons.bookmark, onTap: () {}),
-                  ],
-                ),
-              ),
-            ),
+           Positioned(
+  top: 0,
+  left: 0,
+  right: 0,
+  child: SafeArea(
+    bottom: false,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        children: [
+          _GlassButton(
+            icon: LucideIcons.arrowLeft,
+            onTap: () => Navigator.pop(context),
+          ),
+          const Spacer(),
+          _GlassButton(
+            icon: LucideIcons.share2,
+            onTap: () {},
+          ),
+          const SizedBox(width: 10),
+          _GlassButton(
+            icon: LucideIcons.bookmark,
+            onTap: () {},
+          ),
+        ],
+      ),
+    ),
+  ),
+),
             Positioned(
               left: 22, right: 22, bottom: 26,
               child: Column(
@@ -675,17 +690,47 @@ class _SessionCard extends StatelessWidget {
                         fontWeight: FontWeight.w700, letterSpacing: -0.2,
                       )),
                     const SizedBox(height: 4),
-                    Row(children: [
-                      Icon(LucideIcons.clock, size: 10, color: cs.onSurface.withValues(alpha: 0.45)),
-                      const SizedBox(width: 4),
-                      Text(index % 2 == 0 ? '25 min' : '40 min',
-                        style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.45), fontSize: 11, fontWeight: FontWeight.w500)),
-                      const SizedBox(width: 10),
-                      Icon(LucideIcons.dumbbell, size: 10, color: cs.onSurface.withValues(alpha: 0.45)),
-                      const SizedBox(width: 4),
-                      Text('Haltères · Tapis',
-                        style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.45), fontSize: 11, fontWeight: FontWeight.w500)),
-                    ]),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.clock,
+                                size: 10,
+                                color: cs.onSurface.withValues(alpha: 0.45)),
+                            const SizedBox(width: 4),
+                            Text(
+                              index % 2 == 0 ? '25 min' : '40 min',
+                              style: GoogleFonts.inter(
+                                color: cs.onSurface.withValues(alpha: 0.45),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.dumbbell,
+                                size: 10,
+                                color: cs.onSurface.withValues(alpha: 0.45)),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Haltères · Tapis',
+                              style: GoogleFonts.inter(
+                                color: cs.onSurface.withValues(alpha: 0.45),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
