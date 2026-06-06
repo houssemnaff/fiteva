@@ -1,23 +1,58 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
-import 'cycle_wheel.dart'; // for phaseForDay / colorForDay
+import 'cycle_wheel.dart';
 
 class CycleCalendar extends StatelessWidget {
-  final int currentDay;
-  final int todayDay; // actual today highlight (dot)
+  /// Which month to display.
+  final int displayYear;
+  final int displayMonth; // 1-12
+
+  /// The actual current date (used for "today" dot and phase prediction).
+  final DateTime today;
+
+  /// What cycle day today is (1-28). Used to predict phases in other months.
+  final int todayCycleDay;
+
+  /// Currently selected cycle day (1-28), for highlighting.
+  final int selectedCycleDay;
+
+  /// Called with the cycle day (1-28) when user taps a day.
   final Function(int) onDaySelected;
 
   const CycleCalendar({
     super.key,
-    required this.currentDay,
-    this.todayDay = 16,
+    required this.displayYear,
+    required this.displayMonth,
+    required this.today,
+    required this.todayCycleDay,
+    required this.selectedCycleDay,
     required this.onDaySelected,
   });
-Color colorForDay(int day) {
-  return phaseForDay(day).color;
-}
-  // April 2026 starts on Wednesday → Mon=0, Wed=2
-  static const int _startOffset = 2;
-  static const int _daysInMonth = 30;
+
+  // ── Computed properties ─────────────────────────────────────────────────────
+
+  /// Day-of-week offset for the 1st (0=Mon, 6=Sun).
+  int get _startOffset =>
+      DateTime(displayYear, displayMonth, 1).weekday - 1;
+
+  int get _daysInMonth =>
+      DateTime(displayYear, displayMonth + 1, 0).day;
+
+  /// Cycle day (1-28) for a given calendar day in the displayed month.
+  int _cycleDay(int day) {
+    final date = DateTime(displayYear, displayMonth, day);
+    final cycleStart = today.subtract(Duration(days: todayCycleDay - 1));
+    final diff = date.difference(DateTime(
+      cycleStart.year,
+      cycleStart.month,
+      cycleStart.day,
+    )).inDays;
+    // Handle negative (past months) and positive (future months)
+    return ((diff % 28) + 28) % 28 + 1;
+  }
+
+  bool get _isCurrentMonth =>
+      displayYear == today.year && displayMonth == today.month;
 
   static const _weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -26,33 +61,31 @@ Color colorForDay(int day) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Weekday headers ─────────────────────
+        // ── Weekday headers ───────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             children: _weekdays
-                .map(
-                  (d) => Expanded(
-                    child: Center(
-                      child: Text(
-                        d,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFB07A9A),
-                          letterSpacing: 0.6,
+                .map((d) => Expanded(
+                      child: Center(
+                        child: Text(
+                          d,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFB07A9A),
+                            letterSpacing: 0.6,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                )
+                    ))
                 .toList(),
           ),
         ),
 
         const SizedBox(height: 8),
 
-        // ── Grid ────────────────────────────────
+        // ── Day grid ──────────────────────────────────────────────────────────
         GridView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           shrinkWrap: true,
@@ -64,27 +97,36 @@ Color colorForDay(int day) {
           ),
           itemCount: _startOffset + _daysInMonth,
           itemBuilder: (context, index) {
-            // Empty offset cells
             if (index < _startOffset) return const SizedBox();
 
             final day = index - _startOffset + 1;
+            final cd = _cycleDay(day);
+            final isToday =
+                _isCurrentMonth && day == today.day;
+
             return _DayCell(
               day: day,
-              isSelected: day == currentDay,
-              isToday: day == todayDay,
-              phaseColor: colorForDay(day),
-              onTap: () => onDaySelected(day),
+              isSelected: _isCurrentMonth && cd == selectedCycleDay,
+              isToday: isToday,
+              phaseColor: phaseForDay(cd).color,
+              onTap: () => onDaySelected(cd),
             );
           },
         ),
+
+        // ── Phase legend ──────────────────────────────────────────────────────
+        const SizedBox(height: 20),
+        _PhaseLegend(),
+        const SizedBox(height: 8),
       ],
     );
   }
 }
 
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 //  Single day cell
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _DayCell extends StatelessWidget {
   final int day;
   final bool isSelected;
@@ -119,7 +161,12 @@ class _DayCell extends StatelessWidget {
           color: bgColor,
           border: isSelected
               ? null
-              : Border.all(color: phaseColor.withOpacity(0.25), width: 0.5),
+              : Border.all(
+                  color: isToday
+                      ? const Color(0xFFC1547A)
+                      : phaseColor.withOpacity(0.25),
+                  width: isToday ? 1.5 : 0.5,
+                ),
         ),
         child: Stack(
           alignment: Alignment.center,
@@ -128,7 +175,8 @@ class _DayCell extends StatelessWidget {
               '$day',
               style: TextStyle(
                 fontSize: 12.5,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontWeight:
+                    isSelected || isToday ? FontWeight.w700 : FontWeight.w500,
                 color: textColor,
               ),
             ),
@@ -149,4 +197,55 @@ class _DayCell extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Phase legend
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PhaseLegend extends StatelessWidget {
+  static const _items = [
+    _LegendItem('Règles', Color(0xFFE58F8A)),
+    _LegendItem('Folliculaire', Color(0xFF7ABB98)),
+    _LegendItem('Ovulation', Color(0xFF1C4D30)),
+    _LegendItem('Lutéale', Color(0xFFA7B8AD)),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 8,
+      children: _items
+          .map((item) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: item.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    item.label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF9E8A93),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ))
+          .toList(),
+    );
+  }
+}
+
+class _LegendItem {
+  final String label;
+  final Color color;
+  const _LegendItem(this.label, this.color);
 }

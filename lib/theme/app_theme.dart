@@ -55,8 +55,8 @@ class AppTheme {
   static const Color successMint = Color(0xFF52B788);
   static const Color darkTitle = Color(0xFF333333);
   static const Color profileButtonGreen = Color(0xFF1B5E3B);
-  static const Color chatbotGradientStart = Color(0xFF5CD57A);
-  static const Color chatbotGradientEnd = Color(0xFF1C4D30);
+  static const Color chatbotGradientStart = Color.fromARGB(255, 13, 71, 220);
+  static const Color chatbotGradientEnd = Color.fromARGB(255, 235, 135, 53);
 
   // ---------------------------------------------------------------------------
   // Workout Palette

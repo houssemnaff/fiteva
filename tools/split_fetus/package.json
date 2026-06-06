@@ -1,0 +1,11 @@
+{
+  "name": "split-fetus",
+  "version": "1.0.0",
+  "description": "Crop fetus_sheet.png 3×3 grid → 9 PNGs in assets/fetus/",
+  "scripts": {
+    "split": "node split.js"
+  },
+  "dependencies": {
+    "sharp": "^0.33.5"
+  }
+}
