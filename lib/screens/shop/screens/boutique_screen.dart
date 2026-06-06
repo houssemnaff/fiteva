@@ -1,4 +1,5 @@
 import 'package:fiteva/screens/shop/screens/all_partenaires_screen.dart';
+import 'package:fiteva/services/points_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../models/mock_data.dart';
@@ -120,7 +121,7 @@ class _BoutiqueScreenState extends State<BoutiqueScreen>
 
   final Set<String> _wishlist = {};
 
-  final int _userEtoiles = 60;
+  int _userEtoiles = 0;
 
   final _scrollCtrl  = ScrollController();
   final _searchCtrl  = TextEditingController();
@@ -135,6 +136,12 @@ class _BoutiqueScreenState extends State<BoutiqueScreen>
     super.initState();
     _scrollCtrl.addListener(_onScroll);
     _searchCtrl.addListener(() => setState(() => _query = _searchCtrl.text));
+    _loadPoints();
+  }
+
+  Future<void> _loadPoints() async {
+    final pts = await PointsService.getPoints();
+    if (mounted) setState(() => _userEtoiles = pts);
   }
 
   void _onScroll() {

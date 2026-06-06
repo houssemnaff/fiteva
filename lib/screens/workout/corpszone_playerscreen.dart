@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../../models/workout_model.dart';
+import '../../services/points_service.dart';
 import '../../theme/app_theme.dart';
 
 class CorpsZonePlayerScreen extends StatefulWidget {
@@ -29,6 +30,11 @@ class _CorpsZonePlayerScreenState extends State<CorpsZonePlayerScreen>
   int _currentPage = 0;
   bool _isVideoReady = false;
   String _currentVideoPath = '';
+
+  // 80 % watch → points
+  final Set<int> _pointsAwardedForIndex = {};
+  VideoPlayerController? _activeListenerCtrl;
+  int _currentListenerIndex = 0;
   
   final List<String> _videoUrls = [
     'assets/videos/workout1.mp4',
@@ -91,6 +97,12 @@ class _CorpsZonePlayerScreenState extends State<CorpsZonePlayerScreen>
         setState(() {
           _isVideoReady = true;
         });
+
+        // Attach 80 % listener for this exercise index
+        _activeListenerCtrl?.removeListener(_videoListener);
+        _currentListenerIndex = videoIndex;
+        _activeListenerCtrl = videoPlayerController;
+        _activeListenerCtrl!.addListener(_videoListener);
 
         _preloadNext(videoIndex);
         
@@ -181,8 +193,31 @@ class _CorpsZonePlayerScreenState extends State<CorpsZonePlayerScreen>
     }
   }
 
+  void _videoListener() {
+    final ctrl = _activeListenerCtrl;
+    if (ctrl == null || !ctrl.value.isInitialized) return;
+    final dur = ctrl.value.duration.inMilliseconds;
+    final pos = ctrl.value.position.inMilliseconds;
+    if (dur <= 0) return;
+    if (pos / dur >= 0.80 && !_pointsAwardedForIndex.contains(_currentListenerIndex)) {
+      _pointsAwardedForIndex.add(_currentListenerIndex);
+      PointsService.addPoints(PointsService.pointsPerVideo).then((total) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('+${PointsService.pointsPerVideo} pts ! Total : $total pts'),
+              duration: const Duration(seconds: 2),
+              backgroundColor: const Color(0xFF1C4D30),
+            ),
+          );
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _activeListenerCtrl?.removeListener(_videoListener);
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     _chewieController?.dispose();
