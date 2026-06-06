@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fluttermoji/fluttermoji.dart';
 import '../../providers/mock_data_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/points_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -13,13 +14,13 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(userProvider);
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final surface = colorScheme.surface;
     final background = colorScheme.background;
     final textPrimary = colorScheme.onSurface;
     final textSecondary = theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withOpacity(0.72);
-    final borderColor = colorScheme.outlineVariant;
 
     return Scaffold(
       backgroundColor: background,
@@ -176,6 +177,14 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
+            // ── Points / Étoiles card ──
+            FutureBuilder<int>(
+              future: PointsService.getPoints(),
+              builder: (context, snap) =>
+                  _buildPointsCard(context, snap.data ?? 0),
+            ),
+            const SizedBox(height: 16),
+
             // ── Weekly progress ──
             _buildWeeklyProgress(context),
             const SizedBox(height: 20),
@@ -236,6 +245,82 @@ class ProfileScreen extends ConsumerWidget {
           Text(
             label,
             style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Points card ──
+  Widget _buildPointsCard(BuildContext context, int points) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1C4D30), Color(0xFF2E7D52)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1C4D30).withValues(alpha: 0.30),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(LucideIcons.star, color: Color(0xFFD4AF37), size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mes étoiles',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$points étoiles',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD4AF37),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'Boutique →',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),

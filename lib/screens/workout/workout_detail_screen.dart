@@ -170,13 +170,17 @@ class _HeroAppBar extends StatelessWidget {
                     fontWeight: FontWeight.w800, letterSpacing: -0.8, height: 1.1,
                   )),
                   const SizedBox(height: 14),
-                  Row(children: [
-                    _HeroStatPill(icon: LucideIcons.clock,     label: workout.duration),
-                    const SizedBox(width: 8),
-                    _HeroStatPill(icon: LucideIcons.flame,     label: '${workout.calories} kcal'),
-                    const SizedBox(width: 8),
-                    _HeroStatPill(icon: LucideIcons.barChart2, label: workout.level),
-                  ]),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(children: [
+                      _HeroStatPill(icon: LucideIcons.clock,     label: workout.duration),
+                      const SizedBox(width: 8),
+                      _HeroStatPill(icon: LucideIcons.flame,     label: '${workout.calories} kcal'),
+                      const SizedBox(width: 8),
+                      _HeroStatPill(icon: LucideIcons.barChart2, label: workout.level),
+                    ]),
+                  ),
                 ],
               ),
             ),
@@ -231,7 +235,7 @@ class _HeroStatPill extends StatelessWidget {
           children: [
             Icon(icon, size: 11, color: _kGoldLight),
             const SizedBox(width: 5),
-            Text(label, style: GoogleFonts.inter(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+            Text(label, overflow: TextOverflow.ellipsis, softWrap: false, style: GoogleFonts.inter(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
           ],
         ),
       );
@@ -259,9 +263,22 @@ class _TabBarSliver extends StatelessWidget {
             border: Border.all(color: cs.outline.withValues(alpha: 0.15)),
           ),
           child: Row(children: [
-            _TabPill(label: 'À propos',   selected: current == 0, onTap: () => onTab(0)),
-            _TabPill(label: 'Les séances', selected: current == 1, onTap: () => onTab(1)),
+            Expanded(
+              child: _TabPill(
+                label: 'À propos',
+                selected: current == 0,
+                onTap: () => onTab(0),
+              ),
+            ),
+            Expanded(
+              child: _TabPill(
+                label: 'Les séances',
+                selected: current == 1,
+                onTap: () => onTab(1),
+              ),
+            ),
           ]),
+
         ),
       ),
     );
@@ -277,30 +294,39 @@ class _TabPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          decoration: BoxDecoration(
-            color: selected ? _kGreen : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: selected
-                ? [BoxShadow(color: _kGreen.withValues(alpha: 0.30), blurRadius: 10, offset: const Offset(0, 3))]
-                : [],
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          color: selected ? _kGreen : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: _kGreen.withValues(alpha: 0.30),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  )
+                ]
+              : [],
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: selected ? Colors.white : cs.onSurface.withValues(alpha: 0.50),
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            letterSpacing: 0.1,
           ),
-          child: Text(label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              color: selected ? Colors.white : cs.onSurface.withValues(alpha: 0.50),
-              fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 0.1,
-            )),
         ),
       ),
     );
   }
 }
+
 
 // ══════════════════════════════════════════════════════════════════════════════
 // À PROPOS TAB
@@ -393,32 +419,58 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: cs.outline.withValues(alpha: 0.15)),
-          boxShadow: [BoxShadow(color: _kGreen.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4))],
-        ),
-        child: Column(children: [
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: _kGreen.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
           Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(color: _kGreen.withValues(alpha: 0.10), shape: BoxShape.circle),
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: _kGreen.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
             child: Icon(icon, size: 16, color: _kGreen),
           ),
           const SizedBox(height: 8),
-          Text(value, textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(color: cs.onSurface, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.outfit(
+              color: cs.onSurface,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(label, textAlign: TextAlign.center,
-            style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.50), fontSize: 10, fontWeight: FontWeight.w500)),
-        ]),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: cs.onSurface.withValues(alpha: 0.50),
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
 
 class _CoachCard extends StatelessWidget {
   const _CoachCard();

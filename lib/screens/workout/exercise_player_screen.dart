@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import '../../services/points_service.dart';
 
 // ── Design tokens (always dark — immersive player) ────────────────────────────
 const _kGreen    = Color(0xFF1C4D30);
@@ -42,12 +43,9 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
 
   // ── State ──────────────────────────────────────────────────────────────────
   bool _isDone = false;
-  int _completedSets = 0;
-  static const int _totalSets = 3;
+  bool _pointsAwarded = false;
 
   // ── Animations ─────────────────────────────────────────────────────────────
-  late final AnimationController _pulseCtrl;
-  late final Animation<double> _pulseAnim;
   late final AnimationController _doneCtrl;
   late final Animation<double> _doneAnim;
 
@@ -67,12 +65,6 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-    _pulseCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1400))
-      ..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 1.0, end: 1.04).animate(
-        CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
-
     _doneCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 500));
     _doneAnim = CurvedAnimation(parent: _doneCtrl, curve: Curves.elasticOut);
@@ -85,6 +77,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     _videoCtrl = VideoPlayerController.asset(url);
     try {
       await _videoCtrl!.initialize();
+      _videoCtrl!.addListener(_onVideoProgress);
       if (!mounted) return;
       _chewieCtrl = ChewieController(
         videoPlayerController: _videoCtrl!,
@@ -100,30 +93,41 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     }
   }
 
+  void _onVideoProgress() {
+    if (_pointsAwarded) return;
+    final ctrl = _videoCtrl;
+    if (ctrl == null || !ctrl.value.isInitialized) return;
+    final dur = ctrl.value.duration.inMilliseconds;
+    final pos = ctrl.value.position.inMilliseconds;
+    if (dur <= 0) return;
+    if (pos / dur >= 0.80) {
+      _pointsAwarded = true;
+      PointsService.addPoints(PointsService.pointsPerVideo).then((total) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('+${PointsService.pointsPerVideo} pts ! Total : $total pts'),
+              duration: const Duration(seconds: 2),
+              backgroundColor: _kGreen,
+            ),
+          );
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    _pulseCtrl.dispose();
     _doneCtrl.dispose();
     _chewieCtrl?.dispose();
     _videoCtrl?.dispose();
     super.dispose();
   }
 
-  Future<void> _markSet() async {
-    if (_completedSets < _totalSets) {
-      setState(() => _completedSets++);
-      HapticFeedback.lightImpact();
-    }
-    if (_completedSets == _totalSets) {
-      await _completExercise();
-    }
-  }
-
   Future<void> _completExercise() async {
     if (_isDone) return;
     HapticFeedback.mediumImpact();
-    _pulseCtrl.stop();
     setState(() => _isDone = true);
     _doneCtrl.forward();
     widget.onCompleted();
@@ -172,12 +176,8 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
             builder: (context, scrollCtrl) => _BottomPanel(
               scrollCtrl: scrollCtrl,
               exerciseName: widget.exerciseName,
-              completedSets: _completedSets,
-              totalSets: _totalSets,
               isDone: _isDone,
-              pulseAnim: _pulseAnim,
               doneAnim: _doneAnim,
-              onMarkSet: _markSet,
               onCompleteAll: _completExercise,
               onPrev: () => Navigator.of(context).pop(),
               onNext: () {},
@@ -299,12 +299,8 @@ class _TopBar extends StatelessWidget {
 class _BottomPanel extends StatelessWidget {
   final ScrollController scrollCtrl;
   final String exerciseName;
-  final int completedSets;
-  final int totalSets;
   final bool isDone;
-  final Animation<double> pulseAnim;
   final Animation<double> doneAnim;
-  final VoidCallback onMarkSet;
   final VoidCallback onCompleteAll;
   final VoidCallback onPrev;
   final VoidCallback onNext;
@@ -312,12 +308,8 @@ class _BottomPanel extends StatelessWidget {
   const _BottomPanel({
     required this.scrollCtrl,
     required this.exerciseName,
-    required this.completedSets,
-    required this.totalSets,
     required this.isDone,
-    required this.pulseAnim,
     required this.doneAnim,
-    required this.onMarkSet,
     required this.onCompleteAll,
     required this.onPrev,
     required this.onNext,
@@ -380,10 +372,7 @@ class _BottomPanel extends StatelessWidget {
                   children: const [
                     _Tag(label: 'Fessiers', icon: LucideIcons.zap),
                     _Tag(label: 'Tapis', icon: LucideIcons.layoutDashboard),
-                    _Tag(
-                        label: 'Modéré',
-                        icon: LucideIcons.flame,
-                        isAccent: true),
+                    _Tag(label: 'Modéré', icon: LucideIcons.flame, isAccent: true),
                   ],
                 ),
                 const SizedBox(height: 22),
@@ -397,24 +386,13 @@ class _BottomPanel extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      _StatCell(value: '$totalSets', label: 'Séries'),
+                      const _StatCell(value: '3', label: 'Séries'),
                       _VertDivider(),
                       const _StatCell(value: '45s', label: 'Travail'),
                       _VertDivider(),
                       const _StatCell(value: '15s', label: 'Repos'),
                     ],
                   ),
-                ),
-                const SizedBox(height: 22),
-
-                // ── Set tracker ───────────────────────────────────────────
-                _SectionLabel(label: 'Séries complétées'),
-                const SizedBox(height: 12),
-                _SetTracker(
-                  completed: completedSets,
-                  total: totalSets,
-                  isDone: isDone,
-                  onTap: onMarkSet,
                 ),
                 const SizedBox(height: 22),
 
@@ -454,194 +432,60 @@ class _BottomPanel extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // ── CTA ───────────────────────────────────────────────────
-                _CtaButton(
-                  isDone: isDone,
-                  completedSets: completedSets,
-                  totalSets: totalSets,
-                  pulseAnim: pulseAnim,
-                  doneAnim: doneAnim,
-                  onTap: isDone ? null : onMarkSet,
+                ScaleTransition(
+                  scale: isDone
+                      ? doneAnim
+                      : const AlwaysStoppedAnimation(1.0),
+                  child: GestureDetector(
+                    onTap: isDone ? null : onCompleteAll,
+                    child: Container(
+                      width: double.infinity,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isDone
+                              ? [_kGold, _kGold]
+                              : [_kGreen, _kGreenMid],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(50),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isDone ? _kGold : _kGreen)
+                                .withValues(alpha: 0.45),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isDone ? LucideIcons.checkCircle : LucideIcons.check,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            isDone ? 'Exercice terminé !' : 'Terminer l\'exercice',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 32),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ── Set tracker ───────────────────────────────────────────────────────────────
-class _SetTracker extends StatelessWidget {
-  final int completed;
-  final int total;
-  final bool isDone;
-  final VoidCallback onTap;
-  const _SetTracker({
-    required this.completed,
-    required this.total,
-    required this.isDone,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          ...List.generate(total, (i) {
-            final done = i < completed;
-            return Expanded(
-              child: GestureDetector(
-                onTap: isDone ? null : onTap,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: EdgeInsets.only(right: i < total - 1 ? 8 : 0),
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: done ? _kGreen : _kCard,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: done ? _kGreenMid : _kBorder,
-                      width: 1.5,
-                    ),
-                    boxShadow: done
-                        ? [
-                            BoxShadow(
-                                color: _kGreen.withValues(alpha: 0.35),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4))
-                          ]
-                        : [],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        done ? LucideIcons.check : LucideIcons.dumbbell,
-                        color: done ? _kWhite : _kMuted,
-                        size: 16,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Série ${i + 1}',
-                        style: GoogleFonts.inter(
-                          color: done ? _kWhite : _kMuted,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
-        ],
-      );
-}
-
-// ── CTA button ────────────────────────────────────────────────────────────────
-class _CtaButton extends StatelessWidget {
-  final bool isDone;
-  final int completedSets;
-  final int totalSets;
-  final Animation<double> pulseAnim;
-  final Animation<double> doneAnim;
-  final VoidCallback? onTap;
-
-  const _CtaButton({
-    required this.isDone,
-    required this.completedSets,
-    required this.totalSets,
-    required this.pulseAnim,
-    required this.doneAnim,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (isDone) {
-      return ScaleTransition(
-        scale: doneAnim,
-        child: Container(
-          width: double.infinity,
-          height: 58,
-          decoration: BoxDecoration(
-            color: _kGold,
-            borderRadius: BorderRadius.circular(50),
-            boxShadow: [
-              BoxShadow(
-                  color: _kGold.withValues(alpha: 0.45),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6))
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(LucideIcons.checkCircle, color: Colors.white, size: 18),
-              const SizedBox(width: 10),
-              Text(
-                'Exercice terminé !',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final remaining = totalSets - completedSets;
-    final label = remaining == 1
-        ? 'Dernière série — Terminer'
-        : 'Valider la série ${completedSets + 1}';
-
-    return AnimatedBuilder(
-      animation: pulseAnim,
-      builder: (_, child) => Transform.scale(
-        scale: completedSets == 0 ? pulseAnim.value : 1.0,
-        child: child,
-      ),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          height: 58,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [_kGreen, _kGreenMid],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(50),
-            boxShadow: [
-              BoxShadow(
-                  color: _kGreen.withValues(alpha: 0.50),
-                  blurRadius: 22,
-                  offset: const Offset(0, 8))
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(LucideIcons.check, color: Colors.white, size: 16),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.1,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
