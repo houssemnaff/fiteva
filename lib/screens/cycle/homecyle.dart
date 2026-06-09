@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:math';
+import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -135,45 +136,9 @@ class CycleScreen extends StatefulWidget {
 class _CycleScreenState extends State<CycleScreen> {
   int _currentDay = 14;
   final Set<FloSymptom> _logged = {};
-  bool _showCalendar = false;
+  // calendar is now a pushed route — no local state needed
 
   final DateTime _today = DateTime.now();
-  late DateTime _viewDate;
-
-  static const int _maxFutureMonths = 8;
-
-  static const _monthNames = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _viewDate = DateTime(DateTime.now().year, DateTime.now().month);
-  }
-
-  int get _viewMonthIndex => _viewDate.year * 12 + _viewDate.month;
-  int get _todayMonthIndex => _today.year * 12 + _today.month;
-
-  bool get _canGoBack => _viewMonthIndex > _todayMonthIndex;
-  bool get _canGoForward =>
-      _viewMonthIndex < _todayMonthIndex + _maxFutureMonths;
-
-  void _prevMonth() {
-    if (!_canGoBack) return;
-    HapticFeedback.lightImpact();
-    setState(() => _viewDate = DateTime(_viewDate.year, _viewDate.month - 1));
-  }
-
-  void _nextMonth() {
-    if (!_canGoForward) return;
-    HapticFeedback.lightImpact();
-    setState(() => _viewDate = DateTime(_viewDate.year, _viewDate.month + 1));
-  }
-
-  String get _monthLabel =>
-      '${_monthNames[_viewDate.month - 1]} ${_viewDate.year}';
 
   @override
   Widget build(BuildContext context) {
@@ -187,9 +152,7 @@ class _CycleScreenState extends State<CycleScreen> {
           duration: const Duration(milliseconds: 320),
           transitionBuilder: (child, anim) =>
               FadeTransition(opacity: anim, child: child),
-          child: _showCalendar
-              ? _buildCalendar()
-              : _buildHome(theme, phase),
+          child: _buildHome(theme, phase),
         ),
       ),
     );
@@ -204,7 +167,78 @@ class _CycleScreenState extends State<CycleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _buildHeader(theme, phase),
+          SharedAppHeader(
+            eyebrow:     'Cycle',
+            title:       'Mon Cycle',
+            accentColor:  theme.primary,
+            bgColor:      FloColors.bg,
+            actions: [
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PregnancyHubScreen(
+                        pregnancyStartDate: DateTime.now()
+                            .subtract(const Duration(days: 37 * 7)),
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: FloColors.surface,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(Icons.child_friendly_rounded,
+                      size: 16, color: theme.primary),
+                ),
+              ),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.of(context).push(
+                    PageRouteBuilder(
+                      pageBuilder: (_, a, __) => CycleCalendar(
+                        displayYear:    _today.year,
+                        displayMonth:   _today.month,
+                        today:          _today,
+                        todayCycleDay:  _currentDay,
+                        selectedCycleDay: _currentDay,
+                        onDaySelected: (d) {
+                          setState(() => _currentDay = d);
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      transitionsBuilder: (_, a, __, child) =>
+                          SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 1), end: Offset.zero)
+                              .animate(CurvedAnimation(
+                                parent: a, curve: Curves.easeOutCubic)),
+                            child: child),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: theme.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(children: [
+                    Icon(Icons.calendar_month_rounded, size: 15, color: theme.primary),
+                    const SizedBox(width: 5),
+                    Text('Calendrier',
+                        style: FloTypo.body(12, w: FontWeight.w500, c: theme.primary)),
+                  ]),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 28),
           _CircularRing(
             day: _currentDay,
@@ -238,165 +272,7 @@ class _CycleScreenState extends State<CycleScreen> {
     );
   }
 
-  // ── Calendar view ──────────────────────────────────────────────────────────
-
-  Widget _buildCalendar() {
-    return SingleChildScrollView(
-      key: const ValueKey('calendar'),
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Back header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    setState(() => _showCalendar = false);
-                  },
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: FloColors.surface,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_back_ios_new_rounded,
-                        size: 15, color: Color(0xFFB07A9A)),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Text('Calendrier du cycle', style: FloTypo.heading(18)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Month nav
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: Row(
-              children: [
-                _NavBtn(
-                  icon: Icons.chevron_left_rounded,
-                  onTap: _prevMonth,
-                  enabled: _canGoBack,
-                ),
-                const Spacer(),
-                Text(
-                  _monthLabel,
-                  style: FloTypo.heading(15, w: FontWeight.w600),
-                ),
-                const Spacer(),
-                _NavBtn(
-                  icon: Icons.chevron_right_rounded,
-                  onTap: _nextMonth,
-                  enabled: _canGoForward,
-                ),
-              ],
-            ),
-          ),
-          CycleCalendar(
-            displayYear: _viewDate.year,
-            displayMonth: _viewDate.month,
-            today: _today,
-            todayCycleDay: _currentDay,
-            selectedCycleDay: _currentDay,
-            onDaySelected: (d) {
-              HapticFeedback.lightImpact();
-              setState(() {
-                _currentDay = d;
-                _showCalendar = false;
-              });
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Header ─────────────────────────────────────────────────────────────────
-
-  Widget _buildHeader(CycleTheme theme, CyclePhase phase) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Mon Cycle', style: FloTypo.heading(22, w: FontWeight.w700)),
-              const SizedBox(height: 2),
-              Text(
-                'Jour $_currentDay · ${phase.name}',
-                style: FloTypo.body(13, c: FloColors.muted),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          PregnancyHubScreen(
-                      pregnancyStartDate: DateTime.now()
-                          .subtract(const Duration(days: 14 * 7)),
-                    ),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: FloColors.surface,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Icon(Icons.child_friendly_rounded,
-                      size: 16, color: theme.primary),
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  setState(() => _showCalendar = true);
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: theme.primary.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.calendar_month_rounded,
-                          size: 15, color: theme.primary),
-                      const SizedBox(width: 5),
-                      Text(
-                        'Calendrier',
-                        style: FloTypo.body(12,
-                            w: FontWeight.w500, c: theme.primary),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Calendar is now a full-screen pushed route — see onTap in SharedAppHeader actions.
 
   // ── Symptom chips row ──────────────────────────────────────────────────────
 
@@ -802,36 +678,3 @@ class _PhaseCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  CALENDAR NAV BUTTON
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _NavBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool enabled;
-
-  const _NavBtn({required this.icon, required this.onTap, this.enabled = true});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: FloColors.surface,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          size: 17,
-          color: enabled
-              ? const Color(0xFFB07A9A)
-              : const Color(0xFFD4C4CB),
-        ),
-      ),
-    );
-  }
-}

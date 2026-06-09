@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // MODELS
@@ -760,15 +762,505 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Text(
       text.toUpperCase(),
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: colorScheme.onSurfaceVariant,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
         letterSpacing: 0.8,
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FEATURE 4 — OBJECTIF CALORIQUE DYNAMIQUE
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const _kGreen  = Color(0xFF1C4D30);
+const _kMint   = Color(0xFF7ABB98);
+const _kBorder = Color(0xFFECECEC);
+const _kText1  = Color(0xFF1A1A1A);
+const _kText2  = Color(0xFF6B7280);
+
+// ── Phase calorie & macro extension ───────────────────────────────────────────
+extension CyclePhaseCalorieExt on CyclePhase {
+  int get calorieAdjustment => switch (this) {
+    CyclePhase.menstruation => -50,
+    CyclePhase.folliculaire => 0,
+    CyclePhase.ovulation    => 0,
+    CyclePhase.luteale      => 150,
+  };
+
+  String get calorieExplanation => switch (this) {
+    CyclePhase.menstruation =>
+      'Légère réduction — le métabolisme ralentit en début de cycle.',
+    CyclePhase.folliculaire =>
+      'Objectif standard — énergie stable et montante.',
+    CyclePhase.ovulation    =>
+      'Objectif standard — pic d\'énergie, besoins stables.',
+    CyclePhase.luteale      =>
+      'Cible plus haute — ton corps brûle plus en phase lutéale.',
+  };
+
+  List<PhaseNutritionTarget> get macroTargets => switch (this) {
+    CyclePhase.menstruation => const [
+      PhaseNutritionTarget('Fer',                '↑', Color(0xFFD94F6B)),
+      PhaseNutritionTarget('Anti-inflammatoires','↑', Color(0xFFE8927C)),
+      PhaseNutritionTarget('Protéines',          '=', Color(0xFF7ABB98)),
+      PhaseNutritionTarget('Glucides',           '=', Color(0xFF7BA7FF)),
+    ],
+    CyclePhase.folliculaire => const [
+      PhaseNutritionTarget('Protéines','↑', Color(0xFF7ABB98)),
+      PhaseNutritionTarget('Oméga-3', '↑', Color(0xFF6B8FD4)),
+      PhaseNutritionTarget('Glucides','=', Color(0xFF7BA7FF)),
+      PhaseNutritionTarget('Lipides', '=', Color(0xFFF4A940)),
+    ],
+    CyclePhase.ovulation => const [
+      PhaseNutritionTarget('Zinc',        '↑', Color(0xFF0F6E56)),
+      PhaseNutritionTarget('Antioxydants','↑', Color(0xFF7BA7FF)),
+      PhaseNutritionTarget('Protéines',   '=', Color(0xFF7ABB98)),
+      PhaseNutritionTarget('Fibres',      '↑', Color(0xFFF4A940)),
+    ],
+    CyclePhase.luteale => const [
+      PhaseNutritionTarget('Glucides complexes','+', Color(0xFF7BA7FF)),
+      PhaseNutritionTarget('Magnésium',         '+', Color(0xFF6B4F9B)),
+      PhaseNutritionTarget('Protéines',         '=', Color(0xFF7ABB98)),
+      PhaseNutritionTarget('Lipides',           '=', Color(0xFFF4A940)),
+    ],
+  };
+
+  DailyNutrientTip get nutrientOfDay => switch (this) {
+    CyclePhase.menstruation => const DailyNutrientTip(
+      nutrient: 'Fer',
+      icon: Icons.water_drop_rounded,
+      color: Color(0xFFD94F6B),
+      bg: Color(0xFFFDF0F2),
+      reason: 'Compense les pertes sanguines et combat la fatigue.',
+      sources: [
+        NutrientFoodSource('Lentilles cuites',  '3,3 mg / 100 g'),
+        NutrientFoodSource('Épinards cuits',    '2,7 mg / 100 g'),
+        NutrientFoodSource('Chocolat noir 70%', '11 mg / 100 g'),
+      ],
+    ),
+    CyclePhase.folliculaire => const DailyNutrientTip(
+      nutrient: 'Protéines',
+      icon: Icons.fitness_center_rounded,
+      color: Color(0xFF1C4D30),
+      bg: Color(0xFFEAF3EC),
+      reason: 'Soutient la synthèse hormonale et la récupération musculaire.',
+      sources: [
+        NutrientFoodSource('Poulet grillé', '31 g / 100 g'),
+        NutrientFoodSource('Œufs entiers',  '13 g / 100 g'),
+        NutrientFoodSource('Pois chiches',  '9 g / 100 g'),
+      ],
+    ),
+    CyclePhase.ovulation => const DailyNutrientTip(
+      nutrient: 'Zinc',
+      icon: Icons.bolt_rounded,
+      color: Color(0xFF0F6E56),
+      bg: Color(0xFFE1F5EE),
+      reason: 'Favorise la maturation de l\'ovule et le système immunitaire.',
+      sources: [
+        NutrientFoodSource('Graines de courge', '7,5 mg / 30 g'),
+        NutrientFoodSource('Bœuf maigre',       '4,8 mg / 100 g'),
+        NutrientFoodSource('Noix de cajou',      '1,6 mg / 30 g'),
+      ],
+    ),
+    CyclePhase.luteale => const DailyNutrientTip(
+      nutrient: 'Magnésium',
+      icon: Icons.self_improvement_rounded,
+      color: Color(0xFF6B4F9B),
+      bg: Color(0xFFF3EEF9),
+      reason: 'Réduit les crampes, l\'irritabilité et améliore le sommeil.',
+      sources: [
+        NutrientFoodSource('Amandes',            '76 mg / 30 g'),
+        NutrientFoodSource('Graines de courge',  '150 mg / 30 g'),
+        NutrientFoodSource('Banane',             '37 mg / pièce'),
+      ],
+    ),
+  };
+}
+
+// ── Data models ───────────────────────────────────────────────────────────────
+class PhaseNutritionTarget {
+  final String name, direction;
+  final Color color;
+  const PhaseNutritionTarget(this.name, this.direction, this.color);
+}
+
+class DailyNutrientTip {
+  final String nutrient, reason;
+  final IconData icon;
+  final Color color, bg;
+  final List<NutrientFoodSource> sources;
+  const DailyNutrientTip({
+    required this.nutrient,
+    required this.icon,
+    required this.color,
+    required this.bg,
+    required this.reason,
+    required this.sources,
+  });
+}
+
+class NutrientFoodSource {
+  final String food, amount;
+  const NutrientFoodSource(this.food, this.amount);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// WIDGET 7 — OBJECTIF CALORIQUE DYNAMIQUE
+// ══════════════════════════════════════════════════════════════════════════════
+class DynamicCalorieCard extends StatefulWidget {
+  final CyclePhase phase;
+  final int baseCalories;
+  final int consumed;
+
+  const DynamicCalorieCard({
+    super.key,
+    required this.phase,
+    this.baseCalories = 2000,
+    this.consumed = 865,
+  });
+
+  @override
+  State<DynamicCalorieCard> createState() => _DynamicCalorieCardState();
+}
+
+class _DynamicCalorieCardState extends State<DynamicCalorieCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1200));
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final adjusted   = widget.baseCalories + widget.phase.calorieAdjustment;
+    final adj        = widget.phase.calorieAdjustment;
+    final progress   = (widget.consumed / adjusted).clamp(0.0, 1.0);
+    final remaining  = adjusted - widget.consumed;
+    final over       = remaining < 0;
+    final phaseColor = widget.phase.color;
+    final phaseBg    = widget.phase.bg;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _kBorder),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 16, offset: const Offset(0, 4))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // ── Header ────────────────────────────────────────────────────────────
+        Row(children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('OBJECTIF CALORIQUE', style: GoogleFonts.inter(
+              color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+              letterSpacing: 2.5)),
+            const SizedBox(height: 2),
+            Text('Ajusté pour ta phase', style: GoogleFonts.outfit(
+              color: _kText1, fontSize: 18, fontWeight: FontWeight.w800,
+              letterSpacing: -0.3)),
+          ]),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: phaseBg, borderRadius: BorderRadius.circular(20)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(widget.phase.emoji,
+                style: const TextStyle(fontSize: 12)),
+              const SizedBox(width: 5),
+              Text(widget.phase.label, style: GoogleFonts.inter(
+                fontSize: 11, fontWeight: FontWeight.w700,
+                color: phaseColor)),
+            ]),
+          ),
+        ]),
+
+        const SizedBox(height: 18),
+
+        // ── Animated ring + info ──────────────────────────────────────────────
+        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          AnimatedBuilder(
+            animation: _anim,
+            builder: (_, __) => SizedBox(
+              width: 108, height: 108,
+              child: Stack(alignment: Alignment.center, children: [
+                SizedBox(
+                  width: 108, height: 108,
+                  child: CircularProgressIndicator(
+                    value: progress * _anim.value,
+                    strokeWidth: 9,
+                    backgroundColor: phaseColor.withValues(alpha: 0.10),
+                    valueColor: AlwaysStoppedAnimation(
+                      over ? const Color(0xFFE24B4A) : phaseColor),
+                    strokeCap: StrokeCap.round,
+                  ),
+                ),
+                Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text('${widget.consumed}', style: GoogleFonts.outfit(
+                    fontSize: 22, fontWeight: FontWeight.w800,
+                    color: _kText1, height: 1)),
+                  Text('/ $adjusted', style: GoogleFonts.inter(
+                    fontSize: 10, color: _kText2)),
+                  Text('kcal', style: GoogleFonts.inter(
+                    fontSize: 9, color: _kText2)),
+                ]),
+              ]),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+              Text('$adjusted kcal aujourd\'hui',
+                style: GoogleFonts.outfit(
+                  fontSize: 15, fontWeight: FontWeight.w800,
+                  color: _kText1)),
+              if (adj != 0) ...[
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: adj > 0
+                        ? const Color(0xFFFAEEDA)
+                        : const Color(0xFFE6F5EE),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Text(
+                    '${adj > 0 ? '+' : ''}$adj kcal vs base',
+                    style: GoogleFonts.inter(
+                      fontSize: 10, fontWeight: FontWeight.w700,
+                      color: adj > 0
+                          ? const Color(0xFF9B5E0A)
+                          : _kGreen)),
+                ),
+              ],
+              const SizedBox(height: 10),
+              // Remaining / over pill
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                decoration: BoxDecoration(
+                  color: over
+                      ? const Color(0xFFFFEEEE)
+                      : phaseColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10)),
+                child: Center(
+                  child: Text(
+                    over
+                        ? '+${(-remaining).abs()} kcal dépassés'
+                        : '$remaining kcal restantes',
+                    style: GoogleFonts.inter(
+                      fontSize: 11, fontWeight: FontWeight.w700,
+                      color: over
+                          ? const Color(0xFFE03050)
+                          : phaseColor)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Contextual explanation
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(LucideIcons.info,
+                  size: 12, color: phaseColor),
+                const SizedBox(width: 5),
+                Expanded(child: Text(
+                  widget.phase.calorieExplanation,
+                  style: GoogleFonts.inter(
+                    fontSize: 11, color: _kText2, height: 1.45))),
+              ]),
+            ]),
+          ),
+        ]),
+
+        const SizedBox(height: 16),
+
+        // ── Macro targets for this phase ──────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: phaseBg, borderRadius: BorderRadius.circular(14)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            Text(
+              'MACROS · ${widget.phase.label.toUpperCase()}',
+              style: GoogleFonts.inter(
+                fontSize: 9, fontWeight: FontWeight.w700,
+                color: phaseColor, letterSpacing: 2.0)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8, runSpacing: 6,
+              children: widget.phase.macroTargets.map((m) =>
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: m.color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: m.color.withValues(alpha: 0.25))),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Container(
+                      width: 16, height: 16,
+                      decoration: BoxDecoration(
+                        color: m.color.withValues(alpha: 0.20),
+                        shape: BoxShape.circle),
+                      child: Center(child: Text(m.direction,
+                        style: TextStyle(
+                          fontSize: 9, color: m.color,
+                          fontWeight: FontWeight.w900)))),
+                    const SizedBox(width: 5),
+                    Text(m.name, style: GoogleFonts.inter(
+                      fontSize: 11, fontWeight: FontWeight.w600,
+                      color: _kText1)),
+                  ]),
+                )
+              ).toList(),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// WIDGET 8 — NUTRIMENT DU JOUR
+// ══════════════════════════════════════════════════════════════════════════════
+class DailyNutrientTipCard extends StatelessWidget {
+  final CyclePhase phase;
+  const DailyNutrientTipCard({super.key, required this.phase});
+
+  @override
+  Widget build(BuildContext context) {
+    final tip = phase.nutrientOfDay;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _kBorder),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 16, offset: const Offset(0, 4))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // ── Header ────────────────────────────────────────────────────────────
+        Row(children: [
+          Text('NUTRIMENT DU JOUR', style: GoogleFonts.inter(
+            color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+            letterSpacing: 2.5)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F4F4),
+              borderRadius: BorderRadius.circular(20)),
+            child: Text('Aujourd\'hui', style: GoogleFonts.inter(
+              fontSize: 10, fontWeight: FontWeight.w600, color: _kText2))),
+        ]),
+        const SizedBox(height: 4),
+        Row(children: [
+          Text('Priorité : ', style: GoogleFonts.outfit(
+            color: _kText1, fontSize: 18, fontWeight: FontWeight.w800,
+            letterSpacing: -0.3)),
+          Text(tip.nutrient, style: GoogleFonts.outfit(
+            color: tip.color, fontSize: 18, fontWeight: FontWeight.w800,
+            letterSpacing: -0.3)),
+        ]),
+
+        const SizedBox(height: 14),
+
+        // ── Icon + reason ─────────────────────────────────────────────────────
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: tip.bg, shape: BoxShape.circle),
+            child: Icon(tip.icon, color: tip.color, size: 20)),
+          const SizedBox(width: 12),
+          Expanded(child: Text(tip.reason, style: GoogleFonts.inter(
+            fontSize: 13, color: _kText2, height: 1.5))),
+        ]),
+
+        const SizedBox(height: 14),
+
+        // ── Top 3 food sources ────────────────────────────────────────────────
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F8F8),
+            borderRadius: BorderRadius.circular(16)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                child: Text('LES 3 MEILLEURES SOURCES',
+                  style: GoogleFonts.inter(
+                    fontSize: 9, fontWeight: FontWeight.w700,
+                    color: _kMint, letterSpacing: 2.0)),
+              ),
+              ...tip.sources.asMap().entries.map((entry) {
+                final idx  = entry.key;
+                final src  = entry.value;
+                final last = idx == tip.sources.length - 1;
+                return Column(children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 4, 14, 4),
+                    child: Row(children: [
+                      Container(
+                        width: 22, height: 22,
+                        decoration: BoxDecoration(
+                          color: tip.color, shape: BoxShape.circle),
+                        child: Center(child: Text('${idx + 1}',
+                          style: GoogleFonts.inter(
+                            fontSize: 10, fontWeight: FontWeight.w800,
+                            color: Colors.white))),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(src.food,
+                        style: GoogleFonts.inter(
+                          fontSize: 13, fontWeight: FontWeight.w600,
+                          color: _kText1))),
+                      Text(src.amount, style: GoogleFonts.inter(
+                        fontSize: 11, color: _kText2)),
+                    ]),
+                  ),
+                  if (!last)
+                    Divider(height: 14, indent: 46, color: _kBorder)
+                  else
+                    const SizedBox(height: 12),
+                ]);
+              }),
+            ],
+          ),
+        ),
+      ]),
     );
   }
 }

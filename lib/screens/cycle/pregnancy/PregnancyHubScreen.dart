@@ -3,6 +3,7 @@ import 'package:fiteva/screens/cycle/pregnancy/PregnancyInsightRepository.dart';
 import 'package:fiteva/screens/cycle/pregnancy/baby-story/baby_story_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/checklist/pregnancy_checklist_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/daily_insight_model.dart';
+import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_hub_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/symptom/symptoms_home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -261,9 +262,18 @@ class _PregnancyHubScreenState extends State<PregnancyHubScreen> {
     );
   }
 
-  // ── Settings button ──────────────────────────────────────────────────────────
+  // ── Settings / Born button ────────────────────────────────────────────────────
 
   Widget _buildSettingsBtn() {
+    // Dès la semaine 37 (terme), on propose le passage au post-partum
+    if (_currentWeek >= 37) {
+      return _BabyBornButton(
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          _navigateToPostpartum(DateTime.now());
+        },
+      );
+    }
     return OutlinedButton(
       onPressed: () {
         HapticFeedback.lightImpact();
@@ -278,6 +288,26 @@ class _PregnancyHubScreenState extends State<PregnancyHubScreen> {
       ),
       child: Text('Paramètres',
           style: _C.b(13, w: FontWeight.w700, c: _C.accent)),
+    );
+  }
+
+  void _navigateToPostpartum(DateTime birthDate) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, animation, __) =>
+            PostpartumHubScreen(birthDate: birthDate),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            ),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 500),
+      ),
     );
   }
 
@@ -666,6 +696,56 @@ class _InsightBlock extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BABY BORN BUTTON — affiché dès S37
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _BabyBornButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _BabyBornButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFB99FD8), Color(0xFF9B7FC7)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF9B7FC7).withOpacity(0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.child_friendly_rounded,
+                size: 18, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(
+              'Mon bébé est né !',
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

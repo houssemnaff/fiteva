@@ -428,10 +428,7 @@ class _ActionsRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: const [
-          _ActionBtn(icon: Icons.shopping_bag_outlined,   label: 'Shopping'),
-          _ActionBtn(icon: Icons.calendar_month_outlined, label: 'Planifier'),
-          _ActionBtn(icon: Icons.ios_share_rounded,       label: 'Partager'),
-          _ActionBtn(icon: Icons.timer_outlined,          label: 'Timer'),
+        
         ],
       ),
     );

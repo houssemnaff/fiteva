@@ -1,4 +1,5 @@
 import 'package:fiteva/screens/shop/screens/all_partenaires_screen.dart';
+import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../models/mock_data.dart';
@@ -259,15 +260,57 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
         physics: const BouncingScrollPhysics(),
         slivers: [
 
-          // ── Header ──────────────────────────────────────────────────────
+          // ── Common header ────────────────────────────────────────────────
+          SharedAppHeader.sliver(
+            eyebrow:    'Boutique',
+            title:      'Récompenses',
+            accentColor: _C.gold,
+            bgColor:     c.bg,
+            actions: [
+              GestureDetector(
+                onTap: _openFavorites,
+                child: Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: c.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: c.divider, width: 1),
+                  ),
+                  child: Icon(CupertinoIcons.heart, size: 17, color: c.ink),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: c.isDark
+                      ? _C.gold.withValues(alpha: 0.14)
+                      : const Color(0xFFF7EDD8),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: _C.gold.withValues(alpha: 0.35), width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(CupertinoIcons.star_fill, color: _C.gold, size: 13),
+                    const SizedBox(width: 5),
+                    Text('$_userEtoiles',
+                      style: TextStyle(
+                        color: c.ink, fontSize: 13,
+                        fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 64, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Header(c: c, etoiles: _userEtoiles, onFavoritesTap: _openFavorites),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 12),
                   _PicksSection(
                     c: c,
                     items: _picks,
@@ -363,83 +406,6 @@ if (filtered.isNotEmpty)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HEADER — title left, stars badge right
-// ─────────────────────────────────────────────────────────────────────────────
-class _Header extends StatelessWidget {
-  final _C          c;
-  final int         etoiles;
-  final VoidCallback onFavoritesTap;
-  const _Header({required this.c, required this.etoiles, required this.onFavoritesTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Boutique', style: _T.heading(c, 34, ls: -1.2)),
-              const SizedBox(height: 4),
-              Text('Récompenses partenaires', style: _T.body(c, 13.5)),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        // Favorites button
-        GestureDetector(
-          onTap: onFavoritesTap,
-          child: Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              color: c.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: c.divider, width: 1),
-            ),
-            child: Icon(CupertinoIcons.heart, size: 17, color: c.ink),
-          ),
-        ),
-        const SizedBox(width: 10),
-        // Stars badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          decoration: BoxDecoration(
-            color: c.isDark
-                ? _C.gold.withValues(alpha: 0.14)
-                : const Color(0xFFF7EDD8),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: _C.gold.withValues(alpha: 0.35), width: 1),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(CupertinoIcons.star_fill, color: _C.gold, size: 14),
-              const SizedBox(width: 7),
-              Text(
-                '$etoiles',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: _C.gold,
-                  fontSize: 15,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text('pts',
-                  style: TextStyle(
-                    color: _C.gold.withValues(alpha: 0.75),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  )),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // PARTNER BANNER — "Devenir partenaire" CTA
 // ─────────────────────────────────────────────────────────────────────────────
