@@ -1,6 +1,7 @@
 import 'package:fiteva/models/post_model.dart';
-import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/screens/community/UserProfileScreen.dart';
+import 'package:fiteva/screens/community/providers/community_providers.dart';
+import 'package:fiteva/screens/community/widgets/feed/comment_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,7 +31,7 @@ class _FeedTabState extends ConsumerState<FeedTab> {
 
   @override
   Widget build(BuildContext context) {
-    final posts = ref.watch(postsProvider);
+    final posts = ref.watch(postsNotifierProvider);
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
@@ -131,25 +132,22 @@ class _FilterPill extends StatelessWidget {
 }
 
 // ─── Post Card ────────────────────────────────────────────────
-class _PostCard extends StatefulWidget {
+class _PostCard extends ConsumerStatefulWidget {
   final PostModel post;
   const _PostCard({required this.post});
 
   @override
-  State<_PostCard> createState() => _PostCardState();
+  ConsumerState<_PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<_PostCard>
+class _PostCardState extends ConsumerState<_PostCard>
     with SingleTickerProviderStateMixin {
-  bool _liked = false;
-  late int _likeCount;
   late AnimationController _heartCtrl;
   late Animation<double> _heartScale;
 
   @override
   void initState() {
     super.initState();
-    _likeCount = widget.post.likes;
     _heartCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 280));
     _heartScale = TweenSequence<double>([
@@ -163,11 +161,22 @@ class _PostCardState extends State<_PostCard>
   void dispose() { _heartCtrl.dispose(); super.dispose(); }
 
   void _toggleLike() {
-    setState(() {
-      _liked = !_liked;
-      _likeCount += _liked ? 1 : -1;
-    });
-    if (_liked) _heartCtrl.forward(from: 0);
+    final notifier = ref.read(postsNotifierProvider.notifier);
+    final wasLiked = notifier.isLiked(widget.post.id);
+    notifier.toggleLike(widget.post.id);
+    if (!wasLiked) _heartCtrl.forward(from: 0);
+  }
+
+  void _openComments() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CommentSheet(
+        postId: widget.post.id,
+        postAuthor: widget.post.username,
+      ),
+    );
   }
 
   void _openProfile() {
@@ -181,8 +190,15 @@ class _PostCardState extends State<_PostCard>
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = widget.post.imageUrl.trim().isNotEmpty;
-    final category = widget.post.category ?? '';
+    // Watch the provider so likes/comments update reactively
+    final posts = ref.watch(postsNotifierProvider);
+    final post  = posts.firstWhere(
+      (p) => p.id == widget.post.id,
+      orElse: () => widget.post,
+    );
+    final liked    = ref.read(postsNotifierProvider.notifier).isLiked(post.id);
+    final hasImage = post.imageUrl.trim().isNotEmpty;
+    final category = post.category;
 
     return Container(
       decoration: BoxDecoration(
@@ -191,7 +207,7 @@ class _PostCardState extends State<_PostCard>
         border: Border.all(color: _kBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 14,
             offset: const Offset(0, 3),
           ),
@@ -208,10 +224,10 @@ class _PostCardState extends State<_PostCard>
               GestureDetector(
                 onTap: _openProfile,
                 child: Hero(
-                  tag: 'avatar_${widget.post.username}',
+                  tag: 'avatar_${post.username}',
                   child: CircleAvatar(
                     radius: 20,
-                    backgroundImage: NetworkImage(widget.post.userAvatarUrl),
+                    backgroundImage: NetworkImage(post.userAvatarUrl),
                   ),
                 ),
               ),
@@ -222,15 +238,13 @@ class _PostCardState extends State<_PostCard>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.post.username, style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: _kTextPrimary,
-                        letterSpacing: -0.2,
+                      Text(post.username, style: GoogleFonts.outfit(
+                        fontSize: 14, fontWeight: FontWeight.w700,
+                        color: _kTextPrimary, letterSpacing: -0.2,
                       )),
                       const SizedBox(height: 3),
                       Row(children: [
-                        Text(widget.post.timeAgo, style: GoogleFonts.inter(
+                        Text(post.timeAgo, style: GoogleFonts.inter(
                           fontSize: 11, color: _kTextSecondary,
                         )),
                         if (category.isNotEmpty) ...[
@@ -243,12 +257,11 @@ class _PostCardState extends State<_PostCard>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: _kGreen.withOpacity(0.08),
+                              color: _kGreen.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(category, style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 10, fontWeight: FontWeight.w700,
                               color: _kGreen,
                             )),
                           ),
@@ -260,7 +273,7 @@ class _PostCardState extends State<_PostCard>
               ),
               CupertinoButton(
                 padding: const EdgeInsets.all(6),
-                minSize: 0,
+                minimumSize: Size.zero,
                 onPressed: () {},
                 child: const Icon(CupertinoIcons.ellipsis,
                     color: _kTextSecondary, size: 18),
@@ -271,11 +284,9 @@ class _PostCardState extends State<_PostCard>
           // ── Post text ────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-            child: Text(widget.post.content, style: GoogleFonts.inter(
-              fontSize: 14,
-              color: _kTextPrimary,
-              height: 1.5,
-              letterSpacing: -0.1,
+            child: Text(post.content, style: GoogleFonts.inter(
+              fontSize: 14, color: _kTextPrimary,
+              height: 1.5, letterSpacing: -0.1,
             )),
           ),
 
@@ -284,12 +295,10 @@ class _PostCardState extends State<_PostCard>
             GestureDetector(
               onDoubleTap: _toggleLike,
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(0)),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(0)),
                 child: SizedBox(
-                  height: 200,
-                  width: double.infinity,
-                  child: Image.network(widget.post.imageUrl, fit: BoxFit.cover),
+                  height: 200, width: double.infinity,
+                  child: Image.network(post.imageUrl, fit: BoxFit.cover),
                 ),
               ),
             ),
@@ -301,12 +310,12 @@ class _PostCardState extends State<_PostCard>
               // Like
               GestureDetector(
                 onTap: _toggleLike,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 7),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    color: _liked
-                        ? const Color(0xFFFF375F).withOpacity(0.08)
+                    color: liked
+                        ? const Color(0xFFFF375F).withValues(alpha: 0.08)
                         : const Color(0xFFF4F4F2),
                     borderRadius: BorderRadius.circular(50),
                   ),
@@ -314,20 +323,15 @@ class _PostCardState extends State<_PostCard>
                     ScaleTransition(
                       scale: _heartScale,
                       child: Icon(
-                        _liked ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+                        liked ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
                         size: 16,
-                        color: _liked
-                            ? const Color(0xFFFF375F)
-                            : _kTextSecondary,
+                        color: liked ? const Color(0xFFFF375F) : _kTextSecondary,
                       ),
                     ),
                     const SizedBox(width: 5),
-                    Text('$_likeCount', style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: _liked
-                          ? const Color(0xFFFF375F)
-                          : _kTextSecondary,
+                    Text('${post.likes}', style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w700,
+                      color: liked ? const Color(0xFFFF375F) : _kTextSecondary,
                     )),
                   ]),
                 ),
@@ -336,10 +340,9 @@ class _PostCardState extends State<_PostCard>
 
               // Comment
               GestureDetector(
-                onTap: () {},
+                onTap: _openComments,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 7),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F4F2),
                     borderRadius: BorderRadius.circular(50),
@@ -348,9 +351,8 @@ class _PostCardState extends State<_PostCard>
                     const Icon(CupertinoIcons.chat_bubble,
                         size: 15, color: _kTextSecondary),
                     const SizedBox(width: 5),
-                    Text('${widget.post.comments}', style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                    Text('${post.comments}', style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w700,
                       color: _kTextSecondary,
                     )),
                   ]),

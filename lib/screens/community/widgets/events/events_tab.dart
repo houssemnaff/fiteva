@@ -36,7 +36,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final events = ref.watch(eventsProvider);
+    final events = ref.watch(eventsNotifierProvider);
     final filtered = _selectedType == 'Tous'
         ? events
         : events.where((e) => e.type.toLowerCase() == _selectedType.toLowerCase()).toList();
@@ -120,12 +120,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                       LucideIcons.calendarDays,
                   onJoin: () {
                     HapticFeedback.mediumImpact();
-                    ref.read(eventsProvider.notifier).update((list) => list
-                        .map((e) {
-                          if (e.id == event.id) e.isJoined = !e.isJoined;
-                          return e;
-                        })
-                        .toList());
+                    ref.read(eventsNotifierProvider.notifier).toggleJoin(event.id);
                   },
                   onViewParticipants: () => showModalBottomSheet<void>(
                     context: context,

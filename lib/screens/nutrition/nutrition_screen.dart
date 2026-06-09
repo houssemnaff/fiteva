@@ -1,4 +1,5 @@
 import 'package:fiteva/screens/nutrition/health_nutrition_widgets.dart';
+import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -13,7 +14,6 @@ import 'recette_detail_screen.dart';
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const _kGreen  = Color(0xFF1C4D30);
 const _kMint   = Color(0xFF7ABB98);
-const _kMintBg = Color(0xFFEAF3EC);
 const _kCream  = Color(0xFFFEFEFE);
 const _kBorder = Color(0xFFECECEC);
 const _kText1  = Color(0xFF1A1A1A);
@@ -118,7 +118,11 @@ class _NutritionHomeScreenState extends State<NutritionHomeScreen>
         slivers: [
 
           // ── Sticky editorial header ───────────────────────────
-          _NutritionHeader(),
+          SharedAppHeader.sliver(
+            eyebrow:    'Nutrition',
+            title:      'Mon alimentation',
+            accentColor: _kMint,
+          ),
 
           // ══════════════════════════════════════════════════════
           // NUTRITION SECTION
@@ -203,7 +207,21 @@ class _NutritionHomeScreenState extends State<NutritionHomeScreen>
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
             child: _BodySignalCard())),
 
-          // 4. Water tracker (existing)
+          // 4. Objectif calorique dynamique (new)
+          SliverToBoxAdapter(child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: DynamicCalorieCard(
+              phase: _currentPhase,
+              baseCalories: 2000,
+              consumed: 865,
+            ))),
+
+          // 4b. Nutriment du jour (new)
+          SliverToBoxAdapter(child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: DailyNutrientTipCard(phase: _currentPhase))),
+
+          // 5. Water tracker (existing)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -228,83 +246,6 @@ class _NutritionHomeScreenState extends State<NutritionHomeScreen>
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// HEADER — no tabs
-// ══════════════════════════════════════════════════════════════════════════════
-class _NutritionHeader extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final top = MediaQuery.of(context).padding.top;
-    return SliverAppBar(
-      pinned: true,
-      expandedHeight: top + 100.0,
-      collapsedHeight: top + 56,
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      flexibleSpace: LayoutBuilder(builder: (_, constraints) {
-        final collapsed =
-            1 - ((constraints.maxHeight - (top + 56)) / 44).clamp(0.0, 1.0);
-        return Container(
-          color: Colors.white,
-          padding: EdgeInsets.fromLTRB(20, top + 14, 20, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AnimatedOpacity(
-                opacity: (1 - collapsed * 2.2).clamp(0.0, 1.0),
-                duration: Duration.zero,
-                child: Row(children: [
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('NUTRITION', style: GoogleFonts.inter(
-                      color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
-                      letterSpacing: 3.5)),
-                    const SizedBox(height: 2),
-                    Text('Mon alimentation', style: GoogleFonts.outfit(
-                      color: _kGreen, fontSize: 24, fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5)),
-                  ]),
-                  const Spacer(),
-                  Container(
-                    width: 40, height: 40,
-                    decoration: BoxDecoration(
-                      color: _kMintBg, shape: BoxShape.circle,
-                      border: Border.all(color: _kMint, width: 1.5)),
-                    child: Center(child: Text('Y', style: GoogleFonts.outfit(
-                      color: _kGreen, fontSize: 15, fontWeight: FontWeight.w700)))),
-                ]),
-              ),
-              const Spacer(),
-              // Date row (stays visible when collapsed)
-              Row(children: [
-                const Icon(LucideIcons.calendarDays, size: 12, color: _kText2),
-                const SizedBox(width: 5),
-                Text(_todayLabel(), style: GoogleFonts.inter(
-                  fontSize: 12, color: _kText2)),
-                const Spacer(),
-                Container(width: 6, height: 6,
-                  decoration: const BoxDecoration(
-                    color: _kMint, shape: BoxShape.circle)),
-                const SizedBox(width: 5),
-                Text('Sur la bonne voie', style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w600, color: _kGreen)),
-              ]),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  static String _todayLabel() {
-    final now = DateTime.now();
-    const j = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-    const m = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-    return '${j[now.weekday - 1]} ${now.day} ${m[now.month - 1]}';
-  }
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SANTÉ SECTION DIVIDER

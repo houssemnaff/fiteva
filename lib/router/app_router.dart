@@ -25,7 +25,8 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/edit-avatar',
-      builder: (context, state) => const AvatarCustomizationScreen(),
+      builder: (context, state) => const AvatarCustomizationScreen(userName: 'Sarra'),
+
     ),
   ],
 );

@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use
 import 'package:fiteva/screens/cycle/widgets-cycle/Phasecolors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,10 +12,11 @@ import 'recipe_video_screen.dart';
 const _kGreen  = Color(0xFF1C4D30);
 const _kMint   = Color(0xFF7ABB98);
 const _kMintBg = Color(0xFFEAF3EC);
-const _kCream  = Color(0xFFFEFEFE);
+const _kCream  = Color(0xFFFAFAF8);
 const _kBorder = Color(0xFFECECEC);
-const _kText1  = Color(0xFF1A1A1A);
+const _kText1  = Color(0xFF111110);
 const _kText2  = Color(0xFF6B7280);
+const _kChipBg = Color(0xFFF2F2F0);
 
 // ── Data model ─────────────────────────────────────────────────────────────────
 class RealRecipe {
@@ -89,11 +91,17 @@ const _allRecipes = [
   ),
 ];
 
-const _filters = [
-  'Tout', 'Petit-dej', 'Protéiné', 'Végé', 'Vegan', 'Sans Gluten', 'Batch cooking',
+const _categories = [
+  (label: 'Tout',          icon: LucideIcons.layoutGrid),
+  (label: 'Petit-dej',     icon: LucideIcons.sunrise),
+  (label: 'Protéiné',      icon: LucideIcons.dumbbell),
+  (label: 'Végé',          icon: LucideIcons.leaf),
+  (label: 'Vegan',         icon: LucideIcons.sprout),
+  (label: 'Sans Gluten',   icon: LucideIcons.wheatOff),
+  (label: 'Batch cooking', icon: LucideIcons.cookingPot),
 ];
 
-// ── Video recipe data ──────────────────────────────────────────────────────────
+// ── Video data ─────────────────────────────────────────────────────────────────
 class _VideoRecipe {
   final String name, imageUrl, duration, difficulty;
   final int kcal;
@@ -107,20 +115,16 @@ class _VideoRecipe {
 const _videoRecipes = [
   _VideoRecipe(name: 'Soupe anti-crampes',
     imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80',
-    duration: '20 min', difficulty: 'Facile', kcal: 180,
-    phase: CyclePhase.menstrual),
+    duration: '20 min', difficulty: 'Facile', kcal: 180, phase: CyclePhase.menstrual),
   _VideoRecipe(name: 'Poke Bowl vitalité',
     imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80',
-    duration: '15 min', difficulty: 'Facile', kcal: 420,
-    phase: CyclePhase.follicular),
+    duration: '15 min', difficulty: 'Facile', kcal: 420, phase: CyclePhase.follicular),
   _VideoRecipe(name: 'Smoothie énergie max',
     imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&q=80',
-    duration: '5 min', difficulty: 'Très facile', kcal: 280,
-    phase: CyclePhase.ovulation),
+    duration: '5 min', difficulty: 'Très facile', kcal: 280, phase: CyclePhase.ovulation),
   _VideoRecipe(name: 'Pasta réconfort',
     imageUrl: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&q=80',
-    duration: '30 min', difficulty: 'Facile', kcal: 520,
-    phase: CyclePhase.luteal),
+    duration: '30 min', difficulty: 'Facile', kcal: 520, phase: CyclePhase.luteal),
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -135,10 +139,9 @@ class RecipesListScreen extends StatefulWidget {
 }
 
 class _RecipesListScreenState extends State<RecipesListScreen> {
-  String _activeFilter = 'Tout';
-  CyclePhase? _activePhase;
-  String _searchQuery = '';
-  final _searchCtrl = TextEditingController();
+  String _activeCategory = 'Tout';
+  String _searchQuery    = '';
+  final _searchCtrl      = TextEditingController();
 
   @override
   void dispose() {
@@ -148,11 +151,8 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
 
   List<RealRecipe> get _filtered {
     var list = _allRecipes.toList();
-    if (_activeFilter != 'Tout') {
-      list = list.where((r) => r.tags.contains(_activeFilter)).toList();
-    }
-    if (_activePhase != null) {
-      list = list.where((r) => r.phase == _activePhase).toList();
+    if (_activeCategory != 'Tout') {
+      list = list.where((r) => r.tags.contains(_activeCategory)).toList();
     }
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
@@ -166,8 +166,8 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final top      = MediaQuery.of(context).padding.top;
     final filtered = _filtered;
-    final top = MediaQuery.of(context).padding.top;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
@@ -177,283 +177,137 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
           physics: const BouncingScrollPhysics(),
           slivers: [
 
-            // ── Sticky header ────────────────────────────────────
-            SliverAppBar(
-              pinned: true,
-              expandedHeight: top + 110,
-              collapsedHeight: top + 62,
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              automaticallyImplyLeading: false,
-              flexibleSpace: LayoutBuilder(builder: (ctx, constraints) {
-                final collapsed = 1 -
-                    ((constraints.maxHeight - (top + 62)) / 48).clamp(0.0, 1.0);
-                return Container(
-                  color: Colors.white,
-                  padding: EdgeInsets.fromLTRB(20, top + 14, 20, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            width: 36, height: 36,
-                            decoration: BoxDecoration(
-                              color: _kMintBg, borderRadius: BorderRadius.circular(10)),
-                            child: const Icon(LucideIcons.chevronLeft,
-                              color: _kGreen, size: 18)),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: AnimatedOpacity(
-                            opacity: (1 - collapsed * 2.5).clamp(0.0, 1.0),
-                            duration: Duration.zero,
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                              Text('RECETTES', style: GoogleFonts.inter(
-                                color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
-                                letterSpacing: 3)),
-                              Text('Toutes les Recettes', style: GoogleFonts.outfit(
-                                color: _kGreen, fontSize: 20,
-                                fontWeight: FontWeight.w800, letterSpacing: -0.4)),
-                            ]),
-                          ),
-                        ),
-                        Container(
-                          width: 36, height: 36,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF4F4F4),
-                            borderRadius: BorderRadius.circular(10)),
-                          child: const Icon(LucideIcons.bookmark,
-                            color: _kText2, size: 16)),
-                      ]),
-                    ],
-                  ),
-                );
-              }),
-            ),
+            // ── Sticky header ──────────────────────────────────────
+            _StickyHeader(top: top, onBack: () => Navigator.pop(context)),
 
-            // ── Search ────────────────────────────────────────────
+            // ── Search bar ─────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Container(
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _kBorder),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Row(children: [
-                    const Icon(LucideIcons.search, size: 16, color: _kText2),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchCtrl,
-                        onChanged: (v) => setState(() => _searchQuery = v),
-                        style: GoogleFonts.inter(fontSize: 13, color: _kText1),
-                        decoration: InputDecoration(
-                          hintText: 'Chercher une recette, un ingrédient…',
-                          hintStyle: GoogleFonts.inter(fontSize: 13, color: _kText2),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero),
-                      ),
-                    ),
-                    if (_searchQuery.isNotEmpty)
-                      GestureDetector(
-                        onTap: () { _searchCtrl.clear(); setState(() => _searchQuery = ''); },
-                        child: const Icon(LucideIcons.x, size: 14, color: _kText2)),
-                    if (_searchQuery.isEmpty) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: _kGreen, borderRadius: BorderRadius.circular(8)),
-                        child: const Icon(LucideIcons.sliders, size: 12, color: Colors.white)),
-                    ],
-                  ]),
+                child: _SearchBar(
+                  controller: _searchCtrl,
+                  query: _searchQuery,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  onClear: () {
+                    _searchCtrl.clear();
+                    setState(() => _searchQuery = '');
+                  },
                 ),
               ),
             ),
 
-            // ── Phase cycle filter ────────────────────────────────
+            // ── Category pills ─────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 0, 0),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Selon votre cycle', style: GoogleFonts.inter(
-                    fontSize: 11, fontWeight: FontWeight.w700,
-                    color: _kText2, letterSpacing: 0.3)),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 34,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      children: [
-                        _PhaseChip(
-                          label: 'Toutes',
-                          active: _activePhase == null,
-                          activeColor: _kGreen,
-                          activeBg: _kMintBg,
-                          activeBorder: _kMint,
-                          onTap: () => setState(() => _activePhase = null)),
-                        const SizedBox(width: 6),
-                        ...PhaseColors.all.map((pc) => Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: _PhaseChip(
-                            label: pc.name,
-                            active: _activePhase == pc.phase,
-                            activeColor: pc.primary,
-                            activeBg: pc.light,
-                            activeBorder: pc.border,
-                            onTap: () => setState(() =>
-                              _activePhase = _activePhase == pc.phase ? null : pc.phase)))),
-                        const SizedBox(width: 20),
-                      ],
-                    ),
+                padding: const EdgeInsets.only(top: 14),
+                child: SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    physics: const BouncingScrollPhysics(),
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemCount: _categories.length,
+                    itemBuilder: (_, i) {
+                      final c   = _categories[i];
+                      final sel = _activeCategory == c.label;
+                      return _CategoryPill(
+                        label: c.label, icon: c.icon, selected: sel,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _activeCategory = c.label);
+                        },
+                      );
+                    },
                   ),
-                ]),
-              ),
-            ),
-
-            // ── Featured hero ─────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: _FeaturedCard(recipe: _allRecipes.first, onTap: () => _openRecipe(context, _allRecipes.first)),
-              ),
-            ),
-
-            // ── Video recipes ─────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(children: [
-                      Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: BoxDecoration(
-                          color: _kGreen, borderRadius: BorderRadius.circular(9)),
-                        child: const Icon(LucideIcons.play, size: 13, color: Colors.white)),
-                      const SizedBox(width: 10),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('VIDÉOS', style: GoogleFonts.inter(
-                          color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
-                          letterSpacing: 2.5)),
-                        Text('Recettes Vidéo', style: GoogleFonts.outfit(
-                          color: _kText1, fontSize: 18, fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3)),
-                      ]),
-                    ]),
-                    Text('Voir tout', style: GoogleFonts.inter(
-                      fontSize: 12, fontWeight: FontWeight.w600, color: _kGreen)),
-                  ],
                 ),
               ),
             ),
 
+            // ── Hero recipe ────────────────────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                child: _HeroCard(
+                  recipe: _allRecipes.first,
+                  onTap: () => _openRecipe(context, _allRecipes.first),
+                ),
+              ),
+            ),
+
+            // ── Vidéos ─────────────────────────────────────────────
+            SliverToBoxAdapter(
+              child: _SectionHeader(
+                icon: LucideIcons.play, eyebrow: 'VIDÉOS',
+                title: 'Recettes rapides', action: 'Voir tout', onAction: () {},
+              ),
+            ),
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 185,
+                height: 178,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   physics: const BouncingScrollPhysics(),
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
                   itemCount: _videoRecipes.length,
-                  itemBuilder: (_, i) => _VideoCard(recipe: _videoRecipes[i])),
-              ),
-            ),
-
-            // ── Tag filters ───────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 0, 0),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Catégories', style: GoogleFonts.inter(
-                    fontSize: 11, fontWeight: FontWeight.w700,
-                    color: _kText2, letterSpacing: 0.3)),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 34,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      separatorBuilder: (_, __) => const SizedBox(width: 6),
-                      itemCount: _filters.length,
-                      itemBuilder: (_, i) => _TagChip(
-                        label: _filters[i],
-                        active: _activeFilter == _filters[i],
-                        onTap: () => setState(() => _activeFilter = _filters[i]))),
+                  itemBuilder: (_, i) => _VideoCard(
+                    recipe: _videoRecipes[i],
+                    onTap: () => Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => RecipeVideoPlayerScreen(
+                        recipeName: _videoRecipes[i].name,
+                        imageUrl: _videoRecipes[i].imageUrl,
+                        duration: _videoRecipes[i].duration,
+                        difficulty: _videoRecipes[i].difficulty,
+                        kcal: _videoRecipes[i].kcal,
+                        phase: _videoRecipes[i].phase))),
                   ),
-                ]),
+                ),
               ),
             ),
 
-            // ── Results header ────────────────────────────────────
+            // ── All recipes ────────────────────────────────────────
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 4),
-                child: Row(children: [
-                  Text(
-                    _activeFilter == 'Tout' && _activePhase == null
-                        ? 'Toutes les recettes'
-                        : _activePhase != null
-                            ? PhaseColors.forPhase(_activePhase!).name
-                            : _activeFilter,
-                    style: GoogleFonts.outfit(
-                      fontSize: 20, fontWeight: FontWeight.w800,
-                      color: _kText1, letterSpacing: -0.3)),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _kMintBg, borderRadius: BorderRadius.circular(20)),
-                    child: Text(
-                      '${filtered.length} recette${filtered.length > 1 ? "s" : ""}',
-                      style: GoogleFonts.inter(
-                        fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
-                ]),
+              child: _SectionHeader(
+                icon: LucideIcons.utensils, eyebrow: 'RECETTES',
+                title: _activeCategory == 'Tout' ? 'Toutes' : _activeCategory,
+                action: '${filtered.length} résultat${filtered.length > 1 ? "s" : ""}',
               ),
             ),
 
-            // ── Recipe list (full-width editorial cards) ──────────
             if (filtered.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 60, 20, 60),
-                  child: Column(children: [
-                    Container(
-                      width: 64, height: 64,
-                      decoration: BoxDecoration(
-                        color: _kMintBg, borderRadius: BorderRadius.circular(20)),
-                      child: const Icon(LucideIcons.search, color: _kGreen, size: 28)),
-                    const SizedBox(height: 16),
-                    Text('Aucune recette trouvée', style: GoogleFonts.outfit(
-                      fontSize: 18, fontWeight: FontWeight.w700, color: _kText1)),
-                    const SizedBox(height: 6),
-                    Text('Essaie une autre catégorie ou phase', style: GoogleFonts.inter(
-                      fontSize: 13, color: _kText2)),
-                  ]),
-                ))
+                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  child: Center(
+                    child: Column(children: [
+                      Container(
+                        width: 56, height: 56,
+                        decoration: BoxDecoration(
+                          color: _kMintBg, borderRadius: BorderRadius.circular(18)),
+                        child: const Icon(LucideIcons.search, color: _kGreen, size: 24)),
+                      const SizedBox(height: 14),
+                      Text('Aucune recette', style: GoogleFonts.outfit(
+                        fontSize: 17, fontWeight: FontWeight.w700, color: _kText1)),
+                      const SizedBox(height: 4),
+                      Text('Essaie une autre catégorie', style: GoogleFonts.inter(
+                        fontSize: 13, color: _kText2)),
+                    ]),
+                  ),
+                ),
+              )
             else
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
                 sliver: SliverList.separated(
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (_, i) => _RecipeCard(
                     recipe: filtered[i],
-                    onTap: () => _openRecipe(context, filtered[i])))),
+                    onTap: () => _openRecipe(context, filtered[i]),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -468,13 +322,215 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// FEATURED CARD
+// STICKY HEADER
 // ══════════════════════════════════════════════════════════════════════════════
 
-class _FeaturedCard extends StatelessWidget {
+class _StickyHeader extends StatelessWidget {
+  final double top;
+  final VoidCallback onBack;
+  const _StickyHeader({required this.top, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: top + 72,
+      collapsedHeight: top + 60,
+      backgroundColor: _kCream,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      automaticallyImplyLeading: false,
+      flexibleSpace: LayoutBuilder(builder: (_, __) {
+        return Container(
+          color: _kCream,
+          padding: EdgeInsets.fromLTRB(20, top + 16, 20, 12),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            GestureDetector(
+              onTap: onBack,
+              child: Container(
+                width: 38, height: 38,
+                decoration: BoxDecoration(
+                  color: _kMintBg, borderRadius: BorderRadius.circular(12)),
+                child: const Icon(LucideIcons.chevronLeft, color: _kGreen, size: 18),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('RECETTES', style: GoogleFonts.inter(
+                  color: _kMint, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 3)),
+                Text('Explorer', style: GoogleFonts.outfit(
+                  color: _kGreen, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+              ]),
+            ),
+            Container(
+              width: 38, height: 38,
+              decoration: BoxDecoration(
+                color: _kChipBg, borderRadius: BorderRadius.circular(12)),
+              child: const Icon(LucideIcons.bookmark, color: _kText2, size: 16),
+            ),
+          ]),
+        );
+      }),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SEARCH BAR
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _SearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  final String query;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+  const _SearchBar({
+    required this.controller, required this.query,
+    required this.onChanged, required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kBorder),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Row(children: [
+        const Icon(LucideIcons.search, size: 16, color: _kText2),
+        const SizedBox(width: 10),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            onChanged: onChanged,
+            style: GoogleFonts.inter(fontSize: 13.5, color: _kText1),
+            decoration: InputDecoration(
+              hintText: 'Rechercher une recette…',
+              hintStyle: GoogleFonts.inter(fontSize: 13.5, color: _kText2),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero),
+          ),
+        ),
+        if (query.isNotEmpty)
+          GestureDetector(
+            onTap: onClear,
+            child: Container(
+              width: 20, height: 20,
+              decoration: BoxDecoration(color: _kChipBg, shape: BoxShape.circle),
+              child: const Icon(LucideIcons.x, size: 11, color: _kText2)),
+          ),
+      ]),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CATEGORY PILL
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _CategoryPill extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+  const _CategoryPill({
+    required this.label, required this.icon,
+    required this.selected, required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: selected ? _kGreen : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: selected ? _kGreen : _kBorder, width: 1.2)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12, color: selected ? Colors.white : _kText2),
+        const SizedBox(width: 6),
+        Text(label, style: GoogleFonts.inter(
+          fontSize: 12.5,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          color: selected ? Colors.white : _kText2)),
+      ]),
+    ),
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SECTION HEADER
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String eyebrow, title;
+  final String? action;
+  final VoidCallback? onAction;
+  const _SectionHeader({
+    required this.icon, required this.eyebrow, required this.title,
+    this.action, this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 14),
+      child: Row(children: [
+        Container(
+          width: 32, height: 32,
+          decoration: BoxDecoration(
+            color: _kMintBg, borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, size: 14, color: _kGreen),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(eyebrow, style: GoogleFonts.inter(
+              fontSize: 9, fontWeight: FontWeight.w700,
+              color: _kMint, letterSpacing: 2.5)),
+            Text(title, style: GoogleFonts.outfit(
+              fontSize: 17, fontWeight: FontWeight.w800,
+              color: _kText1, letterSpacing: -0.3)),
+          ]),
+        ),
+        if (action != null)
+          GestureDetector(
+            onTap: onAction,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: onAction != null ? _kMintBg : _kChipBg,
+                borderRadius: BorderRadius.circular(20)),
+              child: Text(action!, style: GoogleFonts.inter(
+                fontSize: 11, fontWeight: FontWeight.w700,
+                color: onAction != null ? _kGreen : _kText2)),
+            ),
+          ),
+      ]),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HERO CARD
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _HeroCard extends StatelessWidget {
   final RealRecipe recipe;
   final VoidCallback onTap;
-  const _FeaturedCard({required this.recipe, required this.onTap});
+  const _HeroCard({required this.recipe, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -482,65 +538,65 @@ class _FeaturedCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 240,
+        height: 210,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           boxShadow: [BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 20, offset: const Offset(0, 6))],
+            color: Colors.black.withOpacity(0.10),
+            blurRadius: 18, offset: const Offset(0, 6))],
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(fit: StackFit.expand, children: [
           Image.network(recipe.imageUrl, fit: BoxFit.cover,
-            loadingBuilder: (_, child, progress) => progress == null
-                ? child : Container(color: _kMintBg),
-            errorBuilder: (_, __, ___) => Container(color: _kMintBg,
-              child: const Center(child: Icon(
-                LucideIcons.image, color: _kMint, size: 40)))),
+            loadingBuilder: (_, child, p) =>
+              p == null ? child : Container(color: _kMintBg),
+            errorBuilder: (_, __, ___) =>
+              Container(color: _kMintBg,
+                child: const Center(child: Icon(
+                  LucideIcons.image, color: _kMint, size: 36)))),
 
-          // Gradient
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                colors: [Color(0x22000000), Color(0xDD000000)],
-                stops: [0.2, 1.0]))),
+                colors: [Color(0x00000000), Color(0xE0000000)],
+                stops: [0.25, 1.0]))),
 
-          // En vedette badge
           Positioned(top: 14, left: 14,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: Colors.white.withOpacity(0.18),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.3))),
-              child: Text('En vedette', style: GoogleFonts.inter(
-                fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700,
-                letterSpacing: 0.5)))),
+                border: Border.all(color: Colors.white.withOpacity(0.3))),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(LucideIcons.star, size: 9, color: Colors.white),
+                const SizedBox(width: 5),
+                Text('En vedette', style: GoogleFonts.inter(
+                  fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
+              ]))),
 
-          // Phase badge
           Positioned(top: 14, right: 14,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: pc.primary.withValues(alpha: 0.9),
+                color: pc.primary.withOpacity(0.92),
                 borderRadius: BorderRadius.circular(20)),
               child: Text(pc.name, style: GoogleFonts.inter(
                 fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)))),
 
-          // Recipe info
-          Positioned(bottom: 16, left: 16, right: 16,
+          Positioned(bottom: 14, left: 16, right: 16,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(recipe.name, style: GoogleFonts.outfit(
-                fontSize: 22, fontWeight: FontWeight.w800,
-                color: Colors.white, letterSpacing: -0.4, height: 1.15)),
+                fontSize: 20, fontWeight: FontWeight.w800,
+                color: Colors.white, letterSpacing: -0.3, height: 1.2)),
               const SizedBox(height: 8),
               Row(children: [
-                _GlassPill(icon: LucideIcons.clock, label: recipe.duration),
+                _GlassBadge(icon: LucideIcons.clock, label: recipe.duration),
                 const SizedBox(width: 8),
-                _GlassPill(icon: LucideIcons.flame, label: '${recipe.kcal} kcal'),
+                _GlassBadge(icon: LucideIcons.flame, label: '${recipe.kcal} kcal'),
                 const SizedBox(width: 8),
-                _GlassPill(icon: LucideIcons.barChart2, label: recipe.difficulty),
+                _GlassBadge(icon: LucideIcons.barChart2, label: recipe.difficulty),
               ]),
             ])),
         ]),
@@ -555,97 +611,70 @@ class _FeaturedCard extends StatelessWidget {
 
 class _VideoCard extends StatelessWidget {
   final _VideoRecipe recipe;
-  const _VideoCard({required this.recipe});
+  final VoidCallback onTap;
+  const _VideoCard({required this.recipe, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final pc = PhaseColors.forPhase(recipe.phase);
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => RecipeVideoPlayerScreen(
-          recipeName: recipe.name,
-          imageUrl: recipe.imageUrl,
-          duration: recipe.duration,
-          difficulty: recipe.difficulty,
-          kcal: recipe.kcal,
-          phase: recipe.phase))),
+      onTap: onTap,
       child: Container(
-        width: 148,
+        width: 140,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _kBorder),
           boxShadow: [BoxShadow(
-            color: pc.primary.withValues(alpha: 0.1),
-            blurRadius: 12, offset: const Offset(0, 4))],
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8, offset: const Offset(0, 3))],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(children: [
           SizedBox(
-            height: 116,
+            height: 108,
             child: Stack(fit: StackFit.expand, children: [
               Image.network(recipe.imageUrl, fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(color: pc.light)),
-
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.transparent, Color(0x99000000)],
+                    colors: [Colors.transparent, Color(0x88000000)],
                     begin: Alignment.topCenter, end: Alignment.bottomCenter))),
-
-              // Play button
               Center(
                 child: Container(
-                  width: 36, height: 36,
+                  width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)]),
-                  child: Icon(LucideIcons.play, color: pc.primary, size: 16))),
-
-              // Duration
-              Positioned(bottom: 8, left: 8,
-                child: Row(children: [
-                  Icon(LucideIcons.clock, size: 9, color: Colors.white),
-                  const SizedBox(width: 3),
-                  Text(recipe.duration, style: GoogleFonts.inter(
-                    fontSize: 9, color: Colors.white, fontWeight: FontWeight.w600))])),
-
-              // Phase pill — top right
-              Positioned(top: 8, right: 8,
+                    color: Colors.white.withOpacity(0.90), shape: BoxShape.circle),
+                  child: Icon(LucideIcons.play, color: pc.primary, size: 13))),
+              Positioned(bottom: 7, right: 7,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
-                    color: pc.primary.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(8)),
-                  child: Text(pc.name, style: GoogleFonts.inter(
-                    fontSize: 8, color: Colors.white, fontWeight: FontWeight.w700)))),
+                    color: Colors.black.withOpacity(0.50),
+                    borderRadius: BorderRadius.circular(6)),
+                  child: Text(recipe.duration, style: GoogleFonts.inter(
+                    fontSize: 9, color: Colors.white, fontWeight: FontWeight.w600)))),
             ]),
           ),
-
-          // Info
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                Text(recipe.name,
-                  maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.outfit(
-                    fontSize: 12.5, fontWeight: FontWeight.w700,
-                    color: _kText1, height: 1.3)),
-                Text('${recipe.kcal} kcal · ${recipe.difficulty}',
-                  style: GoogleFonts.inter(
+                  Text(recipe.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontSize: 12, fontWeight: FontWeight.w700,
+                      color: _kText1, height: 1.3)),
+                  Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
                     fontSize: 10, fontWeight: FontWeight.w600, color: pc.primary)),
-              ]),
+                ],
+              ),
             ),
           ),
-
-          // Phase color line
-          Container(height: 3, color: pc.primary),
+          Container(height: 2.5, color: pc.primary),
         ]),
       ),
     );
@@ -653,7 +682,7 @@ class _VideoCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// RECIPE LIST CARD (full-width editorial)
+// RECIPE CARD (horizontal list item)
 // ══════════════════════════════════════════════════════════════════════════════
 
 class _RecipeCard extends StatelessWidget {
@@ -669,105 +698,80 @@ class _RecipeCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _kBorder),
           boxShadow: [BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 14, offset: const Offset(0, 4))],
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8, offset: const Offset(0, 2))],
         ),
         clipBehavior: Clip.antiAlias,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
-          // ── Image 200px ────────────────────────────────────────
+        child: Row(children: [
+          // Thumbnail
           SizedBox(
-            height: 200,
-            child: Stack(fit: StackFit.expand, children: [
-              Image.network(recipe.imageUrl, fit: BoxFit.cover,
-                loadingBuilder: (_, child, progress) => progress == null
-                    ? child : Container(color: _kMintBg),
-                errorBuilder: (_, __, ___) => Container(color: _kMintBg,
-                  child: const Center(child: Icon(
-                    LucideIcons.image, color: _kMint, size: 40)))),
-
-              // Gradient
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                    colors: [Color(0x11000000), Color(0xCC000000)],
-                    stops: [0.3, 1.0]))),
-
-              // Duration badge
-              Positioned(top: 14, left: 14,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.45),
-                    borderRadius: BorderRadius.circular(10)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(LucideIcons.clock, size: 10, color: Colors.white),
-                    const SizedBox(width: 4),
-                    Text(recipe.duration, style: GoogleFonts.inter(
-                      fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600))]))),
-
-              // Difficulty badge
-              Positioned(top: 14, right: 14,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(10)),
-                  child: Text(recipe.difficulty, style: GoogleFonts.inter(
-                    fontSize: 10, color: _kText1, fontWeight: FontWeight.w700)))),
-
-              // Recipe name
-              Positioned(bottom: 14, left: 14, right: 14,
-                child: Text(recipe.name, style: GoogleFonts.outfit(
-                  fontSize: 20, fontWeight: FontWeight.w800,
-                  color: Colors.white, letterSpacing: -0.3, height: 1.2))),
-            ]),
+            width: 96,
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: Stack(fit: StackFit.expand, children: [
+                Image.network(recipe.imageUrl, fit: BoxFit.cover,
+                  loadingBuilder: (_, child, p) =>
+                    p == null ? child : Container(color: _kMintBg),
+                  errorBuilder: (_, __, ___) =>
+                    Container(color: _kMintBg,
+                      child: const Center(child: Icon(
+                        LucideIcons.image, color: _kMint, size: 22)))),
+                Positioned(bottom: 0, left: 0, right: 0,
+                  child: Container(height: 3, color: pc.primary)),
+              ]),
+            ),
           ),
 
-          // ── Info row ───────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Row(children: [
-              Expanded(child: Text(recipe.subtitle,
-                maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(fontSize: 12, color: _kText2))),
-              const SizedBox(width: 10),
-              _StatPill('${recipe.kcal} kcal', LucideIcons.flame, _kGreen, _kMintBg),
-              const SizedBox(width: 6),
-              _StatPill('${recipe.proteins}g prot.', LucideIcons.dumbbell, _kText2, const Color(0xFFF4F4F4)),
-            ]),
+          // Info
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 11, 8, 11),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Container(
+                      width: 5, height: 5,
+                      decoration: BoxDecoration(
+                        color: pc.primary, shape: BoxShape.circle)),
+                    const SizedBox(width: 5),
+                    Text(pc.name, style: GoogleFonts.inter(
+                      fontSize: 10, fontWeight: FontWeight.w600, color: pc.primary)),
+                  ]),
+                  const SizedBox(height: 3),
+                  Text(recipe.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontSize: 13.5, fontWeight: FontWeight.w700,
+                      color: _kText1, height: 1.3)),
+                  const SizedBox(height: 7),
+                  Row(children: [
+                    _MiniStat(LucideIcons.clock, recipe.duration),
+                    const SizedBox(width: 10),
+                    _MiniStat(LucideIcons.flame, '${recipe.kcal} kcal'),
+                  ]),
+                  const SizedBox(height: 7),
+                  Wrap(
+                    spacing: 5, runSpacing: 4,
+                    children: recipe.tags.take(2).map((t) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _kChipBg, borderRadius: BorderRadius.circular(20)),
+                      child: Text(t, style: GoogleFonts.inter(
+                        fontSize: 10, color: _kText2, fontWeight: FontWeight.w500)),
+                    )).toList(),
+                  ),
+                ],
+              ),
+            ),
           ),
 
-          // ── Phase accent bar ───────────────────────────────────
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
-            child: Row(children: [
-              Container(
-                width: 4, height: 4,
-                decoration: BoxDecoration(
-                  color: pc.primary, shape: BoxShape.circle)),
-              const SizedBox(width: 6),
-              Text('Phase ${pc.name}', style: GoogleFonts.inter(
-                fontSize: 11, fontWeight: FontWeight.w600, color: pc.primary)),
-              const Spacer(),
-              ...recipe.tags.take(2).map((tag) => Padding(
-                padding: const EdgeInsets.only(left: 5),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F4F4),
-                    borderRadius: BorderRadius.circular(20)),
-                  child: Text(tag, style: GoogleFonts.inter(
-                    fontSize: 10, color: _kText2, fontWeight: FontWeight.w600))))),
-            ]),
+          const Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: Icon(LucideIcons.chevronRight, size: 14, color: _kText2),
           ),
-
-          // Phase color line at very bottom
-          Container(height: 2, color: pc.primary),
         ]),
       ),
     );
@@ -775,78 +779,23 @@ class _RecipeCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SHARED SMALL WIDGETS
+// SMALL SHARED WIDGETS
 // ══════════════════════════════════════════════════════════════════════════════
 
-class _PhaseChip extends StatelessWidget {
-  final String label;
-  final bool active;
-  final Color activeColor, activeBg, activeBorder;
-  final VoidCallback onTap;
-  const _PhaseChip({
-    required this.label, required this.active,
-    required this.activeColor, required this.activeBg,
-    required this.activeBorder, required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-      decoration: BoxDecoration(
-        color: active ? activeBg : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: active ? activeBorder : _kBorder,
-          width: active ? 1.5 : 1)),
-      child: Text(label, style: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-        color: active ? activeColor : _kText2)),
-    ),
-  );
-}
-
-class _TagChip extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _TagChip({required this.label, required this.active, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-      decoration: BoxDecoration(
-        color: active ? _kGreen : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: active ? _kGreen : _kBorder)),
-      child: Text(label, style: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-        color: active ? Colors.white : _kText2)),
-    ),
-  );
-}
-
-class _GlassPill extends StatelessWidget {
+class _GlassBadge extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _GlassPill({required this.icon, required this.label});
+  const _GlassBadge({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.18),
+      color: Colors.white.withOpacity(0.18),
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.3))),
+      border: Border.all(color: Colors.white.withOpacity(0.30))),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 10, color: Colors.white),
+      Icon(icon, size: 9, color: Colors.white),
       const SizedBox(width: 4),
       Text(label, style: GoogleFonts.inter(
         fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
@@ -854,21 +803,17 @@ class _GlassPill extends StatelessWidget {
   );
 }
 
-class _StatPill extends StatelessWidget {
-  final String label;
+class _MiniStat extends StatelessWidget {
   final IconData icon;
-  final Color color, bg;
-  const _StatPill(this.label, this.icon, this.color, this.bg);
+  final String label;
+  const _MiniStat(this.icon, this.label);
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 10, color: color),
-      const SizedBox(width: 4),
-      Text(label, style: GoogleFonts.inter(
-        fontSize: 10, fontWeight: FontWeight.w600, color: color)),
-    ]),
-  );
-}
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
+    Icon(icon, size: 10, color: _kText2),
+    const SizedBox(width: 3),
+    Text(label, style: GoogleFonts.inter(
+      fontSize: 11, color: _kText2, fontWeight: FontWeight.w500)),
+  ]);
+  }
+  
