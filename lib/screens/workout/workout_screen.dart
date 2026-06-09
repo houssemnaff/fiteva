@@ -410,14 +410,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                               : color.withValues(alpha: 0.25),
                           width: 1.5,
                         ),
-                        boxShadow: sel
-                            ? [
-                                BoxShadow(
-                                    color: color.withValues(alpha: 0.38),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4))
-                              ]
-                            : [],
+                       
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
