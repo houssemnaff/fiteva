@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "velorah-hero",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:\\Users\\WSI\\velorah-hero", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "jack-portfolio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "D:\\fit-evaclone\\jack-portfolio", "run", "dev"],
+      "port": 5175
+    }
+  ]
+}

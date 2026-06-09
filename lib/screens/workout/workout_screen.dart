@@ -1,4 +1,5 @@
 import 'package:fiteva/models/home_program_model.dart';
+import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:fiteva/screens/workout/widgets/DanceSection.dart';
 import 'package:fiteva/screens/workout/widgets/GrossesseSection.dart';
 import 'package:fiteva/screens/workout/widgets/MaisonSection.dart';
@@ -250,69 +251,61 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
 
     return Scaffold(
       backgroundColor: colorScheme.background,
-      appBar: AppBar(
-        backgroundColor: colorScheme.surface,
-        elevation: 0,
-        title: Text(
-          'Workouts',
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
-        centerTitle: false,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Stack(
-              alignment: Alignment.topRight,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.favorite_rounded,
-                    color: WorkoutColors.grossesse,
-                    size: 26,
-                  ),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FavoritesScreen(
-                        initialFavorites: _favorites,
-                        onToggleFav: _toggleFav,
-                      ),
-                    ),
-                  ),
-                ),
-                if (_favorites.isNotEmpty)
-                  Positioned(
-                    top: 6, right: 6,
-                    child: Container(
-                      width: 16, height: 16,
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text('${_favorites.length}',
-                            style: TextStyle(
-                              color: colorScheme.onPrimary,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            )),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
       body: SingleChildScrollView(
         controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
+            // ── Common header ─────────────────────────
+            SharedAppHeader(
+              eyebrow:    'Workout',
+              title:      'Mes entraînements',
+              accentColor: WorkoutColors.salle,
+              actions: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => FavoritesScreen(
+                          initialFavorites: _favorites,
+                          onToggleFav: _toggleFav,
+                        ),
+                      )),
+                      child: Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: WorkoutColors.grossesse.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.favorite_rounded,
+                            size: 18, color: WorkoutColors.grossesse),
+                      ),
+                    ),
+                    if (_favorites.isNotEmpty)
+                      Positioned(
+                        top: -2, right: -2,
+                        child: Container(
+                          width: 16, height: 16,
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text('${_favorites.length}',
+                              style: TextStyle(
+                                color: colorScheme.onPrimary,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              )),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
 
             // ── Phase Banner ──────────────────────────
             Padding(
