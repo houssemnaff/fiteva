@@ -120,7 +120,7 @@ class AppTheme {
   static const Color overlayBlack = Color(0xFF000000);
   static const Color overlayWhite = Color(0xFFFFFFFF);
   static const Color transparent = Colors.transparent;
-
+static ThemeMode themeMode = ThemeMode.system;
   static ThemeData get lightTheme {
     return ThemeData(
       primaryColor: primaryColor,
