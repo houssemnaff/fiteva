@@ -20,4 +20,28 @@ class PartnerModel {
     required this.description,
     required this.tags,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'avatar': avatar,
+    'goal': goal,
+    'level': level,
+    'region': region,
+    'frequency': frequency,
+    'description': description,
+    'tags': tags,
+  };
+
+  factory PartnerModel.fromJson(Map<String, dynamic> j) => PartnerModel(
+    id: j['id'] as String,
+    name: j['name'] as String,
+    avatar: j['avatar'] as String? ?? '',
+    goal: j['goal'] as String? ?? '',
+    level: j['level'] as String? ?? '',
+    region: j['region'] as String? ?? '',
+    frequency: j['frequency'] as String? ?? '',
+    description: j['description'] as String? ?? '',
+    tags: (j['tags'] as List?)?.map((e) => e as String).toList() ?? [],
+  );
 }
