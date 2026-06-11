@@ -1,7 +1,9 @@
+import 'package:fiteva/core/shop/shop_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/boutique_item.dart';
 import '../widgets/info_row.dart';
 import 'package:fiteva/screens/shop/widgets/promo_modal.dart';
@@ -10,25 +12,17 @@ import 'package:fiteva/screens/shop/widgets/promo_modal.dart';
 // BOUTIQUE DETAIL SCREEN — Premium redesign
 // Style : Sephora × Nike app × Editorial luxury
 // ─────────────────────────────────────────────────────────────────────────────
-class BoutiqueDetailScreen extends StatefulWidget {
+class BoutiqueDetailScreen extends ConsumerStatefulWidget {
   final BoutiqueItem item;
-  final int userEtoiles;
 
-  const BoutiqueDetailScreen({
-    super.key,
-    required this.item,
-    required this.userEtoiles,
-  });
+  const BoutiqueDetailScreen({super.key, required this.item});
 
   @override
-  State<BoutiqueDetailScreen> createState() => _BoutiqueDetailScreenState();
+  ConsumerState<BoutiqueDetailScreen> createState() => _BoutiqueDetailScreenState();
 }
 
-class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
+class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
     with TickerProviderStateMixin {
-  // ── State ──────────────────────────────────────────────────────────────────
-  bool _ctaPressed = false;
-
   late final AnimationController _entryCtrl;
   late final Animation<double> _entryFade;
   late final Animation<Offset> _entrySlide;
@@ -36,8 +30,11 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
   late final AnimationController _ctaBounceCtrl;
   late final Animation<double> _ctaScale;
 
-  // ── Derived ────────────────────────────────────────────────────────────────
-  bool get _canAfford => widget.userEtoiles >= widget.item.etoiles;
+  // ── Derived (use ref.watch only inside build via _shopLive) ───────────────
+  // For tap handlers (outside build), use ref.read via _shop.
+  ShopState get _shop         => ref.read(shopProvider);
+  bool get _canAfford         => ref.read(shopProvider).canAfford(widget.item.etoiles);
+  bool get _alreadyRedeemed   => ref.read(shopProvider).isRedeemed(widget.item.id);
 
   int get _daysLeft {
     try {
@@ -113,19 +110,17 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   void _onCtaTapDown(_) {
-    if (!_canAfford) return;
+    if (!_canAfford || _alreadyRedeemed) return;
     _ctaBounceCtrl.reverse();
   }
 
-  void _onCtaTapUp(_) {
-    if (!_canAfford) return;
+  void _onCtaTapUp(_) async {
+    if (!_canAfford || _alreadyRedeemed) return;
     _ctaBounceCtrl.forward();
-    _showPromoModal(context);
-  }
 
-  void _onCtaTapCancel() => _ctaBounceCtrl.forward();
+    final ok = await ref.read(shopProvider.notifier).redeem(widget.item);
+    if (!ok || !mounted) return;
 
-  void _showPromoModal(BuildContext context) {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
@@ -133,7 +128,10 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
       backgroundColor: Colors.transparent,
       builder: (_) => PromoModal(item: widget.item),
     );
+    setState(() {}); // refresh CTA state
   }
+
+  void _onCtaTapCancel() => _ctaBounceCtrl.forward();
 
   // ── BUILD ──────────────────────────────────────────────────────────────────
   @override
@@ -416,8 +414,10 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
 
   // ── Offer Summary Card ─────────────────────────────────────────────────────
   Widget _buildOfferSummaryCard(BuildContext context) {
-    final item = widget.item;
-    final shortage = item.etoiles - widget.userEtoiles;
+    final item     = widget.item;
+    final shop     = ref.watch(shopProvider);
+    final canAfford = shop.canAfford(item.etoiles);
+    final shortage = item.etoiles - shop.points;
 
     return _Card(
       child: Column(
@@ -556,16 +556,16 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: _canAfford
+                  color: canAfford
                       ? const Color(0xFFE8F5E9)
                       : const Color(0xFFFFF3E0),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  _canAfford
+                  canAfford
                       ? CupertinoIcons.checkmark_circle_fill
                       : CupertinoIcons.lock_fill,
-                  color: _canAfford
+                  color: canAfford
                       ? const Color(0xFF2E7D32)
                       : const Color(0xFFFB8C00),
                   size: 18,
@@ -586,17 +586,17 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                   Row(
                     children: [
                       Text(
-                        '${widget.userEtoiles} disponibles',
+                        '${shop.points} disponibles',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: _canAfford
+                          color: canAfford
                               ? const Color(0xFF2E7D32)
                               : const Color(0xFFFB8C00),
                           letterSpacing: -0.2,
                         ),
                       ),
-                      if (!_canAfford) ...[
+                      if (!canAfford) ...[
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -793,7 +793,12 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
 
   // ── CTA Bar ────────────────────────────────────────────────────────────────
   Widget _buildCTABar(BuildContext context) {
-    final shortage = widget.item.etoiles - widget.userEtoiles;
+    final shop     = ref.watch(shopProvider);
+    final canAfford    = shop.canAfford(widget.item.etoiles);
+    final redeemed     = shop.isRedeemed(widget.item.id);
+    final shortage     = widget.item.etoiles - shop.points;
+    final ctaActive    = canAfford && !redeemed;
+
     return Container(
       padding: EdgeInsets.fromLTRB(
           20, 14, 20, MediaQuery.of(context).padding.bottom + 18),
@@ -809,8 +814,26 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Missing etoiles warning
-          if (!_canAfford)
+          // Already redeemed banner
+          if (redeemed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(10)),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF2E7D32)),
+                    SizedBox(width: 7),
+                    Text('Offre déjà échangée — consulte ton code ci-dessus',
+                      style: TextStyle(color: Color(0xFF2E7D32),
+                        fontSize: 12.5, fontWeight: FontWeight.w500)),
+                  ])))
+          // Missing points warning
+          else if (!canAfford)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Container(
@@ -854,7 +877,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                 width: double.infinity,
                 height: 56,
                 decoration: BoxDecoration(
-                  gradient: _canAfford
+                  gradient: ctaActive
                       ? LinearGradient(
                           colors: [
                             widget.item.primaryColor,
@@ -864,9 +887,9 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                           end: Alignment.centerRight,
                         )
                       : null,
-                  color: _canAfford ? null : const Color(0xFFF0F0ED),
+                  color: ctaActive ? null : const Color(0xFFF0F0ED),
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: _canAfford
+                  boxShadow: ctaActive
                       ? [
                           BoxShadow(
                             color: widget.item.primaryColor.withOpacity(0.35),
@@ -880,23 +903,23 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      _canAfford
-                          ? CupertinoIcons.sparkles
-                          : CupertinoIcons.lock_fill,
-                      color: _canAfford
-                          ? Colors.white
-                          : const Color(0xFFA0A09A),
+                      redeemed
+                          ? Icons.check_circle_rounded
+                          : ctaActive
+                              ? CupertinoIcons.sparkles
+                              : CupertinoIcons.lock_fill,
+                      color: ctaActive ? Colors.white : const Color(0xFFA0A09A),
                       size: 18,
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      _canAfford
-                          ? 'Échanger ${widget.item.etoiles} étoiles'
-                          : 'Étoiles insuffisantes',
+                      redeemed
+                          ? 'Offre déjà échangée'
+                          : ctaActive
+                              ? 'Échanger ${widget.item.etoiles} étoiles'
+                              : 'Étoiles insuffisantes',
                       style: TextStyle(
-                        color: _canAfford
-                            ? Colors.white
-                            : const Color(0xFFA0A09A),
+                        color: ctaActive ? Colors.white : const Color(0xFFA0A09A),
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.3,
@@ -908,25 +931,27 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
             ),
           ),
 
-          // Copy promo placeholder
-          if (_canAfford) ...[
+          // Copy promo code (shown after redemption)
+          if (redeemed) ...[
             const SizedBox(height: 10),
             GestureDetector(
               onTap: () {
+                Clipboard.setData(ClipboardData(text: widget.item.promoCode));
                 HapticFeedback.lightImpact();
-                // Copy placeholder
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Code copié : ${widget.item.promoCode}'),
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: const Color(0xFF2E7D32)));
               },
-              child: const Text(
-                'Copier le code promo',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFFA0A09A),
+              child: Text(
+                'Copier le code : ${widget.item.promoCode}',
+                style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600,
+                  color: Color(0xFF2E7D32),
                   decoration: TextDecoration.underline,
-                  decorationColor: Color(0xFFA0A09A),
-                ),
-              ),
-            ),
+                  decorationColor: Color(0xFF2E7D32)),
+              )),
           ],
         ],
       ),

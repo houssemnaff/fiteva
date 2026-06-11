@@ -1,29 +1,28 @@
+import 'package:fiteva/core/shop/shop_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/mock_data.dart';
 import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FAVORITES SCREEN
-// Shows wishlisted boutique items. Pops updated Set<String> on back.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class FavoritesScreen extends StatefulWidget {
+class FavoritesScreen extends ConsumerStatefulWidget {
   final Set<String> wishlist;
-  final int userEtoiles;
 
   const FavoritesScreen({
     super.key,
     required this.wishlist,
-    required this.userEtoiles,
   });
 
   @override
-  State<FavoritesScreen> createState() => _FavoritesScreenState();
+  ConsumerState<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> {
+class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   late Set<String> _local;
 
   @override
@@ -166,16 +165,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (ctx, i) => _FavoriteCard(
         item: items[i],
-        userEtoiles: widget.userEtoiles,
+        userEtoiles: ref.read(shopProvider).points,
         brightness: brightness,
         onRemove: () => _removeFromWishlist(items[i]),
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => BoutiqueDetailScreen(
-              item: items[i],
-              userEtoiles: widget.userEtoiles,
-            ),
+            builder: (_) => BoutiqueDetailScreen(item: items[i]),
           ),
         ),
         surface: _surface(brightness),

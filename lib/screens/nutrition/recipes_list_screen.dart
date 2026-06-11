@@ -91,8 +91,9 @@ const _allRecipes = [
   ),
 ];
 
-const _categories = [
+const _filterCategories = [
   (label: 'Tout',          icon: LucideIcons.layoutGrid),
+  (label: 'Favoris',       icon: LucideIcons.heart),
   (label: 'Petit-dej',     icon: LucideIcons.sunrise),
   (label: 'Protéiné',      icon: LucideIcons.dumbbell),
   (label: 'Végé',          icon: LucideIcons.leaf),
@@ -130,7 +131,6 @@ const _videoRecipes = [
 // ══════════════════════════════════════════════════════════════════════════════
 // SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
-
 class RecipesListScreen extends StatefulWidget {
   const RecipesListScreen({super.key});
 
@@ -142,6 +142,7 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
   String _activeCategory = 'Tout';
   String _searchQuery    = '';
   final _searchCtrl      = TextEditingController();
+  final Set<String> _favorites = {};
 
   @override
   void dispose() {
@@ -149,11 +150,26 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
     super.dispose();
   }
 
+  void _toggleFavorite(String name) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      if (_favorites.contains(name)) {
+        _favorites.remove(name);
+      } else {
+        _favorites.add(name);
+      }
+    });
+  }
+
   List<RealRecipe> get _filtered {
     var list = _allRecipes.toList();
-    if (_activeCategory != 'Tout') {
+
+    if (_activeCategory == 'Favoris') {
+      list = list.where((r) => _favorites.contains(r.name)).toList();
+    } else if (_activeCategory != 'Tout') {
       list = list.where((r) => r.tags.contains(_activeCategory)).toList();
     }
+
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       list = list.where((r) =>
@@ -177,10 +193,17 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
           physics: const BouncingScrollPhysics(),
           slivers: [
 
-            // ── Sticky header ──────────────────────────────────────
-            _StickyHeader(top: top, onBack: () => Navigator.pop(context)),
+            _StickyHeader(
+              top: top,
+              onBack: () => Navigator.pop(context),
+              favCount: _favorites.length,
+              onFavTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _activeCategory =
+                  _activeCategory == 'Favoris' ? 'Tout' : 'Favoris');
+              },
+            ),
 
-            // ── Search bar ─────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -196,7 +219,6 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
               ),
             ),
 
-            // ── Category pills ─────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(top: 14),
@@ -207,12 +229,17 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     physics: const BouncingScrollPhysics(),
                     separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemCount: _categories.length,
+                    itemCount: _filterCategories.length,
                     itemBuilder: (_, i) {
-                      final c   = _categories[i];
+                      final c   = _filterCategories[i];
                       final sel = _activeCategory == c.label;
+                      final isFavPill = c.label == 'Favoris';
                       return _CategoryPill(
-                        label: c.label, icon: c.icon, selected: sel,
+                        label: c.label,
+                        icon: c.icon,
+                        selected: sel,
+                        badge: isFavPill && _favorites.isNotEmpty
+                            ? _favorites.length : null,
                         onTap: () {
                           HapticFeedback.selectionClick();
                           setState(() => _activeCategory = c.label);
@@ -224,53 +251,59 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
               ),
             ),
 
-            // ── Hero recipe ────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                child: _HeroCard(
-                  recipe: _allRecipes.first,
-                  onTap: () => _openRecipe(context, _allRecipes.first),
-                ),
-              ),
-            ),
-
-            // ── Vidéos ─────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: _SectionHeader(
-                icon: LucideIcons.play, eyebrow: 'VIDÉOS',
-                title: 'Recettes rapides', action: 'Voir tout', onAction: () {},
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 178,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  physics: const BouncingScrollPhysics(),
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemCount: _videoRecipes.length,
-                  itemBuilder: (_, i) => _VideoCard(
-                    recipe: _videoRecipes[i],
-                    onTap: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => RecipeVideoPlayerScreen(
-                        recipeName: _videoRecipes[i].name,
-                        imageUrl: _videoRecipes[i].imageUrl,
-                        duration: _videoRecipes[i].duration,
-                        difficulty: _videoRecipes[i].difficulty,
-                        kcal: _videoRecipes[i].kcal,
-                        phase: _videoRecipes[i].phase))),
+            // Hero card (hidden in Favoris mode)
+            if (_activeCategory != 'Favoris') ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                  child: _HeroCard(
+                    recipe: _allRecipes.first,
+                    isFavorite: _favorites.contains(_allRecipes.first.name),
+                    onToggleFavorite: () => _toggleFavorite(_allRecipes.first.name),
+                    onTap: () => _openRecipe(context, _allRecipes.first),
                   ),
                 ),
               ),
-            ),
 
-            // ── All recipes ────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: _SectionHeader(
+                  icon: LucideIcons.play, eyebrow: 'VIDÉOS',
+                  title: 'Recettes rapides', action: 'Voir tout', onAction: () {},
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 178,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    physics: const BouncingScrollPhysics(),
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemCount: _videoRecipes.length,
+                    itemBuilder: (_, i) => _VideoCard(
+                      recipe: _videoRecipes[i],
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => RecipeVideoPlayerScreen(
+                          recipeName: _videoRecipes[i].name,
+                          imageUrl: _videoRecipes[i].imageUrl,
+                          duration: _videoRecipes[i].duration,
+                          difficulty: _videoRecipes[i].difficulty,
+                          kcal: _videoRecipes[i].kcal,
+                          phase: _videoRecipes[i].phase))),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
             SliverToBoxAdapter(
               child: _SectionHeader(
-                icon: LucideIcons.utensils, eyebrow: 'RECETTES',
-                title: _activeCategory == 'Tout' ? 'Toutes' : _activeCategory,
+                icon: _activeCategory == 'Favoris'
+                    ? LucideIcons.heart : LucideIcons.utensils,
+                eyebrow: _activeCategory == 'Favoris' ? 'MES FAVORIS' : 'RECETTES',
+                title: _activeCategory == 'Favoris'
+                    ? 'Mes favoris'
+                    : _activeCategory == 'Tout' ? 'Toutes' : _activeCategory,
                 action: '${filtered.length} résultat${filtered.length > 1 ? "s" : ""}',
               ),
             ),
@@ -278,20 +311,37 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
             if (filtered.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  padding: const EdgeInsets.symmetric(vertical: 52),
                   child: Center(
                     child: Column(children: [
                       Container(
-                        width: 56, height: 56,
+                        width: 60, height: 60,
                         decoration: BoxDecoration(
-                          color: _kMintBg, borderRadius: BorderRadius.circular(18)),
-                        child: const Icon(LucideIcons.search, color: _kGreen, size: 24)),
-                      const SizedBox(height: 14),
-                      Text('Aucune recette', style: GoogleFonts.outfit(
-                        fontSize: 17, fontWeight: FontWeight.w700, color: _kText1)),
+                          color: _activeCategory == 'Favoris'
+                              ? const Color(0xFFFFF0F3)
+                              : _kMintBg,
+                          borderRadius: BorderRadius.circular(20)),
+                        child: Icon(
+                          _activeCategory == 'Favoris'
+                              ? LucideIcons.heartOff
+                              : LucideIcons.search,
+                          color: _activeCategory == 'Favoris'
+                              ? const Color(0xFFE03050)
+                              : _kGreen,
+                          size: 26)),
+                      const SizedBox(height: 16),
+                      Text(
+                        _activeCategory == 'Favoris'
+                            ? 'Aucun favori pour l\'instant'
+                            : 'Aucune recette',
+                        style: GoogleFonts.outfit(
+                          fontSize: 17, fontWeight: FontWeight.w700, color: _kText1)),
                       const SizedBox(height: 4),
-                      Text('Essaie une autre catégorie', style: GoogleFonts.inter(
-                        fontSize: 13, color: _kText2)),
+                      Text(
+                        _activeCategory == 'Favoris'
+                            ? 'Appuie sur ♡ pour sauvegarder une recette'
+                            : 'Essaie une autre catégorie',
+                        style: GoogleFonts.inter(fontSize: 13, color: _kText2)),
                     ]),
                   ),
                 ),
@@ -304,6 +354,8 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (_, i) => _RecipeCard(
                     recipe: filtered[i],
+                    isFavorite: _favorites.contains(filtered[i].name),
+                    onToggleFavorite: () => _toggleFavorite(filtered[i].name),
                     onTap: () => _openRecipe(context, filtered[i]),
                   ),
                 ),
@@ -324,11 +376,18 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
 // ══════════════════════════════════════════════════════════════════════════════
 // STICKY HEADER
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _StickyHeader extends StatelessWidget {
   final double top;
   final VoidCallback onBack;
-  const _StickyHeader({required this.top, required this.onBack});
+  final int favCount;
+  final VoidCallback onFavTap;
+
+  const _StickyHeader({
+    required this.top,
+    required this.onBack,
+    required this.favCount,
+    required this.onFavTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -359,16 +418,49 @@ class _StickyHeader extends StatelessWidget {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('RECETTES', style: GoogleFonts.inter(
-                  color: _kMint, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 3)),
+                  color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+                  letterSpacing: 3)),
                 Text('Explorer', style: GoogleFonts.outfit(
-                  color: _kGreen, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+                  color: _kGreen, fontSize: 22, fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4)),
               ]),
             ),
-            Container(
-              width: 38, height: 38,
-              decoration: BoxDecoration(
-                color: _kChipBg, borderRadius: BorderRadius.circular(12)),
-              child: const Icon(LucideIcons.bookmark, color: _kText2, size: 16),
+            // Favorites bookmark button with badge
+            GestureDetector(
+              onTap: onFavTap,
+              child: Stack(clipBehavior: Clip.none, children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: favCount > 0
+                        ? const Color(0xFFFFF0F3)
+                        : _kChipBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: favCount > 0
+                          ? const Color(0xFFE03050).withOpacity(0.3)
+                          : Colors.transparent)),
+                  child: Icon(
+                    favCount > 0 ? LucideIcons.heart : LucideIcons.heart,
+                    color: favCount > 0
+                        ? const Color(0xFFE03050)
+                        : _kText2,
+                    size: 16)),
+                if (favCount > 0)
+                  Positioned(
+                    top: -4, right: -4,
+                    child: Container(
+                      width: 18, height: 18,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE03050),
+                        shape: BoxShape.circle),
+                      child: Center(child: Text(
+                        '$favCount',
+                        style: GoogleFonts.inter(
+                          fontSize: 9, fontWeight: FontWeight.w800,
+                          color: Colors.white))))),
+              ]),
             ),
           ]),
         );
@@ -380,7 +472,6 @@ class _StickyHeader extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // SEARCH BAR
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final String query;
@@ -436,16 +527,22 @@ class _SearchBar extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // CATEGORY PILL
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _CategoryPill extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool selected;
+  final int? badge;
   final VoidCallback onTap;
   const _CategoryPill({
     required this.label, required this.icon,
     required this.selected, required this.onTap,
+    this.badge,
   });
+
+  bool get _isFav => label == 'Favoris';
+
+  Color get _activeColor => _isFav ? const Color(0xFFE03050) : _kGreen;
+  Color get _activeBg    => _isFav ? const Color(0xFFE03050) : _kGreen;
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -454,16 +551,44 @@ class _CategoryPill extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
-        color: selected ? _kGreen : Colors.white,
+        color: selected ? _activeBg : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: selected ? _kGreen : _kBorder, width: 1.2)),
+        border: Border.all(
+          color: selected
+              ? _activeBg
+              : _isFav && badge != null
+                  ? const Color(0xFFE03050).withOpacity(0.4)
+                  : _kBorder,
+          width: 1.2)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12, color: selected ? Colors.white : _kText2),
+        Icon(
+          selected && _isFav ? LucideIcons.heartHandshake : icon,
+          size: 12,
+          color: selected
+              ? Colors.white
+              : _isFav
+                  ? const Color(0xFFE03050)
+                  : _kText2),
         const SizedBox(width: 6),
         Text(label, style: GoogleFonts.inter(
           fontSize: 12.5,
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          color: selected ? Colors.white : _kText2)),
+          color: selected
+              ? Colors.white
+              : _isFav
+                  ? const Color(0xFFE03050)
+                  : _kText2)),
+        if (badge != null && !selected) ...[
+          const SizedBox(width: 5),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE03050),
+              borderRadius: BorderRadius.circular(10)),
+            child: Text('$badge', style: GoogleFonts.inter(
+              fontSize: 9, fontWeight: FontWeight.w800,
+              color: Colors.white))),
+        ],
       ]),
     ),
   );
@@ -472,7 +597,6 @@ class _CategoryPill extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // SECTION HEADER
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String eyebrow, title;
@@ -506,17 +630,16 @@ class _SectionHeader extends StatelessWidget {
           ]),
         ),
         if (action != null)
-          GestureDetector(
-            onTap: onAction,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: onAction != null ? _kMintBg : _kChipBg,
-                borderRadius: BorderRadius.circular(20)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: onAction != null ? _kMintBg : _kChipBg,
+              borderRadius: BorderRadius.circular(20)),
+            child: GestureDetector(
+              onTap: onAction,
               child: Text(action!, style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w700,
-                color: onAction != null ? _kGreen : _kText2)),
-            ),
+                color: onAction != null ? _kGreen : _kText2))),
           ),
       ]),
     );
@@ -524,13 +647,19 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// HERO CARD
+// HERO CARD  +  favorite button
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _HeroCard extends StatelessWidget {
   final RealRecipe recipe;
+  final bool isFavorite;
+  final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
-  const _HeroCard({required this.recipe, required this.onTap});
+  const _HeroCard({
+    required this.recipe,
+    required this.isFavorite,
+    required this.onToggleFavorite,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -576,7 +705,8 @@ class _HeroCard extends StatelessWidget {
                   fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
               ]))),
 
-          Positioned(top: 14, right: 14,
+          // Phase badge
+          Positioned(top: 14, right: 56,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
@@ -584,6 +714,26 @@ class _HeroCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20)),
               child: Text(pc.name, style: GoogleFonts.inter(
                 fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)))),
+
+          // ❤ Favorite button
+          Positioned(top: 10, right: 10,
+            child: GestureDetector(
+              onTap: onToggleFavorite,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: isFavorite
+                      ? const Color(0xFFE03050)
+                      : Colors.black.withOpacity(0.35),
+                  shape: BoxShape.circle,
+                  boxShadow: isFavorite ? [BoxShadow(
+                    color: const Color(0xFFE03050).withOpacity(0.4),
+                    blurRadius: 8, offset: const Offset(0, 3))] : []),
+                child: Icon(
+                  isFavorite ? LucideIcons.heart : LucideIcons.heart,
+                  size: 16,
+                  color: Colors.white)))),
 
           Positioned(bottom: 14, left: 16, right: 16,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -608,7 +758,6 @@ class _HeroCard extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // VIDEO CARD
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _VideoCard extends StatelessWidget {
   final _VideoRecipe recipe;
   final VoidCallback onTap;
@@ -682,13 +831,19 @@ class _VideoCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// RECIPE CARD (horizontal list item)
+// RECIPE CARD (list item)  +  favorite button
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _RecipeCard extends StatelessWidget {
   final RealRecipe recipe;
+  final bool isFavorite;
+  final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
-  const _RecipeCard({required this.recipe, required this.onTap});
+  const _RecipeCard({
+    required this.recipe,
+    required this.isFavorite,
+    required this.onToggleFavorite,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -699,9 +854,14 @@ class _RecipeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _kBorder),
+          border: Border.all(
+            color: isFavorite
+                ? const Color(0xFFE03050).withOpacity(0.25)
+                : _kBorder),
           boxShadow: [BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: isFavorite
+                ? const Color(0xFFE03050).withOpacity(0.08)
+                : Colors.black.withOpacity(0.04),
             blurRadius: 8, offset: const Offset(0, 2))],
         ),
         clipBehavior: Clip.antiAlias,
@@ -733,8 +893,7 @@ class _RecipeCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [
-                    Container(
-                      width: 5, height: 5,
+                    Container(width: 5, height: 5,
                       decoration: BoxDecoration(
                         color: pc.primary, shape: BoxShape.circle)),
                     const SizedBox(width: 5),
@@ -768,9 +927,32 @@ class _RecipeCard extends StatelessWidget {
             ),
           ),
 
-          const Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: Icon(LucideIcons.chevronRight, size: 14, color: _kText2),
+          // Favorite + chevron
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: onToggleFavorite,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 32, height: 32,
+                    decoration: BoxDecoration(
+                      color: isFavorite
+                          ? const Color(0xFFFFEEF1)
+                          : const Color(0xFFF4F4F4),
+                      shape: BoxShape.circle),
+                    child: Icon(
+                      LucideIcons.heart,
+                      size: 14,
+                      color: isFavorite
+                          ? const Color(0xFFE03050)
+                          : _kText2))),
+                const SizedBox(height: 6),
+                const Icon(LucideIcons.chevronRight, size: 14, color: _kText2),
+              ],
+            ),
           ),
         ]),
       ),
@@ -781,7 +963,6 @@ class _RecipeCard extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // SMALL SHARED WIDGETS
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _GlassBadge extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -815,5 +996,4 @@ class _MiniStat extends StatelessWidget {
     Text(label, style: GoogleFonts.inter(
       fontSize: 11, color: _kText2, fontWeight: FontWeight.w500)),
   ]);
-  }
-  
+}
