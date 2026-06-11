@@ -134,31 +134,37 @@ class _HeaderContent extends StatelessWidget {
         children: [
           // ── Left: eyebrow + title ─────────────────────────────────────────
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  eyebrow.toUpperCase(),
-                  style: GoogleFonts.inter(
-                    color:       accentColor,
-                    fontSize:    9,
-                    fontWeight:  FontWeight.w700,
-                    letterSpacing: 3.5,
+            child: ClipRect(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (eyebrow.isNotEmpty) ...[
+                    Text(
+                      eyebrow.toUpperCase(),
+                      style: GoogleFonts.inter(
+                        color:        accentColor,
+                        fontSize:     9,
+                        fontWeight:   FontWeight.w700,
+                        letterSpacing: 3.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                  ],
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      color:        const Color(0xFF1A1A1A),
+                      fontSize:     22,
+                      fontWeight:   FontWeight.w800,
+                      letterSpacing: -0.5,
+                      height:       1.0,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    color:       const Color(0xFF1A1A1A),
-                    fontSize:    24,
-                    fontWeight:  FontWeight.w800,
-                    letterSpacing: -0.5,
-                    height:      1.0,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
@@ -231,25 +237,24 @@ class _SharedSliverAppHeader extends StatelessWidget {
     return SliverAppBar(
       pinned: true,
       floating: false,
-      expandedHeight: top + 72,
-      collapsedHeight: top + 64,
+      expandedHeight: top + 80,
+      collapsedHeight: top + 72,
       backgroundColor:      bgColor,
       surfaceTintColor:     Colors.transparent,
       elevation:            0,
       scrolledUnderElevation: 0,
       automaticallyImplyLeading: false,
       flexibleSpace: LayoutBuilder(builder: (_, constraints) {
+        final collapsed = constraints.maxHeight <= top + 56;
         return _HeaderContent(
-          eyebrow:           eyebrow,
-          title:             title,
-          accentColor:       accentColor,
-          bgColor:           bgColor,
-          actions:           actions,
-          avatarInitial:     avatarInitial,
-          
-          topPadding:        top,
-        
-          onAvatarTap:       onAvatarTap,
+          eyebrow:       collapsed ? '' : eyebrow,
+          title:         title,
+          accentColor:   accentColor,
+          bgColor:       bgColor,
+          actions:       actions,
+          avatarInitial: avatarInitial,
+          topPadding:    top,
+          onAvatarTap:   onAvatarTap,
         );
       }),
     );
