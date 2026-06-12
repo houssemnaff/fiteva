@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -6,13 +7,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../models/models.dart';
 import '../shared/donut_painters.dart';
 
-// ── Design tokens ──────────────────────────────────────────────────────────────
-const _kGreen   = Color(0xFF1C4D30);
-const _kMint    = Color(0xFF7ABB98);
-const _kCream   = Color(0xFFFEFEFE);
-const _kBorder  = Color(0xFFECECEC);
-const _kText1   = Color(0xFF1A1A1A);
-const _kText2   = Color(0xFF6B7280);
+// ── Static brand tokens (theme-independent) ───────────────────────────────────
+const _kGreen = NutritionColors.green;
+const _kMint  = NutritionColors.mint;
 
 // ── Meal accent colors ────────────────────────────────────────────────────────
 const _kBreakfastColor = Color(0xFFF59E0B);
@@ -217,13 +214,18 @@ class MealCategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final idx       = _index;
-    final accent    = _colors[idx];
-    final bgAccent  = _bgColors[idx];
-    final icon      = _icons[idx];
-    final pct       = data.pct.clamp(0.0, 1.0);
-    final over      = data.remaining < 0;
-    final empty     = data.consumed == 0;
+    final nc     = NutritionColors.of(context);
+    final idx    = _index;
+    final accent = _colors[idx];
+    final icon   = _icons[idx];
+    final pct    = data.pct.clamp(0.0, 1.0);
+    final over   = data.remaining < 0;
+    final empty  = data.consumed == 0;
+
+    // Dark-mode-aware icon background
+    final bgAccent = nc.isDark
+        ? accent.withOpacity(0.15)
+        : _bgColors[idx];
 
     return GestureDetector(
       onTap: onTap,
@@ -231,14 +233,13 @@ class MealCategoryCard extends StatelessWidget {
         margin: EdgeInsets.only(bottom: isLast ? 0 : 1),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: nc.surface,
           border: Border(
             bottom: isLast
                 ? BorderSide.none
-                : const BorderSide(color: Color(0xFFF2F2F2), width: 1))),
+                : BorderSide(color: nc.border, width: 1))),
         child: Row(children: [
 
-          // Icon circle
           Container(
             width: 42, height: 42,
             decoration: BoxDecoration(color: bgAccent, shape: BoxShape.circle),
@@ -246,25 +247,24 @@ class MealCategoryCard extends StatelessWidget {
 
           const SizedBox(width: 14),
 
-          // Name + time + progress bar
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
                 Text(data.name, style: GoogleFonts.outfit(
-                  fontSize: 14, fontWeight: FontWeight.w700, color: _kText1)),
+                  fontSize: 14, fontWeight: FontWeight.w700, color: nc.text1)),
                 const Spacer(),
                 Text(data.time, style: GoogleFonts.inter(
-                  fontSize: 11, color: _kText2)),
+                  fontSize: 11, color: nc.text2)),
               ]),
               const SizedBox(height: 6),
               ClipRRect(
                 borderRadius: BorderRadius.circular(3),
                 child: LinearProgressIndicator(
                   value: pct, minHeight: 3,
-                  backgroundColor: const Color(0xFFF0F0F0),
+                  backgroundColor: nc.surface2,
                   valueColor: AlwaysStoppedAnimation(
-                    empty ? const Color(0xFFE0E0E0)
+                    empty ? nc.border
                         : over ? const Color(0xFFE03050)
                         : accent))),
               const SizedBox(height: 5),
@@ -273,29 +273,27 @@ class MealCategoryCard extends StatelessWidget {
                   empty ? 'Aucun repas enregistré' : '${data.consumed} kcal consommées',
                   style: GoogleFonts.inter(
                     fontSize: 10,
-                    color: empty ? const Color(0xFFBBBBBB) : _kText2)),
+                    color: empty ? nc.border : nc.text2)),
                 const Spacer(),
-                Text(
-                  '/ ${data.budget} kcal',
-                  style: GoogleFonts.inter(fontSize: 10, color: _kText2)),
+                Text('/ ${data.budget} kcal',
+                  style: GoogleFonts.inter(fontSize: 10, color: nc.text2)),
               ]),
             ],
           )),
 
           const SizedBox(width: 10),
 
-          // Arrow or badge
           if (over)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFEEEE),
+                color: const Color(0xFFE03050).withOpacity(nc.isDark ? 0.25 : 0.10),
                 borderRadius: BorderRadius.circular(20)),
               child: Text('Dépassé', style: GoogleFonts.inter(
                 fontSize: 9, fontWeight: FontWeight.w700,
                 color: const Color(0xFFE03050))))
           else
-            Icon(LucideIcons.chevronRight, size: 16, color: _kText2),
+            Icon(LucideIcons.chevronRight, size: 16, color: nc.text2),
         ]),
       ),
     );
@@ -319,11 +317,11 @@ class MealsContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     final totalConsumed = categories.fold(0, (s, c) => s + c.consumed);
     final totalBudget   = categories.fold(0, (s, c) => s + c.budget);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // Section header
       Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('MES REPAS', style: GoogleFonts.inter(
@@ -331,7 +329,7 @@ class MealsContainer extends StatelessWidget {
             letterSpacing: 2.5)),
           const SizedBox(height: 2),
           Text('Aujourd\'hui', style: GoogleFonts.outfit(
-            color: _kText1, fontSize: 20, fontWeight: FontWeight.w800,
+            color: nc.text1, fontSize: 20, fontWeight: FontWeight.w800,
             letterSpacing: -0.4)),
         ]),
         const Spacer(),
@@ -340,19 +338,18 @@ class MealsContainer extends StatelessWidget {
             fontSize: 12, fontWeight: FontWeight.w700, color: _kGreen)),
           const SizedBox(height: 1),
           Text('total journée', style: GoogleFonts.inter(
-            fontSize: 10, color: _kText2)),
+            fontSize: 10, color: nc.text2)),
         ]),
       ]),
 
       const SizedBox(height: 12),
 
-      // Card
       Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: nc.surface,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: _kBorder),
-          boxShadow: [BoxShadow(
+          border: Border.all(color: nc.border),
+          boxShadow: nc.isDark ? [] : [BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 16, offset: const Offset(0, 4))]),
         clipBehavior: Clip.antiAlias,
@@ -446,7 +443,9 @@ class SectionHeader extends StatelessWidget {
   const SectionHeader({super.key, required this.title, this.eyebrow, this.onSeeAll});
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Row(
     crossAxisAlignment: CrossAxisAlignment.end,
     children: [
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -456,7 +455,7 @@ class SectionHeader extends StatelessWidget {
             letterSpacing: 2.5)),
         if (eyebrow != null) const SizedBox(height: 2),
         Text(title, style: GoogleFonts.outfit(
-          color: _kText1, fontSize: 20, fontWeight: FontWeight.w800,
+          color: nc.text1, fontSize: 20, fontWeight: FontWeight.w800,
           letterSpacing: -0.4)),
       ]),
       const Spacer(),
@@ -470,7 +469,8 @@ class SectionHeader extends StatelessWidget {
             const Icon(LucideIcons.chevronRight, size: 12, color: _kGreen),
           ])),
     ],
-  );
+    );
+  }
 }
 
 // ── Keep MacroRow for any external usage ──────────────────────────────────────
@@ -480,15 +480,18 @@ class MacroRow extends StatelessWidget {
   const MacroRow(this.label, this.value, this.color, {super.key});
 
   @override
-  Widget build(BuildContext context) => Row(children: [
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Row(children: [
     Container(width: 9, height: 9,
       decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
     const SizedBox(width: 8),
     Expanded(child: Text(label, style: GoogleFonts.inter(
-      fontSize: 12, color: _kText2))),
+      fontSize: 12, color: nc.text2))),
     Text(value, style: GoogleFonts.inter(
-      fontSize: 12, fontWeight: FontWeight.w700, color: _kText1)),
+      fontSize: 12, fontWeight: FontWeight.w700, color: nc.text1)),
   ]);
+  }
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────────

@@ -1,7 +1,8 @@
-import 'package:chewie/chewie.dart';
+import 'package:fiteva/core/nutrition/favorites_provider.dart';
+import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:video_player/video_player.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TOKENS LOCAUX — cohérents avec le reste de l'app
@@ -88,53 +89,32 @@ const _macros = [
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
-class RecipeDetailScreen extends StatefulWidget {
+class RecipeDetailScreen extends ConsumerStatefulWidget {
   final dynamic recipe;
   const RecipeDetailScreen({super.key, this.recipe});
 
   @override
-  State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
+  ConsumerState<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
 }
 
-class _RecipeDetailScreenState extends State<RecipeDetailScreen>
+class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     with TickerProviderStateMixin {
-  int  _tab      = 0;
-  int  _portions = 1;
-  bool _saved    = false;
+  int _tab      = 0;
+  int _portions = 1;
+
+  String get _recipeName =>
+      widget.recipe?.name as String? ?? 'Oeufs brouillés';
 
   late final ScrollController _scroll;
-  VideoPlayerController? _videoCtrl;
-  ChewieController?      _chewieCtrl;
 
   @override
   void initState() {
     super.initState();
     _scroll = ScrollController();
-    _initVideo();
-  }
-
-  Future<void> _initVideo() async {
-    final ctrl = VideoPlayerController.asset('assets/videos/workout1.mp4');
-    try {
-      await ctrl.initialize();
-      final chewie = ChewieController(
-        videoPlayerController: ctrl,
-        autoPlay: false,
-        looping: false,
-        aspectRatio: ctrl.value.aspectRatio,
-        placeholder: Image.network(_heroUrl, fit: BoxFit.cover),
-      );
-      if (!mounted) { ctrl.dispose(); return; }
-      setState(() { _videoCtrl = ctrl; _chewieCtrl = chewie; });
-    } catch (_) {
-      ctrl.dispose();
-    }
   }
 
   @override
   void dispose() {
-    _chewieCtrl?.dispose();
-    _videoCtrl?.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -161,11 +141,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
               // ── Hero ──────────────────────────────────────────
               SliverToBoxAdapter(
                 child: _HeroSection(
-                  recipeName: widget.recipe?.name as String? ?? 'Oeufs brouillés',
-                  saved: _saved,
-                  onSave: () => setState(() => _saved = !_saved),
+                  recipeName: _recipeName,
+                  imageUrl: widget.recipe?.emoji as String? ?? _heroUrl,
+                  saved: ref.watch(favoritesProvider).contains(_recipeName),
+                  onSave: () => ref.read(favoritesProvider.notifier).toggle(_recipeName),
                   onBack: () => Navigator.maybePop(context),
-                  chewieCtrl: _chewieCtrl,
                 ),
               ),
 
@@ -211,13 +191,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
           ),
 
           // ── Bottom CTA ────────────────────────────────────────
-          Positioned(
-            bottom: 0, left: 0, right: 0,
-            child: _BottomCta(
-              onBack:  () => Navigator.maybePop(context),
-              onEaten: _showMealModal,
-            ),
-          ),
+          
         ],
       ),
     );
@@ -229,16 +203,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
 // ─────────────────────────────────────────────────────────────────────────────
 class _HeroSection extends StatelessWidget {
   final String recipeName;
+  final String imageUrl;
   final bool saved;
   final VoidCallback onSave, onBack;
-  final ChewieController? chewieCtrl;
 
   const _HeroSection({
     required this.recipeName,
+    required this.imageUrl,
     required this.saved,
     required this.onSave,
     required this.onBack,
-    this.chewieCtrl,
   });
 
   @override
@@ -249,20 +223,19 @@ class _HeroSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Video player (or fallback image) ──────────────────
+        // ── Hero image ────────────────────────────────────────
         SizedBox(
           height: top + 240,
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Video or image
-              chewieCtrl != null
-                  ? Chewie(controller: chewieCtrl!)
-                  : Image.network(
-                      _heroUrl, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: cs.secondaryContainer.withValues(alpha: 0.35)),
-                    ),
+              Image.network(
+                imageUrl, fit: BoxFit.cover,
+                loadingBuilder: (_, child, p) =>
+                  p == null ? child : Container(color: cs.secondaryContainer.withValues(alpha: 0.35)),
+                errorBuilder: (_, __, ___) => Container(
+                  color: cs.secondaryContainer.withValues(alpha: 0.35)),
+              ),
 
               // Top gradient for buttons legibility
               Positioned(
@@ -1003,77 +976,6 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingPainter o) => o.progress != progress;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BOTTOM CTA
-// ─────────────────────────────────────────────────────────────────────────────
-class _BottomCta extends StatelessWidget {
-  final VoidCallback onBack, onEaten;
-  const _BottomCta({required this.onBack, required this.onEaten});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [colorScheme.background.withOpacity(0), colorScheme.background, colorScheme.background],
-        ),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        20, 20, 20, MediaQuery.of(context).padding.bottom + 16),
-      child: Row(children: [
-        // Bouton retour
-        GestureDetector(
-          onTap: onBack,
-          child: Container(
-            width: 50, height: 52,
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.shadow.withOpacity(0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(Icons.chevron_left, color: colorScheme.onSurface, size: 24),
-          ),
-        ),
-        const SizedBox(width: 12),
-        // Bouton principal
-        Expanded(
-          child: GestureDetector(
-            onTap: onEaten,
-            child: Container(
-              height: 52,
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                borderRadius: BorderRadius.circular(26),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_outline_rounded,
-                    size: 20, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text("J'ai mangé ça !",
-                    style: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w700,
-                      color: Colors.white)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ]),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

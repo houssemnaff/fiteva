@@ -1,10 +1,14 @@
+import 'package:fiteva/core/nutrition/favorites_provider.dart';
 import 'package:fiteva/core/nutrition/models.dart' as core;
+import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:fiteva/core/nutrition/nutrition_provider.dart';
 import 'package:fiteva/screens/nutrition/widgets/recommended_meals_section.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'models/models.dart';
 import 'widgets/home/home_widgets.dart';
 
@@ -12,6 +16,7 @@ import 'suivi_nutrition_screen.dart';
 import 'recipes_list_screen.dart';
 import 'ajout_rapide_screen.dart';
 import 'recette_detail_screen.dart';
+import 'recipe_video_screen.dart';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const _kMint  = Color(0xFF7ABB98);
@@ -34,24 +39,10 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
   late AnimationController _ctrl;
   late Animation<double>   _anim;
 
-  static const _recipes = [
-    RecipeItem(
-      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80',
-      'Salade bowl', 'Salade bowl', Color(0xFFD4E8D0),
-      duration: '15 min', difficulty: 'Facile'),
-    RecipeItem(
-      'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&q=80',
-      'Oeufs brouillés', 'Oeufs brouillés', Color(0xFFE8D4C8),
-      duration: '10 min', difficulty: 'Très facile'),
-    RecipeItem(
-      'https://images.unsplash.com/photo-1588137378633-dea1336ce1e2?w=400&q=80',
-      'Toast avocat', 'Toast avocat', Color(0xFFD0D8E8),
-      duration: '8 min', difficulty: 'Très facile'),
-    RecipeItem(
-      'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80',
-      'Soupe légumes', 'Soupe légumes', Color(0xFFE8E0D0),
-      duration: '25 min', difficulty: 'Facile'),
-  ];
+  // Fix #4 — sync with allRecipes (take first 4)
+  static List<RecipeItem> get _recipes => allRecipes.take(4).map((r) =>
+    RecipeItem(r.imageUrl, r.name, r.name, r.accent,
+      duration: r.duration, difficulty: r.difficulty)).toList();
 
   @override
   void initState() {
@@ -103,90 +94,138 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
     }
   }
 
+  // Fix #3 — map NutritionGoal → goalId string
+  String _goalId(core.NutritionGoal g) => switch (g) {
+    core.NutritionGoal.loss     => 'loss',
+    core.NutritionGoal.maintain => 'maintain',
+    core.NutritionGoal.gain     => 'muscle',
+  };
+
   @override
   Widget build(BuildContext context) {
     final totals  = ref.watch(todayTotalsProvider);
     final profile = ref.watch(userProfileProvider);
     final key     = todayKey;
 
-    // Build live categories from provider
     final categories = core.MealType.values.map((type) {
-      final entries = ref.watch(mealsForTypeProvider((dateKey: key, type: type)));
+      final entries    = ref.watch(mealsForTypeProvider((dateKey: key, type: type)));
       final typeTotals = core.DailyTotals.from(entries);
       return MealCategoryData(
-        _mealImageUrl(type),
-        type.label,
-        typeTotals.calories,
-        type.budgetKcal,
-        typeTotals.protein.toDouble(),
-        typeTotals.carbs.toDouble(),
-        time: _mealTime(type),
-        recipeCount: entries.length,
+        _mealImageUrl(type), type.label,
+        typeTotals.calories, type.budgetKcal,
+        typeTotals.protein.toDouble(), typeTotals.carbs.toDouble(),
+        time: _mealTime(type), recipeCount: entries.length,
       );
     }).toList();
 
+    final hasAnyMeal = totals.calories > 0;
+    final recipes    = _recipes;
+    final nc         = NutritionColors.of(context);
+
     return Scaffold(
-      backgroundColor: _kCream,
+      backgroundColor: nc.bg,
+      // Fix #1 — FAB "Ajouter un aliment"
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () { HapticFeedback.mediumImpact(); _goToAjout(); },
+        backgroundColor: const Color(0xFF1C4D30),
+        elevation: 4,
+        icon: const Icon(LucideIcons.plus, color: Colors.white, size: 18),
+        label: Text('Ajouter', style: GoogleFonts.inter(
+          fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+      ),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
 
-          // ── Header ────────────────────────────────────────────────────────
           SharedAppHeader.sliver(
-            eyebrow:     'Nutrition',
-            title:       'Mon alimentation',
-            accentColor: _kMint,
-          ),
+            eyebrow: 'Nutrition', title: 'Mon alimentation', accentColor: _kMint,
+            actions: [
+              Consumer(builder: (ctx, r, _) {
+                final favCount = r.watch(favoritesProvider).length;
+                return GestureDetector(
+                  onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                    builder: (_) => const _FavoritesScreen())),
+                  child: Stack(clipBehavior: Clip.none, children: [
+                    Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                        color: favCount > 0
+                            ? const Color(0xFFFFEEF1)
+                            : const Color(0xFFF4F4F4),
+                        shape: BoxShape.circle),
+                      child: Icon(LucideIcons.heart,
+                        size: 18,
+                        color: favCount > 0
+                            ? const Color(0xFFE03050)
+                            : const Color(0xFF9CA3AF))),
+                    if (favCount > 0)
+                      Positioned(
+                        top: -3, right: -3,
+                        child: Container(
+                          width: 16, height: 16,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE03050),
+                            shape: BoxShape.circle),
+                          child: Center(child: Text('$favCount',
+                            style: const TextStyle(
+                              color: Colors.white, fontSize: 9,
+                              fontWeight: FontWeight.w700))))),
+                  ]),
+                );
+              }),
+            ]),
 
-          // ── Hero: daily summary card ──────────────────────────────────────
-         
-
-          // ── Calorie ring ──────────────────────────────────────────────────
+          // Fix #2 — ring tappable → SuiviNutritionScreen
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: _CalorieRingCard(
-                anim:     _anim,
-                consumed: totals.calories,
-                goal:     profile.dailyKcal,
-                protein:  totals.protein,
-                carbs:    totals.carbs,
-                fat:      totals.fat,
-                proteinGoal: profile.dailyProtein,
-                carbsGoal:   profile.dailyCarbs,
-                fatGoal:     profile.dailyFat,
+              child: GestureDetector(
+                onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const SuiviNutritionScreen())),
+                child: _CalorieRingCard(
+                  anim: _anim,
+                  consumed: totals.calories, goal: profile.dailyKcal,
+                  protein: totals.protein, carbs: totals.carbs, fat: totals.fat,
+                  proteinGoal: profile.dailyProtein,
+                  carbsGoal:   profile.dailyCarbs,
+                  fatGoal:     profile.dailyFat,
+                ),
               ),
             ),
           ),
 
-          // ── Meals list ────────────────────────────────────────────────────
+          // Fix #5 — empty state CTA
+          if (!hasAnyMeal)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: _EmptyDayBanner(onTap: _goToAjout),
+              ),
+            ),
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
-              child: MealsContainer(
-                categories: categories,
-                onMealTap:  _goToSuivi,
-              ),
+              child: MealsContainer(categories: categories, onMealTap: _goToSuivi),
             ),
           ),
 
-          // ── Recommended meals ─────────────────────────────────────────────
-          const SliverToBoxAdapter(
+          // Fix #3 — goal from profile
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(0, 32, 0, 0),
-              child: RecommendedMealsSection(initialGoalId: 'loss'),
+              padding: const EdgeInsets.fromLTRB(0, 32, 0, 0),
+              child: RecommendedMealsSection(initialGoalId: _goalId(profile.goal)),
             ),
           ),
 
-          // ── Recipes ───────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
               child: SectionHeader(
-                eyebrow:  'RECETTES',
-                title:    'Nouvelles recettes',
+                eyebrow: 'RECETTES', title: 'Nouvelles recettes',
                 onSeeAll: _goToRecipes))),
 
+          // Fix #4 — recipes from allRecipes
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -196,12 +235,12 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemCount: _recipes.length,
+                  itemCount: recipes.length,
                   itemBuilder: (_, i) => RecipeCard(
-                    recipe: _recipes[i],
+                    recipe: recipes[i],
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) =>
-                        RecipeDetailScreen(recipe: _recipes[i])))),
+                        RecipeDetailScreen(recipe: recipes[i])))),
                 ),
               ),
             ),
@@ -337,5 +376,267 @@ class _MiniMacroBar extends StatelessWidget {
       Text('${consumed}g', style: GoogleFonts.inter(
         fontSize: 9, color: Colors.white38)),
     ]);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  EMPTY DAY BANNER  (Fix #5)
+// ══════════════════════════════════════════════════════════════════════════════
+class _EmptyDayBanner extends StatelessWidget {
+  final VoidCallback onTap;
+  const _EmptyDayBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEAF3EC),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF7ABB98).withOpacity(0.4)),
+        ),
+        child: Row(children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C4D30),
+              borderRadius: BorderRadius.circular(14)),
+            child: const Icon(LucideIcons.utensils, color: Colors.white, size: 20)),
+          const SizedBox(width: 14),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Aucun repas aujourd\'hui', style: GoogleFonts.outfit(
+              fontSize: 14, fontWeight: FontWeight.w700,
+              color: const Color(0xFF1C4D30))),
+            const SizedBox(height: 2),
+            Text('Commence à suivre ton alimentation →', style: GoogleFonts.inter(
+              fontSize: 12, color: const Color(0xFF6B7280))),
+          ])),
+        ]),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  FAVORITES SCREEN
+// ══════════════════════════════════════════════════════════════════════════════
+class _FavoritesScreen extends ConsumerWidget {
+  const _FavoritesScreen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final top      = MediaQuery.of(context).padding.top;
+    final favNames = ref.watch(favoritesProvider);
+
+    // Merge image + video recipes, keep only favorites
+    final imageFavs = allRecipes
+        .where((r) => favNames.contains(r.name))
+        .toList();
+    final videoFavs = videoRecipes
+        .where((r) => favNames.contains(r.name))
+        .toList();
+    final isEmpty = imageFavs.isEmpty && videoFavs.isEmpty;
+
+    final nc = NutritionColors.of(context);
+    const kRed = Color(0xFFE03050);
+
+    return Scaffold(
+      backgroundColor: nc.bg,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+
+          // Header
+          SliverToBoxAdapter(
+            child: Container(
+              color: nc.surface,
+              padding: EdgeInsets.fromLTRB(20, top + 16, 20, 16),
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(
+                      color: kRed.withOpacity(nc.isDark ? 0.20 : 0.10),
+                      borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(LucideIcons.chevronLeft,
+                      color: kRed, size: 18))),
+                const SizedBox(width: 14),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('MES RECETTES', style: GoogleFonts.inter(
+                    color: kRed, fontSize: 9,
+                    fontWeight: FontWeight.w700, letterSpacing: 3)),
+                  Text('Favoris', style: GoogleFonts.outfit(
+                    color: nc.text1, fontSize: 22,
+                    fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+                ]),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: kRed.withOpacity(nc.isDark ? 0.20 : 0.10),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Text('${favNames.length}', style: GoogleFonts.inter(
+                    fontSize: 12, fontWeight: FontWeight.w700,
+                    color: kRed))),
+              ]),
+            ),
+          ),
+
+          // Empty state
+          if (isEmpty)
+            SliverFillRemaining(
+              child: Center(child: Column(
+                mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                  width: 64, height: 64,
+                  decoration: BoxDecoration(
+                    color: kRed.withOpacity(nc.isDark ? 0.20 : 0.10),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: const Icon(LucideIcons.heart,
+                    color: kRed, size: 28)),
+                const SizedBox(height: 16),
+                Text('Aucun favori', style: GoogleFonts.outfit(
+                  fontSize: 18, fontWeight: FontWeight.w700,
+                  color: nc.text1)),
+                const SizedBox(height: 6),
+                Text('Appuie sur ♥ dans une recette\npour la retrouver ici',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 13, color: nc.text2)),
+              ])),
+            ),
+
+          // Image recipes section
+          if (imageFavs.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+                child: Text('Recettes photos',
+                  style: GoogleFonts.outfit(
+                    fontSize: 16, fontWeight: FontWeight.w700,
+                    color: nc.text1)))),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              sliver: SliverList.separated(
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemCount: imageFavs.length,
+                itemBuilder: (ctx, i) {
+                  final r = imageFavs[i];
+                  return GestureDetector(
+                    onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                      builder: (_) => RecipeDetailScreen(
+                        recipe: RecipeItem(r.imageUrl, r.name, r.name, r.accent)))),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: nc.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: nc.border)),
+                      child: Row(children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(r.imageUrl,
+                            width: 60, height: 60, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                              Container(width: 60, height: 60, color: r.accent.withOpacity(0.15)))),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(r.name, style: GoogleFonts.outfit(
+                            fontSize: 13.5, fontWeight: FontWeight.w700,
+                            color: nc.text1)),
+                          const SizedBox(height: 3),
+                          Text('${r.kcal} kcal · ${r.duration}',
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5, color: nc.text2)),
+                        ])),
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(favoritesProvider.notifier).toggle(r.name);
+                          },
+                          child: const Icon(LucideIcons.heart,
+                            color: kRed, size: 20)),
+                      ])),
+                  );
+                },
+              ),
+            ),
+          ],
+
+          // Video recipes section
+          if (videoFavs.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+                child: Text('Recettes vidéos',
+                  style: GoogleFonts.outfit(
+                    fontSize: 16, fontWeight: FontWeight.w700,
+                    color: nc.text1)))),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+              sliver: SliverList.separated(
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemCount: videoFavs.length,
+                itemBuilder: (ctx, i) {
+                  final r = videoFavs[i];
+                  return GestureDetector(
+                    onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                      builder: (_) => RecipeVideoPlayerScreen(recipe: r))),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: nc.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: nc.border)),
+                      child: Row(children: [
+                        Stack(children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(r.imageUrl,
+                              width: 60, height: 60, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                Container(width: 60, height: 60,
+                                  color: const Color(0xFF1C4D30).withOpacity(0.10)))),
+                          Positioned.fill(child: Center(
+                            child: Container(
+                              width: 24, height: 24,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1C4D30).withOpacity(0.85),
+                                shape: BoxShape.circle),
+                              child: const Icon(LucideIcons.play,
+                                color: Colors.white, size: 10)))),
+                        ]),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(r.name, style: GoogleFonts.outfit(
+                            fontSize: 13.5, fontWeight: FontWeight.w700,
+                            color: nc.text1)),
+                          const SizedBox(height: 3),
+                          Text('${r.kcal} kcal · ${r.duration}',
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5, color: nc.text2)),
+                        ])),
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(favoritesProvider.notifier).toggle(r.name);
+                          },
+                          child: const Icon(LucideIcons.heart,
+                            color: Color(0xFFE03050), size: 20)),
+                      ])),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

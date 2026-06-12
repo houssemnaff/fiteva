@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/core/nutrition/models.dart';
 import 'package:fiteva/core/nutrition/nutrition_provider.dart';
+import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:fiteva/screens/nutrition/recette_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -122,8 +123,10 @@ class _SuiviNutritionScreenState
     final totals  = ref.watch(dailyTotalsProvider(_key));
     final profile = ref.watch(userProfileProvider);
 
+    final nc = NutritionColors.of(context);
+
     return Scaffold(
-      backgroundColor: _C.bg,
+      backgroundColor: nc.bg,
       body: Column(children: [
         _Header(
           top:       top,
@@ -203,8 +206,10 @@ class _Header extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Container(
-    color: _C.surface,
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Container(
+    color: nc.surface,
     padding: EdgeInsets.fromLTRB(20, top + 14, 20, 14),
     child: Column(children: [
       Row(children: [
@@ -213,7 +218,7 @@ class _Header extends StatelessWidget {
           child: Container(
             width: 38, height: 38,
             decoration: BoxDecoration(
-              color: _C.greenBg, borderRadius: BorderRadius.circular(12)),
+              color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
             child: const Icon(LucideIcons.chevronLeft, color: _C.green, size: 20)),
         ),
         const SizedBox(width: 14),
@@ -235,7 +240,7 @@ class _Header extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: _C.greenBg,
+              color: nc.mintBg,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _C.mint.withOpacity(0.35))),
             child: Row(children: [
@@ -254,7 +259,8 @@ class _Header extends StatelessWidget {
           onTap: onNext, disabled: onNext == null),
       ]),
     ]),
-  );
+    );
+  }
 }
 
 class _NavBtn extends StatelessWidget {
@@ -264,16 +270,19 @@ class _NavBtn extends StatelessWidget {
   const _NavBtn({required this.icon, this.onTap, this.disabled = false});
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return GestureDetector(
     onTap: onTap,
     child: Container(
       width: 34, height: 34,
       decoration: BoxDecoration(
-        color: _C.surface, shape: BoxShape.circle,
-        border: Border.all(color: _C.border)),
+        color: nc.surface, shape: BoxShape.circle,
+        border: Border.all(color: nc.border)),
       child: Icon(icon, size: 16,
-        color: disabled ? _C.border : _C.textGrey)),
-  );
+        color: disabled ? nc.border : nc.text2)),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -291,13 +300,15 @@ class _SummaryCard extends StatelessWidget {
     final over    = totals.calories > goal;
     final remain  = goal - totals.calories;
 
+    final nc = NutritionColors.of(context);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _C.surface,
+        color: nc.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _C.border),
-        boxShadow: [BoxShadow(
+        border: Border.all(color: nc.border),
+        boxShadow: nc.isDark ? [] : [BoxShadow(
           color: Colors.black.withOpacity(0.04),
           blurRadius: 16, offset: const Offset(0, 4))]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -316,14 +327,14 @@ class _SummaryCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 5),
                 child: Text('/ $goal kcal', style: GoogleFonts.inter(
-                  fontSize: 13, color: _C.textGrey))),
+                  fontSize: 13, color: nc.text2))),
             ]),
           ]),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: over ? _C.redBg : _C.greenBg,
+              color: over ? _C.redBg : nc.mintBg,
               borderRadius: BorderRadius.circular(20)),
             child: Text(
               over ? '+${-remain} surplus' : '$remain restantes',
@@ -337,7 +348,7 @@ class _SummaryCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(5),
           child: LinearProgressIndicator(
             value: pct, minHeight: 6,
-            backgroundColor: const Color(0xFFF0F0F0),
+            backgroundColor: nc.border,
             valueColor: AlwaysStoppedAnimation(over ? _C.red : _C.green))),
 
         const SizedBox(height: 14),
@@ -412,12 +423,13 @@ class _MealGroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: _C.surface,
+        color: nc.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.border),
-        boxShadow: [BoxShadow(
+        border: Border.all(color: nc.border),
+        boxShadow: nc.isDark ? [] : [BoxShadow(
           color: Colors.black.withOpacity(0.03),
           blurRadius: 12, offset: const Offset(0, 3))]),
       child: Column(children: [
@@ -429,7 +441,7 @@ class _MealGroupCard extends StatelessWidget {
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: _over ? _C.redBg : _C.greenBg,
+                color: _over ? _C.redBg : nc.mintBg,
                 borderRadius: BorderRadius.circular(12)),
               child: Icon(_icon, size: 18,
                 color: _over ? _C.red : _C.green)),
@@ -437,16 +449,16 @@ class _MealGroupCard extends StatelessWidget {
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(mealType.label, style: GoogleFonts.outfit(
-                fontSize: 16, fontWeight: FontWeight.w800, color: _C.textDark)),
+                fontSize: 16, fontWeight: FontWeight.w800, color: nc.text1)),
               Text(entries.isEmpty ? 'Vide' : '${entries.length} aliment${entries.length > 1 ? 's' : ''}',
-                style: GoogleFonts.inter(fontSize: 11, color: _C.textGrey)),
+                style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
             ])),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text('${typeTotals.calories}', style: GoogleFonts.outfit(
                 fontSize: 18, fontWeight: FontWeight.w800,
                 color: _over ? _C.red : _C.green, height: 1)),
               Text('/ $_budget kcal', style: GoogleFonts.inter(
-                fontSize: 10, color: _C.textGrey)),
+                fontSize: 10, color: nc.text2)),
             ]),
           ]),
         ),
@@ -458,7 +470,7 @@ class _MealGroupCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: _pct.clamp(0.0, 1.0), minHeight: 4,
-              backgroundColor: const Color(0xFFF0F0F0),
+              backgroundColor: nc.border,
               valueColor: AlwaysStoppedAnimation(_over ? _C.red : _C.mint))),
         ),
 
@@ -561,20 +573,22 @@ class _EntryRow extends StatelessWidget {
   const _EntryRow({required this.entry, required this.onTap, required this.onDelete});
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return GestureDetector(
     onTap: onTap,
     child: Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
+        color: nc.surface2,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _C.border)),
+        border: Border.all(color: nc.border)),
       child: Row(children: [
         // Category emoji
         Container(
           width: 40, height: 40,
           decoration: BoxDecoration(
-            color: _C.greenBg, borderRadius: BorderRadius.circular(10)),
+            color: nc.mintBg, borderRadius: BorderRadius.circular(10)),
           child: Center(child: Text(
             entry.food.category.emoji,
             style: const TextStyle(fontSize: 18)))),
@@ -586,11 +600,11 @@ class _EntryRow extends StatelessWidget {
           Text(entry.food.name,
             maxLines: 1, overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w600, color: _C.textDark)),
+              fontSize: 13, fontWeight: FontWeight.w600, color: nc.text1)),
           const SizedBox(height: 2),
           Row(children: [
             Text('${entry.grams.round()}g', style: GoogleFonts.inter(
-              fontSize: 10, color: _C.textGrey)),
+              fontSize: 10, color: nc.text2)),
             const SizedBox(width: 8),
             _Macro('P ${entry.protein}g', _C.green, _C.greenBg),
             const SizedBox(width: 3),
@@ -623,7 +637,8 @@ class _EntryRow extends StatelessWidget {
             child: const Icon(LucideIcons.trash2, size: 13, color: _C.red))),
       ]),
     ),
-  );
+    );
+  }
 }
 
 class _Macro extends StatelessWidget {

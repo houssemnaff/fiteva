@@ -1,31 +1,27 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:math';
+import 'package:fiteva/providers/user_profile_provider.dart';
+import 'package:fiteva/screens/cycle/cycle_colors.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fiteva/screens/cycle/pregnancy/PregnancyHubScreen.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/calendar_screen.dart';
-import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart' hide CycleColors;
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  DESIGN TOKENS (Flo-style light)
+//  TYPOGRAPHY HELPERS (pass colors explicitly — theme-unaware by design)
 // ─────────────────────────────────────────────────────────────────────────────
-
-abstract class FloColors {
-  static const bg      = Color(0xFFFFFFFF);
-  static const surface = Color(0xFFF8F6F3);
-  static const text    = Color(0xFF2D1B20);
-  static const muted   = Color(0xFF9E8A93);
-}
 
 abstract class FloTypo {
   static TextStyle heading(double size,
-          {FontWeight w = FontWeight.w600, Color c = FloColors.text}) =>
+          {FontWeight w = FontWeight.w600, required Color c}) =>
       GoogleFonts.lora(fontSize: size, fontWeight: w, color: c);
 
   static TextStyle body(double size,
-          {FontWeight w = FontWeight.w400, Color c = FloColors.text}) =>
+          {FontWeight w = FontWeight.w400, required Color c}) =>
       GoogleFonts.dmSans(fontSize: size, fontWeight: w, color: c);
 }
 
@@ -56,19 +52,14 @@ extension FloSymptomX on FloSymptom {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  PHASE THEME HELPER
+//  PHASE THEME
 // ─────────────────────────────────────────────────────────────────────────────
 
 class CycleTheme {
   final List<Color> gradient;
   final Color primary;
   final Color glow;
-
-  const CycleTheme({
-    required this.gradient,
-    required this.primary,
-    required this.glow,
-  });
+  const CycleTheme({required this.gradient, required this.primary, required this.glow});
 }
 
 CycleTheme getTheme(int day) {
@@ -78,31 +69,31 @@ CycleTheme getTheme(int day) {
       return const CycleTheme(
         gradient: [Color(0xFFE58F8A), Color(0xFFDE7A7A), Color(0xFFF2B6B2)],
         primary: Color(0xFFE58F8A),
-        glow: Color(0x66E58F8A),
+        glow: Color(0x55E58F8A),
       );
     case 'Folliculaire':
       return const CycleTheme(
         gradient: [Color(0xFF7ABB98), Color(0xFF5FAE87), Color(0xFFBFE6D2)],
         primary: Color(0xFF7ABB98),
-        glow: Color(0x667ABB98),
+        glow: Color(0x557ABB98),
       );
     case 'Ovulation':
       return const CycleTheme(
         gradient: [Color(0xFF1C4D30), Color(0xFF2E6B45), Color(0xFF4A8F66)],
         primary: Color(0xFF1C4D30),
-        glow: Color(0x661C4D30),
+        glow: Color(0x551C4D30),
       );
-    default: // Lutéale
+    default:
       return const CycleTheme(
         gradient: [Color(0xFFA7B8AD), Color(0xFF8FA79A), Color(0xFFD6E2DB)],
         primary: Color(0xFFA7B8AD),
-        glow: Color(0x66A7B8AD),
+        glow: Color(0x55A7B8AD),
       );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  APP ENTRY (standalone runner)
+//  APP ENTRY
 // ─────────────────────────────────────────────────────────────────────────────
 
 class CycleApp extends StatelessWidget {
@@ -113,10 +104,6 @@ class CycleApp extends StatelessWidget {
     return MaterialApp(
       title: 'Cycle Tracker',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: FloColors.bg,
-        useMaterial3: true,
-      ),
       home: const CycleScreen(),
     );
   }
@@ -126,33 +113,45 @@ class CycleApp extends StatelessWidget {
 //  MAIN CYCLE SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 
-class CycleScreen extends StatefulWidget {
+class CycleScreen extends ConsumerStatefulWidget {
   const CycleScreen({super.key});
 
   @override
-  State<CycleScreen> createState() => _CycleScreenState();
+  ConsumerState<CycleScreen> createState() => _CycleScreenState();
 }
 
-class _CycleScreenState extends State<CycleScreen> {
-  int _currentDay = 14;
+class _CycleScreenState extends ConsumerState<CycleScreen> {
+  late int _currentDay;
   final Set<FloSymptom> _logged = {};
-  // calendar is now a pushed route — no local state needed
-
   final DateTime _today = DateTime.now();
+
+  int _computeCurrentDay(UserProfile profile) {
+    final last = profile.lastPeriod;
+    if (last == null) return 1;
+    final elapsed = _today.difference(last).inDays % profile.cycleDays;
+    return (elapsed + 1).clamp(1, profile.cycleDays);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _currentDay = _computeCurrentDay(ref.read(userProfileProvider));
+  }
 
   @override
   Widget build(BuildContext context) {
+    final cc    = CycleColors.of(context);
     final theme = getTheme(_currentDay);
     final phase = phaseForDay(_currentDay);
 
     return Scaffold(
-      backgroundColor: FloColors.bg,
+      backgroundColor: cc.bg,
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 320),
           transitionBuilder: (child, anim) =>
               FadeTransition(opacity: anim, child: child),
-          child: _buildHome(theme, phase),
+          child: _buildHome(cc, theme, phase),
         ),
       ),
     );
@@ -160,144 +159,212 @@ class _CycleScreenState extends State<CycleScreen> {
 
   // ── Home view ──────────────────────────────────────────────────────────────
 
-  Widget _buildHome(CycleTheme theme, CyclePhase phase) {
+  Widget _buildHome(CycleColors cc, CycleTheme theme, CyclePhase phase) {
+    final profile      = ref.watch(userProfileProvider);
+    final showPregnancy = profile.showPregnancyContent;
+
     return SingleChildScrollView(
       key: const ValueKey('home'),
       physics: const BouncingScrollPhysics(),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SharedAppHeader(
-            eyebrow:     'Cycle',
-            title:       'Mon Cycle',
-            accentColor:  theme.primary,
-            bgColor:      FloColors.bg,
-            actions: [
+          _buildHero(cc, theme, phase, profile, showPregnancy),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(children: [
+              Expanded(child: _PeriodCard(nextDate: profile.nextPeriodDate, cc: cc)),
+              const SizedBox(width: 12),
+              Expanded(child: _OvulationCard(
+                lastPeriod: profile.lastPeriod,
+                cycleDays:  profile.cycleDays,
+                cc:         cc,
+              )),
+            ]),
+          ),
+
+          const SizedBox(height: 28),
+          _buildSectionLabel('Comment tu te sens ?', theme.primary),
+          const SizedBox(height: 14),
+          _buildChips(cc, theme),
+
+          const SizedBox(height: 28),
+          _PhaseCard(phase: phase, theme: theme, cc: cc),
+
+          const SizedBox(height: 16),
+          _PhaseTipsCard(phase: phase, theme: theme, cc: cc),
+
+          const SizedBox(height: 16),
+          _CycleStatsCard(profile: profile, currentDay: _currentDay, theme: theme, cc: cc),
+          const SizedBox(height: 48),
+        ],
+      ),
+    );
+  }
+
+  // ── Hero section ───────────────────────────────────────────────────────────
+
+  Widget _buildHero(
+    CycleColors cc,
+    CycleTheme theme,
+    CyclePhase phase,
+    UserProfile profile,
+    bool showPregnancy,
+  ) {
+    // In dark mode the hero gradient overlays the dark bg
+    final heroOpacityTop = cc.isDark ? 0.22 : 0.16;
+    final heroOpacityMid = cc.isDark ? 0.10 : 0.06;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            theme.primary.withOpacity(heroOpacityTop),
+            theme.primary.withOpacity(heroOpacityMid),
+            cc.bg,
+          ],
+          stops: const [0.0, 0.52, 1.0],
+        ),
+      ),
+      child: Column(children: [
+        SharedAppHeader(
+          eyebrow:    'CYCLE',
+          title:      'Mon Cycle',
+          accentColor: theme.primary,
+          bgColor:    Colors.transparent,
+          onBack: Navigator.canPop(context)
+              ? () => Navigator.of(context).pop()
+              : null,
+          actions: [
+            if (showPregnancy) ...[
               GestureDetector(
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PregnancyHubScreen(
-                        pregnancyStartDate: DateTime.now()
-                            .subtract(const Duration(days: 37 * 7)),
-                      ),
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => PregnancyHubScreen(
+                      pregnancyStartDate:
+                          DateTime.now().subtract(const Duration(days: 37 * 7)),
                     ),
-                  );
+                  ));
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: FloColors.surface,
+                    color: cc.surface.withOpacity(0.65),
                     borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: theme.primary.withOpacity(0.22)),
                   ),
                   child: Icon(Icons.child_friendly_rounded,
                       size: 16, color: theme.primary),
                 ),
               ),
               const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.of(context).push(
-                    PageRouteBuilder(
-                      pageBuilder: (_, a, __) => CycleCalendar(
-                        displayYear:    _today.year,
-                        displayMonth:   _today.month,
-                        today:          _today,
-                        todayCycleDay:  _currentDay,
-                        selectedCycleDay: _currentDay,
-                        onDaySelected: (d) {
-                          setState(() => _currentDay = d);
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                      transitionsBuilder: (_, a, __, child) =>
-                          SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 1), end: Offset.zero)
-                              .animate(CurvedAnimation(
-                                parent: a, curve: Curves.easeOutCubic)),
-                            child: child),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: theme.primary.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(children: [
-                    Icon(Icons.calendar_month_rounded, size: 15, color: theme.primary),
-                    const SizedBox(width: 5),
-                    Text('Calendrier',
-                        style: FloTypo.body(12, w: FontWeight.w500, c: theme.primary)),
-                  ]),
-                ),
-              ),
             ],
-          ),
-          const SizedBox(height: 28),
-          _CircularRing(
-            day: _currentDay,
-            total: 28,
-            theme: theme,
-            phase: phase,
-          ),
-          const SizedBox(height: 28),
-          _buildChips(theme),
-          const SizedBox(height: 24),
-          _WeekStrip(
-            currentDay: _currentDay,
-            onDayTap: (d) {
-              HapticFeedback.lightImpact();
-              setState(() => _currentDay = d);
-            },
-          ),
-          const SizedBox(height: 24),
-          _PhaseCard(phase: phase, theme: theme),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: CycleRoomWidget(
-              currentDay: _currentDay,
-              onDaySelected: (d) => setState(() => _currentDay = d),
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                Navigator.of(context).push(PageRouteBuilder(
+                  pageBuilder: (_, a, __) => CycleCalendar(
+                    displayYear:      _today.year,
+                    displayMonth:     _today.month,
+                    today:            _today,
+                    todayCycleDay:    _currentDay,
+                    selectedCycleDay: _currentDay,
+                    lastPeriodDate:   profile.lastPeriod,
+                    onDaySelected: (date) {
+                      final today = DateTime(_today.year, _today.month, _today.day);
+                      final plain = DateTime(date.year, date.month, date.day);
+                      if (!plain.isAfter(today)) {
+                        final p = ref.read(userProfileProvider);
+                        final elapsed = today.difference(p.lastPeriod ?? today).inDays;
+                        final cd = elapsed % p.cycleDays + 1;
+                        setState(() => _currentDay = cd.clamp(1, p.cycleDays));
+                      }
+                      Navigator.of(context).pop();
+                    },
+                    onSavePeriod: (newDate) async {
+                      await ref.read(userProfileProvider.notifier)
+                          .updateField('last_period', newDate.toIso8601String());
+                      if (!mounted) return;
+                      setState(() {
+                        _currentDay = _computeCurrentDay(ref.read(userProfileProvider));
+                      });
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  transitionsBuilder: (_, a, __, child) => SlideTransition(
+                    position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                        .animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic)),
+                    child: child,
+                  ),
+                ));
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: cc.surface.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: theme.primary.withOpacity(0.22)),
+                ),
+                child: Row(children: [
+                  Icon(Icons.calendar_month_rounded, size: 15, color: theme.primary),
+                  const SizedBox(width: 5),
+                  Text('Calendrier', style: GoogleFonts.dmSans(
+                    fontSize: 12, fontWeight: FontWeight.w600, color: theme.primary)),
+                ]),
+              ),
             ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [BoxShadow(
+              color: theme.primary.withOpacity(cc.isDark ? 0.30 : 0.22),
+              blurRadius: 55, spreadRadius: 8,
+            )],
           ),
-          const SizedBox(height: 40),
-        ],
-      ),
+          child: _CircularRing(
+            day: _currentDay, total: profile.cycleDays,
+            theme: theme, phase: phase, cc: cc,
+          ),
+        ),
+        const SizedBox(height: 28),
+      ]),
     );
   }
 
-  // Calendar is now a full-screen pushed route — see onTap in SharedAppHeader actions.
+  Widget _buildSectionLabel(String text, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Text(text.toUpperCase(), style: GoogleFonts.inter(
+        fontSize: 10, fontWeight: FontWeight.w700,
+        letterSpacing: 2.8, color: color.withOpacity(0.75))),
+    );
+  }
 
-  // ── Symptom chips row ──────────────────────────────────────────────────────
-
-  Widget _buildChips(CycleTheme theme) {
+  Widget _buildChips(CycleColors cc, CycleTheme theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: FloSymptom.values
-            .map((s) => _SymptomChip(
-                  symptom: s,
-                  logged: _logged.contains(s),
-                  color: theme.primary,
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    setState(() {
-                      if (_logged.contains(s)) {
-                        _logged.remove(s);
-                      } else {
-                        _logged.add(s);
-                      }
-                    });
-                  },
-                ))
-            .toList(),
+        children: FloSymptom.values.map((s) => _SymptomChip(
+          symptom: s,
+          logged:  _logged.contains(s),
+          color:   theme.primary,
+          cc:      cc,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() {
+              _logged.contains(s) ? _logged.remove(s) : _logged.add(s);
+            });
+          },
+        )).toList(),
       ),
     );
   }
@@ -308,53 +375,43 @@ class _CycleScreenState extends State<CycleScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CircularRing extends StatelessWidget {
-  final int day;
-  final int total;
+  final int day, total;
   final CycleTheme theme;
   final CyclePhase phase;
+  final CycleColors cc;
 
   const _CircularRing({
-    required this.day,
-    required this.total,
-    required this.theme,
-    required this.phase,
+    required this.day, required this.total,
+    required this.theme, required this.phase, required this.cc,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 230,
-      height: 230,
+      width: 220, height: 220,
       child: CustomPaint(
         painter: _RingPainter(
-          day: day,
-          total: total,
-          colors: theme.gradient,
-          primary: theme.primary,
+          day: day, total: total,
+          colors: theme.gradient, primary: theme.primary,
         ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Jour', style: FloTypo.body(13, c: FloColors.muted)),
+              Text('Jour', style: GoogleFonts.dmSans(
+                fontSize: 13, color: cc.muted)),
               const SizedBox(height: 2),
-              Text(
-                '$day',
-                style: FloTypo.heading(54,
-                    w: FontWeight.w700, c: theme.primary),
-              ),
-              const SizedBox(height: 6),
+              Text('$day', style: GoogleFonts.lora(
+                fontSize: 52, fontWeight: FontWeight.w700, color: theme.primary)),
+              const SizedBox(height: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                 decoration: BoxDecoration(
-                  color: theme.primary.withOpacity(0.12),
+                  color: theme.primary.withOpacity(0.13),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Text(
-                  phase.name,
-                  style: FloTypo.body(11, w: FontWeight.w600, c: theme.primary),
-                ),
+                child: Text(phase.name, style: GoogleFonts.dmSans(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: theme.primary)),
               ),
             ],
           ),
@@ -365,59 +422,41 @@ class _CircularRing extends StatelessWidget {
 }
 
 class _RingPainter extends CustomPainter {
-  final int day;
-  final int total;
+  final int day, total;
   final List<Color> colors;
   final Color primary;
 
   const _RingPainter({
-    required this.day,
-    required this.total,
-    required this.colors,
-    required this.primary,
+    required this.day, required this.total,
+    required this.colors, required this.primary,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r = (size.width / 2) - 18;
+    final r  = (size.width / 2) - 18;
     const stroke = 13.0;
 
-    // Track arc
-    canvas.drawCircle(
-      Offset(cx, cy),
-      r,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..color = primary.withOpacity(0.1),
-    );
+    canvas.drawCircle(Offset(cx, cy), r, Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..color = primary.withOpacity(0.10));
 
-    // Progress arc
     final progress = (day / total).clamp(0.0, 1.0);
     final sweep = progress * 2 * pi;
-    final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r);
+    final rect  = Rect.fromCircle(center: Offset(cx, cy), radius: r);
 
-    final shader = SweepGradient(
-      startAngle: -pi / 2,
-      endAngle: -pi / 2 + 2 * pi,
-      colors: [colors.first, colors.last, colors.first],
-    ).createShader(rect);
-
-    canvas.drawArc(
-      rect,
-      -pi / 2,
-      sweep,
-      false,
+    canvas.drawArc(rect, -pi / 2, sweep, false,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke
         ..strokeCap = StrokeCap.round
-        ..shader = shader,
-    );
+        ..shader = SweepGradient(
+          startAngle: -pi / 2, endAngle: -pi / 2 + 2 * pi,
+          colors: [colors.first, colors.last, colors.first],
+        ).createShader(rect));
 
-    // Tip dot
     final angle = -pi / 2 + sweep;
     final dotX = cx + r * cos(angle);
     final dotY = cy + r * sin(angle);
@@ -431,6 +470,133 @@ class _RingPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  INFO CARD BASE
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _InfoCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title, value, subtitle;
+  final CycleColors cc;
+
+  const _InfoCard({
+    required this.icon, required this.color,
+    required this.title, required this.value,
+    required this.subtitle, required this.cc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cc.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.22), width: 1),
+        boxShadow: [BoxShadow(
+          color: color.withOpacity(cc.isDark ? 0.12 : 0.08),
+          blurRadius: 14, offset: const Offset(0, 4),
+        )],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, size: 17, color: color),
+          ),
+          const SizedBox(height: 12),
+          Text(title, style: GoogleFonts.dmSans(
+            fontSize: 11, color: cc.muted)),
+          const SizedBox(height: 3),
+          Text(value, style: GoogleFonts.dmSans(
+            fontSize: 16, fontWeight: FontWeight.w800, color: cc.text)),
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(subtitle, style: GoogleFonts.dmSans(
+              fontSize: 11, fontWeight: FontWeight.w500, color: color)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PERIOD CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PeriodCard extends StatelessWidget {
+  final DateTime? nextDate;
+  final CycleColors cc;
+
+  static const _months = [
+    'jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'
+  ];
+
+  const _PeriodCard({required this.nextDate, required this.cc});
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now();
+    String value = '—', sub = '';
+    if (nextDate != null) {
+      final daysLeft = nextDate!
+          .difference(DateTime(today.year, today.month, today.day)).inDays;
+      value = daysLeft <= 0 ? "Aujourd'hui" : 'Dans $daysLeft j';
+      sub   = '${nextDate!.day} ${_months[nextDate!.month - 1]}';
+    }
+    return _InfoCard(
+      icon: Icons.water_drop_outlined,
+      color: const Color(0xFFE58F8A),
+      title: 'Prochains règles',
+      value: value, subtitle: sub, cc: cc,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  OVULATION CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _OvulationCard extends StatelessWidget {
+  final DateTime? lastPeriod;
+  final int cycleDays;
+  final CycleColors cc;
+
+  static const _months = [
+    'jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'
+  ];
+
+  const _OvulationCard({
+    required this.lastPeriod, required this.cycleDays, required this.cc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now();
+    String value = '—', sub = '';
+    if (lastPeriod != null) {
+      final ovDate   = lastPeriod!.add(Duration(days: cycleDays ~/ 2));
+      final daysLeft = ovDate
+          .difference(DateTime(today.year, today.month, today.day)).inDays;
+      value = daysLeft < 0 ? 'Passée'
+          : daysLeft == 0 ? "Aujourd'hui" : 'Dans $daysLeft j';
+      sub = '${ovDate.day} ${_months[ovDate.month - 1]}';
+    }
+    return _InfoCard(
+      icon: Icons.spa_outlined,
+      color: const Color(0xFF7ABB98),
+      title: 'Ovulation',
+      value: value, subtitle: sub, cc: cc,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  SYMPTOM CHIP
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -438,58 +604,130 @@ class _SymptomChip extends StatelessWidget {
   final FloSymptom symptom;
   final bool logged;
   final Color color;
+  final CycleColors cc;
   final VoidCallback onTap;
 
   const _SymptomChip({
-    required this.symptom,
-    required this.logged,
-    required this.color,
-    required this.onTap,
+    required this.symptom, required this.logged,
+    required this.color, required this.cc, required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final inactiveIcon = cc.isDark
+        ? const Color(0xFF5A4D52)
+        : const Color(0xFFBBAFB4);
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeInOut,
-        width: 74,
-        padding: const EdgeInsets.symmetric(vertical: 13),
+        width: 76,
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: logged ? color.withOpacity(0.13) : FloColors.surface,
+          color: logged ? color.withOpacity(0.12) : cc.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: logged ? color : Colors.transparent,
-            width: 1.5,
-          ),
-          boxShadow: logged
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.22),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ]
-              : [],
+            color: logged ? color : cc.border, width: 1.5),
+          boxShadow: [BoxShadow(
+            color: logged
+                ? color.withOpacity(0.18)
+                : Colors.black.withOpacity(cc.isDark ? 0.15 : 0.04),
+            blurRadius: logged ? 12 : 6,
+            offset: const Offset(0, 3),
+          )],
         ),
-        child: Column(
+        child: Column(children: [
+          Icon(symptom.icon, size: 22,
+              color: logged ? color : inactiveIcon),
+          const SizedBox(height: 7),
+          Text(symptom.label, style: GoogleFonts.dmSans(
+            fontSize: 10, fontWeight: FontWeight.w600,
+            color: logged ? color : inactiveIcon),
+            textAlign: TextAlign.center),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PHASE CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PhaseCard extends StatelessWidget {
+  final CyclePhase phase;
+  final CycleTheme theme;
+  final CycleColors cc;
+
+  const _PhaseCard({required this.phase, required this.theme, required this.cc});
+
+  static const _descriptions = {
+    'Règles':       'Ton corps se nettoie. Repos, chaleur et douceur sont essentiels.',
+    'Folliculaire': "Énergie montante. C'est le moment d'explorer et commencer.",
+    'Ovulation':    'Pic d\'énergie et de confiance. Performe et connecte-toi.',
+    'Lutéale':      'Phase introspective. Écoute tes besoins et ralentis.',
+  };
+
+  static const _emojis = {
+    'Règles': '🌸', 'Folliculaire': '🌱', 'Ovulation': '✨', 'Lutéale': '🍂',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final desc  = _descriptions[phase.name] ?? 'Suis ton cycle avec bienveillance.';
+    final emoji = _emojis[phase.name] ?? '🌙';
+    final gradOpacity = cc.isDark ? 0.22 : 0.18;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.gradient[0].withOpacity(gradOpacity),
+              theme.gradient[2].withOpacity(gradOpacity * 0.4),
+            ],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: theme.primary.withOpacity(0.22)),
+          boxShadow: [BoxShadow(
+            color: theme.primary.withOpacity(cc.isDark ? 0.12 : 0.08),
+            blurRadius: 20, offset: const Offset(0, 6),
+          )],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              symptom.icon,
-              size: 21,
-              color: logged ? color : const Color(0xFFA89898),
+            Container(
+              width: 58, height: 58,
+              decoration: BoxDecoration(
+                color: theme.primary.withOpacity(0.15),
+                shape: BoxShape.circle),
+              child: Center(child: Text(emoji,
+                  style: const TextStyle(fontSize: 26))),
             ),
-            const SizedBox(height: 6),
-            Text(
-              symptom.label,
-              style: FloTypo.body(
-                10,
-                w: FontWeight.w500,
-                c: logged ? color : const Color(0xFFA89898),
-              ),
-              textAlign: TextAlign.center,
-            ),
+            const SizedBox(width: 18),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10)),
+                  child: Text('Phase ${phase.name}', style: GoogleFonts.dmSans(
+                    fontSize: 11, fontWeight: FontWeight.w700,
+                    color: theme.primary)),
+                ),
+                const SizedBox(height: 9),
+                Text(desc, style: GoogleFonts.dmSans(
+                  fontSize: 13, color: cc.body)),
+              ],
+            )),
           ],
         ),
       ),
@@ -498,178 +736,184 @@ class _SymptomChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  7-DAY WEEK STRIP
+//  PHASE TIPS CARD
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _WeekStrip extends StatelessWidget {
-  final int currentDay;
-  final void Function(int) onDayTap;
-
-  const _WeekStrip({required this.currentDay, required this.onDayTap});
-
-  static const _weekLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-
-  Color _phaseColor(String name) {
-    switch (name) {
-      case 'Règles':      return const Color(0xFFE58F8A);
-      case 'Folliculaire': return const Color(0xFF7ABB98);
-      case 'Ovulation':   return const Color(0xFF1C4D30);
-      default:            return const Color(0xFFA7B8AD);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final offset = (currentDay - 1).clamp(0, 21);
-    final days = List.generate(7, (i) => offset + i + 1);
-
-    return SizedBox(
-      height: 84,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: 7,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (ctx, i) {
-          final d = days[i];
-          if (d > 28) return const SizedBox(width: 48);
-
-          final phase = phaseForDay(d);
-          final color = _phaseColor(phase.name);
-          final isSelected = d == currentDay;
-
-          return GestureDetector(
-            onTap: () => onDayTap(d),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 48,
-              decoration: BoxDecoration(
-                color: isSelected ? color : FloColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: color.withOpacity(0.35),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        )
-                      ]
-                    : [],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _weekLabels[i % 7],
-                    style: FloTypo.body(
-                      10,
-                      w: FontWeight.w500,
-                      c: isSelected
-                          ? Colors.white70
-                          : const Color(0xFFA89898),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$d',
-                    style: FloTypo.body(
-                      16,
-                      w: FontWeight.w700,
-                      c: isSelected ? Colors.white : const Color(0xFF4A3640),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    width: 4,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? Colors.white.withOpacity(0.7)
-                          : color.withOpacity(0.5),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  PHASE INFO CARD
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _PhaseCard extends StatelessWidget {
+class _PhaseTipsCard extends StatelessWidget {
   final CyclePhase phase;
   final CycleTheme theme;
+  final CycleColors cc;
 
-  const _PhaseCard({required this.phase, required this.theme});
+  const _PhaseTipsCard({
+    required this.phase, required this.theme, required this.cc,
+  });
 
-  static const _descriptions = {
-    'Règles':
-        'Ton corps se nettoie. Repos, chaleur et douceur sont essentiels.',
-    'Folliculaire':
-        'Énergie montante. C\'est le moment d\'explorer et commencer.',
-    'Ovulation':
-        'Pic d\'énergie et de confiance. Performe et connecte-toi.',
-    'Lutéale':
-        'Phase introspective. Écoute tes besoins et ralentis.',
+  static const _tips = {
+    'Règles':       (workout: 'Yoga doux, marche légère — évite l\'intensité élevée.',
+                     nutrition: 'Favorise le fer (épinards, lentilles) et le magnésium.'),
+    'Folliculaire': (workout: 'Cardio, HIIT et force — ton énergie est au top.',
+                     nutrition: 'Protéines et glucides complexes pour alimenter l\'effort.'),
+    'Ovulation':    (workout: 'Séances intenses, sports collectifs — performance maximale.',
+                     nutrition: 'Légumes crucifères et aliments anti-inflammatoires.'),
+    'Lutéale':      (workout: 'Pilates, natation, yoga — écoute ton corps.',
+                     nutrition: 'Limite le sel et le sucre, privilégie les oméga-3.'),
   };
 
   @override
   Widget build(BuildContext context) {
-    final desc =
-        _descriptions[phase.name] ?? 'Suis ton cycle avec bienveillance.';
+    final tip = _tips[phase.name];
+    if (tip == null) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              theme.gradient[0].withOpacity(0.14),
-              theme.gradient[2].withOpacity(0.06),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: cc.surface,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: theme.primary.withOpacity(0.2)),
+          border: Border.all(color: theme.primary.withOpacity(0.12)),
+          boxShadow: [BoxShadow(
+            color: theme.primary.withOpacity(cc.isDark ? 0.10 : 0.07),
+            blurRadius: 18, offset: const Offset(0, 5),
+          )],
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: theme.primary.withOpacity(0.18),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.spa_outlined, color: theme.primary, size: 20),
+            Row(children: [
+              Container(width: 8, height: 8,
+                  decoration: BoxDecoration(
+                      color: theme.primary, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Text('Conseils du jour', style: GoogleFonts.lora(
+                fontSize: 14, fontWeight: FontWeight.w700, color: theme.primary)),
+            ]),
+            const SizedBox(height: 16),
+            _TipRow(icon: Icons.fitness_center_rounded,
+                label: 'Entraînement', text: tip.workout,
+                color: theme.primary, cc: cc),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Divider(color: cc.border, height: 1),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Phase ${phase.name}',
-                    style: FloTypo.heading(15,
-                        w: FontWeight.w600, c: theme.primary),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    desc,
-                    style: FloTypo.body(13, c: const Color(0xFF6B5760)),
-                  ),
-                ],
-              ),
+            _TipRow(icon: Icons.restaurant_outlined,
+                label: 'Nutrition', text: tip.nutrition,
+                color: theme.primary, cc: cc),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TipRow extends StatelessWidget {
+  final IconData icon;
+  final String label, text;
+  final Color color;
+  final CycleColors cc;
+
+  const _TipRow({
+    required this.icon, required this.label, required this.text,
+    required this.color, required this.cc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 34, height: 34,
+          decoration: BoxDecoration(
+              color: color.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, size: 16, color: color),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: GoogleFonts.dmSans(
+              fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+            const SizedBox(height: 3),
+            Text(text, style: GoogleFonts.dmSans(
+              fontSize: 13, color: cc.body)),
+          ],
+        )),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CYCLE STATS CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CycleStatsCard extends StatelessWidget {
+  final dynamic profile;
+  final int currentDay;
+  final CycleTheme theme;
+  final CycleColors cc;
+
+  const _CycleStatsCard({
+    required this.profile, required this.currentDay,
+    required this.theme, required this.cc,
+  });
+
+  static const _months = [
+    'jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final lastPeriod = profile.lastPeriod as DateTime?;
+    final cycleDays  = profile.cycleDays as int;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        decoration: BoxDecoration(
+          color: cc.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: theme.primary.withOpacity(0.12)),
+          boxShadow: [BoxShadow(
+            color: theme.primary.withOpacity(cc.isDark ? 0.10 : 0.07),
+            blurRadius: 18, offset: const Offset(0, 5),
+          )],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(width: 8, height: 8,
+                  decoration: BoxDecoration(
+                      color: theme.primary, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Text('Mon cycle', style: GoogleFonts.lora(
+                fontSize: 14, fontWeight: FontWeight.w700, color: theme.primary)),
+            ]),
+            const SizedBox(height: 18),
+            IntrinsicHeight(
+              child: Row(children: [
+                Expanded(child: _StatCell(label: 'Durée',
+                    value: '$cycleDays j', icon: Icons.loop_rounded,
+                    color: theme.primary, cc: cc)),
+                VerticalDivider(color: cc.border, width: 1, thickness: 1),
+                Expanded(child: _StatCell(label: 'Jour actuel',
+                    value: 'J$currentDay', icon: Icons.today_outlined,
+                    color: theme.primary, cc: cc)),
+                VerticalDivider(color: cc.border, width: 1, thickness: 1),
+                Expanded(child: _StatCell(
+                  label: 'Derniers règles',
+                  value: lastPeriod != null
+                      ? '${lastPeriod.day} ${_months[lastPeriod.month - 1]}'
+                      : '—',
+                  icon: Icons.water_drop_outlined,
+                  color: const Color(0xFFE58F8A),
+                  cc: cc,
+                )),
+              ]),
             ),
           ],
         ),
@@ -678,3 +922,33 @@ class _PhaseCard extends StatelessWidget {
   }
 }
 
+class _StatCell extends StatelessWidget {
+  final String label, value;
+  final IconData icon;
+  final Color color;
+  final CycleColors cc;
+
+  const _StatCell({
+    required this.label, required this.value,
+    required this.icon, required this.color, required this.cc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+            color: color.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(12)),
+        child: Icon(icon, size: 17, color: color),
+      ),
+      const SizedBox(height: 8),
+      Text(value, style: GoogleFonts.dmSans(
+        fontSize: 15, fontWeight: FontWeight.w800, color: cc.text)),
+      const SizedBox(height: 3),
+      Text(label, textAlign: TextAlign.center,
+          style: GoogleFonts.dmSans(fontSize: 10, color: cc.muted)),
+    ]);
+  }
+}

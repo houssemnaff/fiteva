@@ -1,288 +1,347 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 import '../../providers/onboarding_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../services/storage_service.dart';
 import 'steps/onboarding_steps.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Onboarding Data — état centralisé transmis entre les steps
+// ─────────────────────────────────────────────────────────────────────────────
+class OnboardingData {
+  String username       = '';
+  String email          = '';
+  String password       = '';
+  List<String> goals    = [];
+  String? fitnessLevel;
+  List<String> equipment = [];
+  String? frequency;
+  int    heightCm       = 165;
+  double weightKg       = 60.0;
+  int    age            = 25;
+  // Santé féminine
+  String? healthStatus;     // 'cycle' | 'pregnant' | 'postpartum'
+  int?    pregnancyWeekSA;
+  String? ppRecovery;       // 'recent' | 'slowly' | 'active'
+  String? ppDuration;       // '0-2' | '2-6' | '6-12' | '3-6m' | '6m+'
+  String? cycleDuration;
+  DateTime? lastPeriod;
+
+  Map<String, dynamic> toMap() => {
+    'username':        username,
+    'email':           email,
+    'goals':           goals,
+    'fitness_level':   fitnessLevel,
+    'equipment':       equipment,
+    'frequency':       frequency,
+    'height_cm':       heightCm,
+    'weight_kg':       weightKg,
+    'age':             age,
+    'health_status':   healthStatus,
+    'pregnancy_week':  pregnancyWeekSA,
+    'pp_recovery':     ppRecovery,
+    'pp_duration':     ppDuration,
+    'cycle_duration':  cycleDuration,
+    'last_period':     lastPeriod?.toIso8601String(),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Onboarding Steps — enum définissant chaque step
+// ─────────────────────────────────────────────────────────────────────────────
+enum OStep {
+  intro,
+  welcome,
+  goals,
+  fitnessLevel,
+  equipment,
+  frequency,
+  healthProfile,
+  cycleAndPregnancy,
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OnboardingScreen
+// ─────────────────────────────────────────────────────────────────────────────
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
-class SwipeHintOverlay extends StatefulWidget {
-  final bool visible;
 
-  const SwipeHintOverlay({super.key, required this.visible});
-
-  @override
-  State<SwipeHintOverlay> createState() => _SwipeHintOverlayState();
-}
-
-class _SwipeHintOverlayState extends State<SwipeHintOverlay>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<Offset> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-
-    _animation = Tween<Offset>(
-      begin: const Offset(0, 0),
-      end: const Offset(-0.25, 0), // 👈 mouvement vers la gauche
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.visible) return const SizedBox.shrink();
-
-    return IgnorePointer(
-      child: Align(
-        alignment: Alignment.centerRight, // 👈 PAS au centre
-        child: Padding(
-          padding: const EdgeInsets.only(left: 24.0),
-          child: SlideTransition(
-            position: _animation,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.swipe_left, size: 55, color: Colors.white70),
-                SizedBox(height: 6),
-                Text(
-                  "Swipe right",
-                  style: TextStyle(
-                    color: Colors.white60,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
+  final PageController _pageCtrl = PageController();
 
-  bool _showSwipeHint = true;
-  bool _loadedHintFlag = false;
+  // Stack de navigation — permet le back conditionnel
+  final List<OStep> _history = [OStep.intro];
 
-  // ✅ Controllers partagés
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  OStep get _current => _history.last;
 
-  // ✅ Keys
-static const String _goalsKey = 'goals';
-  static const String _fitnessLevelKey = 'fitness_level';
-  static const String _equipmentKey = 'equipment';
-  static const String _frequencyKey = 'frequency';
-  static const String _seenSwipeHintKey = 'seen_swipe_hint';
+  // Données collectées
+  final OnboardingData _data = OnboardingData();
 
-  // ✅ State
-  List<String> _goals = [];
-  String? _fitnessLevel;
-  List<String> _equipment = [];
-  String? _frequency;
-  bool? _isPregnant;
-int? _pregnancyWeekSA;
+  // Controllers texte
+  final TextEditingController _nameCtrl  = TextEditingController();
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _passCtrl  = TextEditingController();
 
-  // 🎨 Couleurs bestach (vert menthe professionnel)
-  static const Color _bestachGreen = Color(0xFF4CAF7D);       // vert principal
-  static const Color _bestachLight = Color(0xFFE8F5EE);       // fond clair
-  static const Color _bestachDark = Color(0xFF2E7D52);        // vert foncé
-  static const Color _bestachAccent = Color(0xFF00C47D);      // accent vif
+  // Ordre linéaire pour la progress bar
+  static const List<OStep> _progressSteps = [
+    OStep.intro,
+    OStep.welcome,
+    OStep.goals,
+    OStep.fitnessLevel,
+    OStep.equipment,
+    OStep.frequency,
+    OStep.healthProfile,
+    OStep.cycleAndPregnancy,
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedOnboardingData();
+  double get _progress {
+    final idx = _progressSteps.indexOf(_current);
+    if (idx <= 0) return 0.0;
+    return idx / (_progressSteps.length - 1);
   }
 
- 
-  Future<void> _loadSavedOnboardingData() async {
-    final data = StorageService.getOnboardingData();
-    final seen = StorageService.getBool(_seenSwipeHintKey) ?? false;
+  // ── Navigation ────────────────────────────────────────────────────────────
 
-    _nameController.text = data['username'] ?? '';
-
-    _goals = (data[_goalsKey] is List)
-        ? List<String>.from(data[_goalsKey])
-        : [];
-
-    _fitnessLevel = data[_fitnessLevelKey];
-
-    _equipment = (data[_equipmentKey] is List)
-        ? List<String>.from(data[_equipmentKey])
-        : [];
-
-    _frequency = data[_frequencyKey]?.toString();
-
-    if (mounted) {
-      setState(() {
-        _showSwipeHint = !seen;
-        _loadedHintFlag = true;
-      });
+  OStep _nextStepFor(OStep current) {
+    switch (current) {
+      case OStep.intro:             return OStep.welcome;
+      case OStep.welcome:           return OStep.goals;
+      case OStep.goals:             return OStep.fitnessLevel;
+      case OStep.fitnessLevel:      return OStep.equipment;
+      case OStep.equipment:         return OStep.frequency;
+      case OStep.frequency:         return OStep.healthProfile;
+      case OStep.healthProfile:     return OStep.cycleAndPregnancy;
+      case OStep.cycleAndPregnancy: return OStep.cycleAndPregnancy; // finish
     }
   }
 
-  Map<String, dynamic> _collectData() {
-    return {
-      'username': _nameController.text.trim(),
-      'age': _ageController.text.trim(),
-      _goalsKey: _goals,
-      _fitnessLevelKey: _fitnessLevel,
-      _equipmentKey: _equipment,
-      _frequencyKey: _frequency,
-       'is_pregnant': _isPregnant,
-    'pregnancy_week': _pregnancyWeekSA,
-    };
+  Future<void> _goNext() async {
+    _syncDataFromControllers();
+    await StorageService.saveOnboardingData(_data.toMap());
+
+    if (_current == OStep.cycleAndPregnancy) {
+      await _finish();
+      return;
+    }
+
+    final next = _nextStepFor(_current);
+    setState(() => _history.add(next));
+
+    await Future.delayed(const Duration(milliseconds: 50));
+    _pageCtrl.animateToPage(
+      _progressSteps.indexOf(next),
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+    );
   }
 
-  Future<void> _saveData() async {
-    await StorageService.saveOnboardingData(_collectData());
+  void _goBack() {
+    if (_history.length <= 1) return;
+    setState(() => _history.removeLast());
+
+    _pageCtrl.animateToPage(
+      _progressSteps.indexOf(_current),
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOut,
+    );
   }
 
-  Future<void> _nextPage() async {
-    await _saveData();
-    if (!mounted) return;
-    if (_currentPage < 7) {
-      _pageController.animateToPage(
-        _currentPage + 1,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      await _finishOnboarding();
-    }
-  }
-
-  void _previousPage() {
-    if (!mounted) return;
-    if (_currentPage > 0) {
-      _pageController.animateToPage(
-        _currentPage - 1,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
-    }
-  }
-    Future<void> _markSwipeHintSeen() async {
-    if (_loadedHintFlag && _showSwipeHint) {
-      await StorageService.setBool(_seenSwipeHintKey, true);
-      setState(() => _showSwipeHint = false);
-    }
-  }
-  void _onPageChanged(int index) {
-    setState(() => _currentPage = index);
-
-    if (index > 0) {
-      _markSwipeHintSeen();
-    }
-  }
-  Future<void> _finishOnboarding() async {
-    await _saveData();
+  Future<void> _finish() async {
+    await StorageService.saveOnboardingData(_data.toMap());
     ref.read(onboardingProvider.notifier).completeOnboarding();
+    ref.read(userProfileProvider.notifier).reload();
     if (!mounted) return;
     context.go('/');
   }
 
+  void _syncDataFromControllers() {
+    _data.username = _nameCtrl.text.trim();
+    _data.email    = _emailCtrl.text.trim();
+    _data.password = _passCtrl.text.trim();
+  }
+
+  // ── Init / Dispose ────────────────────────────────────────────────────────
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSaved();
+  }
+
+  Future<void> _loadSaved() async {
+    final saved = StorageService.getOnboardingData();
+    if (saved.isEmpty) return;
+    setState(() {
+      _nameCtrl.text       = saved['username']  ?? '';
+      _emailCtrl.text      = saved['email']     ?? '';
+      _data.goals          = List<String>.from(saved['goals']     ?? []);
+      _data.fitnessLevel   = saved['fitness_level'];
+      _data.equipment      = List<String>.from(saved['equipment'] ?? []);
+      _data.frequency      = saved['frequency'];
+      _data.heightCm       = (saved['height_cm'] as int?) ?? 165;
+      _data.weightKg       = (saved['weight_kg'] is int)
+          ? (saved['weight_kg'] as int).toDouble()
+          : (saved['weight_kg'] as double?) ?? 60.0;
+      _data.age            = (saved['age'] as int?) ?? 25;
+    });
+  }
+
   @override
   void dispose() {
-    _pageController.dispose();
-    _nameController.dispose();
-    _ageController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
+    _pageCtrl.dispose();
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
     super.dispose();
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
+          // ── PageView — swipe désactivé, contrôlé par code uniquement ──────
           PageView(
-            controller: _pageController,
-            physics: const BouncingScrollPhysics(),
-            onPageChanged: _onPageChanged,
-            children: [
-              StepIntro(onNext: _nextPage),
-              StepWelcome(
-                onNext: _nextPage,
-                onBack: _previousPage,
-                nameController: _nameController,
-                emailController: _emailController,
-                passwordController: _passwordController,
-              ),
-              StepGoals(
-                selectedGoals: _goals,
-                onBack: _previousPage,
-                onToggleGoal: (goal) {
-                  setState(() {
-                    _goals.contains(goal)
-                        ? _goals.remove(goal)
-                        : _goals.add(goal);
-                  });
-                },
-                onNext: _nextPage,
-              ),
-              StepFitnessLevel(
-                selectedLevel: _fitnessLevel,
-                onBack: _previousPage,
-                onChanged: (level) => setState(() => _fitnessLevel = level),
-                onNext: _nextPage,
-              ),
-              StepEquipment(
-                selectedEquipment: _equipment,
-                onBack: _previousPage,
-                onToggleEquipment: (item) {
-                  setState(() {
-                    _equipment.contains(item)
-                        ? _equipment.remove(item)
-                        : _equipment.add(item);
-                  });
-                },
-                onNext: _nextPage,
-              ),
-              StepFrequency(
-                selectedFrequency: _frequency,
-                onBack: _previousPage,
-                onChanged: (value) => setState(() => _frequency = value),
-                onNext: _nextPage,
-              ),
-              StepHealthProfile(onNext: _nextPage, onBack: _previousPage),
-              StepCycleAndPregnancy(
-                  onNext: _nextPage, onBack: _previousPage),
-            ],
+            controller:   _pageCtrl,
+            physics:      const NeverScrollableScrollPhysics(),
+            children:     _buildPages(),
           ),
 
-          SwipeHintOverlay(
-            visible: _currentPage == 0 && _showSwipeHint,
-          ),
+          // ── Progress bar — cachée sur l'intro ─────────────────────────────
+          if (_current != OStep.intro)
+            _ProgressBar(progress: _progress),
         ],
+      ),
+    );
+  }
+
+  // ── Pages ─────────────────────────────────────────────────────────────────
+
+  List<Widget> _buildPages() => [
+    // 0 — Intro
+    StepIntro(onNext: _goNext),
+
+    // 1 — Welcome
+    StepWelcome(
+      onNext:             _goNext,
+      onBack:             _goBack,
+      nameController:     _nameCtrl,
+      emailController:    _emailCtrl,
+      passwordController: _passCtrl,
+    ),
+
+    // 2 — Goals
+    StepGoals(
+      selectedGoals:  _data.goals,
+      onBack:         _goBack,
+      onToggleGoal:   (g) => setState(() =>
+        _data.goals.contains(g) ? _data.goals.remove(g) : _data.goals.add(g)),
+      onNext:         _goNext,
+    ),
+
+    // 3 — Fitness level
+    StepFitnessLevel(
+      selectedLevel: _data.fitnessLevel,
+      onBack:        _goBack,
+      onChanged:     (v) => setState(() => _data.fitnessLevel = v),
+      onNext:        _goNext,
+    ),
+
+    // 4 — Equipment
+    StepEquipment(
+      selectedEquipment:  _data.equipment,
+      onBack:             _goBack,
+      onToggleEquipment:  (item) => setState(() =>
+        _data.equipment.contains(item)
+            ? _data.equipment.remove(item)
+            : _data.equipment.add(item)),
+      onNext:             _goNext,
+    ),
+
+    // 5 — Frequency
+    StepFrequency(
+      selectedFrequency: _data.frequency,
+      onBack:            _goBack,
+      onChanged:         (v) => setState(() => _data.frequency = v),
+      onNext:            _goNext,
+    ),
+
+    // 6 — Health profile (height / weight / age)
+    StepHealthProfile(
+      onNext:            _goNext,
+      onBack:            _goBack,
+      initialHeightCm:   _data.heightCm,
+      initialWeightKg:   _data.weightKg,
+      initialAge:        _data.age,
+      onHeightChanged:   (v) => setState(() => _data.heightCm = v),
+      onWeightChanged:   (v) => setState(() => _data.weightKg = v),
+      onAgeChanged:      (v) => setState(() => _data.age = v),
+    ),
+
+    // 7 — Cycle & pregnancy
+    StepCycleAndPregnancy(
+      onNext:  _goNext,
+      onBack:  _goBack,
+      onHealthStatusChanged:  (v) => setState(() => _data.healthStatus  = v),
+      onLastPeriodChanged:    (v) => setState(() => _data.lastPeriod    = v),
+      onCycleDurationChanged: (v) => setState(() => _data.cycleDuration = v),
+      onPregnancyWeekChanged: (v) => setState(() => _data.pregnancyWeekSA = v),
+      onPpRecoveryChanged:    (v) => setState(() => _data.ppRecovery    = v),
+      onPpDurationChanged:    (v) => setState(() => _data.ppDuration    = v),
+    ),
+  ];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Progress bar widget — custom (pas de shader GPU)
+// ─────────────────────────────────────────────────────────────────────────────
+class _ProgressBar extends StatelessWidget {
+  final double progress;
+  const _ProgressBar({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 0, left: 0, right: 0,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+          child: LayoutBuilder(
+            builder: (_, constraints) {
+              final totalW = constraints.maxWidth;
+              return Container(
+                height: 3,
+                width: totalW,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0EBE0),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    width: totalW * progress,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2D4A2D),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
