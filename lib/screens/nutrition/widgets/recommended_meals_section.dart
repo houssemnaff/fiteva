@@ -1,4 +1,7 @@
 // ignore_for_file: deprecated_member_use
+import 'package:fiteva/screens/nutrition/models/models.dart';
+import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
+import 'package:fiteva/screens/nutrition/recette_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -270,6 +273,7 @@ class _RecommendedMealsSectionState extends State<RecommendedMealsSection> {
   @override
   Widget build(BuildContext context) {
     final goal = _goal;
+    final nc   = NutritionColors.of(context);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       // ── Section header ────────────────────────────────────────────
@@ -290,7 +294,7 @@ class _RecommendedMealsSectionState extends State<RecommendedMealsSection> {
               color: goal.primary, fontSize: 9,
               fontWeight: FontWeight.w700, letterSpacing: 3)),
             Text('Repas du jour', style: GoogleFonts.outfit(
-              color: _kText1, fontSize: 22,
+              color: nc.text1, fontSize: 22,
               fontWeight: FontWeight.w800, letterSpacing: -0.4)),
           ]),
         ]),
@@ -317,12 +321,12 @@ class _RecommendedMealsSectionState extends State<RecommendedMealsSection> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: selected ? g.primary : Colors.white,
+                  color: selected ? g.primary : nc.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: selected
                         ? g.primary
-                        : _kBorder,
+                        : nc.border,
                     width: selected ? 0 : 1),
                   boxShadow: selected
                       ? [BoxShadow(
@@ -343,14 +347,14 @@ class _RecommendedMealsSectionState extends State<RecommendedMealsSection> {
                       const SizedBox(width: 6),
                       Text(g.label, style: GoogleFonts.inter(
                         fontSize: 12, fontWeight: FontWeight.w700,
-                        color: selected ? Colors.white : _kText1)),
+                        color: selected ? Colors.white : nc.text1)),
                     ]),
                     const SizedBox(height: 3),
                     Text(g.sublabel, style: GoogleFonts.inter(
                       fontSize: 10,
                       color: selected
                           ? Colors.white.withOpacity(0.75)
-                          : _kText2)),
+                          : nc.text2)),
                   ],
                 ),
               ),
@@ -363,14 +367,18 @@ class _RecommendedMealsSectionState extends State<RecommendedMealsSection> {
 
       // ── Featured card (first meal) ─────────────────────────────────
       if (_currentMeals.isNotEmpty)
-        LayoutBuilder(builder: (_, constraints) {
+        LayoutBuilder(builder: (ctx, constraints) {
           final featH = (constraints.maxWidth * 0.52).clamp(180.0, 230.0);
+          final meal  = _currentMeals.first;
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _FeaturedCard(
-              meal: _currentMeals.first,
-              goal: goal,
-              height: featH),
+            child: GestureDetector(
+              onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                builder: (_) => RecipeDetailScreen(
+                  recipe: RecipeItem(meal.imageUrl, meal.name, meal.name,
+                    goal.primary)))),
+              child: _FeaturedCard(meal: meal, goal: goal, height: featH),
+            ),
           );
         }),
 
@@ -381,7 +389,7 @@ class _RecommendedMealsSectionState extends State<RecommendedMealsSection> {
         LayoutBuilder(builder: (_, constraints) {
           final cardW = constraints.maxWidth * 0.42;
           final imgH  = cardW * 0.55;
-          final listH = imgH + 78;
+          final listH = imgH + 96; // extra for flexible content area
           return SizedBox(
             height: listH,
             child: ListView.separated(
@@ -389,12 +397,17 @@ class _RecommendedMealsSectionState extends State<RecommendedMealsSection> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemCount: _currentMeals.length - 1,
-              itemBuilder: (_, i) => _CompactCard(
-                meal: _currentMeals[i + 1],
-                goal: goal,
-                width: cardW,
-                imageHeight: imgH,
-              ),
+              itemBuilder: (ctx, i) {
+                final meal = _currentMeals[i + 1];
+                return GestureDetector(
+                  onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                    builder: (_) => RecipeDetailScreen(
+                      recipe: RecipeItem(meal.imageUrl, meal.name, meal.name,
+                        goal.primary)))),
+                  child: _CompactCard(
+                    meal: meal, goal: goal, width: cardW, imageHeight: imgH),
+                );
+              },
             ),
           );
         }),
@@ -540,13 +553,14 @@ class _CompactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return Container(
       width: width,
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: nc.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kBorder),
-        boxShadow: [BoxShadow(
+        border: Border.all(color: nc.border),
+        boxShadow: nc.isDark ? [] : [BoxShadow(
           color: Colors.black.withOpacity(0.04),
           blurRadius: 10, offset: const Offset(0, 3))],
       ),
@@ -578,14 +592,12 @@ class _CompactCard extends StatelessWidget {
             ]),
           ),
 
-          // Content — fixed height 78px, no overflow possible
-          SizedBox(
-            height: 78,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(9, 7, 9, 7),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Content — flexible height, no fixed constraint
+          Padding(
+            padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
                 children: [
                   // Tag pill
                   Container(
@@ -605,8 +617,9 @@ class _CompactCard extends StatelessWidget {
                     maxLines: 2, overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 11, fontWeight: FontWeight.w700,
-                      color: _kText1, height: 1.25)),
+                      color: nc.text1, height: 1.25)),
 
+                  const SizedBox(height: 6),
                   // Macro dots
                   Row(children: [
                     _DotMacro('P ${meal.protein}g', goal.primary),
@@ -615,7 +628,6 @@ class _CompactCard extends StatelessWidget {
                         goal.primary.withOpacity(0.55)),
                   ]),
                 ],
-              ),
             ),
           ),
         ],
@@ -645,15 +657,18 @@ class _DotMacro extends StatelessWidget {
   const _DotMacro(this.label, this.color);
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(width: 5, height: 5,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-      const SizedBox(width: 4),
-      Text(label, style: GoogleFonts.inter(
-        fontSize: 9, fontWeight: FontWeight.w600,
-        color: _kText2)),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 5, height: 5,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text(label, style: GoogleFonts.inter(
+          fontSize: 9, fontWeight: FontWeight.w600,
+          color: nc.text2)),
+      ],
+    );
+  }
 }

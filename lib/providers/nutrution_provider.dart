@@ -1,5 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+
+import 'user_profile_provider.dart';
 
 // ── Recipe Model ──────────────────────────────────────────────────────────────
 class RecipeModel {
@@ -97,9 +98,9 @@ class NutritionState {
 
 // ── Notifier ──────────────────────────────────────────────────────────────────
 class NutritionNotifier extends StateNotifier<NutritionState> {
-  NutritionNotifier()
+  NutritionNotifier({int initialTarget = 2000})
       : super(NutritionState(
-          targetCalories: 2000,
+          targetCalories: initialTarget,
           categories: [
             MealCategory(
               id: 'breakfast', name: 'Petit-déjeuner',
@@ -173,6 +174,7 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 final nutritionProvider =
-    StateNotifierProvider<NutritionNotifier, NutritionState>(
-  (ref) => NutritionNotifier(),
-);
+    StateNotifierProvider<NutritionNotifier, NutritionState>((ref) {
+  final profile = ref.watch(userProfileProvider);
+  return NutritionNotifier(initialTarget: profile.targets.tdeeKcal);
+});

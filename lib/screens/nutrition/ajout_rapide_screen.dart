@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/core/nutrition/food_database.dart';
 import 'package:fiteva/core/nutrition/models.dart';
+import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -260,7 +261,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
     FoodItem food;
     double grams;
 
-    if (_mode == 0 && _selectedFood != null) {
+    if ((_mode == 0 || _mode == 2) && _selectedFood != null) {
       food  = _selectedFood!;
       grams = _selectedGrams;
     } else {
@@ -328,13 +329,14 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
   Widget build(BuildContext context) {
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
+    final nc     = NutritionColors.of(context);
 
     return Scaffold(
-      backgroundColor: _kCream,
+      backgroundColor: nc.bg,
       body: Column(children: [
         // ── Header ───────────────────────────────────────────────────────────
         Container(
-          color: _kSurface,
+          color: nc.surface,
           padding: EdgeInsets.fromLTRB(20, top + 14, 20, 16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
@@ -343,7 +345,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                 child: Container(
                   width: 38, height: 38,
                   decoration: BoxDecoration(
-                    color: _kMintBg, borderRadius: BorderRadius.circular(12)),
+                    color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
                   child: const Icon(LucideIcons.chevronLeft,
                     color: _kGreen, size: 18))),
               const SizedBox(width: 14),
@@ -367,7 +369,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
-                      color: _kMintBg,
+                      color: nc.mintBg,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: _kMint.withOpacity(0.4))),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -384,7 +386,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFFF2F2F0),
+                color: nc.chipBg,
                 borderRadius: BorderRadius.circular(16)),
               child: Row(children: [
                 _ModeTab(icon: LucideIcons.search,    label: 'Recherche', active: _mode == 0,
@@ -420,7 +422,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
 
         // ── Bottom actions ────────────────────────────────────────────────────
         Container(
-          color: _kSurface,
+          color: nc.surface,
           padding: EdgeInsets.fromLTRB(20, 12, 20, bottom + 16),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
 
@@ -432,7 +434,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: _kMintBg,
+                    color: nc.mintBg,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: _kMint.withOpacity(0.5))),
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -467,14 +469,14 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: _canSubmit ? _kGreen : const Color(0xFFD0D0D0),
+                  color: _canSubmit ? _kGreen : nc.border,
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: _canSubmit ? [BoxShadow(
                     color: _kGreen.withOpacity(0.3),
                     blurRadius: 16, offset: const Offset(0, 5))] : []),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Icon(LucideIcons.check, size: 17,
-                    color: _canSubmit ? Colors.white : const Color(0xFF9E9E9E)),
+                    color: _canSubmit ? Colors.white : nc.text2),
                   const SizedBox(width: 8),
                   Text(
                     _basket.isEmpty
@@ -484,7 +486,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                             : 'Confirmer ${_basket.length} aliments · $_basketCalories kcal',
                     style: GoogleFonts.inter(
                       fontSize: 14, fontWeight: FontWeight.w700,
-                      color: _canSubmit ? Colors.white : const Color(0xFF9E9E9E))),
+                      color: _canSubmit ? Colors.white : nc.text2)),
                 ]),
               ),
             ),
@@ -514,6 +516,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
   // ════════════════════════════════════════════════════════════════════════════
   Widget _buildSearch() {
     if (_selectedFood != null) return _buildFoodDetail(_selectedFood!);
+    final nc = NutritionColors.of(context);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
@@ -550,15 +553,15 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
       Container(
         height: 48,
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: nc.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _kBorder),
-          boxShadow: [BoxShadow(
+          border: Border.all(color: nc.border),
+          boxShadow: nc.isDark ? [] : [BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 8, offset: const Offset(0, 2))]),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(children: [
-          const Icon(LucideIcons.search, size: 16, color: _kText2),
+          Icon(LucideIcons.search, size: 16, color: nc.text2),
           const SizedBox(width: 10),
           Expanded(child: TextField(
             controller: _searchCtrl,
@@ -566,10 +569,10 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
               _searchQuery    = v;
               _activeCategory = null;
             }),
-            style: GoogleFonts.inter(fontSize: 14, color: _kText1),
+            style: GoogleFonts.inter(fontSize: 14, color: nc.text1),
             decoration: InputDecoration(
               hintText: 'Rechercher un aliment…',
-              hintStyle: GoogleFonts.inter(fontSize: 14, color: _kText2),
+              hintStyle: GoogleFonts.inter(fontSize: 14, color: nc.text2),
               border: InputBorder.none, isDense: true,
               contentPadding: EdgeInsets.zero),
           )),
@@ -579,7 +582,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                 _searchCtrl.clear();
                 setState(() { _searchQuery = ''; _activeCategory = null; });
               },
-              child: const Icon(LucideIcons.x, size: 14, color: _kText2)),
+              child: Icon(LucideIcons.x, size: 14, color: nc.text2)),
         ]),
       ),
 
@@ -606,16 +609,16 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                   duration: const Duration(milliseconds: 160),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    color: sel ? _kGreen : _kSurface,
+                    color: sel ? _kGreen : nc.surface,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: sel ? _kGreen : _kBorder)),
+                    border: Border.all(color: sel ? _kGreen : nc.border)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(_catIcon(cat), size: 13,
                       color: sel ? Colors.white : _catColor(cat)),
                     const SizedBox(width: 5),
                     Text(cat.label.split(' ').first, style: GoogleFonts.inter(
                       fontSize: 11, fontWeight: FontWeight.w600,
-                      color: sel ? Colors.white : _kText1)),
+                      color: sel ? Colors.white : nc.text1)),
                   ])));
             })),
         const SizedBox(height: 14),
@@ -630,7 +633,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                 : 'POPULAIRES',
         style: GoogleFonts.inter(
           fontSize: 9, fontWeight: FontWeight.w700,
-          color: _kText2, letterSpacing: 2.0)),
+          color: nc.text2, letterSpacing: 2.0)),
       const SizedBox(height: 8),
 
       // ── Food list (multi-select) ─────────────────────────────────────────────
@@ -669,6 +672,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
 
   // ── Food detail ───────────────────────────────────────────────────────────
   Widget _buildFoodDetail(FoodItem food) {
+    final nc      = NutritionColors.of(context);
     final grams   = _selectedGrams;
     final kcal    = food.kcalFor(grams).round();
     final protein = food.proteinFor(grams).round();
@@ -690,10 +694,10 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
       Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: nc.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _kBorder),
-          boxShadow: [BoxShadow(
+          border: Border.all(color: nc.border),
+          boxShadow: nc.isDark ? [] : [BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 14, offset: const Offset(0, 4))]),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -714,9 +718,9 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(food.name, style: GoogleFonts.outfit(
-                fontSize: 18, fontWeight: FontWeight.w800, color: _kText1)),
+                fontSize: 18, fontWeight: FontWeight.w800, color: nc.text1)),
               Text(food.category.label, style: GoogleFonts.inter(
-                fontSize: 11, color: _kText2)),
+                fontSize: 11, color: nc.text2)),
             ])),
           ]),
 
@@ -752,7 +756,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           ],
 
           const SizedBox(height: 16),
-          Divider(height: 1, color: _kBorder),
+          Divider(height: 1, color: nc.border),
           const SizedBox(height: 14),
 
           Text('QUANTITÉ', style: GoogleFonts.inter(
@@ -788,9 +792,9 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                   final val = double.tryParse(v);
                   if (val != null && val > 0) _setAmount(val);
                 },
-                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: _kText1),
+                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: nc.text1),
                 decoration: InputDecoration(
-                  filled: true, fillColor: const Color(0xFFF6F6F6),
+                  filled: true, fillColor: nc.chipBg,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none),
@@ -812,7 +816,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(
                 '≈ ${_selectedGrams.round()} g',
-                style: GoogleFonts.inter(fontSize: 11, color: _kText2))),
+                style: GoogleFonts.inter(fontSize: 11, color: nc.text2))),
         ]),
       ),
     ]);
@@ -821,11 +825,13 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
   // ════════════════════════════════════════════════════════════════════════════
   //  MANUEL MODE
   // ════════════════════════════════════════════════════════════════════════════
-  Widget _buildManual() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  Widget _buildManual() {
+    final nc = NutritionColors.of(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: _kMintBg,
+        color: nc.mintBg,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _kMint.withOpacity(0.3))),
       child: Row(children: [
@@ -841,10 +847,10 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
     Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: nc.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _kBorder),
-        boxShadow: [BoxShadow(
+        border: Border.all(color: nc.border),
+        boxShadow: nc.isDark ? [] : [BoxShadow(
           color: Colors.black.withOpacity(0.04),
           blurRadius: 14, offset: const Offset(0, 4))]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -859,13 +865,13 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           keyboard: TextInputType.number,
           onChanged: (_) => setState(() {})),
         const SizedBox(height: 20),
-        Divider(height: 1, color: _kBorder),
+        Divider(height: 1, color: nc.border),
         const SizedBox(height: 18),
         Text('MACRONUTRIMENTS', style: GoogleFonts.inter(
           color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
           letterSpacing: 2.5)),
         const SizedBox(height: 4),
-        Text('Optionnel', style: GoogleFonts.inter(fontSize: 11, color: _kText2)),
+        Text('Optionnel', style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
         const SizedBox(height: 14),
         Row(children: [
           Expanded(child: _MacroInput('Protéines', 'g', _kGreen, _protCtrl)),
@@ -876,6 +882,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
         ]),
       ])),
   ]);
+  }
 
   // ════════════════════════════════════════════════════════════════════════════
   //  SCANNER MODE
@@ -1009,7 +1016,8 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
 
   // ── Scanner: result (editable card) ──────────────────────────────────────
   Widget _buildScannerResult() {
-    final food = _scannedFood!;
+    final nc      = NutritionColors.of(context);
+    final food    = _scannedFood!;
     final kcal    = food.kcalFor(_selectedGrams).round();
     final protein = food.proteinFor(_selectedGrams).round();
     final carbs   = food.carbsFor(_selectedGrams).round();
@@ -1032,7 +1040,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
         GestureDetector(
           onTap: _resetScan,
           child: Text('Nouvelle photo', style: GoogleFonts.inter(
-            fontSize: 12, color: _kText2,
+            fontSize: 12, color: nc.text2,
             decoration: TextDecoration.underline))),
       ]),
       const SizedBox(height: 12),
@@ -1042,10 +1050,10 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: nc.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _kBorder),
-          boxShadow: [BoxShadow(
+          border: Border.all(color: nc.border),
+          boxShadow: nc.isDark ? [] : [BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 8, offset: const Offset(0, 2))]),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1055,15 +1063,15 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
             Container(
               width: 44, height: 44,
               decoration: BoxDecoration(
-                color: _kMintBg, borderRadius: BorderRadius.circular(12)),
+                color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
               child: const Icon(LucideIcons.utensils, size: 20, color: _kGreen)),
             const SizedBox(width: 12),
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(food.name, style: GoogleFonts.inter(
-                fontSize: 16, fontWeight: FontWeight.w800, color: _kText1)),
+                fontSize: 16, fontWeight: FontWeight.w800, color: nc.text1)),
               Text(food.category.label, style: GoogleFonts.inter(
-                fontSize: 11, color: _kText2)),
+                fontSize: 11, color: nc.text2)),
             ])),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1074,7 +1082,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           ]),
 
           const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFECECEC)),
+          Divider(height: 1, color: nc.border),
           const SizedBox(height: 14),
 
           // Macro pills
@@ -1091,7 +1099,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           // Quantity selector
           Row(children: [
             Text('Quantité :', style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w600, color: _kText1)),
+              fontSize: 13, fontWeight: FontWeight.w600, color: nc.text1)),
             const SizedBox(width: 12),
             SizedBox(width: 72,
               child: TextField(
@@ -1173,14 +1181,14 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 13),
           decoration: BoxDecoration(
-            color: _kSurface,
+            color: nc.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _kBorder)),
+            border: Border.all(color: nc.border)),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(LucideIcons.search, size: 15, color: _kText2),
+            Icon(LucideIcons.search, size: 15, color: nc.text2),
             const SizedBox(width: 7),
             Text('+ Ajouter des ingrédients', style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w600, color: _kText2)),
+              fontSize: 13, fontWeight: FontWeight.w600, color: nc.text2)),
           ]))),
     ]);
   }
@@ -1207,19 +1215,20 @@ class _BasketSheetState extends State<_BasketSheet> {
     final totalCarb = widget.basket.fold(0, (s, i) => s + i.carbs);
     final totalFat  = widget.basket.fold(0, (s, i) => s + i.fat);
 
+    final nc = NutritionColors.of(context);
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.75),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      decoration: BoxDecoration(
+        color: nc.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         // handle
         Padding(
           padding: const EdgeInsets.only(top: 14, bottom: 6),
           child: Container(width: 36, height: 4,
             decoration: BoxDecoration(
-              color: const Color(0xFFE0E0E0),
+              color: nc.border,
               borderRadius: BorderRadius.circular(2)))),
 
         // title
@@ -1227,12 +1236,12 @@ class _BasketSheetState extends State<_BasketSheet> {
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
           child: Row(children: [
             Text('Liste d\'aliments', style: GoogleFonts.outfit(
-              fontSize: 18, fontWeight: FontWeight.w800, color: _kText1)),
+              fontSize: 18, fontWeight: FontWeight.w800, color: nc.text1)),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: _kMintBg, borderRadius: BorderRadius.circular(20)),
+                color: nc.mintBg, borderRadius: BorderRadius.circular(20)),
               child: Text('${widget.basket.length} aliment${widget.basket.length > 1 ? 's' : ''}',
                 style: GoogleFonts.inter(
                   fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
@@ -1243,7 +1252,7 @@ class _BasketSheetState extends State<_BasketSheet> {
           margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: _kMintBg,
+            color: nc.mintBg,
             borderRadius: BorderRadius.circular(14)),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1268,9 +1277,9 @@ class _BasketSheetState extends State<_BasketSheet> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8F8F8),
+                  color: nc.surface2,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _kBorder)),
+                  border: Border.all(color: nc.border)),
                 child: Row(children: [
                   Text(item.food.category.emoji,
                     style: const TextStyle(fontSize: 20)),
@@ -1278,9 +1287,9 @@ class _BasketSheetState extends State<_BasketSheet> {
                   Expanded(child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(item.food.name, style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600, color: _kText1)),
+                      fontSize: 13, fontWeight: FontWeight.w600, color: nc.text1)),
                     Text('${item.grams.round()}g · ${item.calories} kcal',
-                      style: GoogleFonts.inter(fontSize: 11, color: _kText2)),
+                      style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
                   ])),
                   GestureDetector(
                     onTap: () {
@@ -1376,20 +1385,21 @@ class _UnitPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc     = NutritionColors.of(context);
     final bottom = MediaQuery.of(context).padding.bottom;
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      decoration: BoxDecoration(
+        color: nc.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
       padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 36, height: 4,
           decoration: BoxDecoration(
-            color: const Color(0xFFE0E0E0),
+            color: nc.border,
             borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 14),
         Text('Unité de mesure', style: GoogleFonts.outfit(
-          fontSize: 18, fontWeight: FontWeight.w800, color: _kText1)),
+          fontSize: 18, fontWeight: FontWeight.w800, color: nc.text1)),
         const SizedBox(height: 16),
         Wrap(
           spacing: 8, runSpacing: 8,
@@ -1403,13 +1413,13 @@ class _UnitPickerSheet extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? _kGreen : const Color(0xFFF8F8F8),
+                  color: isSelected ? _kGreen : nc.surface2,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isSelected ? _kGreen : _kBorder)),
+                    color: isSelected ? _kGreen : nc.border)),
                 child: Text(unit.label, style: GoogleFonts.inter(
                   fontSize: 14, fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : _kText1)),
+                  color: isSelected ? Colors.white : nc.text1)),
               ),
             );
           }).toList(),
@@ -1425,21 +1435,22 @@ class _UnitPickerSheet extends StatelessWidget {
 class _MealTypePickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final nc     = NutritionColors.of(context);
     final bottom = MediaQuery.of(context).padding.bottom;
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      decoration: BoxDecoration(
+        color: nc.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
       padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 36, height: 4,
           decoration: BoxDecoration(
-            color: const Color(0xFFE0E0E0),
+            color: nc.border,
             borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 16),
         Text('Quel repas ?', style: GoogleFonts.outfit(
           fontSize: 20, fontWeight: FontWeight.w800,
-          color: const Color(0xFF1A1A1A))),
+          color: nc.text1)),
         const SizedBox(height: 16),
         ...MealType.values.map((type) => GestureDetector(
           onTap: () {
@@ -1450,24 +1461,24 @@ class _MealTypePickerSheet extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F8F8),
+              color: nc.surface2,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFECECEC))),
+              border: Border.all(color: nc.border)),
             child: Row(children: [
               Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF3EC),
+                  color: nc.mintBg,
                   borderRadius: BorderRadius.circular(10)),
                 child: Icon(_typeIcon(type), size: 16,
                   color: const Color(0xFF1C4D30))),
               const SizedBox(width: 12),
               Text(type.label, style: GoogleFonts.inter(
                 fontSize: 15, fontWeight: FontWeight.w600,
-                color: const Color(0xFF1A1A1A))),
+                color: nc.text1)),
               const Spacer(),
               Text('${type.budgetKcal} kcal', style: GoogleFonts.inter(
-                fontSize: 12, color: const Color(0xFF6B7280))),
+                fontSize: 12, color: nc.text2)),
             ])))),
       ]));
   }
@@ -1499,6 +1510,7 @@ class _FoodSelectTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc    = NutritionColors.of(context);
     final grams = selectedGrams ?? food.defaultGrams;
     final kcal  = food.kcalFor(grams).round();
 
@@ -1509,10 +1521,10 @@ class _FoodSelectTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? _kMintBg : _kSurface,
+          color: isSelected ? nc.mintBg : nc.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? _kMint : _kBorder,
+            color: isSelected ? _kMint : nc.border,
             width: isSelected ? 1.5 : 1.0)),
         child: Row(children: [
 
@@ -1543,7 +1555,7 @@ class _FoodSelectTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(food.name, style: GoogleFonts.inter(
               fontSize: 14, fontWeight: FontWeight.w700,
-              color: _kText1)),
+              color: nc.text1)),
             const SizedBox(height: 3),
             Row(children: [
               // Serving/quantity pill — tap to edit when selected
@@ -1552,7 +1564,7 @@ class _FoodSelectTile extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.white : const Color(0xFFF2F2F2),
+                    color: isSelected ? nc.surface : nc.chipBg,
                     borderRadius: BorderRadius.circular(8),
                     border: isSelected
                         ? Border.all(color: _kMint.withOpacity(0.5))
@@ -1564,7 +1576,7 @@ class _FoodSelectTile extends StatelessWidget {
                           : food.portionLabel,
                       style: GoogleFonts.inter(
                         fontSize: 11, fontWeight: FontWeight.w600,
-                        color: isSelected ? _kGreen : _kText2)),
+                        color: isSelected ? _kGreen : nc.text2)),
                     if (isSelected) ...[
                       const SizedBox(width: 3),
                       const Icon(LucideIcons.chevronDown, size: 10, color: _kGreen),
@@ -1575,7 +1587,7 @@ class _FoodSelectTile extends StatelessWidget {
               Text('$kcal kcal',
                 style: GoogleFonts.inter(
                   fontSize: 11, fontWeight: FontWeight.w700,
-                  color: isSelected ? _kGreen : _kText2)),
+                  color: isSelected ? _kGreen : nc.text2)),
             ]),
           ])),
 
@@ -1586,7 +1598,7 @@ class _FoodSelectTile extends StatelessWidget {
             duration: const Duration(milliseconds: 180),
             width: 32, height: 32,
             decoration: BoxDecoration(
-              color: isSelected ? _kGreen : const Color(0xFFF0F0F0),
+              color: isSelected ? _kGreen : nc.chipBg,
               shape: BoxShape.circle,
               boxShadow: isSelected ? [BoxShadow(
                 color: _kGreen.withOpacity(0.3),
@@ -1594,7 +1606,7 @@ class _FoodSelectTile extends StatelessWidget {
             child: Icon(
               isSelected ? LucideIcons.check : LucideIcons.plus,
               size: 16,
-              color: isSelected ? Colors.white : _kText2)),
+              color: isSelected ? Colors.white : nc.text2)),
         ])));
   }
 }
@@ -1604,20 +1616,23 @@ class _EmptySearch extends StatelessWidget {
   const _EmptySearch({required this.query});
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Container(
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
-      color: _kSurface, borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: _kBorder)),
+      color: nc.surface, borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: nc.border)),
     child: Column(children: [
-      const Icon(LucideIcons.searchX, size: 32, color: _kText2),
+      Icon(LucideIcons.searchX, size: 32, color: nc.text2),
       const SizedBox(height: 10),
       Text('Aucun résultat pour "$query"',
-        style: GoogleFonts.inter(fontSize: 13, color: _kText2)),
+        style: GoogleFonts.inter(fontSize: 13, color: nc.text2)),
       const SizedBox(height: 4),
       Text('Essaie le mode Manuel pour l\'ajouter',
-        style: GoogleFonts.inter(fontSize: 11, color: _kText2)),
+        style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
     ]));
+  }
 }
 
 class _PortionChip extends StatelessWidget {
@@ -1627,18 +1642,21 @@ class _PortionChip extends StatelessWidget {
   const _PortionChip({required this.label, required this.selected, required this.onTap});
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return GestureDetector(
     onTap: onTap,
     child: AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: selected ? _kGreen : const Color(0xFFF4F4F4),
+        color: selected ? _kGreen : nc.chipBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: selected ? _kGreen : _kBorder)),
+        border: Border.all(color: selected ? _kGreen : nc.border)),
       child: Text(label, style: GoogleFonts.inter(
         fontSize: 11, fontWeight: FontWeight.w600,
-        color: selected ? Colors.white : _kText1))));
+        color: selected ? Colors.white : nc.text1))));
+  }
 }
 
 class _ModeTab extends StatelessWidget {
@@ -1650,7 +1668,9 @@ class _ModeTab extends StatelessWidget {
     required this.active, required this.onTap});
 
   @override
-  Widget build(BuildContext context) => Expanded(
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Expanded(
     child: GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -1663,12 +1683,13 @@ class _ModeTab extends StatelessWidget {
             color: _kGreen.withOpacity(0.2),
             blurRadius: 8, offset: const Offset(0, 2))] : []),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 16, color: active ? Colors.white : _kText2),
+          Icon(icon, size: 16, color: active ? Colors.white : nc.text2),
           const SizedBox(height: 3),
           Text(label, style: GoogleFonts.inter(
             fontSize: 10, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? Colors.white : _kText2)),
+            color: active ? Colors.white : nc.text2)),
         ]))));
+  }
 }
 
 class _AppField extends StatelessWidget {
@@ -1680,24 +1701,27 @@ class _AppField extends StatelessWidget {
     this.keyboard = TextInputType.text, this.onChanged});
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Column(
     crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text(label, style: GoogleFonts.inter(
-      fontSize: 11, fontWeight: FontWeight.w600, color: _kText2)),
+      fontSize: 11, fontWeight: FontWeight.w600, color: nc.text2)),
     const SizedBox(height: 6),
     TextField(
       controller: controller, keyboardType: keyboard, onChanged: onChanged,
-      style: GoogleFonts.inter(fontSize: 14, color: _kText1),
+      style: GoogleFonts.inter(fontSize: 14, color: nc.text1),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFFCCCCCC)),
-        filled: true, fillColor: const Color(0xFFF6F6F6),
+        hintStyle: GoogleFonts.inter(fontSize: 13, color: nc.text2),
+        filled: true, fillColor: nc.chipBg,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _kMint, width: 1.5)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13)))]);
+  }
 }
 
 class _MacroInput extends StatelessWidget {
@@ -1707,30 +1731,34 @@ class _MacroInput extends StatelessWidget {
   const _MacroInput(this.label, this.unit, this.color, this.controller);
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Column(
     crossAxisAlignment: CrossAxisAlignment.start, children: [
     Row(children: [
       Container(width: 6, height: 6,
         decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
       const SizedBox(width: 5),
       Text(label, style: GoogleFonts.inter(
-        fontSize: 10, color: _kText2, fontWeight: FontWeight.w600)),
+        fontSize: 10, color: nc.text2, fontWeight: FontWeight.w600)),
     ]),
     const SizedBox(height: 6),
     TextField(
       controller: controller,
       keyboardType: TextInputType.number,
-      style: GoogleFonts.inter(fontSize: 14, color: _kText1),
+      style: GoogleFonts.inter(fontSize: 14, color: nc.text1),
       decoration: InputDecoration(
         hintText: unit,
-        hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFFCCCCCC)),
-        filled: true, fillColor: const Color(0xFFF6F6F6),
+        hintStyle: GoogleFonts.inter(fontSize: 13, color: nc.text2),
+        filled: true, fillColor: nc.chipBg,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: color, width: 1.5)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12)))]);
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12))),
+    ]);
+  }
 }
 
 class _MacroBadge extends StatelessWidget {
@@ -1753,12 +1781,14 @@ class _MacroBar extends StatelessWidget {
   const _MacroBar(this.label, this.value, this.maxPer100, this.color);
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Column(
     crossAxisAlignment: CrossAxisAlignment.start, children: [
     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
       Text(label, style: GoogleFonts.inter(
-        fontSize: 12, fontWeight: FontWeight.w600, color: _kText1)),
-      Text('${value}g', style: GoogleFonts.inter(fontSize: 11, color: _kText2)),
+        fontSize: 12, fontWeight: FontWeight.w600, color: nc.text1)),
+      Text('${value}g', style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
     ]),
     const SizedBox(height: 6),
     ClipRRect(
@@ -1767,7 +1797,9 @@ class _MacroBar extends StatelessWidget {
         value: maxPer100 > 0 ? (value / maxPer100).clamp(0.0, 1.0) : 0,
         minHeight: 5,
         backgroundColor: color.withOpacity(0.12),
-        valueColor: AlwaysStoppedAnimation(color)))]);
+        valueColor: AlwaysStoppedAnimation(color))),
+    ]);
+  }
 }
 
 class _Corner extends StatelessWidget {

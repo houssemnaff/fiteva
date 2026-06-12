@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'models.dart';
+import '../../services/storage_service.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  NUTRITION STATE
@@ -39,7 +40,13 @@ String get todayKey => dateKey(DateTime.now());
 // ══════════════════════════════════════════════════════════════════════════════
 class NutritionNotifier extends Notifier<NutritionState> {
   @override
-  NutritionState build() => _initialState();
+  NutritionState build() {
+    final savedData = StorageService.getOnboardingData();
+    final profile   = savedData.isNotEmpty
+        ? UserProfile.fromOnboardingData(savedData)
+        : const UserProfile();
+    return _initialState().copyWith(userProfile: profile);
+  }
 
   // ── Actions ───────────────────────────────────────────────────────────────
   void addMeal(MealEntry entry) {

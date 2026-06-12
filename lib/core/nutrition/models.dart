@@ -221,14 +221,55 @@ class UserProfile {
   final NutritionGoal goal;
 
   const UserProfile({
-    this.name          = 'Balkis',
-    this.age           = 26,
-    this.weightKg      = 62.0,
+    this.name          = '',
+    this.age           = 25,
+    this.weightKg      = 60.0,
     this.heightCm      = 165.0,
     this.isFemale      = true,
     this.activityLevel = ActivityLevel.moderate,
     this.goal          = NutritionGoal.maintain,
   });
+
+  factory UserProfile.fromOnboardingData(Map<String, dynamic> data) {
+    final name     = data['username'] as String? ?? '';
+    final age      = data['age'] as int? ?? 25;
+    final weight   = (data['weight_kg'] is int)
+        ? (data['weight_kg'] as int).toDouble()
+        : (data['weight_kg'] as double?) ?? 60.0;
+    final height   = (data['height_cm'] is int)
+        ? (data['height_cm'] as int).toDouble()
+        : (data['height_cm'] as double?) ?? 165.0;
+
+    final freq = data['frequency'] as String?;
+    final ActivityLevel activity = switch (freq) {
+      '2 jours' || '3 jours' => ActivityLevel.light,
+      '4 jours' || '5 jours' => ActivityLevel.moderate,
+      '6 jours'              => ActivityLevel.active,
+      _                      => ActivityLevel.moderate,
+    };
+
+    final goals = List<String>.from(data['goals'] as List<dynamic>? ?? []);
+    NutritionGoal goal = NutritionGoal.maintain;
+    if (goals.any((g) =>
+        g.toLowerCase().contains('poids') ||
+        g.toLowerCase().contains('mincir'))) {
+      goal = NutritionGoal.loss;
+    } else if (goals.any((g) =>
+        g.toLowerCase().contains('masse') ||
+        g.toLowerCase().contains('volume'))) {
+      goal = NutritionGoal.gain;
+    }
+
+    return UserProfile(
+      name:          name,
+      age:           age,
+      weightKg:      weight,
+      heightCm:      height,
+      isFemale:      true,
+      activityLevel: activity,
+      goal:          goal,
+    );
+  }
 
   // Mifflin-St Jeor BMR
   double get bmr => isFemale
