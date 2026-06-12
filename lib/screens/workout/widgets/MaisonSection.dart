@@ -1,33 +1,10 @@
 import 'package:fiteva/models/home_program_model.dart';
-import 'package:fiteva/models/workout_model.dart';
+import 'package:fiteva/screens/workout/programme_detail_screen.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/theme/cycle_theme.dart';
-import 'package:fiteva/screens/workout/workout_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-WorkoutModel _programWorkout(HomeProgramModel program,
-    {required String category}) {
-  final workouts = program.workouts;
-  final calories = workouts.fold<int>(
-      0, (sum, w) => sum + (int.tryParse(w.calories) ?? 0));
-  final exercises =
-      workouts.map((w) => '${w.title} • ${w.duration}').toList();
-
-  return WorkoutModel(
-    id: 'program_${program.name.replaceAll(' ', '_').toLowerCase()}',
-    title: program.name,
-    category: category,
-    duration: program.duration,
-    level: workouts.isNotEmpty ? workouts.first.level : 'Tous niveaux',
-    calories: calories.toString(),
-    imageUrl: program.imageUrl,
-    exercises: exercises.isNotEmpty
-        ? exercises
-        : const ['Échauffement', 'Bloc principal', 'Retour au calme'],
-  );
-}
 
 class MaisonSection extends StatelessWidget {
   final List<HomeProgramModel> homePrograms;
@@ -68,7 +45,7 @@ class MaisonSection extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => WorkoutDetailScreen(
-                      workout: _programWorkout(program, category: 'MAISON'),
+                      program: program,
                     ),
                   ),
                 ),
@@ -131,7 +108,7 @@ class _MaisonHeader extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.w800,
                     fontSize: 19,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    color: const Color(0xFF1A1A1A),
                     letterSpacing: -0.4,
                   ),
                 ),
@@ -140,7 +117,7 @@ class _MaisonHeader extends StatelessWidget {
                   'Sans matériel · Élastiques · Corps',
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: const Color(0xFF6B7280),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

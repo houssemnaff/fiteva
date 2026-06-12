@@ -1,7 +1,7 @@
 import 'package:fiteva/models/workout_model.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/theme/cycle_theme.dart';
-import 'package:fiteva/screens/workout/workout_detail_screen.dart';
+import '../active_workout_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -44,7 +44,8 @@ class GrossesseSection extends StatelessWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => WorkoutDetailScreen(workout: workout),
+                    builder: (_) => ActiveWorkoutScreen(
+                      workout: workout),
                   ),
                 ),
               );

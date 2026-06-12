@@ -1,3 +1,5 @@
+import 'video_model.dart';
+
 class WorkoutModel {
   final String id;
   final String title;
@@ -8,6 +10,8 @@ class WorkoutModel {
   final String calories;
   final List<String> exercises;
   final String phases;
+  final int points;
+  final List<VideoModel> videos;
 
   WorkoutModel({
     required this.id,
@@ -19,5 +23,7 @@ class WorkoutModel {
     required this.exercises,
     required this.calories,
     this.phases = '',
+    this.points = 0,
+    this.videos = const [],
   });
 }

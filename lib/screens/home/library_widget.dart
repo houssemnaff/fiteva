@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fiteva/theme/app_theme.dart';
+import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
 
 class LibrarySection extends StatefulWidget {
   const LibrarySection();
@@ -67,7 +68,14 @@ class _LibrarySectionState extends State<LibrarySection> {
                 ],
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => const FavoritesBottomSheet(),
+                  );
+                },
                 child: Text(
                   'Voir tout',
                   style: GoogleFonts.inter(

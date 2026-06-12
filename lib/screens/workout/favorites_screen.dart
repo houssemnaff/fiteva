@@ -2,9 +2,11 @@ import 'package:fiteva/models/home_program_model.dart';
 import 'package:fiteva/models/workout_model.dart';
 import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/screens/workout/corpszone_playerscreen.dart';
+import 'package:fiteva/screens/workout/active_workout_screen.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/theme/cycle_theme.dart';
-import 'package:fiteva/screens/workout/workout_detail_screen.dart';
+import 'package:fiteva/screens/workout/programme_detail_screen.dart';
+import 'package:fiteva/screens/workout/exercise_player_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -142,7 +144,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => WorkoutDetailScreen(
-                          workout: _toWorkout(favSalle[i], 'SALLE'),
+                          program: favSalle[i],
                         ),
                       ),
                     ),
@@ -174,7 +176,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => WorkoutDetailScreen(
-                          workout: _toWorkout(favMaison[i], 'MAISON'),
+                          program: favMaison[i],
                         ),
                       ),
                     ),
@@ -209,7 +211,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                               ? CorpsZonePlayerScreen(
                                   workout: w,
                                   zoneName: w.category)
-                              : WorkoutDetailScreen(workout: w),
+                              : ActiveWorkoutScreen(workout: w),
                         ),
                       ),
                       isDark: isDark,
@@ -227,22 +229,6 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   bool _isCorpsZone(String cat) {
     final c = cat.toUpperCase();
     return c == 'DANCE' || c == 'RECUPERATION' || c == 'GROSSESSE';
-  }
-
-  WorkoutModel _toWorkout(HomeProgramModel p, String category) {
-    final calories = p.workouts.fold<int>(
-        0, (s, w) => s + (int.tryParse(w.calories) ?? 0));
-    return WorkoutModel(
-      id: 'fav_${p.name.replaceAll(' ', '_').toLowerCase()}',
-      title: p.name,
-      category: category,
-      duration: p.duration,
-      level: p.workouts.isNotEmpty ? p.workouts.first.level : 'Tous niveaux',
-      calories: calories.toString(),
-      imageUrl: p.imageUrl,
-      phases: p.phases,
-      exercises: p.workouts.map((w) => '${w.title} • ${w.duration}').toList(),
-    );
   }
 }
 

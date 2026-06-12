@@ -140,18 +140,32 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // ── Progress ──
+                    // ── Points & Progress ──
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Progression',
-                          style: TextStyle(
-                            color: colorScheme.onSurface,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 17,
-                            letterSpacing: -0.3,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Progression',
+                              style: TextStyle(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 17,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${widget.workout.points} points possibles',
+                              style: TextStyle(
+                                color: colorScheme.onSurface.withValues(alpha: 0.60),
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

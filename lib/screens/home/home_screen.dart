@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:fiteva/screens/home/library_widget.dart';
-import 'package:fiteva/screens/workout/workout_detail_screen.dart';
+import 'package:fiteva/screens/home/programs_bottom_sheet.dart';
+import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
+import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
+import 'package:fiteva/screens/workout/programme_detail_screen.dart';
 import 'package:fiteva/theme/app_theme.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
@@ -11,7 +14,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../models/workout_model.dart';
+import '../../models/home_program_model.dart';
 import '../../providers/mock_data_provider.dart';
+
 
 
 // ═══════════════════════════════════════════════════════════
@@ -344,7 +349,7 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => WorkoutDetailScreen(
-                                        workout: program.workouts.first),
+                                        program: program),
                                   ),
                                 )
                             : null,
@@ -798,36 +803,6 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
           ),
 
           const SizedBox(height: 16),
-
-          // Day detail card
-          if (sel != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: _DayDetailCard(
-                  key: ValueKey(_selectedDay),
-                  plan: sel,
-                  dayIndex: _selectedDay,
-                  onAddWorkout: () => _showPicker(_selectedDay),
-                  onMarkDone: () => ref
-                      .read(weeklyPlanProvider.notifier)
-                      .markAsDone(_selectedDay),
-                  onRemove: () => ref
-                      .read(weeklyPlanProvider.notifier)
-                      .removeWorkout(_selectedDay),
-                  onViewDetail: sel.workout == null
-                      ? null
-                      : () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  WorkoutDetailScreen(workout: sel.workout!),
-                            ),
-                          ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -1174,7 +1149,7 @@ class _IconBtnSmall extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════
 
 class _ProgramsSection extends StatelessWidget {
-  final List<WorkoutModel> programs;
+  final List<HomeProgramModel> programs;
   const _ProgramsSection({required this.programs});
 
   @override
@@ -1211,13 +1186,27 @@ class _ProgramsSection extends StatelessWidget {
                   ],
                 ),
                 const Spacer(),
-                Text('SEE ALL',
-                    style: GoogleFonts.inter(
-                      color: AppTheme.primaryColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
-                    )),
+                InkWell(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+builder: (_) => ProgramsBottomSheet(programs: programs),
+
+
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Text('voir tout',
+                      style: GoogleFonts.inter(
+                        color: AppTheme.primaryColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      )),
+                ),
+
               ],
             ),
           ),
@@ -1243,7 +1232,7 @@ class _ProgramsSection extends StatelessWidget {
 }
 
 class _ProgramCard extends StatelessWidget {
-  final WorkoutModel program;
+  final HomeProgramModel program;
   final double progress;
   const _ProgramCard({required this.program, required this.progress});
 
@@ -1280,7 +1269,7 @@ class _ProgramCard extends StatelessWidget {
                 color: AppTheme.neutral200,
               ),
             ),
-            // Category chip
+            // Points chip
             Positioned(
               top: 10,
               left: 10,
@@ -1291,7 +1280,7 @@ class _ProgramCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  program.category.toUpperCase(),
+                  '${program.totalPoints} PTS',
                   style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 8,
@@ -1309,7 +1298,7 @@ class _ProgramCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  program.title,
+                  program.name,
                   style: GoogleFonts.outfit(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -1321,7 +1310,7 @@ class _ProgramCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${program.duration}  •  ${program.level}',
+                  '${program.duration}  •  ${program.sessions}',
                   style: GoogleFonts.inter(
                     color: AppTheme.textSecondaryColor,
                     fontSize: 10,
