@@ -1,9 +1,10 @@
 import 'dart:ui';
+import 'package:fiteva/models/workout_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../models/workout_model.dart';
+import '../../models/home_program_model.dart';
 import 'active_workout_screen.dart';
 
 // ── Brand tokens (jamais changés par le thème) ────────────────────────────────
@@ -13,8 +14,8 @@ const _kGold      = Color(0xFFB8966E);
 const _kGoldLight = Color(0xFFF0DFC0);
 
 class WorkoutDetailScreen extends StatefulWidget {
-  final WorkoutModel workout;
-  const WorkoutDetailScreen({super.key, required this.workout});
+  final HomeProgramModel program;
+  const WorkoutDetailScreen({super.key, required this.program});
 
   @override
   State<WorkoutDetailScreen> createState() => _WorkoutDetailScreenState();
@@ -44,7 +45,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final w  = widget.workout;
+    final p  = widget.program;
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -53,12 +54,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
         children: [
           CustomScrollView(
             slivers: [
-              _HeroAppBar(workout: w),
+              _HeroAppBar(program: p),
               _TabBarSliver(current: _tab, onTab: (i) => setState(() => _tab = i)),
               _tab == 0
-                  ? _AboutTab(workout: w)
+                  ? _AboutTab(program: p)
                   : _SessionsTab(
-                      workout: w,
+                      program: p,
                       selectedWeek: _selectedWeek,
                       onWeekTap: (i) => setState(() => _selectedWeek = i),
                     ),
@@ -68,7 +69,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
             anim: _fabAnim,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: w)),
+              MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: p.workouts.first)),
             ),
           ),
         ],
@@ -81,8 +82,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
 // HERO APP BAR
 // ══════════════════════════════════════════════════════════════════════════════
 class _HeroAppBar extends StatelessWidget {
-  final WorkoutModel workout;
-  const _HeroAppBar({required this.workout});
+  final HomeProgramModel program;
+  const _HeroAppBar({required this.program});
 
   @override
   Widget build(BuildContext context) {
@@ -99,10 +100,14 @@ class _HeroAppBar extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Image.asset(
-              workout.imageUrl,
+              program.imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Container(color: _kGreen.withValues(alpha: 0.4)),
+              errorBuilder: (_, __, ___) => Container(
+                color: program.color,
+                child: Center(
+                  child: Icon(LucideIcons.package, size: 80, color: Colors.white.withValues(alpha: 0.2)),
+                ),
+              ),
             ),
             DecoratedBox(
               decoration: BoxDecoration(
@@ -153,19 +158,46 @@ class _HeroAppBar extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(color: _kGold, borderRadius: BorderRadius.circular(20)),
-                    child: Text(
-                      workout.category.toUpperCase(),
-                      style: GoogleFonts.inter(
-                        color: Colors.white, fontSize: 9,
-                        fontWeight: FontWeight.w800, letterSpacing: 1.6,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(color: _kGold, borderRadius: BorderRadius.circular(20)),
+                        child: Text(
+                          'PROGRAMME',
+                          style: GoogleFonts.inter(
+                            color: Colors.white, fontSize: 9,
+                            fontWeight: FontWeight.w800, letterSpacing: 1.6,
+                          ),
+                        ),
                       ),
-                    ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(LucideIcons.zap, size: 12, color: _kGold),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${program.totalPoints} pts',
+                              style: GoogleFonts.inter(
+                                color: Colors.white, fontSize: 10,
+                                fontWeight: FontWeight.w700, letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
-                  Text(workout.title, style: GoogleFonts.outfit(
+                  Text(program.name, style: GoogleFonts.outfit(
                     color: Colors.white, fontSize: 30,
                     fontWeight: FontWeight.w800, letterSpacing: -0.8, height: 1.1,
                   )),
@@ -174,11 +206,11 @@ class _HeroAppBar extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Row(children: [
-                      _HeroStatPill(icon: LucideIcons.clock,     label: workout.duration),
+                      _HeroStatPill(icon: LucideIcons.clock,     label: program.duration),
                       const SizedBox(width: 8),
-                      _HeroStatPill(icon: LucideIcons.flame,     label: '${workout.calories} kcal'),
+                      _HeroStatPill(icon: LucideIcons.layers,    label: '${program.workouts.length} séances'),
                       const SizedBox(width: 8),
-                      _HeroStatPill(icon: LucideIcons.barChart2, label: workout.level),
+                      _HeroStatPill(icon: LucideIcons.zap,       label: '${program.totalPoints} PTS'),
                     ]),
                   ),
                 ],
@@ -332,8 +364,8 @@ class _TabPill extends StatelessWidget {
 // À PROPOS TAB
 // ══════════════════════════════════════════════════════════════════════════════
 class _AboutTab extends StatelessWidget {
-  final WorkoutModel workout;
-  const _AboutTab({required this.workout});
+  final HomeProgramModel program;
+  const _AboutTab({required this.program});
 
   @override
   Widget build(BuildContext context) {
@@ -344,13 +376,18 @@ class _AboutTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              _StatTile(icon: LucideIcons.calendarDays, value: '4 sem.',      label: 'Durée'),
-              const SizedBox(width: 10),
-              _StatTile(icon: LucideIcons.zap,          value: workout.level, label: 'Niveau'),
-              const SizedBox(width: 10),
-              _StatTile(icon: LucideIcons.timer,        value: '30–45',       label: 'min / séance'),
-            ]),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                _StatTile(icon: LucideIcons.calendarDays, value: '4 sem.',              label: 'Durée'),
+                const SizedBox(width: 10),
+                _StatTile(icon: LucideIcons.layers,       value: '${program.workouts.length}',  label: 'Séances'),
+                const SizedBox(width: 10),
+                _StatTile(icon: LucideIcons.clock,        value: program.duration,     label: 'Durée totale'),
+                const SizedBox(width: 10),
+                _StatTile(icon: LucideIcons.star,         value: '${program.totalPoints}', label: 'Points'),
+              ]),
+            ),
             const SizedBox(height: 28),
             const _SectionLabel(label: 'Description'),
             const SizedBox(height: 12),
@@ -585,12 +622,12 @@ class _PhaseStrip extends StatelessWidget {
 // LES SÉANCES TAB
 // ══════════════════════════════════════════════════════════════════════════════
 class _SessionsTab extends StatelessWidget {
-  final WorkoutModel workout;
+  final HomeProgramModel program;
   final int selectedWeek;
   final void Function(int) onWeekTap;
 
   const _SessionsTab({
-    required this.workout,
+    required this.program,
     required this.selectedWeek,
     required this.onWeekTap,
   });
@@ -640,18 +677,18 @@ class _SessionsTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            ...List.generate(workout.exercises.length, (i) {
+            ...List.generate(program.workouts.length, (i) {
+              final w = program.workouts[i];
               return _SessionCard(
                 index: i,
-                title: workout.exercises[i],
-                imageUrl: workout.imageUrl,
+                title: w.title,
+                imageUrl: w.imageUrl,
+                points: w.points,
                 isDone: i == 0,
-                isLocked: i > 2,
-                onTap: i > 2
-                    ? null
-                    : () => Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => ActiveWorkoutScreen(workout: workout),
-                        )),
+                isLocked: false,
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => ActiveWorkoutScreen(workout: w),
+                    )),
               );
             }),
           ],
@@ -665,6 +702,7 @@ class _SessionCard extends StatelessWidget {
   final int index;
   final String title;
   final String imageUrl;
+  final int points;
   final bool isDone;
   final bool isLocked;
   final VoidCallback? onTap;
@@ -673,6 +711,7 @@ class _SessionCard extends StatelessWidget {
     required this.index,
     required this.title,
     required this.imageUrl,
+    required this.points,
     required this.isDone,
     required this.isLocked,
     required this.onTap,
@@ -733,15 +772,49 @@ class _SessionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Séance ${index + 1}', style: GoogleFonts.inter(
-                      color: _kGold, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
-                    const SizedBox(height: 3),
-                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                        color: cs.onSurface, fontSize: 14,
-                        fontWeight: FontWeight.w700, letterSpacing: -0.2,
-                      )),
-                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Séance ${index + 1}', style: GoogleFonts.inter(
+                                color: _kGold, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                              const SizedBox(height: 3),
+                              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.outfit(
+                                  color: cs.onSurface, fontSize: 14,
+                                  fontWeight: FontWeight.w700, letterSpacing: -0.2,
+                                )),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _kGold.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: _kGold.withValues(alpha: 0.30)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.zap, size: 10, color: _kGold),
+                              const SizedBox(width: 3),
+                              Text(
+                                '$points pts',
+                                style: GoogleFonts.inter(
+                                  color: _kGold,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 10,
                       runSpacing: 4,

@@ -106,8 +106,14 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('+${PointsService.pointsPerVideo} pts ! Total : $total pts'),
-              duration: const Duration(seconds: 2),
+              content: Row(
+                children: [
+                  const Icon(LucideIcons.checkCircle, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Text('+${PointsService.pointsPerVideo} pts gagnés! Total: $total pts'),
+                ],
+              ),
+              duration: const Duration(seconds: 3),
               backgroundColor: _kGreen,
             ),
           );
@@ -391,6 +397,8 @@ class _BottomPanel extends StatelessWidget {
                       const _StatCell(value: '45s', label: 'Travail'),
                       _VertDivider(),
                       const _StatCell(value: '15s', label: 'Repos'),
+                      _VertDivider(),
+                      const _StatCell(value: '10', label: 'Points'),
                     ],
                   ),
                 ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'workout_model.dart';
 
 class HomeProgramModel {
+  final String id;
   final String name;
   final String duration;
   final String phases;
@@ -10,8 +11,10 @@ class HomeProgramModel {
   final String imageUrl;
   final List<WorkoutModel> workouts;
   final List<String> compatibleCycles;
+  final int totalPoints;
 
   HomeProgramModel({
+    required this.id,
     required this.name,
     required this.duration,
     required this.phases,
@@ -20,5 +23,6 @@ class HomeProgramModel {
     required this.imageUrl,
     required this.workouts,
     this.compatibleCycles = const [],
+    this.totalPoints = 100,
   });
 }

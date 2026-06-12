@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/home_program_model.dart';
 import '../models/user_model.dart';
 import '../models/workout_model.dart';
+import '../models/video_model.dart';
 import '../models/nutrition_model.dart';
 import '../models/post_model.dart';
 
@@ -26,263 +27,33 @@ class AvatarNotifier extends Notifier<int> {
 }
 final avatarProvider = NotifierProvider<AvatarNotifier, int>(AvatarNotifier.new);
 
-// Workouts Provider
-final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
-  return [
-    // HIIT
-    WorkoutModel(
-      id: 'w1',
-      title: 'Full Body HIIT',
-      category: 'HIIT',
-      duration: '45 min',
-      level: 'Intermediate',
-      calories: '700',
-      imageUrl: 'assets/images/fullbody.jpg',
-      exercises: ['Jumping Jacks', 'Burpees', 'Mountain Climbers', 'Squat Jumps'],
-    ),
-
-    // PILATES
-    WorkoutModel(
-      id: 'w2',
-      title: 'Morning Pilates',
-      category: 'Pilates',
-      duration: '30 min',
-      level: 'Beginner',
-      calories: '500',
-      imageUrl: 'assets/images/pilates.jpg',
-      exercises: ['The Hundred', 'Roll Up', 'Single Leg Circle', 'Rolling Like a Ball'],
-    ),
-
-    WorkoutModel(
-      id: 'w12',
-      title: 'Core Pilates',
-      category: 'Pilates',
-      duration: '20 min',
-      level: 'Intermediate',
-      calories: '400',
-      imageUrl: 'assets/images/Core.jpg',
-      exercises: ['Plank', 'Leg Stretch', 'Side Kick', 'Teaser'],
-    ),
-
-    // MUSCULATION (Strength)
-    WorkoutModel(
-      id: 'w3',
-      title: 'Strength Training',
-      category: 'musculation',
-      duration: '60 min',
-      level: 'Advanced',
-      calories: '600',
-      imageUrl: 'assets/images/strength.jpg',
-      exercises: ['Deadlifts', 'Squats', 'Bench Press', 'Pull-ups'],
-    ),
-
-    WorkoutModel(
-      id: 'w13',
-      title: 'Upper Body Workout',
-      category: 'musculation',
-      duration: '40 min',
-      level: 'Intermediate',
-      calories: '550',
-      imageUrl: 'assets/images/upper.jpg',
-      exercises: ['Push-ups', 'Dumbbell Press', 'Bicep Curls', 'Tricep Dips'],
-    ),
-
-    // DANSE
-    WorkoutModel(
-      id: 'w14',
-      title: 'Dance Cardio',
-      category: 'Dance',
-      duration: '35 min',
-      level: 'Beginner',
-      calories: '450',
-      imageUrl: 'assets/images/cardio.jpg',
-      phases: 'Follic. + Ovul.',
-      exercises: ['Warm-up Groove', 'Hip Hop Moves', 'Zumba Steps', 'Cool Down'],
-    ),
-
-    WorkoutModel(
-      id: 'w15',
-      title: 'Zumba Energy',
-      category: 'Dance',
-      duration: '50 min',
-      level: 'Intermediate',
-      calories: '650',
-      imageUrl: 'assets/images/Zumba.jpg',
-      phases: 'Ovul.',
-      exercises: ['Salsa Steps', 'Reggaeton', 'Freestyle Dance', 'Stretch'],
-    ),
-
-    // RUNNING
-    WorkoutModel(
-      id: 'w16',
-      title: 'Morning Run',
-      category: 'Running',
-      duration: '25 min',
-      level: 'Beginner',
-      calories: '300',
-      imageUrl: 'assets/images/Morning.jpg',
-      phases: 'Follic. + Ovul.',
-      exercises: ['Light Jog', 'Breathing', 'Cooldown Walk'],
-    ),
-
-    WorkoutModel(
-      id: 'w17',
-      title: 'Endurance Run',
-      category: 'Running',
-      duration: '60 min',
-      level: 'Advanced',
-      calories: '800',
-      imageUrl: 'assets/images/Endurance.jpg',
-      phases: 'Ovul.',
-      exercises: ['Warm-up', 'Long Distance Run', 'Sprint Finish'],
-    ),
-    // SALLE
-    WorkoutModel(
-      id: 'w_salle_1',
-      title: 'Power Lift',
-      category: 'SALLE',
-      duration: '55 min',
-      level: 'Intermédiaire',
-      calories: '620',
-      imageUrl: 'assets/images/strength.jpg',
-      phases: 'Follic. + Ovul.',
-      exercises: ['Deadlift', 'Back Squat', 'Bench Press', 'Row Machine'],
-    ),
-    WorkoutModel(
-      id: 'w_salle_2',
-      title: 'Upper Build',
-      category: 'SALLE',
-      duration: '45 min',
-      level: 'Avancé',
-      calories: '540',
-      imageUrl: 'assets/images/upper.jpg',
-      phases: 'Ovul. + Lut.',
-      exercises: ['Pull-ups', 'Dumbbell Press', 'Lat Pulldown', 'Dips'],
-    ),
-    WorkoutModel(
-      id: 'w_salle_3',
-      title: 'Machine Burn',
-      category: 'SALLE',
-      duration: '40 min',
-      level: 'Débutant',
-      calories: '480',
-      imageUrl: 'assets/images/workout.jpeg',
-      phases: 'Follic. + Lut.',
-      exercises: ['Leg Press', 'Chest Press', 'Cable Rows', 'Ab Crunch Machine'],
-    ),
-    // MAISON
-    WorkoutModel(
-      id: 'w_maison_1',
-      title: 'Home Burn',
-      category: 'MAISON',
-      duration: '30 min',
-      level: 'Tous niveaux',
-      calories: '300',
-      imageUrl: 'assets/images/fullbody.jpg',
-      phases: 'Follic. + Ovul.',
-      exercises: ['Squats', 'Push-ups', 'Mountain Climbers', 'Plank'],
-    ),
-    WorkoutModel(
-      id: 'w_maison_2',
-      title: 'No Equipment Flow',
-      category: 'MAISON',
-      duration: '25 min',
-      level: 'Débutant',
-      calories: '240',
-      imageUrl: 'assets/images/fiteva_girl.jpg',
-      phases: 'Follic. + Lut.',
-      exercises: ['Warm-up March', 'Glute Bridge', 'Standing Crunch', 'Side Lunges'],
-    ),
-    WorkoutModel(
-      id: 'w_maison_3',
-      title: 'Core At Home',
-      category: 'MAISON',
-      duration: '20 min',
-      level: 'Intermédiaire',
-      calories: '220',
-      imageUrl: 'assets/images/slim1.png',
-      phases: 'Toutes phases',
-      exercises: ['Dead Bug', 'Russian Twist', 'Leg Raise', 'Hollow Hold'],
-    ),
-    // GROSSESSE
-    WorkoutModel(
-      id: 'w_preg_1',
-      title: 'Pregnancy Gentle Flow',
-      category: 'Grossesse',
-      duration: '25 min',
-      level: 'Tous niveaux',
-      calories: '120',
-      imageUrl: 'assets/images/Endurance.jpg',
-      phases: 'Toutes phases',
-      exercises: ['Respiration guidée', 'Étirements doux', 'Mobilité pelvienne'],
-    ),
-    WorkoutModel(
-      id: 'w_preg_2',
-      title: 'Prenatal Strength',
-      category: 'Grossesse',
-      duration: '30 min',
-      level: 'Débutant',
-      calories: '160',
-      imageUrl: 'assets/images/Endurance.jpg',
-      phases: 'Toutes phases',
-      exercises: ['Ponts fessiers', 'Squats assistés', 'Travail du dos'],
-    ),
-    WorkoutModel(
-      id: 'w_preg_3',
-      title: 'Posture & Pelvis',
-      category: 'Grossesse',
-      duration: '20 min',
-      level: 'Tous niveaux',
-      calories: '100',
-      imageUrl: 'assets/images/Endurance.jpg',
-      phases: 'Toutes phases',
-      exercises: ['Renforcement du périnée', 'Étirements du dos', 'Alignement postural'],
-    ),
-    // RÉCUPÉRATION
-    WorkoutModel(
-      id: 'w_recup_1',
-      title: 'Yoga Relax',
-      category: 'RECUPERATION',
-      duration: '20 min',
-      level: 'Tous niveaux',
-      calories: '90',
-      imageUrl: 'assets/images/Endurance.jpg',
-      phases: 'Règles + Lut.',
-      exercises: ['Respiration profonde', 'Étirements doux', 'Relaxation guidée'],
-    ),
-    WorkoutModel(
-      id: 'w_recup_2',
-      title: 'Deep Stretch',
-      category: 'RECUPERATION',
-      duration: '25 min',
-      level: 'Débutant',
-      calories: '110',
-      imageUrl: 'assets/images/Endurance.jpg',
-      phases: 'Règles + Lut.',
-      exercises: ['Étirement des ischio-jambiers', 'Étirement du dos', 'Ouverture des hanches'],
-    ),
-    WorkoutModel(
-      id: 'w_recup_3',
-      title: 'Guided Meditation',
-      category: 'RECUPERATION',
-      duration: '15 min',
-      level: 'Tous niveaux',
-      calories: '50',
-      imageUrl: 'assets/images/Endurance.jpg',
-      phases: 'Règles + Lut.',
-      exercises: ['Méditation assise', 'Scan corporel', 'Respiration rythmée'],
-    ),
-  ];
+final joinedProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
+  final programs = ref.watch(homeProgramsProvider);
+  return programs.take(3).toList();
 });
 
-final joinedProgramsProvider = Provider<List<WorkoutModel>>((ref) {
-  final workouts = ref.watch(workoutsProvider);
-  return workouts.take(3).toList();
+// Workouts Provider — extracts all workouts from all programs
+final workoutsProvider = Provider<List<WorkoutModel>>((ref) {
+  final homePrograms = ref.watch(homeProgramsProvider);
+  final sallePrograms = ref.watch(salleProgramsProvider);
+
+  final allWorkouts = <WorkoutModel>[];
+
+  for (final program in homePrograms) {
+    allWorkouts.addAll(program.workouts);
+  }
+
+  for (final program in sallePrograms) {
+    allWorkouts.addAll(program.workouts);
+  }
+
+  return allWorkouts;
 });
 
 final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
   return [
     HomeProgramModel(
+      id: 'prog_home_glow',
       name: 'Home Glow',
       duration: '4 semaines',
       phases: 'Règles + Foll. + Ovul.',
@@ -290,6 +61,7 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       color: const Color(0xFF3B7DD8),
       imageUrl: 'assets/images/fullbody.jpg',
       compatibleCycles: const ['Folliculaire', 'Ovulation'],
+      totalPoints: 100,
       workouts: [
         WorkoutModel(
           id: 'home_glow_1',
@@ -300,6 +72,12 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '220',
           imageUrl: 'assets/images/fullbody.jpg',
           exercises: ['Squats', 'Glute Bridge', 'Lunges'],
+          points: 35,
+          videos: [
+            VideoModel(id: 'vid_hg1_1', title: 'Warm Up', duration: '3 min', points: 12),
+            VideoModel(id: 'vid_hg1_2', title: 'Main Workout', duration: '14 min', points: 12),
+            VideoModel(id: 'vid_hg1_3', title: 'Cool Down', duration: '3 min', points: 11),
+          ],
         ),
         WorkoutModel(
           id: 'home_glow_2',
@@ -310,6 +88,12 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '180',
           imageUrl: 'assets/images/slim1.png',
           exercises: ['Dead Bug', 'Bird Dog', 'Plank'],
+          points: 30,
+          videos: [
+            VideoModel(id: 'vid_hg2_1', title: 'Core Activation', duration: '6 min', points: 10),
+            VideoModel(id: 'vid_hg2_2', title: 'Posture Work', duration: '10 min', points: 10),
+            VideoModel(id: 'vid_hg2_3', title: 'Stretch', duration: '2 min', points: 10),
+          ],
         ),
         WorkoutModel(
           id: 'home_glow_3',
@@ -320,10 +104,17 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '200',
           imageUrl: 'assets/images/fiteva_girl.jpg',
           exercises: ['March Run', 'Jumping Jacks', 'High Knees'],
+          points: 35,
+          videos: [
+            VideoModel(id: 'vid_hg3_1', title: 'Cardio Warm Up', duration: '3 min', points: 12),
+            VideoModel(id: 'vid_hg3_2', title: 'HIIT Circuit', duration: '10 min', points: 12),
+            VideoModel(id: 'vid_hg3_3', title: 'Recovery', duration: '2 min', points: 11),
+          ],
         ),
       ],
     ),
     HomeProgramModel(
+      id: 'prog_pilates_reset',
       name: 'Pilates Reset',
       duration: '8 semaines',
       phases: 'Toutes phases',
@@ -331,6 +122,7 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       color: const Color(0xFF1565C0),
       imageUrl: 'assets/images/pilates.jpg',
       compatibleCycles: const ['Règles', 'Lutéale'],
+      totalPoints: 100,
       workouts: [
         WorkoutModel(
           id: 'pilates_reset_1',
@@ -341,6 +133,12 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '180',
           imageUrl: 'assets/images/pilates.jpg',
           exercises: ['Breathing', 'Roll Up', 'Hundred'],
+          points: 35,
+          videos: [
+            VideoModel(id: 'vid_pr1_1', title: 'Breathing Exercise', duration: '5 min', points: 12),
+            VideoModel(id: 'vid_pr1_2', title: 'Roll Up Series', duration: '12 min', points: 12),
+            VideoModel(id: 'vid_pr1_3', title: 'Hundred Prep', duration: '8 min', points: 11),
+          ],
         ),
         WorkoutModel(
           id: 'pilates_reset_2',
@@ -351,6 +149,12 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '170',
           imageUrl: 'assets/images/Core.jpg',
           exercises: ['Cat-Cow', 'Side Reach', 'Teaser Prep'],
+          points: 32,
+          videos: [
+            VideoModel(id: 'vid_pr2_1', title: 'Spine Warm Up', duration: '6 min', points: 11),
+            VideoModel(id: 'vid_pr2_2', title: 'Mobility Flow', duration: '12 min', points: 11),
+            VideoModel(id: 'vid_pr2_3', title: 'Teaser Prep', duration: '4 min', points: 10),
+          ],
         ),
         WorkoutModel(
           id: 'pilates_reset_3',
@@ -361,10 +165,17 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '190',
           imageUrl: 'assets/images/Core.jpg',
           exercises: ['Single Leg Stretch', 'Leg Circle', 'Plank'],
+          points: 33,
+          videos: [
+            VideoModel(id: 'vid_pr3_1', title: 'Core Activation', duration: '7 min', points: 11),
+            VideoModel(id: 'vid_pr3_2', title: 'Core Series', duration: '11 min', points: 11),
+            VideoModel(id: 'vid_pr3_3', title: 'Core Finisher', duration: '2 min', points: 11),
+          ],
         ),
       ],
     ),
     HomeProgramModel(
+      id: 'prog_booty_home',
       name: 'Booty From Home',
       duration: '4 semaines',
       phases: 'Toutes phases',
@@ -372,6 +183,7 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       color: const Color(0xFF283593),
       imageUrl: 'assets/images/strength.jpg',
       compatibleCycles: const ['Folliculaire', 'Lutéale'],
+      totalPoints: 100,
       workouts: [
         WorkoutModel(
           id: 'booty_home_1',
@@ -382,6 +194,12 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '200',
           imageUrl: 'assets/images/strength.jpg',
           exercises: ['Clamshell', 'Glute Bridge', 'Kickback'],
+          points: 30,
+          videos: [
+            VideoModel(id: 'vid_bh1_1', title: 'Activation Warm Up', duration: '5 min', points: 10),
+            VideoModel(id: 'vid_bh1_2', title: 'Glute Work', duration: '10 min', points: 10),
+            VideoModel(id: 'vid_bh1_3', title: 'Stretch & Recover', duration: '3 min', points: 10),
+          ],
         ),
         WorkoutModel(
           id: 'booty_home_2',
@@ -392,6 +210,12 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '240',
           imageUrl: 'assets/images/upper.jpg',
           exercises: ['Squats', 'Sumo Squats', 'Split Squats'],
+          points: 35,
+          videos: [
+            VideoModel(id: 'vid_bh2_1', title: 'Sculpt Warm Up', duration: '4 min', points: 12),
+            VideoModel(id: 'vid_bh2_2', title: 'Booty Series', duration: '16 min', points: 12),
+            VideoModel(id: 'vid_bh2_3', title: 'Cool Down', duration: '4 min', points: 11),
+          ],
         ),
         WorkoutModel(
           id: 'booty_home_3',
@@ -402,17 +226,22 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '150',
           imageUrl: 'assets/images/fullbody.jpg',
           exercises: ['Pulse Squats', 'Donkey Kicks', 'Wall Sit'],
+          points: 35,
+          videos: [
+            VideoModel(id: 'vid_bh3_1', title: 'Finisher Start', duration: '2 min', points: 12),
+            VideoModel(id: 'vid_bh3_2', title: 'HIIT Finisher', duration: '8 min', points: 12),
+            VideoModel(id: 'vid_bh3_3', title: 'Cooldown', duration: '2 min', points: 11),
+          ],
         ),
       ],
     ),
-  
-  
   ];
 });
 
 final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
   return [
     HomeProgramModel(
+      id: 'prog_salle_builder',
       name: 'Body Builder',
       duration: '6 semaines',
       phases: 'Follic. + Ovul.',
@@ -420,6 +249,7 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       color: const Color(0xFF1C4D30),
       imageUrl: 'assets/images/strength.jpg',
       compatibleCycles: const ['Folliculaire', 'Ovulation'],
+      totalPoints: 100,
       workouts: [
         WorkoutModel(
           id: 'salle_body_1',
@@ -430,6 +260,12 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '260',
           imageUrl: 'assets/images/strength.jpg',
           exercises: ['Deadlift', 'Back Squat', 'Bench Press'],
+          points: 35,
+          videos: [
+            VideoModel(id: 'vid_sb1_1', title: 'Form Check', duration: '5 min', points: 12),
+            VideoModel(id: 'vid_sb1_2', title: 'Heavy Sets', duration: '16 min', points: 12),
+            VideoModel(id: 'vid_sb1_3', title: 'Recovery', duration: '4 min', points: 11),
+          ],
         ),
         WorkoutModel(
           id: 'salle_body_2',
@@ -440,6 +276,12 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '230',
           imageUrl: 'assets/images/upper.jpg',
           exercises: ['Pull-ups', 'Row Machine', 'Lat Pulldown'],
+          points: 33,
+          videos: [
+            VideoModel(id: 'vid_sb2_1', title: 'Warm Up', duration: '4 min', points: 11),
+            VideoModel(id: 'vid_sb2_2', title: 'Pull Series', duration: '13 min', points: 11),
+            VideoModel(id: 'vid_sb2_3', title: 'Stretch', duration: '3 min', points: 11),
+          ],
         ),
         WorkoutModel(
           id: 'salle_body_3',
@@ -450,53 +292,17 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '240',
           imageUrl: 'assets/images/workout.jpeg',
           exercises: ['Leg Press', 'Lunges', 'Calf Raises'],
+          points: 32,
+          videos: [
+            VideoModel(id: 'vid_sb3_1', title: 'Leg Warm Up', duration: '4 min', points: 11),
+            VideoModel(id: 'vid_sb3_2', title: 'Power Work', duration: '14 min', points: 11),
+            VideoModel(id: 'vid_sb3_3', title: 'Cool Down', duration: '4 min', points: 10),
+          ],
         ),
       ],
     ),
-
-  HomeProgramModel(
-      name: 'Body ',
-      duration: '6 semaines',
-      phases: 'Follic. + Ovul.',
-      sessions: '4 séances / sem.',
-      color: const Color(0xFF1C4D30),
-      imageUrl: 'assets/images/strength.jpg',
-      compatibleCycles: const ['Folliculaire', 'Ovulation'],
-      workouts: [
-        WorkoutModel(
-          id: 'salle_body_1',
-          title: 'Heavy Compound',
-          category: 'SALLE',
-          duration: '25 min',
-          level: 'Intermédiaire',
-          calories: '260',
-          imageUrl: 'assets/images/strength.jpg',
-          exercises: ['Deadlift', 'Back Squat', 'Bench Press'],
-        ),
-        WorkoutModel(
-          id: 'salle_body_2',
-          title: 'Pull Focus',
-          category: 'SALLE',
-          duration: '20 min',
-          level: 'Avancé',
-          calories: '230',
-          imageUrl: 'assets/images/upper.jpg',
-          exercises: ['Pull-ups', 'Row Machine', 'Lat Pulldown'],
-        ),
-        WorkoutModel(
-          id: 'salle_body_3',
-          title: 'Leg Power',
-          category: 'SALLE',
-          duration: '22 min',
-          level: 'Débutant',
-          calories: '240',
-          imageUrl: 'assets/images/workout.jpeg',
-          exercises: ['Leg Press', 'Lunges', 'Calf Raises'],
-        ),
-      ],
-    ),
-
     HomeProgramModel(
+      id: 'prog_salle_stronger',
       name: 'Stronger You',
       duration: '4 semaines',
       phases: 'Toutes phases',
@@ -504,6 +310,7 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       color: const Color(0xFF2E7D32),
       imageUrl: 'assets/images/upper.jpg',
       compatibleCycles: const ['Règles', 'Ovulation'],
+      totalPoints: 100,
       workouts: [
         WorkoutModel(
           id: 'salle_stronger_1',
@@ -514,6 +321,12 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '220',
           imageUrl: 'assets/images/upper.jpg',
           exercises: ['Push-ups', 'Dumbbell Press', 'Tricep Dips'],
+          points: 34,
+          videos: [
+            VideoModel(id: 'vid_ss1_1', title: 'Push Warm Up', duration: '4 min', points: 11),
+            VideoModel(id: 'vid_ss1_2', title: 'Push Series', duration: '13 min', points: 12),
+            VideoModel(id: 'vid_ss1_3', title: 'Finish', duration: '3 min', points: 11),
+          ],
         ),
         WorkoutModel(
           id: 'salle_stronger_2',
@@ -524,6 +337,12 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '240',
           imageUrl: 'assets/images/strength.jpg',
           exercises: ['Lat Pulldown', 'Bent Over Row', 'Face Pull'],
+          points: 33,
+          videos: [
+            VideoModel(id: 'vid_ss2_1', title: 'Back Activation', duration: '5 min', points: 11),
+            VideoModel(id: 'vid_ss2_2', title: 'Back Building', duration: '14 min', points: 11),
+            VideoModel(id: 'vid_ss2_3', title: 'Stretch', duration: '3 min', points: 11),
+          ],
         ),
         WorkoutModel(
           id: 'salle_stronger_3',
@@ -534,10 +353,17 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '180',
           imageUrl: 'assets/images/workout.jpeg',
           exercises: ['Bicep Curls', 'Hammer Curls', 'Overhead Press'],
+          points: 33,
+          videos: [
+            VideoModel(id: 'vid_ss3_1', title: 'Arms Warm Up', duration: '3 min', points: 11),
+            VideoModel(id: 'vid_ss3_2', title: 'Arms Series', duration: '10 min', points: 11),
+            VideoModel(id: 'vid_ss3_3', title: 'Finisher', duration: '2 min', points: 11),
+          ],
         ),
       ],
     ),
     HomeProgramModel(
+      id: 'prog_salle_lean',
       name: 'Lean 4 Life',
       duration: '4 semaines',
       phases: 'Toutes phases',
@@ -545,6 +371,7 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       color: const Color(0xFF00695C),
       imageUrl: 'assets/images/fullbody.jpg',
       compatibleCycles: const ['Règles', 'Folliculaire', 'Lutéale'],
+      totalPoints: 100,
       workouts: [
         WorkoutModel(
           id: 'salle_lean_1',
@@ -555,6 +382,12 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '240',
           imageUrl: 'assets/images/fullbody.jpg',
           exercises: ['Squats', 'Press', 'Rows'],
+          points: 34,
+          videos: [
+            VideoModel(id: 'vid_sl1_1', title: 'Full Body Warm Up', duration: '5 min', points: 11),
+            VideoModel(id: 'vid_sl1_2', title: 'Strength Work', duration: '16 min', points: 12),
+            VideoModel(id: 'vid_sl1_3', title: 'Cool Down', duration: '4 min', points: 11),
+          ],
         ),
         WorkoutModel(
           id: 'salle_lean_2',
@@ -565,6 +398,12 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '230',
           imageUrl: 'assets/images/upper.jpg',
           exercises: ['Thrusters', 'Mountain Climbers', 'Burpees'],
+          points: 33,
+          videos: [
+            VideoModel(id: 'vid_sl2_1', title: 'Circuit Intro', duration: '3 min', points: 11),
+            VideoModel(id: 'vid_sl2_2', title: 'Burn Circuit', duration: '14 min', points: 11),
+            VideoModel(id: 'vid_sl2_3', title: 'Recovery', duration: '3 min', points: 11),
+          ],
         ),
         WorkoutModel(
           id: 'salle_lean_3',
@@ -575,6 +414,12 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
           calories: '150',
           imageUrl: 'assets/images/Core.jpg',
           exercises: ['Plank', 'Russian Twist', 'Leg Raise'],
+          points: 33,
+          videos: [
+            VideoModel(id: 'vid_sl3_1', title: 'Core Prep', duration: '3 min', points: 11),
+            VideoModel(id: 'vid_sl3_2', title: 'Core Work', duration: '7 min', points: 11),
+            VideoModel(id: 'vid_sl3_3', title: 'Finisher', duration: '2 min', points: 11),
+          ],
         ),
       ],
     ),

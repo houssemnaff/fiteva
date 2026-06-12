@@ -1,3 +1,4 @@
+import 'package:fiteva/providers/points_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -47,6 +48,7 @@ class ProfileScreen extends ConsumerWidget {
     final styleName = ref.watch(avatarStyleProvider);
     final bgColor   = ref.watch(avatarBgColorProvider);
     final avatarUrl = _buildDiceBearUrl(seed, styleName, bgColor);
+        final points = ref.watch(pointsProvider);
 
     return Scaffold(
       backgroundColor: cs.background,
@@ -93,7 +95,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 14),
 
             // ── 3 stat cards ──
-            _buildStatsRow(context, user, cs, theme),
+            _buildStatsRow(context, user, cs, theme,points),
             const SizedBox(height: 14),
 
             // ── Weekly tracker ──
@@ -329,10 +331,11 @@ class ProfileScreen extends ConsumerWidget {
     BuildContext context,
     dynamic user,
     ColorScheme cs,
-    ThemeData theme,
+    ThemeData theme, int points,
   ) {
     final textSub = theme.textTheme.bodyMedium?.color
         ?? cs.onSurface.withOpacity(0.55);
+
 
     Widget statCard({
       required String value,
@@ -340,6 +343,7 @@ class ProfileScreen extends ConsumerWidget {
       required IconData icon,
       required Color color,
     }) {
+
       return Expanded(
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
@@ -392,12 +396,12 @@ class ProfileScreen extends ConsumerWidget {
 
     return Row(
       children: [
-        statCard(
-          value: '${user.xp}',
-          label: 'XP Total',
-          icon: LucideIcons.star,
-          color: cs.primary,
-        ),
+       statCard(
+  value: '$points',
+  label: 'XP Total',
+  icon: LucideIcons.star,
+  color: cs.primary,
+),
         const SizedBox(width: 10),
         statCard(
           value: '${user.streak}j',

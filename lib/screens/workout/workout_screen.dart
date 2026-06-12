@@ -16,7 +16,8 @@ import '../../providers/mock_data_provider.dart';
 import 'favorites_screen.dart';
 import 'theme/color.dart';
 import 'theme/cycle_theme.dart';
-import 'workout_detail_screen.dart';
+import 'programme_detail_screen.dart';
+import 'active_workout_screen.dart';
 import 'corpszone_playerscreen.dart';
 
 
@@ -137,20 +138,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                       onToggleFav: () => setState(() => _toggleFav(p.name)),
                       onTap: () {
                         Navigator.pop(ctx);
-                        final workouts = p.workouts;
-                        final calories = workouts.fold<int>(0, (s, w) => s + (int.tryParse(w.calories) ?? 0));
                         Navigator.push(context, MaterialPageRoute(
                           builder: (_) => WorkoutDetailScreen(
-                            workout: WorkoutModel(
-                              id: 'prog_${p.name}',
-                              title: p.name,
-                              category: category,
-                              duration: p.duration,
-                              level: workouts.isNotEmpty ? workouts.first.level : 'Tous niveaux',
-                              calories: calories.toString(),
-                              imageUrl: p.imageUrl,
-                              exercises: workouts.map((w) => '${w.title} · ${w.duration}').toList(),
-                            ),
+                            program: p,
                           ),
                         ));
                       },
@@ -206,7 +196,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                       onTap: () {
                         Navigator.pop(ctx);
                         Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => WorkoutDetailScreen(workout: w),
+                          builder: (_) => ActiveWorkoutScreen(workout: w),
                         ));
                       },
                     );
