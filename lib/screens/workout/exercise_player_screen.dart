@@ -1,36 +1,51 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import '../../services/points_service.dart';
+import '../../providers/points_provider.dart';
+import '../../services/workout_progress_service.dart';
 
 // ── Design tokens (always dark — immersive player) ────────────────────────────
-const _kGreen    = Color(0xFF1C4D30);
+const _kGreen = Color(0xFF1C4D30);
 const _kGreenMid = Color(0xFF2E7D52);
-const _kGold     = Color(0xFFB8966E);
+const _kGold = Color(0xFFB8966E);
 const _kGoldFade = Color(0x33B8966E);
-const _kSheet    = Color(0xFF111111);
-const _kCard     = Color(0xFF1C1C1C);
-const _kBorder   = Color(0xFF2C2C2C);
-const _kMuted    = Color(0xFF8A8A8A);
-const _kWhite    = Colors.white;
+const _kSheet = Color(0xFF111111);
+const _kCard = Color(0xFF1C1C1C);
+const _kBorder = Color(0xFF2C2C2C);
+const _kMuted = Color(0xFF8A8A8A);
+const _kWhite = Colors.white;
+
+int _calculatePointsForExercise(int totalPoints, int totalExercises, int exerciseIndex) {
+  if (totalExercises == 0) return 0;
+  final base = totalPoints ~/ totalExercises;
+  final remainder = totalPoints % totalExercises;
+  return exerciseIndex < remainder ? base + 1 : base;
+}
 
 class ExercisePlayerScreen extends StatefulWidget {
+  final WidgetRef ref;
   final String workoutTitle;
   final String exerciseName;
+  final String videoId;
   final int exerciseIndex;
   final int totalExercises;
+  final int totalWorkoutPoints;
   final VoidCallback onCompleted;
 
   const ExercisePlayerScreen({
     super.key,
+    required this.ref,
     required this.workoutTitle,
     required this.exerciseName,
+    required this.videoId,
     required this.exerciseIndex,
     required this.totalExercises,
+    required this.totalWorkoutPoints,
     required this.onCompleted,
   });
 
@@ -40,10 +55,10 @@ class ExercisePlayerScreen extends StatefulWidget {
 
 class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     with TickerProviderStateMixin {
-
   // ── State ──────────────────────────────────────────────────────────────────
   bool _isDone = false;
   bool _pointsAwarded = false;
+  bool _hasWatched80Percent = false;
 
   // ── Animations ─────────────────────────────────────────────────────────────
   late final AnimationController _doneCtrl;
@@ -69,7 +84,15 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
         vsync: this, duration: const Duration(milliseconds: 500));
     _doneAnim = CurvedAnimation(parent: _doneCtrl, curve: Curves.elasticOut);
 
+    _checkVideoCompletion();
     _initVideo();
+  }
+
+  Future<void> _checkVideoCompletion() async {
+    final isCompleted = await WorkoutProgressService.isVideoCompleted(widget.videoId);
+    if (mounted) {
+      setState(() => _hasWatched80Percent = isCompleted);
+    }
   }
 
   Future<void> _initVideo() async {
@@ -102,15 +125,22 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     if (dur <= 0) return;
     if (pos / dur >= 0.80) {
       _pointsAwarded = true;
-      PointsService.addPoints(PointsService.pointsPerVideo).then((total) {
+
+      if (!_hasWatched80Percent) {
+        setState(() => _hasWatched80Percent = true);
+        final points = _calculatePointsForExercise(widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex);
+        widget.ref.read(pointsProvider.notifier).addPoints(points);
+        WorkoutProgressService.updateVideoProgress(widget.videoId, 0.80);
+        final total = widget.ref.read(pointsProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(LucideIcons.checkCircle, color: Colors.white, size: 18),
+                  const Icon(LucideIcons.checkCircle,
+                      color: Colors.white, size: 18),
                   const SizedBox(width: 8),
-                  Text('+${PointsService.pointsPerVideo} pts gagnés! Total: $total pts'),
+                  Text('+$points pts gagnés! Total: $total pts'),
                 ],
               ),
               duration: const Duration(seconds: 3),
@@ -118,7 +148,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
             ),
           );
         }
-      });
+      }
     }
   }
 
@@ -135,6 +165,28 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     if (_isDone) return;
     HapticFeedback.mediumImpact();
     setState(() => _isDone = true);
+
+    if (!_hasWatched80Percent) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(LucideIcons.alertCircle,
+                    color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Regardez au moins 80% pour gagner les points'),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 4),
+            backgroundColor: const Color(0xFFFFA500),
+          ),
+        );
+      }
+    }
+
     _doneCtrl.forward();
     widget.onCompleted();
     await Future.delayed(const Duration(milliseconds: 900));
@@ -149,7 +201,6 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-
           // ── Video fullscreen ─────────────────────────────────────────────
           Positioned.fill(
             child: _isVideoReady && _chewieCtrl != null
@@ -187,6 +238,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
               onCompleteAll: _completExercise,
               onPrev: () => Navigator.of(context).pop(),
               onNext: () {},
+              pointsPerExercise: _calculatePointsForExercise(widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex),
             ),
           ),
         ],
@@ -273,13 +325,12 @@ class _TopBar extends StatelessWidget {
 
                 // Counter pill
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _kGoldFade,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: _kGold.withValues(alpha: 0.40)),
+                    border: Border.all(color: _kGold.withValues(alpha: 0.40)),
                   ),
                   child: Text(
                     '${exerciseIndex + 1} / $totalExercises',
@@ -303,6 +354,8 @@ class _TopBar extends StatelessWidget {
 // BOTTOM PANEL
 // ══════════════════════════════════════════════════════════════════════════════
 class _BottomPanel extends StatelessWidget {
+    final int pointsPerExercise;
+
   final ScrollController scrollCtrl;
   final String exerciseName;
   final bool isDone;
@@ -318,7 +371,7 @@ class _BottomPanel extends StatelessWidget {
     required this.doneAnim,
     required this.onCompleteAll,
     required this.onPrev,
-    required this.onNext,
+    required this.onNext, required this.pointsPerExercise,
   });
 
   @override
@@ -357,7 +410,6 @@ class _BottomPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 // ── Exercise name ─────────────────────────────────────────
                 Text(
                   exerciseName,
@@ -378,7 +430,10 @@ class _BottomPanel extends StatelessWidget {
                   children: const [
                     _Tag(label: 'Fessiers', icon: LucideIcons.zap),
                     _Tag(label: 'Tapis', icon: LucideIcons.layoutDashboard),
-                    _Tag(label: 'Modéré', icon: LucideIcons.flame, isAccent: true),
+                    _Tag(
+                        label: 'Modéré',
+                        icon: LucideIcons.flame,
+                        isAccent: true),
                   ],
                 ),
                 const SizedBox(height: 22),
@@ -398,7 +453,10 @@ class _BottomPanel extends StatelessWidget {
                       _VertDivider(),
                       const _StatCell(value: '15s', label: 'Repos'),
                       _VertDivider(),
-                      const _StatCell(value: '10', label: 'Points'),
+                       _StatCell(
+                        value: '$pointsPerExercise',
+                        label: 'Points',
+                      ),
                     ],
                   ),
                 ),
@@ -425,25 +483,25 @@ class _BottomPanel extends StatelessWidget {
                 // ── Prev / Next ───────────────────────────────────────────
                 Row(
                   children: [
-                    Expanded(child: _NavBtn(
-                        icon: LucideIcons.skipBack,
-                        label: 'Précédent',
-                        onTap: onPrev)),
+                    Expanded(
+                        child: _NavBtn(
+                            icon: LucideIcons.skipBack,
+                            label: 'Précédent',
+                            onTap: onPrev)),
                     const SizedBox(width: 10),
-                    Expanded(child: _NavBtn(
-                        icon: LucideIcons.skipForward,
-                        label: 'Suivant',
-                        onTap: onNext,
-                        isPrimary: true)),
+                    Expanded(
+                        child: _NavBtn(
+                            icon: LucideIcons.skipForward,
+                            label: 'Suivant',
+                            onTap: onNext,
+                            isPrimary: true)),
                   ],
                 ),
                 const SizedBox(height: 16),
 
                 // ── CTA ───────────────────────────────────────────────────
                 ScaleTransition(
-                  scale: isDone
-                      ? doneAnim
-                      : const AlwaysStoppedAnimation(1.0),
+                  scale: isDone ? doneAnim : const AlwaysStoppedAnimation(1.0),
                   child: GestureDetector(
                     onTap: isDone ? null : onCompleteAll,
                     child: Container(
@@ -451,9 +509,8 @@ class _BottomPanel extends StatelessWidget {
                       height: 58,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: isDone
-                              ? [_kGold, _kGold]
-                              : [_kGreen, _kGreenMid],
+                          colors:
+                              isDone ? [_kGold, _kGold] : [_kGreen, _kGreenMid],
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),
@@ -471,13 +528,17 @@ class _BottomPanel extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            isDone ? LucideIcons.checkCircle : LucideIcons.check,
+                            isDone
+                                ? LucideIcons.checkCircle
+                                : LucideIcons.check,
                             color: Colors.white,
                             size: 18,
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            isDone ? 'Exercice terminé !' : 'Terminer l\'exercice',
+                            isDone
+                                ? 'Exercice terminé !'
+                                : 'Terminer l\'exercice',
                             style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 15,
@@ -555,8 +616,7 @@ class _GlassBtn extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.25)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
               ),
               child: Icon(icon, color: _kWhite, size: 17),
             ),
@@ -657,8 +717,8 @@ class _StatCell extends StatelessWidget {
 
 class _VertDivider extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Container(
-      width: 1, height: 30, color: _kBorder);
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 30, color: _kBorder);
 }
 
 class _TipRow extends StatelessWidget {
@@ -706,20 +766,15 @@ class _NavBtn extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isPrimary
-                ? _kGreen.withValues(alpha: 0.18)
-                : _kCard,
+            color: isPrimary ? _kGreen.withValues(alpha: 0.18) : _kCard,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isPrimary
-                  ? _kGreen.withValues(alpha: 0.40)
-                  : _kBorder,
+              color: isPrimary ? _kGreen.withValues(alpha: 0.40) : _kBorder,
             ),
           ),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Icon(icon,
-                size: 14,
-                color: isPrimary ? const Color(0xFF7ABB98) : _kMuted),
+                size: 14, color: isPrimary ? const Color(0xFF7ABB98) : _kMuted),
             const SizedBox(width: 7),
             Text(
               label,
@@ -750,8 +805,7 @@ class _VideoPlaceholder extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _kGreen.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                      color: _kGreen.withValues(alpha: 0.30)),
+                  border: Border.all(color: _kGreen.withValues(alpha: 0.30)),
                 ),
                 child: const CircularProgressIndicator(
                   color: _kGold,
