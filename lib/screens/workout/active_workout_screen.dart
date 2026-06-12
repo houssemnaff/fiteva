@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/workout_model.dart';
 import 'exercise_player_screen.dart';
 
-class ActiveWorkoutScreen extends StatefulWidget {
+class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   final WorkoutModel workout;
   const ActiveWorkoutScreen({super.key, required this.workout});
 
   @override
-  State<ActiveWorkoutScreen> createState() => _ActiveWorkoutScreenState();
+  ConsumerState<ActiveWorkoutScreen> createState() => _ActiveWorkoutScreenState();
 }
 
-class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
+class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   int _completedExercises = 0;
+  
 
   @override
   Widget build(BuildContext context) {
@@ -204,13 +206,17 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
                       return GestureDetector(
                         onTap: () {
+                          final videoId = '${widget.workout.title}_exercise_$index';
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => ExercisePlayerScreen(
+                                ref: ref,
                                 workoutTitle: widget.workout.title,
                                 exerciseName: eName,
+                                videoId: videoId,
                                 exerciseIndex: index,
                                 totalExercises: exercises.length,
+                                totalWorkoutPoints: widget.workout.points,
                                 onCompleted: () {
                                   if (!isDone) setState(() => _completedExercises++);
                                 },
@@ -387,13 +393,17 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     if (exercises.isNotEmpty) {
+                      final videoId = '${widget.workout.title}_exercise_0';
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => ExercisePlayerScreen(
+                            ref: ref,
                             workoutTitle: widget.workout.title,
                             exerciseName: exercises[0],
+                            videoId: videoId,
                             exerciseIndex: 0,
                             totalExercises: exercises.length,
+                            totalWorkoutPoints: widget.workout.points,
                             onCompleted: () {
                               if (_completedExercises == 0) setState(() => _completedExercises = 1);
                             },
