@@ -36,6 +36,9 @@ class SharedAppHeader extends StatelessWidget {
   /// Callback avatar.
   final VoidCallback? onAvatarTap;
 
+  /// Si non-null, affiche un chevron gauche cliquable avant le titre.
+  final VoidCallback? onBack;
+
   const SharedAppHeader({
     super.key,
     required this.eyebrow,
@@ -44,9 +47,8 @@ class SharedAppHeader extends StatelessWidget {
     this.bgColor         = Colors.white,
     this.actions         = const [],
     this.avatarInitial   = 'S',
-    
-    
     this.onAvatarTap,
+    this.onBack,
   });
 
   // ── Sliver factory ──────────────────────────────────────────────────────────
@@ -81,16 +83,15 @@ class SharedAppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final top = MediaQuery.of(context).padding.top;
     return _HeaderContent(
-      eyebrow:           eyebrow,
-      title:             title,
-      accentColor:       accentColor,
-      bgColor:           bgColor,
-      actions:           actions,
-      avatarInitial:     avatarInitial,
-      
-     
-      onAvatarTap:       onAvatarTap,
-      topPadding:        top,
+      eyebrow:       eyebrow,
+      title:         title,
+      accentColor:   accentColor,
+      bgColor:       bgColor,
+      actions:       actions,
+      avatarInitial: avatarInitial,
+      onAvatarTap:   onAvatarTap,
+      onBack:        onBack,
+      topPadding:    top,
     );
   }
 }
@@ -106,9 +107,8 @@ class _HeaderContent extends StatelessWidget {
   final Color  bgColor;
   final List<Widget> actions;
   final String avatarInitial;
-
-  
   final VoidCallback? onAvatarTap;
+  final VoidCallback? onBack;
   final double topPadding;
 
   const _HeaderContent({
@@ -118,47 +118,71 @@ class _HeaderContent extends StatelessWidget {
     required this.bgColor,
     required this.actions,
     required this.avatarInitial,
-    
     required this.topPadding,
-   
     this.onAvatarTap,
+    this.onBack,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
+    final resolvedBg    = isDark ? const Color(0xFF141414) : bgColor;
+    final resolvedText1 = isDark ? Colors.white : const Color(0xFF1A1A1A);
     return Container(
-      color: bgColor,
+      color: resolvedBg,
       padding: EdgeInsets.fromLTRB(20, topPadding + 14, 20, 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // ── Back button (optionnel) ───────────────────────────────────────
+          if (onBack != null) ...[
+            GestureDetector(
+              onTap: onBack,
+              child: Container(
+                width: 38, height: 38,
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(LucideIcons.chevronLeft,
+                    size: 20, color: accentColor),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
           // ── Left: eyebrow + title ─────────────────────────────────────────
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  eyebrow.toUpperCase(),
-                  style: GoogleFonts.inter(
-                    color:       accentColor,
-                    fontSize:    9,
-                    fontWeight:  FontWeight.w700,
-                    letterSpacing: 3.5,
+            child: ClipRect(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (eyebrow.isNotEmpty) ...[
+                    Text(
+                      eyebrow.toUpperCase(),
+                      style: GoogleFonts.inter(
+                        color:        accentColor,
+                        fontSize:     9,
+                        fontWeight:   FontWeight.w700,
+                        letterSpacing: 3.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                  ],
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      color:        resolvedText1,
+                      fontSize:     22,
+                      fontWeight:   FontWeight.w800,
+                      letterSpacing: -0.5,
+                      height:       1.0,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    color:       const Color(0xFF1A1A1A),
-                    fontSize:    24,
-                    fontWeight:  FontWeight.w800,
-                    letterSpacing: -0.5,
-                    height:      1.0,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
@@ -227,29 +251,30 @@ class _SharedSliverAppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final top = MediaQuery.of(context).padding.top;
+    final top    = MediaQuery.of(context).padding.top;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final resolvedBg = isDark ? const Color(0xFF141414) : bgColor;
     return SliverAppBar(
       pinned: true,
       floating: false,
-      expandedHeight: top + 72,
-      collapsedHeight: top + 64,
-      backgroundColor:      bgColor,
+      expandedHeight: top + 80,
+      collapsedHeight: top + 72,
+      backgroundColor:      resolvedBg,
       surfaceTintColor:     Colors.transparent,
       elevation:            0,
       scrolledUnderElevation: 0,
       automaticallyImplyLeading: false,
       flexibleSpace: LayoutBuilder(builder: (_, constraints) {
+        final collapsed = constraints.maxHeight <= top + 56;
         return _HeaderContent(
-          eyebrow:           eyebrow,
-          title:             title,
-          accentColor:       accentColor,
-          bgColor:           bgColor,
-          actions:           actions,
-          avatarInitial:     avatarInitial,
-          
-          topPadding:        top,
-        
-          onAvatarTap:       onAvatarTap,
+          eyebrow:       collapsed ? '' : eyebrow,
+          title:         title,
+          accentColor:   accentColor,
+          bgColor:       resolvedBg,
+          actions:       actions,
+          avatarInitial: avatarInitial,
+          topPadding:    top,
+          onAvatarTap:   onAvatarTap,
         );
       }),
     );

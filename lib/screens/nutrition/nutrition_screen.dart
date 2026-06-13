@@ -1,6 +1,12 @@
-import 'package:fiteva/screens/nutrition/health_nutrition_widgets.dart';
+import 'package:fiteva/core/nutrition/favorites_provider.dart';
+import 'package:fiteva/core/nutrition/models.dart' as core;
+import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
+import 'package:fiteva/core/nutrition/nutrition_provider.dart';
+import 'package:fiteva/screens/nutrition/widgets/recommended_meals_section.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'models/models.dart';
@@ -10,83 +16,33 @@ import 'suivi_nutrition_screen.dart';
 import 'recipes_list_screen.dart';
 import 'ajout_rapide_screen.dart';
 import 'recette_detail_screen.dart';
+import 'recipe_video_screen.dart';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const _kGreen  = Color(0xFF1C4D30);
-const _kMint   = Color(0xFF7ABB98);
-const _kCream  = Color(0xFFFEFEFE);
-const _kBorder = Color(0xFFECECEC);
-const _kText1  = Color(0xFF1A1A1A);
-const _kText2  = Color(0xFF6B7280);
+const _kMint  = Color(0xFF7ABB98);
+const _kCream = Color(0xFFFEFEFE);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
-class NutritionHomeScreen extends StatefulWidget {
+class NutritionHomeScreen extends ConsumerStatefulWidget {
   const NutritionHomeScreen({super.key});
 
   @override
-  State<NutritionHomeScreen> createState() => _NutritionHomeScreenState();
+  ConsumerState<NutritionHomeScreen> createState() =>
+      _NutritionHomeScreenState();
 }
 
-class _NutritionHomeScreenState extends State<NutritionHomeScreen>
+class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
     with SingleTickerProviderStateMixin {
 
   late AnimationController _ctrl;
   late Animation<double>   _anim;
 
-  static const _categories = [
-    MealCategoryData(
-      'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=600&q=80',
-      'Petit déjeuner', 333, 500, 10.0, 30.0, time: '08 h 00', recipeCount: 3),
-    MealCategoryData(
-      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80',
-      'Déjeuner', 198, 600, 8.0, 40.0, time: '12 h 30', recipeCount: 2),
-    MealCategoryData(
-      'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=600&q=80',
-      'Collation', 0, 200, 0.0, 15.0, time: '16 h 00', recipeCount: 0),
-    MealCategoryData(
-      'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&q=80',
-      'Dîner', 0, 620, 0.0, 45.0, time: '19 h 30', recipeCount: 0),
-  ];
-
-  static const _recipes = [
-    RecipeItem(
-      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80',
-      'Salade bowl', 'Salade bowl', Color(0xFFD4E8D0),
-      duration: '15 min', difficulty: 'Facile'),
-    RecipeItem(
-      'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&q=80',
-      'Oeufs brouillés', 'Oeufs brouillés', Color(0xFFE8D4C8),
-      duration: '10 min', difficulty: 'Très facile'),
-    RecipeItem(
-      'https://images.unsplash.com/photo-1588137378633-dea1336ce1e2?w=400&q=80',
-      'Toast avocat', 'Toast avocat', Color(0xFFD0D8E8),
-      duration: '8 min', difficulty: 'Très facile'),
-    RecipeItem(
-      'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80',
-      'Soupe légumes', 'Soupe légumes', Color(0xFFE8E0D0),
-      duration: '25 min', difficulty: 'Facile'),
-  ];
-
-  static const _experts = [
-    ExpertAdvice(
-      name: 'Dr. Sana Ben Ali', role: 'Nutritionniste clinique',
-      initials: 'SB', color: Color(0xFF185FA5), bg: Color(0xFFE6F1FB),
-      title: 'Protéines & cycle menstruel',
-      body: 'Les besoins en protéines augmentent de 15–20 % en phase lutéale. '
-          'Prioriser les légumineuses et les œufs pour soutenir la synthèse hormonale.',
-      tag: 'Hormones'),
-    ExpertAdvice(
-      name: 'Dr. Leila Mrad', role: 'Médecin endocrinologue',
-      initials: 'LM', color: Color(0xFF0F6E56), bg: Color(0xFFE1F5EE),
-      title: 'Alimentation anti-fatigue',
-      body: 'La carence en fer est la première cause de fatigue féminine. '
-          'Un bilan sanguin annuel et des aliments fortifiés permettent de maintenir l\'énergie durablement.',
-      tag: 'Énergie'),
-  ];
-
-  static const _currentPhase = CyclePhase.luteale;
+  // Fix #4 — sync with allRecipes (take first 4)
+  static List<RecipeItem> get _recipes => allRecipes.take(4).map((r) =>
+    RecipeItem(r.imageUrl, r.name, r.name, r.accent,
+      duration: r.duration, difficulty: r.difficulty)).toList();
 
   @override
   void initState() {
@@ -106,138 +62,189 @@ class _NutritionHomeScreenState extends State<NutritionHomeScreen>
   void _goToRecipes() => Navigator.push(context,
       MaterialPageRoute(builder: (_) => const RecipesListScreen()));
 
-  void _goToAjout() => Navigator.push(context,
-      MaterialPageRoute(builder: (_) => const AjoutRapideScreen()));
+  void _goToAjout() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (_) => const AjoutRapideScreen()),
+    );
+    if (result == null || !mounted) return;
+    final entries = result['entries'] as List<core.MealEntry>?;
+    if (entries != null && entries.isNotEmpty) {
+      for (final entry in entries) {
+        ref.read(nutritionProvider.notifier).addMeal(entry);
+      }
+    }
+  }
+
+  static String _mealImageUrl(core.MealType type) {
+    switch (type) {
+      case core.MealType.breakfast: return 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80';
+      case core.MealType.lunch:     return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80';
+      case core.MealType.snack:     return 'https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?w=400&q=80';
+      case core.MealType.dinner:    return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80';
+    }
+  }
+
+  static String _mealTime(core.MealType type) {
+    switch (type) {
+      case core.MealType.breakfast: return '7h – 9h';
+      case core.MealType.lunch:     return '12h – 14h';
+      case core.MealType.snack:     return '16h – 17h';
+      case core.MealType.dinner:    return '19h – 21h';
+    }
+  }
+
+  // Fix #3 — map NutritionGoal → goalId string
+  String _goalId(core.NutritionGoal g) => switch (g) {
+    core.NutritionGoal.loss     => 'loss',
+    core.NutritionGoal.maintain => 'maintain',
+    core.NutritionGoal.gain     => 'muscle',
+  };
 
   @override
   Widget build(BuildContext context) {
+    final totals  = ref.watch(todayTotalsProvider);
+    final profile = ref.watch(userProfileProvider);
+    final key     = todayKey;
+
+    final categories = core.MealType.values.map((type) {
+      final entries    = ref.watch(mealsForTypeProvider((dateKey: key, type: type)));
+      final typeTotals = core.DailyTotals.from(entries);
+      return MealCategoryData(
+        _mealImageUrl(type), type.label,
+        typeTotals.calories, type.budgetKcal,
+        typeTotals.protein.toDouble(), typeTotals.carbs.toDouble(),
+        time: _mealTime(type), recipeCount: entries.length,
+      );
+    }).toList();
+
+    final hasAnyMeal = totals.calories > 0;
+    final recipes    = _recipes;
+    final nc         = NutritionColors.of(context);
+
     return Scaffold(
-      backgroundColor: _kCream,
+      backgroundColor: nc.bg,
+      // Fix #1 — FAB "Ajouter un aliment"
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () { HapticFeedback.mediumImpact(); _goToAjout(); },
+        backgroundColor: const Color(0xFF1C4D30),
+        elevation: 4,
+        icon: const Icon(LucideIcons.plus, color: Colors.white, size: 18),
+        label: Text('Ajouter', style: GoogleFonts.inter(
+          fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+      ),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
 
-          // ── Sticky editorial header ───────────────────────────
           SharedAppHeader.sliver(
-            eyebrow:    'Nutrition',
-            title:      'Mon alimentation',
-            accentColor: _kMint,
-          ),
+            eyebrow: 'Nutrition', title: 'Mon alimentation', accentColor: _kMint,
+            actions: [
+              Consumer(builder: (ctx, r, _) {
+                final favCount = r.watch(favoritesProvider).length;
+                return GestureDetector(
+                  onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                    builder: (_) => const _FavoritesScreen())),
+                  child: Stack(clipBehavior: Clip.none, children: [
+                    Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                        color: favCount > 0
+                            ? const Color(0xFFFFEEF1)
+                            : const Color(0xFFF4F4F4),
+                        shape: BoxShape.circle),
+                      child: Icon(LucideIcons.heart,
+                        size: 18,
+                        color: favCount > 0
+                            ? const Color(0xFFE03050)
+                            : const Color(0xFF9CA3AF))),
+                    if (favCount > 0)
+                      Positioned(
+                        top: -3, right: -3,
+                        child: Container(
+                          width: 16, height: 16,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE03050),
+                            shape: BoxShape.circle),
+                          child: Center(child: Text('$favCount',
+                            style: const TextStyle(
+                              color: Colors.white, fontSize: 9,
+                              fontWeight: FontWeight.w700))))),
+                  ]),
+                );
+              }),
+            ]),
 
-          // ══════════════════════════════════════════════════════
-          // NUTRITION SECTION
-          // ══════════════════════════════════════════════════════
-
-          // Daily tracking card
+          // Fix #2 — ring tappable → SuiviNutritionScreen
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: DailyTrackingCard(
-                anim: _anim,
-                onConsulter: () => _goToSuivi('lunch'),
-                onCamera: _goToAjout,
-                onBarcode: _goToAjout,
-                onRecipes: _goToRecipes,
-                onEdit: _goToAjout,
-                caloriesConsumed: 865,
-                caloriesGoal: 2000,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: GestureDetector(
+                onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const SuiviNutritionScreen())),
+                child: _CalorieRingCard(
+                  anim: _anim,
+                  consumed: totals.calories, goal: profile.dailyKcal,
+                  protein: totals.protein, carbs: totals.carbs, fat: totals.fat,
+                  proteinGoal: profile.dailyProtein,
+                  carbsGoal:   profile.dailyCarbs,
+                  fatGoal:     profile.dailyFat,
+                ),
               ),
             ),
           ),
 
-          // Meal categories
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (_, i) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: MealCategoryCard(
-                    data: _categories[i],
-                    onTap: () => _goToSuivi(
-                        ['breakfast', 'lunch', 'snack', 'dinner'][i]))),
-                childCount: _categories.length)),
+          // Fix #5 — empty state CTA
+          if (!hasAnyMeal)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: _EmptyDayBanner(onTap: _goToAjout),
+              ),
+            ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+              child: MealsContainer(categories: categories, onMealTap: _goToSuivi),
+            ),
           ),
 
-          // Recipes section header
+          // Fix #3 — goal from profile
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: SectionHeader(title: 'Nouvelles recettes', onSeeAll: _goToRecipes))),
+              padding: const EdgeInsets.fromLTRB(0, 32, 0, 0),
+              child: RecommendedMealsSection(initialGoalId: _goalId(profile.goal)),
+            ),
+          ),
 
-          // Horizontal recipe scroll
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
+              child: SectionHeader(
+                eyebrow: 'RECETTES', title: 'Nouvelles recettes',
+                onSeeAll: _goToRecipes))),
+
+          // Fix #4 — recipes from allRecipes
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 12),
               child: SizedBox(
                 height: 162,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemCount: _recipes.length,
+                  itemCount: recipes.length,
                   itemBuilder: (_, i) => RecipeCard(
-                    recipe: _recipes[i],
+                    recipe: recipes[i],
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) =>
-                        RecipeDetailScreen(recipe: _recipes[i])))),
+                        RecipeDetailScreen(recipe: recipes[i])))),
                 ),
               ),
             ),
           ),
-
-          // ══════════════════════════════════════════════════════
-          // SANTÉ & BIEN-ÊTRE SECTION
-          // ══════════════════════════════════════════════════════
-
-          const SliverToBoxAdapter(child: _SanteDivider()),
-
-          // 1. Score Vitalité (new)
-          const SliverToBoxAdapter(child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: _VitalityScoreCard())),
-
-          // 2. Micronutriments clés (new)
-          const SliverToBoxAdapter(child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: _MicronutrientsCard())),
-
-          // 3. Signal du moment (new)
-          SliverToBoxAdapter(child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: _BodySignalCard())),
-
-          // 4. Objectif calorique dynamique (new)
-          SliverToBoxAdapter(child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: DynamicCalorieCard(
-              phase: _currentPhase,
-              baseCalories: 2000,
-              consumed: 865,
-            ))),
-
-          // 4b. Nutriment du jour (new)
-          SliverToBoxAdapter(child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: DailyNutrientTipCard(phase: _currentPhase))),
-
-          // 5. Water tracker (existing)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: const WaterTrackerCard(initialMl: 1200, goalMl: 2500))),
-
-          // 5. Cycle nutrition (existing)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: CycleNutritionSection(initialPhase: _currentPhase))),
-
-          // 6. Expert advice (existing)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: ExpertAdviceSection(experts: _experts))),
 
           const SliverToBoxAdapter(child: SizedBox(height: 110)),
         ],
@@ -246,352 +253,390 @@ class _NutritionHomeScreenState extends State<NutritionHomeScreen>
   }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  CALORIE RING CARD
+// ══════════════════════════════════════════════════════════════════════════════
+class _CalorieRingCard extends StatelessWidget {
+  final Animation<double> anim;
+  final int consumed, goal;
+  final int protein, carbs, fat;
+  final int proteinGoal, carbsGoal, fatGoal;
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SANTÉ SECTION DIVIDER
-// ══════════════════════════════════════════════════════════════════════════════
-class _SanteDivider extends StatelessWidget {
-  const _SanteDivider();
+  const _CalorieRingCard({
+    required this.anim,
+    required this.consumed, required this.goal,
+    required this.protein,  required this.carbs,  required this.fat,
+    required this.proteinGoal, required this.carbsGoal, required this.fatGoal,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 36, 20, 0),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            width: 3, height: 36,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                colors: [_kMint, _kGreen]),
-              borderRadius: BorderRadius.circular(3))),
-          const SizedBox(width: 14),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('SANTÉ & BIEN-ÊTRE', style: GoogleFonts.inter(
-              color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
-              letterSpacing: 3.5)),
-            const SizedBox(height: 2),
-            Text('Mon bilan', style: GoogleFonts.outfit(
-              color: _kGreen, fontSize: 24, fontWeight: FontWeight.w800,
-              letterSpacing: -0.4)),
-          ]),
-        ]),
-        const SizedBox(height: 14),
-        Container(height: 1,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_kMint, Colors.transparent]))),
-      ]),
-    );
-  }
-}
+    final pct       = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
+    final remaining = goal - consumed;
+    final over      = remaining < 0;
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 1. SCORE VITALITÉ
-// ══════════════════════════════════════════════════════════════════════════════
-class _VitalityScoreCard extends StatelessWidget {
-  const _VitalityScoreCard();
-
-  static const _items = [
-    ('Calories',    0.86, Color(0xFF7BA7FF)),
-    ('Macros',      0.72, _kMint),
-    ('Hydratation', 0.48, Color(0xFF7BD4FF)),
-    ('Cycle',       0.90, Color(0xFFFFB347)),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    const score = 74;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _kGreen,
-        borderRadius: BorderRadius.circular(22),
+        color: const Color(0xFF1C4D30),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [BoxShadow(
-          color: _kGreen.withValues(alpha: 0.28),
-          blurRadius: 20, offset: const Offset(0, 6))]),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text('SCORE VITALITÉ', style: GoogleFonts.inter(
-            color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
-            letterSpacing: 2.5)),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20)),
-            child: Text('Aujourd\'hui', style: GoogleFonts.inter(
-              fontSize: 10, color: Colors.white60))),
-        ]),
-        const SizedBox(height: 16),
-        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          // Score ring
-          SizedBox(
-            width: 90, height: 90,
+          color: const Color(0xFF1C4D30).withOpacity(0.25),
+          blurRadius: 20, offset: const Offset(0, 6))],
+      ),
+      child: Row(children: [
+
+        // ── Ring ────────────────────────────────────────────────────────────
+        AnimatedBuilder(
+          animation: anim,
+          builder: (_, __) => SizedBox(
+            width: 110, height: 110,
             child: Stack(alignment: Alignment.center, children: [
               SizedBox(
-                width: 90, height: 90,
+                width: 110, height: 110,
                 child: CircularProgressIndicator(
-                  value: score / 100,
-                  strokeWidth: 7,
-                  backgroundColor: Colors.white.withValues(alpha: 0.12),
-                  valueColor: const AlwaysStoppedAnimation(_kMint),
-                  strokeCap: StrokeCap.round)),
+                  value: pct * anim.value,
+                  strokeWidth: 9,
+                  backgroundColor: Colors.white.withOpacity(0.12),
+                  valueColor: AlwaysStoppedAnimation(
+                    over ? const Color(0xFFFF6B6B) : const Color(0xFF7ABB98)),
+                  strokeCap: StrokeCap.round,
+                ),
+              ),
               Column(mainAxisSize: MainAxisSize.min, children: [
-                Text('$score', style: GoogleFonts.outfit(
+                Text('$consumed', style: GoogleFonts.outfit(
                   fontSize: 26, fontWeight: FontWeight.w800,
                   color: Colors.white, height: 1)),
-                Text('/100', style: GoogleFonts.inter(
-                  fontSize: 10, color: _kMint)),
+                Text('kcal', style: GoogleFonts.inter(
+                  fontSize: 10, color: const Color(0xFF7ABB98))),
               ]),
-            ])),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              children: _items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(children: [
-                  SizedBox(width: 70,
-                    child: Text(item.$1, style: GoogleFonts.inter(
-                      fontSize: 11, color: Colors.white60))),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: LinearProgressIndicator(
-                        value: item.$2, minHeight: 4,
-                        backgroundColor: Colors.white.withValues(alpha: 0.12),
-                        valueColor: AlwaysStoppedAnimation(item.$3)))),
-                  const SizedBox(width: 8),
-                  Text('${(item.$2 * 100).round()}%', style: GoogleFonts.inter(
-                    fontSize: 10, color: item.$3, fontWeight: FontWeight.w700)),
-                ])))
-              .toList(),
-            ),
+            ]),
           ),
-        ]),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12)),
-          child: Row(children: [
-            const Icon(LucideIcons.trendingUp, size: 13, color: _kMint),
-            const SizedBox(width: 8),
-            Flexible(child: Text(
-              'Hydratation à améliorer pour booster ton score',
-              style: GoogleFonts.inter(fontSize: 11, color: Colors.white70))),
+        ),
+
+        const SizedBox(width: 20),
+
+        // ── Right side ──────────────────────────────────────────────────────
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+          // Goal + remaining
+          Text('/ $goal kcal', style: GoogleFonts.inter(
+            fontSize: 13, color: Colors.white60)),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: over
+                  ? const Color(0xFFFF6B6B).withOpacity(0.18)
+                  : Colors.white.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(20)),
+            child: Text(
+              over
+                  ? '+${(-remaining)} kcal dépassés'
+                  : '$remaining kcal restantes',
+              style: GoogleFonts.inter(
+                fontSize: 11, fontWeight: FontWeight.w700,
+                color: over ? const Color(0xFFFF6B6B) : const Color(0xFF7ABB98)))),
+
+          const SizedBox(height: 14),
+
+          // Macro mini-bars
+          _MiniMacroBar('P', protein, proteinGoal, const Color(0xFF7ABB98)),
+          const SizedBox(height: 6),
+          _MiniMacroBar('G', carbs,   carbsGoal,   const Color(0xFF7BD4FF)),
+          const SizedBox(height: 6),
+          _MiniMacroBar('L', fat,     fatGoal,     const Color(0xFFFFB347)),
+        ])),
+      ]),
+    );
+  }
+}
+
+class _MiniMacroBar extends StatelessWidget {
+  final String label;
+  final int consumed, goal;
+  final Color color;
+  const _MiniMacroBar(this.label, this.consumed, this.goal, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
+    return Row(children: [
+      SizedBox(width: 14, child: Text(label, style: GoogleFonts.inter(
+        fontSize: 10, fontWeight: FontWeight.w700, color: color))),
+      const SizedBox(width: 6),
+      Expanded(child: ClipRRect(
+        borderRadius: BorderRadius.circular(3),
+        child: LinearProgressIndicator(
+          value: pct, minHeight: 5,
+          backgroundColor: Colors.white.withOpacity(0.12),
+          valueColor: AlwaysStoppedAnimation(color)))),
+      const SizedBox(width: 8),
+      Text('${consumed}g', style: GoogleFonts.inter(
+        fontSize: 9, color: Colors.white38)),
+    ]);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  EMPTY DAY BANNER  (Fix #5)
+// ══════════════════════════════════════════════════════════════════════════════
+class _EmptyDayBanner extends StatelessWidget {
+  final VoidCallback onTap;
+  const _EmptyDayBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEAF3EC),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF7ABB98).withOpacity(0.4)),
+        ),
+        child: Row(children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C4D30),
+              borderRadius: BorderRadius.circular(14)),
+            child: const Icon(LucideIcons.utensils, color: Colors.white, size: 20)),
+          const SizedBox(width: 14),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Aucun repas aujourd\'hui', style: GoogleFonts.outfit(
+              fontSize: 14, fontWeight: FontWeight.w700,
+              color: const Color(0xFF1C4D30))),
+            const SizedBox(height: 2),
+            Text('Commence à suivre ton alimentation →', style: GoogleFonts.inter(
+              fontSize: 12, color: const Color(0xFF6B7280))),
           ])),
-      ]),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// 2. MICRONUTRIMENTS CLÉS
-// ══════════════════════════════════════════════════════════════════════════════
-class _MicronutrientsCard extends StatelessWidget {
-  const _MicronutrientsCard();
-
-  static const _nutrients = [
-    _Nutrient('Fer',       12.0, 18.0, 'mg', Color(0xFFD94F6B), Color(0xFFFDF0F2)),
-    _Nutrient('Calcium',  680.0, 1000.0, 'mg', Color(0xFF5BAE8A), Color(0xFFEEF8F3)),
-    _Nutrient('Magnésium', 180.0, 310.0, 'mg', Color(0xFF6B8FD4), Color(0xFFF0F3FC)),
-    _Nutrient('Oméga-3',    0.8, 1.6,  'g',  Color(0xFFF4A940), Color(0xFFFFF6E9)),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
-        boxShadow: [BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 14, offset: const Offset(0, 4))]),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('MICRONUTRIMENTS', style: GoogleFonts.inter(
-          color: _kMint, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 2.5)),
-        const SizedBox(height: 3),
-        Text('Nutriments essentiels', style: GoogleFonts.outfit(
-          color: _kText1, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
-        const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 2.0,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: _nutrients.map((n) => _NutrientTile(n: n)).toList()),
-      ]),
-    );
-  }
-}
-
-class _Nutrient {
-  final String name, unit;
-  final double current, goal;
-  final Color color, bg;
-  const _Nutrient(this.name, this.current, this.goal, this.unit, this.color, this.bg);
-  double get pct => (current / goal).clamp(0.0, 1.0);
-}
-
-class _NutrientTile extends StatelessWidget {
-  final _Nutrient n;
-  const _NutrientTile({required this.n});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: n.bg, borderRadius: BorderRadius.circular(14)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(children: [
-            Container(width: 6, height: 6,
-              decoration: BoxDecoration(color: n.color, shape: BoxShape.circle)),
-            const SizedBox(width: 6),
-            Text(n.name, style: GoogleFonts.inter(
-              fontSize: 11, fontWeight: FontWeight.w700, color: _kText1)),
-            const Spacer(),
-            Text('${(n.pct * 100).round()}%', style: GoogleFonts.inter(
-              fontSize: 10, fontWeight: FontWeight.w700, color: n.color)),
-          ]),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: n.pct, minHeight: 4,
-              backgroundColor: n.color.withValues(alpha: 0.15),
-              valueColor: AlwaysStoppedAnimation(n.color))),
-          Text(
-            '${n.current.toStringAsFixed(n.current < 10 ? 1 : 0)} / ${n.goal.toStringAsFixed(0)} ${n.unit}',
-            style: GoogleFonts.inter(fontSize: 10, color: _kText2)),
-        ],
+        ]),
       ),
     );
   }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 3. SIGNAL DU MOMENT
+//  FAVORITES SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
-class _BodySignalCard extends StatefulWidget {
-  @override
-  State<_BodySignalCard> createState() => _BodySignalCardState();
-}
-
-class _BodySignalCardState extends State<_BodySignalCard> {
-  int _energy    = -1;
-  int _digestion = -1;
-  int _humeur    = -1;
+class _FavoritesScreen extends ConsumerWidget {
+  const _FavoritesScreen();
 
   @override
-  Widget build(BuildContext context) {
-    final allSet = _energy >= 0 && _digestion >= 0 && _humeur >= 0;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
-        boxShadow: [BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 14, offset: const Offset(0, 4))]),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('SIGNAL DU MOMENT', style: GoogleFonts.inter(
-          color: _kMint, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 2.5)),
-        const SizedBox(height: 3),
-        Text('Comment tu te sens ?', style: GoogleFonts.outfit(
-          color: _kText1, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
-        const SizedBox(height: 16),
-        _SignalRow(
-          icon: LucideIcons.zap,
-          label: 'Énergie',
-          options: ['Faible', 'Normale', 'Élevée'],
-          color: const Color(0xFFF4A940),
-          selected: _energy,
-          onSelect: (i) => setState(() => _energy = i)),
-        const SizedBox(height: 10),
-        _SignalRow(
-          icon: LucideIcons.activity,
-          label: 'Digestion',
-          options: ['Difficile', 'Correcte', 'Bonne'],
-          color: const Color(0xFF5BAE8A),
-          selected: _digestion,
-          onSelect: (i) => setState(() => _digestion = i)),
-        const SizedBox(height: 10),
-        _SignalRow(
-          icon: LucideIcons.sun,
-          label: 'Humeur',
-          options: ['Basse', 'Neutre', 'Bonne'],
-          color: const Color(0xFF6B8FD4),
-          selected: _humeur,
-          onSelect: (i) => setState(() => _humeur = i)),
-        if (allSet) ...[
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: _kGreen, borderRadius: BorderRadius.circular(50),
-              boxShadow: [BoxShadow(
-                color: _kGreen.withValues(alpha: 0.2),
-                blurRadius: 12, offset: const Offset(0, 4))]),
-            child: Center(child: Text('Enregistrer mon signal', style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)))),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final top      = MediaQuery.of(context).padding.top;
+    final favNames = ref.watch(favoritesProvider);
+
+    // Merge image + video recipes, keep only favorites
+    final imageFavs = allRecipes
+        .where((r) => favNames.contains(r.name))
+        .toList();
+    final videoFavs = videoRecipes
+        .where((r) => favNames.contains(r.name))
+        .toList();
+    final isEmpty = imageFavs.isEmpty && videoFavs.isEmpty;
+
+    final nc = NutritionColors.of(context);
+    const kRed = Color(0xFFE03050);
+
+    return Scaffold(
+      backgroundColor: nc.bg,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+
+          // Header
+          SliverToBoxAdapter(
+            child: Container(
+              color: nc.surface,
+              padding: EdgeInsets.fromLTRB(20, top + 16, 20, 16),
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(
+                      color: kRed.withOpacity(nc.isDark ? 0.20 : 0.10),
+                      borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(LucideIcons.chevronLeft,
+                      color: kRed, size: 18))),
+                const SizedBox(width: 14),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('MES RECETTES', style: GoogleFonts.inter(
+                    color: kRed, fontSize: 9,
+                    fontWeight: FontWeight.w700, letterSpacing: 3)),
+                  Text('Favoris', style: GoogleFonts.outfit(
+                    color: nc.text1, fontSize: 22,
+                    fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+                ]),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: kRed.withOpacity(nc.isDark ? 0.20 : 0.10),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Text('${favNames.length}', style: GoogleFonts.inter(
+                    fontSize: 12, fontWeight: FontWeight.w700,
+                    color: kRed))),
+              ]),
+            ),
+          ),
+
+          // Empty state
+          if (isEmpty)
+            SliverFillRemaining(
+              child: Center(child: Column(
+                mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                  width: 64, height: 64,
+                  decoration: BoxDecoration(
+                    color: kRed.withOpacity(nc.isDark ? 0.20 : 0.10),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: const Icon(LucideIcons.heart,
+                    color: kRed, size: 28)),
+                const SizedBox(height: 16),
+                Text('Aucun favori', style: GoogleFonts.outfit(
+                  fontSize: 18, fontWeight: FontWeight.w700,
+                  color: nc.text1)),
+                const SizedBox(height: 6),
+                Text('Appuie sur ♥ dans une recette\npour la retrouver ici',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 13, color: nc.text2)),
+              ])),
+            ),
+
+          // Image recipes section
+          if (imageFavs.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+                child: Text('Recettes photos',
+                  style: GoogleFonts.outfit(
+                    fontSize: 16, fontWeight: FontWeight.w700,
+                    color: nc.text1)))),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              sliver: SliverList.separated(
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemCount: imageFavs.length,
+                itemBuilder: (ctx, i) {
+                  final r = imageFavs[i];
+                  return GestureDetector(
+                    onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                      builder: (_) => RecipeDetailScreen(
+                        recipe: RecipeItem(r.imageUrl, r.name, r.name, r.accent)))),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: nc.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: nc.border)),
+                      child: Row(children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(r.imageUrl,
+                            width: 60, height: 60, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                              Container(width: 60, height: 60, color: r.accent.withOpacity(0.15)))),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(r.name, style: GoogleFonts.outfit(
+                            fontSize: 13.5, fontWeight: FontWeight.w700,
+                            color: nc.text1)),
+                          const SizedBox(height: 3),
+                          Text('${r.kcal} kcal · ${r.duration}',
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5, color: nc.text2)),
+                        ])),
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(favoritesProvider.notifier).toggle(r.name);
+                          },
+                          child: const Icon(LucideIcons.heart,
+                            color: kRed, size: 20)),
+                      ])),
+                  );
+                },
+              ),
+            ),
+          ],
+
+          // Video recipes section
+          if (videoFavs.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+                child: Text('Recettes vidéos',
+                  style: GoogleFonts.outfit(
+                    fontSize: 16, fontWeight: FontWeight.w700,
+                    color: nc.text1)))),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+              sliver: SliverList.separated(
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemCount: videoFavs.length,
+                itemBuilder: (ctx, i) {
+                  final r = videoFavs[i];
+                  return GestureDetector(
+                    onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                      builder: (_) => RecipeVideoPlayerScreen(recipe: r))),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: nc.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: nc.border)),
+                      child: Row(children: [
+                        Stack(children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(r.imageUrl,
+                              width: 60, height: 60, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                Container(width: 60, height: 60,
+                                  color: const Color(0xFF1C4D30).withOpacity(0.10)))),
+                          Positioned.fill(child: Center(
+                            child: Container(
+                              width: 24, height: 24,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1C4D30).withOpacity(0.85),
+                                shape: BoxShape.circle),
+                              child: const Icon(LucideIcons.play,
+                                color: Colors.white, size: 10)))),
+                        ]),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(r.name, style: GoogleFonts.outfit(
+                            fontSize: 13.5, fontWeight: FontWeight.w700,
+                            color: nc.text1)),
+                          const SizedBox(height: 3),
+                          Text('${r.kcal} kcal · ${r.duration}',
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5, color: nc.text2)),
+                        ])),
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(favoritesProvider.notifier).toggle(r.name);
+                          },
+                          child: const Icon(LucideIcons.heart,
+                            color: Color(0xFFE03050), size: 20)),
+                      ])),
+                  );
+                },
+              ),
+            ),
+          ],
         ],
-      ]),
+      ),
     );
-  }
-}
-
-class _SignalRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final List<String> options;
-  final Color color;
-  final int selected;
-  final ValueChanged<int> onSelect;
-
-  const _SignalRow({
-    required this.icon, required this.label, required this.options,
-    required this.color, required this.selected, required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Container(
-        padding: const EdgeInsets.all(7),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(9)),
-        child: Icon(icon, size: 13, color: color)),
-      const SizedBox(width: 10),
-      SizedBox(width: 70,
-        child: Text(label, style: GoogleFonts.inter(
-          fontSize: 12, fontWeight: FontWeight.w600, color: _kText1))),
-      const Spacer(),
-      ...List.generate(3, (i) => GestureDetector(
-        onTap: () => onSelect(i),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          margin: const EdgeInsets.only(left: 5),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: selected == i ? color : const Color(0xFFF4F4F4),
-            borderRadius: BorderRadius.circular(20)),
-          child: Text(options[i], style: GoogleFonts.inter(
-            fontSize: 10, fontWeight: FontWeight.w600,
-            color: selected == i ? Colors.white : _kText2))))),
-    ]);
   }
 }

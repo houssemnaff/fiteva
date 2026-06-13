@@ -1,847 +1,1896 @@
+// ignore_for_file: deprecated_member_use
+import 'package:fiteva/core/nutrition/food_database.dart';
+import 'package:fiteva/core/nutrition/models.dart';
+import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:flutter/material.dart';
-import 'widgets/meal_widgets.dart';
-import 'widgets/shared/shared_widgets.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-// ── Mock AI scan result ───────────────────────────────────────────────────────
-const _kScanName       = 'Poulet rôti & légumes';
-const _kScanKcal       = 380;
-const _kScanProtein    = 42;
-const _kScanCarbs      = 28;
-const _kScanFat        = 12;
-const _kScanConfidence = 94;
+// ── Design tokens ──────────────────────────────────────────────────────────────
+const _kGreen   = Color(0xFF1C4D30);
+const _kMint    = Color(0xFF7ABB98);
+const _kMintBg  = Color(0xFFEAF3EC);
+const _kCream   = Color(0xFFFAFAF8);
+const _kBorder  = Color(0xFFECECEC);
+const _kText1   = Color(0xFF1A1A1A);
+const _kText2   = Color(0xFF6B7280);
+const _kSurface = Colors.white;
 
-enum _ScanState { idle, scanning, result }
+// ── Food units ────────────────────────────────────────────────────────────────
+enum FoodUnit { g, kg, ml, cup, tbsp, tsp, piece }
 
-// ── Ingredient data ───────────────────────────────────────────────────────────
-class _Ingredient {
-  final String name, unit;
-  final int kcal, protein, carbs, fat;
-  const _Ingredient({
-    required this.name, required this.unit,
-    required this.kcal, required this.protein,
-    required this.carbs, required this.fat,
-  });
+extension FoodUnitExt on FoodUnit {
+  String get label => switch (this) {
+    FoodUnit.g     => 'g',
+    FoodUnit.kg    => 'kg',
+    FoodUnit.ml    => 'ml',
+    FoodUnit.cup   => 'cup',
+    FoodUnit.tbsp  => 'c. à soupe',
+    FoodUnit.tsp   => 'c. à café',
+    FoodUnit.piece => 'pièce',
+  };
+
+  String get shortLabel => switch (this) {
+    FoodUnit.g     => 'g',
+    FoodUnit.kg    => 'kg',
+    FoodUnit.ml    => 'ml',
+    FoodUnit.cup   => 'cup',
+    FoodUnit.tbsp  => 'tbsp',
+    FoodUnit.tsp   => 'tsp',
+    FoodUnit.piece => 'pce',
+  };
+
+  double toGrams(double amount, {double pieceGrams = 100}) => switch (this) {
+    FoodUnit.g     => amount,
+    FoodUnit.kg    => amount * 1000,
+    FoodUnit.ml    => amount,
+    FoodUnit.cup   => amount * 240,
+    FoodUnit.tbsp  => amount * 15,
+    FoodUnit.tsp   => amount * 5,
+    FoodUnit.piece => amount * pieceGrams,
+  };
+
+  double defaultAmount(double grams, {double pieceGrams = 100}) => switch (this) {
+    FoodUnit.g     => grams,
+    FoodUnit.kg    => grams / 1000,
+    FoodUnit.ml    => grams,
+    FoodUnit.cup   => grams / 240,
+    FoodUnit.tbsp  => grams / 15,
+    FoodUnit.tsp   => grams / 5,
+    FoodUnit.piece => (pieceGrams > 0 ? grams / pieceGrams : 1),
+  };
 }
 
-const _kIngredients = [
-  _Ingredient(name: 'Poulet (filet)',    unit: '100 g', kcal: 165, protein: 31, carbs: 0,  fat: 4),
-  _Ingredient(name: 'Riz cuit',          unit: '100 g', kcal: 130, protein: 3,  carbs: 28, fat: 0),
-  _Ingredient(name: 'Avocat (½)',        unit: '½ pc',  kcal: 120, protein: 2,  carbs: 6,  fat: 11),
-  _Ingredient(name: 'Œuf entier',        unit: '1 pc',  kcal: 78,  protein: 6,  carbs: 1,  fat: 5),
-  _Ingredient(name: 'Yaourt grec',       unit: '150 g', kcal: 100, protein: 10, carbs: 5,  fat: 3),
-  _Ingredient(name: 'Amandes',           unit: '20 g',  kcal: 116, protein: 4,  carbs: 4,  fat: 10),
-  _Ingredient(name: 'Épinards',          unit: '80 g',  kcal: 18,  protein: 2,  carbs: 2,  fat: 0),
-  _Ingredient(name: 'Quinoa cuit',       unit: '100 g', kcal: 120, protein: 4,  carbs: 21, fat: 2),
-  _Ingredient(name: 'Saumon',            unit: '120 g', kcal: 248, protein: 27, carbs: 0,  fat: 15),
-  _Ingredient(name: 'Banane',            unit: '1 pc',  kcal: 89,  protein: 1,  carbs: 23, fat: 0),
-  _Ingredient(name: 'Pain complet',      unit: '1 tranche', kcal: 80, protein: 3, carbs: 15, fat: 1),
-  _Ingredient(name: 'Lentilles cuites',  unit: '100 g', kcal: 116, protein: 9,  carbs: 20, fat: 0),
-];
+// ── Category icon & color ─────────────────────────────────────────────────────
+IconData _catIcon(FoodCategory c) => switch (c) {
+  FoodCategory.viandes      => LucideIcons.drumstick,
+  FoodCategory.poissons     => LucideIcons.fish,
+  FoodCategory.oeufslaitiers=> LucideIcons.egg,
+  FoodCategory.cereales     => LucideIcons.wheat,
+  FoodCategory.legumineuses => LucideIcons.leaf,
+  FoodCategory.legumes      => LucideIcons.salad,
+  FoodCategory.fruits       => LucideIcons.apple,
+  FoodCategory.oleagineux   => LucideIcons.nut,
+  FoodCategory.corpsGras    => LucideIcons.droplets,
+  FoodCategory.platCompose  => LucideIcons.utensils,
+  FoodCategory.boissons     => LucideIcons.glassWater,
+  FoodCategory.desserts     => LucideIcons.cookie,
+};
 
-final _kRecentIngredients = [
-  _kIngredients[0], // Poulet
-  _kIngredients[1], // Riz
-  _kIngredients[3], // Œuf
-  _kIngredients[4], // Yaourt grec
-];
+Color _catColor(FoodCategory c) => switch (c) {
+  FoodCategory.viandes      => const Color(0xFFE53935),
+  FoodCategory.poissons     => const Color(0xFF1E88E5),
+  FoodCategory.oeufslaitiers=> const Color(0xFFF9A825),
+  FoodCategory.cereales     => const Color(0xFF8D6E63),
+  FoodCategory.legumineuses => const Color(0xFF43A047),
+  FoodCategory.legumes      => const Color(0xFF2E7D32),
+  FoodCategory.fruits       => const Color(0xFFE91E63),
+  FoodCategory.oleagineux   => const Color(0xFFFF7043),
+  FoodCategory.corpsGras    => const Color(0xFFFFC107),
+  FoodCategory.platCompose  => const Color(0xFF7ABB98),
+  FoodCategory.boissons     => const Color(0xFF00ACC1),
+  FoodCategory.desserts     => const Color(0xFFAB47BC),
+};
 
-// ─────────────────────────────────────────────────────────────────────────────
+String _catPhoto(FoodCategory c) => switch (c) {
+  FoodCategory.viandes      => 'https://images.unsplash.com/photo-1551446591-142875a901a1?w=80&q=70&fit=crop',
+  FoodCategory.poissons     => 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=80&q=70&fit=crop',
+  FoodCategory.oeufslaitiers=> 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=80&q=70&fit=crop',
+  FoodCategory.cereales     => 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=80&q=70&fit=crop',
+  FoodCategory.legumineuses => 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=80&q=70&fit=crop',
+  FoodCategory.legumes      => 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=80&q=70&fit=crop',
+  FoodCategory.fruits       => 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=80&q=70&fit=crop',
+  FoodCategory.oleagineux   => 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=80&q=70&fit=crop',
+  FoodCategory.corpsGras    => 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=80&q=70&fit=crop',
+  FoodCategory.platCompose  => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=80&q=70&fit=crop',
+  FoodCategory.boissons     => 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=80&q=70&fit=crop',
+  FoodCategory.desserts     => 'https://images.unsplash.com/photo-1587314168485-3236d6710814?w=80&q=70&fit=crop',
+};
+
+// ── Scan state ────────────────────────────────────────────────────────────────
+enum _ScanState { idle, scanning, result }
+
+// ── Basket item ───────────────────────────────────────────────────────────────
+class _BasketItem {
+  final FoodItem food;
+  final double grams;
+  const _BasketItem(this.food, this.grams);
+  int get calories => food.kcalFor(grams).round();
+  int get protein  => food.proteinFor(grams).round();
+  int get carbs    => food.carbsFor(grams).round();
+  int get fat      => food.fatFor(grams).round();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  SCREEN
+// ════════════════════════════════════════════════════════════════════════════
 class AjoutRapideScreen extends StatefulWidget {
-  const AjoutRapideScreen({super.key});
+  final String? initialTypeId;
+  const AjoutRapideScreen({super.key, this.initialTypeId});
+
   @override
   State<AjoutRapideScreen> createState() => _AjoutRapideScreenState();
 }
 
 class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
+  // 0 = Recherche, 1 = Manuel, 2 = Scanner
   int _mode = 0;
+
+  MealType? get _preselectedType =>
+      widget.initialTypeId != null
+          ? MealType.fromId(widget.initialTypeId!)
+          : null;
+
+  // ── Basket ───────────────────────────────────────────────────────────────
+  final List<_BasketItem> _basket = [];
+  int get _basketCalories => _basket.fold(0, (s, i) => s + i.calories);
+
+  // ── Search mode ──────────────────────────────────────────────────────────
+  String _searchQuery = '';
+  final _searchCtrl = TextEditingController();
+  FoodItem? _selectedFood;
+  double _selectedGrams = 100;
+  FoodUnit _selectedUnit = FoodUnit.g;
+  final _amountCtrl = TextEditingController(text: '100');
+  FoodCategory? _activeCategory;
+
+  List<FoodItem> get _searchResults {
+    if (_selectedFood != null) return [];
+    if (_searchQuery.isNotEmpty) return FoodDatabase.search(_searchQuery);
+    if (_activeCategory != null) return FoodDatabase.byCategory(_activeCategory!);
+    return FoodDatabase.popular;
+  }
+
+  // ── Scanner mode ─────────────────────────────────────────────────────────
   _ScanState _scanState = _ScanState.idle;
+  FoodItem?  _scannedFood;
 
-  // Ingredient search (scan mode)
-  final List<_Ingredient> _addedIngredients = [];
-  String _ingredientQuery = '';
-  final _ingredientSearchCtrl = TextEditingController();
+  // Mock foods returned by "image scan"
+  static final _mockScanResults = [
+    FoodItem(id: 'scan_1', name: 'Saumon grillé',
+      category: FoodCategory.poissons,
+      kcal: 208, protein: 20, carbs: 0, fat: 13, defaultGrams: 150, portionLabel: '1 filet'),
+    FoodItem(id: 'scan_2', name: 'Riz basmati cuit',
+      category: FoodCategory.cereales,
+      kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, defaultGrams: 200, portionLabel: '1 bol'),
+    FoodItem(id: 'scan_3', name: 'Poulet rôti',
+      category: FoodCategory.viandes,
+      kcal: 215, protein: 25, carbs: 0, fat: 12, defaultGrams: 150, portionLabel: '1 portion'),
+    FoodItem(id: 'scan_4', name: 'Salade verte',
+      category: FoodCategory.legumes,
+      kcal: 15, protein: 1.4, carbs: 1.8, fat: 0.2, defaultGrams: 80, portionLabel: '1 assiette'),
+    FoodItem(id: 'scan_5', name: 'Pâtes bolognaise',
+      category: FoodCategory.platCompose,
+      kcal: 185, protein: 9, carbs: 24, fat: 5, defaultGrams: 300, portionLabel: '1 assiette'),
+    FoodItem(id: 'scan_6', name: 'Yaourt nature',
+      category: FoodCategory.oeufslaitiers,
+      kcal: 61, protein: 5, carbs: 4.7, fat: 3.2, defaultGrams: 125, portionLabel: '1 pot'),
+    FoodItem(id: 'scan_7', name: 'Omelette 2 œufs',
+      category: FoodCategory.oeufslaitiers,
+      kcal: 154, protein: 11, carbs: 1, fat: 12, defaultGrams: 100, portionLabel: '1 omelette'),
+  ];
 
-  // Form controllers (modes 1-3)
+  Future<void> _startImageScan() async {
+    HapticFeedback.mediumImpact();
+    setState(() { _scanState = _ScanState.scanning; _scannedFood = null; });
+    await Future.delayed(const Duration(milliseconds: 2200));
+    if (!mounted) return;
+    final picked = _mockScanResults[
+      DateTime.now().millisecond % _mockScanResults.length];
+    setState(() {
+      _scanState   = _ScanState.result;
+      _scannedFood = picked;
+      // pre-fill the food detail state so user can adjust
+      _selectedFood  = picked;
+      _selectedGrams = picked.defaultGrams;
+      _selectedUnit  = FoodUnit.g;
+      _amountCtrl.text = picked.defaultGrams.round().toString();
+    });
+  }
+
+  void _resetScan() => setState(() {
+    _scanState    = _ScanState.idle;
+    _scannedFood  = null;
+    _selectedFood = null;
+  });
+
+  // ── Manual mode ──────────────────────────────────────────────────────────
   final _nameCtrl  = TextEditingController();
   final _calCtrl   = TextEditingController();
-  final _poidsCtrl = TextEditingController();
   final _protCtrl  = TextEditingController();
   final _glucCtrl  = TextEditingController();
   final _lipCtrl   = TextEditingController();
 
-  // Computed scan totals (base + manually added ingredients)
-  int get _totalKcal    => _kScanKcal    + _addedIngredients.fold(0, (s, i) => s + i.kcal);
-  int get _totalProtein => _kScanProtein + _addedIngredients.fold(0, (s, i) => s + i.protein);
-  int get _totalCarbs   => _kScanCarbs   + _addedIngredients.fold(0, (s, i) => s + i.carbs);
-  int get _totalFat     => _kScanFat     + _addedIngredients.fold(0, (s, i) => s + i.fat);
-
-  bool get _canAdd {
-    if (_mode == 0) return _scanState == _ScanState.result;
-    return _nameCtrl.text.isNotEmpty && _calCtrl.text.isNotEmpty;
+  bool get _canAddToBasket {
+    if (_mode == 0) return _selectedFood != null;
+    if (_mode == 1) return _nameCtrl.text.isNotEmpty && _calCtrl.text.isNotEmpty;
+    return false;
   }
 
-  static const _modeIcons = [
-    Icons.camera_alt_outlined,
-    Icons.qr_code_outlined,
-    Icons.restaurant_menu_outlined,
-    Icons.edit_outlined,
-  ];
-  static const _modeLabels = ['Photo IA', 'Code-barre', 'Recettes', 'Manuel'];
+  bool get _canSubmit => _basket.isNotEmpty;
 
   @override
   void dispose() {
-    _ingredientSearchCtrl.dispose();
-    _nameCtrl.dispose();
-    _calCtrl.dispose();
-    _poidsCtrl.dispose();
-    _protCtrl.dispose();
-    _glucCtrl.dispose();
-    _lipCtrl.dispose();
+    _searchCtrl.dispose(); _amountCtrl.dispose();
+    _nameCtrl.dispose(); _calCtrl.dispose();
+    _protCtrl.dispose(); _glucCtrl.dispose(); _lipCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _startScan() async {
-    setState(() => _scanState = _ScanState.scanning);
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) setState(() => _scanState = _ScanState.result);
+  void _setUnit(FoodUnit unit) {
+    final pieceGrams = _selectedFood?.defaultGrams ?? 100;
+    final newAmount = unit.defaultAmount(_selectedGrams, pieceGrams: pieceGrams);
+    setState(() {
+      _selectedUnit = unit;
+      _amountCtrl.text = newAmount < 10
+          ? newAmount.toStringAsFixed(1)
+          : newAmount.round().toString();
+    });
   }
 
-  void _resetScan() => setState(() => _scanState = _ScanState.idle);
-
-  void _showMealTypeModal() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => MealTypeSheet(onConfirm: () {
-        Navigator.pop(context);
-        Navigator.pop(context);
-      }),
-    );
+  void _setAmount(double amount) {
+    final pieceGrams = _selectedFood?.defaultGrams ?? 100;
+    setState(() {
+      _selectedGrams = _selectedUnit.toGrams(amount, pieceGrams: pieceGrams);
+    });
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
+  // ── Add / update basket ───────────────────────────────────────────────────
+  void _addToBasket() {
+    FoodItem food;
+    double grams;
+
+    if ((_mode == 0 || _mode == 2) && _selectedFood != null) {
+      food  = _selectedFood!;
+      grams = _selectedGrams;
+    } else {
+      final kcal    = double.tryParse(_calCtrl.text) ?? 0;
+      final protein = double.tryParse(_protCtrl.text) ?? 0;
+      final carbs   = double.tryParse(_glucCtrl.text) ?? 0;
+      final fat     = double.tryParse(_lipCtrl.text) ?? 0;
+      food = FoodItem(
+        id:       'manual_${DateTime.now().millisecondsSinceEpoch}',
+        name:     _nameCtrl.text.trim(),
+        category: FoodCategory.platCompose,
+        kcal: kcal, protein: protein, carbs: carbs, fat: fat,
+        defaultGrams: 100,
+      );
+      grams = 100;
+    }
+
+    HapticFeedback.mediumImpact();
+    setState(() {
+      // If already in basket (editing quantity), replace instead of appending
+      final idx = _basket.indexWhere((b) => b.food.id == food.id);
+      if (idx != -1) {
+        _basket[idx] = _BasketItem(food, grams);
+      } else {
+        _basket.add(_BasketItem(food, grams));
+      }
+      _selectedFood   = null;
+      _searchQuery    = '';
+      _activeCategory = null;
+      _selectedGrams  = 100;
+      _selectedUnit   = FoodUnit.g;
+      _amountCtrl.text = '100';
+      _searchCtrl.clear();
+      _nameCtrl.clear(); _calCtrl.clear();
+      _protCtrl.clear(); _glucCtrl.clear(); _lipCtrl.clear();
+    });
+  }
+
+  // ── Confirm basket → pop with entries list ────────────────────────────────
+  Future<void> _submit() async {
+    if (_basket.isEmpty) return;
+    MealType? type = _preselectedType;
+    if (type == null) {
+      type = await showModalBottomSheet<MealType>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _MealTypePickerSheet(),
+      );
+      if (type == null || !mounted) return;
+    }
+
+    final now = DateTime.now();
+    final entries = _basket.asMap().entries.map((e) => MealEntry(
+      id:       '${now.millisecondsSinceEpoch}_${e.key}',
+      food:     e.value.food,
+      grams:    e.value.grams,
+      mealType: type!,
+      dateTime: now,
+    )).toList();
+
+    if (mounted) Navigator.pop(context, {'entries': entries});
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final top    = MediaQuery.of(context).padding.top;
+    final bottom = MediaQuery.of(context).padding.bottom;
+    final nc     = NutritionColors.of(context);
 
     return Scaffold(
-      backgroundColor: cs.surface,
-      body: Column(
-        children: [
-          Expanded(
-            child: CustomScrollView(
-              slivers: [
-                // Header
-                SliverToBoxAdapter(
-                  child: SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-                      child: Row(children: [
-                        BackBtn(onTap: () => Navigator.pop(context)),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text('Ajout rapide',
-                          style: TextStyle(fontSize: 18,
-                            fontWeight: FontWeight.w800, color: cs.onSurface))),
-                      ]),
-                    ),
-                  ),
+      backgroundColor: nc.bg,
+      body: Column(children: [
+        // ── Header ───────────────────────────────────────────────────────────
+        Container(
+          color: nc.surface,
+          padding: EdgeInsets.fromLTRB(20, top + 14, 20, 16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(LucideIcons.chevronLeft,
+                    color: _kGreen, size: 18))),
+              const SizedBox(width: 14),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('AJOUTER', style: GoogleFonts.inter(
+                  color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+                  letterSpacing: 2.5)),
+                Text(
+                  _preselectedType != null
+                      ? _preselectedType!.label
+                      : 'Un repas',
+                  style: GoogleFonts.outfit(
+                    color: _kGreen, fontSize: 22,
+                    fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+              ])),
+              // basket badge
+              if (_basket.isNotEmpty)
+                GestureDetector(
+                  onTap: () => _showBasketSheet(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: nc.mintBg,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: _kMint.withOpacity(0.4))),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(LucideIcons.shoppingBasket, size: 14, color: _kGreen),
+                      const SizedBox(width: 5),
+                      Text('${_basket.length}', style: GoogleFonts.inter(
+                        fontSize: 13, fontWeight: FontWeight.w800, color: _kGreen)),
+                    ])),
                 ),
+            ]),
 
-                // Mode selector
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-                    child: Row(
-                      children: List.generate(4, (i) => Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() {
-                            _mode = i;
-                            if (i == 0) _scanState = _ScanState.idle;
-                          }),
-                          child: Container(
-                            margin: EdgeInsets.only(right: i < 3 ? 8 : 0),
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: _mode == i ? cs.primary : cs.surface,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: cs.outlineVariant),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(_modeIcons[i], size: 20,
-                                  color: _mode == i ? cs.onPrimary : cs.onSurfaceVariant),
-                                const SizedBox(height: 2),
-                                Text(_modeLabels[i], style: TextStyle(
-                                  fontSize: 9, fontWeight: FontWeight.w600,
-                                  color: _mode == i ? cs.onPrimary : cs.onSurfaceVariant)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      )),
-                    ),
-                  ),
-                ),
+            const SizedBox(height: 16),
 
-                // Main content
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-                    child: _mode == 0
-                        ? _buildScanContent(cs)
-                        : _buildFormContent(cs),
-                  ),
-                ),
-
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
-              ],
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: nc.chipBg,
+                borderRadius: BorderRadius.circular(16)),
+              child: Row(children: [
+                _ModeTab(icon: LucideIcons.search,    label: 'Recherche', active: _mode == 0,
+                  onTap: () => setState(() { _mode = 0; _selectedFood = null; })),
+                _ModeTab(icon: LucideIcons.squarePen, label: 'Manuel',    active: _mode == 1,
+                  onTap: () => setState(() => _mode = 1)),
+                _ModeTab(icon: LucideIcons.scanLine,  label: 'Scanner',   active: _mode == 2,
+                  onTap: () => setState(() => _mode = 2)),
+              ]),
             ),
-          ),
+          ]),
+        ),
 
-          // Bottom CTA
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
-            color: cs.surface,
-            child: GestureDetector(
-              onTap: _canAdd ? _showMealTypeModal : null,
-              child: Container(
+        // ── Body ─────────────────────────────────────────────────────────────
+        Expanded(
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: _mode == 0
+                      ? _buildSearch()
+                      : _mode == 1
+                          ? _buildManual()
+                          : _buildScanner(),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 140)),
+            ],
+          ),
+        ),
+
+        // ── Bottom actions ────────────────────────────────────────────────────
+        Container(
+          color: nc.surface,
+          padding: EdgeInsets.fromLTRB(20, 12, 20, bottom + 16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+
+            // "Add / update" button — shown when a food is selected in detail
+            if (_canAddToBasket) ...[
+              GestureDetector(
+                onTap: _addToBasket,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: nc.mintBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _kMint.withOpacity(0.5))),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(
+                      _selectedFood != null &&
+                          _basket.any((b) => b.food.id == _selectedFood!.id)
+                        ? LucideIcons.check
+                        : LucideIcons.plus,
+                      size: 16, color: _kGreen),
+                    const SizedBox(width: 7),
+                    Text(
+                      _selectedFood != null &&
+                          _basket.any((b) => b.food.id == _selectedFood!.id)
+                        ? 'Mettre à jour la quantité'
+                        : 'Ajouter à la liste',
+                      style: GoogleFonts.inter(
+                        fontSize: 14, fontWeight: FontWeight.w700, color: _kGreen)),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+
+            // Main confirm button — only enabled when basket has items
+            GestureDetector(
+              onTap: _canSubmit ? () {
+                HapticFeedback.mediumImpact();
+                _submit();
+              } : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: _canAdd
-                      ? cs.primary
-                      : cs.primary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(28),
-                ),
+                  color: _canSubmit ? _kGreen : nc.border,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: _canSubmit ? [BoxShadow(
+                    color: _kGreen.withOpacity(0.3),
+                    blurRadius: 16, offset: const Offset(0, 5))] : []),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.add, size: 18,
-                    color: _canAdd
-                        ? cs.onPrimary
-                        : cs.primary.withValues(alpha: 0.5)),
+                  Icon(LucideIcons.check, size: 17,
+                    color: _canSubmit ? Colors.white : nc.text2),
                   const SizedBox(width: 8),
                   Text(
-                    _mode == 0 && _scanState == _ScanState.result
-                        ? 'Ajouter à ma journée'
-                        : 'Ajouter au suivi',
-                    style: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w700,
-                      color: _canAdd
-                          ? cs.onPrimary
-                          : cs.primary.withValues(alpha: 0.5)),
-                  ),
+                    _basket.isEmpty
+                        ? 'Ajoutez d\'abord des aliments'
+                        : _basket.length == 1
+                            ? 'Confirmer 1 aliment · $_basketCalories kcal'
+                            : 'Confirmer ${_basket.length} aliments · $_basketCalories kcal',
+                    style: GoogleFonts.inter(
+                      fontSize: 14, fontWeight: FontWeight.w700,
+                      color: _canSubmit ? Colors.white : nc.text2)),
                 ]),
               ),
             ),
-          ),
-        ],
-      ),
+          ]),
+        ),
+      ]),
     );
   }
 
-  // ── Scan content ──────────────────────────────────────────────────────────
-  Widget _buildScanContent(ColorScheme cs) {
+  // ── Basket bottom sheet ───────────────────────────────────────────────────
+  Future<void> _showBasketSheet() async {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setS) => _BasketSheet(
+          basket: _basket,
+          onRemove: (i) => setState(() => _basket.removeAt(i)),
+        )),
+    );
+    setState(() {}); // refresh after sheet closes
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  SEARCH MODE
+  // ════════════════════════════════════════════════════════════════════════════
+  Widget _buildSearch() {
+    if (_selectedFood != null) return _buildFoodDetail(_selectedFood!);
+    final nc = NutritionColors.of(context);
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+      // ── Selected chips row ──────────────────────────────────────────────────
+      if (_basket.isNotEmpty) ...[
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemCount: _basket.length,
+            itemBuilder: (_, i) {
+              final item = _basket[i];
+              return GestureDetector(
+                onTap: () => setState(() => _basket.removeAt(i)),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _kGreen,
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(item.food.name, style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w600,
+                      color: Colors.white)),
+                    const SizedBox(width: 6),
+                    const Icon(LucideIcons.x, size: 11, color: Colors.white70),
+                  ])));
+            })),
+        const SizedBox(height: 14),
+      ],
+
+      // ── Search bar ──────────────────────────────────────────────────────────
+      Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: nc.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: nc.border),
+          boxShadow: nc.isDark ? [] : [BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8, offset: const Offset(0, 2))]),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Row(children: [
+          Icon(LucideIcons.search, size: 16, color: nc.text2),
+          const SizedBox(width: 10),
+          Expanded(child: TextField(
+            controller: _searchCtrl,
+            onChanged: (v) => setState(() {
+              _searchQuery    = v;
+              _activeCategory = null;
+            }),
+            style: GoogleFonts.inter(fontSize: 14, color: nc.text1),
+            decoration: InputDecoration(
+              hintText: 'Rechercher un aliment…',
+              hintStyle: GoogleFonts.inter(fontSize: 14, color: nc.text2),
+              border: InputBorder.none, isDense: true,
+              contentPadding: EdgeInsets.zero),
+          )),
+          if (_searchQuery.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                _searchCtrl.clear();
+                setState(() { _searchQuery = ''; _activeCategory = null; });
+              },
+              child: Icon(LucideIcons.x, size: 14, color: nc.text2)),
+        ]),
+      ),
+
+      const SizedBox(height: 14),
+
+      // ── Category pills ──────────────────────────────────────────────────────
+      if (_searchQuery.isEmpty) ...[
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
+            separatorBuilder: (_, __) => const SizedBox(width: 7),
+            itemCount: FoodCategory.values.length,
+            itemBuilder: (_, i) {
+              final cat = FoodCategory.values[i];
+              final sel = _activeCategory == cat;
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _activeCategory = sel ? null : cat);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: sel ? _kGreen : nc.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: sel ? _kGreen : nc.border)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(_catIcon(cat), size: 13,
+                      color: sel ? Colors.white : _catColor(cat)),
+                    const SizedBox(width: 5),
+                    Text(cat.label.split(' ').first, style: GoogleFonts.inter(
+                      fontSize: 11, fontWeight: FontWeight.w600,
+                      color: sel ? Colors.white : nc.text1)),
+                  ])));
+            })),
+        const SizedBox(height: 14),
+      ],
+
+      // ── Section label ───────────────────────────────────────────────────────
+      Text(
+        _searchQuery.isNotEmpty
+            ? 'RÉSULTATS (${_searchResults.length})'
+            : _activeCategory != null
+                ? _activeCategory!.label.toUpperCase()
+                : 'POPULAIRES',
+        style: GoogleFonts.inter(
+          fontSize: 9, fontWeight: FontWeight.w700,
+          color: nc.text2, letterSpacing: 2.0)),
+      const SizedBox(height: 8),
+
+      // ── Food list (multi-select) ─────────────────────────────────────────────
+      if (_searchResults.isEmpty && _searchQuery.isNotEmpty)
+        _EmptySearch(query: _searchQuery)
+      else
+        Column(children: _searchResults.map((food) {
+          final basketIdx = _basket.indexWhere((b) => b.food.id == food.id);
+          final isSelected = basketIdx != -1;
+          final item = isSelected ? _basket[basketIdx] : null;
+
+          return _FoodSelectTile(
+            food: food,
+            isSelected: isSelected,
+            selectedGrams: item?.grams,
+            onToggle: () {
+              HapticFeedback.selectionClick();
+              if (isSelected) {
+                setState(() => _basket.removeAt(basketIdx));
+              } else {
+                setState(() => _basket.add(_BasketItem(food, food.defaultGrams)));
+              }
+            },
+            onEditQuantity: () {
+              setState(() {
+                _selectedFood  = food;
+                _selectedGrams = item?.grams ?? food.defaultGrams;
+                _selectedUnit  = FoodUnit.g;
+                _amountCtrl.text = (item?.grams ?? food.defaultGrams).round().toString();
+              });
+            },
+          );
+        }).toList()),
+    ]);
+  }
+
+  // ── Food detail ───────────────────────────────────────────────────────────
+  Widget _buildFoodDetail(FoodItem food) {
+    final nc      = NutritionColors.of(context);
+    final grams   = _selectedGrams;
+    final kcal    = food.kcalFor(grams).round();
+    final protein = food.proteinFor(grams).round();
+    final carbs   = food.carbsFor(grams).round();
+    final fat     = food.fatFor(grams).round();
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      GestureDetector(
+        onTap: () => setState(() { _selectedFood = null; _searchQuery = ''; _searchCtrl.clear(); }),
+        child: Row(children: [
+          const Icon(LucideIcons.chevronLeft, size: 14, color: _kMint),
+          const SizedBox(width: 4),
+          Text('Retour à la recherche', style: GoogleFonts.inter(
+            fontSize: 12, color: _kMint, fontWeight: FontWeight.w600)),
+        ])),
+
+      const SizedBox(height: 16),
+
+      Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: nc.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: nc.border),
+          boxShadow: nc.isDark ? [] : [BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14, offset: const Offset(0, 4))]),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+          Row(children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 44, height: 44,
+                child: Image.network(
+                  _catPhoto(food.category),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: _catColor(food.category).withOpacity(0.12),
+                    child: Icon(_catIcon(food.category),
+                      size: 22, color: _catColor(food.category)))))),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(food.name, style: GoogleFonts.outfit(
+                fontSize: 18, fontWeight: FontWeight.w800, color: nc.text1)),
+              Text(food.category.label, style: GoogleFonts.inter(
+                fontSize: 11, color: nc.text2)),
+            ])),
+          ]),
+
+          const SizedBox(height: 16),
+
+          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text('$kcal', style: GoogleFonts.outfit(
+              fontSize: 44, fontWeight: FontWeight.w800,
+              color: _kGreen, height: 1)),
+            const SizedBox(width: 6),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 7),
+              child: Text('kcal', style: GoogleFonts.inter(
+                fontSize: 15, color: _kText2))),
+            const Spacer(),
+            _MacroBadge('P ${protein}g', _kGreen, _kMintBg),
+            const SizedBox(width: 6),
+            _MacroBadge('G ${carbs}g', const Color(0xFF3B7FD4), const Color(0xFFEBF2FC)),
+            const SizedBox(width: 6),
+            _MacroBadge('L ${fat}g', const Color(0xFFC47A00), const Color(0xFFFFF3DC)),
+          ]),
+
+          const SizedBox(height: 16),
+          _MacroBar('Protéines', protein, food.proteinFor(100).round(), _kGreen),
+          const SizedBox(height: 10),
+          _MacroBar('Glucides', carbs, food.carbsFor(100).round(), const Color(0xFF3B7FD4)),
+          const SizedBox(height: 10),
+          _MacroBar('Lipides', fat, food.fatFor(100).round(), const Color(0xFFC47A00)),
+          if (food.fiber > 0) ...[
+            const SizedBox(height: 10),
+            _MacroBar('Fibres', food.fiberFor(grams).round(),
+              food.fiberFor(100).round(), const Color(0xFF5BAE8A)),
+          ],
+
+          const SizedBox(height: 16),
+          Divider(height: 1, color: nc.border),
+          const SizedBox(height: 14),
+
+          Text('QUANTITÉ', style: GoogleFonts.inter(
+            color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+            letterSpacing: 2.5)),
+          const SizedBox(height: 10),
+
+          // Quick portion chips (always in grams)
+          Wrap(spacing: 7, runSpacing: 7, children: [
+            for (final g in <double>{50, 100, food.defaultGrams, 150, 200}
+                .toList()..sort())
+              _PortionChip(
+                label: g == food.defaultGrams && food.portionLabel != '100 g'
+                    ? '${g.round()}g · ${food.portionLabel}'
+                    : '${g.round()}g',
+                selected: _selectedGrams == g && _selectedUnit == FoodUnit.g,
+                onTap: () => setState(() {
+                  _selectedUnit  = FoodUnit.g;
+                  _selectedGrams = g;
+                  _amountCtrl.text = g.round().toString();
+                })),
+          ]),
+
+          const SizedBox(height: 12),
+
+          // Amount + unit row
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(
+              child: TextField(
+                controller: _amountCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (v) {
+                  final val = double.tryParse(v);
+                  if (val != null && val > 0) _setAmount(val);
+                },
+                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: nc.text1),
+                decoration: InputDecoration(
+                  filled: true, fillColor: nc.chipBg,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _kMint, width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13)),
+              ),
+            ),
+            const SizedBox(width: 10),
+            _UnitSelector(
+              selected: _selectedUnit,
+              onChanged: _setUnit,
+            ),
+          ]),
+
+          if (_selectedUnit != FoodUnit.g)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                '≈ ${_selectedGrams.round()} g',
+                style: GoogleFonts.inter(fontSize: 11, color: nc.text2))),
+        ]),
+      ),
+    ]);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  MANUEL MODE
+  // ════════════════════════════════════════════════════════════════════════════
+  Widget _buildManual() {
+    final nc = NutritionColors.of(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: nc.mintBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kMint.withOpacity(0.3))),
+      child: Row(children: [
+        const Icon(LucideIcons.pencilLine, size: 14, color: _kGreen),
+        const SizedBox(width: 10),
+        Expanded(child: Text(
+          'Saisis les informations nutritionnelles manuellement.',
+          style: GoogleFonts.inter(fontSize: 12, color: _kGreen, height: 1.5))),
+      ])),
+
+    const SizedBox(height: 16),
+
+    Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: nc.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: nc.border),
+        boxShadow: nc.isDark ? [] : [BoxShadow(
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 14, offset: const Offset(0, 4))]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('INFORMATIONS', style: GoogleFonts.inter(
+          color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+          letterSpacing: 2.5)),
+        const SizedBox(height: 14),
+        _AppField('Nom du plat *', 'Ex : Riz thaï au poulet', _nameCtrl,
+          onChanged: (_) => setState(() {})),
+        const SizedBox(height: 12),
+        _AppField('Calories (kcal) *', 'Ex : 450', _calCtrl,
+          keyboard: TextInputType.number,
+          onChanged: (_) => setState(() {})),
+        const SizedBox(height: 20),
+        Divider(height: 1, color: nc.border),
+        const SizedBox(height: 18),
+        Text('MACRONUTRIMENTS', style: GoogleFonts.inter(
+          color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+          letterSpacing: 2.5)),
+        const SizedBox(height: 4),
+        Text('Optionnel', style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
+        const SizedBox(height: 14),
+        Row(children: [
+          Expanded(child: _MacroInput('Protéines', 'g', _kGreen, _protCtrl)),
+          const SizedBox(width: 12),
+          Expanded(child: _MacroInput('Glucides', 'g', const Color(0xFF3B7FD4), _glucCtrl)),
+          const SizedBox(width: 12),
+          Expanded(child: _MacroInput('Lipides', 'g', const Color(0xFFC47A00), _lipCtrl)),
+        ]),
+      ])),
+  ]);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  SCANNER MODE
+  // ════════════════════════════════════════════════════════════════════════════
+  Widget _buildScanner() {
     return switch (_scanState) {
-      _ScanState.idle     => _buildScanIdle(cs),
-      _ScanState.scanning => _buildScanScanning(cs),
-      _ScanState.result   => _buildScanResult(cs),
+      _ScanState.idle     => _buildScannerIdle(),
+      _ScanState.scanning => _buildScannerScanning(),
+      _ScanState.result   => _buildScannerResult(),
     };
   }
 
-  Widget _buildScanIdle(ColorScheme cs) {
-    return Column(children: [
-      // Tip
-      Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: cs.secondaryContainer.withValues(alpha: 0.35),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          'Pointe l\'appareil photo vers ton assiette — l\'IA identifie les aliments et calcule les macros automatiquement.',
-          style: TextStyle(fontSize: 12, color: cs.onSurface, height: 1.5),
-        ),
-      ),
-      const SizedBox(height: 16),
-
-      // Camera frame
-      Container(
-        width: double.infinity, height: 220,
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Stack(children: [
-          Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.camera_alt_outlined, size: 52,
-                color: cs.primary.withValues(alpha: 0.35)),
-              const SizedBox(height: 12),
-              Text('Pointer vers un plat', style: TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w500,
-                color: cs.onSurfaceVariant)),
-            ]),
-          ),
-          // Corner marks
-          _corner(cs.primary, top: true,  left: true),
-          _corner(cs.primary, top: true,  left: false),
-          _corner(cs.primary, top: false, left: true),
-          _corner(cs.primary, top: false, left: false),
-        ]),
-      ),
-      const SizedBox(height: 16),
-
-      // Analyse button
-      GestureDetector(
-        onTap: _startScan,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: cs.primary,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(Icons.document_scanner_outlined, color: cs.onPrimary, size: 18),
-            const SizedBox(width: 8),
-            Text('Analyser le plat', style: TextStyle(
-              fontSize: 15, fontWeight: FontWeight.w700, color: cs.onPrimary)),
-          ]),
-        ),
-      ),
-    ]);
-  }
-
-  Widget _buildScanScanning(ColorScheme cs) {
-    return Container(
-      width: double.infinity, height: 260,
+  // ── Scanner: idle ────────────────────────────────────────────────────────
+  Widget _buildScannerIdle() => Column(children: [
+    Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        SizedBox(
-          width: 48, height: 48,
-          child: CircularProgressIndicator(
-            color: cs.primary, strokeWidth: 2.5),
-        ),
-        const SizedBox(height: 20),
-        Text('Analyse en cours…', style: TextStyle(
-          fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface)),
-        const SizedBox(height: 6),
-        Text('Identification des aliments', style: TextStyle(
-          fontSize: 12, color: cs.onSurfaceVariant)),
-      ]),
-    );
-  }
+        color: _kMintBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kMint.withOpacity(0.3))),
+      child: Row(children: [
+        const Icon(LucideIcons.scanLine, size: 14, color: _kGreen),
+        const SizedBox(width: 10),
+        Expanded(child: Text(
+          'Scanne un code-barre ou prends une photo de ton repas.',
+          style: GoogleFonts.inter(fontSize: 12, color: _kGreen, height: 1.5))),
+      ])),
+    const SizedBox(height: 16),
 
-  Widget _buildScanResult(ColorScheme cs) {
-    return Column(children: [
-      // ── Result card (dynamic totals) ──────────────────────────────────────
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(color: cs.shadow.withValues(alpha: 0.08),
-              blurRadius: 14, offset: const Offset(0, 5)),
-          ],
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // AI badge
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-              decoration: BoxDecoration(
-                color: cs.primary, borderRadius: BorderRadius.circular(20)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.auto_awesome_rounded, size: 10, color: cs.onPrimary),
-                const SizedBox(width: 5),
-                Text('IA · $_kScanConfidence% de confiance',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                    color: cs.onPrimary)),
-              ]),
-            ),
-            if (_addedIngredients.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  color: cs.secondaryContainer.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(20)),
-                child: Text('+${_addedIngredients.length} ingrédient${_addedIngredients.length > 1 ? "s" : ""}',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                    color: cs.primary)),
-              ),
-            ],
-          ]),
+    // Viewfinder
+    Container(
+      width: double.infinity, height: 200,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0E1E15),
+        borderRadius: BorderRadius.circular(22)),
+      child: Stack(children: [
+        Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 160, height: 2,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.transparent, _kMint, Colors.transparent]),
+              borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 12),
+          const Icon(LucideIcons.scanLine, size: 38, color: Colors.white24),
+          const SizedBox(height: 10),
+          Text('Appuie sur Photo pour analyser', style: GoogleFonts.inter(
+            fontSize: 12, color: Colors.white54)),
+        ])),
+        _Corner(_kMint, top: true,  left: true),
+        _Corner(_kMint, top: true,  left: false),
+        _Corner(_kMint, top: false, left: true),
+        _Corner(_kMint, top: false, left: false),
+      ])),
 
-          // Meal name
-          Text(_kScanName, style: TextStyle(fontSize: 20,
-            fontWeight: FontWeight.w800, color: cs.onSurface,
-            letterSpacing: -0.3)),
-          const SizedBox(height: 3),
-          Text('Estimation par portion (300 g)',
-            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+    const SizedBox(height: 12),
+
+    // Buttons
+    Row(children: [
+      Expanded(child: GestureDetector(
+        onTap: () {},
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          decoration: BoxDecoration(
+            color: _kGreen,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(
+              color: _kGreen.withOpacity(0.25),
+              blurRadius: 12, offset: const Offset(0, 4))]),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(LucideIcons.scanLine, size: 17, color: Colors.white),
+            const SizedBox(width: 8),
+            Text('Scanner', style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+          ])))),
+      const SizedBox(width: 10),
+      Expanded(child: GestureDetector(
+        onTap: _startImageScan,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A3A50),
+            borderRadius: BorderRadius.circular(16)),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(LucideIcons.image, size: 17, color: Colors.white),
+            const SizedBox(width: 8),
+            Text('Photo', style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+          ])))),
+    ]),
+  ]);
+
+  // ── Scanner: scanning (animated) ─────────────────────────────────────────
+  Widget _buildScannerScanning() => Column(children: [
+    Container(
+      width: double.infinity, height: 220,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0E1E15),
+        borderRadius: BorderRadius.circular(22)),
+      child: Stack(alignment: Alignment.center, children: [
+        _Corner(_kMint, top: true,  left: true),
+        _Corner(_kMint, top: true,  left: false),
+        _Corner(_kMint, top: false, left: true),
+        _Corner(_kMint, top: false, left: false),
+        Column(mainAxisSize: MainAxisSize.min, children: [
+          const _ScanningDots(),
           const SizedBox(height: 16),
-
-          // Kcal + macro chips (dynamic)
-          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('$_totalKcal', style: TextStyle(fontSize: 44,
-              fontWeight: FontWeight.w800, color: cs.primary, height: 1)),
-            const SizedBox(width: 5),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text('kcal', style: TextStyle(
-                fontSize: 15, color: cs.onSurfaceVariant)),
-            ),
-            const Spacer(),
-            _MacroChipBadge('P ${_totalProtein}g', cs.primary,
-              cs.secondaryContainer.withValues(alpha: 0.5)),
-            const SizedBox(width: 6),
-            _MacroChipBadge('G ${_totalCarbs}g', cs.secondary,
-              cs.secondaryContainer.withValues(alpha: 0.3)),
-            const SizedBox(width: 6),
-            _MacroChipBadge('L ${_totalFat}g', cs.tertiary,
-              cs.tertiaryContainer.withValues(alpha: 0.3)),
-          ]),
-          const SizedBox(height: 18),
-
-          Divider(height: 1, color: cs.outlineVariant),
-          const SizedBox(height: 16),
-
-          // Macro bars (dynamic)
-          _MacroProgressBar('Protéines', _totalProtein, 60,  cs.primary),
-          const SizedBox(height: 12),
-          _MacroProgressBar('Glucides',  _totalCarbs,   100, cs.secondary),
-          const SizedBox(height: 12),
-          _MacroProgressBar('Lipides',   _totalFat,     40,  cs.tertiary),
+          Text('Analyse en cours…', style: GoogleFonts.inter(
+            fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+          const SizedBox(height: 6),
+          Text('Identification des nutriments', style: GoogleFonts.inter(
+            fontSize: 11, color: Colors.white38)),
         ]),
-      ),
+      ])),
+    const SizedBox(height: 16),
+    Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _kMintBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kMint.withOpacity(0.3))),
+      child: Row(children: [
+        SizedBox(width: 14, height: 14,
+          child: CircularProgressIndicator(
+            strokeWidth: 2, color: _kGreen)),
+        const SizedBox(width: 10),
+        Text('Analyse de l\'image avec l\'IA…',
+          style: GoogleFonts.inter(fontSize: 12, color: _kGreen)),
+      ])),
+  ]);
 
-      const SizedBox(height: 14),
+  // ── Scanner: result (editable card) ──────────────────────────────────────
+  Widget _buildScannerResult() {
+    final nc      = NutritionColors.of(context);
+    final food    = _scannedFood!;
+    final kcal    = food.kcalFor(_selectedGrams).round();
+    final protein = food.proteinFor(_selectedGrams).round();
+    final carbs   = food.carbsFor(_selectedGrams).round();
+    final fat     = food.fatFor(_selectedGrams).round();
 
-      // ── Ingredient picker ─────────────────────────────────────────────────
-      _buildIngredientPicker(cs),
-
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // "Résultat" header
+      Row(children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: _kMintBg, borderRadius: BorderRadius.circular(8)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(LucideIcons.sparkles, size: 12, color: _kGreen),
+            const SizedBox(width: 4),
+            Text('Résultat scan', style: GoogleFonts.inter(
+              fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen)),
+          ])),
+        const Spacer(),
+        GestureDetector(
+          onTap: _resetScan,
+          child: Text('Nouvelle photo', style: GoogleFonts.inter(
+            fontSize: 12, color: nc.text2,
+            decoration: TextDecoration.underline))),
+      ]),
       const SizedBox(height: 12),
 
-      // ── Rescanner ─────────────────────────────────────────────────────────
+      // Food card
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: nc.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: nc.border),
+          boxShadow: nc.isDark ? [] : [BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8, offset: const Offset(0, 2))]),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+          // Food name + category chip
+          Row(children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
+              child: const Icon(LucideIcons.utensils, size: 20, color: _kGreen)),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(food.name, style: GoogleFonts.inter(
+                fontSize: 16, fontWeight: FontWeight.w800, color: nc.text1)),
+              Text(food.category.label, style: GoogleFonts.inter(
+                fontSize: 11, color: nc.text2)),
+            ])),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _kMintBg, borderRadius: BorderRadius.circular(8)),
+              child: Text('$kcal kcal', style: GoogleFonts.inter(
+                fontSize: 12, fontWeight: FontWeight.w700, color: _kGreen))),
+          ]),
+
+          const SizedBox(height: 16),
+          Divider(height: 1, color: nc.border),
+          const SizedBox(height: 14),
+
+          // Macro pills
+          Row(children: [
+            _ScanMacroPill('Protéines', protein, 'g', const Color(0xFF4CAF82)),
+            const SizedBox(width: 8),
+            _ScanMacroPill('Glucides', carbs, 'g', const Color(0xFF7BD4FF)),
+            const SizedBox(width: 8),
+            _ScanMacroPill('Lipides', fat, 'g', const Color(0xFFFFB347)),
+          ]),
+
+          const SizedBox(height: 16),
+
+          // Quantity selector
+          Row(children: [
+            Text('Quantité :', style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w600, color: nc.text1)),
+            const SizedBox(width: 12),
+            SizedBox(width: 72,
+              child: TextField(
+                controller: _amountCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.center,
+                onChanged: (v) {
+                  final n = double.tryParse(v);
+                  if (n != null && n > 0) _setAmount(n);
+                },
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: _kBorder)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: _kMint, width: 1.5))),
+                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700))),
+            const SizedBox(width: 8),
+            _UnitSelector(
+              selected: _selectedUnit,
+              onChanged: _setUnit),
+          ]),
+        ])),
+
+      const SizedBox(height: 16),
+
+      // CTA: add to basket + scan another
+      // CTA buttons
+      Row(children: [
+        Expanded(child: GestureDetector(
+          onTap: _resetScan,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: _kMintBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _kMint.withOpacity(0.4))),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(LucideIcons.camera, size: 16, color: _kGreen),
+              const SizedBox(width: 6),
+              Text('Autre photo', style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen)),
+            ])))),
+        const SizedBox(width: 10),
+        Expanded(child: GestureDetector(
+          onTap: _selectedFood == null ? null : () {
+            _addToBasket();
+            _resetScan();
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: _kGreen,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [BoxShadow(
+                color: _kGreen.withOpacity(0.3),
+                blurRadius: 10, offset: const Offset(0, 3))]),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(LucideIcons.check, size: 16, color: Colors.white),
+              const SizedBox(width: 6),
+              Text('Ajouter', style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+            ])))),
+      ]),
+
+      const SizedBox(height: 10),
+
+      // Add more ingredients — switches to search tab keeping the basket
       GestureDetector(
-        onTap: () {
-          setState(() {
-            _addedIngredients.clear();
-            _ingredientQuery = '';
-            _ingredientSearchCtrl.clear();
-          });
+        onTap: _selectedFood == null ? null : () {
+          _addToBasket();
           _resetScan();
+          setState(() => _mode = 0);
         },
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 13),
           decoration: BoxDecoration(
-            border: Border.all(color: cs.outlineVariant),
+            color: nc.surface,
             borderRadius: BorderRadius.circular(14),
-          ),
+            border: Border.all(color: nc.border)),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(Icons.refresh_rounded, size: 14, color: cs.onSurfaceVariant),
-            const SizedBox(width: 6),
-            Text('Rescanner', style: TextStyle(fontSize: 13,
-              fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
-          ]),
-        ),
-      ),
+            Icon(LucideIcons.search, size: 15, color: nc.text2),
+            const SizedBox(width: 7),
+            Text('+ Ajouter des ingrédients', style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w600, color: nc.text2)),
+          ]))),
     ]);
   }
+}
 
-  Widget _buildIngredientPicker(ColorScheme cs) {
-    final query = _ingredientQuery.toLowerCase();
-    final suggestions = query.isEmpty
-        ? _kIngredients.take(6).toList()
-        : _kIngredients
-            .where((i) => i.name.toLowerCase().contains(query))
-            .take(6)
-            .toList();
+// ══════════════════════════════════════════════════════════════════════════════
+//  BASKET SHEET
+// ══════════════════════════════════════════════════════════════════════════════
+class _BasketSheet extends StatefulWidget {
+  final List<_BasketItem> basket;
+  final ValueChanged<int> onRemove;
+  const _BasketSheet({required this.basket, required this.onRemove});
 
+  @override
+  State<_BasketSheet> createState() => _BasketSheetState();
+}
+
+class _BasketSheetState extends State<_BasketSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).padding.bottom;
+    final totalCal  = widget.basket.fold(0, (s, i) => s + i.calories);
+    final totalProt = widget.basket.fold(0, (s, i) => s + i.protein);
+    final totalCarb = widget.basket.fold(0, (s, i) => s + i.carbs);
+    final totalFat  = widget.basket.fold(0, (s, i) => s + i.fat);
+
+    final nc = NutritionColors.of(context);
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.75),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.06),
-          blurRadius: 12, offset: const Offset(0, 4))],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Header
-        Row(children: [
-          Icon(Icons.add_circle_outline_rounded, size: 16, color: cs.primary),
-          const SizedBox(width: 8),
-          Text('Affiner avec des ingrédients',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-              color: cs.onSurface)),
-        ]),
-        const SizedBox(height: 12),
+        color: nc.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        // handle
+        Padding(
+          padding: const EdgeInsets.only(top: 14, bottom: 6),
+          child: Container(width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: nc.border,
+              borderRadius: BorderRadius.circular(2)))),
 
-        // Search bar
-        Container(
-          height: 42,
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+        // title
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
           child: Row(children: [
-            Icon(Icons.search_rounded, size: 16, color: cs.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: _ingredientSearchCtrl,
-                onChanged: (v) => setState(() => _ingredientQuery = v),
-                style: TextStyle(fontSize: 13, color: cs.onSurface),
-                decoration: InputDecoration(
-                  hintText: 'Chercher un ingrédient…',
-                  hintStyle: TextStyle(
-                    fontSize: 13, color: cs.onSurfaceVariant),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ),
-          ]),
-        ),
-        const SizedBox(height: 12),
-
-        // Recents (when no query)
-        if (query.isEmpty) ...[
-          Text('Récents', style: TextStyle(fontSize: 11,
-            fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
-          const SizedBox(height: 8),
-          Wrap(spacing: 6, runSpacing: 6, children: [
-            ..._kRecentIngredients.map((ing) {
-              final added = _addedIngredients.contains(ing);
-              return GestureDetector(
-                onTap: () => setState(() => added
-                    ? _addedIngredients.remove(ing)
-                    : _addedIngredients.add(ing)),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: added ? cs.primary : cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: added ? cs.primary : cs.outlineVariant),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    if (added) ...[
-                      Icon(Icons.check_rounded, size: 11, color: cs.onPrimary),
-                      const SizedBox(width: 4),
-                    ],
-                    Text(ing.name, style: TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w600,
-                      color: added ? cs.onPrimary : cs.onSurface)),
-                    const SizedBox(width: 5),
-                    Text('${ing.kcal} kcal', style: TextStyle(
-                      fontSize: 10,
-                      color: added
-                          ? cs.onPrimary.withValues(alpha: 0.7)
-                          : cs.onSurfaceVariant)),
-                  ]),
-                ),
-              );
-            }),
-          ]),
-          const SizedBox(height: 12),
-          Divider(height: 1, color: cs.outlineVariant),
-          const SizedBox(height: 12),
-        ],
-
-        // Suggestion list
-        Text(query.isEmpty ? 'Tous les ingrédients' : 'Résultats',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-            color: cs.onSurfaceVariant)),
-        const SizedBox(height: 8),
-        ...suggestions.map((ing) {
-          final added = _addedIngredients.contains(ing);
-          return GestureDetector(
-            onTap: () => setState(() => added
-                ? _addedIngredients.remove(ing)
-                : _addedIngredients.add(ing)),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            Text('Liste d\'aliments', style: GoogleFonts.outfit(
+              fontSize: 18, fontWeight: FontWeight.w800, color: nc.text1)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: added
-                    ? cs.primary.withValues(alpha: 0.08)
-                    : cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: added ? cs.primary.withValues(alpha: 0.3)
-                      : Colors.transparent),
-              ),
-              child: Row(children: [
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(ing.name, style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600,
-                      color: cs.onSurface)),
-                    Text('${ing.unit} · P ${ing.protein}g  G ${ing.carbs}g  L ${ing.fat}g',
-                      style: TextStyle(
-                        fontSize: 11, color: cs.onSurfaceVariant)),
-                  ],
-                )),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: added ? cs.primary : cs.secondaryContainer.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    added ? '✓ Ajouté' : '${ing.kcal} kcal',
-                    style: TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w700,
-                      color: added ? cs.onPrimary : cs.primary)),
-                ),
-              ]),
-            ),
-          );
-        }),
+                color: nc.mintBg, borderRadius: BorderRadius.circular(20)),
+              child: Text('${widget.basket.length} aliment${widget.basket.length > 1 ? 's' : ''}',
+                style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
+          ])),
 
-        // Added chips summary
-        if (_addedIngredients.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          Divider(height: 1, color: cs.outlineVariant),
-          const SizedBox(height: 10),
-          Text('Ajoutés', style: TextStyle(fontSize: 11,
-            fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
-          const SizedBox(height: 8),
-          Wrap(spacing: 6, runSpacing: 6, children: [
-            ..._addedIngredients.map((ing) => GestureDetector(
-              onTap: () => setState(() => _addedIngredients.remove(ing)),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        // totals row
+        Container(
+          margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: nc.mintBg,
+            borderRadius: BorderRadius.circular(14)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _TotalChip('$totalCal', 'kcal', const Color(0xFF7BA7FF)),
+              _TotalChip('${totalProt}g', 'prot.', _kGreen),
+              _TotalChip('${totalCarb}g', 'gluc.', const Color(0xFF3B7FD4)),
+              _TotalChip('${totalFat}g', 'lip.', const Color(0xFFC47A00)),
+            ],
+          ),
+        ),
+
+        // list
+        Flexible(
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemCount: widget.basket.length,
+            itemBuilder: (_, i) {
+              final item = widget.basket[i];
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: cs.primary,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(ing.name, style: TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w600,
-                    color: cs.onPrimary)),
-                  const SizedBox(width: 5),
-                  Icon(Icons.close_rounded, size: 12, color: cs.onPrimary),
+                  color: nc.surface2,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: nc.border)),
+                child: Row(children: [
+                  Text(item.food.category.emoji,
+                    style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(item.food.name, style: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w600, color: nc.text1)),
+                    Text('${item.grams.round()}g · ${item.calories} kcal',
+                      style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
+                  ])),
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      widget.onRemove(i);
+                      setState(() {});
+                      if (widget.basket.isEmpty) Navigator.pop(context);
+                    },
+                    child: Container(
+                      width: 30, height: 30,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEEEE),
+                        borderRadius: BorderRadius.circular(8)),
+                      child: const Icon(LucideIcons.trash2,
+                        size: 13, color: Color(0xFFE03050)))),
                 ]),
-              ),
-            )),
-          ]),
-        ],
+              );
+            },
+          ),
+        ),
+
+        Padding(
+          padding: EdgeInsets.fromLTRB(20, 8, 20, bottom + 16),
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: _kGreen,
+                borderRadius: BorderRadius.circular(16)),
+              child: Center(child: Text('Fermer', style: GoogleFonts.inter(
+                fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)))),
+          )),
       ]),
     );
   }
+}
 
-  // ── Form content (modes 1-3) ──────────────────────────────────────────────
-  Widget _buildFormContent(ColorScheme cs) {
-    return Column(children: [
-      Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: cs.secondaryContainer.withValues(alpha: 0.35),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          'Saisis le nom du produit ou plat. Si les macros ne sont pas connues, tu peux juste mettre les calories.',
-          style: TextStyle(fontSize: 12, color: cs.onSurface, height: 1.5),
-        ),
-      ),
-      const SizedBox(height: 14),
-      Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: cs.surface, borderRadius: BorderRadius.circular(18)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _FormField('Nom du plat / produit', 'Ex: Riz thaï au poulet',
-            controller: _nameCtrl, onChanged: (_) => setState(() {})),
-          const SizedBox(height: 14),
-          Row(children: [
-            Expanded(child: _FormField('Calories (kcal)', 'Ex: 450',
-              controller: _calCtrl, keyboardType: TextInputType.number,
-              onChanged: (_) => setState(() {}))),
-            const SizedBox(width: 10),
-            Expanded(child: _FormField('Poids (g)', 'Ex: 250',
-              controller: _poidsCtrl, keyboardType: TextInputType.number)),
-          ]),
-          const SizedBox(height: 14),
-          Text('Macronutriments', style: TextStyle(
-            fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface)),
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _MacroInputLabel('Protéines', cs.secondary),
-                const SizedBox(height: 4),
-                _FormField('', 'g', controller: _protCtrl,
-                  keyboardType: TextInputType.number),
-              ])),
-            const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _MacroInputLabel('Glucides', cs.primary),
-                const SizedBox(height: 4),
-                _FormField('', 'g', controller: _glucCtrl,
-                  keyboardType: TextInputType.number),
-              ])),
-          ]),
-          const SizedBox(height: 10),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _MacroInputLabel('Lipides', cs.tertiary),
-            const SizedBox(height: 4),
-            SizedBox(
-              width: 140,
-              child: _FormField('', 'g', controller: _lipCtrl,
-                keyboardType: TextInputType.number),
-            ),
-          ]),
-        ]),
-      ),
-    ]);
-  }
+class _TotalChip extends StatelessWidget {
+  final String value, label;
+  final Color color;
+  const _TotalChip(this.value, this.label, this.color);
 
-  // ── Corner scan marks ─────────────────────────────────────────────────────
-  Widget _corner(Color color, {required bool top, required bool left}) {
-    return Positioned(
-      top:    top  ? 14 : null,
-      bottom: !top ? 14 : null,
-      left:   left ? 14 : null,
-      right:  !left ? 14 : null,
+  @override
+  Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
+    Text(value, style: GoogleFonts.outfit(
+      fontSize: 16, fontWeight: FontWeight.w800, color: color)),
+    Text(label, style: GoogleFonts.inter(fontSize: 10, color: _kText2)),
+  ]);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  UNIT SELECTOR
+// ══════════════════════════════════════════════════════════════════════════════
+class _UnitSelector extends StatelessWidget {
+  final FoodUnit selected;
+  final ValueChanged<FoodUnit> onChanged;
+  const _UnitSelector({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final unit = await showModalBottomSheet<FoodUnit>(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (_) => _UnitPickerSheet(selected: selected),
+        );
+        if (unit != null) onChanged(unit);
+      },
       child: Container(
-        width: 22, height: 22,
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          border: Border(
-            top:    top  ? BorderSide(color: color, width: 3) : BorderSide.none,
-            bottom: !top ? BorderSide(color: color, width: 3) : BorderSide.none,
-            left:   left ? BorderSide(color: color, width: 3) : BorderSide.none,
-            right:  !left ? BorderSide(color: color, width: 3) : BorderSide.none,
-          ),
-        ),
+          color: _kMintBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _kMint.withOpacity(0.4))),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(selected.shortLabel, style: GoogleFonts.inter(
+            fontSize: 14, fontWeight: FontWeight.w700, color: _kGreen)),
+          const SizedBox(width: 6),
+          const Icon(LucideIcons.chevronsUpDown, size: 14, color: _kGreen),
+        ]),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared form widgets (unchanged from original)
-// ─────────────────────────────────────────────────────────────────────────────
-class _FormField extends StatelessWidget {
-  final String label, hint;
-  final TextEditingController controller;
-  final TextInputType keyboardType;
-  final ValueChanged<String>? onChanged;
-  const _FormField(this.label, this.hint, {
-    required this.controller,
-    this.keyboardType = TextInputType.text,
-    this.onChanged,
+class _UnitPickerSheet extends StatelessWidget {
+  final FoodUnit selected;
+  const _UnitPickerSheet({required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    final nc     = NutritionColors.of(context);
+    final bottom = MediaQuery.of(context).padding.bottom;
+    return Container(
+      decoration: BoxDecoration(
+        color: nc.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 36, height: 4,
+          decoration: BoxDecoration(
+            color: nc.border,
+            borderRadius: BorderRadius.circular(2))),
+        const SizedBox(height: 14),
+        Text('Unité de mesure', style: GoogleFonts.outfit(
+          fontSize: 18, fontWeight: FontWeight.w800, color: nc.text1)),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8, runSpacing: 8,
+          children: FoodUnit.values.map((unit) {
+            final isSelected = unit == selected;
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.pop(context, unit);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? _kGreen : nc.surface2,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected ? _kGreen : nc.border)),
+                child: Text(unit.label, style: GoogleFonts.inter(
+                  fontSize: 14, fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : nc.text1)),
+              ),
+            );
+          }).toList(),
+        ),
+      ]),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MEAL TYPE PICKER SHEET
+// ══════════════════════════════════════════════════════════════════════════════
+class _MealTypePickerSheet extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final nc     = NutritionColors.of(context);
+    final bottom = MediaQuery.of(context).padding.bottom;
+    return Container(
+      decoration: BoxDecoration(
+        color: nc.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 36, height: 4,
+          decoration: BoxDecoration(
+            color: nc.border,
+            borderRadius: BorderRadius.circular(2))),
+        const SizedBox(height: 16),
+        Text('Quel repas ?', style: GoogleFonts.outfit(
+          fontSize: 20, fontWeight: FontWeight.w800,
+          color: nc.text1)),
+        const SizedBox(height: 16),
+        ...MealType.values.map((type) => GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            Navigator.pop(context, type);
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: nc.surface2,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: nc.border)),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: nc.mintBg,
+                  borderRadius: BorderRadius.circular(10)),
+                child: Icon(_typeIcon(type), size: 16,
+                  color: const Color(0xFF1C4D30))),
+              const SizedBox(width: 12),
+              Text(type.label, style: GoogleFonts.inter(
+                fontSize: 15, fontWeight: FontWeight.w600,
+                color: nc.text1)),
+              const Spacer(),
+              Text('${type.budgetKcal} kcal', style: GoogleFonts.inter(
+                fontSize: 12, color: nc.text2)),
+            ])))),
+      ]));
+  }
+
+  IconData _typeIcon(MealType t) => switch (t) {
+    MealType.breakfast => LucideIcons.coffee,
+    MealType.lunch     => LucideIcons.utensils,
+    MealType.snack     => LucideIcons.apple,
+    MealType.dinner    => LucideIcons.moon,
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SMALL WIDGETS
+// ══════════════════════════════════════════════════════════════════════════════
+class _FoodSelectTile extends StatelessWidget {
+  final FoodItem food;
+  final bool isSelected;
+  final double? selectedGrams;
+  final VoidCallback onToggle;
+  final VoidCallback onEditQuantity;
+  const _FoodSelectTile({
+    required this.food,
+    required this.isSelected,
+    required this.onToggle,
+    required this.onEditQuantity,
+    this.selectedGrams,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (label.isNotEmpty) ...[
-        Text(label, style: TextStyle(
-          fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface)),
-        const SizedBox(height: 6),
-      ],
-      TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        onChanged: onChanged,
-        style: TextStyle(fontSize: 14, color: cs.onSurface),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(
-            color: cs.onSurfaceVariant.withValues(alpha: 0.5), fontSize: 14),
-          filled: true,
-          fillColor: cs.surfaceContainerHighest,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: cs.primary, width: 1.5)),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14, vertical: 14),
-        ),
-      ),
+    final nc    = NutritionColors.of(context);
+    final grams = selectedGrams ?? food.defaultGrams;
+    final kcal  = food.kcalFor(grams).round();
+
+    return GestureDetector(
+      onTap: onToggle,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? nc.mintBg : nc.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? _kMint : nc.border,
+            width: isSelected ? 1.5 : 1.0)),
+        child: Row(children: [
+
+          // Food photo
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 42, height: 42,
+              child: Image.network(
+                _catPhoto(food.category),
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : Container(
+                        color: _catColor(food.category).withOpacity(0.12),
+                        child: Icon(_catIcon(food.category),
+                          size: 18, color: _catColor(food.category))),
+                errorBuilder: (_, __, ___) => Container(
+                  color: _catColor(food.category).withOpacity(0.12),
+                  child: Icon(_catIcon(food.category),
+                    size: 18, color: _catColor(food.category))),
+              ))),
+
+          const SizedBox(width: 12),
+
+          // Name + serving info
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(food.name, style: GoogleFonts.inter(
+              fontSize: 14, fontWeight: FontWeight.w700,
+              color: nc.text1)),
+            const SizedBox(height: 3),
+            Row(children: [
+              // Serving/quantity pill — tap to edit when selected
+              GestureDetector(
+                onTap: isSelected ? onEditQuantity : null,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isSelected ? nc.surface : nc.chipBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: isSelected
+                        ? Border.all(color: _kMint.withOpacity(0.5))
+                        : null),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(
+                      isSelected
+                          ? '${grams.round()} g'
+                          : food.portionLabel,
+                      style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w600,
+                        color: isSelected ? _kGreen : nc.text2)),
+                    if (isSelected) ...[
+                      const SizedBox(width: 3),
+                      const Icon(LucideIcons.chevronDown, size: 10, color: _kGreen),
+                    ],
+                  ])),
+              ),
+              const SizedBox(width: 8),
+              Text('$kcal kcal',
+                style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w700,
+                  color: isSelected ? _kGreen : nc.text2)),
+            ]),
+          ])),
+
+          const SizedBox(width: 10),
+
+          // Toggle button
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: isSelected ? _kGreen : nc.chipBg,
+              shape: BoxShape.circle,
+              boxShadow: isSelected ? [BoxShadow(
+                color: _kGreen.withOpacity(0.3),
+                blurRadius: 8, offset: const Offset(0, 2))] : []),
+            child: Icon(
+              isSelected ? LucideIcons.check : LucideIcons.plus,
+              size: 16,
+              color: isSelected ? Colors.white : nc.text2)),
+        ])));
+  }
+}
+
+class _EmptySearch extends StatelessWidget {
+  final String query;
+  const _EmptySearch({required this.query});
+
+  @override
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: nc.surface, borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: nc.border)),
+    child: Column(children: [
+      Icon(LucideIcons.searchX, size: 32, color: nc.text2),
+      const SizedBox(height: 10),
+      Text('Aucun résultat pour "$query"',
+        style: GoogleFonts.inter(fontSize: 13, color: nc.text2)),
+      const SizedBox(height: 4),
+      Text('Essaie le mode Manuel pour l\'ajouter',
+        style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
+    ]));
+  }
+}
+
+class _PortionChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _PortionChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: selected ? _kGreen : nc.chipBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: selected ? _kGreen : nc.border)),
+      child: Text(label, style: GoogleFonts.inter(
+        fontSize: 11, fontWeight: FontWeight.w600,
+        color: selected ? Colors.white : nc.text1))));
+  }
+}
+
+class _ModeTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _ModeTab({required this.icon, required this.label,
+    required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Expanded(
+    child: GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: BoxDecoration(
+          color: active ? _kGreen : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: active ? [BoxShadow(
+            color: _kGreen.withOpacity(0.2),
+            blurRadius: 8, offset: const Offset(0, 2))] : []),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 16, color: active ? Colors.white : nc.text2),
+          const SizedBox(height: 3),
+          Text(label, style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            color: active ? Colors.white : nc.text2)),
+        ]))));
+  }
+}
+
+class _AppField extends StatelessWidget {
+  final String label, hint;
+  final TextEditingController controller;
+  final TextInputType keyboard;
+  final ValueChanged<String>? onChanged;
+  const _AppField(this.label, this.hint, this.controller, {
+    this.keyboard = TextInputType.text, this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Column(
+    crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Text(label, style: GoogleFonts.inter(
+      fontSize: 11, fontWeight: FontWeight.w600, color: nc.text2)),
+    const SizedBox(height: 6),
+    TextField(
+      controller: controller, keyboardType: keyboard, onChanged: onChanged,
+      style: GoogleFonts.inter(fontSize: 14, color: nc.text1),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(fontSize: 13, color: nc.text2),
+        filled: true, fillColor: nc.chipBg,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _kMint, width: 1.5)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13)))]);
+  }
+}
+
+class _MacroInput extends StatelessWidget {
+  final String label, unit;
+  final Color color;
+  final TextEditingController controller;
+  const _MacroInput(this.label, this.unit, this.color, this.controller);
+
+  @override
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return Column(
+    crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Row(children: [
+      Container(width: 6, height: 6,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 5),
+      Text(label, style: GoogleFonts.inter(
+        fontSize: 10, color: nc.text2, fontWeight: FontWeight.w600)),
+    ]),
+    const SizedBox(height: 6),
+    TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      style: GoogleFonts.inter(fontSize: 14, color: nc.text1),
+      decoration: InputDecoration(
+        hintText: unit,
+        hintStyle: GoogleFonts.inter(fontSize: 13, color: nc.text2),
+        filled: true, fillColor: nc.chipBg,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: color, width: 1.5)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12))),
     ]);
   }
 }
 
-class _MacroInputLabel extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _MacroInputLabel(this.label, this.color);
-
-  @override
-  Widget build(BuildContext context) => Row(children: [
-    Container(width: 7, height: 7,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-    const SizedBox(width: 5),
-    Text(label, style: TextStyle(
-      fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-  ]);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Scan result helpers
-// ─────────────────────────────────────────────────────────────────────────────
-class _MacroChipBadge extends StatelessWidget {
+class _MacroBadge extends StatelessWidget {
   final String label;
   final Color color, bg;
-  const _MacroChipBadge(this.label, this.color, this.bg);
+  const _MacroBadge(this.label, this.color, this.bg);
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
     decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-    child: Text(label, style: TextStyle(
-      fontSize: 11, fontWeight: FontWeight.w700, color: color)),
-  );
+    child: Text(label, style: GoogleFonts.inter(
+      fontSize: 11, fontWeight: FontWeight.w700, color: color)));
 }
 
-class _MacroProgressBar extends StatelessWidget {
+class _MacroBar extends StatelessWidget {
   final String label;
-  final int value, max;
+  final int value, maxPer100;
   final Color color;
-  const _MacroProgressBar(this.label, this.value, this.max, this.color);
+  const _MacroBar(this.label, this.value, this.maxPer100, this.color);
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(label, style: TextStyle(
-          fontSize: 12, fontWeight: FontWeight.w600, color: cs.onSurface)),
-        Text('${value}g / ${max}g recommandés',
-          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
-      ]),
-      const SizedBox(height: 7),
-      ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: LinearProgressIndicator(
-          value: (value / max).clamp(0.0, 1.0),
-          minHeight: 7,
-          backgroundColor: color.withValues(alpha: 0.12),
-          valueColor: AlwaysStoppedAnimation(color),
-        ),
-      ),
+    final nc = NutritionColors.of(context);
+    return Column(
+    crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Text(label, style: GoogleFonts.inter(
+        fontSize: 12, fontWeight: FontWeight.w600, color: nc.text1)),
+      Text('${value}g', style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
+    ]),
+    const SizedBox(height: 6),
+    ClipRRect(
+      borderRadius: BorderRadius.circular(5),
+      child: LinearProgressIndicator(
+        value: maxPer100 > 0 ? (value / maxPer100).clamp(0.0, 1.0) : 0,
+        minHeight: 5,
+        backgroundColor: color.withOpacity(0.12),
+        valueColor: AlwaysStoppedAnimation(color))),
     ]);
   }
+}
+
+class _Corner extends StatelessWidget {
+  final Color color;
+  final bool top, left;
+  const _Corner(this.color, {required this.top, required this.left});
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    top: top ? 16 : null, bottom: !top ? 16 : null,
+    left: left ? 16 : null, right: !left ? 16 : null,
+    child: Container(
+      width: 24, height: 24,
+      decoration: BoxDecoration(
+        border: Border(
+          top:    top  ? BorderSide(color: color, width: 2.5) : BorderSide.none,
+          bottom: !top ? BorderSide(color: color, width: 2.5) : BorderSide.none,
+          left:   left ? BorderSide(color: color, width: 2.5) : BorderSide.none,
+          right:  !left ? BorderSide(color: color, width: 2.5) : BorderSide.none))));
+}
+
+// ── Scanning animated dots ─────────────────────────────────────────────────
+class _ScanningDots extends StatefulWidget {
+  const _ScanningDots();
+  @override
+  State<_ScanningDots> createState() => _ScanningDotsState();
+}
+
+class _ScanningDotsState extends State<_ScanningDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900))
+      ..repeat();
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final t = _ctrl.value;
+        return Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) {
+          final scale = (1 + 0.5 * ((t * 3 - i).clamp(0, 1) *
+            (1 - (t * 3 - i).clamp(0, 1)) * 4)).clamp(0.7, 1.5);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: Transform.scale(
+              scale: scale,
+              child: Container(
+                width: 10, height: 10,
+                decoration: BoxDecoration(
+                  color: _kMint,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(
+                    color: _kMint.withOpacity(0.5 * (scale - 0.7)),
+                    blurRadius: 8)]))));
+        }));
+      });
+  }
+}
+
+// ── Scan macro pill ────────────────────────────────────────────────────────
+class _ScanMacroPill extends StatelessWidget {
+  final String label;
+  final int value;
+  final String unit;
+  final Color color;
+  const _ScanMacroPill(this.label, this.value, this.unit, this.color);
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2))),
+      child: Column(children: [
+        Text('$value$unit', style: GoogleFonts.inter(
+          fontSize: 15, fontWeight: FontWeight.w800, color: color)),
+        const SizedBox(height: 2),
+        Text(label, style: GoogleFonts.inter(
+          fontSize: 10, color: _kText2)),
+      ])));
 }

@@ -74,7 +74,7 @@ class _MainLayoutState extends State<MainLayout>
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    CycleApp(),
+    CycleScreen(),
     WorkoutScreen(),
     NutritionHomeScreen(),
     BoutiqueScreen(),
