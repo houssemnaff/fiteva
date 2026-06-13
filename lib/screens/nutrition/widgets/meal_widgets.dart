@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../models/models.dart';
 import 'shared/shared_widgets.dart';
 import 'shared/donut_painters.dart';
 
 class MealTypeSheet extends StatefulWidget {
-  final VoidCallback onConfirm;
-  const MealTypeSheet({super.key, required this.onConfirm});
+  final String? initialTypeId;
+  const MealTypeSheet({super.key, this.initialTypeId});
 
   @override
   State<MealTypeSheet> createState() => _MealTypeSheetState();
@@ -14,13 +15,23 @@ class MealTypeSheet extends StatefulWidget {
 
 class _MealTypeSheetState extends State<MealTypeSheet> {
   int? _selected;
+
+  // (icon, label, typeId)
   static const _types = [
-    ('🍳', 'Petit déjeuner'),
-    ('🥗', 'Déjeuner'),
-    ('🍏', 'Collation'),
-    ('🥘', 'Diner'),
-    ('🍫', 'Extras'),
+    (LucideIcons.coffee,   'Petit déjeuner', 'breakfast'),
+    (LucideIcons.utensils, 'Déjeuner',       'lunch'),
+    (LucideIcons.apple,    'Collation',      'snack'),
+    (LucideIcons.moon,     'Dîner',          'dinner'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTypeId != null) {
+      _selected = _types.indexWhere((t) => t.$3 == widget.initialTypeId);
+      if (_selected == -1) _selected = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +137,11 @@ class _MealTypeSheetState extends State<MealTypeSheet> {
                           ),
                           child: Row(
                             children: [
-                              Text(e.value.$1, style: const TextStyle(fontSize: 22)),
+                              Icon(e.value.$1,
+                                size: 18,
+                                color: _selected == e.key
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant),
                               const SizedBox(width: 12),
                               Text(
                                 e.value.$2,
@@ -149,7 +164,9 @@ class _MealTypeSheetState extends State<MealTypeSheet> {
                     ),
                 const SizedBox(height: 14),
                 GestureDetector(
-                  onTap: _selected != null ? widget.onConfirm : null,
+                  onTap: _selected != null
+                      ? () => Navigator.pop(context, _types[_selected!].$3)
+                      : null,
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 15),

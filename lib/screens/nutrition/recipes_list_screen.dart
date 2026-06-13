@@ -1,12 +1,17 @@
 // ignore_for_file: deprecated_member_use
+import 'package:fiteva/core/nutrition/favorites_provider.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/Phasecolors.dart';
+import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'models/models.dart';
 import 'recette_detail_screen.dart';
 import 'recipe_video_screen.dart';
+import 'all_video_recipes_screen.dart';
+import 'all_image_recipes_screen.dart';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const _kGreen  = Color(0xFF1C4D30);
@@ -40,7 +45,7 @@ class RealRecipe {
   });
 }
 
-const _allRecipes = [
+const allRecipes = [
   RealRecipe(
     name: 'Poke Bowl Saumon Avocat',
     subtitle: 'Riz, saumon mariné, avocat, edamame',
@@ -91,8 +96,9 @@ const _allRecipes = [
   ),
 ];
 
-const _categories = [
+const _filterCategories = [
   (label: 'Tout',          icon: LucideIcons.layoutGrid),
+
   (label: 'Petit-dej',     icon: LucideIcons.sunrise),
   (label: 'Protéiné',      icon: LucideIcons.dumbbell),
   (label: 'Végé',          icon: LucideIcons.leaf),
@@ -102,43 +108,144 @@ const _categories = [
 ];
 
 // ── Video data ─────────────────────────────────────────────────────────────────
-class _VideoRecipe {
-  final String name, imageUrl, duration, difficulty;
+class VideoIngredient {
+  final String name, qty;
   final int kcal;
+  const VideoIngredient({required this.name, required this.qty, required this.kcal});
+}
+
+class VideoStep {
+  final int number;
+  final String title, description;
+  const VideoStep({required this.number, required this.title, required this.description});
+}
+
+class VideoRecipe {
+  final String name, subtitle, imageUrl, duration, difficulty;
+  final String? videoAsset;
+  final int kcal, proteins;
   final CyclePhase phase;
-  const _VideoRecipe({
-    required this.name, required this.imageUrl, required this.duration,
-    required this.difficulty, required this.kcal, required this.phase,
+  final List<VideoIngredient> ingredients;
+  final List<VideoStep> steps;
+  const VideoRecipe({
+    required this.name, required this.subtitle, required this.imageUrl,
+    required this.duration, required this.difficulty,
+    required this.kcal, required this.proteins,
+    required this.phase, required this.ingredients, required this.steps,
+    this.videoAsset,
   });
 }
 
-const _videoRecipes = [
-  _VideoRecipe(name: 'Soupe anti-crampes',
+const videoRecipes = [
+  VideoRecipe(
+    name: 'Pancakes Petit-déj Protéinés',
+    subtitle: 'Flocons d\'avoine, œufs, banane, miel',
+    imageUrl: 'https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=400&q=80',
+    videoAsset: 'assets/videos/ptitdej.mp4',
+    duration: '15 min', difficulty: 'Très facile',
+    kcal: 342, proteins: 22, phase: CyclePhase.follicular,
+    ingredients: [
+      VideoIngredient(name: 'Flocons d\'avoine',  qty: '60 g',   kcal: 230),
+      VideoIngredient(name: 'Œufs entiers',        qty: '2 pièces', kcal: 140),
+      VideoIngredient(name: 'Banane mûre',          qty: '1 pièce', kcal: 89),
+      VideoIngredient(name: 'Lait végétal',         qty: '100 ml',  kcal: 35),
+      VideoIngredient(name: 'Miel',                 qty: '1 c. à s.', kcal: 60),
+      VideoIngredient(name: 'Levure chimique',      qty: '½ c. à c.', kcal: 3),
+    ],
+    steps: [
+      VideoStep(number: 1, title: 'Mixer la base',
+        description: 'Mixe les flocons d\'avoine en farine fine. Ajoute la banane et les œufs, puis mixe à nouveau jusqu\'à obtenir une pâte lisse.'),
+      VideoStep(number: 2, title: 'Ajuster la consistance',
+        description: 'Verse le lait végétal en filet en mélangeant. La pâte doit être fluide mais pas trop liquide. Ajoute la levure et mélange doucement.'),
+      VideoStep(number: 3, title: 'Cuire les pancakes',
+        description: 'Chauffe une poêle antiadhésive à feu moyen. Verse une louche de pâte et cuis 2 min jusqu\'à ce que des bulles se forment. Retourne et cuis encore 1 min.'),
+      VideoStep(number: 4, title: 'Dresser et servir',
+        description: 'Empile les pancakes, arrose de miel et ajoute des fruits frais. Sers immédiatement pour profiter du moelleux optimal.'),
+    ],
+  ),
+  VideoRecipe(
+    name: 'Soupe anti-crampes',
+    subtitle: 'Lentilles, épinards, curcuma, gingembre',
     imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80',
-    duration: '20 min', difficulty: 'Facile', kcal: 180, phase: CyclePhase.menstrual),
-  _VideoRecipe(name: 'Poke Bowl vitalité',
+    duration: '20 min', difficulty: 'Facile',
+    kcal: 180, proteins: 9, phase: CyclePhase.menstrual,
+    ingredients: [
+      VideoIngredient(name: 'Lentilles rouges', qty: '80 g',  kcal: 90),
+      VideoIngredient(name: 'Épinards frais',   qty: '100 g', kcal: 23),
+      VideoIngredient(name: 'Curcuma',          qty: '1 c. à c.', kcal: 8),
+      VideoIngredient(name: 'Gingembre frais',  qty: '1 cm',  kcal: 5),
+      VideoIngredient(name: 'Bouillon légumes', qty: '500 ml', kcal: 20),
+    ],
+    steps: [
+      VideoStep(number: 1, title: 'Faire revenir les épices',
+        description: 'Dans une casserole, chauffe un filet d\'huile et fais revenir le curcuma et le gingembre râpé 1 minute pour libérer les arômes.'),
+      VideoStep(number: 2, title: 'Ajouter les lentilles',
+        description: 'Verse les lentilles rinsées et le bouillon chaud. Porte à ébullition puis baisse le feu. Cuis 12 min à couvert.'),
+      VideoStep(number: 3, title: 'Incorporer les épinards',
+        description: 'Ajoute les épinards frais en fin de cuisson. Mélange et laisse cuire encore 2 min. Ajuste sel et poivre.'),
+      VideoStep(number: 4, title: 'Mixer et servir',
+        description: 'Mixe la moitié de la soupe pour une texture mi-crémeuse mi-chunky. Sers chaud avec un filet de citron.'),
+    ],
+  ),
+  VideoRecipe(
+    name: 'Poke Bowl vitalité',
+    subtitle: 'Riz, saumon, avocat, edamame',
     imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80',
-    duration: '15 min', difficulty: 'Facile', kcal: 420, phase: CyclePhase.follicular),
-  _VideoRecipe(name: 'Smoothie énergie max',
-    imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&q=80',
-    duration: '5 min', difficulty: 'Très facile', kcal: 280, phase: CyclePhase.ovulation),
-  _VideoRecipe(name: 'Pasta réconfort',
+    duration: '15 min', difficulty: 'Facile',
+    kcal: 420, proteins: 28, phase: CyclePhase.follicular,
+    ingredients: [
+      VideoIngredient(name: 'Riz sushi cuit',  qty: '150 g', kcal: 195),
+      VideoIngredient(name: 'Saumon frais',    qty: '120 g', kcal: 200),
+      VideoIngredient(name: 'Avocat',          qty: '½ pièce', kcal: 80),
+      VideoIngredient(name: 'Edamame',         qty: '50 g',  kcal: 55),
+      VideoIngredient(name: 'Sauce soja',      qty: '2 c. à s.', kcal: 12),
+    ],
+    steps: [
+      VideoStep(number: 1, title: 'Assaisonner le riz',
+        description: 'Mélange le riz tiède avec un peu de vinaigre de riz et une pincée de sel. Étale dans le bol.'),
+      VideoStep(number: 2, title: 'Préparer le saumon',
+        description: 'Coupe le saumon en cubes. Marine-le 5 min avec sauce soja, sésame et un filet de citron.'),
+      VideoStep(number: 3, title: 'Dresser le bowl',
+        description: 'Dispose le saumon, l\'avocat tranché et les edamame sur le riz. Ajoute tes garnitures favorites et sers frais.'),
+    ],
+  ),
+  VideoRecipe(
+    name: 'Pasta réconfort',
+    subtitle: 'Pâtes crémeuses, champignons, parmesan',
     imageUrl: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&q=80',
-    duration: '30 min', difficulty: 'Facile', kcal: 520, phase: CyclePhase.luteal),
+    duration: '30 min', difficulty: 'Facile',
+    kcal: 520, proteins: 18, phase: CyclePhase.luteal,
+    ingredients: [
+      VideoIngredient(name: 'Penne',           qty: '80 g',  kcal: 280),
+      VideoIngredient(name: 'Champignons',      qty: '150 g', kcal: 33),
+      VideoIngredient(name: 'Crème légère',     qty: '100 ml', kcal: 110),
+      VideoIngredient(name: 'Parmesan râpé',    qty: '30 g',  kcal: 120),
+      VideoIngredient(name: 'Ail',             qty: '2 gousses', kcal: 8),
+    ],
+    steps: [
+      VideoStep(number: 1, title: 'Cuire les pâtes',
+        description: 'Cuis les pâtes al dente selon les instructions. Réserve un peu d\'eau de cuisson.'),
+      VideoStep(number: 2, title: 'Faire revenir les champignons',
+        description: 'Saute les champignons à feu vif avec l\'ail dans un peu de beurre jusqu\'à dorure.'),
+      VideoStep(number: 3, title: 'Créer la sauce',
+        description: 'Ajoute la crème, le parmesan et un peu d\'eau de cuisson. Laisse réduire 2 min à feu doux.'),
+      VideoStep(number: 4, title: 'Mélanger et servir',
+        description: 'Incorpore les pâtes à la sauce. Mélange bien, ajuste l\'assaisonnement et sers avec du parmesan supplémentaire.'),
+    ],
+  ),
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
-
-class RecipesListScreen extends StatefulWidget {
+class RecipesListScreen extends ConsumerStatefulWidget {
   const RecipesListScreen({super.key});
 
   @override
-  State<RecipesListScreen> createState() => _RecipesListScreenState();
+  ConsumerState<RecipesListScreen> createState() => _RecipesListScreenState();
 }
 
-class _RecipesListScreenState extends State<RecipesListScreen> {
+class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
   String _activeCategory = 'Tout';
   String _searchQuery    = '';
   final _searchCtrl      = TextEditingController();
@@ -149,11 +256,20 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
     super.dispose();
   }
 
-  List<RealRecipe> get _filtered {
-    var list = _allRecipes.toList();
-    if (_activeCategory != 'Tout') {
+  void _toggleFavorite(String name) {
+    HapticFeedback.lightImpact();
+    ref.read(favoritesProvider.notifier).toggle(name);
+  }
+
+  List<RealRecipe> _filtered(Set<String> favorites) {
+    var list = allRecipes.toList();
+
+    if (_activeCategory == 'Favoris') {
+      list = list.where((r) => favorites.contains(r.name)).toList();
+    } else if (_activeCategory != 'Tout') {
       list = list.where((r) => r.tags.contains(_activeCategory)).toList();
     }
+
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       list = list.where((r) =>
@@ -166,21 +282,34 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final top      = MediaQuery.of(context).padding.top;
-    final filtered = _filtered;
+    final top       = MediaQuery.of(context).padding.top;
+    final favorites = ref.watch(favoritesProvider);
+    final filtered  = _filtered(favorites);
+    final nc        = NutritionColors.of(context);
+    final isFavMode = _activeCategory == 'Favoris';
+    final videoFavs = isFavMode
+        ? videoRecipes.where((r) => favorites.contains(r.name)).toList()
+        : <VideoRecipe>[];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: _kCream,
+        backgroundColor: nc.bg,
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
 
-            // ── Sticky header ──────────────────────────────────────
-            _StickyHeader(top: top, onBack: () => Navigator.pop(context)),
+            _StickyHeader(
+              top: top,
+              onBack: () => Navigator.pop(context),
+              favCount: favorites.length,
+              onFavTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _activeCategory =
+                  _activeCategory == 'Favoris' ? 'Tout' : 'Favoris');
+              },
+            ),
 
-            // ── Search bar ─────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -196,7 +325,6 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
               ),
             ),
 
-            // ── Category pills ─────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(top: 14),
@@ -207,12 +335,17 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     physics: const BouncingScrollPhysics(),
                     separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemCount: _categories.length,
+                    itemCount: _filterCategories.length,
                     itemBuilder: (_, i) {
-                      final c   = _categories[i];
+                      final c   = _filterCategories[i];
                       final sel = _activeCategory == c.label;
+                      final isFavPill = c.label == 'Favoris';
                       return _CategoryPill(
-                        label: c.label, icon: c.icon, selected: sel,
+                        label: c.label,
+                        icon: c.icon,
+                        selected: sel,
+                        badge: isFavPill && favorites.isNotEmpty
+                            ? favorites.length : null,
                         onTap: () {
                           HapticFeedback.selectionClick();
                           setState(() => _activeCategory = c.label);
@@ -224,74 +357,162 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
               ),
             ),
 
-            // ── Hero recipe ────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                child: _HeroCard(
-                  recipe: _allRecipes.first,
-                  onTap: () => _openRecipe(context, _allRecipes.first),
-                ),
-              ),
-            ),
-
-            // ── Vidéos ─────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: _SectionHeader(
-                icon: LucideIcons.play, eyebrow: 'VIDÉOS',
-                title: 'Recettes rapides', action: 'Voir tout', onAction: () {},
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 178,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  physics: const BouncingScrollPhysics(),
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemCount: _videoRecipes.length,
-                  itemBuilder: (_, i) => _VideoCard(
-                    recipe: _videoRecipes[i],
-                    onTap: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => RecipeVideoPlayerScreen(
-                        recipeName: _videoRecipes[i].name,
-                        imageUrl: _videoRecipes[i].imageUrl,
-                        duration: _videoRecipes[i].duration,
-                        difficulty: _videoRecipes[i].difficulty,
-                        kcal: _videoRecipes[i].kcal,
-                        phase: _videoRecipes[i].phase))),
+            // Hero card (hidden in Favoris mode)
+            if (!isFavMode) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                  child: _HeroCard(
+                    recipe: allRecipes.first,
+                    isFavorite: favorites.contains(allRecipes.first.name),
+                    onToggleFavorite: () => _toggleFavorite(allRecipes.first.name),
+                    onTap: () => _openRecipe(context, allRecipes.first),
                   ),
                 ),
               ),
-            ),
+              SliverToBoxAdapter(
+                child: _SectionHeader(
+                  icon: LucideIcons.play, eyebrow: 'VIDÉOS',
+                  title: 'Recettes rapides',
+                  action: 'Voir tout',
+                  onAction: () => Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => const AllVideoRecipesScreen())),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 178,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    physics: const BouncingScrollPhysics(),
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemCount: videoRecipes.length,
+                    itemBuilder: (_, i) => _VideoCard(
+                      recipe: videoRecipes[i],
+                      isFavorite: favorites.contains(videoRecipes[i].name),
+                      onToggleFavorite: () => _toggleFavorite(videoRecipes[i].name),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => RecipeVideoPlayerScreen(recipe: videoRecipes[i]))),
+                    ),
+                  ),
+                ),
+              ),
+            ],
 
-            // ── All recipes ────────────────────────────────────────
+            // Vidéos favorites (mode Favoris uniquement)
+            if (isFavMode && videoFavs.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: _SectionHeader(
+                  icon: LucideIcons.video, eyebrow: 'FAVORIS',
+                  title: 'Recettes vidéos',
+                  action: '${videoFavs.length} recette${videoFavs.length > 1 ? "s" : ""}',
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                sliver: SliverList.separated(
+                  itemCount: videoFavs.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (ctx, i) {
+                    final r = videoFavs[i];
+                    return GestureDetector(
+                      onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                        builder: (_) => RecipeVideoPlayerScreen(recipe: r))),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: _kBorder)),
+                        child: Row(children: [
+                          Stack(children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(r.imageUrl,
+                                width: 62, height: 62, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: 62, height: 62, color: _kMintBg))),
+                            Positioned.fill(child: Center(
+                              child: Container(
+                                width: 26, height: 26,
+                                decoration: BoxDecoration(
+                                  color: _kGreen.withOpacity(0.88),
+                                  shape: BoxShape.circle),
+                                child: const Icon(LucideIcons.play,
+                                  color: Colors.white, size: 11)))),
+                          ]),
+                          const SizedBox(width: 12),
+                          Expanded(child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(r.name, style: GoogleFonts.outfit(
+                              fontSize: 13.5, fontWeight: FontWeight.w700, color: _kText1)),
+                            const SizedBox(height: 3),
+                            Text('${r.kcal} kcal · ${r.duration}',
+                              style: GoogleFonts.inter(fontSize: 11.5, color: _kText2)),
+                          ])),
+                          GestureDetector(
+                            onTap: () => _toggleFavorite(r.name),
+                            child: const Icon(LucideIcons.heart,
+                              color: Color(0xFFE03050), size: 20)),
+                        ]),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+
             SliverToBoxAdapter(
               child: _SectionHeader(
-                icon: LucideIcons.utensils, eyebrow: 'RECETTES',
-                title: _activeCategory == 'Tout' ? 'Toutes' : _activeCategory,
-                action: '${filtered.length} résultat${filtered.length > 1 ? "s" : ""}',
+                icon: _activeCategory == 'Favoris'
+                    ? LucideIcons.heart : LucideIcons.image,
+                eyebrow: _activeCategory == 'Favoris' ? 'MES FAVORIS' : 'RECETTES PHOTOS',
+                title: _activeCategory == 'Favoris'
+                    ? 'Mes favoris'
+                    : _activeCategory == 'Tout' ? 'Photos & Étapes' : _activeCategory,
+                action: _activeCategory == 'Tout' ? 'Voir tout' : '${filtered.length} résultat${filtered.length > 1 ? "s" : ""}',
+                onAction: _activeCategory == 'Tout'
+                    ? () => Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const AllImageRecipesScreen()))
+                    : null,
               ),
             ),
 
             if (filtered.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  padding: const EdgeInsets.symmetric(vertical: 52),
                   child: Center(
                     child: Column(children: [
                       Container(
-                        width: 56, height: 56,
+                        width: 60, height: 60,
                         decoration: BoxDecoration(
-                          color: _kMintBg, borderRadius: BorderRadius.circular(18)),
-                        child: const Icon(LucideIcons.search, color: _kGreen, size: 24)),
-                      const SizedBox(height: 14),
-                      Text('Aucune recette', style: GoogleFonts.outfit(
-                        fontSize: 17, fontWeight: FontWeight.w700, color: _kText1)),
+                          color: _activeCategory == 'Favoris'
+                              ? const Color(0xFFFFF0F3)
+                              : _kMintBg,
+                          borderRadius: BorderRadius.circular(20)),
+                        child: Icon(
+                          _activeCategory == 'Favoris'
+                              ? LucideIcons.heartOff
+                              : LucideIcons.search,
+                          color: _activeCategory == 'Favoris'
+                              ? const Color(0xFFE03050)
+                              : _kGreen,
+                          size: 26)),
+                      const SizedBox(height: 16),
+                      Text(
+                        _activeCategory == 'Favoris'
+                            ? 'Aucun favori pour l\'instant'
+                            : 'Aucune recette',
+                        style: GoogleFonts.outfit(
+                          fontSize: 17, fontWeight: FontWeight.w700, color: _kText1)),
                       const SizedBox(height: 4),
-                      Text('Essaie une autre catégorie', style: GoogleFonts.inter(
-                        fontSize: 13, color: _kText2)),
+                      Text(
+                        _activeCategory == 'Favoris'
+                            ? 'Appuie sur ♡ pour sauvegarder une recette'
+                            : 'Essaie une autre catégorie',
+                        style: GoogleFonts.inter(fontSize: 13, color: _kText2)),
                     ]),
                   ),
                 ),
@@ -304,6 +525,8 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (_, i) => _RecipeCard(
                     recipe: filtered[i],
+                    isFavorite: favorites.contains(filtered[i].name),
+                    onToggleFavorite: () => _toggleFavorite(filtered[i].name),
                     onTap: () => _openRecipe(context, filtered[i]),
                   ),
                 ),
@@ -324,26 +547,34 @@ class _RecipesListScreenState extends State<RecipesListScreen> {
 // ══════════════════════════════════════════════════════════════════════════════
 // STICKY HEADER
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _StickyHeader extends StatelessWidget {
   final double top;
   final VoidCallback onBack;
-  const _StickyHeader({required this.top, required this.onBack});
+  final int favCount;
+  final VoidCallback onFavTap;
+
+  const _StickyHeader({
+    required this.top,
+    required this.onBack,
+    required this.favCount,
+    required this.onFavTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return SliverAppBar(
       pinned: true,
       expandedHeight: top + 72,
       collapsedHeight: top + 60,
-      backgroundColor: _kCream,
+      backgroundColor: nc.bg,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       automaticallyImplyLeading: false,
       flexibleSpace: LayoutBuilder(builder: (_, __) {
         return Container(
-          color: _kCream,
+          color: nc.bg,
           padding: EdgeInsets.fromLTRB(20, top + 16, 20, 12),
           child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
             GestureDetector(
@@ -351,7 +582,7 @@ class _StickyHeader extends StatelessWidget {
               child: Container(
                 width: 38, height: 38,
                 decoration: BoxDecoration(
-                  color: _kMintBg, borderRadius: BorderRadius.circular(12)),
+                  color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
                 child: const Icon(LucideIcons.chevronLeft, color: _kGreen, size: 18),
               ),
             ),
@@ -359,16 +590,49 @@ class _StickyHeader extends StatelessWidget {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('RECETTES', style: GoogleFonts.inter(
-                  color: _kMint, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 3)),
+                  color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+                  letterSpacing: 3)),
                 Text('Explorer', style: GoogleFonts.outfit(
-                  color: _kGreen, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+                  color: nc.text1, fontSize: 22, fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4)),
               ]),
             ),
-            Container(
-              width: 38, height: 38,
-              decoration: BoxDecoration(
-                color: _kChipBg, borderRadius: BorderRadius.circular(12)),
-              child: const Icon(LucideIcons.bookmark, color: _kText2, size: 16),
+            // Favorites bookmark button with badge
+            GestureDetector(
+              onTap: onFavTap,
+              child: Stack(clipBehavior: Clip.none, children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: favCount > 0
+                        ? const Color(0xFFE03050).withOpacity(nc.isDark ? 0.25 : 0.10)
+                        : nc.chipBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: favCount > 0
+                          ? const Color(0xFFE03050).withOpacity(0.3)
+                          : Colors.transparent)),
+                  child: Icon(
+                    LucideIcons.heart,
+                    color: favCount > 0
+                        ? const Color(0xFFE03050)
+                        : nc.text2,
+                    size: 16)),
+                if (favCount > 0)
+                  Positioned(
+                    top: -4, right: -4,
+                    child: Container(
+                      width: 18, height: 18,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE03050),
+                        shape: BoxShape.circle),
+                      child: Center(child: Text(
+                        '$favCount',
+                        style: GoogleFonts.inter(
+                          fontSize: 9, fontWeight: FontWeight.w800,
+                          color: Colors.white))))),
+              ]),
             ),
           ]),
         );
@@ -380,7 +644,6 @@ class _StickyHeader extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // SEARCH BAR
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final String query;
@@ -393,28 +656,29 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: nc.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kBorder),
-        boxShadow: [BoxShadow(
+        border: Border.all(color: nc.border),
+        boxShadow: nc.isDark ? [] : [BoxShadow(
           color: Colors.black.withOpacity(0.04),
           blurRadius: 8, offset: const Offset(0, 2))],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(children: [
-        const Icon(LucideIcons.search, size: 16, color: _kText2),
+        Icon(LucideIcons.search, size: 16, color: nc.text2),
         const SizedBox(width: 10),
         Expanded(
           child: TextField(
             controller: controller,
             onChanged: onChanged,
-            style: GoogleFonts.inter(fontSize: 13.5, color: _kText1),
+            style: GoogleFonts.inter(fontSize: 13.5, color: nc.text1),
             decoration: InputDecoration(
               hintText: 'Rechercher une recette…',
-              hintStyle: GoogleFonts.inter(fontSize: 13.5, color: _kText2),
+              hintStyle: GoogleFonts.inter(fontSize: 13.5, color: nc.text2),
               border: InputBorder.none,
               isDense: true,
               contentPadding: EdgeInsets.zero),
@@ -425,8 +689,8 @@ class _SearchBar extends StatelessWidget {
             onTap: onClear,
             child: Container(
               width: 20, height: 20,
-              decoration: BoxDecoration(color: _kChipBg, shape: BoxShape.circle),
-              child: const Icon(LucideIcons.x, size: 11, color: _kText2)),
+              decoration: BoxDecoration(color: nc.chipBg, shape: BoxShape.circle),
+              child: Icon(LucideIcons.x, size: 11, color: nc.text2)),
           ),
       ]),
     );
@@ -436,43 +700,78 @@ class _SearchBar extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // CATEGORY PILL
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _CategoryPill extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool selected;
+  final int? badge;
   final VoidCallback onTap;
   const _CategoryPill({
     required this.label, required this.icon,
     required this.selected, required this.onTap,
+    this.badge,
   });
 
+  bool get _isFav => label == 'Favoris';
+
+  Color get _activeColor => _isFav ? const Color(0xFFE03050) : _kGreen;
+  Color get _activeBg    => _isFav ? const Color(0xFFE03050) : _kGreen;
+
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
+    return GestureDetector(
     onTap: onTap,
     child: AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
-        color: selected ? _kGreen : Colors.white,
+        color: selected ? _activeBg : nc.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: selected ? _kGreen : _kBorder, width: 1.2)),
+        border: Border.all(
+          color: selected
+              ? _activeBg
+              : _isFav && badge != null
+                  ? const Color(0xFFE03050).withOpacity(0.4)
+                  : nc.border,
+          width: 1.2)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12, color: selected ? Colors.white : _kText2),
+        Icon(
+          selected && _isFav ? LucideIcons.heartHandshake : icon,
+          size: 12,
+          color: selected
+              ? Colors.white
+              : _isFav
+                  ? const Color(0xFFE03050)
+                  : nc.text2),
         const SizedBox(width: 6),
         Text(label, style: GoogleFonts.inter(
           fontSize: 12.5,
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          color: selected ? Colors.white : _kText2)),
+          color: selected
+              ? Colors.white
+              : _isFav
+                  ? const Color(0xFFE03050)
+                  : nc.text2)),
+        if (badge != null && !selected) ...[
+          const SizedBox(width: 5),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE03050),
+              borderRadius: BorderRadius.circular(10)),
+            child: Text('$badge', style: GoogleFonts.inter(
+              fontSize: 9, fontWeight: FontWeight.w800,
+              color: Colors.white))),
+        ],
       ]),
     ),
-  );
+  );}
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SECTION HEADER
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String eyebrow, title;
@@ -485,14 +784,15 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 14),
       child: Row(children: [
         Container(
           width: 32, height: 32,
           decoration: BoxDecoration(
-            color: _kMintBg, borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, size: 14, color: _kGreen),
+            color: nc.mintBg, borderRadius: BorderRadius.circular(10)),
+          child: const Icon(LucideIcons.salad, size: 14, color: _kGreen),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -502,21 +802,20 @@ class _SectionHeader extends StatelessWidget {
               color: _kMint, letterSpacing: 2.5)),
             Text(title, style: GoogleFonts.outfit(
               fontSize: 17, fontWeight: FontWeight.w800,
-              color: _kText1, letterSpacing: -0.3)),
+              color: nc.text1, letterSpacing: -0.3)),
           ]),
         ),
         if (action != null)
-          GestureDetector(
-            onTap: onAction,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: onAction != null ? _kMintBg : _kChipBg,
-                borderRadius: BorderRadius.circular(20)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: onAction != null ? nc.mintBg : nc.chipBg,
+              borderRadius: BorderRadius.circular(20)),
+            child: GestureDetector(
+              onTap: onAction,
               child: Text(action!, style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w700,
-                color: onAction != null ? _kGreen : _kText2)),
-            ),
+                color: onAction != null ? _kGreen : nc.text2))),
           ),
       ]),
     );
@@ -524,13 +823,19 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// HERO CARD
+// HERO CARD  +  favorite button
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _HeroCard extends StatelessWidget {
   final RealRecipe recipe;
+  final bool isFavorite;
+  final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
-  const _HeroCard({required this.recipe, required this.onTap});
+  const _HeroCard({
+    required this.recipe,
+    required this.isFavorite,
+    required this.onToggleFavorite,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -549,9 +854,9 @@ class _HeroCard extends StatelessWidget {
         child: Stack(fit: StackFit.expand, children: [
           Image.network(recipe.imageUrl, fit: BoxFit.cover,
             loadingBuilder: (_, child, p) =>
-              p == null ? child : Container(color: _kMintBg),
+              p == null ? child : Container(color: NutritionColors.of(context).mintBg),
             errorBuilder: (_, __, ___) =>
-              Container(color: _kMintBg,
+              Container(color: NutritionColors.of(context).mintBg,
                 child: const Center(child: Icon(
                   LucideIcons.image, color: _kMint, size: 36)))),
 
@@ -576,7 +881,8 @@ class _HeroCard extends StatelessWidget {
                   fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
               ]))),
 
-          Positioned(top: 14, right: 14,
+          // Phase badge
+          Positioned(top: 14, right: 56,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
@@ -584,6 +890,26 @@ class _HeroCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20)),
               child: Text(pc.name, style: GoogleFonts.inter(
                 fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)))),
+
+          // ❤ Favorite button
+          Positioned(top: 10, right: 10,
+            child: GestureDetector(
+              onTap: onToggleFavorite,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: isFavorite
+                      ? const Color(0xFFE03050)
+                      : Colors.black.withOpacity(0.35),
+                  shape: BoxShape.circle,
+                  boxShadow: isFavorite ? [BoxShadow(
+                    color: const Color(0xFFE03050).withOpacity(0.4),
+                    blurRadius: 8, offset: const Offset(0, 3))] : []),
+                child: Icon(
+                  isFavorite ? LucideIcons.heart : LucideIcons.heart,
+                  size: 16,
+                  color: Colors.white)))),
 
           Positioned(bottom: 14, left: 16, right: 16,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -608,24 +934,31 @@ class _HeroCard extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // VIDEO CARD
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _VideoCard extends StatelessWidget {
-  final _VideoRecipe recipe;
+  final VideoRecipe recipe;
+  final bool isFavorite;
   final VoidCallback onTap;
-  const _VideoCard({required this.recipe, required this.onTap});
+  final VoidCallback onToggleFavorite;
+  const _VideoCard({
+    required this.recipe,
+    required this.isFavorite,
+    required this.onTap,
+    required this.onToggleFavorite,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     final pc = PhaseColors.forPhase(recipe.phase);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 140,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: nc.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _kBorder),
-          boxShadow: [BoxShadow(
+          border: Border.all(color: nc.border),
+          boxShadow: nc.isDark ? [] : [BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 8, offset: const Offset(0, 3))],
         ),
@@ -647,6 +980,19 @@ class _VideoCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.90), shape: BoxShape.circle),
                   child: Icon(LucideIcons.play, color: pc.primary, size: 13))),
+              Positioned(
+                top: 6, right: 6,
+                child: GestureDetector(
+                  onTap: onToggleFavorite,
+                  child: Container(
+                    width: 26, height: 26,
+                    decoration: BoxDecoration(
+                      color: isFavorite
+                          ? const Color(0xFFE03050)
+                          : Colors.black.withOpacity(0.35),
+                      shape: BoxShape.circle),
+                    child: const Icon(LucideIcons.heart,
+                      color: Colors.white, size: 11)))),
               Positioned(bottom: 7, right: 7,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -667,7 +1013,7 @@ class _VideoCard extends StatelessWidget {
                   Text(recipe.name, maxLines: 2, overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(
                       fontSize: 12, fontWeight: FontWeight.w700,
-                      color: _kText1, height: 1.3)),
+                      color: nc.text1, height: 1.3)),
                   Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
                     fontSize: 10, fontWeight: FontWeight.w600, color: pc.primary)),
                 ],
@@ -682,31 +1028,42 @@ class _VideoCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// RECIPE CARD (horizontal list item)
+// RECIPE CARD (list item)  +  favorite button
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _RecipeCard extends StatelessWidget {
   final RealRecipe recipe;
+  final bool isFavorite;
+  final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
-  const _RecipeCard({required this.recipe, required this.onTap});
+  const _RecipeCard({
+    required this.recipe,
+    required this.isFavorite,
+    required this.onToggleFavorite,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     final pc = PhaseColors.forPhase(recipe.phase);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: nc.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _kBorder),
-          boxShadow: [BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+          border: Border.all(
+            color: isFavorite
+                ? const Color(0xFFE03050).withOpacity(0.25)
+                : nc.border),
+          boxShadow: nc.isDark ? [] : [BoxShadow(
+            color: isFavorite
+                ? const Color(0xFFE03050).withOpacity(0.08)
+                : Colors.black.withOpacity(0.04),
             blurRadius: 8, offset: const Offset(0, 2))],
         ),
         clipBehavior: Clip.antiAlias,
         child: Row(children: [
-          // Thumbnail
           SizedBox(
             width: 96,
             child: AspectRatio(
@@ -714,9 +1071,9 @@ class _RecipeCard extends StatelessWidget {
               child: Stack(fit: StackFit.expand, children: [
                 Image.network(recipe.imageUrl, fit: BoxFit.cover,
                   loadingBuilder: (_, child, p) =>
-                    p == null ? child : Container(color: _kMintBg),
+                    p == null ? child : Container(color: nc.mintBg),
                   errorBuilder: (_, __, ___) =>
-                    Container(color: _kMintBg,
+                    Container(color: nc.mintBg,
                       child: const Center(child: Icon(
                         LucideIcons.image, color: _kMint, size: 22)))),
                 Positioned(bottom: 0, left: 0, right: 0,
@@ -725,7 +1082,6 @@ class _RecipeCard extends StatelessWidget {
             ),
           ),
 
-          // Info
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 11, 8, 11),
@@ -733,8 +1089,7 @@ class _RecipeCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [
-                    Container(
-                      width: 5, height: 5,
+                    Container(width: 5, height: 5,
                       decoration: BoxDecoration(
                         color: pc.primary, shape: BoxShape.circle)),
                     const SizedBox(width: 5),
@@ -745,12 +1100,12 @@ class _RecipeCard extends StatelessWidget {
                   Text(recipe.name, maxLines: 2, overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(
                       fontSize: 13.5, fontWeight: FontWeight.w700,
-                      color: _kText1, height: 1.3)),
+                      color: nc.text1, height: 1.3)),
                   const SizedBox(height: 7),
                   Row(children: [
-                    _MiniStat(LucideIcons.clock, recipe.duration),
+                    _MiniStat(LucideIcons.clock, recipe.duration, nc.text2),
                     const SizedBox(width: 10),
-                    _MiniStat(LucideIcons.flame, '${recipe.kcal} kcal'),
+                    _MiniStat(LucideIcons.flame, '${recipe.kcal} kcal', nc.text2),
                   ]),
                   const SizedBox(height: 7),
                   Wrap(
@@ -758,9 +1113,9 @@ class _RecipeCard extends StatelessWidget {
                     children: recipe.tags.take(2).map((t) => Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
-                        color: _kChipBg, borderRadius: BorderRadius.circular(20)),
+                        color: nc.chipBg, borderRadius: BorderRadius.circular(20)),
                       child: Text(t, style: GoogleFonts.inter(
-                        fontSize: 10, color: _kText2, fontWeight: FontWeight.w500)),
+                        fontSize: 10, color: nc.text2, fontWeight: FontWeight.w500)),
                     )).toList(),
                   ),
                 ],
@@ -768,9 +1123,29 @@ class _RecipeCard extends StatelessWidget {
             ),
           ),
 
-          const Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: Icon(LucideIcons.chevronRight, size: 14, color: _kText2),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: onToggleFavorite,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 32, height: 32,
+                    decoration: BoxDecoration(
+                      color: isFavorite
+                          ? const Color(0xFFE03050).withOpacity(nc.isDark ? 0.25 : 0.10)
+                          : nc.chipBg,
+                      shape: BoxShape.circle),
+                    child: Icon(LucideIcons.heart, size: 14,
+                      color: isFavorite
+                          ? const Color(0xFFE03050)
+                          : nc.text2))),
+                const SizedBox(height: 6),
+                Icon(LucideIcons.chevronRight, size: 14, color: nc.text2),
+              ],
+            ),
           ),
         ]),
       ),
@@ -781,7 +1156,6 @@ class _RecipeCard extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // SMALL SHARED WIDGETS
 // ══════════════════════════════════════════════════════════════════════════════
-
 class _GlassBadge extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -806,14 +1180,17 @@ class _GlassBadge extends StatelessWidget {
 class _MiniStat extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _MiniStat(this.icon, this.label);
+  final Color? color;
+  const _MiniStat(this.icon, this.label, [this.color]);
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-    Icon(icon, size: 10, color: _kText2),
-    const SizedBox(width: 3),
-    Text(label, style: GoogleFonts.inter(
-      fontSize: 11, color: _kText2, fontWeight: FontWeight.w500)),
-  ]);
+  Widget build(BuildContext context) {
+    final c = color ?? NutritionColors.of(context).text2;
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 10, color: c),
+      const SizedBox(width: 3),
+      Text(label, style: GoogleFonts.inter(
+        fontSize: 11, color: c, fontWeight: FontWeight.w500)),
+    ]);
   }
-  
+}

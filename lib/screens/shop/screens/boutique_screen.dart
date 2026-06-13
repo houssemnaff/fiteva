@@ -1,7 +1,9 @@
+import 'package:fiteva/core/shop/shop_provider.dart';
 import 'package:fiteva/screens/shop/screens/all_partenaires_screen.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/mock_data.dart';
 import 'boutique_detail_screen.dart';
 import 'favorites_screen.dart';
@@ -137,21 +139,20 @@ extension _SortLabel on _Sort {
 // ─────────────────────────────────────────────────────────────────────────────
 // BOUTIQUE SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
-class BoutiqueScreen extends StatefulWidget {
+class BoutiqueScreen extends ConsumerStatefulWidget {
   const BoutiqueScreen({super.key});
 
   @override
-  State<BoutiqueScreen> createState() => _BoutiqueScreenState();
+  ConsumerState<BoutiqueScreen> createState() => _BoutiqueScreenState();
 }
 
-class _BoutiqueScreenState extends State<BoutiqueScreen> {
+class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
   String _cat            = 'all';
   _Sort  _sort           = _Sort.none;
   bool   _filterElevated = false;
 
-  final Set<String> _wishlist    = {};
-  final int         _userEtoiles = 60;
-  final _scrollCtrl              = ScrollController();
+  final Set<String> _wishlist = {};
+  final _scrollCtrl           = ScrollController();
 
   @override
   void initState() {
@@ -209,7 +210,6 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
       CupertinoPageRoute(
         builder: (_) => FavoritesScreen(
           wishlist: Set.from(_wishlist),
-          userEtoiles: _userEtoiles,
         ),
       ),
     ).then((updatedIds) {
@@ -250,8 +250,10 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c        = _C.of(context);
-    final filtered = _filtered;
+    final c          = _C.of(context);
+    final filtered   = _filtered;
+    final shop       = ref.watch(shopProvider);
+    final userPoints = shop.points;
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -294,7 +296,7 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                   children: [
                     const Icon(CupertinoIcons.star_fill, color: _C.gold, size: 13),
                     const SizedBox(width: 5),
-                    Text('$_userEtoiles',
+                    Text('$userPoints',
                       style: TextStyle(
                         color: c.ink, fontSize: 13,
                         fontWeight: FontWeight.w700)),
@@ -314,8 +316,9 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                   _PicksSection(
                     c: c,
                     items: _picks,
-                    userEtoiles: _userEtoiles,
+                    userEtoiles: userPoints,
                     wishlist: _wishlist,
+                    redeemed: shop.redeemed,
                     onWish: _toggleWish,
                   ),
                   const SizedBox(height: 24),
@@ -369,24 +372,23 @@ if (filtered.isNotEmpty)
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) {
-                        final item = filtered[i];
-                        final id   = '${item.brand}_${item.title}';
+                        final item       = filtered[i];
+                        final id         = '${item.brand}_${item.title}';
+                        final isRedeemed = shop.isRedeemed(item.id);
                         return Padding(
                           padding: EdgeInsets.only(
                               bottom: i < filtered.length - 1 ? 12 : 0),
                           child: _PartnerCard(
                             key: ValueKey(id),
                             item: item,
-                            userEtoiles: _userEtoiles,
+                            userEtoiles: userPoints,
                             isWishlisted: _wishlist.contains(id),
+                            isRedeemed: isRedeemed,
                             onWish: () => _toggleWish(id),
                             onTap: () => Navigator.push(
                                 ctx,
                                 CupertinoPageRoute(
-                                    builder: (_) => BoutiqueDetailScreen(
-                                          item: item,
-                                          userEtoiles: _userEtoiles,
-                                        ))),
+                                    builder: (_) => BoutiqueDetailScreen(item: item))),
                           ),
                         );
                       },
@@ -491,6 +493,7 @@ class _PicksSection extends StatelessWidget {
   final List items;
   final int userEtoiles;
   final Set<String> wishlist;
+  final Set<String> redeemed;
   final void Function(String) onWish;
 
   const _PicksSection({
@@ -498,6 +501,7 @@ class _PicksSection extends StatelessWidget {
     required this.items,
     required this.userEtoiles,
     required this.wishlist,
+    required this.redeemed,
     required this.onWish,
   });
 
@@ -534,9 +538,10 @@ class _PicksSection extends StatelessWidget {
                   item: main,
                   userEtoiles: userEtoiles,
                   isWishlisted: wishlist.contains(mainId),
+                  isRedeemed: redeemed.contains(main.id as String),
                   onWish: () => onWish(mainId),
                   onTap: () => Navigator.push(context,
-                      CupertinoPageRoute(builder: (_) => BoutiqueDetailScreen(item: main, userEtoiles: userEtoiles))),
+                      CupertinoPageRoute(builder: (_) => BoutiqueDetailScreen(item: main))),
                   compact: false,
                 ),
               ),
@@ -551,9 +556,10 @@ class _PicksSection extends StatelessWidget {
                           item: sub1,
                           userEtoiles: userEtoiles,
                           isWishlisted: wishlist.contains(sub1Id),
+                          isRedeemed: redeemed.contains(sub1.id as String),
                           onWish: () => onWish(sub1Id),
                           onTap: () => Navigator.push(context,
-                              CupertinoPageRoute(builder: (_) => BoutiqueDetailScreen(item: sub1, userEtoiles: userEtoiles))),
+                              CupertinoPageRoute(builder: (_) => BoutiqueDetailScreen(item: sub1))),
                           compact: true,
                         ),
                       ),
@@ -564,9 +570,10 @@ class _PicksSection extends StatelessWidget {
                           item: sub2,
                           userEtoiles: userEtoiles,
                           isWishlisted: wishlist.contains(sub2Id),
+                          isRedeemed: redeemed.contains(sub2.id as String),
                           onWish: () => onWish(sub2Id),
                           onTap: () => Navigator.push(context,
-                              CupertinoPageRoute(builder: (_) => BoutiqueDetailScreen(item: sub2, userEtoiles: userEtoiles))),
+                              CupertinoPageRoute(builder: (_) => BoutiqueDetailScreen(item: sub2))),
                           compact: true,
                         ),
                       ),
@@ -585,6 +592,7 @@ class _BentoCard extends StatefulWidget {
   final dynamic item;
   final int userEtoiles;
   final bool isWishlisted;
+  final bool isRedeemed;
   final VoidCallback onWish;
   final VoidCallback onTap;
   final bool compact;
@@ -593,6 +601,7 @@ class _BentoCard extends StatefulWidget {
     required this.item,
     required this.userEtoiles,
     required this.isWishlisted,
+    required this.isRedeemed,
     required this.onWish,
     required this.onTap,
     required this.compact,
@@ -653,6 +662,20 @@ class _BentoCardState extends State<_BentoCard>
                     child: _DiscountBadge(label: widget.item.discount as String)),
               Positioned(top: 8, right: 8,
                   child: _WishButton(isActive: widget.isWishlisted, onTap: widget.onWish)),
+              if (widget.isRedeemed)
+                Positioned(bottom: 10, left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32),
+                      borderRadius: BorderRadius.circular(8)),
+                    child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.check_circle_rounded, size: 10, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text('Échangé', style: TextStyle(
+                        color: Colors.white, fontSize: 9,
+                        fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+                    ]))),
               Positioned(
                 left: 12, right: 12, bottom: 12,
                 child: Column(
@@ -1045,6 +1068,7 @@ class _PartnerCard extends StatefulWidget {
   final dynamic item;
   final int userEtoiles;
   final bool isWishlisted;
+  final bool isRedeemed;
   final VoidCallback onWish;
   final VoidCallback onTap;
 
@@ -1053,6 +1077,7 @@ class _PartnerCard extends StatefulWidget {
     required this.item,
     required this.userEtoiles,
     required this.isWishlisted,
+    required this.isRedeemed,
     required this.onWish,
     required this.onTap,
   });
@@ -1126,7 +1151,15 @@ class _PartnerCardState extends State<_PartnerCard>
                         top: 5, left: 5,
                         child: _DiscountBadge(label: widget.item.discount as String),
                       ),
-                    if (!_canAfford)
+                    if (widget.isRedeemed)
+                      Positioned(
+                        bottom: 6, right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF2E7D32), shape: BoxShape.circle),
+                          child: const Icon(Icons.check_rounded, size: 10, color: Colors.white))),
+                    if (!_canAfford && !widget.isRedeemed)
                       const Positioned(
                         bottom: 6, right: 6,
                         child: Icon(CupertinoIcons.lock_fill, size: 12, color: Colors.white),
@@ -1157,10 +1190,24 @@ class _PartnerCardState extends State<_PartnerCard>
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          _StarsBadge(
-                            etoiles: widget.item.etoiles as int,
-                            canAfford: _canAfford,
-                          ),
+                          if (widget.isRedeemed)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F5E9),
+                                borderRadius: BorderRadius.circular(8)),
+                              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF2E7D32)),
+                                SizedBox(width: 4),
+                                Text('Échangé', style: TextStyle(
+                                  color: Color(0xFF2E7D32), fontSize: 11,
+                                  fontWeight: FontWeight.w700)),
+                              ]))
+                          else
+                            _StarsBadge(
+                              etoiles: widget.item.etoiles as int,
+                              canAfford: _canAfford,
+                            ),
                           const Spacer(),
                           _WishButton(
                             isActive: widget.isWishlisted,

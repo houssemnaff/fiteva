@@ -2313,7 +2313,24 @@ class _DialPainter extends CustomPainter {
 class StepHealthProfile extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
-  const StepHealthProfile({super.key, required this.onNext, this.onBack});
+  final int initialHeightCm;
+  final double initialWeightKg;
+  final int initialAge;
+  final ValueChanged<int>? onHeightChanged;
+  final ValueChanged<double>? onWeightChanged;
+  final ValueChanged<int>? onAgeChanged;
+
+  const StepHealthProfile({
+    super.key,
+    required this.onNext,
+    this.onBack,
+    this.initialHeightCm  = 165,
+    this.initialWeightKg  = 60.0,
+    this.initialAge       = 25,
+    this.onHeightChanged,
+    this.onWeightChanged,
+    this.onAgeChanged,
+  });
 
   @override
   State<StepHealthProfile> createState() => _StepHealthProfileState();
@@ -2321,6 +2338,7 @@ class StepHealthProfile extends StatefulWidget {
 
 class _StepHealthProfileState extends State<StepHealthProfile> {
   static const int _minH = 140, _maxH = 210;
+  static const int _minA = 15,  _maxA = 70;
 
   // Weight list: 35.0 → 150.0, step 0.5 → 231 items
   static final List<double> _wList =
@@ -2328,12 +2346,15 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
 
   late final FixedExtentScrollController _hCtrl;
   late final FixedExtentScrollController _wCtrl;
+  late final FixedExtentScrollController _aCtrl;
 
-  int _hIdx = 25; // default 165 cm
-  int _wIdx = 50; // default 60.0 kg
+  late int _hIdx;
+  late int _wIdx;
+  late int _aIdx;
 
   int get _heightCm => _minH + _hIdx;
   double get _weightKg => _wList[_wIdx];
+  int get _age => _minA + _aIdx;
 
   double get _bmi => _weightKg / pow(_heightCm / 100, 2);
 
@@ -2354,14 +2375,21 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
   @override
   void initState() {
     super.initState();
+    _hIdx = (widget.initialHeightCm - _minH).clamp(0, _maxH - _minH);
+    final wNearest = _wList.indexWhere((w) => w >= widget.initialWeightKg);
+    _wIdx = wNearest < 0 ? 50 : wNearest;
+    _aIdx = (widget.initialAge - _minA).clamp(0, _maxA - _minA);
+
     _hCtrl = FixedExtentScrollController(initialItem: _hIdx);
     _wCtrl = FixedExtentScrollController(initialItem: _wIdx);
+    _aCtrl = FixedExtentScrollController(initialItem: _aIdx);
   }
 
   @override
   void dispose() {
     _hCtrl.dispose();
     _wCtrl.dispose();
+    _aCtrl.dispose();
     super.dispose();
   }
 
@@ -2386,7 +2414,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
                         const _StepIcon(Icons.straighten_rounded),
                         const SizedBox(height: 16),
                         const _StepHeader(
-                          title: 'Taille & Poids',
+                          title: 'Taille, Poids & Âge',
                           subtitle: 'Fais défiler pour entrer tes mesures',
                         ),
                         const SizedBox(height: 28),
@@ -2400,10 +2428,13 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
                                 controller: _hCtrl,
                                 itemCount: _maxH - _minH + 1,
                                 labelFor: (i) => '${_minH + i}',
-                                onChanged: (i) => setState(() => _hIdx = i),
+                                onChanged: (i) {
+                                  setState(() => _hIdx = i);
+                                  widget.onHeightChanged?.call(_heightCm);
+                                },
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: _DrumPicker(
                                 label: 'POIDS',
@@ -2417,7 +2448,25 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
                                       ? '${w.toInt()}'
                                       : w.toStringAsFixed(1);
                                 },
-                                onChanged: (i) => setState(() => _wIdx = i),
+                                onChanged: (i) {
+                                  setState(() => _wIdx = i);
+                                  widget.onWeightChanged?.call(_weightKg);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _DrumPicker(
+                                label: 'ÂGE',
+                                unit: 'ans',
+                                selectedIndex: _aIdx,
+                                controller: _aCtrl,
+                                itemCount: _maxA - _minA + 1,
+                                labelFor: (i) => '${_minA + i}',
+                                onChanged: (i) {
+                                  setState(() => _aIdx = i);
+                                  widget.onAgeChanged?.call(_age);
+                                },
                               ),
                             ),
                           ],
@@ -2639,11 +2688,23 @@ class _BmiCard extends StatelessWidget {
 class StepCycleAndPregnancy extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
+  final ValueChanged<DateTime>? onLastPeriodChanged;
+  final ValueChanged<String>? onCycleDurationChanged;
+  final ValueChanged<String>? onHealthStatusChanged;
+  final ValueChanged<int>? onPregnancyWeekChanged;
+  final ValueChanged<String>? onPpRecoveryChanged;
+  final ValueChanged<String>? onPpDurationChanged;
 
   const StepCycleAndPregnancy({
     super.key,
     required this.onNext,
     this.onBack,
+    this.onLastPeriodChanged,
+    this.onCycleDurationChanged,
+    this.onHealthStatusChanged,
+    this.onPregnancyWeekChanged,
+    this.onPpRecoveryChanged,
+    this.onPpDurationChanged,
   });
 
   @override
@@ -2651,15 +2712,45 @@ class StepCycleAndPregnancy extends StatefulWidget {
 }
 
 class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
-  bool? _isPregnant;
+  // 'cycle' | 'pregnant' | 'postpartum' | null
+  String? _status;
 
   // ── Cycle ──────────────────────────────────────────────────────────────────
   String _cycleDuration = '28 jours';
-  DateTime _lastPeriod = DateTime(2026, 4, 5);
+  DateTime _lastPeriod = DateTime.now().subtract(const Duration(days: 14));
 
   static const List<String> _durations = [
     '24 jours', '26 jours', '28 jours', '30 jours', '32 jours',
   ];
+
+  // ── Post-partum ────────────────────────────────────────────────────────────
+  String? _ppRecovery;   // 'recent' | 'slowly' | 'active'
+  String? _ppDuration;   // '0-2', '2-6', '6-12', '3-6m', '6m+'
+
+  String get _ppProgram {
+    if (_ppDuration == null) return '';
+    if (_ppDuration == '0-2' || _ppDuration == '2-6') return 'Reborn';
+    if (_ppDuration == '6-12') return 'Rise';
+    return 'Reclaim';
+  }
+
+  String get _ppProgramDesc {
+    switch (_ppProgram) {
+      case 'Reborn':  return '0–6 sem. · récupération douce, périnée & énergie';
+      case 'Rise':    return '6–12 sem. · mobilité + renforcement léger';
+      case 'Reclaim': return '12 sem.+ · retour fitness progressif';
+      default: return '';
+    }
+  }
+
+  Color get _ppProgramColor {
+    switch (_ppProgram) {
+      case 'Reborn':  return const Color(0xFFE53935);
+      case 'Rise':    return const Color(0xFFFB8C00);
+      case 'Reclaim': return const Color(0xFF2E7D32);
+      default: return _kGreenDark;
+    }
+  }
 
   DateTime get _nextPeriod {
     final d =
@@ -2712,7 +2803,10 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
         child: child!,
       ),
     );
-    if (p != null) setState(() => _lastPeriod = p);
+    if (p != null) {
+      setState(() => _lastPeriod = p);
+      widget.onLastPeriodChanged?.call(p);
+    }
   }
 
   @override
@@ -2753,16 +2847,21 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ── Toggle cards ──
+                  // ── Toggle cards — 3 options ──
                   Row(children: [
                     Expanded(child: _statusCard(
-                      false, LucideIcons.moon,
+                      'cycle', LucideIcons.moon,
                       'Cycle\nrégulier', 'Sync entraînement',
                     )),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(child: _statusCard(
-                      true, LucideIcons.sparkles,
+                      'pregnant', LucideIcons.sparkles,
                       'Je suis\nenceinte', 'Programme prénatal',
+                    )),
+                    const SizedBox(width: 10),
+                    Expanded(child: _statusCard(
+                      'postpartum', LucideIcons.baby,
+                      'Après\ngrossesse', 'Post-partum',
                     )),
                   ]),
                   const SizedBox(height: 24),
@@ -2779,19 +2878,25 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
                         child: child,
                       ),
                     ),
-                    child: _isPregnant == null
+                    child: _status == null
                         ? _hintWidget()
-                        : _isPregnant == false
+                        : _status == 'cycle'
                             ? _cycleWidget()
-                            : _pregnancyWidget(),
+                            : _status == 'pregnant'
+                                ? _pregnancyWidget()
+                                : _postpartumWidget(),
                   ),
                 ],
               ),
             ),
           ),
           _CtaButton(
-            label: _isPregnant == false ? 'Commencer FITEVA' : 'Continuer',
-            onPressed: _isPregnant != null ? widget.onNext : null,
+            label: _status == 'cycle' ? 'Commencer FITEVA' : 'Continuer',
+            onPressed: _status != null
+                ? (_status == 'postpartum'
+                    ? (_ppRecovery != null && _ppDuration != null ? widget.onNext : null)
+                    : widget.onNext)
+                : null,
           ),
         ],
       ),
@@ -2799,10 +2904,13 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
   }
 
   // ── Status toggle cards ────────────────────────────────────────────────────
-  Widget _statusCard(bool value, IconData icon, String label, String sub) {
-    final sel = _isPregnant == value;
+  Widget _statusCard(String value, IconData icon, String label, String sub) {
+    final sel = _status == value;
     return GestureDetector(
-      onTap: () => setState(() => _isPregnant = value),
+      onTap: () {
+        setState(() => _status = value);
+        widget.onHealthStatusChanged?.call(value);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 14),
@@ -2888,7 +2996,10 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
           children: _durations.map((d) {
             final sel = _cycleDuration == d;
             return GestureDetector(
-              onTap: () => setState(() => _cycleDuration = d),
+              onTap: () {
+                setState(() => _cycleDuration = d);
+                widget.onCycleDurationChanged?.call(d);
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(
@@ -3032,7 +3143,10 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
           controller: _weekCtrl,
           itemCount: 42,
           labelFor: (i) => '${i + 1}',
-          onChanged: (i) => setState(() => _weekIdx = i),
+          onChanged: (i) {
+            setState(() => _weekIdx = i);
+            widget.onPregnancyWeekChanged?.call(i + 1);
+          },
         ),
         const SizedBox(height: 16),
         _trimesterBar(),
@@ -3130,6 +3244,154 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
           ],
         )),
       ]),
+    );
+  }
+
+  // ── POST-PARTUM content ────────────────────────────────────────────────────
+  Widget _postpartumWidget() {
+    return Column(
+      key: const ValueKey('postpartum'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Q1 : Récupération ──────────────────────────────────────────────
+        const Text('Où en es-tu dans ta récupération ?',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+              color: _kTextDark)),
+        const SizedBox(height: 12),
+        ...[
+          ('recent',  '🔴', 'Je viens d\'accoucher',  'Très récent — programme Reborn'),
+          ('slowly',  '🟡', 'Je recommence doucement', 'Reprise progressive — programme Rise'),
+          ('active',  '🟢', 'Je suis déjà active',    'Retour fitness — programme Reclaim'),
+        ].map(( rec) {
+          final id    = rec.$1;
+          final emoji = rec.$2;
+          final label = rec.$3;
+          final sub   = rec.$4;
+          final sel   = _ppRecovery == id;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _ppRecovery = id);
+                widget.onPpRecoveryChanged?.call(id);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: sel ? _kGreenDark : const Color(0xFFF3F6F3),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: sel ? _kGreenDark : const Color(0xFFD8E5D8),
+                    width: 1.5),
+                  boxShadow: sel
+                      ? [BoxShadow(color: _kGreenDark.withValues(alpha: 0.20),
+                          blurRadius: 12, offset: const Offset(0, 4))]
+                      : [],
+                ),
+                child: Row(children: [
+                  Text(emoji, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700,
+                        color: sel ? Colors.white : _kTextDark)),
+                      Text(sub, style: TextStyle(
+                        fontSize: 11.5,
+                        color: sel ? Colors.white70 : _kTextMuted)),
+                    ],
+                  )),
+                  if (sel)
+                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                ]),
+              ),
+            ),
+          );
+        }),
+
+        const SizedBox(height: 20),
+
+        // ── Q2 : Combien de temps ─────────────────────────────────────────
+        const Text('Il y a combien de temps ?',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+              color: _kTextDark)),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8, runSpacing: 8,
+          children: [
+            ('0-2',  '0–2 semaines'),
+            ('2-6',  '2–6 semaines'),
+            ('6-12', '6–12 semaines'),
+            ('3-6m', '3–6 mois'),
+            ('6m+',  '6+ mois'),
+          ].map((d) {
+            final sel = _ppDuration == d.$1;
+            return GestureDetector(
+              onTap: () {
+                setState(() => _ppDuration = d.$1);
+                widget.onPpDurationChanged?.call(d.$1);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                decoration: BoxDecoration(
+                  color: sel ? _kGreenDark : const Color(0xFFF3F6F3),
+                  borderRadius: BorderRadius.circular(40),
+                  border: Border.all(
+                    color: sel ? _kGreenDark : const Color(0xFFD8E5D8)),
+                ),
+                child: Text(d.$2, style: TextStyle(
+                  color: sel ? Colors.white : _kTextDark,
+                  fontWeight: FontWeight.w600, fontSize: 13.5)),
+              ),
+            );
+          }).toList(),
+        ),
+
+        // ── Programme assigné ─────────────────────────────────────────────
+        if (_ppProgram.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            decoration: BoxDecoration(
+              color: _ppProgramColor.withValues(alpha: 0.09),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _ppProgramColor.withValues(alpha: 0.35)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 38, height: 38,
+                decoration: BoxDecoration(
+                  color: _ppProgramColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle),
+                child: Icon(LucideIcons.heartPulse,
+                    size: 18, color: _ppProgramColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Text('Programme ', style: TextStyle(
+                        fontSize: 12, color: _ppProgramColor,
+                        fontWeight: FontWeight.w500)),
+                    Text(_ppProgram, style: TextStyle(
+                        fontSize: 15, color: _ppProgramColor,
+                        fontWeight: FontWeight.w800)),
+                  ]),
+                  const SizedBox(height: 2),
+                  Text(_ppProgramDesc, style: const TextStyle(
+                      fontSize: 11.5, color: _kTextMuted, height: 1.4)),
+                ],
+              )),
+            ]),
+          ),
+        ],
+        const SizedBox(height: 8),
+      ],
     );
   }
 }

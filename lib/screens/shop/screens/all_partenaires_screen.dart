@@ -1,5 +1,7 @@
+import 'package:fiteva/core/shop/shop_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/mock_data.dart';
 import 'boutique_detail_screen.dart';
 
@@ -164,16 +166,12 @@ class _AllPartenairesScreenState extends State<AllPartenairesScreen> {
                       return _PartnerCard(
                         p: p,
                         item: item,
-                        userEtoiles: _kUserEtoiles,
                         isWishlisted: _wishlist.contains(id),
                         onWish: () => _toggleWish(id),
                         onTap: () => Navigator.push(
                             ctx,
                             CupertinoPageRoute(
-                                builder: (_) => BoutiqueDetailScreen(
-                                      item: item,
-                                      userEtoiles: _kUserEtoiles,
-                                    ))),
+                                builder: (_) => BoutiqueDetailScreen(item: item))),
                       );
                     },
                   ),
@@ -351,10 +349,9 @@ class _StickyHeader extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // PARTNER CARD — horizontal list style
 // ─────────────────────────────────────────────────────────────────────────────
-class _PartnerCard extends StatefulWidget {
+class _PartnerCard extends ConsumerStatefulWidget {
   final _P p;
   final dynamic item;
-  final int userEtoiles;
   final bool isWishlisted;
   final VoidCallback onWish;
   final VoidCallback onTap;
@@ -362,17 +359,16 @@ class _PartnerCard extends StatefulWidget {
   const _PartnerCard({
     required this.p,
     required this.item,
-    required this.userEtoiles,
     required this.isWishlisted,
     required this.onWish,
     required this.onTap,
   });
 
   @override
-  State<_PartnerCard> createState() => _PartnerCardState();
+  ConsumerState<_PartnerCard> createState() => _PartnerCardState();
 }
 
-class _PartnerCardState extends State<_PartnerCard>
+class _PartnerCardState extends ConsumerState<_PartnerCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
 
@@ -390,7 +386,7 @@ class _PartnerCardState extends State<_PartnerCard>
   @override
   void dispose() { _ctrl.dispose(); super.dispose(); }
 
-  bool get _can => widget.userEtoiles >= (widget.item.etoiles as int);
+  bool get _can => ref.read(shopProvider).canAfford(widget.item.etoiles as int);
 
   @override
   Widget build(BuildContext context) {

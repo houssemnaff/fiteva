@@ -1,34 +1,29 @@
+import 'package:fiteva/core/shop/shop_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/boutique_item.dart';
 import '../widgets/info_row.dart';
 import 'package:fiteva/screens/shop/widgets/promo_modal.dart';
+import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BOUTIQUE DETAIL SCREEN — Premium redesign
 // Style : Sephora × Nike app × Editorial luxury
 // ─────────────────────────────────────────────────────────────────────────────
-class BoutiqueDetailScreen extends StatefulWidget {
+class BoutiqueDetailScreen extends ConsumerStatefulWidget {
   final BoutiqueItem item;
-  final int userEtoiles;
 
-  const BoutiqueDetailScreen({
-    super.key,
-    required this.item,
-    required this.userEtoiles,
-  });
+  const BoutiqueDetailScreen({super.key, required this.item});
 
   @override
-  State<BoutiqueDetailScreen> createState() => _BoutiqueDetailScreenState();
+  ConsumerState<BoutiqueDetailScreen> createState() => _BoutiqueDetailScreenState();
 }
 
-class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
+class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
     with TickerProviderStateMixin {
-  // ── State ──────────────────────────────────────────────────────────────────
-  bool _ctaPressed = false;
-
   late final AnimationController _entryCtrl;
   late final Animation<double> _entryFade;
   late final Animation<Offset> _entrySlide;
@@ -36,8 +31,11 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
   late final AnimationController _ctaBounceCtrl;
   late final Animation<double> _ctaScale;
 
-  // ── Derived ────────────────────────────────────────────────────────────────
-  bool get _canAfford => widget.userEtoiles >= widget.item.etoiles;
+  // ── Derived (use ref.watch only inside build via _shopLive) ───────────────
+  // For tap handlers (outside build), use ref.read via _shop.
+  ShopState get _shop         => ref.read(shopProvider);
+  bool get _canAfford         => ref.read(shopProvider).canAfford(widget.item.etoiles);
+  bool get _alreadyRedeemed   => ref.read(shopProvider).isRedeemed(widget.item.id);
 
   int get _daysLeft {
     try {
@@ -113,19 +111,17 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   void _onCtaTapDown(_) {
-    if (!_canAfford) return;
+    if (!_canAfford || _alreadyRedeemed) return;
     _ctaBounceCtrl.reverse();
   }
 
-  void _onCtaTapUp(_) {
-    if (!_canAfford) return;
+  void _onCtaTapUp(_) async {
+    if (!_canAfford || _alreadyRedeemed) return;
     _ctaBounceCtrl.forward();
-    _showPromoModal(context);
-  }
 
-  void _onCtaTapCancel() => _ctaBounceCtrl.forward();
+    final ok = await ref.read(shopProvider.notifier).redeem(widget.item);
+    if (!ok || !mounted) return;
 
-  void _showPromoModal(BuildContext context) {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
@@ -133,13 +129,17 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
       backgroundColor: Colors.transparent,
       builder: (_) => PromoModal(item: widget.item),
     );
+    setState(() {}); // refresh CTA state
   }
+
+  void _onCtaTapCancel() => _ctaBounceCtrl.forward();
 
   // ── BUILD ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAF8),
+      backgroundColor: nc.bg,
       body: Column(
         children: [
           Expanded(
@@ -386,26 +386,27 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
 
   // ── Title Block ────────────────────────────────────────────────────────────
   Widget _buildTitleBlock(BuildContext context) {
+    final nc   = NutritionColors.of(context);
     final item = widget.item;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           item.brand ?? '',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: Color(0xFFA0A09A),
+            color: nc.text2,
             letterSpacing: 0.3,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           item.title ?? 'Offre partenaire',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF1A1A1A),
+            color: nc.text1,
             letterSpacing: -0.7,
             height: 1.15,
           ),
@@ -416,25 +417,28 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
 
   // ── Offer Summary Card ─────────────────────────────────────────────────────
   Widget _buildOfferSummaryCard(BuildContext context) {
-    final item = widget.item;
-    final shortage = item.etoiles - widget.userEtoiles;
+    final nc        = NutritionColors.of(context);
+    final item      = widget.item;
+    final shop      = ref.watch(shopProvider);
+    final canAfford = shop.canAfford(item.etoiles);
+    final shortage  = item.etoiles - shop.points;
 
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Résumé de l\'offre',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
+              color: nc.text1,
               letterSpacing: -0.1,
             ),
           ),
           const SizedBox(height: 18),
 
-          // Cost row — highlighted
+          // Cost row
           Row(
             children: [
               Container(
@@ -444,33 +448,17 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                   color: item.primaryColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  Icons.water_drop_rounded,
-                  color: item.primaryColor,
-                  size: 18,
-                ),
+                child: Icon(Icons.water_drop_rounded, color: item.primaryColor, size: 18),
               ),
               const SizedBox(width: 14),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Coût de l\'offre',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFFA0A09A),
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  Text(
-                    '${item.etoiles} étoiles',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: item.primaryColor,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
+                  Text('Coût de l\'offre',
+                    style: TextStyle(fontSize: 12, color: nc.text2, fontWeight: FontWeight.w400)),
+                  Text('${item.etoiles} étoiles',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
+                      color: item.primaryColor, letterSpacing: -0.3)),
                 ],
               ),
             ],
@@ -482,41 +470,21 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
           Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 38, height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0F0ED),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  CupertinoIcons.calendar,
-                  color: Color(0xFF5A5A5A),
-                  size: 17,
-                ),
+                  color: nc.surface2, borderRadius: BorderRadius.circular(10)),
+                child: Icon(CupertinoIcons.calendar, color: nc.text2, size: 17),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Valable jusqu\'au',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFFA0A09A),
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    Text(
-                      item.validUntil ?? 'Non précisé',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    // Days left progress
+                    Text('Valable jusqu\'au',
+                      style: TextStyle(fontSize: 12, color: nc.text2, fontWeight: FontWeight.w400)),
+                    Text(item.validUntil ?? 'Non précisé',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
+                        color: nc.text1, letterSpacing: -0.2)),
                     if (_daysLeft < 999) ...[
                       const SizedBox(height: 8),
                       ClipRRect(
@@ -524,22 +492,14 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                         child: LinearProgressIndicator(
                           value: _progressRatio,
                           minHeight: 4,
-                          backgroundColor: const Color(0xFFF0F0ED),
-                          valueColor:
-                              AlwaysStoppedAnimation(_progressColor),
+                          backgroundColor: nc.border,
+                          valueColor: AlwaysStoppedAnimation(_progressColor),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _daysLeft <= 1
-                            ? 'Expire demain !'
-                            : '$_daysLeft jours restants',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _progressColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                        _daysLeft <= 1 ? 'Expire demain !' : '$_daysLeft jours restants',
+                        style: TextStyle(fontSize: 11, color: _progressColor, fontWeight: FontWeight.w500)),
                     ],
                   ],
                 ),
@@ -553,67 +513,38 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
           Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 38, height: 38,
                 decoration: BoxDecoration(
-                  color: _canAfford
-                      ? const Color(0xFFE8F5E9)
-                      : const Color(0xFFFFF3E0),
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                  color: canAfford
+                      ? const Color(0xFF2E7D32).withOpacity(nc.isDark ? 0.25 : 0.12)
+                      : const Color(0xFFFB8C00).withOpacity(nc.isDark ? 0.25 : 0.12),
+                  borderRadius: BorderRadius.circular(10)),
                 child: Icon(
-                  _canAfford
-                      ? CupertinoIcons.checkmark_circle_fill
-                      : CupertinoIcons.lock_fill,
-                  color: _canAfford
-                      ? const Color(0xFF2E7D32)
-                      : const Color(0xFFFB8C00),
-                  size: 18,
-                ),
+                  canAfford ? CupertinoIcons.checkmark_circle_fill : CupertinoIcons.lock_fill,
+                  color: canAfford ? const Color(0xFF2E7D32) : const Color(0xFFFB8C00),
+                  size: 18),
               ),
               const SizedBox(width: 14),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Mes étoiles',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFFA0A09A),
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
+                  Text('Mes étoiles',
+                    style: TextStyle(fontSize: 12, color: nc.text2, fontWeight: FontWeight.w400)),
                   Row(
                     children: [
-                      Text(
-                        '${widget.userEtoiles} disponibles',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: _canAfford
-                              ? const Color(0xFF2E7D32)
-                              : const Color(0xFFFB8C00),
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      if (!_canAfford) ...[
+                      Text('${shop.points} disponibles',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
+                          color: canAfford ? const Color(0xFF2E7D32) : const Color(0xFFFB8C00),
+                          letterSpacing: -0.2)),
+                      if (!canAfford) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF3E0),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '−$shortage',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFFFB8C00),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
+                            color: const Color(0xFFFB8C00).withOpacity(nc.isDark ? 0.20 : 0.12),
+                            borderRadius: BorderRadius.circular(6)),
+                          child: Text('−$shortage',
+                            style: const TextStyle(fontSize: 11, color: Color(0xFFFB8C00), fontWeight: FontWeight.w700))),
                       ],
                     ],
                   ),
@@ -628,6 +559,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
 
   // ── Description Card ───────────────────────────────────────────────────────
   Widget _buildDescriptionCard(BuildContext context) {
+    final nc   = NutritionColors.of(context);
     final desc = widget.item.description ?? '';
     if (desc.isEmpty) return const SizedBox.shrink();
 
@@ -635,25 +567,12 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'À propos de l\'offre',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
-              letterSpacing: -0.1,
-            ),
-          ),
+          Text('À propos de l\'offre',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+              color: nc.text1, letterSpacing: -0.1)),
           const SizedBox(height: 12),
-          Text(
-            desc,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF5A5A5A),
-              height: 1.65,
-              letterSpacing: -0.1,
-            ),
-          ),
+          Text(desc,
+            style: TextStyle(fontSize: 14, color: nc.text2, height: 1.65, letterSpacing: -0.1)),
         ],
       ),
     );
@@ -661,19 +580,14 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
 
   // ── How To Use Card ────────────────────────────────────────────────────────
   Widget _buildHowToUseCard(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
-            'Comment ça marche ?',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
-              letterSpacing: -0.1,
-            ),
-          ),
+        children: [
+          Text('Comment ça marche ?',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+              color: nc.text1, letterSpacing: -0.1)),
           SizedBox(height: 16),
           _StepRow(
               number: '01',
@@ -698,20 +612,15 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
 
   // ── Similar Offers ─────────────────────────────────────────────────────────
   Widget _buildSimilarOffersSection(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 2, bottom: 14),
-          child: Text(
-            'Offres similaires',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A1A),
-              letterSpacing: -0.4,
-            ),
-          ),
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 14),
+          child: Text('Offres similaires',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700,
+              color: nc.text1, letterSpacing: -0.4)),
         ),
         SizedBox(
           height: 90,
@@ -722,15 +631,9 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
             itemBuilder: (ctx, i) => Container(
               width: 200,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: nc.surface,
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                border: Border.all(color: nc.border),
               ),
               child: Row(
                 children: [
@@ -744,15 +647,9 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                       ),
                     ),
                     child: Center(
-                      child: Text(
-                        '${(i + 1) * 10}%',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: widget.item.primaryColor,
-                          letterSpacing: -1,
-                        ),
-                      ),
+                      child: Text('${(i + 1) * 10}%',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900,
+                          color: widget.item.primaryColor, letterSpacing: -1)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -761,24 +658,12 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Partenaire ${i + 1}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1A1A),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        Text('Partenaire ${i + 1}',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: nc.text1),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 3),
-                        Text(
-                          '${(i + 1) * 50} étoiles',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFFA0A09A),
-                          ),
-                        ),
+                        Text('${(i + 1) * 50} étoiles',
+                          style: TextStyle(fontSize: 11, color: nc.text2)),
                       ],
                     ),
                   ),
@@ -793,50 +678,58 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
 
   // ── CTA Bar ────────────────────────────────────────────────────────────────
   Widget _buildCTABar(BuildContext context) {
-    final shortage = widget.item.etoiles - widget.userEtoiles;
+    final shop     = ref.watch(shopProvider);
+    final canAfford    = shop.canAfford(widget.item.etoiles);
+    final redeemed     = shop.isRedeemed(widget.item.id);
+    final shortage     = widget.item.etoiles - shop.points;
+    final ctaActive    = canAfford && !redeemed;
+
+    final nc = NutritionColors.of(context);
     return Container(
       padding: EdgeInsets.fromLTRB(
           20, 14, 20, MediaQuery.of(context).padding.bottom + 18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: const Color(0xFF1A1A1A).withOpacity(0.07),
-            width: 1,
-          ),
-        ),
+        color: nc.surface,
+        border: Border(top: BorderSide(color: nc.border, width: 1)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Missing etoiles warning
-          if (!_canAfford)
+          // Already redeemed banner
+          if (redeemed)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8E1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                  color: const Color(0xFF2E7D32).withOpacity(nc.isDark ? 0.20 : 0.10),
+                  borderRadius: BorderRadius.circular(10)),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF2E7D32)),
+                    SizedBox(width: 7),
+                    Text('Offre déjà échangée — consulte ton code ci-dessus',
+                      style: TextStyle(color: Color(0xFF2E7D32),
+                        fontSize: 12.5, fontWeight: FontWeight.w500)),
+                  ])))
+          else if (!canAfford)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFB8C00).withOpacity(nc.isDark ? 0.20 : 0.10),
+                  borderRadius: BorderRadius.circular(10)),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      CupertinoIcons.info_circle,
-                      size: 14,
-                      color: Color(0xFFFB8C00),
-                    ),
+                    const Icon(CupertinoIcons.info_circle, size: 14, color: Color(0xFFFB8C00)),
                     const SizedBox(width: 7),
                     Text(
                       'Il te manque $shortage étoile${shortage > 1 ? 's' : ''} pour débloquer cette offre',
-                      style: const TextStyle(
-                        color: Color(0xFFFB8C00),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                      style: const TextStyle(color: Color(0xFFFB8C00),
+                        fontSize: 12.5, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -854,7 +747,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                 width: double.infinity,
                 height: 56,
                 decoration: BoxDecoration(
-                  gradient: _canAfford
+                  gradient: ctaActive
                       ? LinearGradient(
                           colors: [
                             widget.item.primaryColor,
@@ -864,9 +757,9 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                           end: Alignment.centerRight,
                         )
                       : null,
-                  color: _canAfford ? null : const Color(0xFFF0F0ED),
+                  color: ctaActive ? null : nc.surface2,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: _canAfford
+                  boxShadow: ctaActive
                       ? [
                           BoxShadow(
                             color: widget.item.primaryColor.withOpacity(0.35),
@@ -880,23 +773,23 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      _canAfford
-                          ? CupertinoIcons.sparkles
-                          : CupertinoIcons.lock_fill,
-                      color: _canAfford
-                          ? Colors.white
-                          : const Color(0xFFA0A09A),
+                      redeemed
+                          ? Icons.check_circle_rounded
+                          : ctaActive
+                              ? CupertinoIcons.sparkles
+                              : CupertinoIcons.lock_fill,
+                      color: ctaActive ? Colors.white : const Color(0xFFA0A09A),
                       size: 18,
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      _canAfford
-                          ? 'Échanger ${widget.item.etoiles} étoiles'
-                          : 'Étoiles insuffisantes',
+                      redeemed
+                          ? 'Offre déjà échangée'
+                          : ctaActive
+                              ? 'Échanger ${widget.item.etoiles} étoiles'
+                              : 'Étoiles insuffisantes',
                       style: TextStyle(
-                        color: _canAfford
-                            ? Colors.white
-                            : const Color(0xFFA0A09A),
+                        color: ctaActive ? Colors.white : const Color(0xFFA0A09A),
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.3,
@@ -908,25 +801,27 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen>
             ),
           ),
 
-          // Copy promo placeholder
-          if (_canAfford) ...[
+          // Copy promo code (shown after redemption)
+          if (redeemed) ...[
             const SizedBox(height: 10),
             GestureDetector(
               onTap: () {
+                Clipboard.setData(ClipboardData(text: widget.item.promoCode));
                 HapticFeedback.lightImpact();
-                // Copy placeholder
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Code copié : ${widget.item.promoCode}'),
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: const Color(0xFF2E7D32)));
               },
-              child: const Text(
-                'Copier le code promo',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFFA0A09A),
+              child: Text(
+                'Copier le code : ${widget.item.promoCode}',
+                style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600,
+                  color: Color(0xFF2E7D32),
                   decoration: TextDecoration.underline,
-                  decorationColor: Color(0xFFA0A09A),
-                ),
-              ),
-            ),
+                  decorationColor: Color(0xFF2E7D32)),
+              )),
           ],
         ],
       ),
@@ -944,18 +839,16 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: nc.surface,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
+        border: Border.all(color: nc.border),
+        boxShadow: nc.isDark ? [] : [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14, offset: const Offset(0, 4)),
         ],
       ),
       child: child,
@@ -968,12 +861,10 @@ class _DividerLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Container(
-        height: 1,
-        color: const Color(0xFFF0F0ED),
-      ),
+      child: Container(height: 1, color: nc.border),
     );
   }
 }
@@ -1017,49 +908,29 @@ class _StepRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc = NutritionColors.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(
           children: [
             Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(8),
-              ),
+              width: 28, height: 28,
+              decoration: BoxDecoration(color: nc.text1, borderRadius: BorderRadius.circular(8)),
               child: Center(
-                child: Text(
-                  number,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                child: Text(number,
+                  style: TextStyle(color: nc.bg, fontSize: 11, fontWeight: FontWeight.w700)),
               ),
             ),
             if (!isLast)
-              Container(
-                width: 1,
-                height: 24,
-                color: const Color(0xFFF0F0ED),
-              ),
+              Container(width: 1, height: 24, color: nc.border),
           ],
         ),
         const SizedBox(width: 14),
         Padding(
           padding: const EdgeInsets.only(top: 5),
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF3A3A3A),
-              fontWeight: FontWeight.w400,
-              height: 1.4,
-            ),
-          ),
+          child: Text(text,
+            style: TextStyle(fontSize: 14, color: nc.text2, fontWeight: FontWeight.w400, height: 1.4)),
         ),
       ],
     );
