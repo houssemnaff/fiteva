@@ -271,8 +271,7 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                 child: const HomeHeader(),
               ),
             ),

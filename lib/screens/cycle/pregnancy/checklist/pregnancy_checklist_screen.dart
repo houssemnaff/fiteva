@@ -1,37 +1,50 @@
-// ─────────────────────────────────────────────
-// pregnancy_checklist_screen.dart
-// ─────────────────────────────────────────────
-
+﻿// ignore_for_file: deprecated_member_use
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:fiteva/screens/cycle/pregnancy/theme.dart';
-
+import 'package:google_fonts/google_fonts.dart';
+import '../pregnancy_colors.dart';
 import 'pregnancy_checklist_repository.dart';
 
-// ════════════════════════════════════════════════════════════
-// MAIN SCREEN
-// ════════════════════════════════════════════════════════════
+extension _Pg on BuildContext {
+  PgColors get _p => PgColors.of(this);
+}
 
+// catégorie → couleur + label
+({Color bg, Color fg, String label}) _catStyle(String cat, BuildContext context) {
+  switch (cat) {
+    case 'medical':   return (bg: context._p.mintLight, fg: context._p.green,    label: 'Médical');
+    case 'bienetre':  return (bg: context._p.pinkSoft,  fg: context._p.warmPink, label: 'Bien-être');
+    default:          return (bg: context._p.amberSoft, fg: context._p.amber,    label: 'Pratique');
+  }
+}
+
+IconData _catIcon(String cat) {
+  switch (cat) {
+    case 'medical':  return Icons.local_hospital_outlined;
+    case 'bienetre': return Icons.favorite_border_rounded;
+    default:         return Icons.checklist_rounded;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 class PregnancyChecklistScreen extends StatefulWidget {
-  const PregnancyChecklistScreen({super.key, required this.currentWeek});
-
   final int currentWeek;
+  const PregnancyChecklistScreen({super.key, required this.currentWeek});
 
   @override
   State<PregnancyChecklistScreen> createState() =>
       _PregnancyChecklistScreenState();
 }
 
-class _PregnancyChecklistScreenState extends State<PregnancyChecklistScreen> {
+class _PregnancyChecklistScreenState
+    extends State<PregnancyChecklistScreen> {
   late final List<ChecklistTask> _tasks;
-  final Set<String> _completed = {};
+  final Set<String> _done = {};
 
-  Color get _accent => ThreadTheme.threadColorForWeek(widget.currentWeek);
-
-  int get _completedCount => _completed.length;
-  int get _total => _tasks.length;
-  double get _progress => _total == 0 ? 0 : _completedCount / _total;
+  int get _doneCount  => _done.length;
+  int get _total      => _tasks.length;
+  double get _progress => _total == 0 ? 0 : _doneCount / _total;
 
   @override
   void initState() {
@@ -41,539 +54,454 @@ class _PregnancyChecklistScreenState extends State<PregnancyChecklistScreen> {
 
   void _toggle(String id) {
     HapticFeedback.lightImpact();
-    setState(() {
-      if (_completed.contains(id)) {
-        _completed.remove(id);
-      } else {
-        _completed.add(id);
-      }
-    });
+    setState(() => _done.contains(id) ? _done.remove(id) : _done.add(id));
   }
 
   @override
   Widget build(BuildContext context) {
-    final double safeBottom = MediaQuery.of(context).padding.bottom;
+    final top    = MediaQuery.of(context).padding.top;
+    final bottom = MediaQuery.of(context).padding.bottom;
+
+    // groupe par catégorie
+    final medical  = _tasks.where((t) => t.category == 'medical').toList();
+    final bienetre = _tasks.where((t) => t.category == 'bienetre').toList();
+    final pratique = _tasks.where((t) => t.category == 'pratique').toList();
 
     return Scaffold(
-      backgroundColor: ThreadTheme.bg,
-      body: CustomScrollView(
+      backgroundColor: context._p.bg,
+      body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        slivers: [
-          // ── App bar ─────────────────────────────────────────────────
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            backgroundColor: ThreadTheme.bg,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new_rounded,
-                  size: 18, color: _accent),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.pin,
-              background: _ChecklistHeader(
-                week: widget.currentWeek,
-                accent: _accent,
-                progress: _progress,
-                completed: _completedCount,
-                total: _total,
-              ),
-            ),
+        child: Column(children: [
+
+          // ── HEADER ──────────────────────────────────────────────────
+          _Header(
+            top: top,
+            week: widget.currentWeek,
+            done: _doneCount,
+            total: _total,
+            progress: _progress,
+            onBack: () => Navigator.maybePop(context),
           ),
 
-          // ── Empty state ─────────────────────────────────────────────
-          if (_tasks.isEmpty)
-            SliverFillRemaining(
-              child: _EmptyState(accent: _accent),
-            )
+          const SizedBox(height: 20),
 
-          // ── Task cards ──────────────────────────────────────────────
-          else ...[
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (_, i) => _ChecklistCard(
-                    key: ValueKey(_tasks[i].id),
-                    task: _tasks[i],
-                    isCompleted: _completed.contains(_tasks[i].id),
-                    accent: _accent,
-                    index: i,
-                    onToggle: () => _toggle(_tasks[i].id),
-                  ),
-                  childCount: _tasks.length,
-                ),
-              ),
+          // ── GROUPES ─────────────────────────────────────────────────
+          if (medical.isNotEmpty) ...[
+            _GroupSection(
+              category: 'medical',
+              tasks: medical,
+              done: _done,
+              onToggle: _toggle,
             ),
-            // Space for FAB
-            SliverToBoxAdapter(
-              child: SizedBox(height: 100 + safeBottom),
-            ),
+            const SizedBox(height: 12),
           ],
-        ],
-      ),
+          if (bienetre.isNotEmpty) ...[
+            _GroupSection(
+              category: 'bienetre',
+              tasks: bienetre,
+              done: _done,
+              onToggle: _toggle,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (pratique.isNotEmpty) ...[
+            _GroupSection(
+              category: 'pratique',
+              tasks: pratique,
+              done: _done,
+              onToggle: _toggle,
+            ),
+            const SizedBox(height: 12),
+          ],
 
-      // ── Bottom button ────────────────────────────────────────────────
-      floatingActionButton: _UpcomingFAB(
-        accent: _accent,
-        safeBottom: safeBottom,
-        onTap: () => _showUpcomingSheet(context),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
-  }
+          if (_tasks.isEmpty) _EmptyState(week: widget.currentWeek),
 
-  void _showUpcomingSheet(BuildContext context) {
-    HapticFeedback.lightImpact();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _UpcomingTasksSheet(
-        currentWeek: widget.currentWeek,
-        accent: _accent,
+          // ── À VENIR ─────────────────────────────────────────────────
+          _UpcomingSection(currentWeek: widget.currentWeek),
+
+          SizedBox(height: bottom + 40),
+        ]),
       ),
     );
   }
 }
 
-// ════════════════════════════════════════════════════════════
-// HEADER  — Week label + Progress ring + summary
-// ════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+//  HEADER
+// ─────────────────────────────────────────────────────────────────────────────
 
-class _ChecklistHeader extends StatelessWidget {
-  const _ChecklistHeader({
-    required this.week,
-    required this.accent,
-    required this.progress,
-    required this.completed,
-    required this.total,
+class _Header extends StatelessWidget {
+  final double top;
+  final int week, done, total;
+  final double progress;
+  final VoidCallback onBack;
+
+  const _Header({
+    required this.top, required this.week,
+    required this.done, required this.total,
+    required this.progress, required this.onBack,
   });
 
-  final int week;
-  final Color accent;
-  final double progress;
-  final int completed;
-  final int total;
+  String get _tri => week <= 13 ? '1er trimestre'
+      : week <= 26 ? '2e trimestre' : '3e trimestre';
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 72, 20, 20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // ── Text block ─────────────────────────────────────────────
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: accent.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Week $week',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: accent,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Pregnancy\nChecklist',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: ThreadTheme.textPrimary,
-                    letterSpacing: -0.6,
-                    height: 1.15,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  total == 0
-                      ? 'Nothing scheduled'
-                      : '$completed of $total tasks complete',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: ThreadTheme.textSecondary,
-                  ),
-                ),
-              ],
+    return Container(
+      color: context._p.surface,
+      padding: EdgeInsets.fromLTRB(20, top + 12, 20, 24),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // top row
+        Row(children: [
+          GestureDetector(
+            onTap: onBack,
+            child: Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: context._p.mintLight,
+                borderRadius: BorderRadius.circular(10)),
+              child: Icon(Icons.chevron_left_rounded,
+                  size: 22, color: context._p.green),
             ),
           ),
-
-          const SizedBox(width: 24),
-
-          // ── Progress ring ──────────────────────────────────────────
-          _ProgressRing(
-            progress: progress,
-            accent: accent,
-            completed: completed,
-            total: total,
+          const SizedBox(width: 14),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('MA CHECKLIST', style: GoogleFonts.inter(
+              fontSize: 9, fontWeight: FontWeight.w600,
+              color: context._p.textSoft, letterSpacing: 2.5)),
+            const SizedBox(height: 1),
+            Text('Semaine $week · $_tri',
+                style: GoogleFonts.inter(
+                  fontSize: 15, fontWeight: FontWeight.w700,
+                  color: context._p.textDark)),
+          ]),
+          const Spacer(),
+          // ring de progression
+          SizedBox(width: 56, height: 56,
+            child: Stack(alignment: Alignment.center, children: [
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: progress),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutCubic,
+                builder: (_, v, __) => CustomPaint(
+                  size: const Size(56, 56),
+                  painter: _RingPainter(v, context._p.green, context._p.mintLight)),
+              ),
+              Column(mainAxisSize: MainAxisSize.min, children: [
+                Text('$done', style: GoogleFonts.inter(
+                  fontSize: 16, fontWeight: FontWeight.w800,
+                  color: context._p.green, height: 1)),
+                Text('/$total', style: GoogleFonts.inter(
+                  fontSize: 9, color: context._p.textSoft)),
+              ]),
+            ]),
           ),
-        ],
-      ),
-    );
-  }
-}
+        ]),
 
-// ════════════════════════════════════════════════════════════
-// PROGRESS RING
-// ════════════════════════════════════════════════════════════
+        const SizedBox(height: 20),
 
-class _ProgressRing extends StatelessWidget {
-  const _ProgressRing({
-    required this.progress,
-    required this.accent,
-    required this.completed,
-    required this.total,
-  });
-
-  final double progress;
-  final Color accent;
-  final int completed;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 88,
-      height: 88,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Ring
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: progress),
-            duration: const Duration(milliseconds: 900),
-            curve: Curves.easeOutCubic,
-            builder: (_, value, __) => CustomPaint(
-              size: const Size(88, 88),
-              painter: _RingPainter(progress: value, color: accent),
+        // progress bar + label
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(total == 0
+              ? 'Aucune tâche cette semaine'
+              : done == total
+                  ? 'Tout est fait — bravo !'
+                  : '$done sur $total tâches complétées',
+              style: GoogleFonts.inter(
+                fontSize: 12, color: context._p.textMid, fontWeight: FontWeight.w500)),
+          Text('${(progress * 100).round()}%',
+              style: GoogleFonts.inter(
+                fontSize: 12, color: context._p.green, fontWeight: FontWeight.w700)),
+        ]),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(children: [
+            Container(height: 7, color: context._p.mintLight),
+            AnimatedFractionallySizedBox(
+              widthFactor: progress,
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutCubic,
+              child: Container(
+                height: 7,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [context._p.mint, context._p.green]),
+                  borderRadius: const BorderRadius.all(Radius.circular(4)),
+                )),
             ),
-          ),
-          // Center label
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$completed',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: accent,
-                  height: 1,
-                ),
-              ),
-              Text(
-                'of $total',
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: ThreadTheme.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+          ]),
+        ),
+      ]),
     );
   }
 }
 
 class _RingPainter extends CustomPainter {
-  const _RingPainter({required this.progress, required this.color});
-
   final double progress;
-  final Color color;
+  final Color fill, track;
+  const _RingPainter(this.progress, this.fill, this.track);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - 10) / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
+    final c = Offset(size.width / 2, size.height / 2);
+    final r = (size.width - 8) / 2;
+    final rect = Rect.fromCircle(center: c, radius: r);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round;
 
-    // Track
-    canvas.drawArc(
-      rect,
-      -math.pi / 2,
-      math.pi * 2,
-      false,
-      Paint()
-        ..color = color.withOpacity(0.1)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 7
-        ..strokeCap = StrokeCap.round,
-    );
-
-    // Progress arc
+    canvas.drawArc(rect, -math.pi / 2, math.pi * 2, false,
+        paint..color = track);
     if (progress > 0) {
-      canvas.drawArc(
-        rect,
-        -math.pi / 2,
-        math.pi * 2 * progress,
-        false,
-        Paint()
-          ..color = color
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 7
-          ..strokeCap = StrokeCap.round,
-      );
+      canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * progress, false,
+          paint..color = fill);
     }
   }
 
   @override
-  bool shouldRepaint(_RingPainter old) => old.progress != progress;
+  bool shouldRepaint(_RingPainter o) => o.progress != progress;
 }
 
-// ════════════════════════════════════════════════════════════
-// CHECKLIST CARD
-// ════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+//  GROUP SECTION
+// ─────────────────────────────────────────────────────────────────────────────
 
-class _ChecklistCard extends StatefulWidget {
-  const _ChecklistCard({
-    super.key,
-    required this.task,
-    required this.isCompleted,
-    required this.accent,
-    required this.index,
-    required this.onToggle,
+class _GroupSection extends StatelessWidget {
+  final String category;
+  final List<ChecklistTask> tasks;
+  final Set<String> done;
+  final void Function(String) onToggle;
+
+  const _GroupSection({
+    required this.category, required this.tasks,
+    required this.done, required this.onToggle,
   });
 
+  @override
+  Widget build(BuildContext context) {
+    final style = _catStyle(category, context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: context._p.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [BoxShadow(
+            color: Color(0x081C4D30),
+            blurRadius: 16, offset: Offset(0, 4))],
+        ),
+        child: Column(children: [
+          // group header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(children: [
+              Container(
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  color: style.bg,
+                  borderRadius: BorderRadius.circular(9)),
+                child: Icon(_catIcon(category), size: 16, color: style.fg),
+              ),
+              const SizedBox(width: 10),
+              Text(style.label, style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w700,
+                color: style.fg)),
+              const Spacer(),
+              Text('${done.where((id) => tasks.any((t)=>t.id==id)).length}/${tasks.length}',
+                style: GoogleFonts.inter(
+                  fontSize: 12, color: context._p.textSoft,
+                  fontWeight: FontWeight.w500)),
+            ]),
+          ),
+
+          Divider(height: 1, color: context._p.border),
+
+          // tasks
+          ...List.generate(tasks.length, (i) {
+            final task = tasks[i];
+            final isDone = done.contains(task.id);
+            return _TaskTile(
+              task: task,
+              isDone: isDone,
+              catColor: style.fg,
+              isLast: i == tasks.length - 1,
+              index: i,
+              onToggle: () => onToggle(task.id),
+            );
+          }),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  TASK TILE
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TaskTile extends StatefulWidget {
   final ChecklistTask task;
-  final bool isCompleted;
-  final Color accent;
+  final bool isDone, isLast;
+  final Color catColor;
   final int index;
   final VoidCallback onToggle;
 
+  const _TaskTile({
+    required this.task, required this.isDone, required this.isLast,
+    required this.catColor, required this.index, required this.onToggle,
+  });
+
   @override
-  State<_ChecklistCard> createState() => _ChecklistCardState();
+  State<_TaskTile> createState() => _TaskTileState();
 }
 
-class _ChecklistCardState extends State<_ChecklistCard>
+class _TaskTileState extends State<_TaskTile>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
-  late final Animation<double> _scale;
   late final Animation<double> _fade;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _scale = Tween<double>(begin: 0.94, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack),
-    );
+    _ctrl = AnimationController(vsync: this,
+        duration: const Duration(milliseconds: 450));
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-
-    // Staggered entrance
-    Future.delayed(Duration(milliseconds: 60 * widget.index), () {
-      if (mounted) _ctrl.forward();
-    });
+    Future.delayed(Duration(milliseconds: 50 * widget.index),
+        () { if (mounted) _ctrl.forward(); });
   }
 
   @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _ctrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _fade,
-      child: ScaleTransition(
-        scale: _scale,
-        child: GestureDetector(
+      child: Column(children: [
+        GestureDetector(
           onTap: widget.onToggle,
+          behavior: HitTestBehavior.opaque,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: widget.isCompleted
-                  ? widget.accent.withOpacity(0.06)
-                  : ThreadTheme.bgCard,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: widget.isCompleted
-                    ? widget.accent.withOpacity(0.3)
-                    : ThreadTheme.bgCardBorder,
-                width: 1,
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            color: widget.isDone
+                ? widget.catColor.withOpacity(0.04)
+                : Colors.transparent,
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              // checkbox
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutBack,
+                margin: const EdgeInsets.only(top: 1),
+                width: 22, height: 22,
+                decoration: BoxDecoration(
+                  color: widget.isDone
+                      ? widget.catColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: widget.isDone
+                        ? widget.catColor : context._p.border, width: 1.5),
+                ),
+                child: widget.isDone
+                    ? const Icon(Icons.check_rounded,
+                        size: 13, color: Colors.white)
+                    : null,
               ),
-              boxShadow: widget.isCompleted
-                  ? []
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 12,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Animated checkbox ─────────────────────────────
-                _AnimatedCheckbox(
-                  isCompleted: widget.isCompleted,
-                  accent: widget.accent,
-                ),
 
-                const SizedBox(width: 14),
+              const SizedBox(width: 12),
 
-                // ── Emoji + text ──────────────────────────────────
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(widget.task.emoji,
-                              style: const TextStyle(fontSize: 16)),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 300),
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w600,
-                                color: widget.isCompleted
-                                    ? ThreadTheme.textSecondary
-                                    : ThreadTheme.textPrimary,
-                                decoration: widget.isCompleted
-                                    ? TextDecoration.lineThrough
-                                    : TextDecoration.none,
-                                decorationColor:
-                                    widget.accent.withOpacity(0.5),
-                                letterSpacing: -0.2,
-                              ),
-                              child: Text(widget.task.title),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      AnimatedOpacity(
-                        opacity: widget.isCompleted ? 0.5 : 1.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: Text(
-                          widget.task.description,
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            height: 1.5,
-                            color: ThreadTheme.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
+              // texte
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 250),
+                    style: GoogleFonts.inter(
+                      fontSize: 14, fontWeight: FontWeight.w600,
+                      height: 1.3,
+                      color: widget.isDone ? context._p.textSoft : context._p.textDark,
+                      decoration: widget.isDone
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      decorationColor: widget.catColor.withOpacity(0.5)),
+                    child: Text(widget.task.title),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 4),
+                  AnimatedOpacity(
+                    opacity: widget.isDone ? 0.45 : 1.0,
+                    duration: const Duration(milliseconds: 250),
+                    child: Text(widget.task.description,
+                      style: GoogleFonts.inter(
+                        fontSize: 12, color: context._p.textMid, height: 1.55)),
+                  ),
+                ],
+              )),
+            ]),
           ),
         ),
-      ),
+        if (!widget.isLast)
+          Divider(height: 1, indent: 50, color: context._p.border),
+      ]),
     );
   }
 }
 
-// ════════════════════════════════════════════════════════════
-// ANIMATED CHECKBOX
-// ════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+//  UPCOMING SECTION — prochaines semaines
+// ─────────────────────────────────────────────────────────────────────────────
 
-class _AnimatedCheckbox extends StatelessWidget {
-  const _AnimatedCheckbox({
-    required this.isCompleted,
-    required this.accent,
-  });
+class _UpcomingSection extends StatelessWidget {
+  final int currentWeek;
+  const _UpcomingSection({required this.currentWeek});
 
-  final bool isCompleted;
-  final Color accent;
+  List<MapEntry<int, List<ChecklistTask>>> _upcoming() {
+    final out = <MapEntry<int, List<ChecklistTask>>>[];
+    for (int w = currentWeek + 1; w <= 42 && out.length < 3; w++) {
+      final t = PregnancyChecklistRepository.forWeek(w);
+      if (t.isNotEmpty) out.add(MapEntry(w, t));
+    }
+    return out;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutBack,
-      width: 24,
-      height: 24,
-      margin: const EdgeInsets.only(top: 1),
-      decoration: BoxDecoration(
-        color: isCompleted ? accent : Colors.transparent,
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(
-          color: isCompleted ? accent : ThreadTheme.bgCardBorder,
-          width: 1.5,
+    final weeks = _upcoming();
+    if (weeks.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: context._p.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [BoxShadow(
+            color: Color(0x081C4D30),
+            blurRadius: 16, offset: Offset(0, 4))],
         ),
-      ),
-      child: isCompleted
-          ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-          : null,
-    );
-  }
-}
-
-// ════════════════════════════════════════════════════════════
-// EMPTY STATE
-// ════════════════════════════════════════════════════════════
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.accent});
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(48),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: accent.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: const Center(
-                child: Text('🌿', style: TextStyle(fontSize: 32)),
-              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+              child: Row(children: [
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: context._p.mintLight,
+                    borderRadius: BorderRadius.circular(9)),
+                  child: Icon(Icons.calendar_month_outlined,
+                      size: 16, color: context._p.green),
+                ),
+                const SizedBox(width: 10),
+                Text('À venir', style: GoogleFonts.inter(
+                  fontSize: 13, fontWeight: FontWeight.w700,
+                  color: context._p.green)),
+              ]),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              'Nothing scheduled\nthis week.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: ThreadTheme.textPrimary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Check back soon or browse\nupcoming tasks below.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.55,
-                color: ThreadTheme.textSecondary,
-              ),
-            ),
+            Divider(height: 1, color: context._p.border),
+
+            ...weeks.map((e) => _UpcomingWeekTile(week: e.key, tasks: e.value)),
           ],
         ),
       ),
@@ -581,229 +509,78 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════════════════
-// FLOATING BUTTON — View upcoming tasks
-// ════════════════════════════════════════════════════════════
-
-class _UpcomingFAB extends StatelessWidget {
-  const _UpcomingFAB({
-    required this.accent,
-    required this.safeBottom,
-    required this.onTap,
-  });
-
-  final Color accent;
-  final double safeBottom;
-  final VoidCallback onTap;
+class _UpcomingWeekTile extends StatelessWidget {
+  final int week;
+  final List<ChecklistTask> tasks;
+  const _UpcomingWeekTile({required this.week, required this.tasks});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: safeBottom + 12),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // semaine label
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: accent,
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: [
-              BoxShadow(
-                color: accent.withOpacity(0.32),
-                blurRadius: 18,
-                offset: const Offset(0, 7),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.calendar_month_rounded,
-                  color: Colors.white, size: 18),
-              SizedBox(width: 8),
-              Text(
-                'View upcoming tasks',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14.5,
-                  letterSpacing: 0.1,
-                ),
-              ),
-            ],
-          ),
+            color: context._p.mintLight,
+            borderRadius: BorderRadius.circular(6)),
+          child: Text('Semaine $week', style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: FontWeight.w600,
+            color: context._p.green, letterSpacing: 0.5)),
         ),
-      ),
+        const SizedBox(height: 10),
+        ...tasks.map((t) {
+          final style = _catStyle(t.category, context);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(children: [
+              Container(
+                width: 6, height: 6,
+                decoration: BoxDecoration(
+                  color: style.fg, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(t.title, style: GoogleFonts.inter(
+                fontSize: 13, color: context._p.textMid,
+                fontWeight: FontWeight.w500))),
+            ]),
+          );
+        }),
+      ]),
     );
   }
 }
 
-// ════════════════════════════════════════════════════════════
-// UPCOMING TASKS SHEET
-// ════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+//  EMPTY STATE
+// ─────────────────────────────────────────────────────────────────────────────
 
-class _UpcomingTasksSheet extends StatelessWidget {
-  const _UpcomingTasksSheet({
-    required this.currentWeek,
-    required this.accent,
-  });
-
-  final int currentWeek;
-  final Color accent;
-
-  /// Next 3 weeks that have data
-  List<MapEntry<int, List<ChecklistTask>>> _upcomingWeeks() {
-    final results = <MapEntry<int, List<ChecklistTask>>>[];
-    for (int w = currentWeek + 1; w <= 40 && results.length < 3; w++) {
-      final tasks = PregnancyChecklistRepository.forWeek(w);
-      // Only add if the week actually has its own key (not a fallback)
-      if (tasks.isNotEmpty) results.add(MapEntry(w, tasks));
-    }
-    return results;
-  }
+class _EmptyState extends StatelessWidget {
+  final int week;
+  const _EmptyState({required this.week});
 
   @override
   Widget build(BuildContext context) {
-    final safeBottom = MediaQuery.of(context).padding.bottom;
-    final weeks = _upcomingWeeks();
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.80,
-      ),
-      decoration: const BoxDecoration(
-        color: ThreadTheme.bgCard,
-        borderRadius: BorderRadius.all(Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle
-          const SizedBox(height: 12),
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFDDD8D0),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: [
-                Icon(Icons.upcoming_rounded, size: 18, color: accent),
-                const SizedBox(width: 8),
-                Text(
-                  'Upcoming Tasks',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: ThreadTheme.textPrimary,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Scrollable list
-          Flexible(
-            child: ListView.builder(
-              padding: EdgeInsets.fromLTRB(24, 0, 24, 24 + safeBottom),
-              itemCount: weeks.isEmpty ? 1 : weeks.length,
-              itemBuilder: (_, wi) {
-                if (weeks.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.only(top: 32),
-                    child: Center(
-                      child: Text(
-                        'You\'re almost at the end — no more upcoming weeks.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: ThreadTheme.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                final entry = weeks[wi];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Week label
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10, top: 4),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: accent.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'Week ${entry.key}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: accent,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Tasks preview
-                    ...entry.value.map(
-                      (task) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                color: accent.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Center(
-                                child: Text(task.emoji,
-                                    style: const TextStyle(fontSize: 12)),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                task.title,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: ThreadTheme.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(48),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 64, height: 64,
+          decoration: BoxDecoration(
+            color: context._p.mintLight, borderRadius: BorderRadius.circular(20)),
+          child: Icon(Icons.spa_outlined, size: 30, color: context._p.green),
+        ),
+        const SizedBox(height: 18),
+        Text('Rien de prévu cette semaine', style: GoogleFonts.outfit(
+          fontSize: 16, fontWeight: FontWeight.w600, color: context._p.textDark),
+          textAlign: TextAlign.center),
+        const SizedBox(height: 8),
+        Text('Profite de ce moment de calme.\nLes prochaines tâches arrivent bientôt.',
+          style: GoogleFonts.inter(
+            fontSize: 13, color: context._p.textMid, height: 1.6),
+          textAlign: TextAlign.center),
+      ]),
     );
   }
 }

@@ -1,513 +1,797 @@
-// ignore_for_file: deprecated_member_use
+﻿// ignore_for_file: deprecated_member_use
+import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/PregnancyInsightRepository.dart';
 import 'package:fiteva/screens/cycle/pregnancy/baby-story/baby_story_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/checklist/pregnancy_checklist_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/daily_insight_model.dart';
+import 'package:fiteva/screens/cycle/pregnancy/body/pregnancy_body_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_hub_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/symptom/symptoms_home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:fiteva/screens/cycle/pregnancy/pregnancy_colors.dart';
+import 'package:fiteva/widgets/shared_app_header.dart';
+
+extension _Pg on BuildContext {
+  PgColors get _p => PgColors.of(this);
+}
+
+// ─── fruit sizes ──────────────────────────────────────────────────────────────
+const _fruit = <int,String>{
+  1:'grain de pavot', 2:'graine de sésame', 3:'graine de sésame',
+  4:'lentille', 5:'lentille', 6:'lentille', 7:'myrtille',
+  8:'framboise', 9:'olive', 10:'datte', 11:'figue', 12:'prune',
+  13:'pêche', 14:'citron', 15:'pomme', 16:'avocat', 17:'poire',
+  18:'poivron', 19:'tomate', 20:'banane', 21:'carotte', 22:'papaye',
+  23:'mangue', 24:'épi de maïs', 25:'chou-fleur', 26:'laitue romaine',
+  27:'chou', 28:'aubergine', 29:'courge', 30:'chou frisé',
+  31:'ananas', 32:'ananas', 33:'melon', 34:'melon cantaloup',
+  35:'melon miellé', 36:'laitue iceberg', 37:'céleri',
+  38:'citrouille', 39:'petite pastèque', 40:'pastèque',
+  41:'pastèque', 42:'pastèque géante',
+};
+
+// ─── fitness tips ─────────────────────────────────────────────────────────────
+const _fitData = <int,(String,String)>{
+  1: ('Marche douce','20 à 30 min par jour. Ton corps sait ce dont il a besoin.'),
+  7: ('Yoga prénatal','Soulage les nausées et maintient la souplesse.'),
+  13:('Pilates prénatal','Périnée, dos, stabilité — les bases pour la suite.'),
+  17:('Natation','Zéro impact. Le meilleur allié du 2e trimestre.'),
+  24:('Gainage doux','Stabilité du bassin et du dos — essentielle maintenant.'),
+  27:('Ballon de grossesse','Rebonds légers pour soulager le bas du dos.'),
+  34:('Marche quotidienne','Prépare le corps naturellement à l\'accouchement.'),
+  38:('Respiration','Cohérence cardiaque 5 min — matin et soir.'),
+};
+String _fitLabel(int w){final k=_fitData.keys.where((k)=>k<=w).fold(1,(p,k)=>k>p?k:p);return _fitData[k]!.$1;}
+String _fitTip(int w){final k=_fitData.keys.where((k)=>k<=w).fold(1,(p,k)=>k>p?k:p);return _fitData[k]!.$2;}
+
 // ─────────────────────────────────────────────────────────────────────────────
-//  DESIGN TOKENS
-// ─────────────────────────────────────────────────────────────────────────────
+class PregnancyHubScreen extends ConsumerStatefulWidget {
+  const PregnancyHubScreen({super.key});
+  @override
+  ConsumerState<PregnancyHubScreen> createState() => _PregnancyHubScreenState();
+}
 
-abstract class _C {
-  static const accent    = Color(0xFFE8927C);
-  static const textDark  = Color(0xFF3D2020);
-  static const textMuted = Color(0xFFB89090);
+class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen> {
+  int? _mood; // 0=bien 1=fatiguée 2=joyeuse
 
-  static TextStyle h(double s,
-          {FontWeight w = FontWeight.w600, Color c = textDark}) =>
-      GoogleFonts.nunito(fontSize: s, fontWeight: w, color: c);
+  static const _months = ['janv.','févr.','mars','avr.','mai','juin',
+    'juil.','août','sept.','oct.','nov.','déc.'];
 
-  static TextStyle b(double s,
-          {FontWeight w = FontWeight.w400, Color c = textDark}) =>
-      GoogleFonts.nunito(fontSize: s, fontWeight: w, color: c);
+  @override
+  Widget build(BuildContext context) {
+    final profile = ref.watch(userProfileProvider);
+    final week    = (profile.pregnancyWeekSA ?? 1).clamp(1, 42);
+    final insight = PregnancyInsightRepository.forWeek(week);
+    final due     = DateTime.now().add(Duration(days: (42 - week) * 7));
+    final left    = due.difference(DateTime.now()).inDays.clamp(0, 300);
+    final fmtDue  = '${due.day} ${_months[due.month - 1]} ${due.year}';
+    final tri     = week <= 13 ? '1er trimestre'
+        : week <= 26 ? '2e trimestre' : '3e trimestre';
+
+    return Scaffold(
+      backgroundColor: context._p.bg,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+
+          SharedAppHeader.sliver(
+            eyebrow: 'GROSSESSE',
+            title: 'Ma grossesse',
+            accentColor: context._p.green,
+            bgColor: Colors.white,
+            actions: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: context._p.mintLight,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(fmtDue, style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: context._p.green)),
+              ),
+            ],
+          ),
+
+          SliverToBoxAdapter(child: Column(children: [
+
+          // ══ HERO CARD ════════════════════════════════════════════════
+          _HeroCard(
+            week: week, tri: tri,
+            left: left, fmtDue: fmtDue,
+            fruit: _fruit[week] ?? 'fruit',
+          ),
+
+          const SizedBox(height: 16),
+
+          // ══ MOOD CHECK-IN ════════════════════════════════════════════
+          _pad(_MoodCard(selected: _mood, onSelect: (i) {
+            HapticFeedback.lightImpact();
+            setState(() => _mood = i);
+          })),
+
+          // ══ MOOD RESPONSE ════════════════════════════════════════════
+          AnimatedSize(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutCubic,
+            child: _mood == null
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _MoodResponseCard(mood: _mood!, week: week),
+                  ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ══ CETTE SEMAINE ════════════════════════════════════════════
+          _pad(_WeekCard(insight: insight)),
+
+          const SizedBox(height: 12),
+
+          // ══ FORME & MOUVEMENT ════════════════════════════════════════
+          _pad(_FitCard(week: week)),
+
+          const SizedBox(height: 12),
+
+          // ══ NAVIGATION ═══════════════════════════════════════════════
+          _pad(_NavCard(week: week, context: context)),
+
+          // ══ BORN ═════════════════════════════════════════════════════
+          if (week >= 37) ...[
+            const SizedBox(height: 12),
+            _pad(_BornCard(context: context)),
+          ],
+
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 90),
+        ])),
+        ],
+      ),
+    );
+  }
+
+  Widget _pad(Widget w) =>
+      Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: w);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  MAIN SCREEN
+//  HERO CARD
 // ─────────────────────────────────────────────────────────────────────────────
 
-class PregnancyHubScreen extends StatefulWidget {
-  /// The date the pregnancy started (LMP or conception date).
-  final DateTime pregnancyStartDate;
+class _HeroCard extends StatelessWidget {
+  final int week, left;
+  final String tri, fmtDue, fruit;
 
-  const PregnancyHubScreen({
-    super.key,
-    required this.pregnancyStartDate,
+  const _HeroCard({
+    required this.week, required this.tri,
+    required this.left, required this.fmtDue, required this.fruit,
   });
 
   @override
-  State<PregnancyHubScreen> createState() => _PregnancyHubScreenState();
+  Widget build(BuildContext context) {
+    final progress = (week / 42).clamp(0.0, 1.0);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: context._p.surface,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+        boxShadow: [BoxShadow(
+          color: Color(0x0A1C4D30), blurRadius: 20, offset: Offset(0, 8))],
+      ),
+      child: Column(children: [
+        const SizedBox(height: 24),
+
+        // fetus photo — dans un cercle en couches
+        Stack(alignment: Alignment.center, children: [
+          // halo externe
+          Container(
+            width: 204, height: 204,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: context._p.mintLight.withOpacity(0.50),
+            ),
+          ),
+          // cercle intermédiaire
+          Container(
+            width: 185, height: 185,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle, color: context._p.mintLight),
+          ),
+          // photo
+          Container(
+            width: 168, height: 168,
+            decoration: const BoxDecoration(shape: BoxShape.circle),
+            child: ClipOval(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 450),
+                transitionBuilder: (c, a) =>
+                    FadeTransition(opacity: a, child: c),
+                child: _FetusPic(key: ValueKey(week), week: week),
+              ),
+            ),
+          ),
+        ]),
+
+        const SizedBox(height: 22),
+
+        // semaine
+        Text(tri.toUpperCase(), style: GoogleFonts.inter(
+          fontSize: 9, fontWeight: FontWeight.w500,
+          color: context._p.textSoft, letterSpacing: 2.5)),
+        const SizedBox(height: 2),
+        Row(mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text('Semaine ', style: GoogleFonts.inter(
+                fontSize: 18, fontWeight: FontWeight.w400, color: context._p.textMid)),
+              Text('$week', style: GoogleFonts.outfit(
+                fontSize: 48, fontWeight: FontWeight.w600,
+                color: context._p.green, height: 1.1)),
+            ]),
+
+        const SizedBox(height: 6),
+        Text('Taille d\'une $fruit',
+            style: GoogleFonts.inter(
+                fontSize: 13, color: context._p.textSoft)),
+
+        const SizedBox(height: 24),
+
+        // progress + jours
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text('$left jours restants', style: GoogleFonts.inter(
+                fontSize: 12, color: context._p.textSoft)),
+              Text('S42', style: GoogleFonts.inter(
+                fontSize: 12, color: context._p.textSoft)),
+            ]),
+            const SizedBox(height: 6),
+            ClipRRect(borderRadius: BorderRadius.circular(4),
+              child: Stack(children: [
+                Container(height: 6, color: context._p.mintLight),
+                FractionallySizedBox(
+                  widthFactor: progress,
+                  child: Container(height: 6,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      gradient: LinearGradient(
+                        colors: [context._p.mint, context._p.green]),
+                    )),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+
+        const SizedBox(height: 28),
+      ]),
+    );
+  }
 }
 
-class _PregnancyHubScreenState extends State<PregnancyHubScreen> {
-  final DateTime _today = DateTime.now();
+// ─────────────────────────────────────────────────────────────────────────────
+//  MOOD CARD — la touche chaleureuse unique FitEva
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // ── Computed pregnancy data ───────────────────────────────────────────────
-  int get _daysSinceStart =>
-      _today.difference(widget.pregnancyStartDate).inDays.clamp(0, 280);
+class _MoodCard extends StatelessWidget {
+  final int? selected;
+  final void Function(int) onSelect;
+  const _MoodCard({required this.selected, required this.onSelect});
 
-  int get _currentWeek => (_daysSinceStart ~/ 7).clamp(1, 40);
-
-  int get _currentDayRemainder => _daysSinceStart % 7;
-
-  // ── Fetus image padding (shrinks as baby grows) ───────────────────────────
-  double get _fetusPadding =>
-      (80.0 - (_currentWeek - 1) * (76.0 / 39.0)).clamp(4.0, 80.0);
-
-  // ── Locale helpers ────────────────────────────────────────────────────────
-  static const _monthNames = [
-    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+  static const _moods = [
+    ('Bien', Icons.sentiment_satisfied_alt_outlined),
+    ('Fatiguée', Icons.sentiment_neutral_outlined),
+    ('Joyeuse', Icons.sentiment_very_satisfied_outlined),
   ];
-  static const _weekdayShort = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-
-  String get _dateLabel =>
-      '${_today.day} ${_monthNames[_today.month - 1]}';
 
   @override
   Widget build(BuildContext context) {
-    final insight = PregnancyInsightRepository.forWeek(_currentWeek);
-
-    return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.4),
-            radius: 1.2,
-            colors: [Color(0xFFFDEEE4), Color(0xFFF0B896)],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _buildTopBar(context),
-                const SizedBox(height: 4),
-                _buildDayStrip(),
-                const SizedBox(height: 24),
-                _buildFetusHero(),
-                const SizedBox(height: 18),
-                _buildWeekLabel(),
-                const SizedBox(height: 12),
-                _buildSettingsBtn(),
-                const SizedBox(height: 28),
-                // White rounded card area
-                Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(32)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDailyTips(context, insight),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20),
-                        child: Divider(color: Color(0xFFF0E8E8), height: 1),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildWeekDetail(insight),
-                      const SizedBox(height: 48),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── Top bar ─────────────────────────────────────────────────────────────────
-
-  Widget _buildTopBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-      child: Row(
-        children: [
-          _GlassBtn(
-            icon: Icons.arrow_back_ios_new_rounded,
-            onTap: () => Navigator.maybePop(context),
-          ),
-          const Spacer(),
-          Text(_dateLabel,
-              style: _C.b(16, w: FontWeight.w700, c: _C.textDark)),
-          const Spacer(),
-          _GlassBtn(icon: Icons.calendar_today_outlined, onTap: () {}),
-        ],
-      ),
-    );
-  }
-
-  // ── 7-day strip ─────────────────────────────────────────────────────────────
-
-  Widget _buildDayStrip() {
-    final days =
-        List.generate(7, (i) => _today.add(Duration(days: i - 3)));
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: days.map((d) {
-          final isToday =
-              d.day == _today.day && d.month == _today.month;
-          final widx = d.weekday - 1;
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _weekdayShort[widx],
-                style: _C.b(11, w: FontWeight.w600, c: _C.textMuted),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _card(context),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Comment tu te sens aujourd\'hui ?',
+            style: GoogleFonts.inter(
+                fontSize: 14, fontWeight: FontWeight.w600, color: context._p.textDark)),
+        const SizedBox(height: 14),
+        Row(children: List.generate(_moods.length, (i) {
+          final sel = selected == i;
+          return Expanded(child: GestureDetector(
+            onTap: () => onSelect(i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: sel ? context._p.mintLight : context._p.bg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: sel ? context._p.mint : Colors.transparent, width: 1.5),
               ),
-              const SizedBox(height: 2),
-              if (isToday)
-                Text(
-                  'AUJ.',
-                  style: _C.b(8,
-                      w: FontWeight.w800, c: _C.accent),
-                )
-              else
-                const SizedBox(height: 12),
-              const SizedBox(height: 3),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isToday ? Colors.white : Colors.transparent,
-                  shape: BoxShape.circle,
-                  boxShadow: isToday
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.12),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          )
-                        ]
-                      : null,
+              child: Column(children: [
+                Icon(_moods[i].$2,
+                  size: 24,
+                  color: sel ? context._p.green : context._p.textSoft),
+                const SizedBox(height: 6),
+                Text(_moods[i].$1, style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w500,
+                  color: sel ? context._p.green : context._p.textSoft)),
+              ]),
+            ),
+          ));
+        })),
+      ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  MOOD RESPONSE CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MoodResponseCard extends StatefulWidget {
+  final int mood;
+  final int week;
+  const _MoodResponseCard({required this.mood, required this.week});
+
+  @override
+  State<_MoodResponseCard> createState() => _MoodResponseCardState();
+}
+
+class _MoodResponseCardState extends State<_MoodResponseCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this,
+        duration: const Duration(milliseconds: 420));
+    _fade  = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slide = Tween(begin: const Offset(0, 0.08), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    _ctrl.forward();
+  }
+
+  @override
+  void didUpdateWidget(_MoodResponseCard old) {
+    super.didUpdateWidget(old);
+    if (old.mood != widget.mood) {
+      _ctrl.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  // ── contenu selon mood + semaine ──────────────────────────────────────────
+
+
+  static const _moodIcons = [
+    Icons.spa_outlined,
+    Icons.bedtime_outlined,
+    Icons.wb_sunny_outlined,
+  ];
+
+  (String, String) _content() {
+    final tri = widget.week <= 13 ? 1 : widget.week <= 26 ? 2 : 3;
+    switch (widget.mood) {
+      case 0: // Bien
+        if (tri == 1) return (
+          'Tu traverses le premier trimestre avec sérénité — c\'est précieux.',
+          'Profite de cette énergie pour une marche de 20 min aujourd\'hui.',
+        );
+        if (tri == 2) return (
+          'Le beau trimestre te va bien. Ton corps et ton bébé sont en harmonie.',
+          'C\'est le bon moment pour inscrire un cours de yoga prénatal.',
+        );
+        return (
+          'Être en forme à la semaine ${widget.week}, c\'est une vraie force.',
+          'Une marche douce le matin prépare ton corps naturellement.',
+        );
+
+      case 1: // Fatiguée
+        if (tri == 1) return (
+          'La fatigue du 1er trimestre est l\'une des plus intenses — ton corps construit tout.',
+          'Accorde-toi une sieste aujourd\'hui. C\'est du soin, pas de la paresse.',
+        );
+        if (tri == 2) return (
+          'Une fatigue au 2e trimestre peut signaler une croissance rapide de bébé.',
+          'Vérifie ton apport en fer et en protéines — et dors dès que tu peux.',
+        );
+        return (
+          'À la semaine ${widget.week}, la fatigue est le signal que ton corps se prépare.',
+          'Surélève les pieds 20 min ce soir et laisse quelqu\'un t\'aider aujourd\'hui.',
+        );
+
+      default: // Joyeuse
+        if (tri == 1) return (
+          'Cette joie est un beau cadeau — savoure chaque instant de ce début.',
+          'Note ce moment dans un journal de grossesse. Tu seras heureuse de le relire.',
+        );
+        if (tri == 2) return (
+          'Ta joie rayonne — bébé la perçoit vraiment. Les émotions traversent le placenta.',
+          'Mets de la musique que tu aimes et danse doucement avec bébé.',
+        );
+        return (
+          'Cette joie à l\'approche du grand jour est la plus belle des préparations.',
+          'Partage ce moment avec quelqu\'un que tu aimes — ce souvenir est précieux.',
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (accent, bg, textAccent) = switch (widget.mood) {
+      0 => (context._p.mint, context._p.mintLight, context._p.green),
+      1 => (context._p.warmPink, context._p.pinkSoft, const Color(0xFFB85C57)),
+      _ => (const Color(0xFFF4A940), const Color(0xFFFDF5E6), const Color(0xFFB87A20)),
+    };
+    final (message, tip) = _content();
+
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(
+        position: _slide,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: accent.withOpacity(0.3), width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(10)),
+                  child: Icon(_moodIcons[widget.mood],
+                      size: 16, color: textAccent),
                 ),
-                child: Center(
-                  child: Text(
-                    '${d.day}',
-                    style: _C.b(
-                      14,
-                      w: isToday ? FontWeight.w800 : FontWeight.w500,
-                      c: isToday ? _C.accent : _C.textMuted,
-                    ),
-                  ),
+                const SizedBox(width: 10),
+                Text('Pour toi aujourd\'hui', style: GoogleFonts.inter(
+                  fontSize: 10, fontWeight: FontWeight.w600,
+                  color: textAccent, letterSpacing: 1.3)),
+              ]),
+              const SizedBox(height: 12),
+              Text(message, style: GoogleFonts.outfit(
+                fontSize: 14, height: 1.65,
+                color: context._p.textDark, fontStyle: FontStyle.italic)),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.lightbulb_outline_rounded,
+                        size: 14, color: textAccent),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(tip, style: GoogleFonts.inter(
+                      fontSize: 12, color: context._p.textMid,
+                      height: 1.55, fontWeight: FontWeight.w500))),
+                  ],
                 ),
               ),
             ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  // ── Fetus hero with AnimatedSwitcher ─────────────────────────────────────────
-
-  Widget _buildFetusHero() {
-    final week = _currentWeek;
-    final pad  = _fetusPadding;
-
-    return Container(
-      width: double.infinity,
-      height: 260,
-      margin: const EdgeInsets.symmetric(horizontal: 28),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 600),
-        transitionBuilder: (child, anim) => FadeTransition(
-          opacity: anim,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.85, end: 1.0).animate(
-              CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-            ),
-            child: child,
           ),
         ),
-        child: _FetusFrame(
-          key: ValueKey(week),
-          week: week,
-          padding: pad,
-        ),
-      ),
-    );
-  }
-
-  // ── Week label ───────────────────────────────────────────────────────────────
-
-  Widget _buildWeekLabel() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '$_currentWeek semaines, $_currentDayRemainder jours',
-          style: _C.h(22, w: FontWeight.w800, c: _C.accent),
-        ),
-        const SizedBox(width: 6),
-        const Icon(Icons.info_outline_rounded, size: 16, color: _C.accent),
-      ],
-    );
-  }
-
-  // ── Settings / Born button ────────────────────────────────────────────────────
-
-  Widget _buildSettingsBtn() {
-    // Dès la semaine 37 (terme), on propose le passage au post-partum
-    if (_currentWeek >= 37) {
-      return _BabyBornButton(
-        onTap: () {
-          HapticFeedback.mediumImpact();
-          _navigateToPostpartum(DateTime.now());
-        },
-      );
-    }
-    return OutlinedButton(
-      onPressed: () {
-        HapticFeedback.lightImpact();
-      },
-      style: OutlinedButton.styleFrom(
-        foregroundColor: _C.accent,
-        side: const BorderSide(color: Colors.white, width: 1.5),
-        backgroundColor: Colors.white.withOpacity(0.6),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 9),
-      ),
-      child: Text('Paramètres',
-          style: _C.b(13, w: FontWeight.w700, c: _C.accent)),
-    );
-  }
-
-  void _navigateToPostpartum(DateTime birthDate) {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (_, animation, __) =>
-            PostpartumHubScreen(birthDate: birthDate),
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(
-            opacity: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOut,
-            ),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 500),
-      ),
-    );
-  }
-
-  // ── Daily tips horizontal scroll ─────────────────────────────────────────────
-
-  Widget _buildDailyTips(BuildContext context, DailyInsight insight) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 26, 0, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20),
-            child: Row(
-              children: [
-                Text('Mes conseils quotidiens',
-                    style: _C.b(15, w: FontWeight.w700)),
-                Text(' • ', style: _C.b(15, c: _C.textMuted)),
-                Text("Aujourd'hui",
-                    style: _C.b(15, c: _C.textMuted)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 152,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              children: [
-                // Symptômes
-                _TipCard(
-                  badge: null,
-                  label: 'Enregistrez\nvos symptômes',
-                  icon: Icons.favorite_border_rounded,
-                  iconColor: _C.accent,
-                  bg: const Color(0xFFFFF0EB),
-                  showAdd: true,
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SymptomsHomeScreen(
-                            currentWeek: _currentWeek),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                // Corps
-                _TipCard(
-                  badge: null,
-                  label: 'Votre corps à\n$_currentWeek sem.',
-                  icon: Icons.accessibility_new_rounded,
-                  iconColor: const Color(0xFFD4A0B0),
-                  bg: const Color(0xFFFCEEF3),
-                  bordered: true,
-                  onTap: () {},
-                ),
-                const SizedBox(width: 12),
-                // Bébé
-                _TipCard(
-                  badge: '$_currentWeek sem.',
-                  label: 'Votre bébé',
-                  icon: Icons.child_care_rounded,
-                  iconColor: const Color(0xFF7ABB98),
-                  bg: const Color(0xFFEFF7F2),
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => BabyStoryScreen(
-                            currentWeek: _currentWeek),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                // Checklist
-                _TipCard(
-                  badge: null,
-                  label: 'Ma liste de\ncontrôle',
-                  icon: Icons.checklist_rounded,
-                  iconColor: const Color(0xFFA7B8AD),
-                  bg: const Color(0xFFF0F4F2),
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PregnancyChecklistScreen(
-                            currentWeek: _currentWeek),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 20),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Week detail section ──────────────────────────────────────────────────────
-
-  Widget _buildWeekDetail(DailyInsight insight) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "$_currentWeek semaines : à quoi s'attendre",
-            style: _C.h(17, w: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(insight.title,
-              style: _C.b(13, c: _C.textMuted)),
-          const SizedBox(height: 16),
-          _InsightBlock(
-            icon: Icons.child_care_rounded,
-            title: 'Votre bébé',
-            color: _C.accent,
-            text: insight.babyInsight,
-          ),
-          const SizedBox(height: 14),
-          _InsightBlock(
-            icon: Icons.favorite_rounded,
-            title: 'Pour vous',
-            color: const Color(0xFF7ABB98),
-            text: insight.momTip,
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFDEEE4),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Text(
-              '"${insight.poeticLine}"',
-              style: _C.h(13, w: FontWeight.w400, c: _C.accent).copyWith(
-                fontStyle: FontStyle.italic,
-                height: 1.65,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FETUS FRAME — handles sprite sheet cropping at runtime
+//  WEEK CARD — insights bébé + maman
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _FetusFrame extends StatelessWidget {
-  final int week;     // 1-40
-  final double padding;
-
-  const _FetusFrame({super.key, required this.week, required this.padding});
+class _WeekCard extends StatelessWidget {
+  final DailyInsight insight;
+  const _WeekCard({required this.insight});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFE8927C).withOpacity(0.18),
-            blurRadius: 32,
-            offset: const Offset(0, 12),
-            spreadRadius: 4,
+      padding: const EdgeInsets.all(20),
+      decoration: _card(context),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _cardTitle('Cette semaine', context),
+        const SizedBox(height: 16),
+
+        // bébé
+        _InsightRow(
+          label: 'Votre bébé',
+          text: insight.babyInsight,
+          bg: context._p.mintLight,
+          labelColor: context._p.green,
+        ),
+        const SizedBox(height: 10),
+
+        // maman
+        _InsightRow(
+          label: 'Pour vous',
+          text: insight.momTip,
+          bg: context._p.pinkSoft,
+          labelColor: context._p.warmPink,
+        ),
+
+        if (insight.poeticLine.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: context._p.bg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text('"${insight.poeticLine}"',
+                style: GoogleFonts.outfit(
+                  fontSize: 13, fontStyle: FontStyle.italic,
+                  color: context._p.textMid, height: 1.7),
+                textAlign: TextAlign.center),
           ),
         ],
-      ),
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOut,
-        padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding * 0.6),
-        child: Image.asset(
-          'assets/fetus/week_$week.png',
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => _FetusPlaceholder(week: week),
+      ]),
+    );
+  }
+}
+
+class _InsightRow extends StatelessWidget {
+  final String label, text;
+  final Color bg, labelColor;
+  const _InsightRow({
+    required this.label, required this.text,
+    required this.bg, required this.labelColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bg, borderRadius: BorderRadius.circular(14)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label.toUpperCase(), style: GoogleFonts.inter(
+          fontSize: 9, fontWeight: FontWeight.w600,
+          color: labelColor, letterSpacing: 1.8)),
+        const SizedBox(height: 7),
+        Text(text, style: GoogleFonts.inter(
+          fontSize: 13, color: context._p.textDark, height: 1.6)),
+      ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FITNESS CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _FitCard extends StatelessWidget {
+  final int week;
+  const _FitCard({required this.week});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _card(context),
+      child: Row(children: [
+        Container(
+          width: 48, height: 48,
+          decoration: BoxDecoration(
+            color: context._p.mintLight, borderRadius: BorderRadius.circular(14)),
+          child: Icon(Icons.self_improvement_outlined,
+              size: 22, color: context._p.green),
         ),
+        const SizedBox(width: 16),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Forme & mouvement', style: GoogleFonts.inter(
+              fontSize: 9, fontWeight: FontWeight.w600,
+              color: context._p.textSoft, letterSpacing: 1.8)),
+            const SizedBox(height: 4),
+            Text(_fitLabel(week), style: GoogleFonts.inter(
+              fontSize: 14, fontWeight: FontWeight.w600, color: context._p.textDark)),
+            const SizedBox(height: 3),
+            Text(_fitTip(week), style: GoogleFonts.inter(
+              fontSize: 12, color: context._p.textMid, height: 1.5)),
+          ],
+        )),
+      ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  NAV CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _NavCard extends StatelessWidget {
+  final int week;
+  final BuildContext context;
+  const _NavCard({required this.week, required this.context});
+
+  @override
+  Widget build(BuildContext ctx) {
+    Route fade(Widget p) => PageRouteBuilder(
+      pageBuilder: (_, a, __) => p,
+      transitionsBuilder: (_, a, __, c) => FadeTransition(
+          opacity: CurvedAnimation(parent: a, curve: Curves.easeInOut),
+          child: c),
+      transitionDuration: const Duration(milliseconds: 280),
+    );
+
+    final items = [
+      (Icons.favorite_border_rounded, 'Symptômes',
+          'Journaliser aujourd\'hui', () {
+        HapticFeedback.lightImpact();
+        Navigator.push(context, fade(SymptomsHomeScreen(currentWeek: week)));
+      }),
+      (Icons.child_care_outlined, 'Votre bébé',
+          'Développement — semaine $week', () {
+        HapticFeedback.lightImpact();
+        Navigator.push(context, fade(BabyStoryScreen(currentWeek: week)));
+      }),
+      (Icons.self_improvement_outlined, 'Votre corps',
+          'Évolutions physiques', () {
+        HapticFeedback.lightImpact();
+        Navigator.push(context, fade(PregnancyBodyScreen(currentWeek: week)));
+      }),
+      (Icons.check_circle_outline_rounded, 'Ma checklist',
+          'Préparatifs & rendez-vous', () {
+        HapticFeedback.lightImpact();
+        Navigator.push(context,
+            fade(PregnancyChecklistScreen(currentWeek: week)));
+      }),
+    ];
+
+    return Container(
+      decoration: _card(ctx),
+      child: Column(children: List.generate(items.length, (i) {
+        final item = items[i];
+        return Column(children: [
+          GestureDetector(
+            onTap: item.$4,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+              child: Row(children: [
+                Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: ctx._p.mintLight,
+                    borderRadius: BorderRadius.circular(11)),
+                  child: Icon(item.$1, size: 18, color: ctx._p.green),
+                ),
+                const SizedBox(width: 14),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.$2, style: GoogleFonts.inter(
+                      fontSize: 14, fontWeight: FontWeight.w600,
+                      color: ctx._p.textDark)),
+                    Text(item.$3, style: GoogleFonts.inter(
+                      fontSize: 12, color: ctx._p.textSoft)),
+                  ],
+                )),
+                Icon(Icons.chevron_right_rounded,
+                    size: 18, color: ctx._p.textSoft),
+              ]),
+            ),
+          ),
+          if (i < items.length - 1)
+            Divider(height: 1, indent: 72, endIndent: 20,
+                color: ctx._p.mintLight),
+        ]);
+      })),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BORN CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _BornCard extends StatelessWidget {
+  final BuildContext context;
+  const _BornCard({required this.context});
+
+  @override
+  Widget build(BuildContext ctx) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        Navigator.push(context, PageRouteBuilder(
+          pageBuilder: (_, a, __) =>
+              PostpartumHubScreen(birthDate: DateTime.now()),
+          transitionsBuilder: (_, a, __, c) => FadeTransition(
+              opacity: CurvedAnimation(parent: a, curve: Curves.easeInOut),
+              child: c),
+          transitionDuration: const Duration(milliseconds: 280),
+        ));
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [ctx._p.green, const Color(0xFF2E6B45)],
+            begin: Alignment.topLeft, end: Alignment.bottomRight),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(children: [
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Mon bébé est né', style: GoogleFonts.outfit(
+                fontSize: 16, fontWeight: FontWeight.w600,
+                color: Colors.white)),
+              const SizedBox(height: 3),
+              Text('Passer au suivi post-partum',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.65))),
+            ],
+          )),
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle),
+            child: const Icon(Icons.arrow_forward_rounded,
+                size: 18, color: Colors.white),
+          ),
+        ]),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FETUS PLACEHOLDER — shown until split script is run
+//  HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
+
+BoxDecoration _card(BuildContext context) => BoxDecoration(
+  color: context._p.surface,
+  borderRadius: BorderRadius.circular(20),
+  boxShadow: const [BoxShadow(
+    color: Color(0x081C4D30), blurRadius: 16, offset: Offset(0, 4))],
+);
+
+Widget _cardTitle(String t, BuildContext context) => Text(t, style: GoogleFonts.outfit(
+  fontSize: 16, fontWeight: FontWeight.w600, color: context._p.textDark));
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FETUS PICTURE
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _FetusPic extends StatelessWidget {
+  final int week;
+  const _FetusPic({super.key, required this.week});
+
+  @override
+  Widget build(BuildContext context) => Image.asset(
+    'assets/fetus/week_$week.png',
+    width: 168, height: 168,
+    fit: BoxFit.cover,
+    alignment: Alignment.center,
+    errorBuilder: (_, __, ___) => _FetusPlaceholder(week: week),
+  );
+}
 
 class _FetusPlaceholder extends StatelessWidget {
   final int week;
@@ -515,265 +799,16 @@ class _FetusPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Icon radius grows linearly: week 1 → 12 px, week 40 → 90 px
-    final r = (12.0 + (week - 1) * (78.0 / 39.0)).clamp(12.0, 90.0);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: r * 2,
-            height: r * 2.4,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8927C).withOpacity(0.25),
-              borderRadius: BorderRadius.circular(r),
-            ),
-            child: Icon(
-              Icons.child_friendly_rounded,
-              size: r,
-              color: const Color(0xFFE8927C).withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Semaine $week',
-            style: GoogleFonts.nunito(
-              fontSize: 11,
-              color: const Color(0xFFE8927C).withOpacity(0.7),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  TIP CARD
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _TipCard extends StatelessWidget {
-  final String? badge;
-  final String label;
-  final IconData icon;
-  final Color iconColor;
-  final Color bg;
-  final bool showAdd;
-  final bool bordered;
-  final VoidCallback onTap;
-
-  const _TipCard({
-    required this.badge,
-    required this.label,
-    required this.icon,
-    required this.iconColor,
-    required this.bg,
-    required this.onTap,
-    this.showAdd = false,
-    this.bordered = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 120,
+    final r = (10.0 + (week - 1) * (44.0 / 41.0)).clamp(10.0, 54.0);
+    return Container(
+      width: 168, height: 168, color: context._p.mintLight,
+      child: Center(child: Container(
+        width: r * 2, height: r * 2.4,
         decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(20),
-          border: bordered
-              ? Border.all(color: const Color(0xFFD4A0B0), width: 1.5)
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            )
-          ],
+          border: Border.all(color: context._p.mint.withOpacity(0.4), width: 1.5),
+          borderRadius: BorderRadius.circular(r),
         ),
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (badge != null)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7ABB98).withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  badge!,
-                  style: GoogleFonts.nunito(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF4A8A6A),
-                  ),
-                ),
-              )
-            else
-              const SizedBox(),
-            const Spacer(),
-            Icon(icon, size: 38, color: iconColor),
-            if (showAdd) ...[
-              const SizedBox(height: 4),
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                    color: iconColor, shape: BoxShape.circle),
-                child:
-                    const Icon(Icons.add, size: 15, color: Colors.white),
-              ),
-            ],
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: GoogleFonts.nunito(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF5C3D3D),
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  INSIGHT BLOCK
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _InsightBlock extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final Color color;
-  final String text;
-
-  const _InsightBlock({
-    required this.icon,
-    required this.title,
-    required this.color,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-              color: color.withOpacity(0.14), shape: BoxShape.circle),
-          child: Icon(icon, size: 17, color: color),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
-                  style: GoogleFonts.nunito(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: color)),
-              const SizedBox(height: 5),
-              Text(text,
-                  style: GoogleFonts.nunito(
-                      fontSize: 13,
-                      color: const Color(0xFF6B5050),
-                      height: 1.55)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  BABY BORN BUTTON — affiché dès S37
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _BabyBornButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _BabyBornButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFB99FD8), Color(0xFF9B7FC7)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF9B7FC7).withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.child_friendly_rounded,
-                size: 18, color: Colors.white),
-            const SizedBox(width: 8),
-            Text(
-              'Mon bébé est né !',
-              style: GoogleFonts.nunito(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  GLASS BUTTON
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _GlassBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _GlassBtn({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.55),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
-        ),
-        child: Icon(icon, size: 16, color: const Color(0xFF8B6060)),
-      ),
+      )),
     );
   }
 }

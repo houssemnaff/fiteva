@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/onboarding_provider.dart';
 import '../../providers/user_profile_provider.dart';
+import '../../providers/mascot_provider.dart';
 import '../../services/storage_service.dart';
 import 'steps/onboarding_steps.dart';
 
@@ -28,6 +29,10 @@ class OnboardingData {
   String? ppDuration;       // '0-2' | '2-6' | '6-12' | '3-6m' | '6m+'
   String? cycleDuration;
   DateTime? lastPeriod;
+  String avatarSeed  = 'fiteva';
+  String avatarStyle = 'lorelei';
+  String avatarBg    = 'b6e3f4';
+  String mascotType  = 'blob';
 
   Map<String, dynamic> toMap() => {
     'username':        username,
@@ -45,6 +50,8 @@ class OnboardingData {
     'pp_duration':     ppDuration,
     'cycle_duration':  cycleDuration,
     'last_period':     lastPeriod?.toIso8601String(),
+    'mascot_type':     mascotType,
+    'mascot_mood':     'happy',
   };
 }
 
@@ -60,6 +67,7 @@ enum OStep {
   frequency,
   healthProfile,
   cycleAndPregnancy,
+  avatar,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -98,6 +106,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     OStep.frequency,
     OStep.healthProfile,
     OStep.cycleAndPregnancy,
+    OStep.avatar,
   ];
 
   double get _progress {
@@ -117,7 +126,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       case OStep.equipment:         return OStep.frequency;
       case OStep.frequency:         return OStep.healthProfile;
       case OStep.healthProfile:     return OStep.cycleAndPregnancy;
-      case OStep.cycleAndPregnancy: return OStep.cycleAndPregnancy; // finish
+      case OStep.cycleAndPregnancy: return OStep.avatar;
+      case OStep.avatar:            return OStep.avatar; // finish
     }
   }
 
@@ -125,7 +135,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _syncDataFromControllers();
     await StorageService.saveOnboardingData(_data.toMap());
 
-    if (_current == OStep.cycleAndPregnancy) {
+    if (_current == OStep.avatar) {
       await _finish();
       return;
     }
@@ -156,6 +166,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await StorageService.saveOnboardingData(_data.toMap());
     ref.read(onboardingProvider.notifier).completeOnboarding();
     ref.read(userProfileProvider.notifier).reload();
+    ref.read(mascotProvider.notifier).reload();
     if (!mounted) return;
     context.go('/');
   }
@@ -296,6 +307,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onPregnancyWeekChanged: (v) => setState(() => _data.pregnancyWeekSA = v),
       onPpRecoveryChanged:    (v) => setState(() => _data.ppRecovery    = v),
       onPpDurationChanged:    (v) => setState(() => _data.ppDuration    = v),
+    ),
+
+    // 8 — Mascotte
+    StepAvatar(
+      userName: _data.username.isNotEmpty ? _data.username : 'fiteva',
+      onBack:   _goBack,
+      onNext:   _goNext,
+      onAvatarChanged: (seed, style, bg) => setState(() {
+        _data.avatarSeed  = seed;
+        _data.avatarStyle = style;
+        _data.avatarBg    = bg;
+        _data.mascotType  = seed; // seed = type.name from StepAvatar
+      }),
     ),
   ];
 }

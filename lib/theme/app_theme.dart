@@ -1,3 +1,4 @@
+import 'package:fiteva/screens/cycle/pregnancy/pregnancy_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -181,6 +182,7 @@ static ThemeMode themeMode = ThemeMode.system;
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
+      extensions: const [PgColors.light],
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: surfaceColor,
         selectedItemColor: primaryColor,
@@ -305,6 +307,7 @@ static ThemeMode themeMode = ThemeMode.system;
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
+      extensions: const [PgColors.dark],
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Color(0xFF141414),
         selectedItemColor: accentColor,
