@@ -1,4 +1,24 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/workout_model.dart';
+import '../models/home_program_model.dart';
+
+class ProgramProgressStatus {
+  final String programId;
+  final double completionPercentage;
+  final bool isCompleted;
+  final int completedWorkouts;
+  final int totalWorkouts;
+
+  ProgramProgressStatus({
+    required this.programId,
+    required this.completionPercentage,
+    required this.isCompleted,
+    required this.completedWorkouts,
+    required this.totalWorkouts,
+  });
+
+  bool get isStarted => completedWorkouts > 0 && !isCompleted;
+}
 
 class WorkoutProgressService {
   static const _completedVideosKey = 'completed_videos';
@@ -80,6 +100,121 @@ class WorkoutProgressService {
     if (progress >= 0.8) {
       await markVideoComplete(videoId);
     }
+  }
+
+  // Check and mark workout as completed if all videos are completed
+  static Future<bool> checkAndMarkWorkoutComplete(WorkoutModel workout) async {
+    final completedVideos = await getCompletedVideos();
+
+    // Check if all exercises (videos) of this workout are completed
+    bool allExercisesCompleted = true;
+    for (int i = 0; i < workout.exercises.length; i++) {
+      final videoId = '${workout.title}_exercise_$i';
+      if (!completedVideos.contains(videoId)) {
+        allExercisesCompleted = false;
+        break;
+      }
+    }
+
+    if (allExercisesCompleted && workout.exercises.isNotEmpty) {
+      await markWorkoutComplete(workout.id);
+      return true;
+    }
+    return false;
+  }
+
+  // Check all programs and mark as completed if all their workouts are completed
+  static Future<void> checkAndMarkAllProgramsComplete(List<HomeProgramModel> programs) async {
+    for (final program in programs) {
+      await checkAndMarkProgramComplete(program);
+    }
+  }
+
+  // Check and mark program as completed if all workouts are completed
+  static Future<bool> checkAndMarkProgramComplete(HomeProgramModel program) async {
+    final completedWorkouts = await getCompletedWorkouts();
+
+    // Check if all workouts of this program are completed
+    bool allWorkoutsCompleted = true;
+    for (final workout in program.workouts) {
+      if (!completedWorkouts.contains(workout.id)) {
+        allWorkoutsCompleted = false;
+        break;
+      }
+    }
+
+    if (allWorkoutsCompleted && program.workouts.isNotEmpty) {
+      await markProgramComplete(program.id);
+      return true;
+    }
+    return false;
+  }
+
+  // Get completion percentage of a workout (0.0 to 1.0)
+  static Future<double> getWorkoutCompletionPercentage(WorkoutModel workout) async {
+    if (workout.exercises.isEmpty) return 0.0;
+
+    final completedVideos = await getCompletedVideos();
+    int completedCount = 0;
+
+    for (int i = 0; i < workout.exercises.length; i++) {
+      final videoId = '${workout.title}_exercise_$i';
+      if (completedVideos.contains(videoId)) {
+        completedCount++;
+      }
+    }
+
+    return completedCount / workout.exercises.length;
+  }
+
+  // Get completion percentage of a program (0.0 to 1.0)
+  static Future<double> getProgramCompletionPercentage(HomeProgramModel program) async {
+    if (program.workouts.isEmpty) return 0.0;
+
+    final completedWorkouts = await getCompletedWorkouts();
+    int completedCount = 0;
+
+    for (final workout in program.workouts) {
+      if (completedWorkouts.contains(workout.id)) {
+        completedCount++;
+      }
+    }
+
+    return completedCount / program.workouts.length;
+  }
+
+  // Get complete program status
+  static Future<ProgramProgressStatus> getProgramStatus(HomeProgramModel program) async {
+    final percentage = await getProgramCompletionPercentage(program);
+    final isCompleted = await isProgramCompleted(program.id);
+    final completedWorkouts = await getCompletedWorkouts();
+
+    int completedCount = 0;
+    for (final workout in program.workouts) {
+      if (completedWorkouts.contains(workout.id)) {
+        completedCount++;
+      }
+    }
+
+    return ProgramProgressStatus(
+      programId: program.id,
+      completionPercentage: percentage,
+      isCompleted: isCompleted,
+      completedWorkouts: completedCount,
+      totalWorkouts: program.workouts.length,
+    );
+  }
+
+  // Get list of programs that are started (not completed, but have progress)
+  static Future<List<HomeProgramModel>> getStartedPrograms(List<HomeProgramModel> allPrograms) async {
+    final started = <HomeProgramModel>[];
+    for (final program in allPrograms) {
+      final status = await getProgramStatus(program);
+      if (status.isStarted) {
+        started.add(program);
+      }
+    }
+    return started;
   }
 
   // Clear all progress (for testing)

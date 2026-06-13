@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/workout_model.dart';
+import '../../services/workout_progress_service.dart';
 import 'exercise_player_screen.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
@@ -14,7 +15,85 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   int _completedExercises = 0;
-  
+  bool _workoutMarkedComplete = false;
+  Set<String> _completedVideos = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompletionStatus();
+  }
+
+
+  Future<void> _loadCompletionStatus() async {
+    final completedVideos = await WorkoutProgressService.getCompletedVideos();
+    final exercises = widget.workout.exercises;
+
+    int completedCount = 0;
+    for (int i = 0; i < exercises.length; i++) {
+      final videoId = '${widget.workout.title}_exercise_$i';
+      if (completedVideos.contains(videoId)) {
+        completedCount++;
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _completedVideos = completedVideos;
+        _completedExercises = completedCount;
+      });
+    }
+  }
+
+  Future<int> _getFirstIncompleteExerciseIndex() async {
+    final completedVideos = await WorkoutProgressService.getCompletedVideos();
+    final exercises = widget.workout.exercises;
+
+    for (int i = 0; i < exercises.length; i++) {
+      final videoId = '${widget.workout.title}_exercise_$i';
+      if (!completedVideos.contains(videoId)) {
+        return i;
+      }
+    }
+    return 0;
+  }
+
+  Future<void> _openFirstIncompleteExercise() async {
+    final exercises = widget.workout.exercises;
+    final exerciseIndex = await _getFirstIncompleteExerciseIndex();
+    final videoId = '${widget.workout.title}_exercise_$exerciseIndex';
+
+    if (mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ExercisePlayerScreen(
+            ref: ref,
+            workoutTitle: widget.workout.title,
+            exerciseName: exercises[exerciseIndex],
+            videoId: videoId,
+            exerciseIndex: exerciseIndex,
+            totalExercises: exercises.length,
+            totalWorkoutPoints: widget.workout.points,
+            onCompleted: () async {
+              await _loadCompletionStatus();
+            },
+            workoutId: widget.workout.id,
+            totalWorkoutExercises: exercises.length,
+          ),
+        ),
+      ).then((_) {
+        _loadCompletionStatus();
+      });
+    }
+  }
+
+  Future<void> _markWorkoutCompleteIfNeeded() async {
+    final exercises = widget.workout.exercises;
+    if (_completedExercises >= exercises.length && !_workoutMarkedComplete) {
+      _workoutMarkedComplete = true;
+      await WorkoutProgressService.markWorkoutComplete(widget.workout.id);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +102,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final exercises = widget.workout.exercises;
     final progressVal = exercises.isEmpty ? 0.0 : _completedExercises / exercises.length;
     final textSecondary = theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha:0.72);
+
+    if (progressVal >= 1.0) {
+      Future.microtask(() => _markWorkoutCompleteIfNeeded());
+    }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: theme.brightness == Brightness.dark
@@ -201,8 +284,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                     // ── Exercise list ──
                     ...List.generate(exercises.length, (index) {
                       final eName = exercises[index];
-                      final isDone = index < _completedExercises;
-                      final isCurrent = index == _completedExercises;
+                      final videoId = '${widget.workout.title}_exercise_$index';
+                      final isDone = _completedVideos.contains(videoId);
+                      final isCurrent = !isDone && index == _completedExercises;
 
                       return GestureDetector(
                         onTap: () {
@@ -218,11 +302,20 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                                 totalExercises: exercises.length,
                                 totalWorkoutPoints: widget.workout.points,
                                 onCompleted: () {
-                                  if (!isDone) setState(() => _completedExercises++);
+                                  if (!isDone) {
+                                    setState(() {
+                                      _completedExercises++;
+                                      _completedVideos.add(videoId);
+                                    });
+                                  }
                                 },
+                                workoutId: widget.workout.id,
+                                totalWorkoutExercises: exercises.length,
                               ),
                             ),
-                          );
+                          ).then((_) {
+                            _loadCompletionStatus();
+                          });
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 10),
@@ -391,36 +484,30 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: progressVal >= 1.0 ? null : () {
                     if (exercises.isNotEmpty) {
-                      final videoId = '${widget.workout.title}_exercise_0';
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ExercisePlayerScreen(
-                            ref: ref,
-                            workoutTitle: widget.workout.title,
-                            exerciseName: exercises[0],
-                            videoId: videoId,
-                            exerciseIndex: 0,
-                            totalExercises: exercises.length,
-                            totalWorkoutPoints: widget.workout.points,
-                            onCompleted: () {
-                              if (_completedExercises == 0) setState(() => _completedExercises = 1);
-                            },
-                          ),
-                        ),
-                      );
+                      _openFirstIncompleteExercise();
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
+                    backgroundColor: progressVal >= 1.0 ? colorScheme.primary.withValues(alpha: 0.50) : colorScheme.primary,
                     foregroundColor: colorScheme.onPrimary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Commencer la séance',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        progressVal >= 1.0 ? Icons.check_circle_rounded : Icons.play_arrow_rounded,
+                        color: colorScheme.onPrimary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        progressVal >= 1.0 ? 'Séance terminée ✓' : 'Commencer la séance',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                      ),
+                    ],
                   ),
                 ),
               ),

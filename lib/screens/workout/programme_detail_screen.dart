@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../models/home_program_model.dart';
+import '../../services/workout_progress_service.dart';
 import 'active_workout_screen.dart';
 
 // ── Brand tokens (jamais changés par le thème) ────────────────────────────────
@@ -25,6 +26,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
   int _tab = 0;
   int _selectedWeek = 0;
   late final AnimationController _fabAnim;
+  bool _isProgramCompleted = false;
 
   @override
   void initState() {
@@ -34,6 +36,24 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
       duration: const Duration(milliseconds: 600),
     )..forward();
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    _checkProgramCompletion();
+  }
+
+  Future<void> _checkProgramCompletion() async {
+    final isCompleted = await WorkoutProgressService.isProgramCompleted(widget.program.id);
+    if (mounted) {
+      setState(() => _isProgramCompleted = isCompleted);
+    }
+  }
+
+  Future<int> _getFirstIncompleteWorkoutIndex() async {
+    final completedWorkouts = await WorkoutProgressService.getCompletedWorkouts();
+    for (int i = 0; i < widget.program.workouts.length; i++) {
+      if (!completedWorkouts.contains(widget.program.workouts[i].id)) {
+        return i;
+      }
+    }
+    return 0;
   }
 
   @override
@@ -53,7 +73,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
         children: [
           CustomScrollView(
             slivers: [
-              _HeroAppBar(program: p),
+              _HeroAppBar(program: p, isCompleted: _isProgramCompleted),
               _TabBarSliver(current: _tab, onTab: (i) => setState(() => _tab = i)),
               _tab == 0
                   ? _AboutTab(program: p)
@@ -66,10 +86,16 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
           ),
           _BottomCta(
             anim: _fabAnim,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: p.workouts.first)),
-            ),
+            workouts: p.workouts,
+            onTap: () async {
+              final workoutIndex = await _getFirstIncompleteWorkoutIndex();
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: p.workouts[workoutIndex])),
+                );
+              }
+            },
           ),
         ],
       ),
@@ -82,7 +108,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
 // ══════════════════════════════════════════════════════════════════════════════
 class _HeroAppBar extends StatelessWidget {
   final HomeProgramModel program;
-  const _HeroAppBar({required this.program});
+  final bool isCompleted;
+  const _HeroAppBar({required this.program, this.isCompleted = false});
 
   @override
   Widget build(BuildContext context) {
@@ -196,10 +223,39 @@ class _HeroAppBar extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  Text(program.name, style: GoogleFonts.outfit(
-                    color: Colors.white, fontSize: 30,
-                    fontWeight: FontWeight.w800, letterSpacing: -0.8, height: 1.1,
-                  )),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(program.name, style: GoogleFonts.outfit(
+                          color: Colors.white, fontSize: 30,
+                          fontWeight: FontWeight.w800, letterSpacing: -0.8, height: 1.1,
+                        )),
+                      ),
+                      if (isCompleted)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _kGold.withValues(alpha: 0.20),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: _kGold.withValues(alpha: 0.50)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(LucideIcons.checkCircle, size: 14, color: _kGold),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Terminé',
+                                style: GoogleFonts.inter(
+                                  color: _kGold, fontSize: 11,
+                                  fontWeight: FontWeight.w700, letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 14),
                   FittedBox(
                     fit: BoxFit.scaleDown,
@@ -631,6 +687,16 @@ class _SessionsTab extends StatelessWidget {
     required this.onWeekTap,
   });
 
+  Future<int> _getFirstIncompleteWorkoutIndex() async {
+    final completedWorkouts = await WorkoutProgressService.getCompletedWorkouts();
+    for (int i = 0; i < program.workouts.length; i++) {
+      if (!completedWorkouts.contains(program.workouts[i].id)) {
+        return i;
+      }
+    }
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -676,20 +742,38 @@ class _SessionsTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            ...List.generate(program.workouts.length, (i) {
-              final w = program.workouts[i];
-              return _SessionCard(
-                index: i,
-                title: w.title,
-                imageUrl: w.imageUrl,
-                points: w.points,
-                isDone: i == 0,
-                isLocked: false,
-                onTap: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => ActiveWorkoutScreen(workout: w),
-                    )),
-              );
-            }),
+            FutureBuilder<int>(
+              future: _getFirstIncompleteWorkoutIndex(),
+              builder: (context, snapshotIndex) {
+                final nextIndex = snapshotIndex.data ?? 0;
+                return Column(
+                  children: List.generate(program.workouts.length, (i) {
+                    final w = program.workouts[i];
+                    return FutureBuilder<bool>(
+                      future: WorkoutProgressService.isWorkoutCompleted(w.id),
+                      builder: (context, snapshot) {
+                        final isDone = snapshot.hasData && snapshot.data == true;
+                        final isCurrent = !isDone && i == nextIndex;
+                        return _SessionCard(
+                          index: i,
+                          title: w.title,
+                          imageUrl: w.imageUrl,
+                          points: w.points,
+                          isDone: isDone,
+                          isLocked: false,
+                          isCurrent: isCurrent,
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => ActiveWorkoutScreen(workout: w),
+                            ));
+                          },
+                        );
+                      },
+                    );
+                  }),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -697,13 +781,14 @@ class _SessionsTab extends StatelessWidget {
   }
 }
 
-class _SessionCard extends StatelessWidget {
+class _SessionCard extends StatefulWidget {
   final int index;
   final String title;
   final String imageUrl;
   final int points;
   final bool isDone;
   final bool isLocked;
+  final bool isCurrent;
   final VoidCallback? onTap;
 
   const _SessionCard({
@@ -714,25 +799,43 @@ class _SessionCard extends StatelessWidget {
     required this.isDone,
     required this.isLocked,
     required this.onTap,
+    this.isCurrent = false,
   });
 
   @override
+  State<_SessionCard> createState() => _SessionCardState();
+}
+
+class _SessionCardState extends State<_SessionCard> {
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final accentColor = widget.isCurrent ? const Color(0xFF2E7D52) : _kGreen;
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Opacity(
-        opacity: isLocked ? 0.50 : 1.0,
+        opacity: widget.isLocked ? 0.50 : 1.0,
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: cs.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDone ? _kGreen.withValues(alpha: 0.35) : cs.outline.withValues(alpha: 0.15),
+              color: widget.isDone
+                  ? _kGreen.withValues(alpha: 0.35)
+                  : widget.isCurrent
+                      ? accentColor.withValues(alpha: 0.35)
+                      : cs.outline.withValues(alpha: 0.15),
             ),
             boxShadow: [
-              BoxShadow(color: cs.shadow.withValues(alpha: 0.06), blurRadius: 14, offset: const Offset(0, 4)),
+              BoxShadow(
+                color: widget.isCurrent
+                    ? accentColor.withValues(alpha: 0.12)
+                    : cs.shadow.withValues(alpha: 0.06),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Padding(
@@ -741,20 +844,36 @@ class _SessionCard extends StatelessWidget {
               Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: isDone ? _kGreen : _kGreen.withValues(alpha: 0.08),
+                  color: widget.isDone
+                      ? _kGreen
+                      : widget.isCurrent
+                          ? accentColor
+                          : accentColor.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
-                  border: Border.all(color: isDone ? _kGreen : _kGreen.withValues(alpha: 0.25)),
-                  boxShadow: isDone
-                      ? [BoxShadow(color: _kGreen.withValues(alpha: 0.30), blurRadius: 8, offset: const Offset(0, 3))]
+                  border: Border.all(
+                    color: widget.isDone
+                        ? _kGreen
+                        : widget.isCurrent
+                            ? accentColor
+                            : accentColor.withValues(alpha: 0.25),
+                  ),
+                  boxShadow: (widget.isDone || widget.isCurrent)
+                      ? [BoxShadow(color: accentColor.withValues(alpha: 0.30), blurRadius: 8, offset: const Offset(0, 3))]
                       : [],
                 ),
                 child: Center(
-                  child: isDone
+                  child: widget.isDone
                       ? const Icon(LucideIcons.check, color: Colors.white, size: 16)
-                      : isLocked
+                      : widget.isLocked
                           ? Icon(LucideIcons.lock, color: cs.onSurface.withValues(alpha: 0.40), size: 14)
-                          : Text('${index + 1}', style: GoogleFonts.outfit(
-                              color: _kGreen, fontSize: 14, fontWeight: FontWeight.w800)),
+                          : Text(
+                              '${widget.index + 1}',
+                              style: GoogleFonts.outfit(
+                                color: widget.isCurrent ? Colors.white : accentColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -762,7 +881,7 @@ class _SessionCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
                   width: 62, height: 62,
-                  child: Image.asset(imageUrl, fit: BoxFit.cover,
+                  child: Image.asset(widget.imageUrl, fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(color: _kGreen.withValues(alpha: 0.10))),
                 ),
               ),
@@ -777,10 +896,10 @@ class _SessionCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Séance ${index + 1}', style: GoogleFonts.inter(
+                              Text('Séance ${widget.index + 1}', style: GoogleFonts.inter(
                                 color: _kGold, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                               const SizedBox(height: 3),
-                              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                              Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.outfit(
                                   color: cs.onSurface, fontSize: 14,
                                   fontWeight: FontWeight.w700, letterSpacing: -0.2,
@@ -801,7 +920,7 @@ class _SessionCard extends StatelessWidget {
                               Icon(LucideIcons.zap, size: 10, color: _kGold),
                               const SizedBox(width: 3),
                               Text(
-                                '$points pts',
+                                '${widget.points} pts',
                                 style: GoogleFonts.inter(
                                   color: _kGold,
                                   fontSize: 10,
@@ -827,7 +946,7 @@ class _SessionCard extends StatelessWidget {
                                 color: cs.onSurface.withValues(alpha: 0.45)),
                             const SizedBox(width: 4),
                             Text(
-                              index % 2 == 0 ? '25 min' : '40 min',
+                              widget.index % 2 == 0 ? '25 min' : '40 min',
                               style: GoogleFonts.inter(
                                 color: cs.onSurface.withValues(alpha: 0.45),
                                 fontSize: 11,
@@ -861,11 +980,11 @@ class _SessionCard extends StatelessWidget {
               Container(
                 width: 30, height: 30,
                 decoration: BoxDecoration(
-                  color: isLocked ? Colors.transparent : _kGreen.withValues(alpha: 0.08),
+                  color: widget.isLocked ? Colors.transparent : accentColor.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(LucideIcons.chevronRight, size: 16,
-                  color: isLocked ? cs.onSurface.withValues(alpha: 0.30) : _kGreen),
+                  color: widget.isLocked ? cs.onSurface.withValues(alpha: 0.30) : accentColor),
               ),
             ]),
           ),
@@ -881,7 +1000,18 @@ class _SessionCard extends StatelessWidget {
 class _BottomCta extends StatelessWidget {
   final AnimationController anim;
   final VoidCallback onTap;
-  const _BottomCta({required this.anim, required this.onTap});
+  final List workouts;
+  const _BottomCta({required this.anim, required this.onTap, required this.workouts});
+
+  Future<bool> _areAllWorkoutsCompleted() async {
+    final completedWorkouts = await WorkoutProgressService.getCompletedWorkouts();
+    for (final w in workouts) {
+      if (!completedWorkouts.contains(w.id)) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -901,34 +1031,55 @@ class _BottomCta extends StatelessWidget {
               stops: const [0.55, 1.0],
             ),
           ),
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 17),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [_kGreen, _kGreenMid],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+          child: FutureBuilder<bool>(
+            future: _areAllWorkoutsCompleted(),
+            builder: (context, snapshot) {
+              final allCompleted = snapshot.data ?? false;
+              return GestureDetector(
+                onTap: allCompleted ? null : onTap,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 17),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: allCompleted
+                          ? [_kGold.withValues(alpha: 0.60), _kGold.withValues(alpha: 0.60)]
+                          : [_kGreen, _kGreenMid],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(50),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (allCompleted ? _kGold : _kGreen).withValues(alpha: 0.40),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        allCompleted ? LucideIcons.checkCircle : LucideIcons.play,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        allCompleted ? 'Programme terminé ✓' : 'Commencer le programme',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(50),
-                boxShadow: [
-                  BoxShadow(color: _kGreen.withValues(alpha: 0.40), blurRadius: 20, offset: const Offset(0, 8)),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(LucideIcons.play, color: Colors.white, size: 16),
-                  const SizedBox(width: 10),
-                  Text('Commencer le programme', style: GoogleFonts.inter(
-                    color: Colors.white, fontSize: 15,
-                    fontWeight: FontWeight.w700, letterSpacing: 0.2,
-                  )),
-                ],
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),

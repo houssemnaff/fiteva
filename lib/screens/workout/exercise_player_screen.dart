@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../../providers/points_provider.dart';
+import '../../providers/workout_progress_provider.dart';
 import '../../services/workout_progress_service.dart';
 
 // ── Design tokens (always dark — immersive player) ────────────────────────────
@@ -36,6 +37,8 @@ class ExercisePlayerScreen extends StatefulWidget {
   final int totalExercises;
   final int totalWorkoutPoints;
   final VoidCallback onCompleted;
+  final String? workoutId;
+  final int? totalWorkoutExercises;
 
   const ExercisePlayerScreen({
     super.key,
@@ -47,6 +50,8 @@ class ExercisePlayerScreen extends StatefulWidget {
     required this.totalExercises,
     required this.totalWorkoutPoints,
     required this.onCompleted,
+    this.workoutId,
+    this.totalWorkoutExercises,
   });
 
   @override
@@ -92,6 +97,43 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     final isCompleted = await WorkoutProgressService.isVideoCompleted(widget.videoId);
     if (mounted) {
       setState(() => _hasWatched80Percent = isCompleted);
+    }
+  }
+
+  Future<void> _checkAndMarkWorkoutComplete() async {
+    if (widget.workoutId == null || widget.totalWorkoutExercises == null) return;
+
+    final completedVideos = await WorkoutProgressService.getCompletedVideos();
+
+    bool allExercisesCompleted = true;
+    for (int i = 0; i < widget.totalWorkoutExercises!; i++) {
+      final videoId = '${widget.workoutTitle}_exercise_$i';
+      if (!completedVideos.contains(videoId)) {
+        allExercisesCompleted = false;
+        break;
+      }
+    }
+
+    if (allExercisesCompleted) {
+      await WorkoutProgressService.markWorkoutComplete(widget.workoutId!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(LucideIcons.checkCircle,
+                    color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Séance terminée ! ✓'),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: _kGreen,
+          ),
+        );
+      }
     }
   }
 
@@ -148,6 +190,13 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
             ),
           );
         }
+        _checkAndMarkWorkoutComplete();
+
+        // Invalidate providers to update UI instantly
+        widget.ref.invalidate(completedVideosProvider);
+        widget.ref.invalidate(workoutCompletionPercentageProvider);
+        widget.ref.invalidate(programCompletionPercentageProvider);
+        widget.ref.invalidate(programStatusProvider);
       }
     }
   }
@@ -166,7 +215,17 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     HapticFeedback.mediumImpact();
     setState(() => _isDone = true);
 
+    // Mark video as completed if not already
     if (!_hasWatched80Percent) {
+      await WorkoutProgressService.updateVideoProgress(widget.videoId, 0.80);
+      await _checkAndMarkWorkoutComplete();
+
+      // Invalidate providers to update UI instantly
+      widget.ref.invalidate(completedVideosProvider);
+      widget.ref.invalidate(workoutCompletionPercentageProvider);
+      widget.ref.invalidate(programCompletionPercentageProvider);
+      widget.ref.invalidate(programStatusProvider);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

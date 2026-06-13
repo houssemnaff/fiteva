@@ -522,6 +522,207 @@ final cycleProvider = Provider<CycleStatus>((ref) {
   );
 });
 
+// Dance Programs Provider
+final danceProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
+  return [
+    HomeProgramModel(
+      id: 'prog_dance_zumba_flow',
+      name: 'Zumba Flow',
+      duration: '4 semaines',
+      phases: 'Toutes phases',
+      sessions: '3 séances / sem.',
+      color: const Color(0xFFE91E63),
+      imageUrl: 'assets/images/fullbody.jpg',
+      compatibleCycles: const ['Folliculaire', 'Ovulation'],
+      totalPoints: 100,
+      workouts: [
+        WorkoutModel(
+          id: 'dance_zumba_1',
+          title: 'Zumba Basics',
+          category: 'DANCE',
+          duration: '20 min',
+          level: 'Débutant',
+          calories: '200',
+          imageUrl: 'assets/images/fullbody.jpg',
+          exercises: ['Basic Step', 'Hip Movement', 'Arm Patterns'],
+          points: 35,
+          videos: [
+            VideoModel(id: 'vid_dz1_1', title: 'Intro & Warm Up', duration: '4 min', points: 12),
+            VideoModel(id: 'vid_dz1_2', title: 'Basic Steps', duration: '12 min', points: 12),
+            VideoModel(id: 'vid_dz1_3', title: 'Cool Down', duration: '4 min', points: 11),
+          ],
+        ),
+        WorkoutModel(
+          id: 'dance_zumba_2',
+          title: 'Zumba Party',
+          category: 'DANCE',
+          duration: '25 min',
+          level: 'Intermédiaire',
+          calories: '250',
+          imageUrl: 'assets/images/fullbody.jpg',
+          exercises: ['Salsa', 'Reggaeton', 'Latin Moves'],
+          points: 35,
+          videos: [
+            VideoModel(id: 'vid_dz2_1', title: 'Warm Up', duration: '4 min', points: 12),
+            VideoModel(id: 'vid_dz2_2', title: 'Party Combo', duration: '17 min', points: 12),
+            VideoModel(id: 'vid_dz2_3', title: 'Stretch', duration: '4 min', points: 11),
+          ],
+        ),
+        WorkoutModel(
+          id: 'dance_zumba_3',
+          title: 'Zumba Cardio Blast',
+          category: 'DANCE',
+          duration: '30 min',
+          level: 'Avancé',
+          calories: '300',
+          imageUrl: 'assets/images/fullbody.jpg',
+          exercises: ['Fast Pace', 'Complex Moves', 'Combinations'],
+          points: 30,
+          videos: [
+            VideoModel(id: 'vid_dz3_1', title: 'Energy Start', duration: '5 min', points: 10),
+            VideoModel(id: 'vid_dz3_2', title: 'Full Blast', duration: '22 min', points: 10),
+            VideoModel(id: 'vid_dz3_3', title: 'Recovery', duration: '3 min', points: 10),
+          ],
+        ),
+      ],
+    ),
+  ];
+});
+
+// Recuperation Programs Provider
+final recuperationProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
+  return [
+    HomeProgramModel(
+      id: 'prog_recovery_gentle',
+      name: 'Gentle Recovery',
+      duration: '2 semaines',
+      phases: 'Toutes phases',
+      sessions: '5 séances / sem.',
+      color: const Color(0xFF00BCD4),
+      imageUrl: 'assets/images/fullbody.jpg',
+      compatibleCycles: const ['Règles', 'Lutéale'],
+      totalPoints: 80,
+      workouts: [
+        WorkoutModel(
+          id: 'recup_gentle_1',
+          title: 'Yoga Relaxation',
+          category: 'RECUPERATION',
+          duration: '15 min',
+          level: 'Tous niveaux',
+          calories: '80',
+          imageUrl: 'assets/images/fullbody.jpg',
+          exercises: ['Child Pose', 'Cat-Cow', 'Savasana'],
+          points: 25,
+          videos: [
+            VideoModel(id: 'vid_rg1_1', title: 'Centering', duration: '3 min', points: 8),
+            VideoModel(id: 'vid_rg1_2', title: 'Gentle Flow', duration: '10 min', points: 9),
+            VideoModel(id: 'vid_rg1_3', title: 'Meditation', duration: '2 min', points: 8),
+          ],
+        ),
+        WorkoutModel(
+          id: 'recup_gentle_2',
+          title: 'Stretching Session',
+          category: 'RECUPERATION',
+          duration: '18 min',
+          level: 'Tous niveaux',
+          calories: '90',
+          imageUrl: 'assets/images/fullbody.jpg',
+          exercises: ['Full Body Stretch', 'Deep Stretches', 'Breathing'],
+          points: 27,
+          videos: [
+            VideoModel(id: 'vid_rg2_1', title: 'Warm Up', duration: '3 min', points: 9),
+            VideoModel(id: 'vid_rg2_2', title: 'Deep Stretches', duration: '13 min', points: 9),
+            VideoModel(id: 'vid_rg2_3', title: 'Breathwork', duration: '2 min', points: 9),
+          ],
+        ),
+        WorkoutModel(
+          id: 'recup_gentle_3',
+          title: 'Foam Rolling & Mobility',
+          category: 'RECUPERATION',
+          duration: '20 min',
+          level: 'Intermédiaire',
+          calories: '100',
+          imageUrl: 'assets/images/fullbody.jpg',
+          exercises: ['Foam Roll', 'Mobility Work', 'Joint Care'],
+          points: 28,
+          videos: [
+            VideoModel(id: 'vid_rg3_1', title: 'Intro', duration: '2 min', points: 9),
+            VideoModel(id: 'vid_rg3_2', title: 'Rolling & Mobility', duration: '16 min', points: 10),
+            VideoModel(id: 'vid_rg3_3', title: 'Finish', duration: '2 min', points: 9),
+          ],
+        ),
+      ],
+    ),
+  ];
+});
+
+// Grossesse Programs Provider
+final grossesseProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
+  return [
+    HomeProgramModel(
+      id: 'prog_pregnancy_safe',
+      name: 'Pregnancy Safe',
+      duration: '9 mois',
+      phases: 'Grossesse',
+      sessions: '3 séances / sem.',
+      color: const Color(0xFFFFB74D),
+      imageUrl: 'assets/images/fullbody.jpg',
+      compatibleCycles: const ['Grossesse'],
+      totalPoints: 120,
+      workouts: [
+        WorkoutModel(
+          id: 'preg_safe_1',
+          title: 'First Trimester Cardio',
+          category: 'GROSSESSE',
+          duration: '20 min',
+          level: 'Débutant',
+          calories: '150',
+          imageUrl: 'assets/images/fullbody.jpg',
+          exercises: ['Walking', 'Light Cardio', 'Breathing'],
+          points: 40,
+          videos: [
+            VideoModel(id: 'vid_ps1_1', title: 'Safe Start', duration: '3 min', points: 13),
+            VideoModel(id: 'vid_ps1_2', title: 'Cardio Flow', duration: '14 min', points: 14),
+            VideoModel(id: 'vid_ps1_3', title: 'Recovery', duration: '3 min', points: 13),
+          ],
+        ),
+        WorkoutModel(
+          id: 'preg_safe_2',
+          title: 'Pelvic Floor Strength',
+          category: 'GROSSESSE',
+          duration: '18 min',
+          level: 'Tous niveaux',
+          calories: '120',
+          imageUrl: 'assets/images/fullbody.jpg',
+          exercises: ['Pelvic Floor', 'Kegels', 'Core Work'],
+          points: 40,
+          videos: [
+            VideoModel(id: 'vid_ps2_1', title: 'Introduction', duration: '3 min', points: 13),
+            VideoModel(id: 'vid_ps2_2', title: 'Pelvic Work', duration: '12 min', points: 14),
+            VideoModel(id: 'vid_ps2_3', title: 'Relaxation', duration: '3 min', points: 13),
+          ],
+        ),
+        WorkoutModel(
+          id: 'preg_safe_3',
+          title: 'Prenatal Yoga',
+          category: 'GROSSESSE',
+          duration: '25 min',
+          level: 'Tous niveaux',
+          calories: '140',
+          imageUrl: 'assets/images/fullbody.jpg',
+          exercises: ['Prenatal Poses', 'Stretching', 'Meditation'],
+          points: 40,
+          videos: [
+            VideoModel(id: 'vid_ps3_1', title: 'Centering', duration: '4 min', points: 13),
+            VideoModel(id: 'vid_ps3_2', title: 'Yoga Flow', duration: '17 min', points: 14),
+            VideoModel(id: 'vid_ps3_3', title: 'Meditation', duration: '4 min', points: 13),
+          ],
+        ),
+      ],
+    ),
+  ];
+});
+
 // Body Zones Provider
 final bodyZonesProvider = Provider<List<Map<String, dynamic>>>((ref) {
   return [
