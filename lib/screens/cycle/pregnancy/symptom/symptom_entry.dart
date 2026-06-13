@@ -1,10 +1,4 @@
-// ─────────────────────────────────────────────
-// symptom_entry.dart
-// ─────────────────────────────────────────────
-
 import 'package:flutter/material.dart';
-
-// ── Symptom types ────────────────────────────────────────────────────────────
 
 enum SymptomType {
   nausea,
@@ -24,18 +18,18 @@ enum SymptomType {
 extension SymptomTypeExtension on SymptomType {
   String get label {
     switch (this) {
-      case SymptomType.nausea:         return 'Nausea';
+      case SymptomType.nausea:         return 'Nausées';
       case SymptomType.fatigue:        return 'Fatigue';
-      case SymptomType.cramps:         return 'Cramps';
-      case SymptomType.mood:           return 'Mood';
-      case SymptomType.sleep:          return 'Sleep';
-      case SymptomType.appetite:       return 'Appetite';
-      case SymptomType.headache:       return 'Headache';
-      case SymptomType.backPain:       return 'Back Pain';
-      case SymptomType.bloating:       return 'Bloating';
-      case SymptomType.heartburn:      return 'Heartburn';
-      case SymptomType.swelling:       return 'Swelling';
-      case SymptomType.breathlessness: return 'Breathlessness';
+      case SymptomType.cramps:         return 'Crampes';
+      case SymptomType.mood:           return 'Humeur';
+      case SymptomType.sleep:          return 'Sommeil';
+      case SymptomType.appetite:       return 'Appétit';
+      case SymptomType.headache:       return 'Maux de tête';
+      case SymptomType.backPain:       return 'Dos';
+      case SymptomType.bloating:       return 'Ballonnements';
+      case SymptomType.heartburn:      return 'Brûlures';
+      case SymptomType.swelling:       return 'Gonflements';
+      case SymptomType.breathlessness: return 'Essoufflement';
     }
   }
 
@@ -56,30 +50,45 @@ extension SymptomTypeExtension on SymptomType {
     }
   }
 
+  IconData get icon {
+    switch (this) {
+      case SymptomType.nausea:         return Icons.sick_outlined;
+      case SymptomType.fatigue:        return Icons.bedtime_outlined;
+      case SymptomType.cramps:         return Icons.loop_rounded;
+      case SymptomType.mood:           return Icons.mood_outlined;
+      case SymptomType.sleep:          return Icons.nightlight_outlined;
+      case SymptomType.appetite:       return Icons.restaurant_outlined;
+      case SymptomType.headache:       return Icons.psychology_outlined;
+      case SymptomType.backPain:       return Icons.accessibility_new_outlined;
+      case SymptomType.bloating:       return Icons.bubble_chart_outlined;
+      case SymptomType.heartburn:      return Icons.local_fire_department_outlined;
+      case SymptomType.swelling:       return Icons.water_drop_outlined;
+      case SymptomType.breathlessness: return Icons.air_outlined;
+    }
+  }
+
   Color get baseColor {
     switch (this) {
-      case SymptomType.nausea:         return const Color(0xFF7DAF8A);
+      case SymptomType.nausea:         return const Color(0xFF7ABB98);
       case SymptomType.fatigue:        return const Color(0xFF9B7DAF);
-      case SymptomType.cramps:         return const Color(0xFFB97A8A);
+      case SymptomType.cramps:         return const Color(0xFFE58F8A);
       case SymptomType.mood:           return const Color(0xFF7A9BBF);
       case SymptomType.sleep:          return const Color(0xFF8A7DAF);
-      case SymptomType.appetite:       return const Color(0xFF8AAF8A);
-      case SymptomType.headache:       return const Color(0xFFAF9B7D);
+      case SymptomType.appetite:       return const Color(0xFF7ABB98);
+      case SymptomType.headache:       return const Color(0xFFF4A940);
       case SymptomType.backPain:       return const Color(0xFF7DAF9B);
       case SymptomType.bloating:       return const Color(0xFFAFAF7D);
-      case SymptomType.heartburn:      return const Color(0xFFAF8A7D);
+      case SymptomType.heartburn:      return const Color(0xFFE58F8A);
       case SymptomType.swelling:       return const Color(0xFF7D9BAF);
       case SymptomType.breathlessness: return const Color(0xFF9BAF7D);
     }
   }
 }
 
-// ── Data model ───────────────────────────────────────────────────────────────
-
 class SymptomEntry {
   final String id;
   final SymptomType type;
-  final int intensity; // 0–5
+  final int intensity; // 1–5
   final DateTime date;
   final String? note;
 

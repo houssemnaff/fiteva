@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+﻿// ignore_for_file: deprecated_member_use
 import 'dart:math' as math;
 import 'package:fiteva/screens/cycle/cycle_colors.dart';
 import 'package:flutter/material.dart';
@@ -159,6 +159,7 @@ class _CycleCalendarState extends State<CycleCalendar> {
   }
 
   Future<void> _pickStartDate() async {
+    final cc     = CycleColors.of(context);
     final picked = await showDatePicker(
       context: context,
       initialDate: _editStart,
@@ -166,7 +167,11 @@ class _CycleCalendarState extends State<CycleCalendar> {
       lastDate: widget.today,
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: ColorScheme.light(primary: _kGreen)),
+          colorScheme: cc.isDark
+              ? ColorScheme.dark(
+                  primary: _kGreen, onPrimary: Colors.white,
+                  surface: const Color(0xFF1A1A1A), onSurface: const Color(0xFFF5F0F2))
+              : ColorScheme.light(primary: _kGreen)),
         child: child!,
       ),
     );
@@ -617,12 +622,12 @@ class _MonthBlock extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 20, 0, 16),
             child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              Text(_monthNames[month.month - 1], style: GoogleFonts.lora(
+              Text(_monthNames[month.month - 1], style: GoogleFonts.outfit(
                 fontSize: 22, fontWeight: FontWeight.w700,
                 color: isCurrent ? _kGreen : cc.text)),
               if (month.year != today.year) ...[
                 const SizedBox(width: 8),
-                Text('${month.year}', style: GoogleFonts.dmSans(
+                Text('${month.year}', style: GoogleFonts.inter(
                   fontSize: 15, fontWeight: FontWeight.w500, color: cc.muted)),
               ],
               if (isCurrent) ...[

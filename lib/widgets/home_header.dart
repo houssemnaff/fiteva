@@ -1,147 +1,95 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:fluttermoji/fluttermoji.dart';
 
 import '../providers/mock_data_provider.dart';
-import '../theme/app_theme.dart';
+import '../providers/mascot_provider.dart';
+import '../widgets/mascot_widget.dart';
 
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key});
 
+  static String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Bonjour';
+    if (h < 18) return 'Bon après-midi';
+    return 'Bonne soirée';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(userProvider);
-    final cycle = ref.watch(cycleProvider);
+    final user    = ref.watch(userProvider);
+    final mascot  = ref.watch(mascotProvider);
+    final firstName = user.name.split(' ').first;
 
-    return Container(
-     
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          /// 👤 Avatar
-          GestureDetector(
-            onTap: () => context.push('/profile'),
-            child: Consumer(
-              builder: (context, ref, child) {
-                ref.watch(avatarProvider);
-                return FluttermojiCircleAvatar(
-                  radius: 24,
-                  backgroundColor: Colors.grey[200],
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          /// 📝 Greeting + Phase
-          Expanded(
-            child: _GreetingSection(user: user, cycle: cycle),
-          ),
-
-          /// 🔔 Notification
-          GestureDetector(
-            onTap: () {},
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D4B30).withValues(alpha: 0.60),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(LucideIcons.bell, color: AppTheme.accentColor, size: 20),
-            ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: () => context.push('/profile'),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D4B30).withValues(alpha: 0.60),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(LucideIcons.user, color: AppTheme.accentColor, size: 20),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GreetingSection extends StatelessWidget {
-  final dynamic user;
-  final dynamic cycle;
-
-  const _GreetingSection({required this.user, required this.cycle});
-
-  String _greeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // ── Greeting + name ────────────────────────────────────────────────
-        Row(
-          children: [
-            Text(
-              '${_greeting()}, ',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.accentColor.withValues(alpha: 0.7),
-                letterSpacing: 0.2,
-              ),
-            ),
-            Flexible(
-              child: Text(
-                user.name,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+
+        // Greeting + name
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _greeting(),
+                style: GoogleFonts.inter(
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.accentColor,
-                  letterSpacing: 0.2,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withOpacity(0.6),
                 ),
               ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 4),
-
-        // ── Cycle phase chip ───────────────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: AppTheme.accentColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppTheme.accentColor.withValues(alpha: 0.35),
-              width: 1,
-            ),
-          ),
-          child: Text(
-            '${cycle.name} · Day ${cycle.dayOfCycle}',
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.accentColor,
-              letterSpacing: 0.5,
-            ),
+              const SizedBox(height: 1),
+              Text(
+                firstName,
+                style: GoogleFonts.outfit(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.3,
+                  height: 1.1,
+                  shadows: [Shadow(blurRadius: 12, color: Colors.black.withOpacity(0.4))],
+                ),
+              ),
+            ],
           ),
         ),
+
+        // Bell
+        GestureDetector(
+          onTap: () {},
+          child: Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(LucideIcons.bell, color: Colors.white.withOpacity(0.9), size: 18),
+          ),
+        ),
+
+        const SizedBox(width: 10),
+
+        // Mascot → profile
+        GestureDetector(
+          onTap: () => context.push('/profile'),
+          child: Container(
+            width: 42, height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withOpacity(0.3),
+              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+            ),
+            child: ClipOval(
+              child: MascotWidget(type: mascot.type, mood: mascot.mood, size: 42),
+            ),
+          ),
+        ),
+
       ],
     );
   }
