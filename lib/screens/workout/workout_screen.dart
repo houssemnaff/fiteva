@@ -219,6 +219,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     final bodyZones    = ref.watch(bodyZonesProvider);
     final sallePrograms = ref.watch(salleProgramsProvider);
     final homePrograms = ref.watch(homeProgramsProvider);
+    final dancePrograms = ref.watch(danceProgramsProvider);
+    final recuperationPrograms = ref.watch(recuperationProgramsProvider);
+    final grossessePrograms = ref.watch(grossesseProgramsProvider);
 
     final screenH  = MediaQuery.of(context).size.height;
     final bottomGap = screenH < 700 ? 80.0 : 110.0;
@@ -234,10 +237,19 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             w.category.toUpperCase() == cat && matchesPhase(w.phases))
         .toList();
 
+    List<HomeProgramModel> filterPrograms(List<HomeProgramModel> programs) =>
+        programs.where((p) => matchesPhase(p.phases)).toList();
+
     final filteredSalle =
-        sallePrograms.where((p) => matchesPhase(p.phases)).toList();
+        filterPrograms(sallePrograms);
     final filteredMaison =
-        homePrograms.where((p) => matchesPhase(p.phases)).toList();
+        filterPrograms(homePrograms);
+    final filteredDance =
+        filterPrograms(dancePrograms);
+    final filteredRecuperation =
+        filterPrograms(recuperationPrograms);
+    final filteredGrossesse =
+        filterPrograms(grossessePrograms);
 
     return Scaffold(
       backgroundColor: colorScheme.background,
@@ -475,56 +487,64 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             const SizedBox(height: 8),
 
             // ── Section Danse ─────────────────────────
-            KeyedSubtree(
-              key: _keyDance,
-              child: DanceSection(
-                danceWorkouts: byCat('DANCE'),
-                favorites: _favorites,
-                onToggleFav: _toggleFav,
-                onSeeAll: () => _showWorkoutsSheet(
-                  title: 'Danse & Cardio',
-                  color: WorkoutColors.dance,
-                  icon: LucideIcons.music,
-                  workouts: byCat('DANCE'),
+            if (filteredDance.isNotEmpty)
+              KeyedSubtree(
+                key: _keyDance,
+                child: DanceSection(
+                  dancePrograms: filteredDance,
+                  favorites: _favorites,
+                  onToggleFav: _toggleFav,
+                  onSeeAll: () => _showProgramsSheet(
+                    title: 'Danse & Cardio',
+                    color: WorkoutColors.dance,
+                    icon: LucideIcons.music,
+                    programs: filteredDance,
+                    category: 'DANCE',
+                  ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 8),
+            if (filteredDance.isNotEmpty) const SizedBox(height: 8),
 
             // ── Section Récupération ──────────────────
-            KeyedSubtree(
-              key: _keyRecup,
-              child: RecuperationSection(
-                recupWorkouts: byCat('RECUPERATION'),
-                favorites: _favorites,
-                onToggleFav: _toggleFav,
-                onSeeAll: () => _showWorkoutsSheet(
-                  title: 'Récupération',
-                  color: WorkoutColors.recuperation,
-                  icon: LucideIcons.wind,
-                  workouts: byCat('RECUPERATION'),
+            if (filteredRecuperation.isNotEmpty)
+              KeyedSubtree(
+                key: _keyRecup,
+                child: RecuperationSection(
+                  recuperationPrograms: filteredRecuperation,
+                  favorites: _favorites,
+                  onToggleFav: _toggleFav,
+                  onSeeAll: () => _showProgramsSheet(
+                    title: 'Récupération',
+                    color: WorkoutColors.recuperation,
+                    icon: LucideIcons.wind,
+                    programs: filteredRecuperation,
+                    category: 'RECUPERATION',
+                  ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 8),
+            if (filteredRecuperation.isNotEmpty) const SizedBox(height: 8),
 
             // ── Section Grossesse ─────────────────────
-            KeyedSubtree(
-              key: _keyGrossesse,
-              child: GrossesseSection(
-                grossesseWorkouts: byCat('GROSSESSE'),
-                favorites: _favorites,
-                onToggleFav: _toggleFav,
-                onSeeAll: () => _showWorkoutsSheet(
-                  title: 'Grossesse',
-                  color: WorkoutColors.grossesse,
-                  icon: LucideIcons.heart,
-                  workouts: byCat('GROSSESSE'),
+            if (filteredGrossesse.isNotEmpty)
+              KeyedSubtree(
+                key: _keyGrossesse,
+                child: GrossesseSection(
+                  grossessePrograms: filteredGrossesse,
+                  favorites: _favorites,
+                  onToggleFav: _toggleFav,
+                  onSeeAll: () => _showProgramsSheet(
+                    title: 'Grossesse',
+                    color: WorkoutColors.grossesse,
+                    icon: LucideIcons.heart,
+                    programs: filteredGrossesse,
+                    category: 'GROSSESSE',
+                  ),
                 ),
               ),
-            ),
+
+            if (filteredGrossesse.isNotEmpty) const SizedBox(height: 8),
 
 
             const SizedBox(height: 8),

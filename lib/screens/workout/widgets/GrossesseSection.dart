@@ -1,20 +1,22 @@
-import 'package:fiteva/models/workout_model.dart';
+import 'package:fiteva/models/home_program_model.dart';
+import 'package:fiteva/screens/workout/programme_detail_screen.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/theme/cycle_theme.dart';
-import '../active_workout_screen.dart';
+import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class GrossesseSection extends StatelessWidget {
-  final List<WorkoutModel> grossesseWorkouts;
+  final List<HomeProgramModel> grossessePrograms;
   final Set<String> favorites;
   final void Function(String) onToggleFav;
   final VoidCallback? onSeeAll;
 
   const GrossesseSection({
     super.key,
-    required this.grossesseWorkouts,
+    required this.grossessePrograms,
     required this.favorites,
     required this.onToggleFav,
     this.onSeeAll,
@@ -33,19 +35,20 @@ class GrossesseSection extends StatelessWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: grossesseWorkouts.length,
+            itemCount: grossessePrograms.length,
             separatorBuilder: (_, __) => const SizedBox(width: 14),
             itemBuilder: (context, i) {
-              final workout = grossesseWorkouts[i];
-              return _GrossesseCard(
-                workout: workout,
-                isFav: favorites.contains(workout.id),
-                onToggleFav: () => onToggleFav(workout.id),
+              final program = grossessePrograms[i];
+              return _GrossesseProgramCard(
+                program: program,
+                isFav: favorites.contains(program.name),
+                onToggleFav: () => onToggleFav(program.name),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => ActiveWorkoutScreen(
-                      workout: workout),
+                    builder: (_) => WorkoutDetailScreen(
+                      program: program,
+                    ),
                   ),
                 ),
               );
@@ -100,20 +103,20 @@ class _GrossesseHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Grossesse & Postpartum',
+                  'Grossesse',
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.w800,
                     fontSize: 19,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    color: const Color(0xFF1A1A1A),
                     letterSpacing: -0.4,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Séances douces · Périnée · Bien-être',
+                  'Sûr · Sain · Adapté',
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: const Color(0xFF6B7280),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -151,22 +154,22 @@ class _GrossesseHeader extends StatelessWidget {
   }
 }
 
-// ── Grossesse card ────────────────────────────────────────────────────────────
-class _GrossesseCard extends StatelessWidget {
-  final WorkoutModel workout;
+// ── Program card ──────────────────────────────────────────────────────────────
+class _GrossesseProgramCard extends ConsumerWidget {
+  final HomeProgramModel program;
   final bool isFav;
   final VoidCallback onToggleFav;
   final VoidCallback onTap;
 
-  const _GrossesseCard({
-    required this.workout,
+  const _GrossesseProgramCard({
+    required this.program,
     required this.isFav,
     required this.onToggleFav,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     const color = WorkoutColors.grossesse;
 
     return GestureDetector(
@@ -187,15 +190,13 @@ class _GrossesseCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Background image
               Image.asset(
-                workout.imageUrl,
+                program.imageUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) =>
                     Container(color: color.withValues(alpha: 0.15)),
               ),
 
-              // Gradient overlay
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -211,37 +212,43 @@ class _GrossesseCard extends StatelessWidget {
                 ),
               ),
 
-              // Top: GROSSESSE badge + heart
               Positioned(
                 top: 14,
                 left: 14,
                 right: 14,
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                              color: color.withValues(alpha: 0.45),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3))
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: color.withValues(alpha: 0.45),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3))
+                              ],
+                            ),
+                            child: Text(
+                              'PROGRAMME',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.3,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _ProgramStatusBadge(program: program),
                         ],
                       ),
-                      child: Text(
-                        'GROSSESSE',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.3,
-                        ),
-                      ),
                     ),
-                    const Spacer(),
                     GestureDetector(
                       onTap: onToggleFav,
                       child: AnimatedContainer(
@@ -269,7 +276,6 @@ class _GrossesseCard extends StatelessWidget {
                 ),
               ),
 
-              // Bottom: title + pills + button
               Positioned(
                 left: 16,
                 right: 16,
@@ -279,7 +285,7 @@ class _GrossesseCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      workout.title,
+                      program.name,
                       maxLines: 2,
                       style: GoogleFonts.outfit(
                         color: Colors.white,
@@ -295,15 +301,15 @@ class _GrossesseCard extends StatelessWidget {
                       runSpacing: 6,
                       children: [
                         _GlassPill(
-                            icon: LucideIcons.clock,
-                            label: workout.duration),
+                            icon: LucideIcons.calendarDays,
+                            label: program.duration),
                         _GlassPill(
-                            icon: LucideIcons.leaf,
-                            label: workout.level),
+                            icon: LucideIcons.dumbbell,
+                            label: program.sessions),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    CycleBadgeRow(phases: workout.phases),
+                    CycleBadgeRow(phases: program.phases),
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
@@ -346,7 +352,85 @@ class _GrossesseCard extends StatelessWidget {
   }
 }
 
-// ── Glassmorphism info pill ───────────────────────────────────────────────────
+// ── Program status badge
+class _ProgramStatusBadge extends ConsumerWidget {
+  final HomeProgramModel program;
+
+  const _ProgramStatusBadge({required this.program});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statusAsync = ref.watch(programStatusProvider(program));
+
+    return statusAsync.when(
+      data: (status) {
+        if (status.isCompleted) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.80),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.green.withValues(alpha: 0.45),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3))
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(LucideIcons.checkCircle,
+                    color: Colors.white, size: 10),
+                const SizedBox(width: 4),
+                Text(
+                  'Complété',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (status.isStarted) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.orange.withValues(alpha: 0.45),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3))
+              ],
+            ),
+            child: Text(
+              '${(status.completionPercentage * 100).toInt()}%',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+          );
+        }
+
+        return const SizedBox.shrink();
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+// ── Glassmorphism info pill
 class _GlassPill extends StatelessWidget {
   final IconData icon;
   final String label;

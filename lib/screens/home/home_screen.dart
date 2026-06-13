@@ -9,6 +9,8 @@ import 'package:fiteva/screens/workout/programme_detail_screen.dart';
 import 'package:fiteva/theme/app_theme.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
+import 'package:fiteva/providers/workout_progress_provider.dart';
+import 'package:fiteva/services/workout_progress_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -1145,6 +1147,78 @@ class _IconBtnSmall extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
+// COMPLETION INDICATOR — circular progress or checkmark
+// ═══════════════════════════════════════════════════════════
+
+class _CompletionIndicator extends StatelessWidget {
+  final bool isCompleted;
+  final double percentage;
+
+  const _CompletionIndicator({
+    required this.isCompleted,
+    required this.percentage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isCompleted) {
+      return Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: Colors.green.shade400,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.shade400.withValues(alpha: 0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Icon(
+          LucideIcons.checkCircle,
+          color: Colors.white,
+          size: 20,
+        ),
+      );
+    }
+
+    if (percentage > 0) {
+      return SizedBox(
+        width: 38,
+        height: 38,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox.expand(
+              child: CircularProgressIndicator(
+                value: percentage.clamp(0.0, 1.0),
+                strokeWidth: 2.5,
+                backgroundColor: Colors.grey.shade300,
+                valueColor: AlwaysStoppedAnimation(
+                  Color(0xFFFFD89B),
+                ),
+              ),
+            ),
+            Text(
+              '${(percentage * 100).toInt()}%',
+              style: GoogleFonts.inter(
+                fontSize: 8,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimaryColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // PROGRAMS SECTION — horizontal cards, editorial
 // ═══════════════════════════════════════════════════════════
 
@@ -1154,218 +1228,261 @@ class _ProgramsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return FutureBuilder<List<HomeProgramModel>>(
+      future: WorkoutProgressService.getStartedPrograms(programs),
+      builder: (context, snapshot) {
+        final startedPrograms = snapshot.data ?? [];
+
+        if (startedPrograms.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('MY PROGRAMS',
-                        style: GoogleFonts.inter(
-                          color: AppTheme.accentColor,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 3,
-                        )),
-                    const SizedBox(height: 4),
-                    Text('In Progress',
-                        style: GoogleFonts.outfit(
-                          color: AppTheme.textPrimaryColor,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        )),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('PROGRAMMES EN COURS',
+                            style: GoogleFonts.inter(
+                              color: AppTheme.accentColor,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 3,
+                            )),
+                        const SizedBox(height: 4),
+                        Text('Continuer',
+                            style: GoogleFonts.outfit(
+                              color: AppTheme.textPrimaryColor,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
+                            )),
+                      ],
+                    ),
+                    const Spacer(),
+                    InkWell(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => ProgramsBottomSheet(programs: programs),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Text('voir tout',
+                          style: GoogleFonts.inter(
+                            color: AppTheme.primaryColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          )),
+                    ),
                   ],
                 ),
-                const Spacer(),
-                InkWell(
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-builder: (_) => ProgramsBottomSheet(programs: programs),
-
-
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Text('voir tout',
-                      style: GoogleFonts.inter(
-                        color: AppTheme.primaryColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1,
-                      )),
-                ),
-
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          SizedBox(
-            height: 232,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: programs.length,
-              itemBuilder: (_, i) => _ProgramCard(
-                program: programs[i],
-                progress: 0.35 + (i * 0.18),
               ),
-            ),
+
+              const SizedBox(height: 16),
+
+              SizedBox(
+                height: 232,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: startedPrograms.length,
+                  itemBuilder: (_, i) => _ProgramCard(
+                    program: startedPrograms[i],
+                    progress: 0.0,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
-class _ProgramCard extends StatelessWidget {
+class _ProgramCard extends ConsumerWidget {
   final HomeProgramModel program;
   final double progress;
   const _ProgramCard({required this.program, required this.progress});
 
   @override
-  Widget build(BuildContext context) {
-    final p = progress.clamp(0.1, 0.95);
-    return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 14),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image
-          Stack(children: [
-            Image.asset(
-              program.imageUrl,
-              height: 100,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                height: 100,
-                color: AppTheme.neutral200,
-              ),
-            ),
-            // Points chip
-            Positioned(
-              top: 10,
-              left: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '${program.totalPoints} PTS',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-            ),
-          ]),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statusAsync = ref.watch(programStatusProvider(program));
 
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  program.name,
-                  style: GoogleFonts.outfit(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimaryColor,
-                    letterSpacing: -0.2,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${program.duration}  •  ${program.sessions}',
-                  style: GoogleFonts.inter(
-                    color: AppTheme.textSecondaryColor,
-                    fontSize: 10,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Progress bar
-                Row(children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: p,
-                        minHeight: 5,
-                        backgroundColor: AppTheme.neutral200,
-                        valueColor:
-                            AlwaysStoppedAnimation(Color(0xFFFFD89B)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('${(p * 100).toInt()}%',
-                      style: GoogleFonts.inter(
-                        color: AppTheme.primaryColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      )),
-                ]),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 9),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                        child: Text('RESUME',
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.5,
-                            )),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return statusAsync.when(
+      data: (status) {
+        final isCompleted = status.isCompleted;
+        final percentage = status.completionPercentage;
+
+        return Container(
+          width: 200,
+          margin: const EdgeInsets.only(right: 14),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image
+              Stack(children: [
+                Image.asset(
+                  program.imageUrl,
+                  height: 100,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 100,
+                    color: AppTheme.neutral200,
+                  ),
+                ),
+                // Points chip
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${program.totalPoints} PTS',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ),
+                // Completion indicator - top right
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: _CompletionIndicator(
+                    isCompleted: isCompleted,
+                    percentage: percentage,
+                  ),
+                ),
+              ]),
+
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      program.name,
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.textPrimaryColor,
+                        letterSpacing: -0.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${program.duration}  •  ${program.sessions}',
+                      style: GoogleFonts.inter(
+                        color: AppTheme.textSecondaryColor,
+                        fontSize: 10,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Progress bar
+                    Row(children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: (percentage).clamp(0.0, 1.0),
+                            minHeight: 5,
+                            backgroundColor: AppTheme.neutral200,
+                            valueColor: AlwaysStoppedAnimation(
+                              isCompleted ? Colors.green.shade400 : Color(0xFFFFD89B),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text('${(percentage * 100).toInt()}%',
+                          style: GoogleFonts.inter(
+                            color: isCompleted ? Colors.green.shade400 : AppTheme.primaryColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          )),
+                    ]),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => WorkoutDetailScreen(program: program),
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              isCompleted ? 'REVIEW' : 'RESUME',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox(
+        width: 200,
+        height: 232,
+        child: Center(child: SizedBox.shrink()),
+      ),
+      error: (_, __) => const SizedBox(
+        width: 200,
+        height: 232,
+        child: Center(child: SizedBox.shrink()),
       ),
     );
   }
