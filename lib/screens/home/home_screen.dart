@@ -123,7 +123,20 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(userProvider);
-    final joinedPrograms = ref.watch(joinedProgramsProvider);
+    final homePrograms = ref.watch(homeProgramsProvider);
+    final sallePrograms = ref.watch(salleProgramsProvider);
+    final dancePrograms = ref.watch(danceProgramsProvider);
+    final recuperationPrograms = ref.watch(recuperationProgramsProvider);
+    final grossessePrograms = ref.watch(grossesseProgramsProvider);
+
+    // Combine all programs from all sources
+    final allPrograms = [
+      ...homePrograms,
+      ...sallePrograms,
+      ...dancePrograms,
+      ...recuperationPrograms,
+      ...grossessePrograms,
+    ];
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -146,9 +159,9 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
 
-          // ── My Programs ───────────────────────────────
+          // ── In-Progress Programs ──────────────────────
           SliverToBoxAdapter(
-            child: _ProgramsSection(programs: joinedPrograms),
+            child: _ProgramsSection(programs: allPrograms),
           ),
 
           // ── Library ───────────────────────────────────
@@ -1275,7 +1288,7 @@ class _ProgramsSection extends StatelessWidget {
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (_) => ProgramsBottomSheet(programs: programs),
+                          builder: (_) => ProgramsBottomSheet(programs: startedPrograms),
                         );
                       },
                       borderRadius: BorderRadius.circular(12),
