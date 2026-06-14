@@ -123,10 +123,25 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(userProvider);
-    final joinedPrograms = ref.watch(joinedProgramsProvider);
+    final homePrograms = ref.watch(homeProgramsProvider);
+    final sallePrograms = ref.watch(salleProgramsProvider);
+    final dancePrograms = ref.watch(danceProgramsProvider);
+    final recuperationPrograms = ref.watch(recuperationProgramsProvider);
+    final grossessePrograms = ref.watch(grossesseProgramsProvider);
+
+    // Combine all programs from all sources
+    final allPrograms = [
+      ...homePrograms,
+      ...sallePrograms,
+      ...dancePrograms,
+      ...recuperationPrograms,
+      ...grossessePrograms,
+    ];
+
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: cs.surface,
       body: CustomScrollView(
         slivers: [
           // ── Hero ──────────────────────────────────────
@@ -146,9 +161,9 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
 
-          // ── My Programs ───────────────────────────────
+          // ── In-Progress Programs ──────────────────────
           SliverToBoxAdapter(
-            child: _ProgramsSection(programs: joinedPrograms),
+            child: _ProgramsSection(programs: allPrograms),
           ),
 
           // ── Library ───────────────────────────────────
@@ -660,9 +675,10 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
     final plans = ref.watch(weeklyPlanProvider);
     final sel = _selectedDay >= 0 ? plans[_selectedDay] : null;
     final done = plans.where((d) => d.status == DayStatus.done).length;
+    final cs = Theme.of(context).colorScheme;
 
     return Container(
-      color: AppTheme.backgroundColor,
+      color: cs.surface,
       padding: const EdgeInsets.fromLTRB(0, 28, 0, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1252,7 +1268,7 @@ class _ProgramsSection extends StatelessWidget {
                       children: [
                         Text('PROGRAMMES EN COURS',
                             style: GoogleFonts.inter(
-                              color: AppTheme.accentColor,
+                              color: Theme.of(context).colorScheme.secondary,
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 3,
@@ -1260,7 +1276,7 @@ class _ProgramsSection extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text('Continuer',
                             style: GoogleFonts.outfit(
-                              color: AppTheme.textPrimaryColor,
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 26,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.5,
@@ -1274,13 +1290,13 @@ class _ProgramsSection extends StatelessWidget {
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (_) => ProgramsBottomSheet(programs: programs),
+                          builder: (_) => ProgramsBottomSheet(programs: startedPrograms),
                         );
                       },
                       borderRadius: BorderRadius.circular(12),
                       child: Text('voir tout',
                           style: GoogleFonts.inter(
-                            color: AppTheme.primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1,
@@ -1421,7 +1437,7 @@ class _ProgramCard extends ConsumerWidget {
                           child: LinearProgressIndicator(
                             value: (percentage).clamp(0.0, 1.0),
                             minHeight: 5,
-                            backgroundColor: AppTheme.neutral200,
+                            backgroundColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                             valueColor: AlwaysStoppedAnimation(
                               isCompleted ? Colors.green.shade400 : Color(0xFFFFD89B),
                             ),

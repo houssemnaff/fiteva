@@ -19,51 +19,17 @@ class CommunityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tabIndex = ref.watch(communityTabProvider);
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFEFEFE),
+      backgroundColor: cs.surface,
       body: NestedScrollView(
         headerSliverBuilder: (context, _) => [
-          SliverAppBar(
-            pinned: true,
-            floating: false,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            automaticallyImplyLeading: false,
-            flexibleSpace: SharedAppHeader(
-              eyebrow: 'COMMUNAUTÉ',
-              title: 'Together',
-              accentColor: const Color(0xFF7ABB98),
-              actions: [
-                GestureDetector(
-                  onTap: () => _openComposer(context, tabIndex),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C4D30),
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    child: Row(children: [
-                      const Icon(LucideIcons.plus, size: 13, color: Colors.white),
-                      const SizedBox(width: 6),
-                      Text('Créer',
-                        style: GoogleFonts.inter(
-                          color: Colors.white, fontSize: 12,
-                          fontWeight: FontWeight.w700, letterSpacing: 0.3)),
-                    ]),
-                  ),
-                ),
-              ],
-            ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(54),
-              child: CommunityTabBar(
-                selectedIndex: tabIndex,
-                onTap: (i) => ref.read(communityTabProvider.notifier).state = i,
-              ),
-            ),
+          _CommunityAppBar(
+            tabIndex: tabIndex,
+            onComposerTap: () => _openComposer(context, tabIndex),
+            onTabTap: (i) => ref.read(communityTabProvider.notifier).state = i,
+            colorScheme: cs,
           ),
         ],
         body: IndexedStack(
@@ -83,9 +49,132 @@ class CommunityScreen extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => sheet,
     );
   }
 }
 
+// SliverAppBar unique avec header partagé + tab bar dans bottom:
+class _CommunityAppBar extends StatelessWidget {
+  final int tabIndex;
+  final VoidCallback onComposerTap;
+  final ValueChanged<int> onTabTap;
+  final ColorScheme colorScheme;
+
+  const _CommunityAppBar({
+    required this.tabIndex,
+    required this.onComposerTap,
+    required this.onTabTap,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.of(context).padding.top;
+    return SliverAppBar(
+      pinned: true,
+      floating: false,
+      elevation: 0,
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      expandedHeight: top + 72,
+      collapsedHeight: top + 64,
+      automaticallyImplyLeading: false,
+      flexibleSpace: LayoutBuilder(builder: (_, __) {
+        return Container(
+          color: colorScheme.surface,
+          padding: EdgeInsets.fromLTRB(20, top + 14, 20, 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'COMMUNAUTÉ',
+                      style: GoogleFonts.inter(
+                        color: colorScheme.secondary,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 3.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Together',
+                      style: GoogleFonts.outfit(
+                        color: colorScheme.onSurface,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Bouton Créer
+              GestureDetector(
+                onTap: onComposerTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Row(children: [
+                    Icon(LucideIcons.plus, size: 13, color: colorScheme.onPrimary),
+                    const SizedBox(width: 6),
+                    Text('Créer',
+                      style: GoogleFonts.inter(
+                        color: colorScheme.onPrimary, fontSize: 12,
+                        fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+                  ]),
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Cloche notif
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: colorScheme.secondary.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(LucideIcons.bell, size: 17,
+                    color: colorScheme.secondary),
+              ),
+              const SizedBox(width: 10),
+              // Avatar
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: colorScheme.secondary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colorScheme.secondary, width: 1.5),
+                ),
+                child: Center(
+                  child: Text('Y',
+                    style: GoogleFonts.outfit(
+                      color: colorScheme.secondary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    )),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(54),
+        child: CommunityTabBar(
+          selectedIndex: tabIndex,
+          onTap: onTabTap,
+        ),
+      ),
+    );
+  }
+}

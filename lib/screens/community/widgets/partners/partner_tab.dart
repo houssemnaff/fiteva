@@ -5,16 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/community_providers.dart';
 
-// ─── Design tokens ────────────────────────────────────────────
-const _kGreen      = Color(0xFF1C4D30);
-const _kMint       = Color(0xFF7ABB98);
-const _kMintLight  = Color(0xFFEAF3EC);
-const _kBg         = Color(0xFFFEFEFE);
-const _kSurface    = Colors.white;
-const _kBorder     = Color(0xFFECECEC);
-const _kText1      = Color(0xFF1A1A1A);
-const _kText2      = Color(0xFF757575);
-const _kText3      = Color(0xFFAAAAAA);
 
 const _avatarColors = [
   Color(0xFF7C3AED), Color(0xFF059669), Color(0xFFD97706),
@@ -40,6 +30,7 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final partners = ref.watch(partnersProvider);
     final filtered = partners.where((p) {
       final goalOk   = _goal   == 'Tous' || p.goal   == _goal;
@@ -49,7 +40,7 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
     }).toList();
 
     return ColoredBox(
-      color: _kBg,
+      color: cs.surface,
       child: CustomScrollView(
         slivers: [
 
@@ -65,7 +56,7 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('PARTNERS', style: GoogleFonts.inter(
-                          color: _kMint, fontSize: 9,
+                          color: cs.secondary, fontSize: 9,
                           fontWeight: FontWeight.w700, letterSpacing: 3,
                         )),
                         const SizedBox(height: 3),
@@ -73,12 +64,12 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
                           text: TextSpan(
                             style: GoogleFonts.outfit(
                               fontSize: 26, fontWeight: FontWeight.w800,
-                              color: _kText1, letterSpacing: -0.5, height: 1.1,
+                              color: cs.onSurface, letterSpacing: -0.5, height: 1.1,
                             ),
-                            children: const [
-                              TextSpan(text: "Partenaires\n"),
+                            children: [
+                              const TextSpan(text: "Partenaires\n"),
                               TextSpan(text: "d'entraînement",
-                                  style: TextStyle(color: _kGreen)),
+                                  style: TextStyle(color: cs.primary)),
                             ],
                           ),
                         ),
@@ -86,7 +77,7 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
                         Text(
                           '${filtered.length} partenaire${filtered.length > 1 ? 's' : ''} trouvé${filtered.length > 1 ? 's' : ''}',
                           style: GoogleFonts.inter(
-                            fontSize: 12, color: _kText2,
+                            fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       ],
@@ -100,19 +91,19 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: _filtersOpen ? _kGreen.withOpacity(0.08) : _kSurface,
+                        color: _filtersOpen ? cs.primary.withValues(alpha: 0.08) : cs.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(50),
                         border: Border.all(
-                          color: _filtersOpen ? _kGreen : _kBorder,
+                          color: _filtersOpen ? cs.primary : cs.outline,
                         ),
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(LucideIcons.sliders,
                             size: 13,
-                            color: _filtersOpen ? _kGreen : _kText2),
+                            color: _filtersOpen ? cs.primary : cs.onSurface.withValues(alpha: 0.6)),
                         const SizedBox(width: 6),
                         Text('Filtres', style: GoogleFonts.inter(
-                          color: _filtersOpen ? _kGreen : _kText2,
+                          color: _filtersOpen ? cs.primary : cs.onSurface.withValues(alpha: 0.6),
                           fontSize: 12, fontWeight: FontWeight.w700,
                         )),
                       ]),
@@ -141,6 +132,7 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
                         onGoalSelect:   (v) => setState(() => _goal   = v),
                         onLevelSelect:  (v) => setState(() => _level  = v),
                         onRegionSelect: (v) => setState(() => _region = v),
+                        colorScheme: cs,
                       ),
                     )
                   : const SizedBox.shrink(),
@@ -154,7 +146,7 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
               itemCount: filtered.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (_, i) =>
-                  PartnerCard(partner: filtered[i], index: i),
+                  PartnerCard(partner: filtered[i], index: i, colorScheme: cs),
             ),
           ),
         ],
@@ -168,6 +160,7 @@ class _FilterPanel extends StatelessWidget {
   final String selectedGoal, selectedLevel, selectedRegion;
   final List<String> goals, levels, regions;
   final ValueChanged<String> onGoalSelect, onLevelSelect, onRegionSelect;
+  final ColorScheme colorScheme;
 
   const _FilterPanel({
     required this.selectedGoal,
@@ -179,6 +172,7 @@ class _FilterPanel extends StatelessWidget {
     required this.onGoalSelect,
     required this.onLevelSelect,
     required this.onRegionSelect,
+    required this.colorScheme,
   });
 
   @override
@@ -186,12 +180,12 @@ class _FilterPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: colorScheme.outline),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: colorScheme.shadow.withValues(alpha: 0.04),
             blurRadius: 16, offset: const Offset(0, 4),
           ),
         ],
@@ -205,9 +199,10 @@ class _FilterPanel extends StatelessWidget {
             items: goals,
             selected: selectedGoal,
             onSelect: onGoalSelect,
+            colorScheme: colorScheme,
           ),
           const SizedBox(height: 14),
-          Divider(height: 1, color: _kBorder),
+          Divider(height: 1, color: colorScheme.outline),
           const SizedBox(height: 14),
           _FilterRow(
             icon: LucideIcons.barChart2,
@@ -215,9 +210,10 @@ class _FilterPanel extends StatelessWidget {
             items: levels,
             selected: selectedLevel,
             onSelect: onLevelSelect,
+            colorScheme: colorScheme,
           ),
           const SizedBox(height: 14),
-          Divider(height: 1, color: _kBorder),
+          Divider(height: 1, color: colorScheme.outline),
           const SizedBox(height: 14),
           _FilterRow(
             icon: LucideIcons.mapPin,
@@ -225,6 +221,7 @@ class _FilterPanel extends StatelessWidget {
             items: regions,
             selected: selectedRegion,
             onSelect: onRegionSelect,
+            colorScheme: colorScheme,
           ),
         ],
       ),
@@ -238,6 +235,7 @@ class _FilterRow extends StatelessWidget {
   final List<String> items;
   final String selected;
   final ValueChanged<String> onSelect;
+  final ColorScheme colorScheme;
 
   const _FilterRow({
     required this.icon,
@@ -245,6 +243,7 @@ class _FilterRow extends StatelessWidget {
     required this.items,
     required this.selected,
     required this.onSelect,
+    required this.colorScheme,
   });
 
   @override
@@ -253,11 +252,11 @@ class _FilterRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          Icon(icon, size: 12, color: _kGreen),
+          Icon(icon, size: 12, color: colorScheme.primary),
           const SizedBox(width: 5),
           Text(label, style: GoogleFonts.inter(
             fontSize: 11, fontWeight: FontWeight.w700,
-            color: _kGreen, letterSpacing: 0.5,
+            color: colorScheme.primary, letterSpacing: 0.5,
           )),
         ]),
         const SizedBox(height: 8),
@@ -272,15 +271,15 @@ class _FilterRow extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: sel ? _kGreen : _kBg,
+                  color: sel ? colorScheme.primary : colorScheme.surface,
                   borderRadius: BorderRadius.circular(50),
                   border: Border.all(
-                      color: sel ? _kGreen : _kBorder),
+                      color: sel ? colorScheme.primary : colorScheme.outline),
                 ),
                 child: Text(item, style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: sel ? Colors.white : _kText2,
+                  color: sel ? colorScheme.onPrimary : colorScheme.onSurface.withValues(alpha: 0.6),
                 )),
               ),
             );
@@ -295,7 +294,8 @@ class _FilterRow extends StatelessWidget {
 class PartnerCard extends StatefulWidget {
   final PartnerModel partner;
   final int index;
-  const PartnerCard({super.key, required this.partner, required this.index});
+  final ColorScheme colorScheme;
+  const PartnerCard({super.key, required this.partner, required this.index, required this.colorScheme});
 
   @override
   State<PartnerCard> createState() => _PartnerCardState();
@@ -315,16 +315,17 @@ class _PartnerCardState extends State<PartnerCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = widget.colorScheme;
     final p = widget.partner;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: cs.outline),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: cs.shadow.withValues(alpha: 0.04),
             blurRadius: 14, offset: const Offset(0, 3),
           ),
         ],
@@ -357,27 +358,27 @@ class _PartnerCardState extends State<PartnerCard> {
                   children: [
                     Text(p.name, style: GoogleFonts.outfit(
                       fontSize: 15, fontWeight: FontWeight.w800,
-                      color: _kText1, letterSpacing: -0.3,
+                      color: cs.onSurface, letterSpacing: -0.3,
                     )),
                     const SizedBox(height: 4),
                     Row(children: [
-                      Icon(LucideIcons.mapPin, size: 11, color: _kText3),
+                      Icon(LucideIcons.mapPin, size: 11, color: cs.onSurface.withValues(alpha: 0.5)),
                       const SizedBox(width: 3),
                       Text(p.region, style: GoogleFonts.inter(
-                        fontSize: 11, color: _kText3,
+                        fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5),
                       )),
                       const SizedBox(width: 10),
-                      Icon(LucideIcons.calendarDays, size: 11, color: _kText3),
+                      Icon(LucideIcons.calendarDays, size: 11, color: cs.onSurface.withValues(alpha: 0.5)),
                       const SizedBox(width: 3),
                       Text(p.frequency, style: GoogleFonts.inter(
-                        fontSize: 11, color: _kText3,
+                        fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5),
                       )),
                     ]),
                   ],
                 ),
               ),
               // Level badge
-              _LevelBadge(level: p.level),
+              _LevelBadge(level: p.level, colorScheme: cs),
             ],
           ),
 
@@ -387,14 +388,14 @@ class _PartnerCardState extends State<PartnerCard> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: _kMintLight,
+              color: cs.secondary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(50),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(LucideIcons.target, size: 10, color: _kGreen),
+              Icon(LucideIcons.target, size: 10, color: cs.primary),
               const SizedBox(width: 5),
               Text(p.goal, style: GoogleFonts.inter(
-                fontSize: 10, fontWeight: FontWeight.w700, color: _kGreen,
+                fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary,
               )),
             ]),
           ),
@@ -403,7 +404,7 @@ class _PartnerCardState extends State<PartnerCard> {
 
           // ── Description ──────────────────────────────────
           Text(p.description, style: GoogleFonts.inter(
-            fontSize: 13, color: _kText2, height: 1.5,
+            fontSize: 13, color: cs.onSurface.withValues(alpha: 0.6), height: 1.5,
           )),
 
           const SizedBox(height: 10),
@@ -414,11 +415,11 @@ class _PartnerCardState extends State<PartnerCard> {
             children: p.tags.map((tag) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
               decoration: BoxDecoration(
-                color: _kGreen.withOpacity(0.06),
+                color: cs.primary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(50),
               ),
               child: Text('#$tag', style: GoogleFonts.inter(
-                fontSize: 10, fontWeight: FontWeight.w700, color: _kGreen,
+                fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary,
               )),
             )).toList(),
           ),
@@ -431,10 +432,11 @@ class _PartnerCardState extends State<PartnerCard> {
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               child: _messaged
-                  ? _MessagedBtn(key: const ValueKey('done'))
+                  ? _MessagedBtn(key: const ValueKey('done'), colorScheme: cs)
                   : _MessageBtn(
                       key: const ValueKey('idle'),
                       onTap: () => setState(() => _messaged = true),
+                      colorScheme: cs,
                     ),
             ),
           ),
@@ -447,23 +449,24 @@ class _PartnerCardState extends State<PartnerCard> {
 // ─── Level Badge ──────────────────────────────────────────────
 class _LevelBadge extends StatelessWidget {
   final String level;
-  const _LevelBadge({required this.level});
+  final ColorScheme colorScheme;
+  const _LevelBadge({required this.level, required this.colorScheme});
 
   Color get _bg {
     switch (level) {
-      case 'Débutant':      return const Color(0xFFDCF5E8);
+      case 'Débutant':      return colorScheme.primary.withValues(alpha: 0.12);
       case 'Intermédiaire': return const Color(0xFFFFF3E0);
-      case 'Avancé':        return const Color(0xFFFFEBEB);
-      default:              return const Color(0xFFF4F4F2);
+      case 'Avancé':        return colorScheme.error.withValues(alpha: 0.12);
+      default:              return colorScheme.outline.withValues(alpha: 0.1);
     }
   }
 
   Color get _fg {
     switch (level) {
-      case 'Débutant':      return _kGreen;
+      case 'Débutant':      return colorScheme.primary;
       case 'Intermédiaire': return const Color(0xFF9A5F00);
-      case 'Avancé':        return const Color(0xFFA32D2D);
-      default:              return _kText2;
+      case 'Avancé':        return colorScheme.error;
+      default:              return colorScheme.onSurface.withValues(alpha: 0.6);
     }
   }
 
@@ -485,7 +488,8 @@ class _LevelBadge extends StatelessWidget {
 // ─── Message Buttons ──────────────────────────────────────────
 class _MessageBtn extends StatelessWidget {
   final VoidCallback onTap;
-  const _MessageBtn({super.key, required this.onTap});
+  final ColorScheme colorScheme;
+  const _MessageBtn({super.key, required this.onTap, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
@@ -494,15 +498,15 @@ class _MessageBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: _kGreen,
+          color: colorScheme.primary,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(LucideIcons.messageSquare, size: 13, color: Colors.white),
+          Icon(LucideIcons.messageSquare, size: 13, color: colorScheme.onPrimary),
           const SizedBox(width: 8),
           Text('Envoyer un message', style: GoogleFonts.inter(
             fontSize: 12, fontWeight: FontWeight.w800,
-            color: Colors.white, letterSpacing: 0.2,
+            color: colorScheme.onPrimary, letterSpacing: 0.2,
           )),
         ]),
       ),
@@ -511,22 +515,23 @@ class _MessageBtn extends StatelessWidget {
 }
 
 class _MessagedBtn extends StatelessWidget {
-  const _MessagedBtn({super.key});
+  final ColorScheme colorScheme;
+  const _MessagedBtn({super.key, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: _kMintLight,
+        color: colorScheme.secondary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kMint.withOpacity(0.4)),
+        border: Border.all(color: colorScheme.secondary.withValues(alpha: 0.4)),
       ),
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(LucideIcons.checkCircle, size: 13, color: _kGreen),
+        Icon(LucideIcons.checkCircle, size: 13, color: colorScheme.primary),
         const SizedBox(width: 8),
         Text('Message envoyé !', style: GoogleFonts.inter(
-          fontSize: 12, fontWeight: FontWeight.w800, color: _kGreen,
+          fontSize: 12, fontWeight: FontWeight.w800, color: colorScheme.primary,
         )),
       ]),
     );
@@ -540,17 +545,18 @@ class GoalBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _kMintLight,
+        color: cs.secondary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(99),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(LucideIcons.target, size: 10, color: _kGreen),
+        Icon(LucideIcons.target, size: 10, color: cs.primary),
         const SizedBox(width: 4),
         Text(label, style: GoogleFonts.inter(
-          fontSize: 10, fontWeight: FontWeight.w700, color: _kGreen,
+          fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary,
         )),
       ]),
     );
@@ -562,5 +568,5 @@ class LevelBadge extends StatelessWidget {
   const LevelBadge({super.key, required this.level});
 
   @override
-  Widget build(BuildContext context) => _LevelBadge(level: level);
+  Widget build(BuildContext context) => _LevelBadge(level: level, colorScheme: Theme.of(context).colorScheme,);
 }

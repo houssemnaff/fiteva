@@ -109,48 +109,19 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (ctx2, controller) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(ctx2).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              _SheetHandle(title: title, color: color, icon: icon, onClose: () => Navigator.pop(ctx)),
-              Expanded(
-                child: ListView.builder(
-                  controller: controller,
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  itemCount: programs.length,
-                  itemBuilder: (_, i) {
-                    final p = programs[i];
-                    return _ProgramTile(
-                      imageUrl: p.imageUrl,
-                      title: p.name,
-                      subtitle: '${p.duration} · ${p.sessions}',
-                      phases: p.phases,
-                      color: color,
-                      isFav: _favorites.contains(p.name),
-                      onToggleFav: () => setState(() => _toggleFav(p.name)),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => WorkoutDetailScreen(
-                            program: p,
-                          ),
-                        ));
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      builder: (ctx) => _ProgramsFilterSheet(
+        title: title,
+        color: color,
+        icon: icon,
+        programs: programs,
+        favorites: _favorites,
+        onToggleFav: _toggleFav,
+        onSelectProgram: (p) {
+          Navigator.pop(ctx);
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => WorkoutDetailScreen(program: p),
+          ));
+        },
       ),
     );
   }
@@ -166,46 +137,19 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (ctx2, controller) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(ctx2).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              _SheetHandle(title: title, color: color, icon: icon, onClose: () => Navigator.pop(ctx)),
-              Expanded(
-                child: ListView.builder(
-                  controller: controller,
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  itemCount: workouts.length,
-                  itemBuilder: (_, i) {
-                    final w = workouts[i];
-                    return _ProgramTile(
-                      imageUrl: w.imageUrl,
-                      title: w.title,
-                      subtitle: '${w.duration} · ${w.level}',
-                      phases: w.phases,
-                      color: color,
-                      isFav: _favorites.contains(w.id),
-                      onToggleFav: () => setState(() => _toggleFav(w.id)),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => ActiveWorkoutScreen(workout: w),
-                        ));
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      builder: (ctx) => _WorkoutsFilterSheet(
+        title: title,
+        color: color,
+        icon: icon,
+        workouts: workouts,
+        favorites: _favorites,
+        onToggleFav: _toggleFav,
+        onSelectWorkout: (w) {
+          Navigator.pop(ctx);
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => ActiveWorkoutScreen(workout: w),
+          ));
+        },
       ),
     );
   }
@@ -557,6 +501,326 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
 
 
             SizedBox(height: bottomGap),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Programs Filter Sheet ─────────────────────────────────────────────────────
+class _ProgramsFilterSheet extends StatefulWidget {
+  final String title;
+  final Color color;
+  final IconData icon;
+  final List<HomeProgramModel> programs;
+  final Set<String> favorites;
+  final void Function(String) onToggleFav;
+  final void Function(HomeProgramModel) onSelectProgram;
+
+  const _ProgramsFilterSheet({
+    required this.title,
+    required this.color,
+    required this.icon,
+    required this.programs,
+    required this.favorites,
+    required this.onToggleFav,
+    required this.onSelectProgram,
+  });
+
+  @override
+  State<_ProgramsFilterSheet> createState() => _ProgramsFilterSheetState();
+}
+
+class _ProgramsFilterSheetState extends State<_ProgramsFilterSheet> {
+  late TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<HomeProgramModel> get _filteredPrograms {
+    final query = _searchController.text.toLowerCase();
+    if (query.isEmpty) {
+      return widget.programs;
+    }
+    return widget.programs
+        .where((p) => p.name.toLowerCase().contains(query))
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (ctx, controller) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            _SheetHandle(title: widget.title, color: widget.color, icon: widget.icon, onClose: () => Navigator.pop(context)),
+
+            // Search filter
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cs.onSurface.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: widget.color.withValues(alpha: 0.2)),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher...',
+                    hintStyle: GoogleFonts.inter(
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                      fontSize: 14,
+                    ),
+                    prefixIcon: Icon(
+                      LucideIcons.search,
+                      color: widget.color,
+                      size: 18,
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                            child: Icon(
+                              LucideIcons.x,
+                              color: cs.onSurface.withValues(alpha: 0.5),
+                              size: 18,
+                            ),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  style: GoogleFonts.inter(
+                    color: cs.onSurface,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+
+            Expanded(
+              child: _filteredPrograms.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.search,
+                            size: 48,
+                            color: cs.onSurface.withValues(alpha: 0.3),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Aucun programme trouvé',
+                            style: GoogleFonts.inter(
+                              color: cs.onSurface.withValues(alpha: 0.5),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: controller,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      itemCount: _filteredPrograms.length,
+                      itemBuilder: (_, i) {
+                        final p = _filteredPrograms[i];
+                        return _ProgramTile(
+                          imageUrl: p.imageUrl,
+                          title: p.name,
+                          subtitle: '${p.duration} · ${p.sessions}',
+                          phases: p.phases,
+                          color: widget.color,
+                          isFav: widget.favorites.contains(p.name),
+                          onToggleFav: () => widget.onToggleFav(p.name),
+                          onTap: () => widget.onSelectProgram(p),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Workouts Filter Sheet ─────────────────────────────────────────────────────
+class _WorkoutsFilterSheet extends StatefulWidget {
+  final String title;
+  final Color color;
+  final IconData icon;
+  final List<WorkoutModel> workouts;
+  final Set<String> favorites;
+  final void Function(String) onToggleFav;
+  final void Function(WorkoutModel) onSelectWorkout;
+
+  const _WorkoutsFilterSheet({
+    required this.title,
+    required this.color,
+    required this.icon,
+    required this.workouts,
+    required this.favorites,
+    required this.onToggleFav,
+    required this.onSelectWorkout,
+  });
+
+  @override
+  State<_WorkoutsFilterSheet> createState() => _WorkoutsFilterSheetState();
+}
+
+class _WorkoutsFilterSheetState extends State<_WorkoutsFilterSheet> {
+  late TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<WorkoutModel> get _filteredWorkouts {
+    final query = _searchController.text.toLowerCase();
+    if (query.isEmpty) {
+      return widget.workouts;
+    }
+    return widget.workouts
+        .where((w) => w.title.toLowerCase().contains(query))
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (ctx, controller) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            _SheetHandle(title: widget.title, color: widget.color, icon: widget.icon, onClose: () => Navigator.pop(context)),
+
+            // Search filter
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cs.onSurface.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: widget.color.withValues(alpha: 0.2)),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher...',
+                    hintStyle: GoogleFonts.inter(
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                      fontSize: 14,
+                    ),
+                    prefixIcon: Icon(
+                      LucideIcons.search,
+                      color: widget.color,
+                      size: 18,
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                            child: Icon(
+                              LucideIcons.x,
+                              color: cs.onSurface.withValues(alpha: 0.5),
+                              size: 18,
+                            ),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  style: GoogleFonts.inter(
+                    color: cs.onSurface,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+
+            Expanded(
+              child: _filteredWorkouts.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.search,
+                            size: 48,
+                            color: cs.onSurface.withValues(alpha: 0.3),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Aucun entraînement trouvé',
+                            style: GoogleFonts.inter(
+                              color: cs.onSurface.withValues(alpha: 0.5),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: controller,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      itemCount: _filteredWorkouts.length,
+                      itemBuilder: (_, i) {
+                        final w = _filteredWorkouts[i];
+                        return _ProgramTile(
+                          imageUrl: w.imageUrl,
+                          title: w.title,
+                          subtitle: '${w.duration} · ${w.level}',
+                          phases: w.phases,
+                          color: widget.color,
+                          isFav: widget.favorites.contains(w.id),
+                          onToggleFav: () => widget.onToggleFav(w.id),
+                          onTap: () => widget.onSelectWorkout(w),
+                        );
+                      },
+                    ),
+            ),
           ],
         ),
       ),

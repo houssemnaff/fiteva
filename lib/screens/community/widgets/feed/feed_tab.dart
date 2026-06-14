@@ -7,14 +7,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ─── Design tokens ────────────────────────────────────────────
-const _kGreen  = Color(0xFF1C4D30);
-const _kMint   = Color(0xFF7ABB98);
-const _kBg     = Color(0xFFFEFEFE);
-const _kSurface = Colors.white;
-const _kBorder = Color(0xFFECECEC);
-const _kTextPrimary   = Color(0xFF1A1A1A);
-const _kTextSecondary = Color(0xFF757575);
+// Color scheme is obtained from Theme.of(context).colorScheme
+// No hardcoded colors - all colors are theme-aware
 
 // ─── Feed Tab ─────────────────────────────────────────────────
 class FeedTab extends ConsumerStatefulWidget {
@@ -32,6 +26,7 @@ class _FeedTabState extends ConsumerState<FeedTab> {
   @override
   Widget build(BuildContext context) {
     final posts = ref.watch(postsNotifierProvider);
+    final cs = Theme.of(context).colorScheme;
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
@@ -48,19 +43,19 @@ class _FeedTabState extends ConsumerState<FeedTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('COMMUNITY', style: GoogleFonts.inter(
-                      color: _kMint, fontSize: 9,
+                      color: cs.secondary, fontSize: 9,
                       fontWeight: FontWeight.w700, letterSpacing: 3,
                     )),
                     const SizedBox(height: 3),
                     Text('Top Posts', style: GoogleFonts.outfit(
-                      color: _kTextPrimary, fontSize: 24,
+                      color: cs.onSurface, fontSize: 24,
                       fontWeight: FontWeight.w800, letterSpacing: -0.5,
                     )),
                   ],
                 ),
                 const Spacer(),
                 Text('See all', style: GoogleFonts.inter(
-                  color: _kGreen, fontSize: 11,
+                  color: cs.primary, fontSize: 11,
                   fontWeight: FontWeight.w700, letterSpacing: 0.3,
                 )),
               ],
@@ -80,6 +75,7 @@ class _FeedTabState extends ConsumerState<FeedTab> {
                 label: _filters[i],
                 selected: _selectedFilter == i,
                 onTap: () => setState(() => _selectedFilter = i),
+                colorScheme: cs,
               ),
             ),
           ),
@@ -91,7 +87,7 @@ class _FeedTabState extends ConsumerState<FeedTab> {
           sliver: SliverList.separated(
             itemCount: posts.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (_, i) => _PostCard(post: posts[i]),
+            itemBuilder: (_, i) => _PostCard(post: posts[i], colorScheme: cs),
           ),
         ),
       ],
@@ -104,7 +100,8 @@ class _FilterPill extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _FilterPill({required this.label, required this.selected, required this.onTap});
+  final ColorScheme colorScheme;
+  const _FilterPill({required this.label, required this.selected, required this.onTap, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
@@ -115,16 +112,16 @@ class _FilterPill extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         decoration: BoxDecoration(
-          color: selected ? _kGreen : _kSurface,
+          color: selected ? colorScheme.primary : colorScheme.surface,
           borderRadius: BorderRadius.circular(50),
           border: Border.all(
-            color: selected ? _kGreen : _kBorder,
+            color: selected ? colorScheme.primary : colorScheme.outline,
           ),
         ),
         child: Text(label, style: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: selected ? Colors.white : _kTextSecondary,
+          color: selected ? colorScheme.onPrimary : colorScheme.onSurface.withValues(alpha: 0.6),
         )),
       ),
     );
@@ -134,7 +131,8 @@ class _FilterPill extends StatelessWidget {
 // ─── Post Card ────────────────────────────────────────────────
 class _PostCard extends ConsumerStatefulWidget {
   final PostModel post;
-  const _PostCard({required this.post});
+  final ColorScheme colorScheme;
+  const _PostCard({required this.post, required this.colorScheme});
 
   @override
   ConsumerState<_PostCard> createState() => _PostCardState();
@@ -199,15 +197,16 @@ class _PostCardState extends ConsumerState<_PostCard>
     final liked    = ref.read(postsNotifierProvider.notifier).isLiked(post.id);
     final hasImage = post.imageUrl.trim().isNotEmpty;
     final category = post.category;
+    final cs = widget.colorScheme;
 
     return Container(
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: cs.outline),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: cs.shadow.withValues(alpha: 0.04),
             blurRadius: 14,
             offset: const Offset(0, 3),
           ),
@@ -240,29 +239,29 @@ class _PostCardState extends ConsumerState<_PostCard>
                     children: [
                       Text(post.username, style: GoogleFonts.outfit(
                         fontSize: 14, fontWeight: FontWeight.w700,
-                        color: _kTextPrimary, letterSpacing: -0.2,
+                        color: cs.onSurface, letterSpacing: -0.2,
                       )),
                       const SizedBox(height: 3),
                       Row(children: [
                         Text(post.timeAgo, style: GoogleFonts.inter(
-                          fontSize: 11, color: _kTextSecondary,
+                          fontSize: 11, color: cs.onSurface.withValues(alpha: 0.6),
                         )),
                         if (category.isNotEmpty) ...[
                           const SizedBox(width: 6),
                           Container(width: 3, height: 3,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle, color: _kBorder)),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle, color: cs.outline.withValues(alpha: 0.3))),
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: _kGreen.withValues(alpha: 0.08),
+                              color: cs.primary.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(category, style: GoogleFonts.inter(
                               fontSize: 10, fontWeight: FontWeight.w700,
-                              color: _kGreen,
+                              color: cs.primary,
                             )),
                           ),
                         ],
@@ -275,8 +274,8 @@ class _PostCardState extends ConsumerState<_PostCard>
                 padding: const EdgeInsets.all(6),
                 minimumSize: Size.zero,
                 onPressed: () {},
-                child: const Icon(CupertinoIcons.ellipsis,
-                    color: _kTextSecondary, size: 18),
+                child: Icon(CupertinoIcons.ellipsis,
+                    color: cs.onSurface.withValues(alpha: 0.6), size: 18),
               ),
             ]),
           ),
@@ -285,7 +284,7 @@ class _PostCardState extends ConsumerState<_PostCard>
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
             child: Text(post.content, style: GoogleFonts.inter(
-              fontSize: 14, color: _kTextPrimary,
+              fontSize: 14, color: cs.onSurface,
               height: 1.5, letterSpacing: -0.1,
             )),
           ),
@@ -316,7 +315,7 @@ class _PostCardState extends ConsumerState<_PostCard>
                   decoration: BoxDecoration(
                     color: liked
                         ? const Color(0xFFFF375F).withValues(alpha: 0.08)
-                        : const Color(0xFFF4F4F2),
+                        : cs.outline.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(50),
                   ),
                   child: Row(children: [
@@ -325,13 +324,13 @@ class _PostCardState extends ConsumerState<_PostCard>
                       child: Icon(
                         liked ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
                         size: 16,
-                        color: liked ? const Color(0xFFFF375F) : _kTextSecondary,
+                        color: liked ? const Color(0xFFFF375F) : cs.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(width: 5),
                     Text('${post.likes}', style: GoogleFonts.inter(
                       fontSize: 12, fontWeight: FontWeight.w700,
-                      color: liked ? const Color(0xFFFF375F) : _kTextSecondary,
+                      color: liked ? const Color(0xFFFF375F) : cs.onSurface.withValues(alpha: 0.6),
                     )),
                   ]),
                 ),
@@ -344,16 +343,16 @@ class _PostCardState extends ConsumerState<_PostCard>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F4F2),
+                    color: cs.outline.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(50),
                   ),
                   child: Row(children: [
-                    const Icon(CupertinoIcons.chat_bubble,
-                        size: 15, color: _kTextSecondary),
+                    Icon(CupertinoIcons.chat_bubble,
+                        size: 15, color: cs.onSurface.withValues(alpha: 0.6)),
                     const SizedBox(width: 5),
                     Text('${post.comments}', style: GoogleFonts.inter(
                       fontSize: 12, fontWeight: FontWeight.w700,
-                      color: _kTextSecondary,
+                      color: cs.onSurface.withValues(alpha: 0.6),
                     )),
                   ]),
                 ),
@@ -367,11 +366,11 @@ class _PostCardState extends ConsumerState<_PostCard>
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F4F2),
+                    color: cs.outline.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(50),
                   ),
-                  child: const Icon(CupertinoIcons.bookmark,
-                      size: 15, color: _kTextSecondary),
+                  child: Icon(CupertinoIcons.bookmark,
+                      size: 15, color: cs.onSurface.withValues(alpha: 0.6)),
                 ),
               ),
               const SizedBox(width: 8),
@@ -382,11 +381,11 @@ class _PostCardState extends ConsumerState<_PostCard>
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F4F2),
+                    color: cs.outline.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(50),
                   ),
-                  child: const Icon(CupertinoIcons.share,
-                      size: 15, color: _kTextSecondary),
+                  child: Icon(CupertinoIcons.share,
+                      size: 15, color: cs.onSurface.withValues(alpha: 0.6)),
                 ),
               ),
             ]),

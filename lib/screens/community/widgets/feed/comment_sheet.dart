@@ -7,12 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-const _kGreen  = Color(0xFF1C4D30);
-const _kMint   = Color(0xFF7ABB98);
-const _kBorder = Color(0xFFECECEC);
-const _kText1  = Color(0xFF1A1A1A);
-const _kText2  = Color(0xFF757575);
-const _kChip   = Color(0xFFF4F4F2);
 
 class CommentSheet extends ConsumerStatefulWidget {
   final String postId;
@@ -67,14 +61,15 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
       constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.80),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -84,7 +79,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
             margin: const EdgeInsets.only(top: 12, bottom: 4),
             width: 38, height: 4,
             decoration: BoxDecoration(
-              color: _kBorder, borderRadius: BorderRadius.circular(2)),
+              color: cs.outline, borderRadius: BorderRadius.circular(2)),
           ),
           // Header
           Padding(
@@ -94,32 +89,32 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                 child: Text('Commentaires',
                   style: GoogleFonts.outfit(
                     fontSize: 17, fontWeight: FontWeight.w700,
-                    color: _kText1, letterSpacing: -0.3)),
+                    color: cs.onSurface, letterSpacing: -0.3)),
               ),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
                   width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color: _kChip, shape: BoxShape.circle),
-                  child: const Icon(LucideIcons.x, size: 14, color: _kText2),
+                    color: cs.outline.withValues(alpha: 0.1), shape: BoxShape.circle),
+                  child: Icon(LucideIcons.x, size: 14, color: cs.onSurface.withValues(alpha: 0.6)),
                 ),
               ),
             ]),
           ),
-          const Divider(height: 1, color: _kBorder),
+          Divider(height: 1, color: cs.outline),
 
           // Comment list
           Flexible(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(
-                    strokeWidth: 2, color: _kGreen))
+                ? Center(child: CircularProgressIndicator(
+                    strokeWidth: 2, color: cs.primary))
                 : _comments.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.all(32),
                         child: Text('Aucun commentaire pour l\'instant.\nSois le premier ! 💬',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(color: _kText2, fontSize: 13, height: 1.5)),
+                          style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.6), fontSize: 13, height: 1.5)),
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.symmetric(
@@ -130,6 +125,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                         itemBuilder: (_, i) => _CommentRow(
                           text: _comments[i],
                           author: i == 0 ? widget.postAuthor : 'Moi',
+                          colorScheme: cs,
                         ),
                       ),
           ),
@@ -137,9 +133,9 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
           // Input bar
           Container(
             padding: EdgeInsets.fromLTRB(14, 10, 14, 10 + bottom),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: _kBorder))),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              border: Border(top: BorderSide(color: cs.outline))),
             child: Row(children: [
               Expanded(
                 child: TextField(
@@ -147,13 +143,13 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                   focusNode: _focus,
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _send(),
-                  style: GoogleFonts.inter(fontSize: 14, color: _kText1),
+                  style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
                   decoration: InputDecoration(
                     hintText: 'Ajouter un commentaire…',
                     hintStyle: GoogleFonts.inter(
-                        color: _kText2, fontSize: 13),
+                        color: cs.onSurface.withValues(alpha: 0.6), fontSize: 13),
                     filled: true,
-                    fillColor: _kChip,
+                    fillColor: cs.outline.withValues(alpha: 0.1),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 11),
                     border: OutlineInputBorder(
@@ -171,17 +167,17 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                   width: 40, height: 40,
                   decoration: BoxDecoration(
                     color: _sending
-                        ? _kMint
-                        : _kGreen,
+                        ? cs.secondary
+                        : cs.primary,
                     shape: BoxShape.circle,
                   ),
                   child: _sending
-                      ? const Center(child: SizedBox(
+                      ? Center(child: SizedBox(
                           width: 16, height: 16,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white)))
-                      : const Icon(LucideIcons.send,
-                          color: Colors.white, size: 16),
+                              strokeWidth: 2, color: cs.onPrimary)))
+                      : Icon(LucideIcons.send,
+                          color: cs.onPrimary, size: 16),
                 ),
               ),
             ]),
@@ -195,7 +191,8 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
 class _CommentRow extends StatelessWidget {
   final String text;
   final String author;
-  const _CommentRow({required this.text, required this.author});
+  final ColorScheme colorScheme;
+  const _CommentRow({required this.text, required this.author, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
@@ -204,10 +201,10 @@ class _CommentRow extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 16,
-          backgroundColor: _kMint.withValues(alpha: 0.20),
+          backgroundColor: colorScheme.secondary.withValues(alpha: 0.20),
           child: Text(author[0].toUpperCase(),
             style: GoogleFonts.outfit(
-              color: _kGreen, fontSize: 13, fontWeight: FontWeight.w700)),
+              color: colorScheme.primary, fontSize: 13, fontWeight: FontWeight.w700)),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -216,11 +213,11 @@ class _CommentRow extends StatelessWidget {
             children: [
               Text(author,
                 style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w700, color: _kText1)),
+                  fontSize: 12, fontWeight: FontWeight.w700, color: colorScheme.onSurface)),
               const SizedBox(height: 3),
               Text(text,
                 style: GoogleFonts.inter(
-                  fontSize: 13, color: _kText1, height: 1.45)),
+                  fontSize: 13, color: colorScheme.onSurface, height: 1.45)),
             ],
           ),
         ),
