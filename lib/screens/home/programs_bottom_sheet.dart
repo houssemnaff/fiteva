@@ -6,10 +6,39 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// Bottom sheet used by HomeScreen “MY PROGRAMS / voir tout”
-class ProgramsBottomSheet extends StatelessWidget {
+class ProgramsBottomSheet extends StatefulWidget {
   final List<HomeProgramModel> programs;
 
   const ProgramsBottomSheet({super.key, required this.programs});
+
+  @override
+  State<ProgramsBottomSheet> createState() => _ProgramsBottomSheetState();
+}
+
+class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
+  late TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<HomeProgramModel> get _filteredPrograms {
+    final query = _searchController.text.toLowerCase();
+    if (query.isEmpty) {
+      return widget.programs;
+    }
+    return widget.programs
+        .where((program) => program.name.toLowerCase().contains(query))
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,14 +101,85 @@ class ProgramsBottomSheet extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Programs list
+          // Search filter input
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.borderLight),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Rechercher un programme...',
+                  hintStyle: GoogleFonts.inter(
+                    color: AppTheme.textSecondaryColor,
+                    fontSize: 14,
+                  ),
+                  prefixIcon: Icon(
+                    LucideIcons.search,
+                    color: AppTheme.textSecondaryColor,
+                    size: 18,
+                  ),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? GestureDetector(
+                          onTap: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                          child: Icon(
+                            LucideIcons.x,
+                            color: AppTheme.textSecondaryColor,
+                            size: 18,
+                          ),
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                style: GoogleFonts.inter(
+                  color: AppTheme.textPrimaryColor,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Programs list or empty state
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: programs.length,
-              itemBuilder: (context, index) {
-                final program = programs[index];
-                final progress = (0.35 + (index * 0.18)).clamp(0.1, 0.95);
+            child: _filteredPrograms.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.search,
+                          size: 48,
+                          color: AppTheme.textSecondaryColor.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Aucun programme trouvé',
+                          style: GoogleFonts.inter(
+                            color: AppTheme.textSecondaryColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: _filteredPrograms.length,
+                    itemBuilder: (context, index) {
+                      final program = _filteredPrograms[index];
+                      final progress = (0.35 + (index * 0.18)).clamp(0.1, 0.95);
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 14),
@@ -108,7 +208,7 @@ class ProgramsBottomSheet extends StatelessWidget {
                                 color: AppTheme.neutral200,
                                 child: Icon(
                                   LucideIcons.dumbbell,
-                                  color: AppTheme.primaryColor.withOpacity(0.3),
+                                  color: AppTheme.primaryColor.withValues(alpha: 0.3),
                                 ),
                               ),
                             ),
