@@ -7,20 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  DESIGN TOKENS  (cohérents avec les autres sheets)
-// ─────────────────────────────────────────────────────────────────────────────
-abstract class _K {
-  static const green     = Color(0xFF1C4D30);
-  static const mint      = Color(0xFF7ABB98);
-  static const mintBg    = Color(0xFFEAF3EC);
-  static const surface   = Colors.white;
-  static const ink       = Color(0xFF111110);
-  static const inkMuted  = Color(0xFF6B7280);
-  static const inkSubtle = Color(0xFFAAAAAA);
-  static const divider   = Color(0xFFEEEEEC);
-  static const chipBg    = Color(0xFFF4F4F3);
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  MAIN WIDGET
@@ -94,19 +80,20 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
     if (!mounted) return;
     setState(() => _publishing = false);
     Navigator.of(context).pop();
+    final cs = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: _K.green,
+        backgroundColor: cs.primary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         duration: const Duration(seconds: 3),
         content: Row(children: [
-          const Icon(LucideIcons.checkCircle, color: Colors.white, size: 18),
+          Icon(LucideIcons.checkCircle, color: cs.onPrimary, size: 18),
           const SizedBox(width: 10),
           Text('Post publié !',
               style: GoogleFonts.inter(
-                  color: Colors.white, fontWeight: FontWeight.w600)),
+                  color: cs.onPrimary, fontWeight: FontWeight.w600)),
         ]),
       ),
     );
@@ -116,6 +103,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final bottom  = MediaQuery.of(context).viewInsets.bottom;
     final screenH = MediaQuery.of(context).size.height;
 
@@ -125,16 +113,16 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
       ).animate(_slide),
       child: Container(
         constraints: BoxConstraints(maxHeight: screenH * 0.92),
-        decoration: const BoxDecoration(
-          color: _K.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHandle(),
-            _buildHeader(),
-            const Divider(color: _K.divider, height: 1),
+            _buildHandle(cs),
+            _buildHeader(cs),
+            Divider(color: cs.outline, height: 1),
             Flexible(
               child: SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 16),
@@ -142,35 +130,37 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Type picker ──────────────────────────────────────
-                    _label('Type de post'),
+                    _label('Type de post', cs),
                     const SizedBox(height: 10),
-                    _buildTypePicker(),
+                    _buildTypePicker(cs),
                     const SizedBox(height: 24),
 
                     // ── Titre ────────────────────────────────────────────
-                    _label('Titre'),
+                    _label('Titre', cs),
                     const SizedBox(height: 8),
                     _Field(
                       controller: _titleCtrl,
                       hint: 'Day 5 challenge FitEva 💪',
                       icon: LucideIcons.type,
+                      colorScheme: cs,
                     ),
                     const SizedBox(height: 24),
 
                     // ── Contenu ──────────────────────────────────────────
-                    _label(_contentLabel),
+                    _label(_contentLabel, cs),
                     const SizedBox(height: 8),
                     _Field(
                       controller: _textCtrl,
                       hint: 'Partage quelque chose d\'inspirant…',
                       icon: LucideIcons.alignLeft,
                       maxLines: 5,
+                      colorScheme: cs,
                     ),
 
                     // ── Photo upload (si Photo ou Avant/Après) ───────────
                     if (_selectedType != 'Texte') ...[
                       const SizedBox(height: 16),
-                      _buildPhotoZone(),
+                      _buildPhotoZone(cs),
                     ],
 
                     const SizedBox(height: 8),
@@ -178,7 +168,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                 ),
               ),
             ),
-            _buildActions(),
+            _buildActions(cs),
           ],
         ),
       ),
@@ -195,14 +185,14 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
 
   // ── Handle ─────────────────────────────────────────────────────────────────
 
-  Widget _buildHandle() {
+  Widget _buildHandle(ColorScheme cs) {
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 4),
       child: Center(
         child: Container(
           width: 40, height: 4,
           decoration: BoxDecoration(
-            color: _K.divider,
+            color: cs.outline,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -212,7 +202,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
 
   // ── Header ─────────────────────────────────────────────────────────────────
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ColorScheme cs) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
       child: Row(
@@ -220,11 +210,11 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
           Container(
             width: 48, height: 48,
             decoration: BoxDecoration(
-              color: _K.mintBg,
+              color: cs.secondary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(LucideIcons.penLine,
-                color: _K.green, size: 20),
+            child: Icon(LucideIcons.penLine,
+                color: cs.primary, size: 20),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -233,7 +223,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
               children: [
                 Text('Nouveau post',
                     style: GoogleFonts.outfit(
-                      color: _K.ink,
+                      color: cs.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
@@ -241,7 +231,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                 const SizedBox(height: 2),
                 Text('Partage ta progression avec la communauté',
                     style: GoogleFonts.inter(
-                        color: _K.inkMuted, fontSize: 12)),
+                        color: cs.onSurface.withValues(alpha: 0.6), fontSize: 12)),
               ],
             ),
           ),
@@ -250,11 +240,11 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
             child: Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
-                color: _K.chipBg,
+                color: cs.outline.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.x,
-                  size: 15, color: _K.inkMuted),
+              child: Icon(LucideIcons.x,
+                  size: 15, color: cs.onSurface.withValues(alpha: 0.6)),
             ),
           ),
         ],
@@ -264,7 +254,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
 
   // ── Type picker ────────────────────────────────────────────────────────────
 
-  Widget _buildTypePicker() {
+  Widget _buildTypePicker(ColorScheme cs) {
     return Row(
       children: _types.asMap().entries.map((e) {
         final t   = e.value;
@@ -282,10 +272,10 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 decoration: BoxDecoration(
-                  color: sel ? _K.mintBg : _K.chipBg,
+                  color: sel ? cs.secondary.withValues(alpha: 0.12) : cs.outline.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: sel ? _K.mint.withOpacity(0.6) : Colors.transparent,
+                    color: sel ? cs.secondary.withValues(alpha: 0.6) : Colors.transparent,
                     width: 1.5,
                   ),
                 ),
@@ -294,7 +284,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                   children: [
                     Icon(t.icon,
                         size: 18,
-                        color: sel ? _K.green : _K.inkSubtle),
+                        color: sel ? cs.primary : cs.onSurface.withValues(alpha: 0.5)),
                     const SizedBox(height: 6),
                     Text(t.label,
                         style: GoogleFonts.inter(
@@ -302,7 +292,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                           fontWeight: sel
                               ? FontWeight.w700
                               : FontWeight.w400,
-                          color: sel ? _K.green : _K.inkMuted,
+                          color: sel ? cs.primary : cs.onSurface.withValues(alpha: 0.6),
                         )),
                   ],
                 ),
@@ -316,31 +306,31 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
 
   // ── Photo upload zone ──────────────────────────────────────────────────────
 
-  Widget _buildPhotoZone() {
+  Widget _buildPhotoZone(ColorScheme cs) {
     final isBeforeAfter = _selectedType == 'Avant/Après';
 
     if (isBeforeAfter) {
       return Row(
         children: [
-          Expanded(child: _PhotoSlot(label: 'Avant')),
+          Expanded(child: _PhotoSlot(label: 'Avant', colorScheme: cs)),
           const SizedBox(width: 10),
-          Expanded(child: _PhotoSlot(label: 'Après')),
+          Expanded(child: _PhotoSlot(label: 'Après', colorScheme: cs)),
         ],
       );
     }
 
-    return _PhotoSlot(label: 'Ajouter une photo');
+    return _PhotoSlot(label: 'Ajouter une photo', colorScheme: cs);
   }
 
   // ── Actions bar ────────────────────────────────────────────────────────────
 
-  Widget _buildActions() {
+  Widget _buildActions(ColorScheme cs) {
     return Container(
       padding: EdgeInsets.fromLTRB(
           20, 12, 20, 12 + MediaQuery.of(context).padding.bottom),
-      decoration: const BoxDecoration(
-        color: _K.surface,
-        border: Border(top: BorderSide(color: _K.divider)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        border: Border(top: BorderSide(color: cs.outline)),
       ),
       child: Row(children: [
         GestureDetector(
@@ -349,12 +339,12 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
             padding: const EdgeInsets.symmetric(
                 horizontal: 20, vertical: 15),
             decoration: BoxDecoration(
-              color: _K.chipBg,
+              color: cs.outline.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Text('Annuler',
                 style: GoogleFonts.inter(
-                  color: _K.inkMuted,
+                  color: cs.onSurface.withValues(alpha: 0.6),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 )),
@@ -368,24 +358,24 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(vertical: 15),
               decoration: BoxDecoration(
-                color: _publishing ? _K.mint : _K.green,
+                color: _publishing ? cs.secondary : cs.primary,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(
                 child: _publishing
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18, height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: cs.onPrimary))
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(LucideIcons.send,
-                              color: Colors.white, size: 15),
+                          Icon(LucideIcons.send,
+                              color: cs.onPrimary, size: 15),
                           const SizedBox(width: 8),
                           Text('Publier',
                               style: GoogleFonts.inter(
-                                color: Colors.white,
+                                color: cs.onPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                               )),
@@ -401,10 +391,10 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
 
   // ── Label ──────────────────────────────────────────────────────────────────
 
-  Widget _label(String text) => Text(
+  Widget _label(String text, ColorScheme cs) => Text(
         text,
         style: GoogleFonts.inter(
-          color: _K.inkMuted,
+          color: cs.onSurface.withValues(alpha: 0.6),
           fontSize: 11,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
@@ -420,12 +410,14 @@ class _Field extends StatefulWidget {
   final String hint;
   final IconData icon;
   final int maxLines;
+  final ColorScheme colorScheme;
 
   const _Field({
     required this.controller,
     required this.hint,
     required this.icon,
     this.maxLines = 1,
+    required this.colorScheme,
   });
 
   @override
@@ -437,20 +429,21 @@ class _FieldState extends State<_Field> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = widget.colorScheme;
     return Focus(
       onFocusChange: (f) => setState(() => _focused = f),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: _focused ? Colors.white : _K.chipBg,
+          color: _focused ? cs.surface : cs.outline.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _focused ? _K.mint : Colors.transparent,
+            color: _focused ? cs.secondary : Colors.transparent,
             width: 1.5,
           ),
           boxShadow: _focused
               ? [BoxShadow(
-                  color: _K.mint.withOpacity(0.12),
+                  color: cs.secondary.withValues(alpha: 0.12),
                   blurRadius: 8,
                   offset: const Offset(0, 2))]
               : [],
@@ -458,15 +451,15 @@ class _FieldState extends State<_Field> {
         child: TextField(
           controller: widget.controller,
           maxLines: widget.maxLines,
-          style: GoogleFonts.inter(color: _K.ink, fontSize: 14, height: 1.55),
+          style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14, height: 1.55),
           decoration: InputDecoration(
             hintText: widget.hint,
             hintStyle: GoogleFonts.inter(
-                color: _K.inkSubtle, fontSize: 13),
+                color: cs.onSurface.withValues(alpha: 0.5), fontSize: 13),
             prefixIcon: Padding(
               padding: const EdgeInsets.only(left: 14, right: 10),
               child: Icon(widget.icon,
-                  color: _focused ? _K.green : _K.inkSubtle,
+                  color: _focused ? cs.primary : cs.onSurface.withValues(alpha: 0.5),
                   size: 15),
             ),
             prefixIconConstraints:
@@ -488,7 +481,8 @@ class _FieldState extends State<_Field> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _PhotoSlot extends StatelessWidget {
   final String label;
-  const _PhotoSlot({required this.label});
+  final ColorScheme colorScheme;
+  const _PhotoSlot({required this.label, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
@@ -497,10 +491,10 @@ class _PhotoSlot extends StatelessWidget {
       child: Container(
         height: 110,
         decoration: BoxDecoration(
-          color: _K.chipBg,
+          color: colorScheme.outline.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _K.mint.withOpacity(0.35),
+            color: colorScheme.secondary.withValues(alpha: 0.35),
             width: 1.5,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
@@ -511,16 +505,16 @@ class _PhotoSlot extends StatelessWidget {
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: _K.mintBg,
+                color: colorScheme.secondary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.imagePlus,
-                  color: _K.green, size: 18),
+              child: Icon(LucideIcons.imagePlus,
+                  color: colorScheme.primary, size: 18),
             ),
             const SizedBox(height: 8),
             Text(label,
                 style: GoogleFonts.inter(
-                  color: _K.inkMuted,
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 )),

@@ -1,5 +1,4 @@
-git add .
-git commit -m "Mes modifications locales"// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_insight_repository.dart';
 import 'package:fiteva/screens/cycle/pregnancy/pregnancy_colors.dart';
