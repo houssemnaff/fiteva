@@ -47,7 +47,7 @@ class PgColors extends ThemeExtension<PgColors> {
     pinkSoft:  Color(0xFFFDF0EF),
     amber:     Color(0xFFF4A940),
     amberSoft: Color(0xFFFDF5E6),
-    bg:        Color(0xFFF5FAF7),
+    bg:        Color.fromARGB(255, 255, 255, 255),
     surface:   Color(0xFFFFFFFF),
     textDark:  Color(0xFF1A2E20),
     textMid:   Color(0xFF5A7A65),
