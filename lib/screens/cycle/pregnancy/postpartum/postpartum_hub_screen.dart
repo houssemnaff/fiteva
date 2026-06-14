@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+﻿// ignore_for_file: deprecated_member_use
 import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_insight_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,11 +18,11 @@ abstract class _C {
 
   static TextStyle h(double s,
           {FontWeight w = FontWeight.w600, Color c = textDark}) =>
-      GoogleFonts.nunito(fontSize: s, fontWeight: w, color: c);
+      GoogleFonts.inter(fontSize: s, fontWeight: w, color: c);
 
   static TextStyle b(double s,
           {FontWeight w = FontWeight.w400, Color c = textDark}) =>
-      GoogleFonts.nunito(fontSize: s, fontWeight: w, color: c);
+      GoogleFonts.inter(fontSize: s, fontWeight: w, color: c);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -497,7 +497,7 @@ class _ActionCard extends StatelessWidget {
                 ),
                 child: Text(
                   badge!,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.inter(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF6B4FA0),
@@ -522,7 +522,7 @@ class _ActionCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               label,
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF3D2460),
@@ -571,13 +571,13 @@ class _InsightBlock extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: color)),
               const SizedBox(height: 5),
               Text(text,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.inter(
                       fontSize: 13,
                       color: const Color(0xFF4A3560),
                       height: 1.55)),
