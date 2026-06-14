@@ -1,11 +1,15 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:ui';
+import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/cycle/homecyle.dart';
+import 'package:fiteva/screens/cycle/pregnancy/PregnancyHubScreen.dart';
+import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_hub_screen.dart';
 import 'package:fiteva/screens/sante/sante_screen.dart';
 import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
 import 'package:fiteva/widgets/chatbot_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -24,13 +28,13 @@ class _NavItem {
   const _NavItem(this.icon, this.label);
 }
 
-// Main 4 tabs (indices 0–3)
-const _mainNavItems = [
-  _NavItem(LucideIcons.home,     'Accueil'),
-  _NavItem(LucideIcons.loader,   'Cycle'),
-  _NavItem(LucideIcons.dumbbell, 'Workout'),
-  _NavItem(LucideIcons.apple,    'Nutrition'),
-];
+// Main 4 tabs (indices 0–3) — tab 1 is dynamic (see _navItems helper)
+const _navItemAccueil   = _NavItem(LucideIcons.home,     'Accueil');
+const _navItemCycle     = _NavItem(LucideIcons.loader,   'Cycle');
+const _navItemGrossesse = _NavItem(Icons.child_friendly_rounded, 'Grossesse');
+const _navItemPostpartum = _NavItem(Icons.favorite_rounded, 'Post-partum');
+const _navItemWorkout   = _NavItem(LucideIcons.dumbbell, 'Workout');
+const _navItemNutrition = _NavItem(LucideIcons.apple,    'Nutrition');
 
 // Secondary 3 screens revealed by "+" (indices 4–6)
 class _SecondaryItem {
@@ -54,14 +58,14 @@ const _secondaryItems = [
 //  MAIN LAYOUT
 // ─────────────────────────────────────────────────────────────────────────────
 
-class MainLayout extends StatefulWidget {
+class MainLayout extends ConsumerStatefulWidget {
   const MainLayout({super.key});
 
   @override
-  State<MainLayout> createState() => _MainLayoutState();
+  ConsumerState<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout>
+class _MainLayoutState extends ConsumerState<MainLayout>
     with SingleTickerProviderStateMixin {
 
   int  _currentIndex = 0;
@@ -72,15 +76,41 @@ class _MainLayoutState extends State<MainLayout>
   late final AnimationController _plusAnim;
   late final Animation<double>   _plusScale;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    CycleScreen(),
-    WorkoutScreen(),
-    NutritionHomeScreen(),
-    BoutiqueScreen(),
-    CommunityScreen(),
-    SanteScreen(),
-  ];
+  // ── Helpers: compute pregnancy start from week number ─────────────────────
+  static DateTime _startFromWeek(int weekSA) =>
+      DateTime.now().subtract(Duration(days: (weekSA - 1) * 7));
+
+  // ── Dynamic tab 1 based on health status ──────────────────────────────────
+  Widget _tab1Screen(UserProfile profile) {
+    if (profile.healthStatus == 'pregnant') {
+      return const PregnancyHubScreen();
+    }
+    if (profile.healthStatus == 'postpartum') {
+      // pp_duration: '0-2' | '2-6' | '6-12' | '3-6m' | '6m+' → estimate birth weeks ago
+      final weeksAgo = _ppWeeksAgo(profile.ppDuration);
+      return PostpartumHubScreen(
+        birthDate: DateTime.now().subtract(Duration(days: weeksAgo * 7)),
+      );
+    }
+    return const CycleScreen();
+  }
+
+  static int _ppWeeksAgo(String? ppDuration) {
+    switch (ppDuration) {
+      case '0-2':  return 1;
+      case '2-6':  return 4;
+      case '6-12': return 9;
+      case '3-6m': return 18;
+      case '6m+':  return 30;
+      default:     return 4;
+    }
+  }
+
+  _NavItem _tab1NavItem(String? healthStatus) {
+    if (healthStatus == 'pregnant')  return _navItemGrossesse;
+    if (healthStatus == 'postpartum') return _navItemPostpartum;
+    return _navItemCycle;
+  }
 
   @override
   void initState() {
@@ -133,16 +163,34 @@ class _MainLayoutState extends State<MainLayout>
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(userProfileProvider);
     final size    = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
     const btnSize = 56.0;
     const navH    = 90.0;
 
+    final List<Widget> screens = [
+      const HomeScreen(),
+      _tab1Screen(profile),
+      const WorkoutScreen(),
+      const NutritionHomeScreen(),
+      const BoutiqueScreen(),
+      const CommunityScreen(),
+      const SanteScreen(),
+    ];
+
+    final List<_NavItem> mainNavItems = [
+      _navItemAccueil,
+      _tab1NavItem(profile.healthStatus),
+      _navItemWorkout,
+      _navItemNutrition,
+    ];
+
     return Scaffold(
       extendBody: true,
       body: Stack(
         children: [
-          _screens[_currentIndex],
+          screens[_currentIndex],
 
           // ── Secondary menu — ALWAYS in tree, never removed ─────
           // (removing BackdropFilter mid-animation causes mouse_tracker crash)
@@ -187,6 +235,7 @@ class _MainLayoutState extends State<MainLayout>
         currentIndex: _currentIndex,
         plusOpen: _plusOpen,
         isSecondary: _isSecondary,
+        navItems: mainNavItems,
         onTap: _selectMain,
         onPlusTap: _togglePlus,
       ),
@@ -337,6 +386,7 @@ class _LiquidGlassNavBar extends StatefulWidget {
   final int currentIndex;
   final bool plusOpen;
   final bool isSecondary;
+  final List<_NavItem> navItems;
   final ValueChanged<int> onTap;
   final VoidCallback onPlusTap;
 
@@ -344,6 +394,7 @@ class _LiquidGlassNavBar extends StatefulWidget {
     required this.currentIndex,
     required this.plusOpen,
     required this.isSecondary,
+    required this.navItems,
     required this.onTap,
     required this.onPlusTap,
   });
@@ -368,24 +419,24 @@ class _LiquidGlassNavBarState extends State<_LiquidGlassNavBar> {
   double _navWidth(double total) => total - _plusW - 14;
 
   double _widthFor(int i, double total) =>
-      _navWidth(total) / _mainNavItems.length;
+      _navWidth(total) / widget.navItems.length;
 
   double _pillLeft(double total) {
     if (_pillIndex < 0) return 0;
-    final slotW = _navWidth(total) / _mainNavItems.length;
+    final slotW = _navWidth(total) / widget.navItems.length;
     final pillW = _pillWidth(total);
     return slotW * _pillIndex + (slotW - pillW) / 2;
   }
 
   double _pillWidth(double total) {
     if (_pillIndex < 0) return 0;
-    final slotW = _navWidth(total) / _mainNavItems.length;
+    final slotW = _navWidth(total) / widget.navItems.length;
     return (slotW - 8).clamp(40.0, 80.0);
   }
 
   int _indexAt(double dx, double total) {
-    final slotW = _navWidth(total) / _mainNavItems.length;
-    return (dx / slotW).floor().clamp(0, _mainNavItems.length - 1);
+    final slotW = _navWidth(total) / widget.navItems.length;
+    return (dx / slotW).floor().clamp(0, widget.navItems.length - 1);
   }
 
   void _haptic(int i) {
@@ -514,13 +565,13 @@ class _LiquidGlassNavBarState extends State<_LiquidGlassNavBar> {
                             // Items row
                             Row(
                               children: List.generate(
-                                _mainNavItems.length,
+                                widget.navItems.length,
                                 (i) => AnimatedContainer(
                                   duration: const Duration(milliseconds: 340),
                                   curve: Curves.easeOutQuart,
                                   width: _widthFor(i, total),
                                   child: _LiquidNavItem(
-                                    item: _mainNavItems[i],
+                                    item: widget.navItems[i],
                                     isSelected: !widget.isSecondary &&
                                         i == widget.currentIndex,
                                     onTap: () {

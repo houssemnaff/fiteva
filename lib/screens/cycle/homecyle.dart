@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+﻿// ignore_for_file: deprecated_member_use
 import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/cycle/cycle_colors.dart';
@@ -18,11 +18,11 @@ import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart' hide CycleC
 abstract class FloTypo {
   static TextStyle heading(double size,
           {FontWeight w = FontWeight.w600, required Color c}) =>
-      GoogleFonts.lora(fontSize: size, fontWeight: w, color: c);
+      GoogleFonts.outfit(fontSize: size, fontWeight: w, color: c);
 
   static TextStyle body(double size,
           {FontWeight w = FontWeight.w400, required Color c}) =>
-      GoogleFonts.dmSans(fontSize: size, fontWeight: w, color: c);
+      GoogleFonts.inter(fontSize: size, fontWeight: w, color: c);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -244,10 +244,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen> {
                 onTap: () {
                   HapticFeedback.lightImpact();
                   Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => PregnancyHubScreen(
-                      pregnancyStartDate:
-                          DateTime.now().subtract(const Duration(days: 37 * 7)),
-                    ),
+                    builder: (_) => const PregnancyHubScreen(),
                   ));
                 },
                 child: Container(
@@ -312,7 +309,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen> {
                 child: Row(children: [
                   Icon(Icons.calendar_month_rounded, size: 15, color: theme.primary),
                   const SizedBox(width: 5),
-                  Text('Calendrier', style: GoogleFonts.dmSans(
+                  Text('Calendrier', style: GoogleFonts.inter(
                     fontSize: 12, fontWeight: FontWeight.w600, color: theme.primary)),
                 ]),
               ),
@@ -398,10 +395,10 @@ class _CircularRing extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Jour', style: GoogleFonts.dmSans(
+              Text('Jour', style: GoogleFonts.inter(
                 fontSize: 13, color: cc.muted)),
               const SizedBox(height: 2),
-              Text('$day', style: GoogleFonts.lora(
+              Text('$day', style: GoogleFonts.outfit(
                 fontSize: 52, fontWeight: FontWeight.w700, color: theme.primary)),
               const SizedBox(height: 8),
               Container(
@@ -410,7 +407,7 @@ class _CircularRing extends StatelessWidget {
                   color: theme.primary.withOpacity(0.13),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Text(phase.name, style: GoogleFonts.dmSans(
+                child: Text(phase.name, style: GoogleFonts.inter(
                   fontSize: 11, fontWeight: FontWeight.w600, color: theme.primary)),
               ),
             ],
@@ -509,14 +506,14 @@ class _InfoCard extends StatelessWidget {
             child: Icon(icon, size: 17, color: color),
           ),
           const SizedBox(height: 12),
-          Text(title, style: GoogleFonts.dmSans(
+          Text(title, style: GoogleFonts.inter(
             fontSize: 11, color: cc.muted)),
           const SizedBox(height: 3),
-          Text(value, style: GoogleFonts.dmSans(
+          Text(value, style: GoogleFonts.inter(
             fontSize: 16, fontWeight: FontWeight.w800, color: cc.text)),
           if (subtitle.isNotEmpty) ...[
             const SizedBox(height: 2),
-            Text(subtitle, style: GoogleFonts.dmSans(
+            Text(subtitle, style: GoogleFonts.inter(
               fontSize: 11, fontWeight: FontWeight.w500, color: color)),
           ],
         ],
@@ -642,7 +639,7 @@ class _SymptomChip extends StatelessWidget {
           Icon(symptom.icon, size: 22,
               color: logged ? color : inactiveIcon),
           const SizedBox(height: 7),
-          Text(symptom.label, style: GoogleFonts.dmSans(
+          Text(symptom.label, style: GoogleFonts.inter(
             fontSize: 10, fontWeight: FontWeight.w600,
             color: logged ? color : inactiveIcon),
             textAlign: TextAlign.center),
@@ -719,12 +716,12 @@ class _PhaseCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: theme.primary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10)),
-                  child: Text('Phase ${phase.name}', style: GoogleFonts.dmSans(
+                  child: Text('Phase ${phase.name}', style: GoogleFonts.inter(
                     fontSize: 11, fontWeight: FontWeight.w700,
                     color: theme.primary)),
                 ),
                 const SizedBox(height: 9),
-                Text(desc, style: GoogleFonts.dmSans(
+                Text(desc, style: GoogleFonts.inter(
                   fontSize: 13, color: cc.body)),
               ],
             )),
@@ -785,7 +782,7 @@ class _PhaseTipsCard extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: theme.primary, shape: BoxShape.circle)),
               const SizedBox(width: 8),
-              Text('Conseils du jour', style: GoogleFonts.lora(
+              Text('Conseils du jour', style: GoogleFonts.outfit(
                 fontSize: 14, fontWeight: FontWeight.w700, color: theme.primary)),
             ]),
             const SizedBox(height: 16),
@@ -833,10 +830,10 @@ class _TipRow extends StatelessWidget {
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: GoogleFonts.dmSans(
+            Text(label, style: GoogleFonts.inter(
               fontSize: 11, fontWeight: FontWeight.w700, color: color)),
             const SizedBox(height: 3),
-            Text(text, style: GoogleFonts.dmSans(
+            Text(text, style: GoogleFonts.inter(
               fontSize: 13, color: cc.body)),
           ],
         )),
@@ -890,7 +887,7 @@ class _CycleStatsCard extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: theme.primary, shape: BoxShape.circle)),
               const SizedBox(width: 8),
-              Text('Mon cycle', style: GoogleFonts.lora(
+              Text('Mon cycle', style: GoogleFonts.outfit(
                 fontSize: 14, fontWeight: FontWeight.w700, color: theme.primary)),
             ]),
             const SizedBox(height: 18),
@@ -944,11 +941,11 @@ class _StatCell extends StatelessWidget {
         child: Icon(icon, size: 17, color: color),
       ),
       const SizedBox(height: 8),
-      Text(value, style: GoogleFonts.dmSans(
+      Text(value, style: GoogleFonts.inter(
         fontSize: 15, fontWeight: FontWeight.w800, color: cc.text)),
       const SizedBox(height: 3),
       Text(label, textAlign: TextAlign.center,
-          style: GoogleFonts.dmSans(fontSize: 10, color: cc.muted)),
+          style: GoogleFonts.inter(fontSize: 10, color: cc.muted)),
     ]);
   }
 }

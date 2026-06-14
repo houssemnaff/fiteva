@@ -2,8 +2,11 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:fiteva/screens/onboarding/widgets/shared_onboarding_widgets.dart';
+import 'package:fiteva/widgets/mascot_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ─── Design Tokens — Mint/Sage Palette ────────────────────────────────────
@@ -3402,4 +3405,201 @@ class _CyclePhase {
   final int days;
   final Color color;
   const _CyclePhase(this.name, this.days, this.color);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Step 8 — Mascotte
+// ─────────────────────────────────────────────────────────────────────────────
+class StepAvatar extends StatefulWidget {
+  final String   userName;
+  final VoidCallback onNext;
+  final VoidCallback onBack;
+  final void Function(String seed, String style, String bg) onAvatarChanged;
+
+  const StepAvatar({
+    super.key,
+    required this.userName,
+    required this.onNext,
+    required this.onBack,
+    required this.onAvatarChanged,
+  });
+
+  @override
+  State<StepAvatar> createState() => _StepAvatarState();
+}
+
+class _StepAvatarState extends State<StepAvatar> {
+  MascotType _type = MascotType.blob;
+  MascotMood _mood = MascotMood.happy;
+
+  static const _accent = Color(0xFF2D4A2D);
+
+  static const _types = [
+    (MascotType.blob,  'Blobby',  '🟢'),
+    (MascotType.sun,   'Sunny',   '☀️'),
+    (MascotType.star,  'Starlet', '⭐'),
+    (MascotType.cloud, 'Cloudie', '☁️'),
+    (MascotType.leaf,  'Leafy',   '🍃'),
+  ];
+
+  static const _moods = [
+    (MascotMood.happy,       '😊', 'Heureuse'),
+    (MascotMood.excited,     '🤩', 'Excitée'),
+    (MascotMood.proud,       '💪', 'Fière'),
+    (MascotMood.celebrating, '🎉', 'En fête'),
+    (MascotMood.sleepy,      '😴', 'Fatiguée'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      backgroundColor: cs.surface,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(children: [
+            // top bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: Row(children: [
+                GestureDetector(
+                  onTap: widget.onBack,
+                  child: Icon(Icons.arrow_back, size: 20, color: cs.onSurface),
+                ),
+                Expanded(child: Center(child: Text('TA MASCOTTE',
+                  style: TextStyle(fontSize: 11, letterSpacing: 2.5,
+                    fontWeight: FontWeight.w600, color: cs.onSurface.withOpacity(0.5))))),
+                const SizedBox(width: 20),
+              ]),
+            ),
+
+            const SizedBox(height: 24),
+
+            MascotWidget(type: _type, mood: _mood, size: 130),
+
+            const SizedBox(height: 12),
+
+            Text('Choisis ta mascotte !',
+              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w700,
+                color: cs.onSurface)),
+            const SizedBox(height: 4),
+            Text('Elle t\'accompagnera tout au long de ton aventure.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: cs.onSurface.withOpacity(0.5), height: 1.5)),
+
+            const SizedBox(height: 24),
+
+            // ── Choix mascotte ────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.only(left: 24),
+              child: Align(alignment: Alignment.centerLeft,
+                child: Text('Mascotte', style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w700,
+                  color: cs.onSurface.withOpacity(0.45), letterSpacing: 1.5))),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 90,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                itemCount: _types.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (_, i) {
+                  final (type, name, _) = _types[i];
+                  final selected = _type == type;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _type = type);
+                      HapticFeedback.selectionClick();
+                      widget.onAvatarChanged(type.name, type.name, '');
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 80,
+                      decoration: BoxDecoration(
+                        color: selected ? cs.primary : cs.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: selected ? cs.primary : Colors.transparent, width: 2),
+                      ),
+                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        MascotWidget(type: type, mood: MascotMood.happy, size: 48),
+                        const SizedBox(height: 4),
+                        Text(name, style: TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.w700,
+                          color: selected ? Colors.white : cs.onSurface.withOpacity(0.6))),
+                      ]),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ── Humeur ────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.only(left: 24),
+              child: Align(alignment: Alignment.centerLeft,
+                child: Text('Son humeur', style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w700,
+                  color: cs.onSurface.withOpacity(0.45), letterSpacing: 1.5))),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Wrap(spacing: 8, runSpacing: 8,
+                children: _moods.map((m) {
+                  final (mood, emoji, label) = m;
+                  final selected = _mood == mood;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _mood = mood);
+                      HapticFeedback.selectionClick();
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: selected ? cs.primary : cs.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(emoji, style: const TextStyle(fontSize: 15)),
+                        const SizedBox(width: 5),
+                        Text(label, style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w600,
+                          color: selected ? Colors.white : cs.onSurface)),
+                      ]),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: SizedBox(
+                width: double.infinity, height: 54,
+                child: ElevatedButton(
+                  onPressed: widget.onNext,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cs.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Text('Commencer !',
+                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
 }
