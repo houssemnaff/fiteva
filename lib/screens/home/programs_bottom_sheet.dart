@@ -42,13 +42,14 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      decoration: const BoxDecoration(
-        color: AppTheme.backgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -59,7 +60,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppTheme.neutral300,
+              color: cs.onSurface.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -73,7 +74,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                   child: Text(
                     'Tous mes programmes',
                     style: GoogleFonts.outfit(
-                      color: AppTheme.textPrimaryColor,
+                      color: cs.onSurface,
                       fontWeight: FontWeight.w800,
                       fontSize: 20,
                       letterSpacing: -0.3,
@@ -85,13 +86,13 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: AppTheme.neutral200,
+                      color: cs.onSurface.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.close_rounded,
                       size: 16,
-                      color: AppTheme.textPrimaryColor,
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
@@ -106,9 +107,9 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Container(
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
+                color: cs.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.borderLight),
+                border: Border.all(color: cs.outline),
               ),
               child: TextField(
                 controller: _searchController,
@@ -116,12 +117,12 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                 decoration: InputDecoration(
                   hintText: 'Rechercher un programme...',
                   hintStyle: GoogleFonts.inter(
-                    color: AppTheme.textSecondaryColor,
+                    color: cs.onSurface.withValues(alpha: 0.6),
                     fontSize: 14,
                   ),
                   prefixIcon: Icon(
                     LucideIcons.search,
-                    color: AppTheme.textSecondaryColor,
+                    color: cs.onSurface.withValues(alpha: 0.6),
                     size: 18,
                   ),
                   suffixIcon: _searchController.text.isNotEmpty
@@ -132,7 +133,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                           },
                           child: Icon(
                             LucideIcons.x,
-                            color: AppTheme.textSecondaryColor,
+                            color: cs.onSurface.withValues(alpha: 0.6),
                             size: 18,
                           ),
                         )
@@ -141,7 +142,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 style: GoogleFonts.inter(
-                  color: AppTheme.textPrimaryColor,
+                  color: cs.onSurface,
                   fontSize: 14,
                 ),
               ),
@@ -160,13 +161,13 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                         Icon(
                           LucideIcons.search,
                           size: 48,
-                          color: AppTheme.textSecondaryColor.withValues(alpha: 0.5),
+                          color: cs.onSurface.withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'Aucun programme trouvé',
                           style: GoogleFonts.inter(
-                            color: AppTheme.textSecondaryColor,
+                            color: cs.onSurface.withValues(alpha: 0.6),
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -185,9 +186,9 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                   margin: const EdgeInsets.only(bottom: 14),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor,
+                    color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.borderLight),
+                    border: Border.all(color: cs.outline),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,7 +209,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                                 color: AppTheme.neutral200,
                                 child: Icon(
                                   LucideIcons.dumbbell,
-                                  color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                                  color: cs.primary.withValues(alpha: 0.3),
                                 ),
                               ),
                             ),
@@ -221,7 +222,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                                 Text(
                                   program.name,
                                   style: GoogleFonts.outfit(
-                                    color: AppTheme.textPrimaryColor,
+                                    color: cs.onSurface,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 15,
                                     letterSpacing: -0.2,
@@ -233,7 +234,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                                 Text(
                                   '${program.duration}  •  ${program.sessions}',
                                   style: GoogleFonts.inter(
-                                    color: AppTheme.textSecondaryColor,
+                                    color: cs.onSurface.withValues(alpha: 0.6),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -249,7 +250,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                                     Text(
                                       '${program.totalPoints} pts',
                                       style: GoogleFonts.inter(
-                                        color: AppTheme.textSecondaryColor,
+                                        color: cs.onSurface.withValues(alpha: 0.6),
                                         fontSize: 11,
                                       ),
                                     ),
@@ -273,7 +274,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                               Text(
                                 'Progression',
                                 style: GoogleFonts.inter(
-                                  color: AppTheme.textSecondaryColor,
+                                  color: cs.onSurface.withValues(alpha: 0.6),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -281,7 +282,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                               Text(
                                 '${(progress * 100).toInt()}%',
                                 style: GoogleFonts.inter(
-                                  color: AppTheme.primaryColor,
+                                  color: cs.primary,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -294,7 +295,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                             child: LinearProgressIndicator(
                               value: progress,
                               minHeight: 6,
-                              backgroundColor: AppTheme.neutral200,
+                              backgroundColor: cs.outline.withValues(alpha: 0.3),
                               valueColor: const AlwaysStoppedAnimation(
                                 Color(0xFFFFD89B),
                               ),
@@ -326,14 +327,14 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor,
+                                  color: cs.primary,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Center(
                                   child: Text(
                                     'CONTINUER',
                                     style: GoogleFonts.inter(
-                                      color: Colors.white,
+                                      color: cs.onPrimary,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 1,
@@ -352,15 +353,15 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.surfaceColor,
-                                  border: Border.all(color: AppTheme.borderLight),
+                                  color: cs.surface,
+                                  border: Border.all(color: cs.outline),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Center(
                                   child: Text(
                                     'FAVORIS',
                                     style: GoogleFonts.inter(
-                                      color: AppTheme.textPrimaryColor,
+                                      color: cs.onSurface,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 1,

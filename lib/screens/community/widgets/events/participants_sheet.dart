@@ -5,15 +5,16 @@ import '../shared/community_shared_widgets.dart';
 
 class ParticipantsSheet extends StatelessWidget {
   final EventModel event;
+  final ColorScheme colorScheme;
 
-  const ParticipantsSheet({super.key, required this.event});
+  const ParticipantsSheet({super.key, required this.event, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
