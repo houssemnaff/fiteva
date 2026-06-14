@@ -86,53 +86,14 @@ class NutritionNotifier extends Notifier<NutritionState> {
   DailyTotals totalsForType(DateTime date, MealType type) =>
       DailyTotals.from(mealsForMealType(date, type));
 
-  // ── Mock initial data ─────────────────────────────────────────────────────
+  // ── Empty initial state ───────────────────────────────────────────────────
   static NutritionState _initialState() {
-    // We'll import food_database lazily to avoid circular; use inline values
-    final today = todayKey;
-    return NutritionState(
-      waterMlToday: 1200,
-      mealsByDate: {
-        today: [
-          // Petit déjeuner
-          MealEntry(
-            id: 'init_1',
-            food: _mockFood('flocons_avoine', 'Flocons d\'avoine',
-              kcal: 389, protein: 17, carbs: 66, fat: 7),
-            grams: 60, mealType: MealType.breakfast,
-            dateTime: DateTime.now().copyWith(hour: 8, minute: 0)),
-          MealEntry(
-            id: 'init_2',
-            food: _mockFood('yaourt_grec', 'Yaourt grec (0%)',
-              kcal: 59, protein: 10, carbs: 3.6, fat: 0.4),
-            grams: 150, mealType: MealType.breakfast,
-            dateTime: DateTime.now().copyWith(hour: 8, minute: 5)),
-          // Déjeuner
-          MealEntry(
-            id: 'init_3',
-            food: _mockFood('poulet_filet', 'Poulet (filet)',
-              kcal: 165, protein: 31, carbs: 0, fat: 3.6),
-            grams: 150, mealType: MealType.lunch,
-            dateTime: DateTime.now().copyWith(hour: 12, minute: 30)),
-          MealEntry(
-            id: 'init_4',
-            food: _mockFood('riz_blanc', 'Riz blanc (cuit)',
-              kcal: 130, protein: 2.7, carbs: 28, fat: 0.3),
-            grams: 150, mealType: MealType.lunch,
-            dateTime: DateTime.now().copyWith(hour: 12, minute: 30)),
-        ],
-      },
+    return const NutritionState(
+      waterMlToday: 0,
+      mealsByDate: {},
     );
   }
 
-  static FoodItem _mockFood(String id, String name, {
-    required double kcal, required double protein,
-    required double carbs, required double fat,
-  }) => FoodItem(
-    id: id, name: name,
-    category: FoodCategory.platCompose,
-    kcal: kcal, protein: protein, carbs: carbs, fat: fat,
-  );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

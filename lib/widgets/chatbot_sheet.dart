@@ -1,32 +1,71 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/chat_provider.dart';
-import '../../models/home_program_model.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../providers/chat_provider.dart';
 
-// ── Quick Suggestions ─────────────────────────────────────────────────────────
+// ── Adaptive theme ────────────────────────────────────────────────────────────
 
-const List<Map<String, String>> _quickSuggestions = [
-  {'label': '🔄 Mon cycle actuel', 'message': 'Quel programme pour mon cycle actuel ?'},
-  {'label': '🌱 Folliculaire',     'message': 'Quels programmes pour la phase folliculaire ?'},
-  {'label': '🌊 Règles',           'message': 'Quels programmes pendant les règles ?'},
-  {'label': '🍂 Lutéale',          'message': 'Quels programmes pour la phase lutéale ?'},
-  {'label': '🏠 Maison',           'message': 'Montre-moi les programmes maison'},
-  {'label': '🏋️ Salle',           'message': 'Montre-moi les programmes en salle'},
-  {'label': '🥗 Nutrition',        'message': 'Conseils nutrition par phase de cycle'},
-];
+const _accent = Color(0xFF3DA85A); // FitEva green — same both modes
 
-// ── Bold text parser ──────────────────────────────────────────────────────────
+class _T {
+  final bool dark;
+  final Color bg, surface, card, border, text1, text2, accentBg, aiBubble;
+
+  const _T._({
+    required this.dark, required this.bg, required this.surface,
+    required this.card, required this.border,
+    required this.text1, required this.text2,
+    required this.accentBg, required this.aiBubble,
+  });
+
+  factory _T.of(BuildContext ctx) =>
+      Theme.of(ctx).brightness == Brightness.dark ? _dark : _light;
+
+  static const _light = _T._(
+    dark: false,
+    bg:       Color.fromARGB(255, 255, 255, 255),
+    surface:  Colors.white,
+    card:     Color(0xFFEEF0F8),
+    border:   Color(0xFFE0E3EF),
+    text1:    Color(0xFF0E1117),
+    text2:    Color(0xFF6B7280),
+    accentBg: Color(0xFFE8F5EC),
+    aiBubble: Colors.white,
+  );
+
+  static const _dark = _T._(
+    dark: true,
+    bg:       Color(0xFF0D0F15),
+    surface:  Color(0xFF161A24),
+    card:     Color(0xFF1E2334),
+    border:   Color(0xFF252D42),
+    text1:    Colors.white,
+    text2:    Color(0xFF8A96B0),
+    accentBg: Color(0xFF0D2018),
+    aiBubble: Color(0xFF1E2334),
+  );
+}
+
+// ── Bold parser ───────────────────────────────────────────────────────────────
 
 InlineSpan _parseBold(String text, TextStyle base) {
   final spans = <InlineSpan>[];
   final rx = RegExp(r'\*\*(.+?)\*\*');
   int last = 0;
   for (final m in rx.allMatches(text)) {
-    if (m.start > last) spans.add(TextSpan(text: text.substring(last, m.start), style: base));
-    spans.add(TextSpan(text: m.group(1), style: base.copyWith(fontWeight: FontWeight.w700)));
+    if (m.start > last) {
+      spans.add(TextSpan(text: text.substring(last, m.start), style: base));
+    }
+    spans.add(TextSpan(
+        text: m.group(1),
+        style: base.copyWith(fontWeight: FontWeight.w700)));
     last = m.end;
   }
-  if (last < text.length) spans.add(TextSpan(text: text.substring(last), style: base));
+  if (last < text.length) {
+    spans.add(TextSpan(text: text.substring(last), style: base));
+  }
   return TextSpan(children: spans);
 }
 
@@ -35,384 +74,493 @@ InlineSpan _parseBold(String text, TextStyle base) {
 class ChatbotSheet extends ConsumerStatefulWidget {
   const ChatbotSheet({super.key});
   @override
-  ConsumerState<ChatbotSheet> createState() => _ChatbotSheetState();
+  ConsumerState<ChatbotSheet> createState() => _State();
 }
 
-class _ChatbotSheetState extends ConsumerState<ChatbotSheet> {
-  final TextEditingController _controller = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  bool _isTyping = false;
+class _State extends ConsumerState<ChatbotSheet> {
+  final _ctrl   = TextEditingController();
+  final _scroll = ScrollController();
+  bool        _typing = false;
+  AiCategory? _activeCat;
 
-  void _sendMessage([String? override]) {
-    final text = override ?? _controller.text;
+  void _send(String text, {AiCategory? cat}) {
     if (text.trim().isEmpty) return;
-    setState(() => _isTyping = true);
-    ref.read(chatProvider.notifier).sendMessage(text).then((_) {
-      if (mounted) setState(() => _isTyping = false);
-      _scrollToBottom();
+    _ctrl.clear();
+    setState(() {
+      _typing = true;
+      if (cat != null) _activeCat = cat;
     });
-    _controller.clear();
-    _scrollToBottom();
+    ref.read(chatProvider.notifier)
+        .sendMessage(text, categoryId: (cat ?? _activeCat)?.id)
+        .then((_) {
+      if (mounted) setState(() => _typing = false);
+      _bottom();
+    });
+    _bottom();
   }
 
-  void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 250), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent + 300,
-          duration: const Duration(milliseconds: 380),
-          curve: Curves.easeOut,
-        );
+  void _bottom() {
+    Future.delayed(const Duration(milliseconds: 280), () {
+      if (_scroll.hasClients) {
+        _scroll.animateTo(_scroll.position.maxScrollExtent + 400,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOut);
       }
     });
   }
 
   @override
+  void dispose() {
+    _ctrl.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final t        = _T.of(context);
     final messages = ref.watch(chatProvider);
+    final kbBottom = MediaQuery.of(context).viewInsets.bottom;
+    final isEmpty  = messages.isEmpty;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      if (_scroll.hasClients && !isEmpty) {
+        _scroll.jumpTo(_scroll.position.maxScrollExtent);
       }
     });
 
     return Container(
-      margin: const EdgeInsets.only(top: kToolbarHeight),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF2F2F7),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      margin: const EdgeInsets.only(top: 56),
+      decoration: BoxDecoration(
+        color: t.bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: Column(
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 6),
-              width: 36, height: 4,
+      child: Column(children: [
+
+        // Handle
+        Center(
+          child: Container(
+            margin: const EdgeInsets.only(top: 10, bottom: 4),
+            width: 34, height: 3,
+            decoration: BoxDecoration(
+              color: t.border, borderRadius: BorderRadius.circular(2)),
+          ),
+        ),
+
+        // Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 16, 14),
+          child: Row(children: [
+            // Icon
+            Container(
+              width: 42, height: 42,
               decoration: BoxDecoration(
-                color: const Color(0xFFD1D1D6),
-                borderRadius: BorderRadius.circular(2),
-              ),
+                color: t.accentBg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _accent.withOpacity(0.35))),
+              child: const Icon(LucideIcons.wand, color: _accent, size: 20),
             ),
-          ),
-
-          // Header
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 8, 8, 12),
-            child: Row(
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 36, height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5EE),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF1B5E3B), size: 18),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('AI Assistant',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17,
-                              color: Color(0xFF1C1C1E), letterSpacing: -0.3)),
-                      Text('Toujours disponible',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF8E8E93))),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 32, height: 32,
-                    decoration: const BoxDecoration(color: Color(0xFFE5E5EA), shape: BoxShape.circle),
-                    child: const Icon(Icons.close_rounded, color: Color(0xFF3C3C43), size: 16),
-                  ),
-                ),
-                const SizedBox(width: 8),
+                Text('FitEva AI', style: GoogleFonts.outfit(
+                  fontSize: 17, fontWeight: FontWeight.w800,
+                  color: t.text1, letterSpacing: -0.4)),
+                Row(children: [
+                  Container(width: 6, height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4ADE80), shape: BoxShape.circle)),
+                  const SizedBox(width: 5),
+                  Text('Assistante personnelle', style: GoogleFonts.inter(
+                    fontSize: 11, color: t.text2)),
+                ]),
               ],
-            ),
-          ),
-
-          const Divider(height: 0.5, thickness: 0.5, color: Color(0xFFE5E5EA)),
-
-          // Chat list
-          Expanded(
-            child: messages.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    itemCount: messages.length + (_isTyping ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (_isTyping && index == messages.length) {
-                        return _buildTypingIndicator();
-                      }
-                      final msg = messages[index];
-                      return _MessageRow(
-                        message: msg,
-                        onProgramTap: (card) => _navigateToProgram(card),
-                      );
-                    },
-                  ),
-          ),
-
-          // Quick chips — always visible below chat
-          _buildQuickChips(),
-
-          // Input area
-          Container(
-            padding: EdgeInsets.only(
-              left: 16, right: 16, top: 10,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            ),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF2F2F7),
-              border: Border(top: BorderSide(color: Color(0xFFE5E5EA), width: 0.5)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 44),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: const Color(0xFFE5E5EA), width: 0.5),
-                    ),
-                    child: TextField(
-                      controller: _controller,
-                      onSubmitted: (_) => _sendMessage(),
-                      maxLines: 5, minLines: 1,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: const TextStyle(fontSize: 15, color: Color(0xFF1C1C1E)),
-                      decoration: const InputDecoration(
-                        hintText: 'Posez-moi une question…',
-                        hintStyle: TextStyle(color: Color(0xFFAEAEB2), fontSize: 15),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
+            )),
+            // Back to categories
+            if (_activeCat != null && isEmpty)
+              GestureDetector(
+                onTap: () => setState(() => _activeCat = null),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: t.card,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: t.border)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(LucideIcons.chevronLeft, size: 13, color: t.text2),
+                    const SizedBox(width: 3),
+                    Text(_activeCat!.emoji,
+                        style: const TextStyle(fontSize: 13)),
+                  ]),
                 ),
-                const SizedBox(width: 8),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _controller,
-                  builder: (context, value, _) {
-                    final canSend = value.text.trim().isNotEmpty;
-                    return GestureDetector(
-                      onTap: canSend ? _sendMessage : null,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        width: 44, height: 44,
-                        decoration: BoxDecoration(
-                          color: canSend ? const Color(0xFF1B5E3B) : const Color(0xFFE5E5EA),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.arrow_upward_rounded,
-                            color: canSend ? Colors.white : const Color(0xFFAEAEB2), size: 20),
-                      ),
+              ),
+            // Clear
+            if (messages.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  ref.read(chatProvider.notifier).clearChat();
+                  setState(() { _typing = false; _activeCat = null; });
+                },
+                child: Container(
+                  width: 34, height: 34,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: t.card, borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: t.border)),
+                  child: Icon(LucideIcons.rotateCcw, size: 15, color: t.text2)),
+              ),
+            // Close
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color: t.card, borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: t.border)),
+                child: Icon(LucideIcons.x, size: 16, color: t.text2)),
+            ),
+          ]),
+        ),
+
+        Container(height: 0.5, color: t.border),
+
+        // Body
+        Expanded(
+          child: isEmpty
+              ? (_activeCat == null
+                  ? _CategoryGrid(t: t, onSelect: (c) => setState(() => _activeCat = c))
+                  : _QuestionList(
+                      t: t, category: _activeCat!,
+                      onTap: (q) => _send(q, cat: _activeCat),
+                    ))
+              : ListView.builder(
+                  controller: _scroll,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  itemCount: messages.length + (_typing ? 1 : 0),
+                  itemBuilder: (_, i) {
+                    if (_typing && i == messages.length) {
+                      return _TypingRow(t: t);
+                    }
+                    return _Bubble(
+                      t: t,
+                      msg: messages[i],
+                      onQuickReply: _send,
+                      onProgramTap: _navToProgram,
                     );
                   },
                 ),
-              ],
+        ),
+
+        // Input
+        Container(
+          padding: EdgeInsets.fromLTRB(16, 10, 16, kbBottom > 0 ? kbBottom + 8 : 26),
+          decoration: BoxDecoration(
+            color: t.bg,
+            border: Border(top: BorderSide(color: t.border, width: 0.5))),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Expanded(
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 46),
+                decoration: BoxDecoration(
+                  color: t.card,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: t.border)),
+                child: TextField(
+                  controller: _ctrl,
+                  onSubmitted: (_) => _send(_ctrl.text),
+                  maxLines: 5, minLines: 1,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: GoogleFonts.inter(fontSize: 14, color: t.text1),
+                  decoration: InputDecoration(
+                    hintText: 'Pose ta question…',
+                    hintStyle: GoogleFonts.inter(fontSize: 14, color: t.text2),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 12),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(width: 10),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _ctrl,
+              builder: (_, val, __) {
+                final active = val.text.trim().isNotEmpty;
+                return GestureDetector(
+                  onTap: active ? () => _send(_ctrl.text) : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 46, height: 46,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: active ? _accent : t.card,
+                      border: Border.all(color: t.border)),
+                    child: Icon(LucideIcons.arrowUp, size: 18,
+                      color: active ? Colors.white : t.text2),
+                  ),
+                );
+              },
+            ),
+          ]),
+        ),
+      ]),
     );
   }
 
-  // ── Navigate to program detail ─────────────────────────────────────────────
-
-  void _navigateToProgram(ChatProgramCard card) {
-    // Close the chatbot sheet first, then push the program detail route.
-    // Adjust the route name / arguments to match your app's router.
+  void _navToProgram(ChatProgramCard card) {
     Navigator.pop(context);
-    Navigator.pushNamed(
-      context,
-      '/program-detail',
-      arguments: {
-        'programId': card.id,
-        'programName': card.name,
-        'category': card.category,
-        'imageUrl': card.imageUrl,
-        'duration': card.duration,
-        'sessions': card.sessions,
-        'phases': card.phases,
-        'color': card.color,
-      },
-    );
+    Navigator.pushNamed(context, '/program-detail', arguments: {
+      'programId': card.id, 'programName': card.name,
+      'category': card.category, 'imageUrl': card.imageUrl,
+      'duration': card.duration, 'sessions': card.sessions,
+      'phases': card.phases, 'color': card.color,
+    });
   }
+}
 
-  // ── Quick chips ────────────────────────────────────────────────────────────
+// ── Category Grid ─────────────────────────────────────────────────────────────
 
-  Widget _buildQuickChips() {
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _quickSuggestions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final s = _quickSuggestions[i];
-          return GestureDetector(
-            onTap: () => _sendMessage(s['message']),
+class _CategoryGrid extends StatelessWidget {
+  final _T t;
+  final void Function(AiCategory) onSelect;
+  const _CategoryGrid({required this.t, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Comment puis-je t\'aider ?', style: GoogleFonts.outfit(
+          fontSize: 20, fontWeight: FontWeight.w800,
+          color: t.text1, letterSpacing: -0.5)),
+        const SizedBox(height: 4),
+        Text('Choisis une catégorie pour commencer',
+          style: GoogleFonts.inter(fontSize: 13, color: t.text2)),
+        const SizedBox(height: 22),
+        GridView.count(
+          crossAxisCount: 2, shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12, mainAxisSpacing: 12,
+          childAspectRatio: 1.45,
+          children: appCategories.map((cat) => GestureDetector(
+            onTap: () => onSelect(cat),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5EE),
+                color: t.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF1B5E3B).withOpacity(0.2)),
-              ),
-              child: Text(s['label']!,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
-                      color: Color(0xFF1B5E3B))),
+                border: Border.all(color: t.border)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: cat.color.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(12)),
+                  child: Center(child: Text(cat.emoji,
+                      style: const TextStyle(fontSize: 18)))),
+                const Spacer(),
+                Text(cat.label, style: GoogleFonts.outfit(
+                  fontSize: 14, fontWeight: FontWeight.w700, color: t.text1)),
+                const SizedBox(height: 2),
+                Text('${cat.questions.length} questions',
+                  style: GoogleFonts.inter(fontSize: 10, color: t.text2)),
+              ]),
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ── Typing indicator ───────────────────────────────────────────────────────
-
-  Widget _buildTypingIndicator() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Container(
-            width: 28, height: 28,
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5EE),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF1B5E3B), size: 14),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(18), topRight: Radius.circular(18),
-                bottomLeft: Radius.circular(4), bottomRight: Radius.circular(18),
-              ),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
-            ),
-            child: _TypingDots(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Empty state ────────────────────────────────────────────────────────────
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 64, height: 64,
-            decoration: BoxDecoration(color: const Color(0xFFE8F5EE), borderRadius: BorderRadius.circular(18)),
-            child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF1B5E3B), size: 30),
-          ),
-          const SizedBox(height: 16),
-          const Text('Comment puis-je vous aider ?',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFF1C1C1E))),
-          const SizedBox(height: 6),
-          const Text('Posez une question sur votre cycle,\nvos programmes ou votre nutrition.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF8E8E93), height: 1.4)),
-          const SizedBox(height: 20),
-        ],
-      ),
+          )).toList(),
+        ),
+      ]),
     );
   }
 }
 
-// ── Message Row (bubble + optional program cards) ─────────────────────────────
+// ── Question List ─────────────────────────────────────────────────────────────
 
-class _MessageRow extends StatelessWidget {
-  final ChatMessage message;
+class _QuestionList extends StatelessWidget {
+  final _T t;
+  final AiCategory category;
+  final void Function(String) onTap;
+  const _QuestionList({required this.t, required this.category, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 42, height: 42,
+            decoration: BoxDecoration(
+              color: category.color.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(14)),
+            child: Center(child: Text(category.emoji,
+                style: const TextStyle(fontSize: 20)))),
+          const SizedBox(width: 12),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(category.label, style: GoogleFonts.outfit(
+              fontSize: 18, fontWeight: FontWeight.w800, color: t.text1)),
+            Text('Sélectionne une question', style: GoogleFonts.inter(
+              fontSize: 11, color: t.text2)),
+          ]),
+        ]),
+        const SizedBox(height: 20),
+        ...category.questions.asMap().entries.map((e) {
+          final i = e.key;
+          final q = e.value;
+          return Padding(
+            padding: EdgeInsets.only(
+                bottom: i < category.questions.length - 1 ? 10 : 0),
+            child: GestureDetector(
+              onTap: () => onTap(q),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: t.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: t.border)),
+                child: Row(children: [
+                  Container(
+                    width: 28, height: 28,
+                    decoration: BoxDecoration(
+                      color: category.color.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(8)),
+                    child: Center(child: Text('${i + 1}',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12, fontWeight: FontWeight.w800,
+                        color: category.color)))),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(q, style: GoogleFonts.inter(
+                    fontSize: 13, color: t.text1,
+                    fontWeight: FontWeight.w500, height: 1.4))),
+                  Icon(LucideIcons.chevronRight, size: 14, color: t.text2),
+                ]),
+              ),
+            ),
+          );
+        }),
+      ]),
+    );
+  }
+}
+
+// ── Message Bubble ────────────────────────────────────────────────────────────
+
+class _Bubble extends StatelessWidget {
+  final _T t;
+  final ChatMessage msg;
+  final void Function(String) onQuickReply;
   final void Function(ChatProgramCard) onProgramTap;
-
-  const _MessageRow({required this.message, required this.onProgramTap});
+  const _Bubble({required this.t, required this.msg,
+      required this.onQuickReply, required this.onProgramTap});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
-        crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: msg.isUser
+            ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          // Text bubble
           Row(
-            mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: msg.isUser
+                ? MainAxisAlignment.end : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (!message.isUser) ...[
+              if (!msg.isUser) ...[
                 Container(
                   width: 28, height: 28,
-                  margin: const EdgeInsets.only(right: 8),
+                  margin: const EdgeInsets.only(right: 8, bottom: 2),
                   decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5EE), borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF1B5E3B), size: 14),
+                    color: t.accentBg,
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(color: _accent.withOpacity(0.3))),
+                  child: const Icon(LucideIcons.wand,
+                      color: _accent, size: 13),
                 ),
               ],
               Flexible(
                 child: Container(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.76),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: message.isUser ? const Color(0xFF1B5E3B) : Colors.white,
+                    color: msg.isUser ? _accent : t.aiBubble,
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(18),
-                      topRight: const Radius.circular(18),
-                      bottomLeft: Radius.circular(message.isUser ? 18 : 4),
-                      bottomRight: Radius.circular(message.isUser ? 4 : 18),
+                      topLeft:     const Radius.circular(20),
+                      topRight:    const Radius.circular(20),
+                      bottomLeft:  Radius.circular(msg.isUser ? 20 : 4),
+                      bottomRight: Radius.circular(msg.isUser ? 4 : 20),
                     ),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                    border: msg.isUser ? null
+                        : Border.all(color: t.border, width: 0.8),
+                    boxShadow: msg.isUser ? null : [
+                      BoxShadow(color: Colors.black.withOpacity(
+                          t.dark ? 0.15 : 0.05),
+                        blurRadius: 8, offset: const Offset(0, 2))
+                    ],
                   ),
                   child: RichText(
-                    text: _parseBold(
-                      message.text,
-                      TextStyle(
-                        color: message.isUser ? Colors.white : const Color(0xFF1C1C1E),
-                        fontSize: 15, height: 1.5,
-                      ),
-                    ),
+                    text: _parseBold(msg.text, GoogleFonts.inter(
+                      fontSize: 14, height: 1.55,
+                      color: msg.isUser ? Colors.white : t.text1)),
                   ),
                 ),
               ),
             ],
           ),
 
-          // Program cards (only on AI messages)
-          if (!message.isUser && message.programCards.isNotEmpty) ...[
+          // Quick replies
+          if (!msg.isUser && msg.quickReplies.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 36),
+              child: Wrap(spacing: 7, runSpacing: 7,
+                children: msg.quickReplies.map((r) => GestureDetector(
+                  onTap: () => onQuickReply(r),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: t.accentBg,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: _accent.withOpacity(0.35))),
+                    child: Text(r, style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w600,
+                      color: _accent)),
+                  ),
+                )).toList(),
+              ),
+            ),
+          ],
+
+          // Program cards
+          if (!msg.isUser && msg.programCards.isNotEmpty) ...[
             const SizedBox(height: 10),
             SizedBox(
-              height: 156,
+              height: 155,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(left: 36),
-                itemCount: message.programCards.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (context, i) {
-                  return _ProgramCard(
-                    card: message.programCards[i],
-                    onTap: () => onProgramTap(message.programCards[i]),
-                  );
-                },
+                itemCount: msg.programCards.length,
+                itemBuilder: (_, i) => _ProgramCard(
+                  card: msg.programCards[i],
+                  onTap: () => onProgramTap(msg.programCards[i])),
               ),
+            ),
+          ],
+
+          // Workout card
+          if (!msg.isUser && msg.workout != null) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 36),
+              child: _WorkoutCard(t: t, workout: msg.workout!),
             ),
           ],
         ],
@@ -421,12 +569,125 @@ class _MessageRow extends StatelessWidget {
   }
 }
 
-// ── Program Card Widget ───────────────────────────────────────────────────────
+// ── Generated Workout Card ────────────────────────────────────────────────────
+
+class _WorkoutCard extends StatefulWidget {
+  final _T t;
+  final GeneratedWorkout workout;
+  const _WorkoutCard({required this.t, required this.workout});
+  @override
+  State<_WorkoutCard> createState() => _WorkoutCardState();
+}
+
+class _WorkoutCardState extends State<_WorkoutCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.t;
+    final w = widget.workout;
+    return Container(
+      decoration: BoxDecoration(
+        color: t.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: t.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: t.accentBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
+          child: Row(children: [
+            const Icon(LucideIcons.dumbbell, color: _accent, size: 18),
+            const SizedBox(width: 10),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(w.title, style: GoogleFonts.outfit(
+                fontSize: 15, fontWeight: FontWeight.w800,
+                color: t.text1, letterSpacing: -0.3)),
+              Text(w.subtitle, style: GoogleFonts.inter(
+                fontSize: 11, color: t.text2)),
+            ])),
+            GestureDetector(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _accent.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(10)),
+                child: Text(_expanded ? 'Réduire' : 'Voir tout',
+                  style: GoogleFonts.inter(
+                    fontSize: 11, fontWeight: FontWeight.w700,
+                    color: _accent)),
+              ),
+            ),
+          ]),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            children: w.sections.asMap().entries.map((e) {
+              final i = e.key;
+              final s = e.value;
+              final exercises = _expanded
+                  ? s.exercises : s.exercises.take(2).toList();
+              return Padding(
+                padding: EdgeInsets.only(
+                    bottom: i < w.sections.length - 1 ? 14 : 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Text(s.name, style: GoogleFonts.outfit(
+                      fontSize: 13, fontWeight: FontWeight.w700,
+                      color: t.text1)),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: t.accentBg,
+                        borderRadius: BorderRadius.circular(8)),
+                      child: Text(s.duration, style: GoogleFonts.inter(
+                        fontSize: 10, fontWeight: FontWeight.w600,
+                        color: _accent)),
+                    ),
+                  ]),
+                  const SizedBox(height: 8),
+                  ...exercises.map((ex) => Padding(
+                    padding: const EdgeInsets.only(bottom: 5),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(width: 5, height: 5,
+                          margin: const EdgeInsets.only(top: 5, right: 8),
+                          decoration: const BoxDecoration(
+                            color: _accent, shape: BoxShape.circle)),
+                        Expanded(child: Text(ex, style: GoogleFonts.inter(
+                          fontSize: 12, color: t.text1, height: 1.4))),
+                      ]),
+                  )),
+                  if (!_expanded && s.exercises.length > 2)
+                    Text('+${s.exercises.length - 2} exercices',
+                      style: GoogleFonts.inter(
+                        fontSize: 11, color: t.text2,
+                        fontStyle: FontStyle.italic)),
+                ]),
+              );
+            }).toList(),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Program Card ──────────────────────────────────────────────────────────────
 
 class _ProgramCard extends StatelessWidget {
   final ChatProgramCard card;
   final VoidCallback onTap;
-
   const _ProgramCard({required this.card, required this.onTap});
 
   @override
@@ -434,173 +695,118 @@ class _ProgramCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 190,
+        width: 160,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.10), blurRadius: 8, offset: const Offset(0, 3)),
-          ],
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [BoxShadow(
+            color: Colors.black.withOpacity(0.20),
+            blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Background image
-              Image.asset(
-                card.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: card.color),
-              ),
-
-              // Dark gradient overlay
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      card.color.withOpacity(0.55),
-                      card.color.withOpacity(0.92),
-                    ],
-                    stops: const [0.25, 0.6, 1.0],
-                  ),
-                ),
-              ),
-
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Category chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        card.category,
-                        style: const TextStyle(
-                          color: Colors.white, fontSize: 10,
-                          fontWeight: FontWeight.w600, letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // Program name
-                    Text(
-                      card.name,
-                      style: const TextStyle(
-                        color: Colors.white, fontSize: 15,
-                        fontWeight: FontWeight.w700, letterSpacing: -0.2,
-                        shadows: [Shadow(blurRadius: 4, color: Colors.black38)],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-
-                    // Meta row
-                    Row(
-                      children: [
-                        const Icon(Icons.schedule_rounded, size: 11, color: Colors.white70),
-                        const SizedBox(width: 3),
-                        Expanded(
-                          child: Text(
-                            '${card.duration} · ${card.sessions}',
-                            style: const TextStyle(color: Colors.white70, fontSize: 11),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-
-                    // Cycle badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.white24, width: 0.5),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.autorenew_rounded, size: 10, color: Colors.white70),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              card.phases,
-                              style: const TextStyle(color: Colors.white70, fontSize: 10),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Start button
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 7),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Voir le programme',
-                            style: TextStyle(
-                              color: card.color,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_rounded, size: 12, color: card.color),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          borderRadius: BorderRadius.circular(18),
+          child: Stack(fit: StackFit.expand, children: [
+            Image.asset(card.imageUrl, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(color: card.color)),
+            DecoratedBox(decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                colors: [Colors.transparent, card.color.withOpacity(0.95)],
+                stops: const [0.3, 1.0]))),
+            Padding(padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(7)),
+                  child: Text(card.category, style: const TextStyle(
+                    color: Colors.white, fontSize: 9,
+                    fontWeight: FontWeight.w700))),
+                const Spacer(),
+                Text(card.name, style: const TextStyle(
+                  color: Colors.white, fontSize: 13,
+                  fontWeight: FontWeight.w800)),
+                const SizedBox(height: 3),
+                Text(card.duration, style: const TextStyle(
+                  color: Colors.white70, fontSize: 10)),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(9)),
+                  child: Text('Voir', textAlign: TextAlign.center,
+                    style: TextStyle(color: card.color, fontSize: 11,
+                      fontWeight: FontWeight.w700))),
+              ])),
+          ]),
         ),
       ),
     );
   }
 }
 
-// ── Animated typing dots ──────────────────────────────────────────────────────
+// ── Typing indicator ──────────────────────────────────────────────────────────
 
-class _TypingDots extends StatefulWidget {
+class _TypingRow extends StatelessWidget {
+  final _T t;
+  const _TypingRow({required this.t});
+
   @override
-  State<_TypingDots> createState() => _TypingDotsState();
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        Container(
+          width: 28, height: 28,
+          margin: const EdgeInsets.only(right: 8, bottom: 2),
+          decoration: BoxDecoration(
+            color: t.accentBg,
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: _accent.withOpacity(0.3))),
+          child: const Icon(LucideIcons.wand, color: _accent, size: 13),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            color: t.aiBubble,
+            border: Border.all(color: t.border, width: 0.8),
+            borderRadius: const BorderRadius.only(
+              topLeft:     Radius.circular(20),
+              topRight:    Radius.circular(20),
+              bottomLeft:  Radius.circular(4),
+              bottomRight: Radius.circular(20))),
+          child: const _Dots(),
+        ),
+      ]),
+    );
+  }
 }
 
-class _TypingDotsState extends State<_TypingDots> with TickerProviderStateMixin {
+// ── Animated dots ─────────────────────────────────────────────────────────────
+
+class _Dots extends StatefulWidget {
+  const _Dots();
+  @override
+  State<_Dots> createState() => _DotsState();
+}
+
+class _DotsState extends State<_Dots> with TickerProviderStateMixin {
   late final List<AnimationController> _ctrls;
-  late final List<Animation<double>> _anims;
+  late final List<Animation<double>>   _anims;
 
   @override
   void initState() {
     super.initState();
-    _ctrls = List.generate(3, (i) => AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 500)));
-    _anims = _ctrls.map((c) => Tween<double>(begin: 0, end: -6)
+    _ctrls = List.generate(3, (_) => AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500)));
+    _anims = _ctrls.map((c) => Tween<double>(begin: 0, end: -5)
         .animate(CurvedAnimation(parent: c, curve: Curves.easeInOut))).toList();
     for (int i = 0; i < 3; i++) {
-      Future.delayed(Duration(milliseconds: i * 160), () {
+      Future.delayed(Duration(milliseconds: i * 150), () {
         if (mounted) _ctrls[i].repeat(reverse: true);
       });
     }
@@ -614,19 +820,19 @@ class _TypingDotsState extends State<_TypingDots> with TickerProviderStateMixin 
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(3, (i) => AnimatedBuilder(
-        animation: _anims[i],
-        builder: (_, __) => Transform.translate(
-          offset: Offset(0, _anims[i].value),
-          child: Container(
-            width: 6, height: 6,
-            margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
-            decoration: const BoxDecoration(color: Color(0xFF8E8E93), shape: BoxShape.circle),
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      for (int i = 0; i < 3; i++)
+        AnimatedBuilder(
+          animation: _anims[i],
+          builder: (_, __) => Transform.translate(
+            offset: Offset(0, _anims[i].value),
+            child: Container(
+              width: 6, height: 6,
+              margin: EdgeInsets.only(right: i < 2 ? 5 : 0),
+              decoration: const BoxDecoration(
+                color: _accent, shape: BoxShape.circle)),
           ),
         ),
-      )),
-    );
+    ]);
   }
 }

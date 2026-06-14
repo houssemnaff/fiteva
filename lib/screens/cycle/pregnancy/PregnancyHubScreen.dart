@@ -589,7 +589,7 @@ class _MoodResponseCardState extends State<_MoodResponseCard>
   Widget build(BuildContext context) {
     final (accent, bg, textAccent) = switch (widget.mood) {
       0 => (context._p.mint, context._p.mintLight, context._p.green),
-      1 => (context._p.warmPink, context._p.pinkSoft, const Color(0xFFB85C57)),
+      1 => (context._p.warmPink, context._p.pinkSoft, const Color.fromARGB(255, 87, 134, 184)),
       _ => (const Color(0xFFF4A940), const Color(0xFFFDF5E6), const Color(0xFFB87A20)),
     };
     final (message, tip) = _content();

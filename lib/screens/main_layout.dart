@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/cycle/homecyle.dart';
@@ -50,7 +51,7 @@ const _secondaryItems = [
       Color(0xFFB8860B), Color(0xFFFFF8E7)),
   _SecondaryItem(LucideIcons.users, 'Communauté',
       Color(0xFF1C4D30), Color(0xFFEAF3EC)),
-  _SecondaryItem(LucideIcons.heart, 'Santé',
+  _SecondaryItem(LucideIcons.activity, 'Santé',
       Color(0xFF9B3E6A), Color(0xFFFCEEF5)),
 ];
 
@@ -75,10 +76,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
 
   late final AnimationController _plusAnim;
   late final Animation<double>   _plusScale;
-
-  // ── Helpers: compute pregnancy start from week number ─────────────────────
-  static DateTime _startFromWeek(int weekSA) =>
-      DateTime.now().subtract(Duration(days: (weekSA - 1) * 7));
+  late final PageController      _pageController;
 
   // ── Dynamic tab 1 based on health status ──────────────────────────────────
   Widget _tab1Screen(UserProfile profile) {
@@ -115,14 +113,16 @@ class _MainLayoutState extends ConsumerState<MainLayout>
   @override
   void initState() {
     super.initState();
-    _plusAnim  = AnimationController(
+    _plusAnim      = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 280));
-    _plusScale = CurvedAnimation(parent: _plusAnim, curve: Curves.easeOutCubic);
+    _plusScale     = CurvedAnimation(parent: _plusAnim, curve: Curves.easeOutCubic);
+    _pageController = PageController(initialPage: 0);
   }
 
   @override
   void dispose() {
     _plusAnim.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -142,6 +142,13 @@ class _MainLayoutState extends ConsumerState<MainLayout>
   void _selectMain(int i) {
     _closePlus();
     setState(() => _currentIndex = i);
+    if (i < 4) {
+      _pageController.animateToPage(
+        i,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeInOutCubic,
+      );
+    }
   }
 
   void _selectSecondary(int i) {
@@ -166,14 +173,10 @@ class _MainLayoutState extends ConsumerState<MainLayout>
     final profile = ref.watch(userProfileProvider);
     final size    = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
-    const btnSize = 56.0;
+    const btnSize = 85.0;
     const navH    = 90.0;
 
-    final List<Widget> screens = [
-      const HomeScreen(),
-      _tab1Screen(profile),
-      const WorkoutScreen(),
-      const NutritionHomeScreen(),
+    final List<Widget> secondaryScreens = [
       const BoutiqueScreen(),
       const CommunityScreen(),
       const SanteScreen(),
@@ -186,11 +189,31 @@ class _MainLayoutState extends ConsumerState<MainLayout>
       _navItemNutrition,
     ];
 
+    final List<Widget> mainScreens = [
+      const HomeScreen(),
+      _tab1Screen(profile),
+      const WorkoutScreen(),
+      const NutritionHomeScreen(),
+    ];
+
     return Scaffold(
       extendBody: true,
       body: Stack(
         children: [
-          screens[_currentIndex],
+          // ── Swipeable main tabs (0-3) ──────────────────────────
+          PageView(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            onPageChanged: (i) {
+              _closePlus();
+              setState(() => _currentIndex = i);
+            },
+            children: mainScreens,
+          ),
+
+          // ── Secondary screen overlay (boutique, community, santé) ─
+          if (_isSecondary)
+            secondaryScreens[_currentIndex - 4],
 
           // ── Secondary menu — ALWAYS in tree, never removed ─────
           // (removing BackdropFilter mid-animation causes mouse_tracker crash)
@@ -214,30 +237,23 @@ class _MainLayoutState extends ConsumerState<MainLayout>
               onPanEnd: (_) => setState(() {
                 _x = _x < size.width / 2 ? 0 : size.width - btnSize;
               }),
-              child: FloatingActionButton(
-                onPressed: _openChatbot,
-                heroTag: 'ai_chatbot',
-                backgroundColor: Colors.transparent,
-                elevation: 4,
-                child: Container(
-                  width: btnSize, height: btnSize,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF5CD57A), Color(0xFF1C4D30)],
-                      begin: Alignment.topLeft, end: Alignment.bottomRight)),
-                  child: const Icon(Icons.auto_awesome, color: Colors.white))),
-            ),
+              child: GestureDetector(
+                onTap: _openChatbot,
+                child: const _AiChatButton())),
           ),
         ],
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: _PlusFloatingButton(
+        open: _plusOpen,
+        animation: _plusScale,
+        onTap: _togglePlus,
+      ),
       bottomNavigationBar: _LiquidGlassNavBar(
         currentIndex: _currentIndex,
-        plusOpen: _plusOpen,
         isSecondary: _isSecondary,
         navItems: mainNavItems,
         onTap: _selectMain,
-        onPlusTap: _togglePlus,
       ),
     );
   }
@@ -271,103 +287,120 @@ class _SecondaryMenu extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (_, __) {
-        final v = animation.value; // 0 → 1
+        final v = animation.value;
         return IgnorePointer(
-          // Block touches when fully dismissed
           ignoring: v < 0.01,
           child: Stack(
             children: [
-              // ── Dark backdrop (no BackdropFilter — avoids crash) ──
+              // ── Blurred dark backdrop ───────────────────────────────
               Positioned.fill(
                 child: GestureDetector(
                   onTap: onCloseTap,
                   behavior: HitTestBehavior.opaque,
                   child: Opacity(
-                    opacity: v * 0.65,
-                    child: const ColoredBox(color: Color(0xFF0A0A0A)),
+                    opacity: v * 0.55,
+                    child: const ColoredBox(color: Color(0xFF060810)),
                   ),
                 ),
               ),
 
-              // ── Item list ─────────────────────────────────────────
+              // ── Cards panel ─────────────────────────────────────────
               Positioned(
                 bottom: bottomPadding,
-                right: 20,
-                left: 0,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: items.asMap().entries.map((e) {
-                    final i    = e.key;
-                    final item = e.value;
-                    final sel  = activeIndex == i;
+                left: 20, right: 20,
+                child: Transform.translate(
+                  offset: Offset(0, (1 - v) * 40),
+                  child: Opacity(
+                    opacity: v.clamp(0.0, 1.0),
+                    child: Row(
+                      children: items.asMap().entries.map((e) {
+                        final i    = e.key;
+                        final item = e.value;
+                        final sel  = activeIndex == i;
 
-                    // Per-item stagger: slide from bottom + fade
-                    final staggered = CurvedAnimation(
-                      parent: animation,
-                      curve: Interval(
-                        i * 0.10, 1.0,
-                        curve: Curves.easeOutCubic),
-                    );
+                        // stagger each card slightly
+                        final staggered = CurvedAnimation(
+                          parent: animation,
+                          curve: Interval(i * 0.08, 1.0,
+                              curve: Curves.easeOutCubic),
+                        );
 
-                    return Transform.translate(
-                      offset: Offset(0, (1 - staggered.value) * 24),
-                      child: Opacity(
-                        opacity: staggered.value.clamp(0.0, 1.0),
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            bottom: i < items.length - 1 ? 18 : 0),
-                          child: GestureDetector(
-                            onTap: () => onTap(i),
-                            behavior: HitTestBehavior.opaque,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                // Label
-                                Text(
-                                  item.label,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 17,
-                                    fontWeight: sel
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: sel
-                                        ? Colors.white
-                                        : Colors.white.withOpacity(0.85),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-
-                                // Circle icon button
-                                Container(
-                                  width: 56, height: 56,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: sel
-                                        ? item.color.withOpacity(0.90)
-                                        : Colors.white.withOpacity(0.13),
-                                    border: Border.all(
+                        return Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              left: i == 0 ? 0 : 6,
+                              right: i == items.length - 1 ? 0 : 6,
+                            ),
+                            child: Transform.translate(
+                              offset: Offset(0, (1 - staggered.value) * 20),
+                              child: Opacity(
+                                opacity: staggered.value.clamp(0.0, 1.0),
+                                child: GestureDetector(
+                                  onTap: () => onTap(i),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 18, horizontal: 8),
+                                    decoration: BoxDecoration(
                                       color: sel
-                                          ? item.color
-                                          : Colors.white.withOpacity(0.22),
-                                      width: 1.5),
-                                    boxShadow: sel
-                                        ? [BoxShadow(
-                                            color: item.color.withOpacity(0.40),
-                                            blurRadius: 16,
-                                            offset: const Offset(0, 4))]
-                                        : const [],
+                                          ? item.color.withOpacity(0.90)
+                                          : Colors.white.withOpacity(0.10),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: sel
+                                            ? item.color
+                                            : Colors.white.withOpacity(0.16),
+                                        width: 1.2,
+                                      ),
+                                      boxShadow: sel
+                                          ? [BoxShadow(
+                                              color: item.color.withOpacity(0.35),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 6))]
+                                          : [BoxShadow(
+                                              color: Colors.black.withOpacity(0.20),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4))],
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 44, height: 44,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: sel
+                                                ? Colors.white.withOpacity(0.20)
+                                                : Colors.white.withOpacity(0.12),
+                                          ),
+                                          child: Icon(item.icon,
+                                            size: 20,
+                                            color: Colors.white),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          item.label,
+                                          textAlign: TextAlign.center,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: sel
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                            color: Colors.white,
+                                            letterSpacing: -0.2,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  child: Icon(item.icon,
-                                    size: 22, color: Colors.white),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -379,448 +412,322 @@ class _SecondaryMenu extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  LIQUID GLASS NAV BAR
+//  FLOATING PLUS BUTTON — centred above nav bar via floatingActionButton
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _LiquidGlassNavBar extends StatefulWidget {
+class _PlusFloatingButton extends StatelessWidget {
+  final bool open;
+  final Animation<double> animation;
+  final VoidCallback onTap;
+
+  const _PlusFloatingButton({
+    required this.open,
+    required this.animation,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (_, __) => Transform.scale(
+          scale: 1.0 + animation.value * 0.08,
+          child: Container(
+            width: 58, height: 58,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: open
+                    ? [const Color(0xFF3A6B4A), const Color(0xFF1C4D30)]
+                    : [const Color(0xFF5CD57A), const Color(0xFF2D8A50)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2D8A50).withOpacity(0.55),
+                  blurRadius: 22, offset: const Offset(0, 8)),
+              ],
+            ),
+            child: AnimatedRotation(
+              turns: open ? 0.125 : 0,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              child: const Icon(Icons.add, color: Colors.white, size: 30),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CLASSY NAV BAR — 4 tabs, floating pill, adaptive dark/light
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _LiquidGlassNavBar extends StatelessWidget {
   final int currentIndex;
-  final bool plusOpen;
   final bool isSecondary;
   final List<_NavItem> navItems;
   final ValueChanged<int> onTap;
-  final VoidCallback onPlusTap;
 
   const _LiquidGlassNavBar({
     required this.currentIndex,
-    required this.plusOpen,
     required this.isSecondary,
     required this.navItems,
     required this.onTap,
-    required this.onPlusTap,
   });
 
-  @override
-  State<_LiquidGlassNavBar> createState() => _LiquidGlassNavBarState();
-}
-
-class _LiquidGlassNavBarState extends State<_LiquidGlassNavBar> {
-  bool _isDragging = false;
-  int  _lastHaptic = -1;
-
-  static const double _barH  = 68.0;
-  static const double _pillH = 52.0;
-  static const double _plusW = 56.0;
-
-  // Effective index for the liquid pill (only 0–3 for main tabs)
-  int get _pillIndex =>
-      widget.isSecondary ? -1 : widget.currentIndex;
-
-  // Available width for the 4 main items (excluding "+" button + divider)
-  double _navWidth(double total) => total - _plusW - 14;
-
-  double _widthFor(int i, double total) =>
-      _navWidth(total) / widget.navItems.length;
-
-  double _pillLeft(double total) {
-    if (_pillIndex < 0) return 0;
-    final slotW = _navWidth(total) / widget.navItems.length;
-    final pillW = _pillWidth(total);
-    return slotW * _pillIndex + (slotW - pillW) / 2;
-  }
-
-  double _pillWidth(double total) {
-    if (_pillIndex < 0) return 0;
-    final slotW = _navWidth(total) / widget.navItems.length;
-    return (slotW - 8).clamp(40.0, 80.0);
-  }
-
-  int _indexAt(double dx, double total) {
-    final slotW = _navWidth(total) / widget.navItems.length;
-    return (dx / slotW).floor().clamp(0, widget.navItems.length - 1);
-  }
-
-  void _haptic(int i) {
-    if (i != _lastHaptic) {
-      HapticFeedback.selectionClick();
-      _lastHaptic = i;
-    }
-  }
+  static const _barH = 70.0;
+  static const _r    = 28.0;
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).padding.bottom;
+    final bottom  = MediaQuery.of(context).padding.bottom;
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(14, 0, 14, bottom + 10),
-      child: SizedBox(
-        height: _barH,
-        child: Stack(
-          children: [
+    // Pill colours — adaptive
+    final pillBg     = isDark
+        ? const Color(0xFF12151A)
+        : Colors.white;
+    final pillBorder = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
+    final unselectedColor = isDark
+        ? Colors.white.withOpacity(0.38)
+        : Colors.black.withOpacity(0.32);
+    final accent = const Color(0xFF3DA85A);
 
-            // Drop shadow
-            Container(
-              height: _barH,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(36),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.22),
-                    blurRadius: 32, offset: const Offset(0, 10),
-                    spreadRadius: -6),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 8, offset: const Offset(0, 3)),
-                ],
-              ),
-            ),
-
-            // Glass base
-            ClipRRect(
-              borderRadius: BorderRadius.circular(36),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-                child: Container(
-                  height: _barH,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color.fromARGB(255, 64, 73, 66).withValues(alpha: 0.28),
-                        const Color.fromARGB(255, 64, 73, 66).withValues(alpha: 0.28),
-                        const Color.fromARGB(255, 64, 73, 66).withValues(alpha: 0.28),
-                      ],
-                      stops: const [0.0, 0.5, 1.0]),
-                    borderRadius: BorderRadius.circular(36),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      width: 0.5)),
-                ),
-              ),
-            ),
-
-            // Specular highlight
-            Positioned(top: 0, left: 24, right: 24,
-              child: Container(
-                height: 0.8,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      Colors.white.withValues(alpha: 0.80),
-                      Colors.white.withValues(alpha: 0.95),
-                      Colors.white.withValues(alpha: 0.80),
-                      Colors.transparent,
-                    ],
-                    stops: const [0.0, 0.2, 0.5, 0.8, 1.0])))),
-
-            // Nav items + pill + "+" button
-            LayoutBuilder(
-              builder: (ctx, constraints) {
-                final total = constraints.maxWidth;
-                return Row(
-                  children: [
-                    // ── 4 main tabs ────────────────────────────────
-                    Expanded(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onPanStart: (d) {
-                          final i = _indexAt(d.localPosition.dx, total);
-                          setState(() => _isDragging = true);
-                          _haptic(i);
-                          widget.onTap(i);
-                        },
-                        onPanUpdate: (d) {
-                          final i = _indexAt(d.localPosition.dx, total);
-                          _haptic(i);
-                          if (i != widget.currentIndex) widget.onTap(i);
-                        },
-                        onPanEnd: (_) {
-                          setState(() => _isDragging = false);
-                          _lastHaptic = -1;
-                        },
-                        onTapUp: (d) {
-                          final i = _indexAt(d.localPosition.dx, total);
-                          _haptic(i);
-                          widget.onTap(i);
-                        },
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-
-                            // Liquid pill (highlight under selected item)
-                            if (_pillIndex >= 0)
-                              AnimatedPositioned(
-                                duration: _isDragging
-                                    ? Duration.zero
-                                    : const Duration(milliseconds: 300),
-                                curve: Curves.easeOutCubic,
-                                left: _pillLeft(total),
-                                top: (_barH - _pillH) / 2,
-                                child: _LiquidPill(
-                                  width: _pillWidth(total),
-                                  height: _pillH),
-                              ),
-
-                            // Items row
-                            Row(
-                              children: List.generate(
-                                widget.navItems.length,
-                                (i) => AnimatedContainer(
-                                  duration: const Duration(milliseconds: 340),
-                                  curve: Curves.easeOutQuart,
-                                  width: _widthFor(i, total),
-                                  child: _LiquidNavItem(
-                                    item: widget.navItems[i],
-                                    isSelected: !widget.isSecondary &&
-                                        i == widget.currentIndex,
-                                    onTap: () {
-                                      _haptic(i);
-                                      widget.onTap(i);
-                                    }))),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // ── Divider ────────────────────────────────────
-                    Container(
-                      width: 1, height: 28,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      color: Colors.white.withOpacity(0.25)),
-
-                    // ── "+" button ─────────────────────────────────
-                    _PlusButton(
-                      open: widget.plusOpen,
-                      isSecondary: widget.isSecondary,
-                      onTap: widget.onPlusTap,
-                    ),
-                    const SizedBox(width: 4),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: pillBg,
+        border: Border(top: BorderSide(color: pillBorder, width: 0.8)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.20 : 0.06),
+            blurRadius: 16, offset: const Offset(0, -4)),
+        ],
       ),
-    );
-  }
-}
+      padding: EdgeInsets.only(bottom: bottom),
+      child: Stack(children: [
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  PLUS BUTTON
-// ─────────────────────────────────────────────────────────────────────────────
+        // ── Full-width bar ───────────────────────────────────────────────
+        Container(height: _barH, color: Colors.transparent),
 
-class _PlusButton extends StatelessWidget {
-  final bool open;
-  final bool isSecondary;
-  final VoidCallback onTap;
-  const _PlusButton({
-    required this.open, required this.isSecondary, required this.onTap,
-  });
+        // ── Nav items ────────────────────────────────────────────────────
+        SizedBox(
+          height: _barH,
+          child: Row(
+            children: List.generate(navItems.length, (i) {
+              // leave gap in the middle for the floating + button
+              final isSelected = !isSecondary && i == currentIndex;
+              final item       = navItems[i];
 
-  @override
-  Widget build(BuildContext context) {
-    final active = open || isSecondary;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56, height: 68,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Circle button
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeOutCubic,
-                width: 36, height: 28,
-                child: Center(
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onTap(i);
+                  },
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 260),
+                    duration: const Duration(milliseconds: 240),
                     curve: Curves.easeOutCubic,
-                    width: 32, height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: active
-                          ? const LinearGradient(
-                              colors: [Color(0xFF5CD57A), Color(0xFF1C4D30)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight)
-                          : null,
-                      color: active ? null : Colors.white.withOpacity(0.20),
-                      border: Border.all(
-                        color: active
-                            ? Colors.transparent
-                            : Colors.white.withOpacity(0.40),
-                        width: 1.5),
-                      boxShadow: active
-                          ? [BoxShadow(
-                              color: const Color(0xFF1C4D30).withOpacity(0.35),
-                              blurRadius: 10, offset: const Offset(0, 3))]
-                          : null,
-                    ),
-                    child: AnimatedRotation(
-                      duration: const Duration(milliseconds: 260),
-                      curve: Curves.easeOutCubic,
-                      turns: open ? 0.125 : 0,
-                      child: Icon(
-                        open ? LucideIcons.x : LucideIcons.plus,
-                        size: 15, color: Colors.white),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Selected dot indicator above icon
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 240),
+                          curve: Curves.easeOutCubic,
+                          width:  isSelected ? 20 : 0,
+                          height: 3,
+                          margin: const EdgeInsets.only(bottom: 4),
+                          decoration: BoxDecoration(
+                            color: accent,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+
+                        // Icon
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 240),
+                          curve: Curves.easeOutCubic,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 4),
+                          decoration: isSelected ? BoxDecoration(
+                            color: accent.withOpacity(0.14),
+                            borderRadius: BorderRadius.circular(14),
+                          ) : null,
+                          child: Icon(
+                            item.icon,
+                            size: 22,
+                            color: isSelected ? accent : unselectedColor,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        // Label — bigger, classier
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            height: 1.0,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                            color: isSelected ? accent : unselectedColor,
+                            letterSpacing: -0.2,
+                          ),
+                          child: Text(item.label, maxLines: 1),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-              // Label
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 220),
-                style: TextStyle(
-                  color: active
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.45),
-                  fontSize: 10,
-                  height: 1.0,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-                  letterSpacing: 0.1,
-                ),
-                child: Text(open ? 'Fermer' : 'Plus', maxLines: 1),
-              ),
-            ],
+              );
+            }),
           ),
         ),
+      ]),
+    );
+  }
+}
+
+// ── AI Chat Button ────────────────────────────────────────────────────────────
+
+// ── Waving Robot ──────────────────────────────────────────────────────────────
+
+class _WavingRobot extends StatefulWidget {
+  const _WavingRobot();
+  @override
+  State<_WavingRobot> createState() => _WavingRobotState();
+}
+
+class _WavingRobotState extends State<_WavingRobot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _wave;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..repeat(reverse: true);
+    _wave = Tween<double>(begin: -0.5, end: 0.5)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _wave,
+      builder: (_, __) => CustomPaint(
+        size: const Size(56, 56),
+        painter: _RobotWavePainter(waveAngle: _wave.value),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  LIQUID GLASS PILL
-// ─────────────────────────────────────────────────────────────────────────────
+class _RobotWavePainter extends CustomPainter {
+  final double waveAngle;
+  const _RobotWavePainter({required this.waveAngle});
 
-class _LiquidPill extends StatelessWidget {
-  final double width;
-  final double height;
-  const _LiquidPill({required this.width, required this.height});
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final s  = size.width / 56.0;
+
+    final body   = Paint()..color = const Color(0xFF1C4D30);
+    final green  = Paint()..color = const Color(0xFF3DA85A);
+    final pupil  = Paint()..color = Colors.white;
+    final stroke = Paint()
+      ..color = const Color(0xFF1C4D30)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5 * s
+      ..strokeCap = StrokeCap.round;
+
+    // ── Antenna ──
+    canvas.drawLine(Offset(cx, cy - 14*s), Offset(cx, cy - 20*s), stroke);
+    canvas.drawCircle(Offset(cx, cy - 21*s), 2.5*s, green);
+
+    // ── Head ──
+    canvas.drawRRect(RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(cx, cy - 8*s), width: 26*s, height: 20*s),
+      Radius.circular(7*s)), body);
+
+    // ── Eyes ──
+    canvas.drawRRect(RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(cx - 6*s, cy - 9*s), width: 7*s, height: 6*s),
+      Radius.circular(2*s)), green);
+    canvas.drawRRect(RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(cx + 6*s, cy - 9*s), width: 7*s, height: 6*s),
+      Radius.circular(2*s)), green);
+    canvas.drawCircle(Offset(cx - 6*s, cy - 9*s), 1.8*s, pupil);
+    canvas.drawCircle(Offset(cx + 6*s, cy - 9*s), 1.8*s, pupil);
+
+    // ── Mouth ──
+    final mouth = Path()
+      ..moveTo(cx - 5*s, cy - 3*s)
+      ..quadraticBezierTo(cx, cy + 1*s, cx + 5*s, cy - 3*s);
+    canvas.drawPath(mouth, stroke);
+
+    // ── Body ──
+    canvas.drawRRect(RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(cx, cy + 8*s), width: 22*s, height: 14*s),
+      Radius.circular(5*s)), body);
+    canvas.drawRRect(RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(cx, cy + 8*s), width: 6*s, height: 10*s),
+      Radius.circular(3*s)), green);
+
+    // ── Left arm + dumbbell ──
+    canvas.drawRRect(RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(cx - 14*s, cy + 4*s), width: 5*s, height: 11*s),
+      Radius.circular(3*s)), body);
+    canvas.drawLine(Offset(cx - 20*s, cy - 3*s), Offset(cx - 10*s, cy - 3*s),
+      Paint()..color = const Color(0xFF1C4D30)..strokeWidth = 2*s..strokeCap = StrokeCap.round);
+    canvas.drawCircle(Offset(cx - 20*s, cy - 3*s), 3.5*s, green);
+    canvas.drawCircle(Offset(cx - 10*s, cy - 3*s), 3.5*s, green);
+
+    // ── Right arm (waving) ──
+    canvas.save();
+    canvas.translate(cx + 11*s, cy + 3*s);
+    canvas.rotate(waveAngle);
+    canvas.drawRRect(RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(3*s, -6*s), width: 5*s, height: 13*s),
+      Radius.circular(3*s)), body);
+    canvas.drawCircle(Offset(3*s, -13*s), 3*s, green);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_RobotWavePainter old) => old.waveAngle != waveAngle;
+}
+
+class _AiChatButton extends StatelessWidget {
+  const _AiChatButton();
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Container(
-              width: width, height: height,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.58),
-                    Colors.white.withValues(alpha: 0.32),
-                    Colors.white.withValues(alpha: 0.18),
-                  ],
-                  stops: const [0.0, 0.5, 1.0]),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.50),
-                  width: 0.5),
-              ),
-            ),
-          ),
-        ),
-        Positioned(top: 0, left: 12, right: 12,
-          child: Container(
-            height: 0.8,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  Colors.white.withValues(alpha: 0.95),
-                  Colors.white.withValues(alpha: 1.0),
-                  Colors.white.withValues(alpha: 0.95),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.2, 0.5, 0.8, 1.0])))),
-        Positioned(bottom: 0, left: 0, right: 0,
-          child: Container(
-            height: height * 0.4,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.04),
-                ]),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(22))))),
-      ],
-    );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      const SizedBox(width: 85, height: 85, child: _WavingRobot()),
+    ]);
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  INDIVIDUAL NAV ITEM  — icon above label (vertical)
-// ─────────────────────────────────────────────────────────────────────────────
 
-class _LiquidNavItem extends StatelessWidget {
-  final _NavItem item;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _LiquidNavItem({
-    required this.item,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        height: 68,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                width: isSelected ? 38 : 32,
-                height: isSelected ? 28 : 24,
-                child: Icon(
-                  item.icon,
-                  size: isSelected ? 22 : 20,
-                  color: isSelected
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.45),
-                ),
-              ),
-              // Label — always visible, just fades
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 220),
-                style: TextStyle(
-                  color: isSelected
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.45),
-                  fontSize: 10,
-                  height: 1.0,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-                  letterSpacing: 0.1,
-                ),
-                child: Text(item.label, maxLines: 1),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
