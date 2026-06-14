@@ -7,20 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  DESIGN TOKENS  (même palette que create_partner_sheet)
-// ─────────────────────────────────────────────────────────────────────────────
-abstract class _K {
-  static const green     = Color(0xFF1C4D30);
-  static const mint      = Color(0xFF7ABB98);
-  static const mintBg    = Color(0xFFEAF3EC);
-  static const surface   = Colors.white;
-  static const ink       = Color(0xFF111110);
-  static const inkMuted  = Color(0xFF6B7280);
-  static const inkSubtle = Color(0xFFAAAAAA);
-  static const divider   = Color(0xFFEEEEEC);
-  static const chipBg    = Color(0xFFF4F4F3);
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ENTRY POINT
@@ -115,10 +101,11 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
     if (!mounted) return;
     setState(() => _publishing = false);
     Navigator.of(context).pop();
+    final cs = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: _K.green,
+        backgroundColor: cs.primary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         duration: const Duration(seconds: 3),
@@ -137,6 +124,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final bottom  = MediaQuery.of(context).viewInsets.bottom;
     final screenH = MediaQuery.of(context).size.height;
 
@@ -146,16 +134,16 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
       ).animate(_slide),
       child: Container(
         constraints: BoxConstraints(maxHeight: screenH * 0.92),
-        decoration: const BoxDecoration(
-          color: _K.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHandle(),
-            _buildHeader(),
-            const Divider(color: _K.divider, height: 1),
+            _buildHandle(cs),
+            _buildHeader(cs),
+            Divider(color: cs.outline, height: 1),
             Flexible(
               child: SingleChildScrollView(
                 controller: _scrollCtrl,
@@ -163,50 +151,37 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _label('Type d\'activité'),
+                    _label('Type d\'activité', cs),
                     const SizedBox(height: 10),
-                    _buildTypePicker(),
+                    _buildTypePicker(cs),
                     const SizedBox(height: 24),
-                    _label('Titre'),
+                    _label('Titre', cs),
                     const SizedBox(height: 8),
-                    _Field(
-                      controller: _titleCtrl,
-                      hint: 'Morning Run — Corniche Sousse',
-                      icon: LucideIcons.type,
-                    ),
+                    _Field(controller: _titleCtrl, hint: 'Morning Run — Corniche Sousse', icon: LucideIcons.type, colorScheme: cs),
                     const SizedBox(height: 24),
-                    _label('Date & heure'),
+                    _label('Date & heure', cs),
                     const SizedBox(height: 10),
-                    _buildDateTimeRow(),
+                    _buildDateTimeRow(cs),
                     const SizedBox(height: 24),
-                    _label('Lieu'),
+                    _label('Lieu', cs),
                     const SizedBox(height: 8),
-                    _Field(
-                      controller: _locationCtrl,
-                      hint: 'Corniche, Sousse',
-                      icon: LucideIcons.mapPin,
-                    ),
+                    _Field(controller: _locationCtrl, hint: 'Corniche, Sousse', icon: LucideIcons.mapPin, colorScheme: cs),
                     const SizedBox(height: 24),
-                    _label('Participants max'),
+                    _label('Participants max', cs),
                     const SizedBox(height: 10),
-                    _buildSpotsStepper(),
+                    _buildSpotsStepper(cs),
                     const SizedBox(height: 24),
-                    _label('Description  (optionnel)'),
+                    _label('Description  (optionnel)', cs),
                     const SizedBox(height: 8),
-                    _Field(
-                      controller: _detailsCtrl,
-                      hint: 'Équipement requis, niveau, consignes…',
-                      icon: LucideIcons.alignLeft,
-                      maxLines: 3,
-                    ),
+                    _Field(controller: _detailsCtrl, hint: 'Équipement requis, niveau, consignes…', icon: LucideIcons.alignLeft, maxLines: 3, colorScheme: cs),
                     const SizedBox(height: 24),
-                    _buildVisibilityToggle(),
+                    _buildVisibilityToggle(cs),
                     const SizedBox(height: 8),
                   ],
                 ),
               ),
             ),
-            _buildActions(),
+            _buildActions(cs),
           ],
         ),
       ),
@@ -215,14 +190,14 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 
   // ── Handle ─────────────────────────────────────────────────────────────────
 
-  Widget _buildHandle() {
+  Widget _buildHandle(ColorScheme cs) {
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 4),
       child: Center(
         child: Container(
           width: 40, height: 4,
           decoration: BoxDecoration(
-            color: _K.divider,
+            color: cs.outline,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -232,7 +207,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 
   // ── Header ─────────────────────────────────────────────────────────────────
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ColorScheme cs) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
       child: Row(
@@ -240,11 +215,11 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
           Container(
             width: 48, height: 48,
             decoration: BoxDecoration(
-              color: _K.mintBg,
+              color: cs.secondary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(LucideIcons.calendarPlus,
-                color: _K.green, size: 20),
+            child: Icon(LucideIcons.calendarPlus,
+                color: cs.primary, size: 20),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -253,7 +228,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
               children: [
                 Text('Créer un événement',
                     style: GoogleFonts.outfit(
-                      color: _K.ink,
+                      color: cs.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
@@ -261,7 +236,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                 const SizedBox(height: 2),
                 Text('Invite la communauté à ta session',
                     style: GoogleFonts.inter(
-                        color: _K.inkMuted, fontSize: 12)),
+                        color: cs.onSurface.withValues(alpha: 0.6), fontSize: 12)),
               ],
             ),
           ),
@@ -270,11 +245,11 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
             child: Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
-                color: _K.chipBg,
+                color: cs.outline.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.x,
-                  size: 15, color: _K.inkMuted),
+              child: Icon(LucideIcons.x,
+                  size: 15, color: cs.onSurface.withValues(alpha: 0.6)),
             ),
           ),
         ],
@@ -284,7 +259,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 
   // ── Type picker ────────────────────────────────────────────────────────────
 
-  Widget _buildTypePicker() {
+  Widget _buildTypePicker(ColorScheme cs) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -299,23 +274,23 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: sel ? _K.mintBg : _K.chipBg,
+              color: sel ? cs.secondary.withValues(alpha: 0.12) : cs.outline.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(50),
               border: Border.all(
-                color: sel ? _K.mint.withOpacity(0.6) : Colors.transparent,
+                color: sel ? cs.secondary.withOpacity(0.6) : Colors.transparent,
                 width: 1.5,
               ),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(_types[i].icon,
                   size: 14,
-                  color: sel ? _K.green : _K.inkSubtle),
+                  color: sel ? cs.primary : cs.onSurface.withValues(alpha: 0.5)),
               const SizedBox(width: 7),
               Text(_types[i].label,
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: sel ? _K.green : _K.inkMuted,
+                    color: sel ? cs.primary : cs.onSurface.withValues(alpha: 0.6),
                   )),
             ]),
           ),
@@ -326,13 +301,14 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 
   // ── Date / time row ────────────────────────────────────────────────────────
 
-  Widget _buildDateTimeRow() {
+  Widget _buildDateTimeRow(ColorScheme cs) {
     return Row(children: [
       Expanded(child: _DateCard(
         label: 'Date',
         value: 'Sam 3 Mai',
         sub: '2025',
         icon: LucideIcons.calendarDays,
+        colorScheme: cs,
       )),
       const SizedBox(width: 10),
       Expanded(child: _DateCard(
@@ -340,27 +316,28 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
         value: '06 : 30',
         sub: 'du matin',
         icon: LucideIcons.clock,
+        colorScheme: cs,
       )),
     ]);
   }
 
   // ── Spots stepper ──────────────────────────────────────────────────────────
 
-  Widget _buildSpotsStepper() {
+  Widget _buildSpotsStepper(ColorScheme cs) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: _K.chipBg,
+        color: cs.outline.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(children: [
         Container(
           width: 40, height: 40,
           decoration: BoxDecoration(
-            color: _K.mintBg,
+            color: cs.secondary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(LucideIcons.users, color: _K.green, size: 17),
+          child: Icon(LucideIcons.users, color: cs.primary, size: 17),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -369,13 +346,13 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
             children: [
               Text('Places disponibles',
                   style: GoogleFonts.inter(
-                    fontSize: 10, color: _K.inkMuted,
+                    fontSize: 10, color: cs.onSurface.withValues(alpha: 0.6),
                     fontWeight: FontWeight.w500,
                   )),
               Text('$_spots places',
                   style: GoogleFonts.outfit(
                     fontSize: 16, fontWeight: FontWeight.w800,
-                    color: _K.ink, letterSpacing: -0.3,
+                    color: cs.onSurface, letterSpacing: -0.3,
                   )),
             ],
           ),
@@ -386,12 +363,13 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
             if (_spots > 2) setState(() => _spots--);
             HapticFeedback.selectionClick();
           },
+          colorScheme: cs,
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text('$_spots',
               style: GoogleFonts.outfit(
-                fontSize: 18, fontWeight: FontWeight.w800, color: _K.green,
+                fontSize: 18, fontWeight: FontWeight.w800, color: cs.primary,
               )),
         ),
         _StepBtn(
@@ -400,6 +378,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
             if (_spots < 100) setState(() => _spots++);
             HapticFeedback.selectionClick();
           },
+          colorScheme: cs,
         ),
       ]),
     );
@@ -407,14 +386,14 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 
   // ── Visibility toggle ──────────────────────────────────────────────────────
 
-  Widget _buildVisibilityToggle() {
+  Widget _buildVisibilityToggle(ColorScheme cs) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: _isPublic ? _K.mintBg : _K.chipBg,
+        color: _isPublic ? cs.secondary.withValues(alpha: 0.12) : cs.outline.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isPublic ? _K.mint.withOpacity(0.4) : Colors.transparent,
+          color: _isPublic ? cs.secondary.withOpacity(0.4) : Colors.transparent,
           width: 1.5,
         ),
       ),
@@ -423,13 +402,13 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
           width: 40, height: 40,
           decoration: BoxDecoration(
             color: _isPublic
-                ? _K.green.withOpacity(0.1)
-                : const Color(0xFFE8E8E6),
+                ? cs.primary.withOpacity(0.1)
+                : cs.outline.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             _isPublic ? LucideIcons.globe : LucideIcons.lock,
-            color: _isPublic ? _K.green : _K.inkMuted,
+            color: _isPublic ? cs.primary : cs.onSurface.withValues(alpha: 0.6),
             size: 17,
           ),
         ),
@@ -442,7 +421,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                 _isPublic ? 'Événement public' : 'Événement privé',
                 style: GoogleFonts.inter(
                   fontSize: 13, fontWeight: FontWeight.w700,
-                  color: _isPublic ? _K.green : _K.ink,
+                  color: _isPublic ? cs.primary : cs.onSurface,
                 ),
               ),
               const SizedBox(height: 1),
@@ -452,7 +431,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                     : 'Accessible uniquement sur invitation',
                 style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: _isPublic ? _K.mint : _K.inkMuted),
+                    color: _isPublic ? cs.secondary : cs.onSurface.withValues(alpha: 0.6)),
               ),
             ],
           ),
@@ -460,6 +439,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
         _Toggle(
           value: _isPublic,
           onChanged: (v) => setState(() => _isPublic = v),
+          colorScheme: cs,
         ),
       ]),
     );
@@ -467,13 +447,13 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 
   // ── Actions bar ────────────────────────────────────────────────────────────
 
-  Widget _buildActions() {
+  Widget _buildActions(ColorScheme cs) {
     return Container(
       padding: EdgeInsets.fromLTRB(
           20, 12, 20, 12 + MediaQuery.of(context).padding.bottom),
-      decoration: const BoxDecoration(
-        color: _K.surface,
-        border: Border(top: BorderSide(color: _K.divider)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        border: Border(top: BorderSide(color: cs.outline)),
       ),
       child: Row(children: [
         GestureDetector(
@@ -482,12 +462,12 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
             padding: const EdgeInsets.symmetric(
                 horizontal: 20, vertical: 15),
             decoration: BoxDecoration(
-              color: _K.chipBg,
+              color: cs.outline.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Text('Annuler',
                 style: GoogleFonts.inter(
-                  color: _K.inkMuted,
+                  color: cs.onSurface.withValues(alpha: 0.6),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 )),
@@ -501,7 +481,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(vertical: 15),
               decoration: BoxDecoration(
-                color: _publishing ? _K.mint : _K.green,
+                color: _publishing ? cs.secondary : cs.primary,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(
@@ -534,10 +514,10 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 
   // ── Section label ──────────────────────────────────────────────────────────
 
-  Widget _label(String text) => Text(
+  Widget _label(String text, ColorScheme cs) => Text(
         text,
         style: GoogleFonts.inter(
-          color: _K.inkMuted,
+          color: cs.onSurface.withValues(alpha: 0.6),
           fontSize: 11,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
@@ -551,32 +531,35 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 class _DateCard extends StatelessWidget {
   final String label, value, sub;
   final IconData icon;
+  final ColorScheme colorScheme;
 
   const _DateCard({
     required this.label,
     required this.value,
     required this.sub,
     required this.icon,
+    required this.colorScheme,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cs = colorScheme;
     return GestureDetector(
       onTap: () => HapticFeedback.selectionClick(),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _K.chipBg,
+          color: cs.outline.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(children: [
           Container(
             width: 38, height: 38,
             decoration: BoxDecoration(
-              color: _K.mintBg,
+              color: cs.secondary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(11),
             ),
-            child: Icon(icon, color: _K.green, size: 16),
+            child: Icon(icon, color: cs.primary, size: 16),
           ),
           const SizedBox(width: 10),
           Column(
@@ -584,7 +567,7 @@ class _DateCard extends StatelessWidget {
             children: [
               Text(label.toUpperCase(),
                   style: GoogleFonts.inter(
-                    color: _K.inkSubtle,
+                    color: cs.onSurface.withValues(alpha: 0.5),
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1,
@@ -592,14 +575,14 @@ class _DateCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(value,
                   style: GoogleFonts.outfit(
-                    color: _K.ink,
+                    color: cs.onSurface,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
                   )),
               Text(sub,
                   style: GoogleFonts.inter(
-                      color: _K.inkSubtle, fontSize: 10)),
+                      color: cs.onSurface.withValues(alpha: 0.5), fontSize: 10)),
             ],
           ),
         ]),
@@ -616,11 +599,13 @@ class _Field extends StatefulWidget {
   final String hint;
   final IconData icon;
   final int maxLines;
+  final ColorScheme colorScheme;
 
   const _Field({
     required this.controller,
     required this.hint,
     required this.icon,
+    required this.colorScheme,
     this.maxLines = 1,
   });
 
@@ -633,20 +618,21 @@ class _FieldState extends State<_Field> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = widget.colorScheme;
     return Focus(
       onFocusChange: (f) => setState(() => _focused = f),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: _focused ? Colors.white : _K.chipBg,
+          color: _focused ? cs.surface : cs.outline.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _focused ? _K.mint : Colors.transparent,
+            color: _focused ? cs.secondary : Colors.transparent,
             width: 1.5,
           ),
           boxShadow: _focused
               ? [BoxShadow(
-                  color: _K.mint.withOpacity(0.12),
+                  color: cs.secondary.withOpacity(0.12),
                   blurRadius: 8,
                   offset: const Offset(0, 2))]
               : [],
@@ -654,15 +640,15 @@ class _FieldState extends State<_Field> {
         child: TextField(
           controller: widget.controller,
           maxLines: widget.maxLines,
-          style: GoogleFonts.inter(color: _K.ink, fontSize: 14),
+          style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14),
           decoration: InputDecoration(
             hintText: widget.hint,
             hintStyle: GoogleFonts.inter(
-                color: _K.inkSubtle, fontSize: 13),
+                color: cs.onSurface.withValues(alpha: 0.5), fontSize: 13),
             prefixIcon: Padding(
               padding: const EdgeInsets.only(left: 14, right: 10),
               child: Icon(widget.icon,
-                  color: _focused ? _K.green : _K.inkSubtle,
+                  color: _focused ? cs.primary : cs.onSurface.withValues(alpha: 0.5),
                   size: 15),
             ),
             prefixIconConstraints:
@@ -685,19 +671,21 @@ class _FieldState extends State<_Field> {
 class _StepBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _StepBtn({required this.icon, required this.onTap});
+  final ColorScheme colorScheme;
+  const _StepBtn({required this.icon, required this.onTap, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
+    final cs = colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 34, height: 34,
         decoration: BoxDecoration(
-          color: _K.mintBg,
+          color: cs.secondary.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: _K.green, size: 14),
+        child: Icon(icon, color: cs.primary, size: 14),
       ),
     );
   }
@@ -709,10 +697,12 @@ class _StepBtn extends StatelessWidget {
 class _Toggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
-  const _Toggle({required this.value, required this.onChanged});
+  final ColorScheme colorScheme;
+  const _Toggle({required this.value, required this.onChanged, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
+    final cs = colorScheme;
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -723,7 +713,7 @@ class _Toggle extends StatelessWidget {
         curve: Curves.easeInOut,
         width: 46, height: 26,
         decoration: BoxDecoration(
-          color: value ? _K.green : const Color(0xFFDDDDDB),
+          color: value ? cs.primary : cs.outline.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(13),
         ),
         child: AnimatedAlign(

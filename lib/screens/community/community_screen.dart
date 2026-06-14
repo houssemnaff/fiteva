@@ -18,15 +18,17 @@ class CommunityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tabIndex = ref.watch(communityTabProvider);
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFEFEFE),
+      backgroundColor: cs.surface,
       body: NestedScrollView(
         headerSliverBuilder: (context, _) => [
           _CommunityAppBar(
             tabIndex: tabIndex,
             onComposerTap: () => _openComposer(context, tabIndex),
             onTabTap: (i) => ref.read(communityTabProvider.notifier).state = i,
+            colorScheme: cs,
           ),
         ],
         body: IndexedStack(
@@ -46,7 +48,7 @@ class CommunityScreen extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => sheet,
     );
   }
@@ -57,11 +59,13 @@ class _CommunityAppBar extends StatelessWidget {
   final int tabIndex;
   final VoidCallback onComposerTap;
   final ValueChanged<int> onTabTap;
+  final ColorScheme colorScheme;
 
   const _CommunityAppBar({
     required this.tabIndex,
     required this.onComposerTap,
     required this.onTabTap,
+    required this.colorScheme,
   });
 
   @override
@@ -71,14 +75,14 @@ class _CommunityAppBar extends StatelessWidget {
       pinned: true,
       floating: false,
       elevation: 0,
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       surfaceTintColor: Colors.transparent,
       expandedHeight: top + 72,
       collapsedHeight: top + 64,
       automaticallyImplyLeading: false,
       flexibleSpace: LayoutBuilder(builder: (_, __) {
         return Container(
-          color: Colors.white,
+          color: colorScheme.surface,
           padding: EdgeInsets.fromLTRB(20, top + 14, 20, 10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -91,7 +95,7 @@ class _CommunityAppBar extends StatelessWidget {
                     Text(
                       'COMMUNAUTÉ',
                       style: GoogleFonts.inter(
-                        color: const Color(0xFF7ABB98),
+                        color: colorScheme.secondary,
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 3.5,
@@ -101,7 +105,7 @@ class _CommunityAppBar extends StatelessWidget {
                     Text(
                       'Together',
                       style: GoogleFonts.outfit(
-                        color: const Color(0xFF1A1A1A),
+                        color: colorScheme.onSurface,
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
@@ -117,15 +121,15 @@ class _CommunityAppBar extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1C4D30),
+                    color: colorScheme.primary,
                     borderRadius: BorderRadius.circular(50),
                   ),
                   child: Row(children: [
-                    const Icon(LucideIcons.plus, size: 13, color: Colors.white),
+                    Icon(LucideIcons.plus, size: 13, color: colorScheme.onPrimary),
                     const SizedBox(width: 6),
                     Text('Créer',
                       style: GoogleFonts.inter(
-                        color: Colors.white, fontSize: 12,
+                        color: colorScheme.onPrimary, fontSize: 12,
                         fontWeight: FontWeight.w700, letterSpacing: 0.3)),
                   ]),
                 ),
@@ -135,25 +139,25 @@ class _CommunityAppBar extends StatelessWidget {
               Container(
                 width: 40, height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7ABB98).withOpacity(0.08),
+                  color: colorScheme.secondary.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(LucideIcons.bell, size: 17,
-                    color: Color(0xFF7ABB98)),
+                child: Icon(LucideIcons.bell, size: 17,
+                    color: colorScheme.secondary),
               ),
               const SizedBox(width: 10),
               // Avatar
               Container(
                 width: 40, height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7ABB98).withOpacity(0.12),
+                  color: colorScheme.secondary.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF7ABB98), width: 1.5),
+                  border: Border.all(color: colorScheme.secondary, width: 1.5),
                 ),
                 child: Center(
                   child: Text('Y',
                     style: GoogleFonts.outfit(
-                      color: const Color(0xFF7ABB98),
+                      color: colorScheme.secondary,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                     )),

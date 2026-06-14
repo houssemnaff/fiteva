@@ -20,8 +20,9 @@ class CommunityTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      color: Colors.white,
+      color: cs.surface,
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Row(
         children: List.generate(_tabs.length, (i) {
@@ -37,8 +38,8 @@ class CommunityTabBar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
                   color: selected
-                      ? const Color(0xFF1C4D30)
-                      : const Color(0xFFF4F4F2),
+                      ? cs.primary
+                      : cs.outline.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: Row(
@@ -48,8 +49,8 @@ class CommunityTabBar extends StatelessWidget {
                       tab.icon,
                       size: 13,
                       color: selected
-                          ? const Color(0xFF7ABB98)
-                          : const Color(0xFF757575),
+                          ? cs.secondary
+                          : cs.onSurface.withValues(alpha: 0.6),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -57,7 +58,7 @@ class CommunityTabBar extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: selected ? Colors.white : const Color(0xFF757575),
+                        color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
                         letterSpacing: 0.2,
                       ),
                     ),

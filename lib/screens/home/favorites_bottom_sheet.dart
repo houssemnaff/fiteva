@@ -1,4 +1,3 @@
-import 'package:fiteva/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -43,13 +42,14 @@ class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      decoration: const BoxDecoration(
-        color: AppTheme.backgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -60,7 +60,7 @@ class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppTheme.neutral300,
+              color: cs.onSurface.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -74,7 +74,7 @@ class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
                   child: Text(
                     'Mes favoris',
                     style: GoogleFonts.outfit(
-                      color: AppTheme.textPrimaryColor,
+                      color: cs.onSurface,
                       fontWeight: FontWeight.w800,
                       fontSize: 20,
                       letterSpacing: -0.3,
@@ -86,13 +86,13 @@ class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: AppTheme.neutral200,
+                      color: cs.onSurface.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.close_rounded,
                       size: 16,
-                      color: AppTheme.textPrimaryColor,
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
@@ -119,8 +119,8 @@ class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: selected
-                          ? AppTheme.primaryColor
-                          : const Color(0xFFEDE9E3),
+                          ? cs.primary
+                          : cs.onSurface.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -128,13 +128,13 @@ class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
                         Icon(
                           _tabs[index]['icon'] as IconData,
                           size: 14,
-                          color: selected ? Colors.white : AppTheme.textSecondaryColor,
+                          color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
                         ),
                         const SizedBox(width: 6),
                         Text(
                           _tabs[index]['label'] as String,
                           style: GoogleFonts.inter(
-                            color: selected ? Colors.white : AppTheme.textSecondaryColor,
+                            color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -173,6 +173,7 @@ class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
                     onRemove: () {
                       setState(() => _getItems().removeAt(index));
                     },
+                    colorScheme: cs,
                   );
                 },
               ),
@@ -203,6 +204,7 @@ class _FavoriteCard extends StatelessWidget {
   final String imageAsset;
   final FavoriteType type;
   final VoidCallback onRemove;
+  final ColorScheme colorScheme;
 
   const _FavoriteCard({
     required this.title,
@@ -210,6 +212,7 @@ class _FavoriteCard extends StatelessWidget {
     required this.imageAsset,
     required this.type,
     required this.onRemove,
+    required this.colorScheme,
   });
 
   IconData get _typeIcon {
@@ -227,7 +230,7 @@ class _FavoriteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F4F1),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -244,11 +247,11 @@ class _FavoriteCard extends StatelessWidget {
                     imageAsset,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFFD5C9BF),
+                      color: colorScheme.outline.withValues(alpha: 0.3),
                       child: Center(
                         child: Icon(
                           _typeIcon,
-                          color: const Color(0xFF9E948C),
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
                           size: 32,
                         ),
                       ),
@@ -265,20 +268,20 @@ class _FavoriteCard extends StatelessWidget {
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surface,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
+                          color: colorScheme.shadow.withValues(alpha: 0.1),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       LucideIcons.heartOff,
                       size: 14,
-                      color: Color(0xFFE57373),
+                      color: colorScheme.error,
                     ),
                   ),
                 ),
@@ -293,7 +296,7 @@ class _FavoriteCard extends StatelessWidget {
                 Text(
                   title,
                   style: GoogleFonts.outfit(
-                    color: AppTheme.textPrimaryColor,
+                    color: colorScheme.onSurface,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -304,7 +307,7 @@ class _FavoriteCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: GoogleFonts.inter(
-                    color: AppTheme.textSecondaryColor,
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 11,
                   ),
                   maxLines: 1,

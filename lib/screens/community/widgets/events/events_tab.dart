@@ -7,13 +7,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/community_providers.dart';
 import 'participants_sheet.dart';
 
-const _kGreen   = Color(0xFF1C4D30);
-const _kMint    = Color(0xFF7ABB98);
-const _kBg      = Color(0xFFFEFEFE);
-const _kSurface = Colors.white;
-const _kBorder  = Color(0xFFECECEC);
-const _kText1   = Color(0xFF1A1A1A);
-const _kText2   = Color(0xFF757575);
 
 // ─── Events Tab ───────────────────────────────────────────────
 class EventsTab extends ConsumerStatefulWidget {
@@ -36,13 +29,14 @@ class _EventsTabState extends ConsumerState<EventsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final events = ref.watch(eventsNotifierProvider);
     final filtered = _selectedType == 'Tous'
         ? events
         : events.where((e) => e.type.toLowerCase() == _selectedType.toLowerCase()).toList();
 
     return ColoredBox(
-      color: _kBg,
+      color: cs.surface,
       child: CustomScrollView(
         slivers: [
 
@@ -54,12 +48,12 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('EVENTS', style: GoogleFonts.inter(
-                    color: _kMint, fontSize: 9,
+                    color: cs.secondary, fontSize: 9,
                     fontWeight: FontWeight.w700, letterSpacing: 3,
                   )),
                   const SizedBox(height: 3),
                   Text('Événements', style: GoogleFonts.outfit(
-                    color: _kText1, fontSize: 26,
+                    color: cs.onSurface, fontSize: 26,
                     fontWeight: FontWeight.w800, letterSpacing: -0.5,
                   )),
                 ],
@@ -89,15 +83,15 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 5),
                       decoration: BoxDecoration(
-                        color: sel ? _kGreen : _kSurface,
+                        color: sel ? cs.primary : cs.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(50),
                         border: Border.all(
-                            color: sel ? _kGreen : _kBorder),
+                            color: sel ? cs.primary : cs.outline),
                       ),
                       child: Text(label, style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: sel ? Colors.white : _kText2,
+                        color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
                       )),
                     ),
                   );
@@ -118,6 +112,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                   event: event,
                   typeIcon: _icons[event.type.toLowerCase()] ??
                       LucideIcons.calendarDays,
+                  colorScheme: cs,
                   onJoin: () {
                     HapticFeedback.mediumImpact();
                     ref.read(eventsNotifierProvider.notifier).toggleJoin(event.id);
@@ -125,7 +120,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                   onViewParticipants: () => showModalBottomSheet<void>(
                     context: context,
                     backgroundColor: Colors.transparent,
-                    builder: (_) => ParticipantsSheet(event: event),
+                    builder: (_) => ParticipantsSheet(event: event, colorScheme: cs),
                   ),
                 );
               },
@@ -143,6 +138,7 @@ class EventCard extends StatelessWidget {
   final IconData typeIcon;
   final VoidCallback onJoin;
   final VoidCallback onViewParticipants;
+  final ColorScheme colorScheme;
 
   const EventCard({
     super.key,
@@ -150,6 +146,7 @@ class EventCard extends StatelessWidget {
     required this.typeIcon,
     required this.onJoin,
     required this.onViewParticipants,
+    required this.colorScheme,
   });
 
   @override
@@ -160,12 +157,12 @@ class EventCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: colorScheme.outline),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -185,9 +182,9 @@ class EventCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   height: 160,
-                  color: _kGreen.withOpacity(0.1),
+                  color: colorScheme.primary.withValues(alpha: 0.1),
                   child: Center(child: Icon(LucideIcons.image,
-                      color: _kGreen.withOpacity(0.3), size: 32)),
+                      color: colorScheme.primary.withValues(alpha: 0.3), size: 32)),
                 ),
               ),
             ),
@@ -199,7 +196,7 @@ class EventCard extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
-                    colors: [_kGreen.withOpacity(0.75), Colors.transparent],
+                    colors: [colorScheme.primary.withValues(alpha: 0.75), Colors.transparent],
                   ),
                 ),
               ),
@@ -210,14 +207,14 @@ class EventCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: _kGreen,
+                  color: colorScheme.primary,
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(typeIcon, size: 10, color: _kMint),
+                  Icon(typeIcon, size: 10, color: colorScheme.secondary),
                   const SizedBox(width: 5),
                   Text(event.type.toUpperCase(), style: GoogleFonts.inter(
-                    fontSize: 9, color: Colors.white,
+                    fontSize: 9, color: colorScheme.onPrimary,
                     fontWeight: FontWeight.w800, letterSpacing: 1,
                   )),
                 ]),
@@ -237,7 +234,7 @@ class EventCard extends StatelessWidget {
                 child: Text(
                   isFull ? 'Complet' : '$spotsLeft places',
                   style: GoogleFonts.inter(
-                    fontSize: 9, color: Colors.white,
+                    fontSize: 9, color: colorScheme.onSurface,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -252,7 +249,7 @@ class EventCard extends StatelessWidget {
               children: [
                 // Title
                 Text(event.title, style: GoogleFonts.outfit(
-                  color: _kText1, fontSize: 17,
+                  color: colorScheme.onSurface, fontSize: 17,
                   fontWeight: FontWeight.w800, letterSpacing: -0.4,
                 )),
                 const SizedBox(height: 12),
@@ -262,28 +259,28 @@ class EventCard extends StatelessWidget {
                   spacing: 8, runSpacing: 8,
                   children: [
                     _MetaChip(icon: LucideIcons.calendarDays,
-                        label: '${event.date} · ${event.time}'),
-                    _MetaChip(icon: LucideIcons.mapPin, label: event.location),
+                        label: '${event.date} · ${event.time}', colorScheme: colorScheme),
+                    _MetaChip(icon: LucideIcons.mapPin, label: event.location, colorScheme: colorScheme),
                   ],
                 ),
                 const SizedBox(height: 14),
 
-                Divider(height: 1, color: _kBorder),
+                Divider(height: 1, color: colorScheme.outline),
                 const SizedBox(height: 14),
 
                 // Organizer + participants
                 Row(children: [
-                  _ProAvatar(url: event.organizerAvatar, radius: 14),
+                  _ProAvatar(url: event.organizerAvatar, radius: 14, colorScheme: colorScheme),
                   const SizedBox(width: 9),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Organisé par', style: GoogleFonts.inter(
-                          color: _kText2, fontSize: 10,
+                          color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 10,
                         )),
                         Text(event.organizer, style: GoogleFonts.inter(
-                          color: _kText1, fontSize: 12,
+                          color: colorScheme.onSurface, fontSize: 12,
                           fontWeight: FontWeight.w600,
                         )),
                       ],
@@ -294,6 +291,7 @@ class EventCard extends StatelessWidget {
                     child: _ParticipantsStack(
                       avatars: event.participantAvatars,
                       count: event.joinedCount,
+                      colorScheme: colorScheme,
                     ),
                   ),
                 ]),
@@ -302,7 +300,7 @@ class EventCard extends StatelessWidget {
 
                 // CTA
                 _JoinButton(isJoined: isJoined, isFull: isFull,
-                    onTap: isFull ? null : onJoin),
+                    onTap: isFull ? null : onJoin, colorScheme: colorScheme),
               ],
             ),
           ),
@@ -315,21 +313,22 @@ class EventCard extends StatelessWidget {
 class _MetaChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _MetaChip({required this.icon, required this.label});
+  final ColorScheme colorScheme;
+  const _MetaChip({required this.icon, required this.label, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _kGreen.withOpacity(0.06),
+        color: colorScheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 11, color: _kGreen),
+        Icon(icon, size: 11, color: colorScheme.primary),
         const SizedBox(width: 6),
         Text(label, style: GoogleFonts.inter(
-          fontSize: 11, color: _kText1, fontWeight: FontWeight.w500,
+          fontSize: 11, color: colorScheme.onSurface, fontWeight: FontWeight.w500,
         )),
       ]),
     );
@@ -339,7 +338,8 @@ class _MetaChip extends StatelessWidget {
 class _ParticipantsStack extends StatelessWidget {
   final List<String> avatars;
   final int count;
-  const _ParticipantsStack({required this.avatars, required this.count});
+  final ColorScheme colorScheme;
+  const _ParticipantsStack({required this.avatars, required this.count, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
@@ -357,18 +357,18 @@ class _ParticipantsStack extends StatelessWidget {
               width: size, height: size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: _kSurface, width: 1.5),
+                border: Border.all(color: colorScheme.surfaceContainerHighest, width: 1.5),
               ),
               child: ClipOval(child: Image.network(shown[i], fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) =>
-                      Container(color: _kMint.withOpacity(0.3)))),
+                      Container(color: colorScheme.secondary.withValues(alpha: 0.3)))),
             ),
           )),
         ),
       ),
       const SizedBox(width: 7),
       Text('+$count', style: GoogleFonts.inter(
-        color: _kText2, fontSize: 11, fontWeight: FontWeight.w600,
+        color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 11, fontWeight: FontWeight.w600,
       )),
     ]);
   }
@@ -377,7 +377,8 @@ class _ParticipantsStack extends StatelessWidget {
 class _JoinButton extends StatelessWidget {
   final bool isJoined, isFull;
   final VoidCallback? onTap;
-  const _JoinButton({required this.isJoined, required this.isFull, required this.onTap});
+  final ColorScheme colorScheme;
+  const _JoinButton({required this.isJoined, required this.isFull, required this.onTap, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
@@ -387,13 +388,13 @@ class _JoinButton extends StatelessWidget {
     final String label;
 
     if (isJoined) {
-      bg = _kMint.withOpacity(0.15); fg = _kGreen;
+      bg = colorScheme.secondary.withValues(alpha: 0.15); fg = colorScheme.primary;
       icon = LucideIcons.checkCircle; label = 'Inscrit ✓';
     } else if (isFull) {
-      bg = Colors.red.withOpacity(0.08); fg = Colors.red.shade600;
+      bg = colorScheme.error.withValues(alpha: 0.08); fg = colorScheme.error;
       icon = LucideIcons.xCircle; label = 'Complet';
     } else {
-      bg = _kGreen; fg = Colors.white;
+      bg = colorScheme.primary; fg = colorScheme.onPrimary;
       icon = LucideIcons.userPlus; label = 'Rejoindre';
     }
 
@@ -426,7 +427,8 @@ class _JoinButton extends StatelessWidget {
 class _ProAvatar extends StatelessWidget {
   final String url;
   final double radius;
-  const _ProAvatar({required this.url, required this.radius});
+  final ColorScheme colorScheme;
+  const _ProAvatar({required this.url, required this.radius, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
@@ -434,12 +436,12 @@ class _ProAvatar extends StatelessWidget {
       width: radius * 2, height: radius * 2,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: _kSurface, width: 1),
+        border: Border.all(color: colorScheme.surfaceContainerHighest, width: 1),
       ),
       child: ClipOval(
         child: Image.network(url, fit: BoxFit.cover,
             errorBuilder: (_, __, ___) =>
-                Container(color: _kMint.withOpacity(0.3))),
+                Container(color: colorScheme.secondary.withValues(alpha: 0.3))),
       ),
     );
   }
