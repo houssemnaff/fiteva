@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../../providers/points_provider.dart';
+import '../../core/shop/shop_provider.dart';
 import '../../providers/workout_progress_provider.dart';
 import '../../services/workout_progress_service.dart';
 
@@ -172,6 +173,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
         setState(() => _hasWatched80Percent = true);
         final points = _calculatePointsForExercise(widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex);
         widget.ref.read(pointsProvider.notifier).addPoints(points);
+        widget.ref.read(shopProvider.notifier).refresh();
         WorkoutProgressService.updateVideoProgress(widget.videoId, 0.80);
         final total = widget.ref.read(pointsProvider);
         if (mounted) {

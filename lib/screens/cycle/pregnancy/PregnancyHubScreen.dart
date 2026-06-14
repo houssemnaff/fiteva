@@ -7,6 +7,7 @@ import 'package:fiteva/screens/cycle/pregnancy/daily_insight_model.dart';
 import 'package:fiteva/screens/cycle/pregnancy/body/pregnancy_body_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_hub_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/symptom/symptoms_home_screen.dart';
+import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,11 +56,147 @@ class PregnancyHubScreen extends ConsumerStatefulWidget {
   ConsumerState<PregnancyHubScreen> createState() => _PregnancyHubScreenState();
 }
 
-class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen> {
-  int? _mood; // 0=bien 1=fatiguée 2=joyeuse
+class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
+    with SingleTickerProviderStateMixin {
+  int? _mood;
+  bool _switching = false;
 
-  static const _months = ['janv.','févr.','mars','avr.','mai','juin',
-    'juil.','août','sept.','oct.','nov.','déc.'];
+  late final AnimationController _switchAnim = AnimationController(
+    vsync: this, duration: const Duration(milliseconds: 600));
+  late final Animation<double> _fadeOut =
+      Tween<double>(begin: 1, end: 0).animate(
+          CurvedAnimation(parent: _switchAnim, curve: Curves.easeInCubic));
+  late final Animation<double> _scaleOut =
+      Tween<double>(begin: 1, end: 0.92).animate(
+          CurvedAnimation(parent: _switchAnim, curve: Curves.easeInCubic));
+
+  static const _months = ['janv.','fevr.','mars','avr.','mai','juin',
+    'juil.','aout','sept.','oct.','nov.','dec.'];
+
+  @override
+  void dispose() {
+    _switchAnim.dispose();
+    super.dispose();
+  }
+
+  Future<void> _switchToCycle() async {
+    // Confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Quitter le suivi grossesse ?',
+          style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w700,
+              color: const Color(0xFF1A2E20))),
+        content: Text(
+          'Votre application passera en mode Cycle menstruel. '
+          'Vos donnees de grossesse seront conservees.',
+          style: GoogleFonts.inter(fontSize: 13, height: 1.55,
+              color: const Color(0xFF5A7A65))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler',
+              style: GoogleFonts.inter(color: const Color(0xFF888888)))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1C4D30),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Confirmer',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700))),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    // Animate out
+    setState(() => _switching = true);
+    await _switchAnim.forward();
+
+    if (!mounted) return;
+
+    // Save profile
+    final notifier = ref.read(userProfileProvider.notifier);
+    await notifier.updateField('health_status', 'cycle');
+    await notifier.updateField('pregnancy_week', null);
+  }
+
+  Future<void> _switchToPostpartum() async {
+    // Calendrier date d'accouchement
+    final birthDate = await showCustomDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 730)),
+      lastDate: DateTime.now(),
+      title: 'Date d\'accouchement',
+      subtitle: 'Quand est ne votre bebe ?',
+      icon: Icons.child_care_rounded,
+      accentColor: const Color(0xFF1C4D30),
+    );
+
+    if (birthDate == null || !mounted) return;
+
+    // Calcul semaines depuis l'accouchement
+    final weeks = DateTime.now().difference(birthDate).inDays ~/ 7;
+    final String ppDuration;
+    if (weeks < 2)       ppDuration = '0-2';
+    else if (weeks < 6)  ppDuration = '2-6';
+    else if (weeks < 12) ppDuration = '6-12';
+    else if (weeks < 26) ppDuration = '3-6m';
+    else                 ppDuration = '6m+';
+
+    // Confirmation
+    if (!mounted) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Passer en mode Post-partum ?',
+          style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w700,
+              color: const Color(0xFF1A2E20))),
+        content: Text(
+          'Accouchement le ${birthDate.day}/${birthDate.month}/${birthDate.year} '
+          '($weeks semaines). Votre suivi passera en mode post-partum.',
+          style: GoogleFonts.inter(fontSize: 13, height: 1.55,
+              color: const Color(0xFF5A7A65))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler',
+              style: GoogleFonts.inter(color: const Color(0xFF888888)))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1C4D30),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Confirmer',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700))),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    // Animation + sauvegarde
+    setState(() => _switching = true);
+    await _switchAnim.forward();
+    if (!mounted) return;
+
+    final notifier = ref.read(userProfileProvider.notifier);
+    await notifier.updateField('health_status', 'postpartum');
+    await notifier.updateField('pp_duration', ppDuration);
+    await notifier.updateField('pregnancy_week', null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +211,13 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen> {
 
     return Scaffold(
       backgroundColor: context._p.bg,
-      body: CustomScrollView(
+      body: AnimatedBuilder(
+        animation: _switchAnim,
+        builder: (context, child) => FadeTransition(
+          opacity: _fadeOut,
+          child: ScaleTransition(scale: _scaleOut, child: child),
+        ),
+        child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
 
@@ -84,14 +227,50 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen> {
             accentColor: context._p.green,
             bgColor: Colors.white,
             actions: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: context._p.mintLight,
-                  borderRadius: BorderRadius.circular(20),
+              PopupMenuButton<String>(
+                enabled: !_switching,
+                onSelected: (v) {
+                  if (v == 'cycle')      _switchToCycle();
+                  if (v == 'postpartum') _switchToPostpartum();
+                },
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                elevation: 4,
+                color: Colors.white,
+                offset: const Offset(0, 44),
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'postpartum',
+                    child: Row(children: [
+                      const Text('👶', style: TextStyle(fontSize: 16)),
+                      const SizedBox(width: 10),
+                      Text('Post-partum', style: GoogleFonts.inter(
+                        fontSize: 13, fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1A2E20))),
+                    ]),
+                  ),
+                  PopupMenuItem(
+                    value: 'cycle',
+                    child: Row(children: [
+                      const Icon(Icons.water_drop_rounded,
+                          size: 16, color: Color(0xFFD94F6B)),
+                      const SizedBox(width: 10),
+                      Text('Mon cycle', style: GoogleFonts.inter(
+                        fontSize: 13, fontWeight: FontWeight.w600,
+                        color: const Color(0xFFD94F6B))),
+                    ]),
+                  ),
+                ],
+                child: Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: context._p.mintLight,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: context._p.border),
+                  ),
+                  child: Icon(Icons.more_horiz_rounded,
+                      size: 18, color: context._p.green),
                 ),
-                child: Text(fmtDue, style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w600, color: context._p.green)),
               ),
             ],
           ),
@@ -150,6 +329,7 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen> {
         ])),
         ],
       ),
+      ),  // AnimatedBuilder child
     );
   }
 
@@ -174,103 +354,81 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = (week / 42).clamp(0.0, 1.0);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context._p.surface,
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-        boxShadow: [BoxShadow(
-          color: Color(0x0A1C4D30), blurRadius: 20, offset: Offset(0, 8))],
+    return Column(children: [
+
+      // ── image — complètement libre, aucun container ──────────────────────
+      AnimatedSwitcher(
+        duration: const Duration(milliseconds: 450),
+        transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
+        child: _FetusPic(key: ValueKey(week), week: week),
       ),
-      child: Column(children: [
-        const SizedBox(height: 24),
 
-        // fetus photo — dans un cercle en couches
-        Stack(alignment: Alignment.center, children: [
-          // halo externe
-          Container(
-            width: 204, height: 204,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: context._p.mintLight.withOpacity(0.50),
-            ),
-          ),
-          // cercle intermédiaire
-          Container(
-            width: 185, height: 185,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle, color: context._p.mintLight),
-          ),
-          // photo
-          Container(
-            width: 168, height: 168,
-            decoration: const BoxDecoration(shape: BoxShape.circle),
-            child: ClipOval(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 450),
-                transitionBuilder: (c, a) =>
-                    FadeTransition(opacity: a, child: c),
-                child: _FetusPic(key: ValueKey(week), week: week),
-              ),
-            ),
-          ),
-        ]),
-
-        const SizedBox(height: 22),
-
-        // semaine
-        Text(tri.toUpperCase(), style: GoogleFonts.inter(
-          fontSize: 9, fontWeight: FontWeight.w500,
-          color: context._p.textSoft, letterSpacing: 2.5)),
-        const SizedBox(height: 2),
-        Row(mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text('Semaine ', style: GoogleFonts.inter(
-                fontSize: 18, fontWeight: FontWeight.w400, color: context._p.textMid)),
-              Text('$week', style: GoogleFonts.outfit(
-                fontSize: 48, fontWeight: FontWeight.w600,
-                color: context._p.green, height: 1.1)),
-            ]),
-
-        const SizedBox(height: 6),
-        Text('Taille d\'une $fruit',
-            style: GoogleFonts.inter(
-                fontSize: 13, color: context._p.textSoft)),
-
-        const SizedBox(height: 24),
-
-        // progress + jours
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('$left jours restants', style: GoogleFonts.inter(
-                fontSize: 12, color: context._p.textSoft)),
-              Text('S42', style: GoogleFonts.inter(
-                fontSize: 12, color: context._p.textSoft)),
-            ]),
-            const SizedBox(height: 6),
-            ClipRRect(borderRadius: BorderRadius.circular(4),
-              child: Stack(children: [
-                Container(height: 6, color: context._p.mintLight),
-                FractionallySizedBox(
-                  widthFactor: progress,
-                  child: Container(height: 6,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      gradient: LinearGradient(
-                        colors: [context._p.mint, context._p.green]),
-                    )),
-                ),
-              ]),
-            ),
-          ]),
+      // ── info card — commence après l'image ──────────────────────────────
+      Container(
+        decoration: BoxDecoration(
+          color: context._p.surface,
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+          boxShadow: [BoxShadow(
+            color: Color(0x0A1C4D30), blurRadius: 20, offset: Offset(0, 8))],
         ),
+        child: Column(children: [
+          const SizedBox(height: 16),
 
-        const SizedBox(height: 28),
-      ]),
-    );
+          // semaine
+          Text(tri.toUpperCase(), style: GoogleFonts.inter(
+            fontSize: 9, fontWeight: FontWeight.w500,
+            color: context._p.textSoft, letterSpacing: 2.5)),
+          const SizedBox(height: 2),
+          Row(mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text('Semaine ', style: GoogleFonts.inter(
+                  fontSize: 18, fontWeight: FontWeight.w400, color: context._p.textMid)),
+                Text('$week', style: GoogleFonts.outfit(
+                  fontSize: 48, fontWeight: FontWeight.w600,
+                  color: context._p.green, height: 1.1)),
+              ]),
+
+          const SizedBox(height: 6),
+          Text('Taille d\'une $fruit',
+              style: GoogleFonts.inter(
+                  fontSize: 13, color: context._p.textSoft)),
+
+          const SizedBox(height: 24),
+
+          // progress + jours
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('$left jours restants', style: GoogleFonts.inter(
+                  fontSize: 12, color: context._p.textSoft)),
+                Text('S42', style: GoogleFonts.inter(
+                  fontSize: 12, color: context._p.textSoft)),
+              ]),
+              const SizedBox(height: 6),
+              ClipRRect(borderRadius: BorderRadius.circular(4),
+                child: Stack(children: [
+                  Container(height: 6, color: context._p.mintLight),
+                  FractionallySizedBox(
+                    widthFactor: progress,
+                    child: Container(height: 6,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        gradient: LinearGradient(
+                          colors: [context._p.mint, context._p.green]),
+                      )),
+                  ),
+                ]),
+              ),
+            ]),
+          ),
+
+          const SizedBox(height: 28),
+        ]),
+      ),
+    ]);
   }
 }
 
@@ -786,9 +944,8 @@ class _FetusPic extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Image.asset(
     'assets/fetus/week_$week.png',
-    width: 168, height: 168,
-    fit: BoxFit.cover,
-    alignment: Alignment.center,
+    width: double.infinity,
+    fit: BoxFit.fitWidth,
     errorBuilder: (_, __, ___) => _FetusPlaceholder(week: week),
   );
 }

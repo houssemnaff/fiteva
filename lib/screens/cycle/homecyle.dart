@@ -120,10 +120,21 @@ class CycleScreen extends ConsumerStatefulWidget {
   ConsumerState<CycleScreen> createState() => _CycleScreenState();
 }
 
-class _CycleScreenState extends ConsumerState<CycleScreen> {
+class _CycleScreenState extends ConsumerState<CycleScreen>
+    with SingleTickerProviderStateMixin {
   late int _currentDay;
   final Set<FloSymptom> _logged = {};
   final DateTime _today = DateTime.now();
+  bool _switching = false;
+
+  late final AnimationController _switchAnim = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 550));
+  late final Animation<double> _fadeOut =
+      Tween<double>(begin: 1, end: 0).animate(
+          CurvedAnimation(parent: _switchAnim, curve: Curves.easeInCubic));
+  late final Animation<double> _scaleDown =
+      Tween<double>(begin: 1, end: 0.94).animate(
+          CurvedAnimation(parent: _switchAnim, curve: Curves.easeInCubic));
 
   int _computeCurrentDay(UserProfile profile) {
     final last = profile.lastPeriod;
@@ -139,6 +150,80 @@ class _CycleScreenState extends ConsumerState<CycleScreen> {
   }
 
   @override
+  void dispose() {
+    _switchAnim.dispose();
+    super.dispose();
+  }
+
+  Future<void> _switchToPregnancy() async {
+    HapticFeedback.mediumImpact();
+
+    // Semaine de grossesse
+    int selectedWeek = 12;
+    final week = await showDialog<int>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('Je suis enceinte',
+            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700,
+                color: const Color(0xFF1A2E20))),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('A quelle semaine en es-tu ?',
+              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5A7A65))),
+            const SizedBox(height: 20),
+            Text('Semaine $selectedWeek',
+              style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1C4D30))),
+            Slider(
+              value: selectedWeek.toDouble(),
+              min: 1, max: 42,
+              divisions: 41,
+              activeColor: const Color(0xFF1C4D30),
+              inactiveColor: const Color(0xFFD0E8D8),
+              onChanged: (v) => setDlg(() => selectedWeek = v.round()),
+            ),
+            Text(
+              selectedWeek <= 13 ? '1er trimestre'
+                  : selectedWeek <= 26 ? '2e trimestre' : '3e trimestre',
+              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600,
+                  color: const Color(0xFF7ABB98))),
+          ]),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Annuler',
+                style: GoogleFonts.inter(color: const Color(0xFF888888)))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1C4D30),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              onPressed: () => Navigator.pop(ctx, selectedWeek),
+              child: Text('Confirmer',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700))),
+          ],
+        ),
+      ),
+    );
+
+    if (week == null || !mounted) return;
+
+    // Animation de sortie
+    setState(() => _switching = true);
+    await _switchAnim.forward();
+    if (!mounted) return;
+
+    // Sauvegarder
+    final notifier = ref.read(userProfileProvider.notifier);
+    await notifier.updateField('health_status', 'pregnant');
+    await notifier.updateField('pregnancy_week', week);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cc    = CycleColors.of(context);
     final theme = getTheme(_currentDay);
@@ -147,11 +232,18 @@ class _CycleScreenState extends ConsumerState<CycleScreen> {
     return Scaffold(
       backgroundColor: cc.bg,
       body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 320),
-          transitionBuilder: (child, anim) =>
-              FadeTransition(opacity: anim, child: child),
-          child: _buildHome(cc, theme, phase),
+        child: AnimatedBuilder(
+          animation: _switchAnim,
+          builder: (context, child) => FadeTransition(
+            opacity: _fadeOut,
+            child: ScaleTransition(scale: _scaleDown, child: child),
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 320),
+            transitionBuilder: (child, anim) =>
+                FadeTransition(opacity: anim, child: child),
+            child: _buildHome(cc, theme, phase),
+          ),
         ),
       ),
     );
@@ -239,27 +331,40 @@ class _CycleScreenState extends ConsumerState<CycleScreen> {
               ? () => Navigator.of(context).pop()
               : null,
           actions: [
-            if (showPregnancy) ...[
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => const PregnancyHubScreen(),
-                  ));
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: cc.surface.withOpacity(0.65),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: theme.primary.withOpacity(0.22)),
-                  ),
-                  child: Icon(Icons.child_friendly_rounded,
-                      size: 16, color: theme.primary),
+            PopupMenuButton<String>(
+              enabled: !_switching,
+              onSelected: (v) {
+                if (v == 'pregnancy') _switchToPregnancy();
+              },
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+              color: Colors.white,
+              offset: const Offset(0, 44),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'pregnancy',
+                  child: Row(children: [
+                    const Text('🤰', style: TextStyle(fontSize: 16)),
+                    const SizedBox(width: 10),
+                    Text('Grossesse', style: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1A2E20))),
+                  ]),
                 ),
+              ],
+              child: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: cc.surface.withOpacity(0.65),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: theme.primary.withOpacity(0.22)),
+                ),
+                child: Icon(Icons.more_horiz_rounded,
+                    size: 18, color: theme.primary),
               ),
-              const SizedBox(width: 6),
-            ],
+            ),
+            const SizedBox(width: 6),
             GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();

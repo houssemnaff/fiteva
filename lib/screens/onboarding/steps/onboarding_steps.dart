@@ -2,12 +2,26 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:fiteva/screens/onboarding/widgets/shared_onboarding_widgets.dart';
+import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:fiteva/widgets/mascot_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+// ─── Responsive helpers ────────────────────────────────────────────────────
+// Reference device: 390 × 844 (iPhone 14)
+extension _R on BuildContext {
+  double get _w => MediaQuery.of(this).size.width;
+  double get _h => MediaQuery.of(this).size.height;
+  /// Scale a horizontal/font value relative to reference width 390
+  double rs(double v) => (v * _w / 390).clamp(v * 0.78, v * 1.28);
+  /// Scale a vertical spacing relative to reference height 844
+  double rv(double v) => (v * _h / 844).clamp(v * 0.68, v * 1.22);
+  bool get isSmall => _h < 700;   // SE, Fold outer, older Androids
+  bool get isLarge => _h > 900;   // Pro Max, tablets
+}
 
 // ─── Design Tokens — Mint/Sage Palette ────────────────────────────────────
 const _kBgMint       = Color(0xFFB8CFC4); // fond principal mint sauge
@@ -20,6 +34,57 @@ const _kTextDark     = Color(0xFF1A2E1A); // texte principal
 const _kTextMuted    = Color(0xFF5A7A65); // texte secondaire
 const _kWhite        = Colors.white;
 const _kBorderLight  = Color(0xFFE2EDE7); // bordures claires
+
+// ─── Shared background widget with mint gradient + decorative orbs ──────────
+Widget _stepBackground({required Widget child}) {
+  return Scaffold(
+    body: LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
+        return Stack(
+          children: [
+            // Mint gradient
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.40, 1.0],
+                  colors: [Color(0xFFA8C4B7), Color(0xFFD2E5DB), Color(0xFFF4FAF6)],
+                ),
+              ),
+            ),
+            // Decorative orb top-right
+            Positioned(
+              top: -h * 0.07, right: -w * 0.12,
+              child: Container(
+                width: w * 0.56, height: w * 0.56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF4A7A5A).withOpacity(0.12),
+                ),
+              ),
+            ),
+            // Decorative orb bottom-left
+            Positioned(
+              bottom: h * 0.05, left: -w * 0.17,
+              child: Container(
+                width: w * 0.66, height: w * 0.66,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF2D4A2D).withOpacity(0.07),
+                ),
+              ),
+            ),
+            // Content
+            child,
+          ],
+        );
+      },
+    ),
+  );
+}
 
 // ─── Shared Widgets ────────────────────────────────────────────────────────
 
@@ -42,19 +107,21 @@ class _OnboardingTopBar extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: EdgeInsets.symmetric(
+            horizontal: context.rs(24), vertical: context.rv(14)),
         child: Row(
           children: [
             GestureDetector(
               onTap: onBack ?? () => Navigator.maybePop(context),
-              child: const Icon(Icons.arrow_back, size: 20, color: _kTextDark),
+              child: Icon(Icons.arrow_back,
+                  size: context.rs(20), color: _kTextDark),
             ),
             Expanded(
               child: Center(
                 child: Text(
                   title?.toUpperCase() ?? '',
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: context.rs(11),
                     letterSpacing: 2.5,
                     fontWeight: FontWeight.w600,
                     color: _kTextMuted,
@@ -62,7 +129,7 @@ class _OnboardingTopBar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 20),
+            SizedBox(width: context.rs(20)),
           ],
         ),
       ),
@@ -77,15 +144,15 @@ class _StepIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sz = context.rs(64);
     return Center(
       child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: const Color(0xFFEEF2EE),
+        width: sz, height: sz,
+        decoration: const BoxDecoration(
+          color: Color(0xFFEEF2EE),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: _kGreenDark, size: 28),
+        child: Icon(icon, color: _kGreenDark, size: context.rs(28)),
       ),
     );
   }
@@ -104,19 +171,19 @@ class _StepHeader extends StatelessWidget {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 24,
+          style: TextStyle(
+            fontSize: context.rs(24),
             fontWeight: FontWeight.w700,
             color: _kTextDark,
             height: 1.2,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: context.rv(8)),
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: context.rs(14),
             color: _kTextMuted,
             height: 1.5,
           ),
@@ -315,21 +382,33 @@ class _CtaButton extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+        padding: EdgeInsets.fromLTRB(
+            context.rs(24), context.rv(10),
+            context.rs(24), context.rv(18)),
         child: GestureDetector(
           onTap: onPressed,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            height: 54,
+            height: context.rv(54),
             decoration: BoxDecoration(
-              color: enabled ? _kGreenDark : const Color(0xFFE8EDE8),
+              gradient: enabled
+                  ? const LinearGradient(
+                      colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    )
+                  : null,
+              color: enabled ? null : const Color(0xFFE8EDE8),
               borderRadius: BorderRadius.circular(40),
+              boxShadow: enabled
+                  ? [BoxShadow(color: _kGreenDark.withOpacity(0.30),
+                      blurRadius: 14, offset: const Offset(0, 5))]
+                  : [],
             ),
             child: Center(
               child: Text(
                 label.toUpperCase(),
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: context.rs(13),
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.8,
                   color: enabled ? _kWhite : _kTextMuted,
@@ -344,12 +423,7 @@ class _CtaButton extends StatelessWidget {
 }
 
 // ─── Scaffold mint de base ─────────────────────────────────────────────────
-Widget _mintScaffold({required Widget child}) {
-  return Scaffold(
-    backgroundColor: Colors.white,
-    body: child,
-  );
-}
+Widget _mintScaffold({required Widget child}) => _stepBackground(child: child);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // STEP 0 — StepIntro  (cinematic hero screen)
@@ -1359,77 +1433,99 @@ class _StepGoalsState extends State<StepGoals>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+    return _stepBackground(
+      child: SafeArea(
         child: Column(
           children: [
             // ── Top bar ──────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 18),
+              padding: EdgeInsets.symmetric(
+                  horizontal: context.rs(24), vertical: context.rv(14)),
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: widget.onBack ??
-                        () => Navigator.maybePop(context),
-                    child: const Icon(Icons.arrow_back,
-                        size: 20, color: _kGreenDark),
+                    onTap: widget.onBack ?? () => Navigator.maybePop(context),
+                    child: Container(
+                      width: context.rs(36), height: context.rs(36),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.arrow_back,
+                          size: context.rs(18), color: _kGreenDark),
+                    ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Center(
                       child: Text(
                         'OBJECTIFS',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: context.rs(11),
                           letterSpacing: 3.5,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: _kGreenDark,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  SizedBox(width: context.rs(36)),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: context.rv(8)),
 
-            // ── Icon ────────────────────────────────────────────
-            const Icon(Icons.track_changes_rounded,
-                size: 38, color: Color(0xFF888888)),
-
-            const SizedBox(height: 20),
-
-            // ── Question ─────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                'Quel est ton objectif\nprincipal en ce moment ?',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: _kGreenDark,
-                  height: 1.25,
-                  letterSpacing: -0.4,
+            // ── Icon + title block ───────────────────────────────
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
+              child: Column(children: [
+                Container(
+                  width: context.rs(56), height: context.rs(56),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3),
+                        blurRadius: 12, offset: const Offset(0, 4))],
+                  ),
+                  child: Icon(Icons.track_changes_rounded,
+                      size: context.rs(26), color: Colors.white),
                 ),
-              ),
+                SizedBox(height: context.rv(12)),
+                Text(
+                  'Quel est ton objectif\nprincipal en ce moment ?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: context.rs(20),
+                    fontWeight: FontWeight.w800,
+                    color: _kTextDark,
+                    height: 1.25,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                SizedBox(height: context.rv(5)),
+                Text(
+                  'Touche un cercle pour choisir',
+                  style: TextStyle(
+                      fontSize: context.rs(12.5), color: _kTextMuted),
+                ),
+              ]),
             ),
 
             const Spacer(),
 
             // ── Circle cluster ────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: context.rs(20)),
               child: LayoutBuilder(
                 builder: (_, constraints) {
-                  const double d     = 148.0;
-                  const double vStep = 120.0;
+                  final double d     = context.rs(138);
+                  final double vStep = context.rv(108);
                   final double w     = constraints.maxWidth;
-                  final double lx    = d / 2 + 10;
-                  final double rx    = w - d / 2 - 10;
+                  final double lx    = d / 2 + context.rs(10);
+                  final double rx    = w - d / 2 - context.rs(10);
                   final double cx    = w / 2;
 
                   final offsets = [
@@ -1446,8 +1542,7 @@ class _StepGoalsState extends State<StepGoals>
                       clipBehavior: Clip.none,
                       children: List.generate(_goals.length, (i) {
                         final label = _goals[i].label;
-                        final isSel =
-                            widget.selectedGoals.contains(label);
+                        final isSel = widget.selectedGoals.contains(label);
                         return Positioned(
                           left: offsets[i].dx - d / 2,
                           top: offsets[i].dy,
@@ -1482,12 +1577,14 @@ class _CircleGoal extends StatefulWidget {
   final double diameter;
   final bool selected;
   final VoidCallback onTap;
+  final Color accentColor;
 
   const _CircleGoal({
     required this.label,
     required this.diameter,
     required this.selected,
     required this.onTap,
+    this.accentColor = _kGreenDark,
   });
 
   @override
@@ -1536,19 +1633,32 @@ class _CircleGoalState extends State<_CircleGoal>
           height: d,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: sel ? _kGreenDark : Colors.white,
-            border: Border.all(color: _kGreenDark, width: 1.2),
+            gradient: sel
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                  )
+                : null,
+            color: sel ? null : const Color(0xFFE8F2EC),
+            border: Border.all(
+              color: sel ? Colors.transparent : const Color(0xFFB8D4C0),
+              width: 1.5,
+            ),
+            boxShadow: sel
+                ? [BoxShadow(color: const Color(0xFF2D4A2D).withOpacity(0.38), blurRadius: 22, offset: const Offset(0, 8))]
+                : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 2))],
           ),
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: EdgeInsets.all(context.rs(12)),
               child: Text(
                 widget.label,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: sel ? Colors.white : _kGreenDark,
+                  fontSize: context.rs(12.5),
+                  fontWeight: FontWeight.w600,
+                  color: sel ? Colors.white : _kTextDark,
                   height: 1.4,
                   letterSpacing: -0.1,
                 ),
@@ -1621,22 +1731,25 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+    return _stepBackground(
+      child: SafeArea(
         child: Column(
           children: [
             // ── Top bar ──────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: widget.onBack ??
-                        () => Navigator.maybePop(context),
-                    child: const Icon(Icons.arrow_back,
-                        size: 20, color: Colors.black),
+                    onTap: widget.onBack ?? () => Navigator.maybePop(context),
+                    child: Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
+                    ),
                   ),
                   const Expanded(
                     child: Center(
@@ -1645,39 +1758,53 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
                         style: TextStyle(
                           fontSize: 11,
                           letterSpacing: 3.5,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: _kGreenDark,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 36),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
-            // ── Icon ────────────────────────────────────────────
-            const Icon(Icons.show_chart_rounded,
-                size: 38, color: Color(0xFF888888)),
-
-            const SizedBox(height: 20),
-
-            // ── Question ─────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                'Quel est ton niveau\nde forme actuel ?',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: _kGreenDark,
-                  height: 1.25,
-                  letterSpacing: -0.4,
+            // ── Icon + title block ───────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(children: [
+                Container(
+                  width: 60, height: 60,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                  ),
+                  child: const Icon(Icons.show_chart_rounded, size: 28, color: Colors.white),
                 ),
-              ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Quel est ton niveau\nde forme actuel ?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: _kTextDark,
+                    height: 1.25,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Touche un cercle pour choisir',
+                  style: TextStyle(fontSize: 12.5, color: _kTextMuted),
+                ),
+              ]),
             ),
 
             const Spacer(),
@@ -1694,7 +1821,6 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
                   final double rx    = w - d / 2 - 10;
                   final double cx    = w / 2;
 
-                  // Triangle: top-left, top-right, bottom-center
                   final offsets = [
                     Offset(lx, 0),
                     Offset(rx, 0),
@@ -1729,7 +1855,7 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
             ),
 
             const Spacer(),
-          ],  
+          ],
         ),
       ),
     );
@@ -1780,6 +1906,7 @@ class equipmentIcon extends StatelessWidget {
   final double diameter;
   final bool selected;
   final VoidCallback onTap;
+  final Color accentColor;
 
   const equipmentIcon({
     required this.label,
@@ -1787,6 +1914,7 @@ class equipmentIcon extends StatelessWidget {
     required this.diameter,
     required this.selected,
     required this.onTap,
+    this.accentColor = _kGreenDark,
   });
 
   @override
@@ -1798,8 +1926,20 @@ class equipmentIcon extends StatelessWidget {
         height: diameter,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: selected ? _kGreenDark : Colors.white,
-          border: Border.all(color: _kGreenDark),
+          gradient: selected
+              ? const LinearGradient(
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                )
+              : null,
+          color: selected ? null : const Color(0xFFE8F2EC),
+          border: Border.all(
+            color: selected ? Colors.transparent : const Color(0xFFB8D4C0),
+            width: 1.5,
+          ),
+          boxShadow: selected
+              ? [BoxShadow(color: _kGreenDark.withOpacity(0.35), blurRadius: 18, offset: const Offset(0, 6))]
+              : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 5, offset: const Offset(0, 2))],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1812,7 +1952,8 @@ class equipmentIcon extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 11,
-                color: selected ? Colors.white : _kGreenDark,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : _kTextDark,
               ),
             ),
           ],
@@ -1877,58 +2018,80 @@ class _StepEquipmentState extends State<StepEquipment>
   Widget build(BuildContext context) {
     final count = widget.selectedEquipment.length;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+    return _stepBackground(
+      child: SafeArea(
         child: Column(
           children: [
-            // ── Top bar ──────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: widget.onBack ?? () => Navigator.maybePop(context),
-                    child: const Icon(Icons.arrow_back, size: 20, color: _kGreenDark),
-                  ),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'ÉQUIPEMENT',
-                        style: TextStyle(
-                          fontSize: 11,
-                          letterSpacing: 3.5,
-                          fontWeight: FontWeight.w600,
-                          color: _kGreenDark,
+              // ── Top bar ──────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: widget.onBack ?? () => Navigator.maybePop(context),
+                      child: Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
+                      ),
+                    ),
+                    const Expanded(
+                      child: Center(
+                        child: Text(
+                          'ÉQUIPEMENT',
+                          style: TextStyle(
+                            fontSize: 11,
+                            letterSpacing: 3.5,
+                            fontWeight: FontWeight.w700,
+                            color: _kGreenDark,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 20),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            const Icon(Icons.sports_gymnastics, size: 38, color: Color(0xFF888888)),
-
-            const SizedBox(height: 20),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                'Quel équipement\nas-tu à disposition ?',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: _kGreenDark,
-                  height: 1.25,
-                  letterSpacing: -0.4,
+                    const SizedBox(width: 36),
+                  ],
                 ),
               ),
-            ),
+
+              const SizedBox(height: 12),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(children: [
+                  Container(
+                    width: 60, height: 60,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
+                        begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                    ),
+                    child: const Icon(Icons.sports_gymnastics, size: 28, color: Colors.white),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Quel équipement\nas-tu à disposition ?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: _kTextDark,
+                      height: 1.25,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Sélectionne tout ce qui s\'applique',
+                    style: TextStyle(fontSize: 12.5, color: _kTextMuted),
+                  ),
+                ]),
+              ),
 
             Expanded(
               child: Center(
@@ -1971,6 +2134,7 @@ class _StepEquipmentState extends State<StepEquipment>
                                   diameter: d,
                                   selected: isSel,
                                   onTap: () => _handleEquipmentTap(label),
+                                  accentColor: _kGreenDark,
                                 ),
                               ),
                             );
@@ -1991,8 +2155,14 @@ class _StepEquipmentState extends State<StepEquipment>
                   duration: const Duration(milliseconds: 200),
                   height: 54,
                   decoration: BoxDecoration(
-                    color: count > 0 ? _kGreenDark : const Color(0xFFE8EDE8),
+                    gradient: count > 0
+                        ? const LinearGradient(colors: [Color(0xFF3D6B40), Color(0xFF1A3318)])
+                        : null,
+                    color: count > 0 ? null : const Color(0xFFE8EDE8),
                     borderRadius: BorderRadius.circular(40),
+                    boxShadow: count > 0
+                        ? [BoxShadow(color: _kGreenDark.withOpacity(0.30), blurRadius: 12, offset: const Offset(0, 4))]
+                        : [],
                   ),
                   child: Center(
                     child: Text(
@@ -2062,41 +2232,97 @@ class _StepFrequencyState extends State<StepFrequency> {
   @override
   Widget build(BuildContext context) {
     return _mintScaffold(
-      child: Column(
-        children: [
-          _OnboardingTopBar(step: 5, total: 7, title: 'Wellbeing', onBack: widget.onBack),
-          const SizedBox(height: 20),
-          const Icon(Icons.timer_outlined, size: 38, color: kGreenDark),
-          const SizedBox(height: 20),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              'Combien de jours par\nsemaine veux-tu t\'entraîner ?',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: kGreenDark,
-                height: 1.25,
-                letterSpacing: -0.4,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // ── Top bar ──────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: widget.onBack ?? () => Navigator.maybePop(context),
+                    child: Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
+                    ),
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'FRÉQUENCE',
+                        style: TextStyle(
+                          fontSize: 11,
+                          letterSpacing: 3.5,
+                          fontWeight: FontWeight.w700,
+                          color: _kGreenDark,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 36),
+                ],
               ),
             ),
-          ),
-          const Spacer(),
-          Center(
-            child: _FreqDial(
-              count: _labels.length,
-              index: _index,
-              onChanged: _select,
-              label: _labels[_index],
+
+            const SizedBox(height: 12),
+
+            // ── Header card ─────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(children: [
+                Container(
+                  width: 60, height: 60,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                  ),
+                  child: const Icon(Icons.timer_outlined, size: 28, color: Colors.white),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Combien de jours par\nsemaine veux-tu t\'entraîner ?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: _kTextDark,
+                    height: 1.25,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Fais glisser le curseur pour choisir',
+                  style: TextStyle(fontSize: 12.5, color: _kTextMuted),
+                ),
+              ]),
             ),
-          ),
-          const Spacer(),
-          _CtaButton(
-            label: 'Suivant',
-            onPressed: _hasInteracted ? widget.onNext : null,
-          ),
-        ],
+
+            const Spacer(),
+            Center(
+              child: _FreqDial(
+                count: _labels.length,
+                index: _index,
+                onChanged: _select,
+                label: _labels[_index],
+              ),
+            ),
+            const Spacer(),
+            _CtaButton(
+              label: 'Suivant',
+              onPressed: _hasInteracted ? widget.onNext : null,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2729,28 +2955,37 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
   // ── Post-partum ────────────────────────────────────────────────────────────
   String? _ppRecovery;   // 'recent' | 'slowly' | 'active'
   String? _ppDuration;   // '0-2', '2-6', '6-12', '3-6m', '6m+'
+  DateTime? _birthDate;
 
   String get _ppProgram {
-    if (_ppDuration == null) return '';
-    if (_ppDuration == '0-2' || _ppDuration == '2-6') return 'Reborn';
-    if (_ppDuration == '6-12') return 'Rise';
-    return 'Reclaim';
+    switch (_ppDuration) {
+      case '0-2':  return 'Reborn';
+      case '2-6':  return 'Rise';
+      case '6-12': return 'Rise+';
+      case '3-6m': return 'Reclaim';
+      case '6m+':  return 'Reclaim+';
+      default: return '';
+    }
   }
 
   String get _ppProgramDesc {
-    switch (_ppProgram) {
-      case 'Reborn':  return '0–6 sem. · récupération douce, périnée & énergie';
-      case 'Rise':    return '6–12 sem. · mobilité + renforcement léger';
-      case 'Reclaim': return '12 sem.+ · retour fitness progressif';
+    switch (_ppDuration) {
+      case '0-2':  return '0–2 sem. · récupération douce, périnée & repos absolu';
+      case '2-6':  return '2–6 sem. · mobilité progressive & renforcement léger';
+      case '6-12': return '6–12 sem. · reprise légère & consolidation posturale';
+      case '3-6m': return '3–6 mois · renforcement progressif & retour à l\'effort';
+      case '6m+':  return '6+ mois · retour fitness actif & reconditionnement complet';
       default: return '';
     }
   }
 
   Color get _ppProgramColor {
-    switch (_ppProgram) {
-      case 'Reborn':  return const Color(0xFFE53935);
-      case 'Rise':    return const Color(0xFFFB8C00);
-      case 'Reclaim': return const Color(0xFF2E7D32);
+    switch (_ppDuration) {
+      case '0-2':  return const Color(0xFFE53935);
+      case '2-6':  return const Color(0xFFFB8C00);
+      case '6-12': return const Color(0xFFFB8C00);
+      case '3-6m': return const Color(0xFF2E7D32);
+      case '6m+':  return const Color(0xFF2E7D32);
       default: return _kGreenDark;
     }
   }
@@ -2794,17 +3029,15 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
   }
 
   Future<void> _pickDate() async {
-    final p = await showDatePicker(
+    final p = await showCustomDatePicker(
       context: context,
       initialDate: _lastPeriod,
       firstDate: DateTime(2024),
       lastDate: DateTime.now(),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: _kGreenDark),
-        ),
-        child: child!,
-      ),
+      title: 'Dernieres regles',
+      subtitle: 'Date du premier jour',
+      icon: Icons.water_drop_rounded,
+      accentColor: const Color(0xFFD94F6B),
     );
     if (p != null) {
       setState(() => _lastPeriod = p);
@@ -2897,7 +3130,7 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
             label: _status == 'cycle' ? 'Commencer FITEVA' : 'Continuer',
             onPressed: _status != null
                 ? (_status == 'postpartum'
-                    ? (_ppRecovery != null && _ppDuration != null ? widget.onNext : null)
+                    ? (_ppDuration != null ? widget.onNext : null)
                     : widget.onNext)
                 : null,
           ),
@@ -3252,126 +3485,135 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
 
   // ── POST-PARTUM content ────────────────────────────────────────────────────
   Widget _postpartumWidget() {
+    final weeks = _birthDate != null
+        ? DateTime.now().difference(_birthDate!).inDays ~/ 7
+        : null;
+
     return Column(
       key: const ValueKey('postpartum'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Q1 : Récupération ──────────────────────────────────────────────
-        const Text('Où en es-tu dans ta récupération ?',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-              color: _kTextDark)),
-        const SizedBox(height: 12),
-        ...[
-          ('recent',  '🔴', 'Je viens d\'accoucher',  'Très récent — programme Reborn'),
-          ('slowly',  '🟡', 'Je recommence doucement', 'Reprise progressive — programme Rise'),
-          ('active',  '🟢', 'Je suis déjà active',    'Retour fitness — programme Reclaim'),
-        ].map(( rec) {
-          final id    = rec.$1;
-          final emoji = rec.$2;
-          final label = rec.$3;
-          final sub   = rec.$4;
-          final sel   = _ppRecovery == id;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _ppRecovery = id);
-                widget.onPpRecoveryChanged?.call(id);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: sel ? _kGreenDark : const Color(0xFFF3F6F3),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: sel ? _kGreenDark : const Color(0xFFD8E5D8),
-                    width: 1.5),
-                  boxShadow: sel
-                      ? [BoxShadow(color: _kGreenDark.withValues(alpha: 0.20),
-                          blurRadius: 12, offset: const Offset(0, 4))]
-                      : [],
-                ),
-                child: Row(children: [
-                  Text(emoji, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(label, style: TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700,
-                        color: sel ? Colors.white : _kTextDark)),
-                      Text(sub, style: TextStyle(
-                        fontSize: 11.5,
-                        color: sel ? Colors.white70 : _kTextMuted)),
-                    ],
-                  )),
-                  if (sel)
-                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                ]),
-              ),
-            ),
-          );
-        }),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 4),
 
-        // ── Q2 : Combien de temps ─────────────────────────────────────────
-        const Text('Il y a combien de temps ?',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-              color: _kTextDark)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8, runSpacing: 8,
-          children: [
-            ('0-2',  '0–2 semaines'),
-            ('2-6',  '2–6 semaines'),
-            ('6-12', '6–12 semaines'),
-            ('3-6m', '3–6 mois'),
-            ('6m+',  '6+ mois'),
-          ].map((d) {
-            final sel = _ppDuration == d.$1;
-            return GestureDetector(
-              onTap: () {
-                setState(() => _ppDuration = d.$1);
-                widget.onPpDurationChanged?.call(d.$1);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-                decoration: BoxDecoration(
-                  color: sel ? _kGreenDark : const Color(0xFFF3F6F3),
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(
-                    color: sel ? _kGreenDark : const Color(0xFFD8E5D8)),
-                ),
-                child: Text(d.$2, style: TextStyle(
-                  color: sel ? Colors.white : _kTextDark,
-                  fontWeight: FontWeight.w600, fontSize: 13.5)),
-              ),
+        // ── Titre + sous-titre ────────────────────────────────────────────
+        const Text('Quand as-tu accouché ?',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextDark)),
+        const SizedBox(height: 4),
+        const Text('On calcule ta phase de récupération automatiquement',
+          style: TextStyle(fontSize: 12, color: _kTextMuted)),
+        const SizedBox(height: 14),
+
+        // ── Date picker card ──────────────────────────────────────────────
+        GestureDetector(
+          onTap: () async {
+            final picked = await showCustomDatePicker(
+              context: context,
+              initialDate: _birthDate ?? DateTime.now(),
+              firstDate: DateTime.now().subtract(const Duration(days: 365 * 2)),
+              lastDate: DateTime.now(),
+              title: 'Date d\'accouchement',
+              subtitle: 'Quand est ne votre bebe ?',
+              icon: Icons.child_care_rounded,
+              accentColor: const Color(0xFF2D4A2D),
             );
-          }).toList(),
-        ),
-
-        // ── Programme assigné ─────────────────────────────────────────────
-        if (_ppProgram.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            if (picked != null && mounted) {
+              final w = DateTime.now().difference(picked).inDays ~/ 7;
+              final String dur;
+              if (w < 2)       dur = '0-2';
+              else if (w < 6)  dur = '2-6';
+              else if (w < 12) dur = '6-12';
+              else if (w < 26) dur = '3-6m';
+              else             dur = '6m+';
+              setState(() { _birthDate = picked; _ppDuration = dur; });
+              widget.onPpDurationChanged?.call(dur);
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             decoration: BoxDecoration(
-              color: _ppProgramColor.withValues(alpha: 0.09),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _ppProgramColor.withValues(alpha: 0.35)),
+              color: _birthDate != null
+                  ? const Color(0xFFE8F2EC)
+                  : const Color(0xFFF3F6F3),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: _birthDate != null ? _kGreenDark : const Color(0xFFD8E5D8),
+                width: 1.5),
+              boxShadow: _birthDate != null
+                  ? [BoxShadow(color: _kGreenDark.withValues(alpha: 0.12),
+                      blurRadius: 14, offset: const Offset(0, 4))]
+                  : [],
             ),
             child: Row(children: [
               Container(
-                width: 38, height: 38,
+                width: 40, height: 40,
                 decoration: BoxDecoration(
-                  color: _ppProgramColor.withValues(alpha: 0.15),
+                  color: _birthDate != null
+                      ? _kGreenDark.withValues(alpha: 0.12)
+                      : const Color(0xFFE8EDE8),
                   shape: BoxShape.circle),
-                child: Icon(LucideIcons.heartPulse,
-                    size: 18, color: _ppProgramColor),
+                child: Icon(Icons.calendar_today_rounded,
+                  size: 19,
+                  color: _birthDate != null ? _kGreenDark : _kTextMuted),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _birthDate == null
+                  ? Text('Sélectionne la date d\'accouchement',
+                      style: TextStyle(fontSize: 13.5, color: _kTextMuted))
+                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(
+                        '${_birthDate!.day.toString().padLeft(2,'0')} / '
+                        '${_birthDate!.month.toString().padLeft(2,'0')} / '
+                        '${_birthDate!.year}',
+                        style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700, color: _kTextDark)),
+                      const SizedBox(height: 2),
+                      Text(
+                        weeks == 0
+                          ? 'Moins d\'une semaine'
+                          : '$weeks ${weeks == 1 ? 'semaine' : 'semaines'} depuis l\'accouchement',
+                        style: TextStyle(fontSize: 12, color: _kGreenDark.withValues(alpha: 0.75))),
+                    ]),
+              ),
+              if (_birthDate != null)
+                const Icon(Icons.edit_calendar_rounded, color: _kGreenDark, size: 18)
+              else
+                Icon(Icons.chevron_right_rounded, color: _kTextMuted, size: 22),
+            ]),
+          ),
+        ),
+
+        // ── Barre de progression semaines ─────────────────────────────────
+        if (_birthDate != null && weeks != null) ...[
+          const SizedBox(height: 18),
+          _BirthWeekBar(weeks: weeks),
+        ],
+
+        // ── Programme assigné ─────────────────────────────────────────────
+        if (_ppProgram.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  _ppProgramColor.withValues(alpha: 0.08),
+                  _ppProgramColor.withValues(alpha: 0.04),
+                ],
+                begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _ppProgramColor.withValues(alpha: 0.30)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  color: _ppProgramColor.withValues(alpha: 0.14),
+                  shape: BoxShape.circle),
+                child: Icon(LucideIcons.heartPulse, size: 20, color: _ppProgramColor),
               ),
               const SizedBox(width: 12),
               Expanded(child: Column(
@@ -3379,15 +3621,14 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
                 children: [
                   Row(children: [
                     Text('Programme ', style: TextStyle(
-                        fontSize: 12, color: _ppProgramColor,
-                        fontWeight: FontWeight.w500)),
+                      fontSize: 11.5, color: _ppProgramColor, fontWeight: FontWeight.w500)),
                     Text(_ppProgram, style: TextStyle(
-                        fontSize: 15, color: _ppProgramColor,
-                        fontWeight: FontWeight.w800)),
+                      fontSize: 15, color: _ppProgramColor, fontWeight: FontWeight.w800,
+                      letterSpacing: 0.3)),
                   ]),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(_ppProgramDesc, style: const TextStyle(
-                      fontSize: 11.5, color: _kTextMuted, height: 1.4)),
+                    fontSize: 11.5, color: _kTextMuted, height: 1.4)),
                 ],
               )),
             ]),
@@ -3399,12 +3640,241 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
   }
 }
 
+// ── Barre de progression de récupération post-partum ─────────────────────────
+class _BirthWeekBar extends StatelessWidget {
+  final int weeks;
+  const _BirthWeekBar({required this.weeks});
+
+  @override
+  Widget build(BuildContext context) {
+    // Phases : 0-2 / 2-6 / 6-12 / 12-26 / 26+
+    const phases = [
+      (label: '0–2 sem.', maxW: 2,  color: Color(0xFFE53935)),
+      (label: '2–6 sem.', maxW: 6,  color: Color(0xFFFB8C00)),
+      (label: '6–12 sem.',maxW: 12, color: Color(0xFFFFA726)),
+      (label: '3–6 mois', maxW: 26, color: Color(0xFF66BB6A)),
+      (label: '6+ mois',  maxW: 99, color: Color(0xFF2E7D32)),
+    ];
+
+    int activeIdx = 0;
+    for (int i = 0; i < phases.length; i++) {
+      if (weeks < phases[i].maxW) { activeIdx = i; break; }
+      if (i == phases.length - 1)  activeIdx = i;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Segments colorés
+        Row(
+          children: List.generate(phases.length, (i) {
+            final isActive = i == activeIdx;
+            final isPast   = i < activeIdx;
+            return Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 350),
+                height: isActive ? 7 : 5,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: isPast || isActive
+                      ? phases[i].color
+                      : phases[i].color.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: isActive
+                      ? [BoxShadow(color: phases[i].color.withValues(alpha: 0.40),
+                          blurRadius: 6, offset: const Offset(0, 2))]
+                      : [],
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 7),
+        // Label de la phase active
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: phases[activeIdx].color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: phases[activeIdx].color.withValues(alpha: 0.30)),
+            ),
+            child: Text(
+              'Phase : ${phases[activeIdx].label}',
+              style: TextStyle(
+                fontSize: 11.5, fontWeight: FontWeight.w600,
+                color: phases[activeIdx].color),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // Data holder for cycle phase strip
 class _CyclePhase {
   final String name;
   final int days;
   final Color color;
   const _CyclePhase(this.name, this.days, this.color);
+}
+
+// ── Post-partum progressive phase card ────────────────────────────────────────
+enum _PpStatus { unselected, current, next }
+
+class _PpPhaseCard extends StatelessWidget {
+  final bool show;
+  final String value;
+  final String emoji;
+  final String label;
+  final String desc;
+  final _PpStatus status;
+  final VoidCallback onTap;
+
+  const _PpPhaseCard({
+    required this.show,
+    required this.value,
+    required this.emoji,
+    required this.label,
+    required this.desc,
+    required this.status,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrent = status == _PpStatus.current;
+    final isNext    = status == _PpStatus.next;
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeInOut,
+      child: show
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: GestureDetector(
+                onTap: onTap,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: isCurrent
+                        ? const LinearGradient(
+                            colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    color: isCurrent
+                        ? null
+                        : isNext
+                            ? Colors.white.withOpacity(0.60)
+                            : const Color(0xFFEEF5EE),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isCurrent
+                          ? Colors.transparent
+                          : isNext
+                              ? const Color(0xFFB8D4C0)
+                              : const Color(0xFFD4E6D6),
+                      width: 1.5,
+                    ),
+                    boxShadow: isCurrent
+                        ? [BoxShadow(color: _kGreenDark.withOpacity(0.30), blurRadius: 16, offset: const Offset(0, 5))]
+                        : isNext
+                            ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]
+                            : [],
+                  ),
+                  child: Row(
+                    children: [
+                      // Emoji circle
+                      Container(
+                        width: 46, height: 46,
+                        decoration: BoxDecoration(
+                          color: isCurrent
+                              ? Colors.white.withOpacity(0.18)
+                              : const Color(0xFFD6EBE0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+
+                      // Label + description
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: isCurrent ? Colors.white : _kTextDark,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              desc,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                height: 1.4,
+                                color: isCurrent
+                                    ? Colors.white.withOpacity(0.70)
+                                    : _kTextMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // Status badge
+                      if (isCurrent)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.22),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text('🟢', style: TextStyle(fontSize: 11)),
+                            SizedBox(width: 4),
+                            Text('ACTUELLE',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
+                                color: Colors.white, letterSpacing: 0.5)),
+                          ]),
+                        )
+                      else if (isNext)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD6EBE0),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text('🔜', style: TextStyle(fontSize: 11)),
+                            SizedBox(width: 4),
+                            Text('PROCHAINE',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
+                                color: _kGreenDark, letterSpacing: 0.5)),
+                          ]),
+                        )
+                      else
+                        const Icon(Icons.chevron_right, color: _kTextMuted, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3452,54 +3922,89 @@ class _StepAvatarState extends State<StepAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      backgroundColor: cs.surface,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(children: [
-            // top bar
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(
+          children: [
+            // ── Top bar ──────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: Row(children: [
                 GestureDetector(
                   onTap: widget.onBack,
-                  child: Icon(Icons.arrow_back, size: 20, color: cs.onSurface),
+                  child: Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
+                  ),
                 ),
-                Expanded(child: Center(child: Text('TA MASCOTTE',
-                  style: TextStyle(fontSize: 11, letterSpacing: 2.5,
-                    fontWeight: FontWeight.w600, color: cs.onSurface.withOpacity(0.5))))),
-                const SizedBox(width: 20),
+                const Expanded(child: Center(child: Text('TA MASCOTTE',
+                  style: TextStyle(fontSize: 11, letterSpacing: 3.0,
+                    fontWeight: FontWeight.w700, color: _kGreenDark)))),
+                const SizedBox(width: 36),
               ]),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-            MascotWidget(type: _type, mood: _mood, size: 130),
-
-            const SizedBox(height: 12),
-
-            Text('Choisis ta mascotte !',
-              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w700,
-                color: cs.onSurface)),
-            const SizedBox(height: 4),
-            Text('Elle t\'accompagnera tout au long de ton aventure.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: cs.onSurface.withOpacity(0.5), height: 1.5)),
-
-            const SizedBox(height: 24),
-
-            // ── Choix mascotte ────────────────────────────────────────────
+            // ── Mascot preview card ───────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.only(left: 24),
-              child: Align(alignment: Alignment.centerLeft,
-                child: Text('Mascotte', style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w700,
-                  color: cs.onSurface.withOpacity(0.45), letterSpacing: 1.5))),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.55),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+                  boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 6))],
+                ),
+                child: Column(children: [
+                  // Mascot with glow ring
+                  Container(
+                    width: 140, height: 140,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const RadialGradient(
+                        colors: [Color(0xFFD6EBE0), Color(0xFFB8CFC4)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(color: _kGreenDark.withOpacity(0.20), blurRadius: 24, spreadRadius: 2),
+                      ],
+                    ),
+                    child: Center(child: MascotWidget(type: _type, mood: _mood, size: 110)),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Choisis ta mascotte !',
+                    style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800,
+                      color: _kTextDark, letterSpacing: -0.3)),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Elle t\'accompagnera tout au long\nde ton aventure FitEva.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12.5, color: _kTextMuted, height: 1.5),
+                  ),
+                ]),
+              ),
             ),
-            const SizedBox(height: 10),
+
+            const SizedBox(height: 20),
+
+            // ── Choix mascotte (horizontal scroll) ───────────────────────
+            Padding(
+              padding: const EdgeInsets.only(left: 24, bottom: 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('FORME', style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w800,
+                  color: _kGreenMid, letterSpacing: 2.5)),
+              ),
+            ),
             SizedBox(
-              height: 90,
+              height: 96,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -3515,20 +4020,30 @@ class _StepAvatarState extends State<StepAvatar> {
                       widget.onAvatarChanged(type.name, type.name, '');
                     },
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 80,
+                      duration: const Duration(milliseconds: 200),
+                      width: 82,
                       decoration: BoxDecoration(
-                        color: selected ? cs.primary : cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(16),
+                        gradient: selected
+                            ? const LinearGradient(
+                                colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                                begin: Alignment.topLeft, end: Alignment.bottomRight)
+                            : null,
+                        color: selected ? null : Colors.white.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: selected ? cs.primary : Colors.transparent, width: 2),
+                          color: selected ? Colors.transparent : const Color(0xFFB8D4C0),
+                          width: 1.5,
+                        ),
+                        boxShadow: selected
+                            ? [BoxShadow(color: _kGreenDark.withOpacity(0.32), blurRadius: 14, offset: const Offset(0, 5))]
+                            : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
                       ),
                       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                         MascotWidget(type: type, mood: MascotMood.happy, size: 48),
                         const SizedBox(height: 4),
                         Text(name, style: TextStyle(
                           fontSize: 10, fontWeight: FontWeight.w700,
-                          color: selected ? Colors.white : cs.onSurface.withOpacity(0.6))),
+                          color: selected ? Colors.white : _kTextMuted)),
                       ]),
                     ),
                   );
@@ -3536,20 +4051,22 @@ class _StepAvatarState extends State<StepAvatar> {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // ── Humeur ────────────────────────────────────────────────────
+            // ── Humeur ───────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.only(left: 24),
-              child: Align(alignment: Alignment.centerLeft,
-                child: Text('Son humeur', style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w700,
-                  color: cs.onSurface.withOpacity(0.45), letterSpacing: 1.5))),
+              padding: const EdgeInsets.only(left: 24, bottom: 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('HUMEUR', style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w800,
+                  color: _kGreenMid, letterSpacing: 2.5)),
+              ),
             ),
-            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Wrap(spacing: 8, runSpacing: 8,
+              child: Wrap(
+                spacing: 8, runSpacing: 8,
                 children: _moods.map((m) {
                   final (mood, emoji, label) = m;
                   final selected = _mood == mood;
@@ -3560,17 +4077,29 @@ class _StepAvatarState extends State<StepAvatar> {
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: selected ? cs.primary : cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
+                        gradient: selected
+                            ? const LinearGradient(
+                                colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                                begin: Alignment.topLeft, end: Alignment.bottomRight)
+                            : null,
+                        color: selected ? null : Colors.white.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(40),
+                        border: Border.all(
+                          color: selected ? Colors.transparent : const Color(0xFFB8D4C0),
+                          width: 1.2,
+                        ),
+                        boxShadow: selected
+                            ? [BoxShadow(color: _kGreenDark.withOpacity(0.28), blurRadius: 10, offset: const Offset(0, 3))]
+                            : [],
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Text(emoji, style: const TextStyle(fontSize: 15)),
-                        const SizedBox(width: 5),
+                        Text(emoji, style: const TextStyle(fontSize: 16)),
+                        const SizedBox(width: 6),
                         Text(label, style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600,
-                          color: selected ? Colors.white : cs.onSurface)),
+                          fontSize: 13, fontWeight: FontWeight.w600,
+                          color: selected ? Colors.white : _kTextDark)),
                       ]),
                     ),
                   );
@@ -3578,28 +4107,274 @@ class _StepAvatarState extends State<StepAvatar> {
               ),
             ),
 
-            const SizedBox(height: 32),
+            const Spacer(),
 
+            // ── CTA ──────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: SizedBox(
-                width: double.infinity, height: 54,
-                child: ElevatedButton(
-                  onPressed: widget.onNext,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: cs.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+              child: GestureDetector(
+                onTap: widget.onNext,
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(40),
+                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))],
                   ),
-                  child: Text('Commencer !',
-                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('COMMENCER !',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
+                          color: Colors.white, letterSpacing: 1.5)),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ]),
+          ],
         ),
       ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STEP — StepTrainingLocation  (Salle / Maison / Les deux)
+// ══════════════════════════════════════════════════════════════════════════════
+class StepTrainingLocation extends StatefulWidget {
+  final String? selectedLocation;
+  final VoidCallback? onBack;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onNext;
+
+  const StepTrainingLocation({
+    super.key,
+    required this.selectedLocation,
+    this.onBack,
+    required this.onChanged,
+    required this.onNext,
+  });
+
+  @override
+  State<StepTrainingLocation> createState() => _StepTrainingLocationState();
+}
+
+class _StepTrainingLocationState extends State<StepTrainingLocation>
+    with SingleTickerProviderStateMixin {
+  static const _accent = _kGreenDark;
+  String? _selected;
+
+  late final AnimationController _ctrl;
+  late final List<Animation<double>> _fades;
+
+  static const _options = [
+    (value: 'gym',  emoji: '🏋️', label: 'Salle de sport',   sub: 'Accès aux machines\net aux équipements'),
+    (value: 'home', emoji: '🏠', label: 'À la maison',       sub: 'Sans matériel ou\navec haltères'),
+    (value: 'both', emoji: '💪', label: 'Les deux',           sub: 'Flexibilité totale\nselon tes envies'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.selectedLocation;
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 750),
+    )..forward();
+    _fades = List.generate(_options.length, (i) {
+      final s = 0.10 + i * 0.22;
+      final e = (s + 0.50).clamp(0.0, 1.0);
+      return CurvedAnimation(parent: _ctrl, curve: Interval(s, e, curve: Curves.easeOut));
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _select(String value) {
+    setState(() => _selected = value);
+    widget.onChanged(value);
+    Future.delayed(const Duration(milliseconds: 320), widget.onNext);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(
+          children: [
+              // ── Top bar ──────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: widget.onBack ?? () => Navigator.maybePop(context),
+                      child: Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
+                      ),
+                    ),
+                    const Expanded(
+                      child: Center(
+                        child: Text(
+                          'LIEU D\'ENTRAÎNEMENT',
+                          style: TextStyle(
+                            fontSize: 11,
+                            letterSpacing: 3.0,
+                            fontWeight: FontWeight.w700,
+                            color: _kGreenDark,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 36),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // ── Header card ─────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(children: [
+                  Container(
+                    width: 60, height: 60,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
+                        begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                    ),
+                    child: const Icon(Icons.location_on_outlined, size: 28, color: Colors.white),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Où est-ce que tu\nt\'entraînes ?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: _kTextDark,
+                      height: 1.25,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Choisis ton environnement principal',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12.5, color: _kTextMuted),
+                  ),
+                ]),
+              ),
+
+              const Spacer(),
+
+              // ── Cards ─────────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: List.generate(_options.length, (i) {
+                    final opt = _options[i];
+                    final sel = _selected == opt.value;
+                    return FadeTransition(
+                      opacity: _fades[i],
+                      child: GestureDetector(
+                        onTap: () => _select(opt.value),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOut,
+                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                          decoration: BoxDecoration(
+                            gradient: sel
+                                ? const LinearGradient(
+                                    colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                                  )
+                                : null,
+                            color: sel ? null : Colors.white.withOpacity(0.75),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: sel ? Colors.transparent : const Color(0xFFB8D4C0),
+                              width: 1.8,
+                            ),
+                            boxShadow: sel
+                                ? [BoxShadow(color: _kGreenDark.withOpacity(0.32), blurRadius: 18, offset: const Offset(0, 6))]
+                                : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 52, height: 52,
+                                decoration: BoxDecoration(
+                                  color: sel ? Colors.white.withOpacity(0.2) : const Color(0xFFD6EBE0),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Center(
+                                  child: Text(opt.emoji, style: const TextStyle(fontSize: 26)),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      opt.label,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: sel ? Colors.white : _kTextDark,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      opt.sub,
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        height: 1.4,
+                                        color: sel ? Colors.white.withOpacity(0.75) : _kTextMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              AnimatedOpacity(
+                                opacity: sel ? 1 : 0,
+                                duration: const Duration(milliseconds: 200),
+                                child: const Icon(Icons.check_circle, color: Colors.white, size: 22),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+
+              const Spacer(),
+            ],
+          ),
+        ),
     );
   }
 }

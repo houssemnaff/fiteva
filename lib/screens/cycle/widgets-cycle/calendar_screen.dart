@@ -1,6 +1,7 @@
 ﻿// ignore_for_file: deprecated_member_use
 import 'dart:math' as math;
 import 'package:fiteva/screens/cycle/cycle_colors.dart';
+import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -160,20 +161,15 @@ class _CycleCalendarState extends State<CycleCalendar> {
 
   Future<void> _pickStartDate() async {
     final cc     = CycleColors.of(context);
-    final picked = await showDatePicker(
+    final picked = await showCustomDatePicker(
       context: context,
       initialDate: _editStart,
       firstDate: DateTime(2023),
       lastDate: widget.today,
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: cc.isDark
-              ? ColorScheme.dark(
-                  primary: _kGreen, onPrimary: Colors.white,
-                  surface: const Color(0xFF1A1A1A), onSurface: const Color(0xFFF5F0F2))
-              : ColorScheme.light(primary: _kGreen)),
-        child: child!,
-      ),
+      title: 'Debut des regles',
+      subtitle: 'Choisir la date de debut',
+      icon: Icons.water_drop_rounded,
+      accentColor: _kRed,
     );
     if (picked != null) {
       setState(() => _editStart = DateTime(picked.year, picked.month, picked.day));

@@ -17,7 +17,40 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/',
-      builder: (context, state) => const MainLayout(),
+      pageBuilder: (context, state) => CustomTransitionPage<void>(
+        key: state.pageKey,
+        child: const MainLayout(),
+        transitionDuration: const Duration(milliseconds: 750),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // L'accueil zoom depuis 0.08 (minuscule au centre) → 1.0
+          final scaleIn = Tween<double>(begin: 0.08, end: 1.0).animate(
+              CurvedAnimation(parent: animation,
+                  curve: const Interval(0.0, 0.85, curve: Curves.easeOutExpo)));
+          // Fade in de l'accueil : démarre à 20% de l'anim
+          final fadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(parent: animation,
+                  curve: const Interval(0.10, 0.60, curve: Curves.easeOut)));
+          // L'onboarding s'efface pendant que l'accueil arrive
+          final fadeOut = Tween<double>(begin: 1.0, end: 0.0).animate(
+              CurvedAnimation(parent: secondaryAnimation,
+                  curve: const Interval(0.0, 0.50, curve: Curves.easeIn)));
+
+          return Stack(children: [
+            // Onboarding qui disparaît
+            FadeTransition(opacity: fadeOut, child: Container(color: Colors.white)),
+            // Accueil qui zoom depuis le centre
+            FadeTransition(
+              opacity: fadeIn,
+              child: ScaleTransition(
+                scale: scaleIn,
+                alignment: Alignment.center,
+                child: child,
+              ),
+            ),
+          ]);
+        },
+      ),
     ),
     GoRoute(
       path: '/profile',
@@ -26,7 +59,6 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/edit-avatar',
       builder: (context, state) => const AvatarCustomizationScreen(userName: 'Sarra'),
-
     ),
   ],
 );

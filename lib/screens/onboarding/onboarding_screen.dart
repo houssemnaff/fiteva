@@ -33,25 +33,27 @@ class OnboardingData {
   String avatarStyle = 'lorelei';
   String avatarBg    = 'b6e3f4';
   String mascotType  = 'blob';
+  String? trainingLocation;
 
   Map<String, dynamic> toMap() => {
-    'username':        username,
-    'email':           email,
-    'goals':           goals,
-    'fitness_level':   fitnessLevel,
-    'equipment':       equipment,
-    'frequency':       frequency,
-    'height_cm':       heightCm,
-    'weight_kg':       weightKg,
-    'age':             age,
-    'health_status':   healthStatus,
-    'pregnancy_week':  pregnancyWeekSA,
-    'pp_recovery':     ppRecovery,
-    'pp_duration':     ppDuration,
-    'cycle_duration':  cycleDuration,
-    'last_period':     lastPeriod?.toIso8601String(),
-    'mascot_type':     mascotType,
-    'mascot_mood':     'happy',
+    'username':           username,
+    'email':              email,
+    'goals':              goals,
+    'fitness_level':      fitnessLevel,
+    'equipment':          equipment,
+    'frequency':          frequency,
+    'training_location':  trainingLocation,
+    'height_cm':          heightCm,
+    'weight_kg':          weightKg,
+    'age':                age,
+    'health_status':      healthStatus,
+    'pregnancy_week':     pregnancyWeekSA,
+    'pp_recovery':        ppRecovery,
+    'pp_duration':        ppDuration,
+    'cycle_duration':     cycleDuration,
+    'last_period':        lastPeriod?.toIso8601String(),
+    'mascot_type':        mascotType,
+    'mascot_mood':        'happy',
   };
 }
 
@@ -64,6 +66,7 @@ enum OStep {
   goals,
   fitnessLevel,
   equipment,
+  trainingLocation,
   frequency,
   healthProfile,
   cycleAndPregnancy,
@@ -103,6 +106,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     OStep.goals,
     OStep.fitnessLevel,
     OStep.equipment,
+    OStep.trainingLocation,
     OStep.frequency,
     OStep.healthProfile,
     OStep.cycleAndPregnancy,
@@ -123,7 +127,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       case OStep.welcome:           return OStep.goals;
       case OStep.goals:             return OStep.fitnessLevel;
       case OStep.fitnessLevel:      return OStep.equipment;
-      case OStep.equipment:         return OStep.frequency;
+      case OStep.equipment:         return OStep.trainingLocation;
+      case OStep.trainingLocation:  return OStep.frequency;
       case OStep.frequency:         return OStep.healthProfile;
       case OStep.healthProfile:     return OStep.cycleAndPregnancy;
       case OStep.cycleAndPregnancy: return OStep.avatar;
@@ -191,10 +196,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() {
       _nameCtrl.text       = saved['username']  ?? '';
       _emailCtrl.text      = saved['email']     ?? '';
-      _data.goals          = List<String>.from(saved['goals']     ?? []);
-      _data.fitnessLevel   = saved['fitness_level'];
-      _data.equipment      = List<String>.from(saved['equipment'] ?? []);
-      _data.frequency      = saved['frequency'];
+      _data.goals             = List<String>.from(saved['goals']     ?? []);
+      _data.fitnessLevel      = saved['fitness_level'];
+      _data.equipment         = List<String>.from(saved['equipment'] ?? []);
+      _data.trainingLocation  = saved['training_location'];
+      _data.frequency         = saved['frequency'];
       _data.heightCm       = (saved['height_cm'] as int?) ?? 165;
       _data.weightKg       = (saved['weight_kg'] is int)
           ? (saved['weight_kg'] as int).toDouble()
@@ -277,7 +283,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onNext:             _goNext,
     ),
 
-    // 5 — Frequency
+    // 5 — Training location
+    StepTrainingLocation(
+      selectedLocation: _data.trainingLocation,
+      onBack:           _goBack,
+      onChanged:        (v) => setState(() => _data.trainingLocation = v),
+      onNext:           _goNext,
+    ),
+
+    // 6 — Frequency
     StepFrequency(
       selectedFrequency: _data.frequency,
       onBack:            _goBack,
@@ -285,7 +299,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onNext:            _goNext,
     ),
 
-    // 6 — Health profile (height / weight / age)
+    // 7 — Health profile (height / weight / age)
     StepHealthProfile(
       onNext:            _goNext,
       onBack:            _goBack,
@@ -297,7 +311,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onAgeChanged:      (v) => setState(() => _data.age = v),
     ),
 
-    // 7 — Cycle & pregnancy
+    // 8 — Cycle & pregnancy
     StepCycleAndPregnancy(
       onNext:  _goNext,
       onBack:  _goBack,
@@ -309,7 +323,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onPpDurationChanged:    (v) => setState(() => _data.ppDuration    = v),
     ),
 
-    // 8 — Mascotte
+    // 9 — Mascotte
     StepAvatar(
       userName: _data.username.isNotEmpty ? _data.username : 'fiteva',
       onBack:   _goBack,
