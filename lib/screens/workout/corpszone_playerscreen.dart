@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../../models/workout_model.dart';
 import '../../services/points_service.dart';
 import '../../theme/app_theme.dart';
+import '../../providers/points_provider.dart';
+import '../../core/shop/shop_provider.dart';
 
-class CorpsZonePlayerScreen extends StatefulWidget {
+class CorpsZonePlayerScreen extends ConsumerStatefulWidget {
   final WorkoutModel workout;
   final String zoneName;
 
@@ -17,10 +20,10 @@ class CorpsZonePlayerScreen extends StatefulWidget {
   });
 
   @override
-  State<CorpsZonePlayerScreen> createState() => _CorpsZonePlayerScreenState();
+  ConsumerState<CorpsZonePlayerScreen> createState() => _CorpsZonePlayerScreenState();
 }
 
-class _CorpsZonePlayerScreenState extends State<CorpsZonePlayerScreen>
+class _CorpsZonePlayerScreenState extends ConsumerState<CorpsZonePlayerScreen>
     with WidgetsBindingObserver {
   late PageController _pageController;
   VideoPlayerController? _videoPlayerController;
@@ -202,6 +205,9 @@ class _CorpsZonePlayerScreenState extends State<CorpsZonePlayerScreen>
     if (pos / dur >= 0.80 && !_pointsAwardedForIndex.contains(_currentListenerIndex)) {
       _pointsAwardedForIndex.add(_currentListenerIndex);
       PointsService.addPoints(PointsService.pointsPerVideo).then((total) {
+        if (!mounted) return;
+        ref.read(pointsProvider.notifier).loadPoints();
+        ref.read(shopProvider.notifier).refresh();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

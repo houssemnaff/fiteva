@@ -1,4 +1,6 @@
+import 'package:fiteva/providers/onboarding_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
+import 'package:fiteva/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -770,7 +772,41 @@ class ProfileScreen extends ConsumerWidget {
           width: double.infinity,
           height: 52,
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  title: const Text('Se déconnecter ?',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                  content: const Text(
+                    'Vos données locales seront effacées. '
+                    'Vous devrez refaire l\'onboarding.',
+                    style: TextStyle(fontSize: 13, height: 1.55,
+                        color: Color(0xFF666666))),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Annuler',
+                        style: TextStyle(color: Color(0xFF888888)))),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: cs.error,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Déconnecter',
+                        style: TextStyle(fontWeight: FontWeight.w700))),
+                  ],
+                ),
+              );
+              if (confirm != true || !context.mounted) return;
+              await StorageService.clearAll();
+              ref.read(onboardingProvider.notifier).reset();
+            },
             icon: const Icon(LucideIcons.logOut, size: 18),
             label: const Text(
               'Se déconnecter',

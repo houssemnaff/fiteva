@@ -1,3 +1,4 @@
+import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'shared_onboarding_widgets.dart';
@@ -29,17 +30,15 @@ class _StepCycleState extends State<StepCycle> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+    final picked = await showCustomDatePicker(
       context: context,
       initialDate: _lastPeriodDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: kGreenDark),
-        ),
-        child: child!,
-      ),
+      title: 'Dernieres regles',
+      subtitle: 'Date du premier jour',
+      icon: Icons.water_drop_rounded,
+      accentColor: const Color(0xFFD94F6B),
     );
     if (picked != null) setState(() => _lastPeriodDate = picked);
   }

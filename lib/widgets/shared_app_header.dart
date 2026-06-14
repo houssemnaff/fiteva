@@ -1,5 +1,9 @@
 // ignore_for_file: deprecated_member_use
+import 'package:fiteva/providers/mascot_provider.dart';
+import 'package:fiteva/widgets/mascot_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -100,7 +104,7 @@ class SharedAppHeader extends StatelessWidget {
 //  _HeaderContent — contenu partagé (utilisé en inline et en sliver)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _HeaderContent extends StatelessWidget {
+class _HeaderContent extends ConsumerWidget {
   final String eyebrow;
   final String title;
   final Color  accentColor;
@@ -124,10 +128,11 @@ class _HeaderContent extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark   = Theme.of(context).brightness == Brightness.dark;
     final resolvedBg    = isDark ? const Color(0xFF141414) : bgColor;
     final resolvedText1 = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final mascot = ref.watch(mascotProvider);
     return Container(
       color: resolvedBg,
       padding: EdgeInsets.fromLTRB(20, topPadding + 14, 20, 14),
@@ -194,24 +199,21 @@ class _HeaderContent extends StatelessWidget {
 
           const SizedBox(width: 10),
 
-          // ── Avatar ────────────────────────────────────────────────────────
+          // ── Mascotte → profil ─────────────────────────────────────────────
           GestureDetector(
-            onTap: onAvatarTap,
+            onTap: () => context.push('/profile'),
             child: Container(
-              width: 40, height: 40,
+              width: 42, height: 42,
               decoration: BoxDecoration(
-                color:  accentColor.withOpacity(0.12),
-                shape:  BoxShape.circle,
-                border: Border.all(color: accentColor, width: 1.5),
+                shape: BoxShape.circle,
+                color: accentColor.withOpacity(0.12),
+                border: Border.all(color: accentColor.withOpacity(0.4), width: 1.5),
               ),
-              child: Center(
-                child: Text(
-                  avatarInitial.toUpperCase(),
-                  style: GoogleFonts.outfit(
-                    color:      accentColor,
-                    fontSize:   15,
-                    fontWeight: FontWeight.w700,
-                  ),
+              child: ClipOval(
+                child: MascotWidget(
+                  type: mascot.type,
+                  mood: mascot.mood,
+                  size: 42,
                 ),
               ),
             ),
