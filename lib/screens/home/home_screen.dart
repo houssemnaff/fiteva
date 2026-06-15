@@ -6,7 +6,6 @@ import 'package:fiteva/screens/home/programs_bottom_sheet.dart';
 import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
 import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
 import 'package:fiteva/screens/workout/programme_detail_screen.dart';
-import 'package:fiteva/theme/app_theme.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
 import 'package:fiteva/providers/workout_progress_provider.dart';
@@ -222,6 +221,7 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
 
     final program = programs[_currentIndex % programs.length];
     final h = MediaQuery.of(context).size.height * 0.62;
+    final cs = Theme.of(context).colorScheme;
 
     return SizedBox(
       height: h,
@@ -306,7 +306,7 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                   // Category eyebrow
                   Row(children: [
                     Container(
-                        width: 28, height: 2, color: AppTheme.accentColor),
+                        width: 28, height: 2, color: cs.secondary),
                     const SizedBox(width: 10),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
@@ -314,7 +314,7 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                         key: ValueKey('cat_$_currentIndex'),
                         'PROGRAMME',
                         style: GoogleFonts.inter(
-                          color: AppTheme.accentColor,
+                          color: cs.secondary,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 3,
@@ -372,7 +372,7 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
-                            color: Color(0xFF1C4D30),
+                            color: cs.primary,
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Center(
@@ -632,14 +632,14 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
     if (_selectedDay == -1) _selectedDay = 0;
   }
 
-  Color _statusColor(DayStatus s) {
+  Color _statusColor(DayStatus s, ColorScheme cs) {
     switch (s) {
       case DayStatus.done:
         return const Color(0xFF52B788);
       case DayStatus.planned:
-        return AppTheme.primaryColor;
+        return cs.primary;
       case DayStatus.today:
-        return AppTheme.accentColor;
+        return cs.secondary;
       case DayStatus.rest:
         return const Color(0xFFE8EDE8);
     }
@@ -648,7 +648,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
   Color _statusTextColor(DayStatus s) {
     switch (s) {
       case DayStatus.rest:
-        return AppTheme.textSecondaryColor;
+        return const Color(0xFF8E8E93);
       default:
         return Colors.white;
     }
@@ -696,7 +696,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                       Text(
                         'WEEK PLAN',
                         style: GoogleFonts.inter(
-                          color: AppTheme.accentColor,
+                          color: cs.secondary,
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 3,
@@ -706,7 +706,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                       Text(
                         'Plan Your\nWeek',
                         style: GoogleFonts.outfit(
-                          color: AppTheme.textPrimaryColor,
+                          color: cs.onSurface,
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
                           height: 1.0,
@@ -720,13 +720,13 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
+                    color: cs.primary,
                     borderRadius: BorderRadius.circular(50),
                   ),
                   child: Text(
                     '$done/7 DONE',
                     style: GoogleFonts.inter(
-                      color: AppTheme.accentColor,
+                      color: cs.secondary,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1,
@@ -746,7 +746,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
               children: List.generate(plans.length, (i) {
                 final plan = plans[i];
                 final isSel = _selectedDay == i;
-                final sc = _statusColor(plan.status);
+                final sc = _statusColor(plan.status, cs);
                 final hasWorkout = plan.workout != null;
 
                 return Expanded(
@@ -757,12 +757,12 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                       margin: const EdgeInsets.symmetric(horizontal: 3),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: isSel ? AppTheme.primaryColor : sc,
+                        color: isSel ? cs.primary : sc,
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: isSel
                             ? [
                                 BoxShadow(
-                                  color: AppTheme.primaryColor.withOpacity(0.3),
+                                  color: cs.primary.withValues(alpha: 0.3),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 )
@@ -775,9 +775,9 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                             plan.dayLabel,
                             style: GoogleFonts.inter(
                               color: isSel
-                                  ? AppTheme.accentColor
+                                  ? cs.secondary
                                   : plan.status == DayStatus.rest
-                                      ? AppTheme.textSecondaryColor
+                                      ? const Color(0xFF8E8E93)
                                       : Colors.white,
                               fontSize: 8,
                               fontWeight: FontWeight.w800,
@@ -791,8 +791,8 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                               color: isSel
                                   ? Colors.white
                                   : plan.status == DayStatus.rest
-                                      ? AppTheme.textPrimaryColor
-                                      : Colors.white,
+                                      ? Colors.black
+                                      : Colors.black,
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                             ),
@@ -805,7 +805,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                               shape: BoxShape.circle,
                               color: hasWorkout
                                   ? (isSel
-                                      ? AppTheme.accentColor
+                                      ? Theme.of(context).colorScheme.secondary
                                       : Colors.white.withOpacity(0.7))
                                   : Colors.transparent,
                             ),
@@ -859,10 +859,10 @@ class _DayDetailCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 24),
           decoration: BoxDecoration(
-            color: AppTheme.neutral100,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-                color: AppTheme.primaryColor.withOpacity(0.15),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                 width: 1.5,
                 style: BorderStyle.solid),
           ),
@@ -871,17 +871,17 @@ class _DayDetailCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.08),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: Icon(LucideIcons.plus,
-                  color: AppTheme.primaryColor, size: 20),
+                  color: Theme.of(context).colorScheme.primary, size: 20),
             ),
             const SizedBox(height: 10),
             Text(
               'Add a workout for ${plan.fullDay}',
               style: GoogleFonts.inter(
-                color: AppTheme.textSecondaryColor,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -894,11 +894,11 @@ class _DayDetailCard extends StatelessWidget {
     // Workout present
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.08),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -920,9 +920,9 @@ class _DayDetailCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     height: 130,
-                    color: AppTheme.neutral200,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: Icon(LucideIcons.dumbbell,
-                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                         size: 36),
                   ),
                 ),
@@ -935,7 +935,7 @@ class _DayDetailCard extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          AppTheme.primaryColor.withOpacity(0.7),
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                         ],
                       ),
                     ),
@@ -944,7 +944,7 @@ class _DayDetailCard extends StatelessWidget {
                 if (isDone)
                   Positioned.fill(
                     child: Container(
-                      color: Colors.black.withOpacity(0.35),
+                      color: Colors.black.withValues(alpha: 0.35),
                       child: Center(
                         child: Container(
                           width: 48,
@@ -983,13 +983,13 @@ class _DayDetailCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentColor,
+                          color: Theme.of(context).colorScheme.secondary,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           w.duration,
                           style: GoogleFonts.inter(
-                            color: AppTheme.primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                           ),
@@ -1016,12 +1016,12 @@ class _DayDetailCard extends StatelessWidget {
                 _StatBadge(
                     icon: LucideIcons.barChart2,
                     label: w.level,
-                    color: AppTheme.primaryColor),
+                    color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 _StatBadge(
                     icon: LucideIcons.tag,
                     label: w.category,
-                    color: AppTheme.accentColor),
+                    color: Theme.of(context).colorScheme.secondary),
               ]),
 
               const SizedBox(height: 14),
@@ -1044,7 +1044,7 @@ class _DayDetailCard extends StatelessWidget {
                   child: _Btn(
                     label: isDone ? 'REVIEW' : 'START',
                     icon: isDone ? LucideIcons.eye : LucideIcons.play,
-                    bg: AppTheme.primaryColor,
+                    bg: Theme.of(context).colorScheme.primary,
                     fg: Colors.white,
                     onTap: onViewDetail ?? () {},
                   ),
@@ -1052,15 +1052,15 @@ class _DayDetailCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 _IconBtnSmall(
                   icon: LucideIcons.refreshCw,
-                  color: AppTheme.primaryColor,
-                  bg: AppTheme.primaryColor.withOpacity(0.08),
+                  color: Theme.of(context).colorScheme.primary,
+                  bg: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                   onTap: onAddWorkout,
                 ),
                 const SizedBox(width: 6),
                 _IconBtnSmall(
                   icon: LucideIcons.trash2,
                   color: Colors.red.shade400,
-                  bg: Colors.red.withOpacity(0.06),
+                  bg: Colors.red.withValues(alpha: 0.06),
                   onTap: onRemove,
                 ),
               ]),
@@ -1092,7 +1092,7 @@ class _StatBadge extends StatelessWidget {
         const SizedBox(width: 4),
         Text(label,
             style: GoogleFonts.inter(
-              color: AppTheme.textPrimaryColor,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 10,
               fontWeight: FontWeight.w600,
             )),
@@ -1221,7 +1221,7 @@ class _CompletionIndicator extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 8,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimaryColor,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -1336,7 +1336,8 @@ class _ProgramCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statusAsync = ref.watch(programStatusProvider(program));
-
+ final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return statusAsync.when(
       data: (status) {
         final isCompleted = status.isCompleted;
@@ -1346,7 +1347,7 @@ class _ProgramCard extends ConsumerWidget {
           width: 200,
           margin: const EdgeInsets.only(right: 14),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
@@ -1369,7 +1370,7 @@ class _ProgramCard extends ConsumerWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     height: 100,
-                    color: AppTheme.neutral200,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                 ),
                 // Points chip
@@ -1379,7 +1380,7 @@ class _ProgramCard extends ConsumerWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -1414,7 +1415,7 @@ class _ProgramCard extends ConsumerWidget {
                       style: GoogleFonts.outfit(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: AppTheme.textPrimaryColor,
+                        color: Theme.of(context).colorScheme.onSurface,
                         letterSpacing: -0.2,
                       ),
                       maxLines: 1,
@@ -1424,7 +1425,7 @@ class _ProgramCard extends ConsumerWidget {
                     Text(
                       '${program.duration}  •  ${program.sessions}',
                       style: GoogleFonts.inter(
-                        color: AppTheme.textSecondaryColor,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 10,
                       ),
                     ),
@@ -1447,7 +1448,7 @@ class _ProgramCard extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Text('${(percentage * 100).toInt()}%',
                           style: GoogleFonts.inter(
-                            color: isCompleted ? Colors.green.shade400 : AppTheme.primaryColor,
+                            color: isCompleted ? Colors.green.shade400 : Theme.of(context).colorScheme.primary,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           )),
@@ -1465,7 +1466,7 @@ class _ProgramCard extends ConsumerWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 9),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
@@ -1532,9 +1533,9 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: AppTheme.backgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(children: [
         // Handle
@@ -1543,7 +1544,7 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
           height: 4,
           margin: const EdgeInsets.only(top: 12, bottom: 16),
           decoration: BoxDecoration(
-            color: AppTheme.neutral300,
+            color: Theme.of(context).colorScheme.outlineVariant,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -1553,7 +1554,7 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
           child: Row(children: [
             Text('Pick a workout',
                 style: GoogleFonts.outfit(
-                  color: AppTheme.textPrimaryColor,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w800,
                   fontSize: 20,
                 )),
@@ -1563,11 +1564,11 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppTheme.neutral200,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.close_rounded,
-                    size: 16, color: AppTheme.textPrimaryColor),
+                    size: 16, color: Theme.of(context).colorScheme.onSurface),
               ),
             ),
           ]),
@@ -1593,15 +1594,15 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
-                    color: sel ? AppTheme.primaryColor : AppTheme.surfaceColor,
+                    color: sel ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(50),
                     border: Border.all(
-                      color: sel ? AppTheme.primaryColor : AppTheme.borderLight,
+                      color: sel ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
                     ),
                   ),
                   child: Text(cat,
                       style: GoogleFonts.inter(
-                        color: sel ? Colors.white : AppTheme.textSecondaryColor,
+                        color: sel ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
                       )),
@@ -1625,9 +1626,9 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppTheme.borderLight),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
                   ),
                   child: Row(children: [
                     ClipRRect(
@@ -1640,9 +1641,9 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
                         errorBuilder: (_, __, ___) => Container(
                           width: 54,
                           height: 54,
-                          color: AppTheme.neutral200,
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           child: Icon(LucideIcons.dumbbell,
-                              color: AppTheme.primaryColor.withOpacity(0.3)),
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
                         ),
                       ),
                     ),
@@ -1653,14 +1654,14 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
                         children: [
                           Text(w.title,
                               style: GoogleFonts.outfit(
-                                color: AppTheme.textPrimaryColor,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
                               )),
                           const SizedBox(height: 3),
                           Text('${w.duration}  •  ${w.calories} kcal',
                               style: GoogleFonts.inter(
-                                color: AppTheme.textSecondaryColor,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontSize: 11,
                               )),
                         ],
@@ -1670,12 +1671,12 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.08),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(w.level,
                           style: GoogleFonts.inter(
-                            color: AppTheme.primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                           )),

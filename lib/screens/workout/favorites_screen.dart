@@ -1,6 +1,7 @@
 import 'package:fiteva/models/home_program_model.dart';
 import 'package:fiteva/models/workout_model.dart';
 import 'package:fiteva/providers/mock_data_provider.dart';
+import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:fiteva/screens/workout/corpszone_playerscreen.dart';
 import 'package:fiteva/screens/workout/active_workout_screen.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
@@ -18,48 +19,21 @@ const _kDark   = Color(0xFF1A1A1A);
 const _kGrey   = Color(0xFF6B7280);
 const _kBorder = Color(0xFFECECE8);
 
-class FavoritesScreen extends ConsumerStatefulWidget {
-  final Set<String> initialFavorites;
-  final void Function(String) onToggleFav;
-
-  const FavoritesScreen({
-    super.key,
-    required this.initialFavorites,
-    required this.onToggleFav,
-  });
+class FavoritesScreen extends ConsumerWidget {
+  const FavoritesScreen({super.key});
 
   @override
-  ConsumerState<FavoritesScreen> createState() => _FavoritesScreenState();
-}
-
-class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
-  late Set<String> _favs;
-
-  @override
-  void initState() {
-    super.initState();
-    _favs = Set.from(widget.initialFavorites);
-  }
-
-  void _toggle(String id) {
-    setState(() {
-      _favs.contains(id) ? _favs.remove(id) : _favs.add(id);
-    });
-    widget.onToggleFav(id);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF111111) : Colors.white;
     final sallePrograms  = ref.watch(salleProgramsProvider);
     final homePrograms   = ref.watch(homeProgramsProvider);
     final workouts       = ref.watch(workoutsProvider);
+    final favorites      = ref.watch(favoritesProvider);
 
-    final favSalle  = sallePrograms.where((p) => _favs.contains(p.name)).toList();
-    final favMaison = homePrograms.where((p) => _favs.contains(p.name)).toList();
-    final favWorkouts = workouts.where((w) => _favs.contains(w.id)).toList();
-
+    final favSalle  = sallePrograms.where((p) => favorites.contains(p.name)).toList();
+    final favMaison = homePrograms.where((p) => favorites.contains(p.name)).toList();
+    final favWorkouts = workouts.where((w) => favorites.contains(w.id)).toList();
     final totalCount = favSalle.length + favMaison.length + favWorkouts.length;
 
     return Scaffold(
@@ -139,7 +113,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                     sectionColor: WorkoutColors.salle,
                     sectionLabel: 'SALLE',
                     isFav: true,
-                    onToggleFav: () => _toggle(favSalle[i].name),
+                    onToggleFav: () => ref.read(favoritesProvider.notifier).toggleFavorite(favSalle[i].name),
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -171,7 +145,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                     sectionColor: WorkoutColors.maison,
                     sectionLabel: 'MAISON',
                     isFav: true,
-                    onToggleFav: () => _toggle(favMaison[i].name),
+                    onToggleFav: () => ref.read(favoritesProvider.notifier).toggleFavorite(favMaison[i].name),
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -203,7 +177,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                     return _WorkoutFavCard(
                       workout: w,
                       isFav: true,
-                      onToggleFav: () => _toggle(w.id),
+                      onToggleFav: () => ref.read(favoritesProvider.notifier).toggleFavorite(w.id),
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
