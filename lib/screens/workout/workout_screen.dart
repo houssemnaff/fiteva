@@ -13,13 +13,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
+<<<<<<< HEAD
 import '../../l10n/app_localizations.dart';
+=======
+import '../../providers/workout_progress_provider.dart';
+>>>>>>> d96131fd75f15096a7fcd05615ec90358554703e
 import 'favorites_screen.dart';
 import 'theme/color.dart';
 import 'theme/cycle_theme.dart';
 import 'programme_detail_screen.dart';
 import 'active_workout_screen.dart';
-import 'corpszone_playerscreen.dart';
 
 
 
@@ -37,7 +40,6 @@ class WorkoutScreen extends ConsumerStatefulWidget {
 class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     with SingleTickerProviderStateMixin {
 
-  final Set<String> _favorites = {};
   int _selectedChip = 0;
   CyclePhase? _selectedPhase;
 
@@ -96,12 +98,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     }
   }
 
-  void _toggleFav(String id) {
-    setState(() {
-      _favorites.contains(id) ? _favorites.remove(id) : _favorites.add(id);
-    });
-  }
-
   // ── "Voir tout" bottom sheet — programmes (HomeProgramModel) ─────────────────
   void _showProgramsSheet({
     required String title,
@@ -110,6 +106,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     required List<HomeProgramModel> programs,
     required String category,
   }) {
+    final favorites = ref.read(favoritesProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -119,8 +116,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
         color: color,
         icon: icon,
         programs: programs,
-        favorites: _favorites,
-        onToggleFav: _toggleFav,
+        favorites: favorites,
+        onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
         onSelectProgram: (p) {
           Navigator.pop(ctx);
           Navigator.push(context, MaterialPageRoute(
@@ -138,6 +135,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     required IconData icon,
     required List<WorkoutModel> workouts,
   }) {
+    final favorites = ref.read(favoritesProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -147,8 +145,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
         color: color,
         icon: icon,
         workouts: workouts,
-        favorites: _favorites,
-        onToggleFav: _toggleFav,
+        favorites: favorites,
+        onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
         onSelectWorkout: (w) {
           Navigator.pop(ctx);
           Navigator.push(context, MaterialPageRoute(
@@ -172,6 +170,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     final dancePrograms = ref.watch(danceProgramsProvider);
     final recuperationPrograms = ref.watch(recuperationProgramsProvider);
     final grossessePrograms = ref.watch(grossesseProgramsProvider);
+    final favorites    = ref.watch(favoritesProvider);
 
     final screenH  = MediaQuery.of(context).size.height;
     final bottomGap = screenH < 700 ? 80.0 : 110.0;
@@ -220,22 +219,19 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => FavoritesScreen(
-                          initialFavorites: _favorites,
-                          onToggleFav: _toggleFav,
-                        ),
+                        builder: (_) => const FavoritesScreen(),
                       )),
                       child: Container(
                         width: 40, height: 40,
                         decoration: BoxDecoration(
-                          color: WorkoutColors.grossesse.withOpacity(0.1),
+                          color: WorkoutColors.grossesse.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.favorite_rounded,
                             size: 18, color: WorkoutColors.grossesse),
                       ),
                     ),
-                    if (_favorites.isNotEmpty)
+                    if (favorites.isNotEmpty)
                       Positioned(
                         top: -2, right: -2,
                         child: Container(
@@ -245,7 +241,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                             shape: BoxShape.circle,
                           ),
                           child: Center(
-                            child: Text('${_favorites.length}',
+                            child: Text('${favorites.length}',
                               style: TextStyle(
                                 color: colorScheme.onPrimary,
                                 fontSize: 8,
@@ -403,8 +399,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                 key: _keySalle,
                 child: SalleSection(
                   sallePrograms: filteredSalle,
-                  favorites: _favorites,
-                  onToggleFav: _toggleFav,
+                  favorites: favorites,
+                  onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
                     title: 'Programmes Salle',
                     color: WorkoutColors.salle,
@@ -423,8 +419,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                 key: _keyMaison,
                 child: MaisonSection(
                   homePrograms: filteredMaison,
-                  favorites: _favorites,
-                  onToggleFav: _toggleFav,
+                  favorites: favorites,
+                  onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
                     title: 'Programmes Maison',
                     color: WorkoutColors.maison,
@@ -445,8 +441,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                 key: _keyDance,
                 child: DanceSection(
                   dancePrograms: filteredDance,
-                  favorites: _favorites,
-                  onToggleFav: _toggleFav,
+                  favorites: favorites,
+                  onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
                     title: 'Danse & Cardio',
                     color: WorkoutColors.dance,
@@ -465,8 +461,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                 key: _keyRecup,
                 child: RecuperationSection(
                   recuperationPrograms: filteredRecuperation,
-                  favorites: _favorites,
-                  onToggleFav: _toggleFav,
+                  favorites: favorites,
+                  onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
                     title: 'Récupération',
                     color: WorkoutColors.recuperation,
@@ -485,8 +481,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                 key: _keyGrossesse,
                 child: GrossesseSection(
                   grossessePrograms: filteredGrossesse,
-                  favorites: _favorites,
-                  onToggleFav: _toggleFav,
+                  favorites: favorites,
+                  onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
                     title: 'Grossesse',
                     color: WorkoutColors.grossesse,

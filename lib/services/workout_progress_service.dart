@@ -25,6 +25,7 @@ class WorkoutProgressService {
   static const _completedWorkoutsKey = 'completed_workouts';
   static const _completedProgramsKey = 'completed_programs';
   static const _videoProgressKey = 'video_progress_';
+  static const _favoritesKey = 'favorites';
 
   // Video Completion (80% watched)
   static Future<Set<String>> getCompletedVideos() async {
@@ -217,11 +218,53 @@ class WorkoutProgressService {
     return started;
   }
 
+  // Favorites Management
+  static Future<Set<String>> getFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    return (prefs.getStringList(_favoritesKey) ?? []).toSet();
+  }
+
+  static Future<void> addFavorite(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final favorites = prefs.getStringList(_favoritesKey) ?? [];
+    if (!favorites.contains(id)) {
+      favorites.add(id);
+      await prefs.setStringList(_favoritesKey, favorites);
+    }
+  }
+
+  static Future<void> removeFavorite(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final favorites = prefs.getStringList(_favoritesKey) ?? [];
+    favorites.remove(id);
+    await prefs.setStringList(_favoritesKey, favorites);
+  }
+
+  static Future<void> toggleFavorite(String id) async {
+    final favorites = await getFavorites();
+    if (favorites.contains(id)) {
+      await removeFavorite(id);
+    } else {
+      await addFavorite(id);
+    }
+  }
+
+  static Future<bool> isFavorite(String id) async {
+    final favorites = await getFavorites();
+    return favorites.contains(id);
+  }
+
+  static Future<void> clearFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_favoritesKey);
+  }
+
   // Clear all progress (for testing)
   static Future<void> clearAllProgress() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_completedVideosKey);
     await prefs.remove(_completedWorkoutsKey);
     await prefs.remove(_completedProgramsKey);
+    await prefs.remove(_favoritesKey);
   }
 }

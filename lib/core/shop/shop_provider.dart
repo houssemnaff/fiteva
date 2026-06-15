@@ -66,3 +66,60 @@ class ShopNotifier extends Notifier<ShopState> {
 }
 
 final shopProvider = NotifierProvider<ShopNotifier, ShopState>(ShopNotifier.new);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WISHLIST NOTIFIER
+// ─────────────────────────────────────────────────────────────────────────────
+class ShopWishlistNotifier extends Notifier<Set<String>> {
+  static const _wishlistKey = 'shop_wishlist';
+
+  @override
+  Set<String> build() {
+    _loadWishlist();
+    return {};
+  }
+
+  Future<void> _loadWishlist() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_wishlistKey) ?? [];
+    state = Set.from(ids);
+  }
+
+  Future<void> toggleWishlist(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final newSet = Set<String>.from(state);
+    if (newSet.contains(id)) {
+      newSet.remove(id);
+    } else {
+      newSet.add(id);
+    }
+    await prefs.setStringList(_wishlistKey, newSet.toList());
+    state = newSet;
+  }
+
+  Future<void> addToWishlist(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final newSet = Set<String>.from(state);
+    newSet.add(id);
+    await prefs.setStringList(_wishlistKey, newSet.toList());
+    state = newSet;
+  }
+
+  Future<void> removeFromWishlist(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final newSet = Set<String>.from(state);
+    newSet.remove(id);
+    await prefs.setStringList(_wishlistKey, newSet.toList());
+    state = newSet;
+  }
+
+  Future<void> setWishlist(Set<String> wishlist) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_wishlistKey, wishlist.toList());
+    state = Set<String>.from(wishlist);
+  }
+}
+
+final shopWishlistProvider = NotifierProvider<ShopWishlistNotifier, Set<String>>(
+  ShopWishlistNotifier.new,
+);

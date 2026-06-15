@@ -1,4 +1,4 @@
-import 'package:fiteva/services/step_service.dart';
+/*import 'package:fiteva/services/step_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pedometer/pedometer.dart';
 
@@ -41,3 +41,4 @@ final stepProgressProvider = FutureProvider<double>((ref) async {
   const goalSteps = 10000;
   return (stepsToday / goalSteps).clamp(0.0, 1.0);
 });
+*/

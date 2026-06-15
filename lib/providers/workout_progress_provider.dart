@@ -102,3 +102,58 @@ class ProgramCompletionNotifier extends Notifier<void> {
 final programCompletionProvider = NotifierProvider<ProgramCompletionNotifier, void>(
   ProgramCompletionNotifier.new,
 );
+
+// Notifier for managing favorite items (programs, workouts)
+class FavoritesNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() {
+    _loadFavorites();
+    return {};
+  }
+
+  Future<void> _loadFavorites() async {
+    final favorites = await WorkoutProgressService.getFavorites();
+    state = favorites;
+  }
+
+  Future<void> toggleFavorite(String id) async {
+    await WorkoutProgressService.toggleFavorite(id);
+    final newSet = Set<String>.from(state);
+    if (newSet.contains(id)) {
+      newSet.remove(id);
+    } else {
+      newSet.add(id);
+    }
+    state = newSet;
+  }
+
+  Future<void> addFavorite(String id) async {
+    await WorkoutProgressService.addFavorite(id);
+    final newSet = Set<String>.from(state);
+    newSet.add(id);
+    state = newSet;
+  }
+
+  Future<void> removeFavorite(String id) async {
+    await WorkoutProgressService.removeFavorite(id);
+    final newSet = Set<String>.from(state);
+    newSet.remove(id);
+    state = newSet;
+  }
+
+  Future<void> setFavorites(Set<String> favorites) async {
+    for (final id in favorites) {
+      await WorkoutProgressService.addFavorite(id);
+    }
+    state = Set<String>.from(favorites);
+  }
+}
+
+// Favorites from storage provider
+final storedFavoritesProvider = FutureProvider<Set<String>>((ref) async {
+  return await WorkoutProgressService.getFavorites();
+});
+
+final favoritesProvider = NotifierProvider<FavoritesNotifier, Set<String>>(
+  FavoritesNotifier.new,
+);
