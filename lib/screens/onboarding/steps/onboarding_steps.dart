@@ -4167,54 +4167,40 @@ class StepTrainingLocation extends StatefulWidget {
 
 class _StepTrainingLocationState extends State<StepTrainingLocation>
     with SingleTickerProviderStateMixin {
-  static const _accent = _kGreenDark;
   String? _selected;
-
   late final AnimationController _ctrl;
-  late final List<Animation<double>> _fades;
-
-  static const _options = [
-    (value: 'gym',  emoji: '🏋️', label: 'Salle de sport',   sub: 'Accès aux machines\net aux équipements'),
-    (value: 'home', emoji: '🏠', label: 'À la maison',       sub: 'Sans matériel ou\navec haltères'),
-    (value: 'both', emoji: '💪', label: 'Les deux',           sub: 'Flexibilité totale\nselon tes envies'),
-  ];
+  late final Animation<double> _fadeIn;
 
   @override
   void initState() {
     super.initState();
     _selected = widget.selectedLocation;
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 750),
-    )..forward();
-    _fades = List.generate(_options.length, (i) {
-      final s = 0.10 + i * 0.22;
-      final e = (s + 0.50).clamp(0.0, 1.0);
-      return CurvedAnimation(parent: _ctrl, curve: Interval(s, e, curve: Curves.easeOut));
-    });
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..forward();
+    _fadeIn = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
   }
 
   @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _ctrl.dispose(); super.dispose(); }
 
   void _select(String value) {
     setState(() => _selected = value);
     widget.onChanged(value);
-    Future.delayed(const Duration(milliseconds: 320), widget.onNext);
+    Future.delayed(const Duration(milliseconds: 380), widget.onNext);
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return _stepBackground(
       child: SafeArea(
-        child: Column(
-          children: [
-              // ── Top bar ──────────────────────────────────────────────────
+        child: FadeTransition(
+          opacity: _fadeIn,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Top bar ────────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: Row(
                   children: [
                     GestureDetector(
@@ -4222,159 +4208,239 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                       child: Container(
                         width: 36, height: 36,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withOpacity(0.55),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
                       ),
                     ),
-                    const Expanded(
-                      child: Center(
-                        child: Text(
-                          'LIEU D\'ENTRAÎNEMENT',
-                          style: TextStyle(
-                            fontSize: 11,
-                            letterSpacing: 3.0,
-                            fontWeight: FontWeight.w700,
-                            color: _kGreenDark,
-                          ),
-                        ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _kGreenDark.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'LIEU D\'ENTRAÎNEMENT',
+                        style: TextStyle(fontSize: 9, letterSpacing: 2.5, fontWeight: FontWeight.w700, color: _kGreenDark),
                       ),
                     ),
+                    const Spacer(),
                     const SizedBox(width: 36),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 28),
 
-              // ── Header card ─────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(children: [
-                  Container(
-                    width: 60, height: 60,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
-                        begin: Alignment.topLeft, end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
-                    ),
-                    child: const Icon(Icons.location_on_outlined, size: 28, color: Colors.white),
-                  ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'Où est-ce que tu\nt\'entraînes ?',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: _kTextDark,
-                      height: 1.25,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Choisis ton environnement principal',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12.5, color: _kTextMuted),
-                  ),
-                ]),
-              ),
-
-              const Spacer(),
-
-              // ── Cards ─────────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+              // ── Title ──────────────────────────────────────────────────
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
-                  children: List.generate(_options.length, (i) {
-                    final opt = _options[i];
-                    final sel = _selected == opt.value;
-                    return FadeTransition(
-                      opacity: _fades[i],
-                      child: GestureDetector(
-                        onTap: () => _select(opt.value),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOut,
-                          margin: const EdgeInsets.only(bottom: 14),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                          decoration: BoxDecoration(
-                            gradient: sel
-                                ? const LinearGradient(
-                                    colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
-                                    begin: Alignment.topLeft, end: Alignment.bottomRight,
-                                  )
-                                : null,
-                            color: sel ? null : Colors.white.withOpacity(0.75),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: sel ? Colors.transparent : const Color(0xFFB8D4C0),
-                              width: 1.8,
-                            ),
-                            boxShadow: sel
-                                ? [BoxShadow(color: _kGreenDark.withOpacity(0.32), blurRadius: 18, offset: const Offset(0, 6))]
-                                : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 52, height: 52,
-                                decoration: BoxDecoration(
-                                  color: sel ? Colors.white.withOpacity(0.2) : const Color(0xFFD6EBE0),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Center(
-                                  child: Text(opt.emoji, style: const TextStyle(fontSize: 26)),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      opt.label,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: sel ? Colors.white : _kTextDark,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      opt.sub,
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        height: 1.4,
-                                        color: sel ? Colors.white.withOpacity(0.75) : _kTextMuted,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              AnimatedOpacity(
-                                opacity: sel ? 1 : 0,
-                                duration: const Duration(milliseconds: 200),
-                                child: const Icon(Icons.check_circle, color: Colors.white, size: 22),
-                              ),
-                            ],
-                          ),
-                        ),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Où tu t\'entraînes ?',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: _kTextDark,
+                        letterSpacing: -0.8,
+                        height: 1.1,
                       ),
-                    );
-                  }),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Choisis ton environnement de prédilection',
+                      style: TextStyle(fontSize: 13, color: _kTextMuted, height: 1.4),
+                    ),
+                  ],
                 ),
               ),
 
+              const SizedBox(height: 28),
+
+              // ── Option cards ───────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    // Salle de sport — full width
+                    _LocationCard(
+                      value: 'gym',
+                      label: 'Salle de sport',
+                      detail: 'Machines, câbles, haltères',
+                      icon: Icons.fitness_center_rounded,
+                      accentColor: const Color(0xFF1C4D30),
+                      bgLight: const Color(0xFFEAF4EE),
+                      isSelected: _selected == 'gym',
+                      onTap: () => _select('gym'),
+                      height: 90,
+                    ),
+                    const SizedBox(height: 12),
+                    // Maison + Les deux — side by side
+                    IntrinsicHeight(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _LocationCard(
+                              value: 'home',
+                              label: 'À la maison',
+                              detail: 'Poids du corps',
+                              icon: Icons.weekend_rounded,
+                              accentColor: const Color(0xFF2C5F8A),
+                              bgLight: const Color(0xFFE8F1F8),
+                              isSelected: _selected == 'home',
+                              onTap: () => _select('home'),
+                              height: 90,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _LocationCard(
+                              value: 'both',
+                              label: 'Les deux',
+                              detail: 'Flexibilité totale',
+                              icon: Icons.swap_horiz_rounded,
+                              accentColor: const Color(0xFF6B3FA0),
+                              bgLight: const Color(0xFFF1ECF8),
+                              isSelected: _selected == 'both',
+                              onTap: () => _select('both'),
+                              height: 90,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const Spacer(),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _LocationCard extends StatelessWidget {
+  final String value;
+  final String label;
+  final String detail;
+  final IconData icon;
+  final Color accentColor;
+  final Color bgLight;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final double height;
+
+  const _LocationCard({
+    required this.value,
+    required this.label,
+    required this.detail,
+    required this.icon,
+    required this.accentColor,
+    required this.bgLight,
+    required this.isSelected,
+    required this.onTap,
+    this.height = 90,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 230),
+        curve: Curves.easeOut,
+        height: height,
+        decoration: BoxDecoration(
+          color: isSelected ? accentColor : bgLight,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected ? accentColor : accentColor.withOpacity(0.18),
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [BoxShadow(color: accentColor.withOpacity(0.32), blurRadius: 16, offset: const Offset(0, 6))]
+              : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Stack(
+            children: [
+              // Decorative circle
+              Positioned(
+                right: -14, bottom: -14,
+                child: Container(
+                  width: 70, height: 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected ? Colors.white.withOpacity(0.08) : accentColor.withOpacity(0.07),
+                  ),
+                ),
+              ),
+              // Content row
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.white.withOpacity(0.18) : accentColor.withOpacity(0.13),
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: Icon(icon, size: 18, color: isSelected ? Colors.white : accentColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: isSelected ? Colors.white : _kTextDark,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            detail,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              color: isSelected ? Colors.white.withOpacity(0.68) : _kTextMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AnimatedOpacity(
+                      opacity: isSelected ? 1 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      child: Container(
+                        width: 22, height: 22,
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: Icon(Icons.check, size: 14, color: accentColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -79,6 +79,17 @@ class StorageService {
   }
 
   // --------------------
+  // STRING
+  // --------------------
+  static Future<void> setString(String key, String value) async {
+    await _prefs.setString(key, value);
+  }
+
+  static String? getString(String key) {
+    return _prefs.getString(key);
+  }
+
+  // --------------------
   // CLEAR ALL
   // --------------------
   static Future<void> clearAll() async {

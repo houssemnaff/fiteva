@@ -18,6 +18,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../models/workout_model.dart';
 import '../../models/home_program_model.dart';
 import '../../providers/mock_data_provider.dart';
+import '../../l10n/app_localizations.dart';
 
 
 
@@ -163,7 +164,7 @@ class HomeScreen extends ConsumerWidget {
 
           // ── In-Progress Programs ──────────────────────
           SliverToBoxAdapter(
-            child: _ProgramsSection(programs: allPrograms),
+            child: _ProgramsSection(programs: allPrograms, l10n: ref.watch(l10nProvider)),
           ),
 
           // ── Library ───────────────────────────────────
@@ -1239,7 +1240,8 @@ class _CompletionIndicator extends StatelessWidget {
 
 class _ProgramsSection extends StatelessWidget {
   final List<HomeProgramModel> programs;
-  const _ProgramsSection({required this.programs});
+  final AppL10n l10n;
+  const _ProgramsSection({required this.programs, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -1266,7 +1268,7 @@ class _ProgramsSection extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('PROGRAMMES EN COURS',
+                        Text(l10n.homeInProgress,
                             style: GoogleFonts.inter(
                               color: Theme.of(context).colorScheme.secondary,
                               fontSize: 9,
@@ -1274,7 +1276,7 @@ class _ProgramsSection extends StatelessWidget {
                               letterSpacing: 3,
                             )),
                         const SizedBox(height: 4),
-                        Text('Continuer',
+                        Text(l10n.homeContinueSection,
                             style: GoogleFonts.outfit(
                               color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 26,
@@ -1294,7 +1296,7 @@ class _ProgramsSection extends StatelessWidget {
                         );
                       },
                       borderRadius: BorderRadius.circular(12),
-                      child: Text('voir tout',
+                      child: Text(l10n.homeVoirTout,
                           style: GoogleFonts.inter(
                             color: Theme.of(context).colorScheme.primary,
                             fontSize: 11,
@@ -1469,14 +1471,19 @@ class _ProgramCard extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
-                            child: Text(
-                              isCompleted ? 'REVIEW' : 'RESUME',
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.5,
-                              ),
+                            child: Consumer(
+                              builder: (ctx, r, _) {
+                                final l = r.watch(l10nProvider);
+                                return Text(
+                                  isCompleted ? l.homeReview : l.homeResume,
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.5,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -1507,16 +1514,16 @@ class _ProgramCard extends ConsumerWidget {
 // WORKOUT PICKER BOTTOM SHEET
 // ═══════════════════════════════════════════════════════════
 
-class _WorkoutPickerSheet extends StatefulWidget {
+class _WorkoutPickerSheet extends ConsumerStatefulWidget {
   final List<WorkoutModel> workouts;
   final void Function(WorkoutModel) onPick;
   const _WorkoutPickerSheet({required this.workouts, required this.onPick});
 
   @override
-  State<_WorkoutPickerSheet> createState() => _WorkoutPickerSheetState();
+  ConsumerState<_WorkoutPickerSheet> createState() => _WorkoutPickerSheetState();
 }
 
-class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
+class _WorkoutPickerSheetState extends ConsumerState<_WorkoutPickerSheet> {
   String _cat = 'Tout';
 
   List<String> get _cats {
@@ -1530,6 +1537,7 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: const BoxDecoration(
@@ -1551,7 +1559,7 @@ class _WorkoutPickerSheetState extends State<_WorkoutPickerSheet> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Row(children: [
-            Text('Pick a workout',
+            Text(l10n.homePickWorkout,
                 style: GoogleFonts.outfit(
                   color: AppTheme.textPrimaryColor,
                   fontWeight: FontWeight.w800,

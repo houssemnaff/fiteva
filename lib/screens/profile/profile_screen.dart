@@ -10,6 +10,8 @@ import 'package:dice_bear/dice_bear.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../providers/mock_data_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/locale_provider.dart';
+import '../../l10n/app_localizations.dart';
 
 // ─── DiceBear avatar state ──────────────────────────────────────────────────
 // Replaces the old avatarProvider counter — now we store actual avatar params.
@@ -661,18 +663,21 @@ class ProfileScreen extends ConsumerWidget {
     ThemeData theme,
     Color textSub,
   ) {
+    final l10n     = ref.watch(l10nProvider);
+    final isFrench = ref.watch(localeProvider).languageCode == 'fr';
+
     final items = [
       _SettingsItemData(
         icon: LucideIcons.bell,
-        title: 'Notifications',
+        title: l10n.notifications,
         iconColor: cs.primary,
         onTap: () {},
       ),
       _SettingsItemData(
         icon: isDarkMode ? LucideIcons.sunMedium : LucideIcons.moon,
-        title: 'Mode sombre',
+        title: l10n.darkMode,
         iconColor: const Color(0xFF8A6FE8),
-        trailing: isDarkMode ? 'Activé' : 'Désactivé',
+        trailing: isDarkMode ? l10n.darkModeOn : l10n.darkModeOff,
         trailingWidget: Switch.adaptive(
           value: isDarkMode,
           onChanged: (_) =>
@@ -682,38 +687,38 @@ class ProfileScreen extends ConsumerWidget {
       ),
       _SettingsItemData(
         icon: LucideIcons.heart,
-        title: 'Santé connectée',
+        title: l10n.connectedHealth,
         iconColor: const Color(0xFFFF6B35),
         onTap: () {},
       ),
       _SettingsItemData(
         icon: LucideIcons.globe,
-        title: 'Langue',
+        title: l10n.language,
         iconColor: const Color(0xFF007AFF),
-        trailing: 'Français',
-        onTap: () {},
+        trailing: isFrench ? l10n.langFrench : l10n.langEnglish,
+        onTap: () => _showLanguagePicker(context, ref, l10n, cs, isFrench),
       ),
       _SettingsItemData(
         icon: LucideIcons.lock,
-        title: 'Confidentialité',
+        title: l10n.privacy,
         iconColor: textSub,
         onTap: () {},
       ),
       _SettingsItemData(
         icon: LucideIcons.share2,
-        title: "Partager l'app",
+        title: l10n.shareApp,
         iconColor: textSub,
         onTap: () {},
       ),
       _SettingsItemData(
         icon: LucideIcons.helpCircle,
-        title: 'Aide & FAQ',
+        title: l10n.helpFaq,
         iconColor: textSub,
         onTap: () {},
       ),
       _SettingsItemData(
         icon: LucideIcons.info,
-        title: 'À propos',
+        title: l10n.about,
         iconColor: textSub,
         trailing: 'v2.4.1',
         onTap: () {},
@@ -724,7 +729,7 @@ class ProfileScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Paramètres',
+          l10n.settings,
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w700,
@@ -778,18 +783,17 @@ class ProfileScreen extends ConsumerWidget {
                 builder: (ctx) => AlertDialog(
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20)),
-                  title: const Text('Se déconnecter ?',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-                  content: const Text(
-                    'Vos données locales seront effacées. '
-                    'Vous devrez refaire l\'onboarding.',
-                    style: TextStyle(fontSize: 13, height: 1.55,
+                  title: Text(l10n.logoutConfirm,
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                  content: Text(
+                    l10n.logoutMessage,
+                    style: const TextStyle(fontSize: 13, height: 1.55,
                         color: Color(0xFF666666))),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Annuler',
-                        style: TextStyle(color: Color(0xFF888888)))),
+                      child: Text(l10n.cancel,
+                        style: const TextStyle(color: Color(0xFF888888)))),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: cs.error,
@@ -798,8 +802,8 @@ class ProfileScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Déconnecter',
-                        style: TextStyle(fontWeight: FontWeight.w700))),
+                      child: Text(l10n.confirm,
+                        style: const TextStyle(fontWeight: FontWeight.w700))),
                   ],
                 ),
               );
@@ -808,9 +812,9 @@ class ProfileScreen extends ConsumerWidget {
               ref.read(onboardingProvider.notifier).reset();
             },
             icon: const Icon(LucideIcons.logOut, size: 18),
-            label: const Text(
-              'Se déconnecter',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            label: Text(
+              l10n.logout,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: cs.error,
@@ -822,6 +826,71 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showLanguagePicker(
+    BuildContext context,
+    WidgetRef ref,
+    AppL10n l10n,
+    ColorScheme cs,
+    bool isFrench,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                width: 38, height: 4,
+                decoration: BoxDecoration(
+                  color: cs.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                l10n.chooseLanguage,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _LangOption(
+                label: 'Français',
+                flag: '🇫🇷',
+                isSelected: isFrench,
+                cs: cs,
+                onTap: () {
+                  ref.read(localeProvider.notifier).setLocale(const Locale('fr'));
+                  Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 10),
+              _LangOption(
+                label: 'English',
+                flag: '🇬🇧',
+                isSelected: !isFrench,
+                cs: cs,
+                onTap: () {
+                  ref.read(localeProvider.notifier).setLocale(const Locale('en'));
+                  Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -919,4 +988,57 @@ class _SettingsItemData {
     this.trailingWidget,
     required this.onTap,
   });
+}
+
+class _LangOption extends StatelessWidget {
+  final String label;
+  final String flag;
+  final bool isSelected;
+  final ColorScheme cs;
+  final VoidCallback onTap;
+
+  const _LangOption({
+    required this.label,
+    required this.flag,
+    required this.isSelected,
+    required this.cs,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? cs.primary.withOpacity(0.10) : cs.surfaceContainerHighest.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? cs.primary : cs.outlineVariant.withOpacity(0.5),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(flag, style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: cs.primary, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
 }
