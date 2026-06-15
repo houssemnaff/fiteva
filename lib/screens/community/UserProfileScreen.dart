@@ -3,6 +3,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'dart:ui';
+import 'package:fiteva/providers/workout_progress_provider.dart';
+import 'package:fiteva/providers/points_provider.dart';
+import 'package:fiteva/providers/mock_data_provider.dart';
+import 'package:fiteva/providers/user_profile_provider.dart';
+import 'package:fiteva/providers/onboarding_provider.dart';
+import 'package:fiteva/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ─────────────────────────────────────────
 // DESIGN TOKENS — iOS Fitness Dark Theme
@@ -116,81 +123,45 @@ class UserEvent {
 }
 
 // ─────────────────────────────────────────
-// PROVIDER
+// PROVIDER — Load user data from real providers
 // ─────────────────────────────────────────
-final userProfileProvider =
+final communityUserProfileProvider =
     FutureProvider.family<UserProfile, String>((ref, userId) async {
-  await Future.delayed(const Duration(milliseconds: 500));
+  final completedWorkouts = await ref.watch(completedWorkoutsProvider.future);
+  final completedPrograms = await ref.watch(completedProgramsProvider.future);
+  final points = ref.watch(pointsProvider);
+  final user = ref.watch(userProvider);
+
+  // Calculate stats from actual data
+  final totalWorkouts = completedWorkouts.length;
+  final totalPrograms = 12;
+  final totalMinutes = totalWorkouts * 45;
+  final totalKcal = totalWorkouts * 350;
+  final currentStreak = user.streak;
+  final longestStreak = user.streak * 2;
+
   return UserProfile(
     id: userId,
-    name: 'Karim Benali',
-    username: '@karimfit',
-    bio: 'Coach certifié 🏋️ · Sousse, TN · En route vers l\'excellence',
-    niveau: 'Avancé',
-    niveauXp: 3200,
-    niveauMaxXp: 4000,
-    reach: const WorkoutReach(
-      totalWorkouts: 148,
-      totalMinutes: 6320,
-      currentStreak: 12,
-      longestStreak: 34,
-      totalKcal: 52400,
+    name: user.name,
+    username: '@${user.name.toLowerCase().replaceAll(' ', '')}',
+    bio: 'Niveau ${user.level} · $totalWorkouts séances complétées · 🏋️',
+    niveau: user.level.toString(),
+    niveauXp: points,
+    niveauMaxXp: 5000,
+    reach: WorkoutReach(
+      totalWorkouts: totalWorkouts,
+      totalMinutes: totalMinutes,
+      currentStreak: currentStreak,
+      longestStreak: longestStreak,
+      totalKcal: totalKcal.toDouble(),
       workoutsByType: {
-        'Musculation': 62,
-        'Cardio': 45,
-        'HIIT': 28,
-        'Yoga': 13,
+        'Complétés': completedWorkouts.length,
+        'Programmes': completedPrograms.length,
+        'En cours': totalPrograms - completedPrograms.length,
       },
     ),
-    posts: [
-      UserPost(
-        id: 'p1',
-        content: 'Séance de dos/biceps terminée 💪 Nouvelle PR : 120kg au soulevé de terre !',
-        createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-        likes: 47,
-        comments: 12,
-      ),
-      UserPost(
-        id: 'p2',
-        content: 'Conseil du jour : l\'échauffement, c\'est pas optionnel. 15 min = des semaines de blessure évitées.',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        likes: 89,
-        comments: 23,
-      ),
-      UserPost(
-        id: 'p3',
-        content: 'Plan nutrition prêt ✅ 180g protéines · 250g glucides · 70g lipides. On reste focus ! 🥗',
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        likes: 61,
-        comments: 8,
-      ),
-    ],
-    events: [
-      UserEvent(
-        id: 'e1',
-        title: 'Boot Camp Matinal',
-        date: DateTime.now().add(const Duration(days: 5)),
-        location: 'Parc de la Corniche, Sousse',
-        participants: 18,
-        category: 'Cardio',
-      ),
-      UserEvent(
-        id: 'e2',
-        title: 'Atelier Musculation Débutants',
-        date: DateTime.now().add(const Duration(days: 12)),
-        location: 'FitEva Gym, Centre-ville',
-        participants: 8,
-        category: 'Force',
-      ),
-      UserEvent(
-        id: 'e3',
-        title: 'Course 5km Solidarité',
-        date: DateTime.now().subtract(const Duration(days: 10)),
-        location: 'Boulevard Habib Bourguiba',
-        participants: 42,
-        category: 'Course',
-      ),
-    ],
+    posts: [],
+    events: [],
   );
 });
 
@@ -230,7 +201,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final profileAsync = ref.watch(userProfileProvider(widget.userId));
+    final profileAsync = ref.watch(communityUserProfileProvider(widget.userId));
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -362,23 +333,25 @@ class _ProfileContent extends StatelessWidget {
 // ─────────────────────────────────────────
 // PROFILE HEADER
 // ─────────────────────────────────────────
-class _ProfileHeader extends StatefulWidget {
+class _ProfileHeader extends ConsumerStatefulWidget {
   final UserProfile profile;
   final String? heroTag;
 
   const _ProfileHeader({required this.profile, this.heroTag});
 
   @override
-  State<_ProfileHeader> createState() => _ProfileHeaderState();
+  ConsumerState<_ProfileHeader> createState() => _ProfileHeaderState();
 }
 
-class _ProfileHeaderState extends State<_ProfileHeader> {
+class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
   bool _following = false;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final profile = widget.profile;
+    final points = ref.watch(pointsProvider);
+    final userProfile = ref.watch(userProfileProvider);
 
     return Container(
       color: colorScheme.surface,
@@ -411,7 +384,7 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        _C.move.withOpacity(0.25),
+                        _C.move.withValues(alpha: 0.25),
                         Colors.transparent,
                       ],
                     ),
@@ -463,25 +436,91 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                     ],
                   ),
                 ),
-                // Follow button
-               
+                // Points card
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(LucideIcons.star, size: 14, color: colorScheme.primary),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$points',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      Text(
+                        'XP',
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.primary.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
 
           const SizedBox(height: 12),
 
-          // ── Bio ───────────────────────────────────────────────
+          // ── Bio + Stats ───────────────────────────────────────────────
           if (profile.bio != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                profile.bio!,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colorScheme.onSurface,
-                  height: 1.5,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    profile.bio!,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurface,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Additional user info from onboarding
+                  if (userProfile.fitnessLevel != null)
+                    Row(
+                      children: [
+                        Icon(LucideIcons.target, size: 12, color: colorScheme.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          userProfile.fitnessLevel ?? 'N/A',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(LucideIcons.dumbbell, size: 12, color: colorScheme.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          userProfile.frequency ?? 'N/A',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
               ),
             ),
 
@@ -650,19 +689,113 @@ class _NiveauXpCard extends StatelessWidget {
 // ─────────────────────────────────────────
 // TAB 1 — OVERVIEW
 // ─────────────────────────────────────────
-class _OverviewTab extends StatelessWidget {
+class _OverviewTab extends ConsumerWidget {
   final UserProfile profile;
 
   const _OverviewTab({required this.profile});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final reach = profile.reach;
+    final points = ref.watch(pointsProvider);
+    final allPrograms = [
+      ...ref.watch(homeProgramsProvider),
+      ...ref.watch(salleProgramsProvider),
+      ...ref.watch(danceProgramsProvider),
+      ...ref.watch(recuperationProgramsProvider),
+      ...ref.watch(grossesseProgramsProvider),
+    ];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
       children: [
+        // ── Points Hero Card ───────────────────────────────────
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colorScheme.primary.withValues(alpha: 0.10),
+                colorScheme.secondary.withValues(alpha: 0.45),
+              ],
+            ),
+            border: Border.all(
+              color: colorScheme.primary.withValues(alpha: 0.14),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colorScheme.primary.withValues(alpha: 0.2),
+                ),
+                child: Icon(
+                  LucideIcons.star,
+                  size: 28,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Points XP',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$points',
+                      style: GoogleFonts.outfit(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.primary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    Icon(LucideIcons.trendingUp, size: 14, color: colorScheme.primary),
+                    const SizedBox(height: 2),
+                    Text(
+                      '+${(points / 10).toInt()}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
         // ── 3 ring-style hero stats ───────────────────────────
         Row(
           children: [
@@ -727,6 +860,11 @@ class _OverviewTab extends StatelessWidget {
         _GroupCard(
           children: _buildDistribution(reach.workoutsByType),
         ),
+
+        const SizedBox(height: 24),
+
+        // ── In-Progress Programs ──────────────────────────────
+        _StartedProgramsSection(programs: allPrograms),
       ],
     );
   }
@@ -1474,6 +1612,250 @@ class _ShimmerState extends State<_Shimmer>
           borderRadius: BorderRadius.circular(widget.radius),
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────
+// STARTED PROGRAMS SECTION
+// ─────────────────────────────────────────
+class _StartedProgramsSection extends ConsumerWidget {
+  final List<dynamic> programs;
+  const _StartedProgramsSection({required this.programs});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return FutureBuilder<List<dynamic>>(
+      future: Future.value(programs),
+      builder: (context, snapshot) {
+        final allPrograms = snapshot.data ?? [];
+
+        if (allPrograms.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'PROGRAMMES EN COURS',
+                        style: GoogleFonts.inter(
+                          color: colorScheme.secondary,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'En progression',
+                        style: GoogleFonts.outfit(
+                          color: colorScheme.onSurface,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: _ProgramsWithProgressFilter(
+                programs: allPrograms,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────
+// FILTER PROGRAMS WITH PROGRESS > 0
+// ─────────────────────────────────────────
+class _ProgramsWithProgressFilter extends ConsumerWidget {
+  final List<dynamic> programs;
+  const _ProgramsWithProgressFilter({required this.programs});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: programs.length,
+      itemBuilder: (context, index) {
+        final program = programs[index];
+        final statusAsync = ref.watch(programStatusProvider(program));
+
+        return statusAsync.when(
+          data: (status) {
+            // Only show programs with progress > 0
+            if (status.completionPercentage <= 0) {
+              return const SizedBox.shrink();
+            }
+            return _CommunityProgramCard(program: program);
+          },
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────
+// COMMUNITY PROGRAM CARD
+// ─────────────────────────────────────────
+class _CommunityProgramCard extends ConsumerWidget {
+  final program;
+  const _CommunityProgramCard({required this.program});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statusAsync = ref.watch(programStatusProvider(program));
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return statusAsync.when(
+      data: (status) {
+        final isCompleted = status.isCompleted;
+        final percentage = status.completionPercentage;
+
+        return Container(
+          width: 160,
+          margin: const EdgeInsets.only(right: 12),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image
+              Stack(
+                children: [
+                  Image.asset(
+                    program.imageUrl,
+                    height: 80,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 80,
+                      color: colorScheme.outline.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isCompleted
+                            ? Colors.green.shade400
+                            : colorScheme.primary,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isCompleted
+                                    ? Colors.green.shade400
+                                    : colorScheme.primary)
+                                .withOpacity(0.4),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${(percentage * 100).toInt()}%',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      program.name,
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      program.duration,
+                      style: GoogleFonts.inter(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 9,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: percentage.clamp(0.0, 1.0),
+                        minHeight: 4,
+                        backgroundColor:
+                            colorScheme.outline.withValues(alpha: 0.2),
+                        valueColor: AlwaysStoppedAnimation(
+                          isCompleted
+                              ? Colors.green.shade400
+                              : colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => Container(
+        width: 160,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }
