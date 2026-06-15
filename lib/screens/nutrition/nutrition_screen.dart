@@ -12,6 +12,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'models/models.dart';
 import 'widgets/home/home_widgets.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/lang.dart';
 
 import 'suivi_nutrition_screen.dart';
 import 'recipes_list_screen.dart';
@@ -112,7 +113,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
       final entries    = ref.watch(mealsForTypeProvider((dateKey: key, type: type)));
       final typeTotals = core.DailyTotals.from(entries);
       return MealCategoryData(
-        _mealImageUrl(type), type.label,
+        _mealImageUrl(type), type.labelFor(Lang.code),
         typeTotals.calories, type.budgetKcal,
         typeTotals.protein.toDouble(), typeTotals.carbs.toDouble(),
         time: _mealTime(type), recipeCount: entries.length,
@@ -229,7 +230,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
               child: SectionHeader(
-                eyebrow: 'RECETTES', title: ref.watch(l10nProvider).nutritionNewRecipes,
+                eyebrow: ref.watch(l10nProvider).nutritionRecipesEyebrow, title: ref.watch(l10nProvider).nutritionNewRecipes,
                 onSeeAll: _goToRecipes))),
 
           // Fix #4 — recipes from allRecipes
@@ -397,6 +398,7 @@ class _EmptyDayBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppL10n(Lang.code);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -416,11 +418,11 @@ class _EmptyDayBanner extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Aucun repas aujourd\'hui', style: GoogleFonts.outfit(
+            Text(l10n.nutritionNoMealsToday, style: GoogleFonts.outfit(
               fontSize: 14, fontWeight: FontWeight.w700,
               color: const Color(0xFF1C4D30))),
             const SizedBox(height: 2),
-            Text('Commence à suivre ton alimentation →', style: GoogleFonts.inter(
+            Text(l10n.nutritionStartTracking, style: GoogleFonts.inter(
               fontSize: 12, color: const Color(0xFF6B7280))),
           ])),
         ]),
@@ -437,6 +439,7 @@ class _FavoritesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n     = ref.watch(l10nProvider);
     final top      = MediaQuery.of(context).padding.top;
     final favNames = ref.watch(favoritesProvider);
 
@@ -475,10 +478,10 @@ class _FavoritesScreen extends ConsumerWidget {
                       color: kRed, size: 18))),
                 const SizedBox(width: 14),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('MES RECETTES', style: GoogleFonts.inter(
+                  Text(l10n.nutritionMyRecipes, style: GoogleFonts.inter(
                     color: kRed, fontSize: 9,
                     fontWeight: FontWeight.w700, letterSpacing: 3)),
-                  Text('Favoris', style: GoogleFonts.outfit(
+                  Text(l10n.nutritionFavorites, style: GoogleFonts.outfit(
                     color: nc.text1, fontSize: 22,
                     fontWeight: FontWeight.w800, letterSpacing: -0.4)),
                 ]),
@@ -508,11 +511,11 @@ class _FavoritesScreen extends ConsumerWidget {
                   child: const Icon(LucideIcons.heart,
                     color: kRed, size: 28)),
                 const SizedBox(height: 16),
-                Text('Aucun favori', style: GoogleFonts.outfit(
+                Text(l10n.nutritionNoFavorites, style: GoogleFonts.outfit(
                   fontSize: 18, fontWeight: FontWeight.w700,
                   color: nc.text1)),
                 const SizedBox(height: 6),
-                Text('Appuie sur ♥ dans une recette\npour la retrouver ici',
+                Text(l10n.nutritionFavoriteHint,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 13, color: nc.text2)),
@@ -524,7 +527,7 @@ class _FavoritesScreen extends ConsumerWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
-                child: Text('Recettes photos',
+                child: Text(l10n.nutritionPhotoRecipes,
                   style: GoogleFonts.outfit(
                     fontSize: 16, fontWeight: FontWeight.w700,
                     color: nc.text1)))),
@@ -582,7 +585,7 @@ class _FavoritesScreen extends ConsumerWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
-                child: Text('Recettes vidéos',
+                child: Text(l10n.nutritionVideoRecipes,
                   style: GoogleFonts.outfit(
                     fontSize: 16, fontWeight: FontWeight.w700,
                     color: nc.text1)))),

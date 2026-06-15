@@ -6,6 +6,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../models/models.dart';
 import '../shared/donut_painters.dart';
+import '../../../../l10n/lang.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ── Static brand tokens (theme-independent) ───────────────────────────────────
 const _kGreen = NutritionColors.green;
@@ -43,6 +45,7 @@ class DailyTrackingCard extends StatelessWidget {
     final over      = remaining < 0;
     final pct       = (caloriesConsumed / caloriesGoal).clamp(0.0, 1.0);
 
+    final l10n = AppL10n(Lang.code);
     return Container(
       decoration: BoxDecoration(
         color: _kGreen,
@@ -58,7 +61,7 @@ class DailyTrackingCard extends StatelessWidget {
 
         // ── Top row: label + status pill ──────────────────────────────────────
         Row(children: [
-          Text('BILAN DU JOUR', style: GoogleFonts.inter(
+          Text(l10n.nutritionDailyLog, style: GoogleFonts.inter(
             color: _kMint.withOpacity(0.8), fontSize: 9,
             fontWeight: FontWeight.w700, letterSpacing: 2.8)),
           const Spacer(),
@@ -72,7 +75,7 @@ class DailyTrackingCard extends StatelessWidget {
                 decoration: const BoxDecoration(
                   color: _kMint, shape: BoxShape.circle)),
               const SizedBox(width: 5),
-              Text('Sur la bonne voie', style: GoogleFonts.inter(
+              Text(l10n.nutritionOnTrack, style: GoogleFonts.inter(
                 fontSize: 10, color: Colors.white70, fontWeight: FontWeight.w500)),
             ])),
         ]),
@@ -108,11 +111,11 @@ class DailyTrackingCard extends StatelessWidget {
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _MacroRow('Protéines', '25g', '60g', 25 / 60, const Color(0xFF7ABB98)),
+              _MacroRow(l10n.nutritionProtein, '25g', '60g', 25 / 60, const Color(0xFF7ABB98)),
               const SizedBox(height: 8),
-              _MacroRow('Glucides',  '128g', '200g', 128 / 200, const Color(0xFF7BA7FF)),
+              _MacroRow(l10n.nutritionCarbs,   '128g', '200g', 128 / 200, const Color(0xFF7BA7FF)),
               const SizedBox(height: 8),
-              _MacroRow('Lipides',   '26g', '60g', 26 / 60, const Color(0xFFFFB347)),
+              _MacroRow(l10n.nutritionFat,     '26g', '60g', 26 / 60, const Color(0xFFFFB347)),
               const SizedBox(height: 14),
               // Remaining pill
               Container(
@@ -129,8 +132,8 @@ class DailyTrackingCard extends StatelessWidget {
                         : Colors.white.withOpacity(0.12))),
                 child: Text(
                   over
-                      ? '+${(-remaining).abs()} kcal dépassées'
-                      : '$remaining kcal restantes',
+                      ? '+${(-remaining).abs()} ${l10n.nutritionKcalExceeded}'
+                      : '$remaining ${l10n.nutritionKcalRemaining}',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 11, fontWeight: FontWeight.w700,
@@ -144,7 +147,7 @@ class DailyTrackingCard extends StatelessWidget {
         // ── Overall progress bar ──────────────────────────────────────────────
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Text('$caloriesGoal kcal objectif', style: GoogleFonts.inter(
+            Text('$caloriesGoal ${l10n.nutritionKcalGoal}', style: GoogleFonts.inter(
               fontSize: 10, color: Colors.white38)),
             const Spacer(),
             Text('${(pct * 100).round()}%', style: GoogleFonts.inter(
@@ -170,13 +173,13 @@ class DailyTrackingCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withOpacity(0.08))),
           child: Row(children: [
-            _ActionBtn(LucideIcons.camera,        'Photo',    onCamera),
+            _ActionBtn(LucideIcons.camera,        l10n.nutritionPhoto,          onCamera),
             _Divider(),
-            _ActionBtn(LucideIcons.scanLine,      'Scanner',  onBarcode),
+            _ActionBtn(LucideIcons.scanLine,      l10n.nutritionScanner,        onBarcode),
             _Divider(),
-            _ActionBtn(LucideIcons.chefHat,       'Recettes', onRecipes),
+            _ActionBtn(LucideIcons.chefHat,       l10n.nutritionRecipesAction,  onRecipes),
             _Divider(),
-            _ActionBtn(LucideIcons.squarePen,     'Manuel',   onEdit),
+            _ActionBtn(LucideIcons.squarePen,     l10n.nutritionManual,         onEdit),
           ]),
         ),
       ]),
@@ -208,12 +211,18 @@ class MealCategoryCard extends StatelessWidget {
   static const _bgColors = [
     Color(0xFFFFFBEB), Color(0xFFECFDF5), Color(0xFFF5F3FF), Color(0xFFEFF6FF),
   ];
-  static const _names = ['Petit déjeuner', 'Déjeuner', 'Collation', 'Dîner'];
+  static const _namesFr = ['Petit déjeuner', 'Déjeuner', 'Collation', 'Dîner'];
+  static const _namesEn = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
 
-  int get _index => _names.indexOf(data.name).clamp(0, 3);
+  int get _index {
+    int i = _namesFr.indexOf(data.name);
+    if (i == -1) i = _namesEn.indexOf(data.name);
+    return i.clamp(0, 3);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l10n   = AppL10n(Lang.code);
     final nc     = NutritionColors.of(context);
     final idx    = _index;
     final accent = _colors[idx];
@@ -270,7 +279,7 @@ class MealCategoryCard extends StatelessWidget {
               const SizedBox(height: 5),
               Row(children: [
                 Text(
-                  empty ? 'Aucun repas enregistré' : '${data.consumed} kcal consommées',
+                  empty ? l10n.nutritionNoMealLogged : '${data.consumed} ${l10n.nutritionKcalConsumed}',
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     color: empty ? nc.border : nc.text2)),
@@ -289,7 +298,7 @@ class MealCategoryCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFE03050).withOpacity(nc.isDark ? 0.25 : 0.10),
                 borderRadius: BorderRadius.circular(20)),
-              child: Text('Dépassé', style: GoogleFonts.inter(
+              child: Text(l10n.nutritionExceeded, style: GoogleFonts.inter(
                 fontSize: 9, fontWeight: FontWeight.w700,
                 color: const Color(0xFFE03050))))
           else
@@ -317,6 +326,7 @@ class MealsContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppL10n(Lang.code);
     final nc = NutritionColors.of(context);
     final totalConsumed = categories.fold(0, (s, c) => s + c.consumed);
     final totalBudget   = categories.fold(0, (s, c) => s + c.budget);
@@ -324,11 +334,11 @@ class MealsContainer extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('MES REPAS', style: GoogleFonts.inter(
+          Text(l10n.nutritionMyMeals, style: GoogleFonts.inter(
             color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
             letterSpacing: 2.5)),
           const SizedBox(height: 2),
-          Text('Aujourd\'hui', style: GoogleFonts.outfit(
+          Text(l10n.nutritionToday, style: GoogleFonts.outfit(
             color: nc.text1, fontSize: 20, fontWeight: FontWeight.w800,
             letterSpacing: -0.4)),
         ]),
@@ -337,7 +347,7 @@ class MealsContainer extends StatelessWidget {
           Text('$totalConsumed / $totalBudget kcal', style: GoogleFonts.inter(
             fontSize: 12, fontWeight: FontWeight.w700, color: _kGreen)),
           const SizedBox(height: 1),
-          Text('total journée', style: GoogleFonts.inter(
+          Text(l10n.nutritionDailyTotal, style: GoogleFonts.inter(
             fontSize: 10, color: nc.text2)),
         ]),
       ]),
@@ -463,7 +473,7 @@ class SectionHeader extends StatelessWidget {
         GestureDetector(
           onTap: onSeeAll,
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Text('Tout voir', style: GoogleFonts.inter(
+            Text(AppL10n(Lang.code).nutritionSeeAll, style: GoogleFonts.inter(
               fontSize: 12, fontWeight: FontWeight.w600, color: _kGreen)),
             const SizedBox(width: 3),
             const Icon(LucideIcons.chevronRight, size: 12, color: _kGreen),

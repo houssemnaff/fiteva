@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'ajout_rapide_screen.dart';
+import '../../l10n/lang.dart';
+import '../../l10n/app_localizations.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCREEN
@@ -49,15 +51,15 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
     return !next.isAfter(_today);
   }
 
-  static const _days   = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-  static const _months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin',
-      'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+  String _fmt(DateTime d) {
+    final l10n = AppL10n(Lang.code);
+    return '${l10n.daysShort[d.weekday - 1]} ${d.day} ${l10n.monthsShort[d.month - 1]}';
+  }
 
-  String _fmt(DateTime d) =>
-      '${_days[d.weekday - 1]} ${d.day} ${_months[d.month - 1]}';
-
-  String get _dateLabel =>
-      _isToday ? 'Aujourd\'hui · ${_fmt(_selectedDate)}' : _fmt(_selectedDate);
+  String get _dateLabel {
+    final l10n = AppL10n(Lang.code);
+    return _isToday ? '${l10n.nutritionTodayLabel} · ${_fmt(_selectedDate)}' : _fmt(_selectedDate);
+  }
 
   String get _key => dateKey(_selectedDate);
 
@@ -104,7 +106,7 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
           nc:        nc,
           top:       top,
           dateLabel: _dateLabel,
-          title:     single ? types.first.label : 'Nutrition',
+          title:     single ? types.first.labelFor(Lang.code) : 'Nutrition',
           onBack:    () => Navigator.pop(context),
           onPrev:    _prevDay,
           onNext:    _canGoNext ? _nextDay : null,
@@ -176,6 +178,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppL10n(Lang.code);
     return Container(
       color: nc.surface,
       padding: EdgeInsets.fromLTRB(20, top + 14, 20, 14),
@@ -192,7 +195,7 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('SUIVI', style: GoogleFonts.inter(
+            Text(l10n.nutritionTracking, style: GoogleFonts.inter(
               color: NutritionColors.mint, fontSize: 9,
               fontWeight: FontWeight.w700, letterSpacing: 2.5)),
             Text(title, style: GoogleFonts.outfit(
@@ -270,6 +273,7 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n  = AppL10n(Lang.code);
     final goal   = profile.dailyKcal;
     final pct    = (totals.calories / goal).clamp(0.0, 1.0);
     final over   = totals.calories > goal;
@@ -288,7 +292,7 @@ class _SummaryCard extends StatelessWidget {
 
         Row(children: [
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('CALORIES DU JOUR', style: GoogleFonts.inter(
+            Text(l10n.nutritionCaloriesDay, style: GoogleFonts.inter(
               color: NutritionColors.mint, fontSize: 9,
               fontWeight: FontWeight.w700, letterSpacing: 2.5)),
             const SizedBox(height: 2),
@@ -310,7 +314,7 @@ class _SummaryCard extends StatelessWidget {
               color: over ? nc.redBg : nc.mintBg,
               borderRadius: BorderRadius.circular(20)),
             child: Text(
-              over ? '+${-remain} surplus' : '$remain restantes',
+              over ? '+${-remain} ${l10n.nutritionSurplus}' : '$remain ${l10n.nutritionLeft}',
               style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w700,
                 color: over ? nc.redFg : nc.greenFg))),
@@ -330,17 +334,17 @@ class _SummaryCard extends StatelessWidget {
 
         // Macro chips
         Row(children: [
-          _MacroChip(nc: nc, label: 'Protéines',
+          _MacroChip(nc: nc, label: l10n.nutritionProtein,
             value: '${totals.protein}g',
             goal: '${profile.dailyProtein}g',
             fg: nc.greenFg, bg: nc.mintBg),
           const SizedBox(width: 8),
-          _MacroChip(nc: nc, label: 'Glucides',
+          _MacroChip(nc: nc, label: l10n.nutritionCarbs,
             value: '${totals.carbs}g',
             goal: '${profile.dailyCarbs}g',
             fg: nc.blueFg, bg: nc.blueBg),
           const SizedBox(width: 8),
-          _MacroChip(nc: nc, label: 'Lipides',
+          _MacroChip(nc: nc, label: l10n.nutritionFat,
             value: '${totals.fat}g',
             goal: '${profile.dailyFat}g',
             fg: nc.amberFg, bg: nc.amberBg),
@@ -411,6 +415,7 @@ class _MealGroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppL10n(Lang.code);
     return Container(
       decoration: BoxDecoration(
         color: nc.surface,
@@ -435,11 +440,11 @@ class _MealGroupCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(mealType.label, style: GoogleFonts.outfit(
+              Text(mealType.labelFor(Lang.code), style: GoogleFonts.outfit(
                 fontSize: 16, fontWeight: FontWeight.w800, color: nc.text1)),
               Text(entries.isEmpty
-                  ? 'Aucun aliment'
-                  : '${entries.length} aliment${entries.length > 1 ? 's' : ''}',
+                  ? l10n.nutritionNoFood
+                  : l10n.nutritionFoodItems(entries.length),
                 style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
             ])),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -475,8 +480,8 @@ class _MealGroupCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 _over
-                    ? '+${typeTotals.calories - _budget} kcal dépassées'
-                    : '${_budget - typeTotals.calories} kcal restantes',
+                    ? '+${typeTotals.calories - _budget} ${l10n.nutritionKcalExceeded}'
+                    : '${_budget - typeTotals.calories} ${l10n.nutritionKcalRemaining}',
                 style: GoogleFonts.inter(
                   fontSize: 12, fontWeight: FontWeight.w600,
                   color: _over ? nc.redFg : nc.greenFg)),
@@ -527,7 +532,7 @@ class _MealGroupCard extends StatelessWidget {
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(LucideIcons.plus, size: 14, color: nc.greenFg),
                 const SizedBox(width: 7),
-                Text('Ajouter un aliment', style: GoogleFonts.inter(
+                Text(l10n.nutritionAddFood, style: GoogleFonts.inter(
                   fontSize: 13, fontWeight: FontWeight.w600, color: nc.greenFg)),
               ]),
             ),

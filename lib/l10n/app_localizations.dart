@@ -152,6 +152,100 @@ class AppL10n {
   String get nutritionNewRecipes    => _fr ? 'Nouvelles recettes'     : 'New recipes';
   String get nutritionKcalOver      => _fr ? 'kcal dépassés'         : 'kcal over';
   String get nutritionKcalLeft      => _fr ? 'kcal restantes'        : 'kcal left';
+  String get nutritionNoMealsToday  => _fr ? 'Aucun repas aujourd\'hui'                              : 'No meals today';
+  String get nutritionStartTracking => _fr ? 'Commence à suivre ton alimentation →'                 : 'Start tracking your food →';
+  String get nutritionMyRecipes     => _fr ? 'MES RECETTES'                                          : 'MY RECIPES';
+  String get nutritionFavorites     => _fr ? 'Favoris'                                               : 'Favorites';
+  String get nutritionNoFavorites   => _fr ? 'Aucun favori'                                          : 'No favorites';
+  String get nutritionFavoriteHint  => _fr ? 'Appuie sur ♥ dans une recette\npour la retrouver ici' : 'Tap ♥ on a recipe\nto save it here';
+  String get nutritionPhotoRecipes  => _fr ? 'Recettes photos'                                       : 'Photo recipes';
+  String get nutritionVideoRecipes  => _fr ? 'Recettes vidéos'                                       : 'Video recipes';
+  String get nutritionRecipesEyebrow=> _fr ? 'RECETTES'                                              : 'RECIPES';
+  String get nutritionOnTrack       => _fr ? 'Sur la bonne voie'                                     : 'On track';
+  String get nutritionDailyLog      => _fr ? 'BILAN DU JOUR'                                         : 'DAILY LOG';
+  String get nutritionNoMealLogged  => _fr ? 'Aucun repas enregistré'                                : 'No meals logged';
+  String get nutritionKcalConsumed  => _fr ? 'kcal consommées'                                       : 'kcal consumed';
+  String get nutritionExceeded      => _fr ? 'Dépassé'                                               : 'Over';
+  String get nutritionKcalExceeded  => _fr ? 'kcal dépassées'                                        : 'kcal over';
+  String get nutritionKcalRemaining => _fr ? 'kcal restantes'                                        : 'kcal left';
+  String get nutritionMyMeals       => _fr ? 'MES REPAS'                                             : 'MY MEALS';
+  String get nutritionToday         => _fr ? 'Aujourd\'hui'                                          : 'Today';
+  String get nutritionDailyTotal    => _fr ? 'total journée'                                         : 'daily total';
+  String get nutritionSeeAll        => _fr ? 'Tout voir'                                             : 'See all';
+  String get nutritionKcalGoal      => _fr ? 'kcal objectif'                                         : 'kcal goal';
+  String get nutritionPhoto         => _fr ? 'Photo'                                                  : 'Photo';
+  String get nutritionScanner       => _fr ? 'Scanner'                                               : 'Scanner';
+  String get nutritionRecipesAction => _fr ? 'Recettes'                                              : 'Recipes';
+  String get nutritionManual        => _fr ? 'Manuel'                                                : 'Manual';
+  String get nutritionTracking      => _fr ? 'SUIVI'                                                 : 'TRACKING';
+  String get nutritionCaloriesDay   => _fr ? 'CALORIES DU JOUR'                                      : "TODAY'S CALORIES";
+  String get nutritionSurplus       => _fr ? 'surplus'                                               : 'surplus';
+  String get nutritionLeft          => _fr ? 'restantes'                                             : 'left';
+  String get nutritionNoFood        => _fr ? 'Aucun aliment'                                         : 'No food';
+  String get nutritionAddFood       => _fr ? 'Ajouter un aliment'                                    : 'Add food';
+  String get nutritionTodayLabel    => _fr ? "Aujourd'hui"                                           : 'Today';
+  String nutritionFoodItems(int n)  => _fr
+      ? '$n aliment${n > 1 ? 's' : ''}'
+      : '$n food item${n > 1 ? 's' : ''}';
+  List<String> get daysShort => _fr
+      ? ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  List<String> get monthsShort => _fr
+      ? ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc']
+      : ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+  // ── Ajout rapide screen ───────────────────────────────────────────────────
+  String get addMealTitle       => _fr ? 'AJOUTER'                                          : 'ADD';
+  String get addMealSubtitle    => _fr ? 'Un repas'                                         : 'A meal';
+  String get addMealSearch      => _fr ? 'Recherche'                                        : 'Search';
+  String get addMealManual      => _fr ? 'Manuel'                                           : 'Manual';
+  String get addMealScanner     => _fr ? 'Scanner'                                          : 'Scanner';
+  String get addMealUpdateQty   => _fr ? 'Mettre à jour la quantité'                       : 'Update quantity';
+  String get addMealAddToList   => _fr ? 'Ajouter à la liste'                              : 'Add to list';
+  String get addMealFirstAdd    => _fr ? "Ajoutez d'abord des aliments"                    : 'Add foods first';
+  String addMealConfirm(int n, int kcal) => _fr
+      ? (n == 1 ? 'Confirmer 1 aliment · $kcal kcal' : 'Confirmer $n aliments · $kcal kcal')
+      : (n == 1 ? 'Confirm 1 item · $kcal kcal'      : 'Confirm $n items · $kcal kcal');
+  String get addMealHint        => _fr ? 'Rechercher un aliment…'                          : 'Search for a food…';
+  String addMealResults(int n)  => _fr ? 'RÉSULTATS ($n)'                                  : 'RESULTS ($n)';
+  String get addMealPopular     => _fr ? 'POPULAIRES'                                       : 'POPULAR';
+  String get addMealBack        => _fr ? 'Retour à la recherche'                           : 'Back to search';
+  String get addMealQuantity    => _fr ? 'QUANTITÉ'                                         : 'QUANTITY';
+  String get addMealFibers      => _fr ? 'Fibres'                                           : 'Fiber';
+  String get addMealInfoTitle   => _fr ? 'INFORMATIONS'                                     : 'INFO';
+  String get addMealInfoHint    => _fr ? 'Saisis les informations nutritionnelles manuellement.' : 'Enter nutritional info manually.';
+  String get addMealNameLabel   => _fr ? 'Nom du plat *'                                   : 'Dish name *';
+  String get addMealNameHint    => _fr ? 'Ex : Riz thaï au poulet'                        : 'E.g. Thai chicken rice';
+  String get addMealCalLabel    => _fr ? 'Calories (kcal) *'                               : 'Calories (kcal) *';
+  String get addMealCalHint     => _fr ? 'Ex : 450'                                        : 'E.g. 450';
+  String get addMealMacros      => _fr ? 'MACRONUTRIMENTS'                                  : 'MACRONUTRIENTS';
+  String get addMealOptional    => _fr ? 'Optionnel'                                        : 'Optional';
+  String get addMealScanHint    => _fr ? 'Scanne un code-barre ou prends une photo de ton repas.' : 'Scan a barcode or take a photo of your meal.';
+  String get addMealScanPress   => _fr ? 'Appuie sur Photo pour analyser'                  : 'Tap Photo to analyze';
+  String get addMealAnalyzing   => _fr ? 'Analyse en cours…'                               : 'Analyzing…';
+  String get addMealNutrients   => _fr ? 'Identification des nutriments'                   : 'Identifying nutrients';
+  String get addMealAiAnalysis  => _fr ? "Analyse de l'image avec l'IA…"                  : 'AI image analysis…';
+  String get addMealScanResult  => _fr ? 'Résultat scan'                                   : 'Scan result';
+  String get addMealNewPhoto    => _fr ? 'Nouvelle photo'                                  : 'New photo';
+  String get addMealQtyLabel    => _fr ? 'Quantité :'                                      : 'Quantity:';
+  String get addMealOtherPhoto  => _fr ? 'Autre photo'                                     : 'Other photo';
+  String get addMealAdd         => _fr ? 'Ajouter'                                         : 'Add';
+  String get addMealMoreIngr    => _fr ? '+ Ajouter des ingrédients'                      : '+ Add ingredients';
+  String get addMealBasketTitle => _fr ? "Liste d'aliments"                                : 'Food list';
+  String addMealBasketCount(int n) => _fr
+      ? '$n aliment${n > 1 ? 's' : ''}'
+      : '$n item${n > 1 ? 's' : ''}';
+  String get addMealProt        => _fr ? 'prot.'                                            : 'prot.';
+  String get addMealGluc        => _fr ? 'gluc.'                                            : 'carbs';
+  String get addMealLip         => _fr ? 'lip.'                                             : 'fat';
+  String get addMealClose       => _fr ? 'Fermer'                                           : 'Close';
+  String get addMealUnitTitle   => _fr ? 'Unité de mesure'                                 : 'Unit of measure';
+  String get addMealWhichMeal   => _fr ? 'Quel repas ?'                                    : 'Which meal?';
+  String addMealNoResults(String q) => _fr ? 'Aucun résultat pour "$q"'                   : 'No results for "$q"';
+  String get addMealTryManual   => _fr ? "Essaie le mode Manuel pour l'ajouter"           : 'Try Manual mode to add it';
+  String get unitTbsp           => _fr ? 'c. à soupe'                                      : 'tbsp';
+  String get unitTsp            => _fr ? 'c. à café'                                       : 'tsp';
+  String get unitPiece          => _fr ? 'pièce'                                           : 'piece';
 
   // ── Santé screen ───────────────────────────────────────────────────────────
   String get santeTitle             => _fr ? 'Espace Médical'        : 'Medical Space';
