@@ -11,6 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'models/models.dart';
 import 'widgets/home/home_widgets.dart';
+import '../../l10n/app_localizations.dart';
 
 import 'suivi_nutrition_screen.dart';
 import 'recipes_list_screen.dart';
@@ -125,20 +126,25 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
     return Scaffold(
       backgroundColor: nc.bg,
       // Fix #1 — FAB "Ajouter un aliment"
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () { HapticFeedback.mediumImpact(); _goToAjout(); },
-        backgroundColor: const Color(0xFF1C4D30),
-        elevation: 4,
-        icon: const Icon(LucideIcons.plus, color: Colors.white, size: 18),
-        label: Text('Ajouter', style: GoogleFonts.inter(
-          fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+      floatingActionButton: Consumer(
+        builder: (ctx, r, _) {
+          final l10n = r.watch(l10nProvider);
+          return FloatingActionButton.extended(
+            onPressed: () { HapticFeedback.mediumImpact(); _goToAjout(); },
+            backgroundColor: const Color(0xFF1C4D30),
+            elevation: 4,
+            icon: const Icon(LucideIcons.plus, color: Colors.white, size: 18),
+            label: Text(l10n.nutritionAdd, style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+          );
+        },
       ),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
 
           SharedAppHeader.sliver(
-            eyebrow: 'Nutrition', title: 'Mon alimentation', accentColor: _kMint,
+            eyebrow: 'Nutrition', title: ref.watch(l10nProvider).nutritionMyDiet, accentColor: _kMint,
             actions: [
               Consumer(builder: (ctx, r, _) {
                 final favCount = r.watch(favoritesProvider).length;
@@ -189,6 +195,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
                   proteinGoal: profile.dailyProtein,
                   carbsGoal:   profile.dailyCarbs,
                   fatGoal:     profile.dailyFat,
+                  l10n: ref.watch(l10nProvider),
                 ),
               ),
             ),
@@ -222,7 +229,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
               child: SectionHeader(
-                eyebrow: 'RECETTES', title: 'Nouvelles recettes',
+                eyebrow: 'RECETTES', title: ref.watch(l10nProvider).nutritionNewRecipes,
                 onSeeAll: _goToRecipes))),
 
           // Fix #4 — recipes from allRecipes
@@ -261,12 +268,14 @@ class _CalorieRingCard extends StatelessWidget {
   final int consumed, goal;
   final int protein, carbs, fat;
   final int proteinGoal, carbsGoal, fatGoal;
+  final AppL10n l10n;
 
   const _CalorieRingCard({
     required this.anim,
     required this.consumed, required this.goal,
     required this.protein,  required this.carbs,  required this.fat,
     required this.proteinGoal, required this.carbsGoal, required this.fatGoal,
+    required this.l10n,
   });
 
   @override
@@ -333,8 +342,8 @@ class _CalorieRingCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20)),
             child: Text(
               over
-                  ? '+${(-remaining)} kcal dépassés'
-                  : '$remaining kcal restantes',
+                  ? '+${(-remaining)} ${l10n.nutritionKcalOver}'
+                  : '$remaining ${l10n.nutritionKcalLeft}',
               style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w700,
                 color: over ? const Color(0xFFFF6B6B) : const Color(0xFF7ABB98)))),

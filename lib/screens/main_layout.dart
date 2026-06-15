@@ -18,6 +18,7 @@ import 'home/home_screen.dart';
 import 'workout/workout_screen.dart';
 import 'nutrition/nutrition_screen.dart';
 import 'community/community_screen.dart';
+import '../l10n/app_localizations.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  NAV CONFIG
@@ -29,14 +30,6 @@ class _NavItem {
   const _NavItem(this.icon, this.label);
 }
 
-// Main 4 tabs (indices 0–3) — tab 1 is dynamic (see _navItems helper)
-const _navItemAccueil   = _NavItem(LucideIcons.home,     'Accueil');
-const _navItemCycle     = _NavItem(LucideIcons.loader,   'Cycle');
-const _navItemGrossesse = _NavItem(Icons.child_friendly_rounded, 'Grossesse');
-const _navItemPostpartum = _NavItem(Icons.favorite_rounded, 'Post-partum');
-const _navItemWorkout   = _NavItem(LucideIcons.dumbbell, 'Workout');
-const _navItemNutrition = _NavItem(LucideIcons.apple,    'Nutrition');
-
 // Secondary 3 screens revealed by "+" (indices 4–6)
 class _SecondaryItem {
   final IconData icon;
@@ -45,15 +38,6 @@ class _SecondaryItem {
   final Color bg;
   const _SecondaryItem(this.icon, this.label, this.color, this.bg);
 }
-
-const _secondaryItems = [
-  _SecondaryItem(LucideIcons.shoppingBag, 'Boutique',
-      Color(0xFFB8860B), Color(0xFFFFF8E7)),
-  _SecondaryItem(LucideIcons.users, 'Communauté',
-      Color(0xFF1C4D30), Color(0xFFEAF3EC)),
-  _SecondaryItem(LucideIcons.activity, 'Santé',
-      Color(0xFF9B3E6A), Color(0xFFFCEEF5)),
-];
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  MAIN LAYOUT
@@ -104,10 +88,10 @@ class _MainLayoutState extends ConsumerState<MainLayout>
     }
   }
 
-  _NavItem _tab1NavItem(String? healthStatus) {
-    if (healthStatus == 'pregnant')  return _navItemGrossesse;
-    if (healthStatus == 'postpartum') return _navItemPostpartum;
-    return _navItemCycle;
+  _NavItem _tab1NavItem(String? healthStatus, AppL10n l10n) {
+    if (healthStatus == 'pregnant')  return _NavItem(Icons.child_friendly_rounded, l10n.navPregnancy);
+    if (healthStatus == 'postpartum') return _NavItem(Icons.favorite_rounded, l10n.navPostpartum);
+    return _NavItem(LucideIcons.loader, l10n.navCycle);
   }
 
   @override
@@ -171,10 +155,20 @@ class _MainLayoutState extends ConsumerState<MainLayout>
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(userProfileProvider);
+    final l10n    = ref.watch(l10nProvider);
     final size    = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
     const btnSize = 85.0;
     const navH    = 90.0;
+
+    final List<_SecondaryItem> secondaryItemsL10n = [
+      _SecondaryItem(LucideIcons.shoppingBag, l10n.navShop,
+          const Color(0xFFB8860B), const Color(0xFFFFF8E7)),
+      _SecondaryItem(LucideIcons.users, l10n.navCommunity,
+          const Color(0xFF1C4D30), const Color(0xFFEAF3EC)),
+      _SecondaryItem(LucideIcons.activity, l10n.navHealth,
+          const Color(0xFF9B3E6A), const Color(0xFFFCEEF5)),
+    ];
 
     final List<Widget> secondaryScreens = [
       const BoutiqueScreen(),
@@ -183,10 +177,10 @@ class _MainLayoutState extends ConsumerState<MainLayout>
     ];
 
     final List<_NavItem> mainNavItems = [
-      _navItemAccueil,
-      _tab1NavItem(profile.healthStatus),
-      _navItemWorkout,
-      _navItemNutrition,
+      _NavItem(LucideIcons.home, l10n.navHome),
+      _tab1NavItem(profile.healthStatus, l10n),
+      _NavItem(LucideIcons.dumbbell, l10n.navWorkout),
+      _NavItem(LucideIcons.apple, l10n.navNutrition),
     ];
 
     final List<Widget> mainScreens = [
@@ -220,7 +214,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
           _SecondaryMenu(
             animation: _plusScale,
             onCloseTap: _closePlus,
-            items: _secondaryItems,
+            items: secondaryItemsL10n,
             activeIndex: _isSecondary ? _currentIndex - 4 : -1,
             onTap: _selectSecondary,
             bottomPadding: padding.bottom + navH + 8,
