@@ -17,6 +17,7 @@ class AppL10n {
   const AppL10n(this._lang);
 
   bool get _fr => _lang == 'fr';
+  bool get isFrench => _lang == 'fr';
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   String get navHome        => _fr ? 'Accueil'    : 'Home';
@@ -226,4 +227,166 @@ class AppL10n {
   String get weeklyStatusPlanned    => _fr ? 'Planifié'               : 'Planned';
   String get weeklyStatusToday      => _fr ? "Aujourd'hui"            : 'Today';
   String get weeklyStatusRest       => _fr ? 'Repos'                  : 'Rest';
+
+  // ── Onboarding steps ──────────────────────────────────────────────────────
+
+  // StepWelcome
+  String get welcomeCreateAccount   => _fr ? 'Créer mon compte'        : 'Create your account';
+  String get welcomeUsername        => _fr ? 'Ton prénom'              : 'Your username';
+  String get welcomeEmail           => _fr ? 'Email'                   : 'Email';
+  String get welcomePassword        => _fr ? 'Mot de passe'            : 'Password';
+  String get welcomeContinue        => _fr ? 'Continuer →'             : 'Continue →';
+  String get welcomeSignUpGoogle    => _fr ? "S'inscrire avec Google"  : 'Sign Up with Google';
+  String get welcomeSignUpApple     => _fr ? "S'inscrire avec Apple"   : 'Sign Up with Apple';
+  String get welcomeSignUpEmail     => _fr ? "S'inscrire par e-mail"   : 'Sign Up with Email';
+  String get welcomeAlreadyAccount  => _fr ? 'Vous avez déjà un compte ? ' : 'Already have an account? ';
+  String get welcomeLogIn           => _fr ? 'Se connecter'            : 'Log In';
+  String get welcomeBack            => _fr ? 'Retour'                  : 'Welcome back';
+  String get welcomeLogInToContinue => _fr ? 'Connectez-vous pour continuer' : 'Log in to continue';
+  String get welcomeLogInGoogle     => _fr ? 'Se connecter avec Google' : 'Log In with Google';
+  String get welcomeLogInApple      => _fr ? 'Se connecter avec Apple'  : 'Log In with Apple';
+  String get welcomeLogInEmail      => _fr ? 'Se connecter par e-mail'  : 'Log In with Email';
+
+  // StepGoals
+  String get goalsTopBarTitle       => _fr ? 'OBJECTIFS'               : 'GOALS';
+  String get goalsTitle             => _fr ? 'Quel est ton objectif\nprincipal en ce moment ?' : 'What is your main\ngoal right now?';
+  String get goalsHint              => _fr ? 'Touche un cercle pour choisir' : 'Tap a circle to choose';
+  String get goal1                  => _fr ? 'Prendre de la force\net me sentir plus forte'   : 'Build strength\nand feel stronger';
+  String get goal2                  => _fr ? 'Tonifier et sculpter\ntout mon corps'            : 'Tone and sculpt\nmy whole body';
+  String get goal3                  => _fr ? 'Améliorer\nma souplesse\net mobilité'            : 'Improve\nmy flexibility\nand mobility';
+  String get goal4                  => _fr ? 'Réduire le stress\net me sentir plus\néquilibrée' : 'Reduce stress\nand feel more\nbalanced';
+  String get goal5                  => _fr ? 'Reprendre\nune routine'                          : 'Get back\nto a routine';
+
+  // StepFitnessLevel
+  String get fitnessTopBarTitle     => _fr ? 'NIVEAU'                   : 'LEVEL';
+  String get fitnessTitle           => _fr ? 'Quel est ton niveau\nde forme actuel ?' : 'What is your current\nfitness level?';
+  String get fitnessHint            => _fr ? 'Touche un cercle pour choisir' : 'Tap a circle to choose';
+  String get fitnessLevelBeginner   => _fr ? 'Débutant'                : 'Beginner';
+  String get fitnessLevelIntermediate => _fr ? 'Intermédiaire'         : 'Intermediate';
+  String get fitnessLevelAdvanced   => _fr ? 'Avancé'                  : 'Advanced';
+
+  // StepEquipment
+  String get equipmentTopBarTitle   => _fr ? 'ÉQUIPEMENT'              : 'EQUIPMENT';
+  String get equipmentTitle         => _fr ? 'Quel équipement\nas-tu à disposition ?' : 'What equipment\ndo you have available?';
+  String get equipmentHint          => _fr ? "Sélectionne tout ce qui s'applique" : 'Select all that apply';
+  String get equipmentNone          => _fr ? 'Aucun matériel'          : 'No equipment';
+  String get equipmentDumbbells     => _fr ? 'Haltères'                : 'Dumbbells';
+  String get equipmentBarbell       => _fr ? 'Barre & poids'           : 'Barbell & weights';
+  String get equipmentMachines      => _fr ? 'Machines'                : 'Machines';
+  String get equipmentBands         => _fr ? 'Résistances'             : 'Resistance bands';
+  String get equipmentYogaMat       => _fr ? 'Tapis de yoga'           : 'Yoga mat';
+  String get equipmentContinue      => _fr ? 'CONTINUER'               : 'CONTINUE';
+  String get equipmentSelectAtLeastOne => _fr ? 'SÉLECTIONNE AU MOINS UN' : 'SELECT AT LEAST ONE';
+
+  // StepTrainingLocation
+  String get locationTopBarTitle    => _fr ? "LIEU D'ENTRAÎNEMENT"     : 'TRAINING LOCATION';
+  String get locationTitle          => _fr ? "Où tu t'entraînes ?"     : 'Where do you train?';
+  String get locationSubtitle       => _fr ? 'Choisis ton environnement de prédilection' : 'Choose your preferred environment';
+  String get locationGym            => _fr ? 'Salle de sport'          : 'Gym';
+  String get locationGymDetail      => _fr ? 'Machines, câbles, haltères' : 'Machines, cables, dumbbells';
+  String get locationHome           => _fr ? 'À la maison'             : 'At home';
+  String get locationHomeDetail     => _fr ? 'Poids du corps'          : 'Bodyweight';
+  String get locationBoth           => _fr ? 'Les deux'                : 'Both';
+  String get locationBothDetail     => _fr ? 'Flexibilité totale'      : 'Total flexibility';
+
+  // StepFrequency
+  String get frequencyTopBarTitle   => _fr ? 'FRÉQUENCE'               : 'FREQUENCY';
+  String get frequencyTitle         => _fr ? 'Combien de jours par\nsemaine veux-tu t\'entraîner ?' : 'How many days per\nweek do you want to train?';
+  String get frequencyHint          => _fr ? 'Fais glisser le curseur pour choisir' : 'Drag the slider to choose';
+  String get frequencyNext          => _fr ? 'Suivant'                 : 'Next';
+  String get frequencyDay2          => _fr ? '2 jours'                 : '2 days';
+  String get frequencyDay3          => _fr ? '3 jours'                 : '3 days';
+  String get frequencyDay4          => _fr ? '4 jours'                 : '4 days';
+  String get frequencyDay5          => _fr ? '5 jours'                 : '5 days';
+  String get frequencyDay6          => _fr ? '6 jours'                 : '6 days';
+
+  /// Returns translated frequency label for dial display (index 0–4 = 2–6 days).
+  String freqLabel(int index) {
+    switch (index) {
+      case 0: return frequencyDay2;
+      case 1: return frequencyDay3;
+      case 2: return frequencyDay4;
+      case 3: return frequencyDay5;
+      default: return frequencyDay6;
+    }
+  }
+
+  // StepHealthProfile
+  String get healthProfileTopBarTitle => _fr ? 'Profil santé'          : 'Health profile';
+  String get healthProfileTitle     => _fr ? 'Taille, Poids & Âge'    : 'Height, Weight & Age';
+  String get healthProfileSubtitle  => _fr ? 'Fais défiler pour entrer tes mesures' : 'Scroll to enter your measurements';
+  String get healthProfileHeight    => _fr ? 'TAILLE'                  : 'HEIGHT';
+  String get healthProfileWeight    => _fr ? 'POIDS'                   : 'WEIGHT';
+  String get healthProfileAge       => _fr ? 'ÂGE'                    : 'AGE';
+  String get healthProfileAgeUnit   => _fr ? 'ans'                     : 'yrs';
+  String get healthProfileBmi       => _fr ? 'IMC'                     : 'BMI';
+  String get healthProfileBmiThin   => _fr ? 'Mince'                   : 'Underweight';
+  String get healthProfileBmiNormal => _fr ? 'Normale'                 : 'Normal';
+  String get healthProfileBmiOver   => _fr ? 'Surpoids'                : 'Overweight';
+  String get healthProfileBmiObese  => _fr ? 'Obésité'                 : 'Obese';
+  String get healthProfileContinue  => _fr ? 'Continuer'               : 'Continue';
+
+  // StepCycleAndPregnancy
+  String get cycleStepTopBarTitle   => _fr ? 'Santé féminine'          : 'Women\'s health';
+  String get cycleStepTitle         => _fr ? 'Santé féminine'          : 'Women\'s health';
+  String get cycleStepSubtitle      => _fr ? 'Pour adapter ton plan à ta réalité du moment' : 'To adapt your plan to your current reality';
+  String get cycleStatusRegular     => _fr ? 'Cycle\nrégulier'         : 'Regular\ncycle';
+  String get cycleStatusRegularSub  => _fr ? 'Sync entraînement'       : 'Training sync';
+  String get cycleStatusPregnant    => _fr ? 'Je suis\nenceinte'       : 'I am\npregnant';
+  String get cycleStatusPregnantSub => _fr ? 'Programme prénatal'      : 'Prenatal program';
+  String get cycleStatusPostpartum  => _fr ? 'Après\ngrossesse'        : 'After\npregnancy';
+  String get cycleStatusPostpartumSub => _fr ? 'Post-partum'           : 'Postpartum';
+  String get cycleSelectSituation   => _fr ? 'Sélectionne ta situation ci-dessus' : 'Select your situation above';
+  String get cycleDurationLabel     => _fr ? 'Durée habituelle de ton cycle' : 'Usual cycle duration';
+  String get cycleLastPeriod        => _fr ? 'Dernières règles'        : 'Last period';
+  String get cycleAtAGlance         => _fr ? "Ton cycle en un coup d'œil" : 'Your cycle at a glance';
+  String get cycleNextPeriodIn      => _fr ? 'Prochaines règles dans'  : 'Next period in';
+  String get cycleNextPeriodDays    => _fr ? 'jours'                   : 'days';
+  String get cycleNextPeriodToday   => _fr ? "Prochaines règles aujourd'hui" : 'Next period today';
+  String get cycleNextPeriodExpected => _fr ? 'Période attendue'       : 'Expected period';
+  String get cyclePregnancyWeeksLabel => _fr ? "SEMAINES D'AMÉNORRHÉE" : 'GESTATIONAL WEEKS';
+  String get cycleTrimester1Label   => _fr ? '1er trimestre'           : '1st trimester';
+  String get cycleTrimester2Label   => _fr ? '2ème trimestre'          : '2nd trimester';
+  String get cycleTrimester3Label   => _fr ? '3ème trimestre'          : '3rd trimester';
+  String get cycleAdviceT1          => _fr ? 'Marche douce & yoga prénatal. Évite les abdominaux et les efforts intenses.' : 'Gentle walking & prenatal yoga. Avoid abdominals and intense efforts.';
+  String get cycleAdviceT2          => _fr ? "Natation & Pilates prénatal. Évite d'être allongée sur le dos après 16 SA." : 'Swimming & prenatal Pilates. Avoid lying on your back after 16 weeks.';
+  String get cycleAdviceT3          => _fr ? 'Mobilité douce & respiration consciente. Intensité très modérée recommandée.' : 'Gentle mobility & mindful breathing. Very moderate intensity recommended.';
+  String get ppWhenDidYouGiveBirth  => _fr ? 'Quand as-tu accouché ?'  : 'When did you give birth?';
+  String get ppAutoCalculate        => _fr ? 'On calcule ta phase de récupération automatiquement' : 'We calculate your recovery phase automatically';
+  String get ppSelectBirthDate      => _fr ? "Sélectionne la date d'accouchement" : 'Select your birth date';
+  String get ppLessThanOneWeek      => _fr ? "Moins d'une semaine"     : 'Less than one week';
+  String get ppWeeksSince           => _fr ? "depuis l'accouchement"   : 'since giving birth';
+  String get ppProgramLabel         => _fr ? 'Programme'               : 'Program';
+  String get ppPhaseLabel           => _fr ? 'Phase'                   : 'Phase';
+  String get cycleCtaStart          => _fr ? 'Commencer FITEVA'        : 'Start FITEVA';
+  String get ppPpProgDesc0_2        => _fr ? '0–2 sem. · récupération douce, périnée & repos absolu' : '0–2 wks · gentle recovery, perineum & absolute rest';
+  String get ppPpProgDesc2_6        => _fr ? '2–6 sem. · mobilité progressive & renforcement léger' : '2–6 wks · progressive mobility & light strengthening';
+  String get ppPpProgDesc6_12       => _fr ? '6–12 sem. · reprise légère & consolidation posturale' : '6–12 wks · light resumption & postural consolidation';
+  String get ppPpProgDesc3_6m       => _fr ? "3–6 mois · renforcement progressif & retour à l'effort" : '3–6 months · progressive strengthening & return to effort';
+  String get ppPpProgDesc6mPlus     => _fr ? '6+ mois · retour fitness actif & reconditionnement complet' : '6+ months · active fitness return & full reconditioning';
+
+  // StepAvatar
+  String get avatarTopBarTitle      => _fr ? 'TA MASCOTTE'             : 'YOUR MASCOT';
+  String get avatarChooseTitle      => _fr ? 'Choisis ta mascotte !'   : 'Choose your mascot!';
+  String get avatarSubtitle         => _fr ? 'Elle t\'accompagnera tout au long\nde ton aventure FitEva.' : 'It will accompany you throughout\nyour FitEva adventure.';
+  String get avatarShapeLabel       => _fr ? 'FORME'                   : 'SHAPE';
+  String get avatarMoodLabel        => _fr ? 'HUMEUR'                  : 'MOOD';
+  String get avatarMoodHappy        => _fr ? 'Heureuse'                : 'Happy';
+  String get avatarMoodExcited      => _fr ? 'Excitée'                 : 'Excited';
+  String get avatarMoodProud        => _fr ? 'Fière'                   : 'Proud';
+  String get avatarMoodCelebrating  => _fr ? 'En fête'                 : 'Celebrating';
+  String get avatarMoodSleepy       => _fr ? 'Fatiguée'                : 'Tired';
+  String get avatarCta              => _fr ? 'COMMENCER !'             : 'GET STARTED!';
+
+  // Cycle phase names (used in cycle strip)
+  String get cyclePhaseMenstruation => _fr ? 'Menstruation'            : 'Menstruation';
+  String get cyclePhaseFollicular   => _fr ? 'Folliculaire'            : 'Follicular';
+  String get cyclePhaseOvulation    => _fr ? 'Ovulation'               : 'Ovulation';
+  String get cyclePhaseLuteal       => _fr ? 'Lutéale'                 : 'Luteal';
+
+  // Date picker titles
+  String get datePickerLastPeriodTitle   => _fr ? 'Dernieres regles'     : 'Last period';
+  String get datePickerLastPeriodSub     => _fr ? 'Date du premier jour' : 'First day date';
+  String get datePickerBirthTitle        => _fr ? "Date d'accouchement"  : 'Birth date';
+  String get datePickerBirthSub         => _fr ? 'Quand est ne votre bebe ?' : 'When was your baby born?';
 }
