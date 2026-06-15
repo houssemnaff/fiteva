@@ -45,11 +45,11 @@ const appCategories = <AiCategory>[
     id: 'workout', label: 'Workout', emoji: '💪',
     color: Color(0xFF7C6AFA),
     questions: [
+      'Crée mon programme personnalisé 🎯',
       'Génère-moi une séance personnalisée',
       'Quels programmes sont disponibles ?',
       'Programme maison sans équipement',
       'Programme pour la salle de sport',
-      'Exercices adaptés à mon cycle',
     ],
   ),
   AiCategory(
@@ -163,6 +163,53 @@ enum _WStep { type, duration, level, equipment, done }
 
 class _WorkoutData {
   String? type, duration, level, equipment;
+}
+
+// ── Program Builder Q&A ───────────────────────────────────────────────────────
+
+enum _PStep { goal, location, level, days, duration, done }
+
+class _ProgramData {
+  String? goal, location, level, days, duration;
+}
+
+List<ChatProgramCard> _matchPrograms(_ProgramData d) {
+  return _allPrograms.where((p) {
+    final locMatch = d.location == null ||
+        (d.location == 'Maison' && (p.category == 'MAISON' || p.category == 'Pilates')) ||
+        (d.location == 'Salle'  && p.category == 'SALLE') ||
+        d.location == 'Les deux';
+    return locMatch;
+  }).toList();
+}
+
+String _buildProgramAdvice(_ProgramData d) {
+  final goal = d.goal ?? '';
+  final loc  = d.location ?? '';
+  final lvl  = d.level ?? '';
+  final days = d.days ?? '3';
+  final dur  = d.duration ?? '4 semaines';
+
+  String advice = '🎯 **Ton programme personnalisé**\n\n';
+  advice += 'Sur la base de tes réponses :\n';
+  advice += '• Objectif : **$goal**\n';
+  advice += '• Lieu : **$loc**\n';
+  advice += '• Niveau : **$lvl**\n';
+  advice += '• Fréquence : **$days jours/sem.**\n';
+  advice += '• Durée : **$dur**\n\n';
+
+  if (goal.contains('poids') || goal.contains('minceur')) {
+    advice += '💡 Pour la perte de poids, combine cardio et musculation. Assure un déficit calorique modéré de 200–300 kcal.\n\n';
+  } else if (goal.contains('muscle') || goal.contains('force')) {
+    advice += '💡 Pour la prise de muscle, mise sur la progressivité des charges. Mange suffisamment de protéines (1.6–2g/kg).\n\n';
+  } else if (goal.contains('tonic') || goal.contains('galb')) {
+    advice += '💡 Pour la tonification, alterne entre cardio léger et renforcement musculaire ciblé.\n\n';
+  } else {
+    advice += '💡 Pour le bien-être général, écoute ton corps et reste régulière. La constance prime sur l\'intensité.\n\n';
+  }
+
+  advice += '📍 Voici les programmes qui correspondent le mieux à ton profil :';
+  return advice;
 }
 
 GeneratedWorkout _buildWorkout(_WorkoutData d) {
@@ -447,25 +494,40 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
   @override
   List<ChatMessage> build() => [];
 
-  _WStep? _wStep;
+  _WStep?  _wStep;
+  _PStep?  _pStep;
   final _wData = _WorkoutData();
+  final _pData = _ProgramData();
   String? _activeCategoryId;
 
   Future<void> sendMessage(String text, {String? categoryId}) async {
     state = [...state, ChatMessage(text: text, isUser: true)];
     await Future.delayed(const Duration(milliseconds: 600));
 
+    // ── Program builder Q&A ───────────────────────────────────────────────────
+    if (_pStep != null) { _handleProgramStep(text); return; }
+
     // ── Workout Q&A ───────────────────────────────────────────────────────────
-    if (_wStep != null) {
-      _handleWorkoutStep(text);
-      return;
-    }
+    if (_wStep != null) { _handleWorkoutStep(text); return; }
 
     final effectiveCat = categoryId ?? _activeCategoryId;
     _activeCategoryId  = effectiveCat;
+    final m = text.toLowerCase();
+
+    // Start program builder
+    if (m.contains('programme personnalisé') || m.contains('créer') && m.contains('programme')) {
+      _pStep = _PStep.goal;
+      _activeCategoryId = 'workout';
+      state = [...state, ChatMessage(
+        text: '🎯 Je vais créer ton programme sur mesure !\n\nQuel est ton objectif principal ?',
+        isUser: false,
+        quickReplies: ['Perte de poids', 'Prise de muscle', 'Tonification', 'Bien-être général'],
+      )];
+      return;
+    }
 
     // Start workout generator
-    if ((text.toLowerCase().contains('génère') || text.toLowerCase().contains('personnalis')) &&
+    if ((m.contains('génère') || m.contains('séance personnalis')) &&
         (effectiveCat == 'workout' || effectiveCat == null)) {
       _wStep = _WStep.type;
       _activeCategoryId = 'workout';
@@ -484,6 +546,56 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
       quickReplies: r.quickReplies,
       workout: r.workout,
     )];
+  }
+
+  void _handleProgramStep(String text) {
+    switch (_pStep) {
+      case _PStep.goal:
+        _pData.goal = text;
+        _pStep = _PStep.location;
+        state = [...state, ChatMessage(
+          text: 'Où tu t\'entraînes ?',
+          isUser: false,
+          quickReplies: ['Maison', 'Salle', 'Les deux'])];
+
+      case _PStep.location:
+        _pData.location = text;
+        _pStep = _PStep.level;
+        state = [...state, ChatMessage(
+          text: 'Quel est ton niveau ?',
+          isUser: false,
+          quickReplies: ['Débutante', 'Intermédiaire', 'Avancée'])];
+
+      case _PStep.level:
+        _pData.level = text;
+        _pStep = _PStep.days;
+        state = [...state, ChatMessage(
+          text: 'Combien de jours par semaine peux-tu t\'entraîner ?',
+          isUser: false,
+          quickReplies: ['2 jours', '3 jours', '4 jours', '5 jours'])];
+
+      case _PStep.days:
+        _pData.days = text.replaceAll(' jours', '').replaceAll(' jour', '');
+        _pStep = _PStep.duration;
+        state = [...state, ChatMessage(
+          text: 'Sur quelle durée veux-tu ce programme ?',
+          isUser: false,
+          quickReplies: ['4 semaines', '6 semaines', '8 semaines'])];
+
+      case _PStep.duration:
+        _pData.duration = text;
+        _pStep = null;
+        final advice = _buildProgramAdvice(_pData);
+        final cards  = _matchPrograms(_pData);
+        state = [...state, ChatMessage(
+          text: advice,
+          isUser: false,
+          programCards: cards,
+          quickReplies: ['Générer une séance maintenant', 'Voir tous les programmes'])];
+
+      default:
+        _pStep = null;
+    }
   }
 
   void _handleWorkoutStep(String text) {
@@ -516,7 +628,7 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
         state = [...state, ChatMessage(
           text: '✅ Voici ta séance personnalisée ! Bonne séance 💪',
           isUser: false, workout: w,
-          quickReplies: ['Générer une autre séance'])];
+          quickReplies: ['Générer une autre séance', 'Créer mon programme'])];
 
       default:
         _wStep = null;
@@ -526,11 +638,10 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
   void clearChat() {
     state = [];
     _wStep = null;
+    _pStep = null;
     _activeCategoryId = null;
-    _wData.type = null;
-    _wData.duration = null;
-    _wData.level = null;
-    _wData.equipment = null;
+    _wData.type = _wData.duration = _wData.level = _wData.equipment = null;
+    _pData.goal = _pData.location = _pData.level = _pData.days = _pData.duration = null;
   }
 }
 

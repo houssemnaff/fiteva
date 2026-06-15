@@ -428,6 +428,169 @@ class _CtaButton extends StatelessWidget {
 Widget _mintScaffold({required Widget child}) => _stepBackground(child: child);
 
 // ══════════════════════════════════════════════════════════════════════════════
+// STEP — StepLanguageChoice  (FR / EN — shown after login)
+// ══════════════════════════════════════════════════════════════════════════════
+class StepLanguageChoice extends StatefulWidget {
+  final void Function(Locale locale) onNext;
+  const StepLanguageChoice({super.key, required this.onNext});
+
+  @override
+  State<StepLanguageChoice> createState() => _StepLanguageChoiceState();
+}
+
+class _StepLanguageChoiceState extends State<StepLanguageChoice>
+    with SingleTickerProviderStateMixin {
+  String? _selected;
+  late final AnimationController _enterCtrl;
+  late final Animation<double> _titleFade;
+  late final Animation<Offset> _titleSlide;
+  late final Animation<double> _cardsFade;
+
+  @override
+  void initState() {
+    super.initState();
+    _enterCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..forward();
+    _titleFade  = CurvedAnimation(parent: _enterCtrl, curve: const Interval(0.0, 0.55, curve: Curves.easeOut));
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _enterCtrl, curve: const Interval(0.0, 0.55, curve: Curves.easeOut)));
+    _cardsFade  = CurvedAnimation(parent: _enterCtrl, curve: const Interval(0.30, 0.85, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() { _enterCtrl.dispose(); super.dispose(); }
+
+  void _pick(String lang) {
+    if (_selected != null) return;
+    setState(() => _selected = lang);
+    Future.delayed(const Duration(milliseconds: 420), () {
+      widget.onNext(Locale(lang));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _stepBackground(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 48),
+
+              FadeTransition(
+                opacity: _titleFade,
+                child: SlideTransition(
+                  position: _titleSlide,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Language',
+                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: _kTextDark, height: 1.0, letterSpacing: -1.2)),
+                      const Text('Langue',
+                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: _kGreenMid, height: 1.1, letterSpacing: -1.2)),
+                      const SizedBox(height: 14),
+                      Container(width: 32, height: 3,
+                          decoration: BoxDecoration(color: _kGreenDark, borderRadius: BorderRadius.circular(2))),
+                      const SizedBox(height: 10),
+                      const Text('Choose the language for your experience',
+                        style: TextStyle(fontSize: 13, color: _kTextMuted, height: 1.4)),
+                    ],
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              FadeTransition(
+                opacity: _cardsFade,
+                child: Column(
+                  children: [
+                    _CleanLangOption(label: 'Français', sublabel: 'French',  isSelected: _selected == 'fr', onTap: () => _pick('fr')),
+                    const SizedBox(height: 14),
+                    _CleanLangOption(label: 'English',  sublabel: 'Anglais', isSelected: _selected == 'en', onTap: () => _pick('en')),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+
+              Padding(
+                padding: const EdgeInsets.only(bottom: 32),
+                child: Center(
+                  child: Text(
+                    'Changeable anytime in Settings · Modifiable dans Paramètres',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10.5, color: _kTextMuted.withOpacity(0.6), height: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CleanLangOption extends StatelessWidget {
+  final String label;
+  final String sublabel;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CleanLangOption({required this.label, required this.sublabel, required this.isSelected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 230),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(colors: [Color(0xFF3D6B40), _kGreenDark], begin: Alignment.topLeft, end: Alignment.bottomRight)
+              : null,
+          color: isSelected ? null : Colors.white.withOpacity(0.72),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? Colors.transparent : const Color(0xFFB8D4C0), width: 1.5),
+          boxShadow: isSelected
+              ? [BoxShadow(color: _kGreenDark.withOpacity(0.28), blurRadius: 18, offset: const Offset(0, 6))]
+              : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
+                      color: isSelected ? Colors.white : _kTextDark, letterSpacing: -0.3)),
+                  const SizedBox(height: 2),
+                  Text(sublabel, style: TextStyle(fontSize: 12,
+                      color: isSelected ? Colors.white.withOpacity(0.55) : _kTextMuted)),
+                ],
+              ),
+            ),
+            AnimatedOpacity(
+              opacity: isSelected ? 1 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: Container(
+                width: 26, height: 26,
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: Icon(Icons.check_rounded, size: 15, color: _kGreenDark),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // STEP 0 — StepIntro  (cinematic hero screen)
 // ══════════════════════════════════════════════════════════════════════════════
 class StepIntro extends StatefulWidget {

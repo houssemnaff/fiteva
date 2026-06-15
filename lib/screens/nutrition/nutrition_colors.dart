@@ -51,7 +51,7 @@ class NutritionColors {
 
   static final _light = NutritionColors._(
     isDark:   false,
-    bg:       const Color(0xFFFAFAF8),
+    bg:       const Color.fromARGB(255, 255, 255, 255),
     surface:  Colors.white,
     surface2: const Color(0xFFF4F4F2),
     border:   const Color(0xFFECECEC),
