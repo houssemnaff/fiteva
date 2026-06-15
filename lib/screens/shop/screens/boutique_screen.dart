@@ -140,8 +140,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
   _Sort  _sort           = _Sort.none;
   bool   _filterElevated = false;
 
-  final Set<String> _wishlist = {};
-  final _scrollCtrl           = ScrollController();
+  final _scrollCtrl = ScrollController();
 
   @override
   void initState() {
@@ -188,28 +187,16 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
   }
 
   void _selectCat(String key) => setState(() { _cat = key; _sort = _Sort.none; });
-  void _toggleWish(String id) => setState(() {
-        _wishlist.contains(id) ? _wishlist.remove(id) : _wishlist.add(id);
-      });
+  void _toggleWish(String id) => ref.read(shopWishlistProvider.notifier).toggleWishlist(id);
   void _clearFilters() => setState(() { _cat = 'all'; _sort = _Sort.none; });
 
   void _openFavorites() {
     Navigator.push(
       context,
       CupertinoPageRoute(
-        builder: (_) => FavoritesScreen(
-          wishlist: Set.from(_wishlist),
-        ),
+        builder: (_) => const FavoritesScreen(),
       ),
-    ).then((updatedIds) {
-      if (updatedIds != null && mounted) {
-        setState(() {
-          _wishlist
-            ..clear()
-            ..addAll(updatedIds as Set<String>);
-        });
-      }
-    });
+    );
   }
 
   void _openPartnerForm() {
@@ -245,7 +232,11 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
     final filtered   = _filtered;
     final shop       = ref.watch(shopProvider);
     final userPoints = shop.points;
+<<<<<<< HEAD
     final l10n       = ref.watch(l10nProvider);
+=======
+    final wishlist   = ref.watch(shopWishlistProvider);
+>>>>>>> d96131fd75f15096a7fcd05615ec90358554703e
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -309,7 +300,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
                     c: c,
                     items: _picks,
                     userEtoiles: userPoints,
-                    wishlist: _wishlist,
+                    wishlist: wishlist,
                     redeemed: shop.redeemed,
                     onWish: _toggleWish,
                   ),
@@ -374,7 +365,7 @@ if (filtered.isNotEmpty)
                             key: ValueKey(id),
                             item: item,
                             userEtoiles: userPoints,
-                            isWishlisted: _wishlist.contains(id),
+                            isWishlisted: wishlist.contains(id),
                             isRedeemed: isRedeemed,
                             onWish: () => _toggleWish(id),
                             onTap: () => Navigator.push(

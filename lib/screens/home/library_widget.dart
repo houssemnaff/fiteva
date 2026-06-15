@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:fiteva/theme/app_theme.dart';
+import 'package:fiteva/providers/workout_progress_provider.dart';
+import 'package:fiteva/providers/mock_data_provider.dart';
+import 'package:fiteva/core/nutrition/favorites_provider.dart' as nutrition;
+import 'package:fiteva/core/shop/shop_provider.dart' as shop_provider;
 import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
 
-class LibrarySection extends StatefulWidget {
+class LibrarySection extends ConsumerStatefulWidget {
   const LibrarySection();
 
   @override
-  State<LibrarySection> createState() => _LibrarySectionState();
+  ConsumerState<LibrarySection> createState() => _LibrarySectionState();
 }
 
-class _LibrarySectionState extends State<LibrarySection> {
+class _LibrarySectionState extends ConsumerState<LibrarySection> {
   int _selectedTab = 0;
 
   final List<Map<String, dynamic>> _tabs = const [
@@ -21,28 +24,30 @@ class _LibrarySectionState extends State<LibrarySection> {
     {'label': 'Boutique', 'icon': LucideIcons.shoppingBag},
   ];
 
-  final List<Map<String, String>> _favoriteWorkouts = [
-    {'title': 'Full Body Burn', 'subtitle': '45 min · Intermédiaire', 'image': 'assets/images/fullbody.jpg'},
-    {'title': 'Cardio Intense', 'subtitle': '30 min · Avancé', 'image': 'assets/images/cardio.jpg'},
-    {'title': 'Yoga Flow', 'subtitle': '20 min · Débutant', 'image': 'assets/images/yoga.jpg'},
-    {'title': 'HIIT Express', 'subtitle': '25 min · Avancé', 'image': 'assets/images/hiit.jpg'},
-  ];
-
-  final List<Map<String, String>> _favoriteRecipes = [
-    {'title': 'Bowl protéiné', 'subtitle': '520 kcal · 35g protéines', 'image': 'assets/images/bowl.jpg'},
-    {'title': 'Smoothie vert', 'subtitle': '180 kcal · 8g protéines', 'image': 'assets/images/smoothie.jpg'},
-    {'title': 'Pancakes avoine', 'subtitle': '310 kcal · 22g protéines', 'image': 'assets/images/pancakes.jpg'},
-  ];
-
-  final List<Map<String, String>> _favoriteProducts = [
-    {'title': 'Whey Vanille', 'subtitle': '34,99 €', 'image': 'assets/images/whey.jpg'},
-    {'title': 'Bande élastique', 'subtitle': '12,50 €', 'image': 'assets/images/band.jpg'},
-    {'title': 'Shaker inox', 'subtitle': '18,00 €', 'image': 'assets/images/shaker.jpg'},
-    {'title': 'BCAA Fruits', 'subtitle': '27,90 €', 'image': 'assets/images/bcaa.jpg'},
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final favorites = ref.watch(favoritesProvider);
+    final recipeFavorites = ref.watch(nutrition.favoritesProvider);
+    final shopWishlist = ref.watch(shop_provider.shopWishlistProvider);
+    final allWorkouts = ref.watch(workoutsProvider);
+
+    // Watch all program providers
+    final sallePrograms = ref.watch(salleProgramsProvider);
+    final homePrograms = ref.watch(homeProgramsProvider);
+    final dancePrograms = ref.watch(danceProgramsProvider);
+    final recuperationPrograms = ref.watch(recuperationProgramsProvider);
+    final grossessePrograms = ref.watch(grossesseProgramsProvider);
+
+    // Combine all programs
+    final allPrograms = [
+      ...sallePrograms,
+      ...homePrograms,
+      ...dancePrograms,
+      ...recuperationPrograms,
+      ...grossessePrograms,
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -54,13 +59,13 @@ class _LibrarySectionState extends State<LibrarySection> {
             children: [
               Row(
                 children: [
-                  const Icon(LucideIcons.heart,
-                      size: 20, color: AppTheme.textSecondaryColor),
+                  Icon(LucideIcons.heart,
+                      size: 20, color: cs.onSurfaceVariant),
                   const SizedBox(width: 8),
                   Text(
                     'Mes favoris',
                     style: GoogleFonts.outfit(
-                      color: AppTheme.textPrimaryColor,
+                      color: cs.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                     ),
@@ -79,7 +84,7 @@ class _LibrarySectionState extends State<LibrarySection> {
                 child: Text(
                   'Voir tout',
                   style: GoogleFonts.inter(
-                    color: AppTheme.accentColor,
+                    color: cs.secondary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -91,7 +96,7 @@ class _LibrarySectionState extends State<LibrarySection> {
 
         const SizedBox(height: 14),
 
-        // ── Tab bar (inchangé) ───────────────────────────────
+        // ── Tab bar ───────────────────────────────────────────
         SizedBox(
           height: 40,
           child: ListView.separated(
@@ -108,8 +113,8 @@ class _LibrarySectionState extends State<LibrarySection> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: selected
-                        ? AppTheme.primaryColor
-                        : const Color(0xFFEDE9E3),
+                        ? cs.primary
+                        : cs.onSurface.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -117,13 +122,13 @@ class _LibrarySectionState extends State<LibrarySection> {
                       Icon(
                         _tabs[index]['icon'] as IconData,
                         size: 14,
-                        color: selected ? Colors.white : AppTheme.textSecondaryColor,
+                        color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         _tabs[index]['label'] as String,
                         style: GoogleFonts.inter(
-                          color: selected ? Colors.white : AppTheme.textSecondaryColor,
+                          color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -139,33 +144,110 @@ class _LibrarySectionState extends State<LibrarySection> {
         const SizedBox(height: 16),
 
         // ── Content ─────────────────────────────────────────
-        if (_selectedTab == 0) _buildHorizontalList(_favoriteWorkouts, type: _FavType.workout),
-        if (_selectedTab == 1) _buildHorizontalList(_favoriteRecipes, type: _FavType.recipe),
-        if (_selectedTab == 2) _buildHorizontalList(_favoriteProducts, type: _FavType.product),
+        if (_selectedTab == 0)
+          _buildWorkoutList(favorites, allWorkouts, allPrograms, cs),
+        if (_selectedTab == 1)
+          _buildRecipeList(recipeFavorites, cs),
+        if (_selectedTab == 2)
+          _buildProductList(shopWishlist, cs),
       ],
     );
   }
 
-  Widget _buildHorizontalList(List<Map<String, String>> items, {required _FavType type}) {
-    if (items.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
-        child: Center(
-          child: Column(
-            children: [
-              Icon(LucideIcons.heartOff, size: 36, color: AppTheme.textSecondaryColor.withOpacity(0.4)),
-              const SizedBox(height: 10),
-              Text(
-                'Aucun favori pour le moment',
-                style: GoogleFonts.inter(
-                  color: AppTheme.textSecondaryColor,
-                  fontSize: 14,
-                ),
+  Widget _buildWorkoutList(Set<String> favorites, List<dynamic> allWorkouts, List<dynamic> allPrograms, ColorScheme cs) {
+    // Filter workouts by ID
+    final filteredWorkouts = allWorkouts
+        .where((w) => favorites.contains(w.id))
+        .map((w) => {
+          'id': w.id,
+          'title': w.title,
+          'subtitle': '${w.duration} · ${w.level}',
+          'image': w.imageUrl,
+        })
+        .toList();
+
+    // Filter programs by name
+    final filteredPrograms = allPrograms
+        .where((p) => favorites.contains(p.name))
+        .map((p) => {
+          'id': p.name,
+          'title': p.name,
+          'subtitle': '${p.duration} · ${p.sessions}',
+          'image': p.imageUrl,
+        })
+        .toList();
+
+    // Combine both
+    final allItems = [...filteredWorkouts, ...filteredPrograms];
+
+    return _buildHorizontalList(allItems, type: _FavType.workout, cs: cs, onRemove: (id) async {
+      await ref.read(favoritesProvider.notifier).toggleFavorite(id);
+    });
+  }
+
+  Widget _buildRecipeList(Set<String> favorites, ColorScheme cs) {
+    // Show only favorited recipe IDs - the actual recipe data should come from a real provider
+    if (favorites.isEmpty) {
+      return _buildEmptyState(cs);
+    }
+
+    final filteredItems = favorites
+        .map((id) => {
+          'id': id,
+          'title': id,
+          'subtitle': 'Recipe',
+          'image': 'assets/images/recipe.jpg',
+        })
+        .toList();
+
+    return _buildHorizontalList(filteredItems, type: _FavType.recipe, cs: cs, onRemove: (id) async {
+      ref.read(nutrition.favoritesProvider.notifier).toggle(id);
+    });
+  }
+
+  Widget _buildProductList(Set<String> wishlist, ColorScheme cs) {
+    if (wishlist.isEmpty) {
+      return _buildEmptyState(cs);
+    }
+
+    final filteredItems = wishlist
+        .map((id) => {
+          'id': id,
+          'title': id,
+          'subtitle': 'Produit',
+          'image': 'assets/images/product.jpg',
+        })
+        .toList();
+
+    return _buildHorizontalList(filteredItems, type: _FavType.product, cs: cs, onRemove: (id) async {
+      await ref.read(shop_provider.shopWishlistProvider.notifier).removeFromWishlist(id);
+    });
+  }
+
+  Widget _buildEmptyState(ColorScheme cs) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(LucideIcons.heartOff, size: 36, color: cs.onSurface.withValues(alpha: 0.3)),
+            const SizedBox(height: 10),
+            Text(
+              'Aucun favori pour le moment',
+              style: GoogleFonts.inter(
+                color: cs.onSurfaceVariant,
+                fontSize: 14,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
+
+  Widget _buildHorizontalList(List<Map<String, dynamic>> items, {required _FavType type, required ColorScheme cs, required Function(String) onRemove}) {
+    if (items.isEmpty) {
+      return _buildEmptyState(cs);
     }
 
     return SizedBox(
@@ -178,14 +260,14 @@ class _LibrarySectionState extends State<LibrarySection> {
         itemBuilder: (context, index) {
           final item = items[index];
           return _FavoriteCardVertical(
-            title: item['title']!,
-            subtitle: item['subtitle']!,
-            imageAsset: item['image']!,
+            id: item['id']! as String,
+            title: item['title']! as String,
+            subtitle: item['subtitle']! as String,
+            imageAsset: item['image']! as String,
             type: type,
             onTap: () {},
-            onUnfav: () {
-              setState(() => items.removeAt(index));
-            },
+            onUnfav: () async => await onRemove(item['id']! as String),
+            colorScheme: cs,
           );
         },
       ),
@@ -197,20 +279,24 @@ enum _FavType { workout, recipe, product }
 
 // ── Carte verticale pour scroll horizontal ───────────────────
 class _FavoriteCardVertical extends StatelessWidget {
+  final String id;
   final String title;
   final String subtitle;
   final String imageAsset;
   final _FavType type;
   final VoidCallback onTap;
   final VoidCallback onUnfav;
+  final ColorScheme colorScheme;
 
   const _FavoriteCardVertical({
+    required this.id,
     required this.title,
     required this.subtitle,
     required this.imageAsset,
     required this.type,
     required this.onTap,
     required this.onUnfav,
+    required this.colorScheme,
   });
 
   IconData get _typeIcon {
@@ -228,7 +314,7 @@ class _FavoriteCardVertical extends StatelessWidget {
       child: Container(
         width: 140,
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F4F1),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -246,10 +332,10 @@ class _FavoriteCardVertical extends StatelessWidget {
                       imageAsset,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
-                        color: const Color(0xFFD5C9BF),
+                        color: colorScheme.outline.withValues(alpha: 0.3),
                         child: Center(
                           child: Icon(_typeIcon,
-                              color: const Color(0xFF9E948C), size: 28),
+                              color: colorScheme.onSurface.withValues(alpha: 0.5), size: 28),
                         ),
                       ),
                     ),
@@ -264,20 +350,20 @@ class _FavoriteCardVertical extends StatelessWidget {
                       width: 30,
                       height: 30,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: colorScheme.surface,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
+                            color: colorScheme.shadow.withValues(alpha: 0.1),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         LucideIcons.heartOff,
                         size: 14,
-                        color: Color(0xFFE57373),
+                        color: colorScheme.error,
                       ),
                     ),
                   ),
@@ -294,7 +380,7 @@ class _FavoriteCardVertical extends StatelessWidget {
                   Text(
                     title,
                     style: GoogleFonts.outfit(
-                      color: AppTheme.textPrimaryColor,
+                      color: colorScheme.onSurface,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -305,7 +391,7 @@ class _FavoriteCardVertical extends StatelessWidget {
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
-                      color: AppTheme.textSecondaryColor,
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
                       fontSize: 11,
                     ),
                     maxLines: 1,

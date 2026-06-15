@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fiteva/providers/workout_progress_provider.dart';
+import 'package:fiteva/providers/mock_data_provider.dart';
+import 'package:fiteva/core/nutrition/favorites_provider.dart' as nutrition;
+import 'package:fiteva/core/shop/shop_provider.dart' as shop_provider;
 
 enum FavoriteType { workout, recipe, product }
 
-class FavoritesBottomSheet extends StatefulWidget {
+class FavoritesBottomSheet extends ConsumerStatefulWidget {
   const FavoritesBottomSheet({super.key});
 
   @override
-  State<FavoritesBottomSheet> createState() => _FavoritesBottomSheetState();
+  ConsumerState<FavoritesBottomSheet> createState() => _FavoritesBottomSheetState();
 }
 
-class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
+class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
   int _selectedTab = 0;
 
   final List<Map<String, dynamic>> _tabs = [
@@ -20,29 +25,28 @@ class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
     {'label': 'Boutique', 'icon': LucideIcons.shoppingBag, 'type': FavoriteType.product},
   ];
 
-  final List<Map<String, String>> _favoriteWorkouts = [
-    {'title': 'Full Body Burn', 'subtitle': '45 min · Intermédiaire', 'image': 'assets/images/fullbody.jpg'},
-    {'title': 'Cardio Intense', 'subtitle': '30 min · Avancé', 'image': 'assets/images/cardio.jpg'},
-    {'title': 'Yoga Flow', 'subtitle': '20 min · Débutant', 'image': 'assets/images/yoga.jpg'},
-    {'title': 'HIIT Express', 'subtitle': '25 min · Avancé', 'image': 'assets/images/hiit.jpg'},
-  ];
-
-  final List<Map<String, String>> _favoriteRecipes = [
-    {'title': 'Bowl protéiné', 'subtitle': '520 kcal · 35g protéines', 'image': 'assets/images/bowl.jpg'},
-    {'title': 'Smoothie vert', 'subtitle': '180 kcal · 8g protéines', 'image': 'assets/images/smoothie.jpg'},
-    {'title': 'Pancakes avoine', 'subtitle': '310 kcal · 22g protéines', 'image': 'assets/images/pancakes.jpg'},
-  ];
-
-  final List<Map<String, String>> _favoriteProducts = [
-    {'title': 'Whey Vanille', 'subtitle': '34,99 €', 'image': 'assets/images/whey.jpg'},
-    {'title': 'Bande élastique', 'subtitle': '12,50 €', 'image': 'assets/images/band.jpg'},
-    {'title': 'Shaker inox', 'subtitle': '18,00 €', 'image': 'assets/images/shaker.jpg'},
-    {'title': 'BCAA Fruits', 'subtitle': '27,90 €', 'image': 'assets/images/bcaa.jpg'},
-  ];
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final programFavorites = ref.watch(favoritesProvider);
+    final recipeFavorites = ref.watch(nutrition.favoritesProvider);
+    final shopWishlist = ref.watch(shop_provider.shopWishlistProvider);
+
+    // Watch all program providers
+    final sallePrograms = ref.watch(salleProgramsProvider);
+    final homePrograms = ref.watch(homeProgramsProvider);
+    final dancePrograms = ref.watch(danceProgramsProvider);
+    final recuperationPrograms = ref.watch(recuperationProgramsProvider);
+    final grossessePrograms = ref.watch(grossesseProgramsProvider);
+
+    // Combine all programs
+    final allPrograms = [
+      ...sallePrograms,
+      ...homePrograms,
+      ...dancePrograms,
+      ...recuperationPrograms,
+      ...grossessePrograms,
+    ];
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
@@ -153,30 +157,7 @@ class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.75,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemCount: _getItems().length,
-                itemBuilder: (context, index) {
-                  final item = _getItems()[index];
-                  return _FavoriteCard(
-                    title: item['title']!,
-                    subtitle: item['subtitle']!,
-                    imageAsset: item['image']!,
-                    type: _tabs[_selectedTab]['type'] as FavoriteType,
-                    onRemove: () {
-                      setState(() => _getItems().removeAt(index));
-                    },
-                    colorScheme: cs,
-                  );
-                },
-              ),
+              child: _buildContent(_selectedTab, programFavorites, recipeFavorites, shopWishlist, allPrograms, cs),
             ),
           ),
         ],
@@ -184,35 +165,103 @@ class _FavoritesBottomSheetState extends State<FavoritesBottomSheet> {
     );
   }
 
-  List<Map<String, String>> _getItems() {
-    switch (_selectedTab) {
-      case 0:
-        return _favoriteWorkouts;
-      case 1:
-        return _favoriteRecipes;
-      case 2:
-        return _favoriteProducts;
-      default:
-        return [];
+  List<Map<String, dynamic>> _getItems(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms) {
+    if (tab == 0) {
+      // Programs - filter by name
+      return allPrograms
+          .where((p) => programFavorites.contains(p.name))
+          .map((p) => {
+            'id': p.name,
+            'title': p.name,
+            'subtitle': '${p.duration} · ${p.sessions}',
+            'image': p.imageUrl,
+          })
+          .toList();
+    } else if (tab == 1) {
+      // Recipes - show only favorited recipe IDs
+      return recipeFavorites
+          .map((id) => {
+            'id': id,
+            'title': id,
+            'subtitle': 'Recipe',
+            'image': 'assets/images/recipe.jpg',
+          })
+          .toList();
+    } else {
+      // Products - show shop wishlist items
+      return shopWishlist
+          .map((id) => {
+            'id': id,
+            'title': id,
+            'subtitle': 'Produit',
+            'image': 'assets/images/product.jpg',
+          })
+          .toList();
+    }
+  }
+
+  Widget _buildContent(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, ColorScheme cs) {
+    final items = _getItems(tab, programFavorites, recipeFavorites, shopWishlist, allPrograms);
+
+    return GridView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return _FavoriteCard(
+          id: item['id']! as String,
+          title: item['title']! as String,
+          subtitle: item['subtitle']! as String,
+          imageAsset: item['image']! as String,
+          type: _tabs[tab]['type'] as FavoriteType,
+          onRemove: () async => await _removeItem(item['id']! as String, tab),
+          colorScheme: cs,
+          isPlaceholder: tab != 0,
+        );
+      },
+    );
+  }
+
+  Future<void> _removeItem(String id, int tab) async {
+    if (tab == 0) {
+      // Remove from programs favorites
+      await ref.read(favoritesProvider.notifier).toggleFavorite(id);
+    } else if (tab == 1) {
+      // Remove from recipes favorites
+      ref.read(nutrition.favoritesProvider.notifier).toggle(id);
+    } else if (tab == 2) {
+      // Remove from shop wishlist
+      await ref.read(shop_provider.shopWishlistProvider.notifier).removeFromWishlist(id);
     }
   }
 }
 
 class _FavoriteCard extends StatelessWidget {
+  final String id;
   final String title;
   final String subtitle;
   final String imageAsset;
   final FavoriteType type;
   final VoidCallback onRemove;
   final ColorScheme colorScheme;
+  final bool isPlaceholder;
 
   const _FavoriteCard({
+    required this.id,
     required this.title,
     required this.subtitle,
     required this.imageAsset,
     required this.type,
     required this.onRemove,
     required this.colorScheme,
+    this.isPlaceholder = false,
   });
 
   IconData get _typeIcon {
@@ -243,20 +292,31 @@ class _FavoriteCard extends StatelessWidget {
                 child: SizedBox(
                   width: double.infinity,
                   height: 120,
-                  child: Image.asset(
-                    imageAsset,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: colorScheme.outline.withValues(alpha: 0.3),
-                      child: Center(
-                        child: Icon(
-                          _typeIcon,
-                          color: colorScheme.onSurface.withValues(alpha: 0.5),
-                          size: 32,
+                  child: isPlaceholder
+                      ? Container(
+                          color: colorScheme.surfaceContainerHigh,
+                          child: Center(
+                            child: Icon(
+                              _typeIcon,
+                              color: colorScheme.onSurface.withValues(alpha: 0.5),
+                              size: 40,
+                            ),
+                          ),
+                        )
+                      : Image.asset(
+                          imageAsset,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: colorScheme.surfaceContainerHigh,
+                            child: Center(
+                              child: Icon(
+                                _typeIcon,
+                                color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                size: 40,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
                 ),
               ),
               Positioned(

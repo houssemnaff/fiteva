@@ -10,26 +10,8 @@ import 'boutique_detail_screen.dart';
 // FAVORITES SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 
-class FavoritesScreen extends ConsumerStatefulWidget {
-  final Set<String> wishlist;
-
-  const FavoritesScreen({
-    super.key,
-    required this.wishlist,
-  });
-
-  @override
-  ConsumerState<FavoritesScreen> createState() => _FavoritesScreenState();
-}
-
-class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
-  late Set<String> _local;
-
-  @override
-  void initState() {
-    super.initState();
-    _local = Set<String>.from(widget.wishlist);
-  }
+class FavoritesScreen extends ConsumerWidget {
+  const FavoritesScreen({super.key});
 
   // ── Color helpers (brightness-inline) ─────────────────────────────────────
 
@@ -57,59 +39,46 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   Color _goldSurface(Brightness b) =>
       b == Brightness.light ? const Color(0xFFF7EDD8) : const Color(0xFF2A2010);
 
-  // ── Filtered items ─────────────────────────────────────────────────────────
-
-  List<BoutiqueItem> get _favorites => mockItems
-      .where((e) => _local.contains('${e.brand}_${e.title}'))
-      .toList();
-
-  // ── Remove from wishlist ───────────────────────────────────────────────────
-
-  void _removeFromWishlist(BoutiqueItem item) {
-    final key = '${item.brand}_${item.title}';
-    setState(() => _local.remove(key));
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Retiré des favoris',
-          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        duration: const Duration(milliseconds: 1800),
-        backgroundColor: const Color(0xFF1C1C1C),
-      ),
-    );
-  }
-
-  // ── BUILD ──────────────────────────────────────────────────────────────────
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final brightness = Theme.of(context).brightness;
-    final favorites = _favorites;
+    final wishlist = ref.watch(shopWishlistProvider);
+    final favorites = mockItems
+        .where((e) => wishlist.contains('${e.brand}_${e.title}'))
+        .toList();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) Navigator.pop(context, _local);
-      },
-      child: Scaffold(
-        backgroundColor: _bg(brightness),
-        body: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(brightness),
-              Container(height: 0.5, color: _divider(brightness)),
-              Expanded(
-                child: favorites.isEmpty
-                    ? _buildEmptyState(brightness)
-                    : _buildList(favorites, brightness),
-              ),
-            ],
+    void removeFromWishlist(BoutiqueItem item) {
+      final key = '${item.brand}_${item.title}';
+      ref.read(shopWishlistProvider.notifier).removeFromWishlist(key);
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Retiré des favoris',
+            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
           ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          duration: const Duration(milliseconds: 1800),
+          backgroundColor: const Color(0xFF1C1C1C),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: _bg(brightness),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Container(height: 0.5, color: _divider(brightness)),
+            Expanded(
+              child: favorites.isEmpty
+                  ? _buildEmptyState(brightness)
+                  : _buildList(context, ref, favorites, brightness, removeFromWishlist),
+            ),
+          ],
         ),
       ),
     );
@@ -117,7 +86,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
 
   // ── Header ─────────────────────────────────────────────────────────────────
 
-  Widget _buildHeader(Brightness brightness) {
+  Widget _buildHeader(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: SizedBox(
@@ -128,7 +98,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: GestureDetector(
-                onTap: () => Navigator.pop(context, _local),
+                onTap: () => Navigator.pop(context),
                 child: Container(
                   width: 40,
                   height: 40,
@@ -158,7 +128,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
 
   // ── List ───────────────────────────────────────────────────────────────────
 
-  Widget _buildList(List<BoutiqueItem> items, Brightness brightness) {
+  Widget _buildList(BuildContext context, WidgetRef ref, List<BoutiqueItem> items, Brightness brightness, Function(BoutiqueItem) removeFromWishlist) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       itemCount: items.length,
@@ -167,7 +137,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         item: items[i],
         userEtoiles: ref.read(shopProvider).points,
         brightness: brightness,
-        onRemove: () => _removeFromWishlist(items[i]),
+        onRemove: () => removeFromWishlist(items[i]),
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(

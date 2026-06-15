@@ -65,14 +65,14 @@ const _kCats = [
 // ─────────────────────────────────────────────────────────────────────────────
 // SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
-class AllPartenairesScreen extends StatefulWidget {
+class AllPartenairesScreen extends ConsumerStatefulWidget {
   const AllPartenairesScreen({super.key});
 
   @override
-  State<AllPartenairesScreen> createState() => _AllPartenairesScreenState();
+  ConsumerState<AllPartenairesScreen> createState() => _AllPartenairesScreenState();
 }
 
-class _AllPartenairesScreenState extends State<AllPartenairesScreen> {
+class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
   final _searchCtrl  = TextEditingController();
   final _searchFocus = FocusNode();
   final _scrollCtrl  = ScrollController();
@@ -82,7 +82,6 @@ class _AllPartenairesScreenState extends State<AllPartenairesScreen> {
   bool   _elevated = false;
 
   static const int _kUserEtoiles = 60;
-  final Set<String> _wishlist = {};
 
   @override
   void initState() {
@@ -111,14 +110,13 @@ class _AllPartenairesScreenState extends State<AllPartenairesScreen> {
     return matchSearch && matchCat;
   }).toList();
 
-  void _toggleWish(String id) => setState(() {
-    _wishlist.contains(id) ? _wishlist.remove(id) : _wishlist.add(id);
-  });
+  void _toggleWish(String id) => ref.read(shopWishlistProvider.notifier).toggleWishlist(id);
 
   @override
   Widget build(BuildContext context) {
     final p        = _P.of(context);
     final filtered = _filtered;
+    final wishlist = ref.watch(shopWishlistProvider);
 
     return Scaffold(
       backgroundColor: p.bg,
@@ -166,7 +164,7 @@ class _AllPartenairesScreenState extends State<AllPartenairesScreen> {
                       return _PartnerCard(
                         p: p,
                         item: item,
-                        isWishlisted: _wishlist.contains(id),
+                        isWishlisted: wishlist.contains(id),
                         onWish: () => _toggleWish(id),
                         onTap: () => Navigator.push(
                             ctx,
