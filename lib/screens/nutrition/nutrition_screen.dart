@@ -14,6 +14,7 @@ import 'widgets/home/home_widgets.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/lang.dart';
 
+import '../../providers/xp_provider.dart';
 import 'suivi_nutrition_screen.dart';
 import 'recipes_list_screen.dart';
 import 'ajout_rapide_screen.dart';
@@ -198,6 +199,17 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
                   fatGoal:     profile.dailyFat,
                   l10n: ref.watch(l10nProvider),
                 ),
+              ),
+            ),
+          ),
+
+          // XP goal banner
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: _NutritionXpBanner(
+                consumed: totals.calories,
+                goal: profile.dailyKcal,
               ),
             ),
           ),
@@ -392,6 +404,93 @@ class _MiniMacroBar extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 //  EMPTY DAY BANNER  (Fix #5)
 // ══════════════════════════════════════════════════════════════════════════════
+class _NutritionXpBanner extends StatelessWidget {
+  final int consumed;
+  final int goal;
+  const _NutritionXpBanner({required this.consumed, required this.goal});
+
+  @override
+  Widget build(BuildContext context) {
+    final reached = goal > 0 && consumed >= goal;
+    final pct     = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      decoration: BoxDecoration(
+        color: reached
+            ? const Color(0xFF4CAF50).withOpacity(0.12)
+            : const Color(0xFF1A2E20).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: reached
+              ? const Color(0xFF4CAF50).withOpacity(0.45)
+              : const Color(0xFF4CAF50).withOpacity(0.20),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Text(reached ? '🏆' : '⭐', style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                reached
+                    ? 'Objectif atteint ! Tu as gagné +20 XP 🎉'
+                    : 'Log tes repas du jour pour gagner +20 XP',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: reached
+                      ? const Color(0xFF2E7D32)
+                      : const Color(0xFF1A2E20),
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: reached
+                    ? const Color(0xFF4CAF50)
+                    : const Color(0xFF4CAF50).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text('+20 XP',
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: reached ? Colors.white : const Color(0xFF2E7D32),
+                )),
+            ),
+          ]),
+          if (!reached && goal > 0) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: pct,
+                minHeight: 5,
+                backgroundColor: const Color(0xFF4CAF50).withOpacity(0.15),
+                valueColor: const AlwaysStoppedAnimation(Color(0xFF4CAF50)),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              '${consumed} / $goal kcal — encore ${goal - consumed} kcal à logger',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: const Color(0xFF4CAF50).withOpacity(0.8),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _EmptyDayBanner extends StatelessWidget {
   final VoidCallback onTap;
   const _EmptyDayBanner({required this.onTap});

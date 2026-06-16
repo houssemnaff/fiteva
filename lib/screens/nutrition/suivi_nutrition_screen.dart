@@ -75,11 +75,28 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
     if (result == null || !mounted) return;
     final entries = result['entries'] as List<MealEntry>?;
     if (entries != null && entries.isNotEmpty) {
+      // Snapshot calories BEFORE adding new entries
+      final nutrition = ref.read(nutritionProvider);
+      final calGoal   = nutrition.userProfile.dailyKcal;
+      final calBefore = ref.read(dailyTotalsProvider(todayKey)).calories;
+
       for (final entry in entries) {
         ref.read(nutritionProvider.notifier).addMeal(entry);
       }
-      ref.read(xpProvider.notifier).rewardMealLogged();
-      XpToast.show(context, XpAmounts.mealLogged, label: 'Repas enregistré !');
+
+      // Calories AFTER
+      final calAfter = ref.read(dailyTotalsProvider(todayKey)).calories;
+
+      // Reward daily calorie goal completion (only once per day)
+      final goalJustReached = calGoal > 0
+          && calBefore < calGoal
+          && calAfter >= calGoal;
+
+      if (goalJustReached) {
+        ref.read(xpProvider.notifier).addCustomXp(20);
+        XpToast.show(context, 20, label: 'Objectif calorique atteint ! 🎉');
+      }
+
       HapticFeedback.mediumImpact();
     }
   }
@@ -334,6 +351,11 @@ class _SummaryCard extends StatelessWidget {
             backgroundColor: nc.border,
             valueColor: AlwaysStoppedAnimation(over ? nc.redFg : nc.greenFg))),
 
+        const SizedBox(height: 12),
+
+        // XP motivation banner
+        _XpGoalBanner(nc: nc, reached: totals.calories >= goal && goal > 0),
+
         const SizedBox(height: 16),
 
         // Macro chips
@@ -353,6 +375,64 @@ class _SummaryCard extends StatelessWidget {
             goal: '${profile.dailyFat}g',
             fg: nc.amberFg, bg: nc.amberBg),
         ]),
+      ]),
+    );
+  }
+}
+
+class _XpGoalBanner extends StatelessWidget {
+  final NutritionColors nc;
+  final bool reached;
+  const _XpGoalBanner({required this.nc, required this.reached});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOut,
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: reached
+            ? const Color(0xFF4CAF50).withOpacity(0.13)
+            : const Color(0xFF4CAF50).withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: reached
+              ? const Color(0xFF4CAF50).withOpacity(0.5)
+              : const Color(0xFF4CAF50).withOpacity(0.18),
+          width: 1.2,
+        ),
+      ),
+      child: Row(children: [
+        Text(reached ? '🏆' : '⭐', style: const TextStyle(fontSize: 18)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            reached
+                ? 'Bravo ! Tu as gagné +20 XP pour avoir atteint ton objectif !'
+                : 'Complète ton objectif calorique du jour pour gagner +20 XP',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: reached
+                  ? const Color(0xFF2E7D32)
+                  : const Color(0xFF4CAF50),
+              height: 1.4,
+            ),
+          ),
+        ),
+        if (reached)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4CAF50),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text('+20 XP',
+              style: GoogleFonts.outfit(
+                fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
+          ),
       ]),
     );
   }
