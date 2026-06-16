@@ -4,6 +4,7 @@ import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../l10n/app_localizations.dart';
 import '../models/mock_data.dart';
 import 'boutique_detail_screen.dart';
 import 'favorites_screen.dart';
@@ -124,18 +125,6 @@ const _kCats = [
 // ─────────────────────────────────────────────────────────────────────────────
 enum _Sort { none, topDeals, mostPopular, expiringSoon, discount10, discount20, discount30 }
 
-extension _SortLabel on _Sort {
-  String get label => switch (this) {
-        _Sort.none         => 'Tout',
-        _Sort.topDeals     => 'Meilleures offres',
-        _Sort.mostPopular  => 'Plus populaires',
-        _Sort.expiringSoon => 'Expire bientôt',
-        _Sort.discount10   => '10% off',
-        _Sort.discount20   => '20% off',
-        _Sort.discount30   => '30%+ off',
-      };
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // BOUTIQUE SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
@@ -216,12 +205,14 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
   }
 
   void _showSortSheet() {
-    final c = _C.of(context);
+    final c    = _C.of(context);
+    final l10n = ref.read(l10nProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => _SortSheet(
         c: c,
+        l10n: l10n,
         selected: _sort,
         onSelect: (s) {
           setState(() { _sort = s; _cat = 'all'; });
@@ -241,6 +232,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
     final filtered   = _filtered;
     final shop       = ref.watch(shopProvider);
     final userPoints = shop.points;
+    final l10n       = ref.watch(l10nProvider);
     final wishlist   = ref.watch(shopWishlistProvider);
 
     return Scaffold(
@@ -252,8 +244,8 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
 
           // ── Common header ────────────────────────────────────────────────
           SharedAppHeader.sliver(
-            eyebrow:    'Boutique',
-            title:      'Récompenses',
+            eyebrow:    l10n.boutiqueEyebrow,
+            title:      l10n.boutiqueTitle,
             accentColor: _C.gold,
             bgColor:     c.bg,
             actions: [
@@ -800,16 +792,28 @@ class _FilterBarDelegate extends SliverPersistentHeaderDelegate {
 // ─────────────────────────────────────────────────────────────────────────────
 class _SortSheet extends StatelessWidget {
   final _C c;
+  final AppL10n l10n;
   final _Sort selected;
   final void Function(_Sort) onSelect;
   final VoidCallback onClear;
 
   const _SortSheet({
     required this.c,
+    required this.l10n,
     required this.selected,
     required this.onSelect,
     required this.onClear,
   });
+
+  String _sortLabel(_Sort s) => switch (s) {
+    _Sort.none         => l10n.boutiqueSortAll,
+    _Sort.topDeals     => l10n.boutiqueSortTopDeals,
+    _Sort.mostPopular  => l10n.boutiqueSortPopular,
+    _Sort.expiringSoon => l10n.boutiqueSortExpiring,
+    _Sort.discount10   => '10% off',
+    _Sort.discount20   => '20% off',
+    _Sort.discount30   => '30%+ off',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -836,13 +840,13 @@ class _SortSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Row(
               children: [
-                Text('Trier et filtrer',
+                Text(l10n.boutiqueSortFilter,
                     style: _T.heading(c, 17, fw: FontWeight.w700)),
                 const Spacer(),
                 if (selected != _Sort.none)
                   GestureDetector(
                     onTap: onClear,
-                    child: Text('Effacer',
+                    child: Text(l10n.boutiqueClear,
                         style: _T.body(c, 13,
                             color: _C.gold, fw: FontWeight.w600)),
                   ),
@@ -864,7 +868,7 @@ class _SortSheet extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Text(s.label,
+                    Text(_sortLabel(s),
                         style: _T.body(c, 14,
                             color: isSel ? c.chipSelFg : c.ink,
                             fw: FontWeight.w500)),

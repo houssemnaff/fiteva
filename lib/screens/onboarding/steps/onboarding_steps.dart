@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../l10n/lang.dart';
+import '../../../l10n/app_localizations.dart';
 
 // ─── Responsive helpers ────────────────────────────────────────────────────
 // Reference device: 390 × 844 (iPhone 14)
@@ -426,6 +428,169 @@ class _CtaButton extends StatelessWidget {
 Widget _mintScaffold({required Widget child}) => _stepBackground(child: child);
 
 // ══════════════════════════════════════════════════════════════════════════════
+// STEP — StepLanguageChoice  (FR / EN — shown after login)
+// ══════════════════════════════════════════════════════════════════════════════
+class StepLanguageChoice extends StatefulWidget {
+  final void Function(Locale locale) onNext;
+  const StepLanguageChoice({super.key, required this.onNext});
+
+  @override
+  State<StepLanguageChoice> createState() => _StepLanguageChoiceState();
+}
+
+class _StepLanguageChoiceState extends State<StepLanguageChoice>
+    with SingleTickerProviderStateMixin {
+  String? _selected;
+  late final AnimationController _enterCtrl;
+  late final Animation<double> _titleFade;
+  late final Animation<Offset> _titleSlide;
+  late final Animation<double> _cardsFade;
+
+  @override
+  void initState() {
+    super.initState();
+    _enterCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..forward();
+    _titleFade  = CurvedAnimation(parent: _enterCtrl, curve: const Interval(0.0, 0.55, curve: Curves.easeOut));
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _enterCtrl, curve: const Interval(0.0, 0.55, curve: Curves.easeOut)));
+    _cardsFade  = CurvedAnimation(parent: _enterCtrl, curve: const Interval(0.30, 0.85, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() { _enterCtrl.dispose(); super.dispose(); }
+
+  void _pick(String lang) {
+    if (_selected != null) return;
+    setState(() => _selected = lang);
+    Future.delayed(const Duration(milliseconds: 420), () {
+      widget.onNext(Locale(lang));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _stepBackground(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 48),
+
+              FadeTransition(
+                opacity: _titleFade,
+                child: SlideTransition(
+                  position: _titleSlide,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Language',
+                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: _kTextDark, height: 1.0, letterSpacing: -1.2)),
+                      const Text('Langue',
+                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: _kGreenMid, height: 1.1, letterSpacing: -1.2)),
+                      const SizedBox(height: 14),
+                      Container(width: 32, height: 3,
+                          decoration: BoxDecoration(color: _kGreenDark, borderRadius: BorderRadius.circular(2))),
+                      const SizedBox(height: 10),
+                      const Text('Choose the language for your experience',
+                        style: TextStyle(fontSize: 13, color: _kTextMuted, height: 1.4)),
+                    ],
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              FadeTransition(
+                opacity: _cardsFade,
+                child: Column(
+                  children: [
+                    _CleanLangOption(label: 'Français', sublabel: 'French',  isSelected: _selected == 'fr', onTap: () => _pick('fr')),
+                    const SizedBox(height: 14),
+                    _CleanLangOption(label: 'English',  sublabel: 'Anglais', isSelected: _selected == 'en', onTap: () => _pick('en')),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+
+              Padding(
+                padding: const EdgeInsets.only(bottom: 32),
+                child: Center(
+                  child: Text(
+                    'Changeable anytime in Settings · Modifiable dans Paramètres',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10.5, color: _kTextMuted.withOpacity(0.6), height: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CleanLangOption extends StatelessWidget {
+  final String label;
+  final String sublabel;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CleanLangOption({required this.label, required this.sublabel, required this.isSelected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 230),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(colors: [Color(0xFF3D6B40), _kGreenDark], begin: Alignment.topLeft, end: Alignment.bottomRight)
+              : null,
+          color: isSelected ? null : Colors.white.withOpacity(0.72),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? Colors.transparent : const Color(0xFFB8D4C0), width: 1.5),
+          boxShadow: isSelected
+              ? [BoxShadow(color: _kGreenDark.withOpacity(0.28), blurRadius: 18, offset: const Offset(0, 6))]
+              : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
+                      color: isSelected ? Colors.white : _kTextDark, letterSpacing: -0.3)),
+                  const SizedBox(height: 2),
+                  Text(sublabel, style: TextStyle(fontSize: 12,
+                      color: isSelected ? Colors.white.withOpacity(0.55) : _kTextMuted)),
+                ],
+              ),
+            ),
+            AnimatedOpacity(
+              opacity: isSelected ? 1 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: Container(
+                width: 26, height: 26,
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: Icon(Icons.check_rounded, size: 15, color: _kGreenDark),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // STEP 0 — StepIntro  (cinematic hero screen)
 // ══════════════════════════════════════════════════════════════════════════════
 class StepIntro extends StatefulWidget {
@@ -507,45 +672,45 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
 
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
+                padding: EdgeInsets.symmetric(horizontal: sh < 700 ? 22 : 28),
                 child: Column(
                   children: [
-                    const SizedBox(height: 28),
+                    SizedBox(height: sh * 0.032),
                     FadeTransition(
                       opacity: _logoFade,
                       child: SlideTransition(
-                          position: _logoSlide, child: _buildLogo()),
+                          position: _logoSlide, child: _buildLogo(sh)),
                     ),
-                    const Spacer(flex: 2),
+                    Spacer(flex: sh < 700 ? 1 : 2),
                     FadeTransition(
                       opacity: _headFade,
                       child: SlideTransition(
-                          position: _headSlide, child: _buildHeadline()),
+                          position: _headSlide, child: _buildHeadline(sh)),
                     ),
-                    const SizedBox(height: 32),
-                    FadeTransition(opacity: _chipsFade, child: _buildChips()),
-                    const SizedBox(height: 28),
-                    FadeTransition(opacity: _proofFade, child: _buildSocialProof()),
-                    const Spacer(flex: 3),
+                    SizedBox(height: sh * 0.030),
+                    FadeTransition(opacity: _chipsFade, child: _buildChips(sh)),
+                    SizedBox(height: sh * 0.024),
+                    FadeTransition(opacity: _proofFade, child: _buildSocialProof(sh)),
+                    Spacer(flex: sh < 700 ? 1 : 3),
                     FadeTransition(
                       opacity: _btnFade,
                       child: SlideTransition(
-                          position: _btnSlide, child: _buildCTA()),
+                          position: _btnSlide, child: _buildCTA(sh)),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: sh * 0.014),
                     FadeTransition(
                       opacity: _btnFade,
                       child: Text(
                         "En continuant, tu acceptes nos Conditions d'utilisation",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: sh < 700 ? 10 : 11,
                           color: Colors.white.withValues(alpha: 0.28),
                           height: 1.4,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    SizedBox(height: sh * 0.028),
                   ],
                 ),
               ),
@@ -565,111 +730,104 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
         ),
       );
 
-  Widget _buildLogo() => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(11),
-              child: Image.asset('assets/images/logfiteva.jpeg',
-                  fit: BoxFit.cover),
-            ),
+  Widget _buildLogo(double sh) {
+    final logoSz = sh < 700 ? 36.0 : 44.0;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: logoSz, height: logoSz,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(logoSz * 0.27),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
           ),
-          const SizedBox(width: 13),
-          const Text(
-            "FITEVA",
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(logoSz * 0.25),
+            child: Image.asset('assets/images/logfiteva.jpeg', fit: BoxFit.cover),
+          ),
+        ),
+        const SizedBox(width: 13),
+        Text(
+          "FITEVA",
+          style: TextStyle(
+            fontSize: sh < 700 ? 18 : 22,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            letterSpacing: 3.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeadline(double sh) {
+    final headFs = (sh * 0.051).clamp(28.0, 46.0);
+    final subFs  = (sh * 0.018).clamp(12.0, 16.0);
+    return Column(
+      children: [
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
+              fontSize: headFs,
+              fontWeight: FontWeight.w900,
               color: Colors.white,
-              letterSpacing: 3.5,
+              height: 1.08,
+              letterSpacing: -1.2,
             ),
+            children: const [
+              TextSpan(text: "Transforme\nton corps,\n"),
+              TextSpan(text: "libère ta force.",
+                style: TextStyle(color: Color(0xFF5CD57A))),
+            ],
           ),
-        ],
-      );
+        ),
+        SizedBox(height: sh * 0.018),
+        Text(
+          "Fitness, cycle & nutrition —\ntout ce dont une femme a besoin.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: subFs,
+            color: Colors.white.withValues(alpha: 0.50),
+            height: 1.55,
+          ),
+        ),
+      ],
+    );
+  }
 
-  Widget _buildHeadline() => Column(
-        children: [
-          RichText(
-            textAlign: TextAlign.center,
-            text: const TextSpan(
-              style: TextStyle(
-                fontSize: 44,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                height: 1.08,
-                letterSpacing: -1.2,
-              ),
-              children: [
-                TextSpan(text: "Transforme\nton corps,\n"),
-                TextSpan(
-                  text: "libère ta force.",
-                  style: TextStyle(color: Color(0xFF5CD57A)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            "Fitness, cycle & nutrition —\ntout ce dont une femme a besoin.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15.5,
-              color: Colors.white.withValues(alpha: 0.50),
-              height: 1.55,
-            ),
-          ),
-        ],
-      );
-
-  Widget _buildChips() {
+  Widget _buildChips(double sh) {
     const features = [
       (Icons.fitness_center_rounded,  "Workouts"),
       (Icons.water_drop_outlined,     "Cycle"),
       (Icons.restaurant_menu_rounded, "Nutrition"),
-      (Icons.supervised_user_circle, "Comunauty"),
-
+      (Icons.supervised_user_circle,  "Communauté"),
     ];
+    final chipPadV = sh < 700 ? 7.0 : 10.0;
+    final chipFs   = sh < 700 ? 12.0 : 13.0;
     return Wrap(
       alignment: WrapAlignment.center,
-      spacing: 10,
-      runSpacing: 10,
-      children: features
-          .map((f) => Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.07),
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.13)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(f.$1, color: const Color(0xFF5CD57A), size: 15),
-                    const SizedBox(width: 7),
-                    Text(f.$2,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        )),
-                  ],
-                ),
-              ))
-          .toList(),
+      spacing: 8,
+      runSpacing: 8,
+      children: features.map((f) => Container(
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: chipPadV),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(40),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(f.$1, color: const Color(0xFF5CD57A), size: 14),
+          const SizedBox(width: 7),
+          Text(f.$2, style: TextStyle(
+            fontSize: chipFs, color: Colors.white, fontWeight: FontWeight.w500)),
+        ]),
+      )).toList(),
     );
   }
 
-  Widget _buildSocialProof() => Container(
+  Widget _buildSocialProof(double sh) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.05),
@@ -731,11 +889,11 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
         ),
       );
 
-  Widget _buildCTA() => GestureDetector(
+  Widget _buildCTA(double sh) => GestureDetector(
         onTap: widget.onNext,
         child: Container(
           width: double.infinity,
-          height: 58,
+          height: sh < 700 ? 50 : 58,
           decoration: BoxDecoration(
            color: Color.fromARGB(255, 21, 80, 44),
             borderRadius: BorderRadius.circular(18),
@@ -1059,7 +1217,7 @@ class _StepWelcomeState extends State<StepWelcome>
     return Column(
       children: [
         _authBtn(
-          label: 'Sign Up with Google',
+          label: AppL10n(Lang.code).welcomeSignUpGoogle,
           bgColor: _kWhite,
           textColor: _kDark,
           borderColor: _kBorder,
@@ -1068,7 +1226,7 @@ class _StepWelcomeState extends State<StepWelcome>
         ),
         const SizedBox(height: 12),
         _authBtn(
-          label: 'Sign Up with Apple',
+          label: AppL10n(Lang.code).welcomeSignUpApple,
           bgColor: _kDark,
           textColor: _kWhite,
           borderColor: Colors.transparent,
@@ -1077,7 +1235,7 @@ class _StepWelcomeState extends State<StepWelcome>
         ),
         const SizedBox(height: 12),
         _authBtn(
-          label: 'Sign Up with Email',
+          label: AppL10n(Lang.code).welcomeSignUpEmail,
           bgColor: const Color.fromARGB(255, 21, 80, 44),
           textColor: _kWhite,
           borderColor: Colors.transparent,
@@ -1145,8 +1303,8 @@ class _StepWelcomeState extends State<StepWelcome>
                     color: _kWhite, size: 14),
               ),
               const SizedBox(width: 10),
-              Text('Create your account',
-                  style: TextStyle(color: _kWhite,
+              Text(AppL10n(Lang.code).welcomeCreateAccount,
+                  style: const TextStyle(color: _kWhite,
                       fontWeight: FontWeight.w700, fontSize: 16)),
             ],
           ),
@@ -1155,7 +1313,7 @@ class _StepWelcomeState extends State<StepWelcome>
 
         _formField(
           controller: widget.nameController,
-          hint: 'Your username',
+          hint: AppL10n(Lang.code).welcomeUsername,
           icon: Icons.badge_outlined,
           onChanged: (_) => setState(() {}),
         ),
@@ -1197,7 +1355,7 @@ class _StepWelcomeState extends State<StepWelcome>
             ),
             child: Center(
               child: Text(
-                'Continue →',
+                AppL10n(Lang.code).welcomeContinue,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -1258,12 +1416,12 @@ class _StepWelcomeState extends State<StepWelcome>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Already have an account? ',
+          Text(AppL10n(Lang.code).welcomeAlreadyAccount,
               style: TextStyle(color: _kWhite.withOpacity(0.6), fontSize: 13)),
           GestureDetector(
             onTap: _showLoginSheet,
             child: Text(
-              'Log In',
+              AppL10n(Lang.code).welcomeLogIn,
               style: const TextStyle(
                 color: _kWhite,
                 fontSize: 13,
@@ -1305,20 +1463,20 @@ class _StepWelcomeState extends State<StepWelcome>
                 ),
               ),
               Text(
-                'Welcome back',
-                style: TextStyle(
+                AppL10n(Lang.code).welcomeBack,
+                style: const TextStyle(
                   fontSize: 22, fontWeight: FontWeight.w800,
                   color: _kWhite, letterSpacing: -0.3,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
-                'Log in to continue',
-                style: TextStyle(fontSize: 14, color: _kGrey),
+                AppL10n(Lang.code).welcomeLogInToContinue,
+                style: const TextStyle(fontSize: 14, color: _kGrey),
               ),
               const SizedBox(height: 28),
               _authBtn(
-                label: 'Log In with Google',
+                label: AppL10n(Lang.code).welcomeLogInGoogle,
                 bgColor: _kWhite,
                 textColor: _kDark,
                 borderColor: _kBorder,
@@ -1327,7 +1485,7 @@ class _StepWelcomeState extends State<StepWelcome>
               ),
               const SizedBox(height: 12),
               _authBtn(
-                label: 'Log In with Apple',
+                label: AppL10n(Lang.code).welcomeLogInApple,
                 bgColor: _kDark,
                 textColor: _kWhite,
                 borderColor: Colors.white24,
@@ -1336,8 +1494,8 @@ class _StepWelcomeState extends State<StepWelcome>
               ),
               const SizedBox(height: 12),
               _authBtn(
-                label: 'Log In with Email',
-                bgColor:  Color.fromARGB(255, 21, 80, 44),
+                label: AppL10n(Lang.code).welcomeLogInEmail,
+                bgColor:  const Color.fromARGB(255, 21, 80, 44),
                 textColor: _kWhite,
                 borderColor: Colors.transparent,
                 leading: Icon(Icons.mail_outline_rounded, color: _kWhite, size: 20),
@@ -1458,7 +1616,7 @@ class _StepGoalsState extends State<StepGoals>
                   Expanded(
                     child: Center(
                       child: Text(
-                        'OBJECTIFS',
+                        AppL10n(Lang.code).goalsTopBarTitle,
                         style: TextStyle(
                           fontSize: context.rs(11),
                           letterSpacing: 3.5,
@@ -1495,7 +1653,7 @@ class _StepGoalsState extends State<StepGoals>
                 ),
                 SizedBox(height: context.rv(12)),
                 Text(
-                  'Quel est ton objectif\nprincipal en ce moment ?',
+                  AppL10n(Lang.code).goalsTitle,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: context.rs(20),
@@ -1507,7 +1665,7 @@ class _StepGoalsState extends State<StepGoals>
                 ),
                 SizedBox(height: context.rv(5)),
                 Text(
-                  'Touche un cercle pour choisir',
+                  AppL10n(Lang.code).goalsHint,
                   style: TextStyle(
                       fontSize: context.rs(12.5), color: _kTextMuted),
                 ),
@@ -1536,23 +1694,28 @@ class _StepGoalsState extends State<StepGoals>
                     Offset(rx, vStep * 2),
                   ];
 
+                  final l10n = AppL10n(Lang.code);
+                  final _goalDisplayLabels = [
+                    l10n.goal1, l10n.goal2, l10n.goal3, l10n.goal4, l10n.goal5,
+                  ];
                   return SizedBox(
                     height: vStep * 2 + d,
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: List.generate(_goals.length, (i) {
-                        final label = _goals[i].label;
-                        final isSel = widget.selectedGoals.contains(label);
+                        final key = _goals[i].label; // French key for selection
+                        final displayLabel = _goalDisplayLabels[i];
+                        final isSel = widget.selectedGoals.contains(key);
                         return Positioned(
                           left: offsets[i].dx - d / 2,
                           top: offsets[i].dy,
                           child: FadeTransition(
                             opacity: _fades[i],
                             child: _CircleGoal(
-                              label: label,
+                              label: displayLabel,
                               diameter: d,
                               selected: isSel,
-                              onTap: () => _select(label),
+                              onTap: () => _select(key),
                             ),
                           ),
                         );
@@ -1751,11 +1914,11 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
                       child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Center(
                       child: Text(
-                        'NIVEAU',
-                        style: TextStyle(
+                        AppL10n(Lang.code).fitnessTopBarTitle,
+                        style: const TextStyle(
                           fontSize: 11,
                           letterSpacing: 3.5,
                           fontWeight: FontWeight.w700,
@@ -1788,10 +1951,10 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
                   child: const Icon(Icons.show_chart_rounded, size: 28, color: Colors.white),
                 ),
                 const SizedBox(height: 14),
-                const Text(
-                  'Quel est ton niveau\nde forme actuel ?',
+                Text(
+                  AppL10n(Lang.code).fitnessTitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: _kTextDark,
@@ -1800,9 +1963,9 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Touche un cercle pour choisir',
-                  style: TextStyle(fontSize: 12.5, color: _kTextMuted),
+                Text(
+                  AppL10n(Lang.code).fitnessHint,
+                  style: const TextStyle(fontSize: 12.5, color: _kTextMuted),
                 ),
               ]),
             ),
@@ -1827,23 +1990,30 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
                     Offset(cx, vStep),
                   ];
 
+                  final l10n = AppL10n(Lang.code);
+                  final _levelDisplayLabels = [
+                    l10n.fitnessLevelBeginner,
+                    l10n.fitnessLevelIntermediate,
+                    l10n.fitnessLevelAdvanced,
+                  ];
                   return SizedBox(
                     height: vStep + d,
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: List.generate(_levels.length, (i) {
-                        final label = _levels[i];
-                        final isSel = widget.selectedLevel == label;
+                        final key = _levels[i]; // French key for selection
+                        final displayLabel = _levelDisplayLabels[i];
+                        final isSel = widget.selectedLevel == key;
                         return Positioned(
                           left: offsets[i].dx - d / 2,
                           top: offsets[i].dy,
                           child: FadeTransition(
                             opacity: _fades[i],
                             child: _CircleGoal(
-                              label: label,
+                              label: displayLabel,
                               diameter: d,
                               selected: isSel,
-                              onTap: () => _select(label),
+                              onTap: () => _select(key),
                             ),
                           ),
                         );
@@ -2038,11 +2208,11 @@ class _StepEquipmentState extends State<StepEquipment>
                         child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
                       ),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Center(
                         child: Text(
-                          'ÉQUIPEMENT',
-                          style: TextStyle(
+                          AppL10n(Lang.code).equipmentTopBarTitle,
+                          style: const TextStyle(
                             fontSize: 11,
                             letterSpacing: 3.5,
                             fontWeight: FontWeight.w700,
@@ -2074,10 +2244,10 @@ class _StepEquipmentState extends State<StepEquipment>
                     child: const Icon(Icons.sports_gymnastics, size: 28, color: Colors.white),
                   ),
                   const SizedBox(height: 14),
-                  const Text(
-                    'Quel équipement\nas-tu à disposition ?',
+                  Text(
+                    AppL10n(Lang.code).equipmentTitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: _kTextDark,
@@ -2086,9 +2256,9 @@ class _StepEquipmentState extends State<StepEquipment>
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Sélectionne tout ce qui s\'applique',
-                    style: TextStyle(fontSize: 12.5, color: _kTextMuted),
+                  Text(
+                    AppL10n(Lang.code).equipmentHint,
+                    style: const TextStyle(fontSize: 12.5, color: _kTextMuted),
                   ),
                 ]),
               ),
@@ -2116,12 +2286,22 @@ class _StepEquipmentState extends State<StepEquipment>
                         Offset(cx, vStep * 3),
                       ];
 
+                      final l10n = AppL10n(Lang.code);
+                      final _equipDisplayLabels = [
+                        l10n.equipmentNone,
+                        l10n.equipmentDumbbells,
+                        l10n.equipmentBarbell,
+                        l10n.equipmentMachines,
+                        l10n.equipmentBands,
+                        l10n.equipmentYogaMat,
+                      ];
                       return SizedBox(
                         height: vStep * 3 + d,
                         child: Stack(
                           children: List.generate(_equipments.length, (i) {
-                            final label = _equipments[i];
-                            final isSel = widget.selectedEquipment.contains(label);
+                            final key = _equipments[i]; // French key
+                            final displayLabel = _equipDisplayLabels[i];
+                            final isSel = widget.selectedEquipment.contains(key);
 
                             return Positioned(
                               left: offsets[i].dx - d / 2,
@@ -2129,11 +2309,11 @@ class _StepEquipmentState extends State<StepEquipment>
                               child: FadeTransition(
                                 opacity: _fades[i],
                                 child: equipmentIcon(
-                                  label: label,
-                                  icon: equipmentIcons[label]!,
+                                  label: displayLabel,
+                                  icon: equipmentIcons[key]!,
                                   diameter: d,
                                   selected: isSel,
-                                  onTap: () => _handleEquipmentTap(label),
+                                  onTap: () => _handleEquipmentTap(key),
                                   accentColor: _kGreenDark,
                                 ),
                               ),
@@ -2166,7 +2346,7 @@ class _StepEquipmentState extends State<StepEquipment>
                   ),
                   child: Center(
                     child: Text(
-                      count > 0 ? 'CONTINUER ($count)' : 'SÉLECTIONNE AU MOINS UN',
+                      count > 0 ? '${AppL10n(Lang.code).equipmentContinue} ($count)' : AppL10n(Lang.code).equipmentSelectAtLeastOne,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -2251,11 +2431,11 @@ class _StepFrequencyState extends State<StepFrequency> {
                       child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Center(
                       child: Text(
-                        'FRÉQUENCE',
-                        style: TextStyle(
+                        AppL10n(Lang.code).frequencyTopBarTitle,
+                        style: const TextStyle(
                           fontSize: 11,
                           letterSpacing: 3.5,
                           fontWeight: FontWeight.w700,
@@ -2288,10 +2468,10 @@ class _StepFrequencyState extends State<StepFrequency> {
                   child: const Icon(Icons.timer_outlined, size: 28, color: Colors.white),
                 ),
                 const SizedBox(height: 14),
-                const Text(
-                  'Combien de jours par\nsemaine veux-tu t\'entraîner ?',
+                Text(
+                  AppL10n(Lang.code).frequencyTitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: _kTextDark,
@@ -2300,9 +2480,9 @@ class _StepFrequencyState extends State<StepFrequency> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Fais glisser le curseur pour choisir',
-                  style: TextStyle(fontSize: 12.5, color: _kTextMuted),
+                Text(
+                  AppL10n(Lang.code).frequencyHint,
+                  style: const TextStyle(fontSize: 12.5, color: _kTextMuted),
                 ),
               ]),
             ),
@@ -2313,12 +2493,12 @@ class _StepFrequencyState extends State<StepFrequency> {
                 count: _labels.length,
                 index: _index,
                 onChanged: _select,
-                label: _labels[_index],
+                label: AppL10n(Lang.code).freqLabel(_index),
               ),
             ),
             const Spacer(),
             _CtaButton(
-              label: 'Suivant',
+              label: AppL10n(Lang.code).frequencyNext,
               onPressed: _hasInteracted ? widget.onNext : null,
             ),
           ],
@@ -2588,10 +2768,11 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
   double get _bmi => _weightKg / pow(_heightCm / 100, 2);
 
   String get _bmiLabel {
-    if (_bmi < 18.5) return 'Mince';
-    if (_bmi < 25.0) return 'Normale';
-    if (_bmi < 30.0) return 'Surpoids';
-    return 'Obésité';
+    final l10n = AppL10n(Lang.code);
+    if (_bmi < 18.5) return l10n.healthProfileBmiThin;
+    if (_bmi < 25.0) return l10n.healthProfileBmiNormal;
+    if (_bmi < 30.0) return l10n.healthProfileBmiOver;
+    return l10n.healthProfileBmiObese;
   }
 
   Color get _bmiColor {
@@ -2628,7 +2809,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
       child: Column(
         children: [
           _OnboardingTopBar(
-              step: 6, total: 7, title: 'Profil santé', onBack: widget.onBack),
+              step: 6, total: 7, title: AppL10n(Lang.code).healthProfileTopBarTitle, onBack: widget.onBack),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -2642,16 +2823,16 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
                         const SizedBox(height: 8),
                         const _StepIcon(Icons.straighten_rounded),
                         const SizedBox(height: 16),
-                        const _StepHeader(
-                          title: 'Taille, Poids & Âge',
-                          subtitle: 'Fais défiler pour entrer tes mesures',
+                        _StepHeader(
+                          title: AppL10n(Lang.code).healthProfileTitle,
+                          subtitle: AppL10n(Lang.code).healthProfileSubtitle,
                         ),
                         const SizedBox(height: 28),
                         Row(
                           children: [
                             Expanded(
                               child: _DrumPicker(
-                                label: 'TAILLE',
+                                label: AppL10n(Lang.code).healthProfileHeight,
                                 unit: 'cm',
                                 selectedIndex: _hIdx,
                                 controller: _hCtrl,
@@ -2666,7 +2847,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: _DrumPicker(
-                                label: 'POIDS',
+                                label: AppL10n(Lang.code).healthProfileWeight,
                                 unit: 'kg',
                                 selectedIndex: _wIdx,
                                 controller: _wCtrl,
@@ -2686,8 +2867,8 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: _DrumPicker(
-                                label: 'ÂGE',
-                                unit: 'ans',
+                                label: AppL10n(Lang.code).healthProfileAge,
+                                unit: AppL10n(Lang.code).healthProfileAgeUnit,
                                 selectedIndex: _aIdx,
                                 controller: _aCtrl,
                                 itemCount: _maxA - _minA + 1,
@@ -2710,7 +2891,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
               },
             ),
           ),
-          _CtaButton(label: 'Continuer', onPressed: widget.onNext),
+          _CtaButton(label: AppL10n(Lang.code).healthProfileContinue, onPressed: widget.onNext),
         ],
       ),
     );
@@ -2969,12 +3150,13 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
   }
 
   String get _ppProgramDesc {
+    final l10n = AppL10n(Lang.code);
     switch (_ppDuration) {
-      case '0-2':  return '0–2 sem. · récupération douce, périnée & repos absolu';
-      case '2-6':  return '2–6 sem. · mobilité progressive & renforcement léger';
-      case '6-12': return '6–12 sem. · reprise légère & consolidation posturale';
-      case '3-6m': return '3–6 mois · renforcement progressif & retour à l\'effort';
-      case '6m+':  return '6+ mois · retour fitness actif & reconditionnement complet';
+      case '0-2':  return l10n.ppPpProgDesc0_2;
+      case '2-6':  return l10n.ppPpProgDesc2_6;
+      case '6-12': return l10n.ppPpProgDesc6_12;
+      case '3-6m': return l10n.ppPpProgDesc3_6m;
+      case '6m+':  return l10n.ppPpProgDesc6mPlus;
       default: return '';
     }
   }
@@ -3009,13 +3191,11 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
   }
 
   String get _trimesterAdvice {
+    final l10n = AppL10n(Lang.code);
     switch (_trimester) {
-      case 1:
-        return 'Marche douce & yoga prénatal. Évite les abdominaux et les efforts intenses.';
-      case 2:
-        return 'Natation & Pilates prénatal. Évite d\'être allongée sur le dos après 16 SA.';
-      default:
-        return 'Mobilité douce & respiration consciente. Intensité très modérée recommandée.';
+      case 1: return l10n.cycleAdviceT1;
+      case 2: return l10n.cycleAdviceT2;
+      default: return l10n.cycleAdviceT3;
     }
   }
 
@@ -3034,8 +3214,8 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
       initialDate: _lastPeriod,
       firstDate: DateTime(2024),
       lastDate: DateTime.now(),
-      title: 'Dernieres regles',
-      subtitle: 'Date du premier jour',
+      title: AppL10n(Lang.code).datePickerLastPeriodTitle,
+      subtitle: AppL10n(Lang.code).datePickerLastPeriodSub,
       icon: Icons.water_drop_rounded,
       accentColor: const Color(0xFFD94F6B),
     );
@@ -3064,16 +3244,16 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
       child: Column(
         children: [
           _OnboardingTopBar(
-              step: 7, total: 7, title: 'Santé féminine',
+              step: 7, total: 7, title: AppL10n(Lang.code).cycleStepTopBarTitle,
               onBack: widget.onBack),
           const SizedBox(height: 20),
           const _StepIcon(Icons.favorite_border_rounded),
           const SizedBox(height: 20),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 40),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
             child: _StepHeader(
-              title: 'Santé féminine',
-              subtitle: 'Pour adapter ton plan à ta réalité du moment',
+              title: AppL10n(Lang.code).cycleStepTitle,
+              subtitle: AppL10n(Lang.code).cycleStepSubtitle,
             ),
           ),
           const SizedBox(height: 28),
@@ -3087,17 +3267,20 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
                   Row(children: [
                     Expanded(child: _statusCard(
                       'cycle', LucideIcons.moon,
-                      'Cycle\nrégulier', 'Sync entraînement',
+                      AppL10n(Lang.code).cycleStatusRegular,
+                      AppL10n(Lang.code).cycleStatusRegularSub,
                     )),
                     const SizedBox(width: 10),
                     Expanded(child: _statusCard(
                       'pregnant', LucideIcons.sparkles,
-                      'Je suis\nenceinte', 'Programme prénatal',
+                      AppL10n(Lang.code).cycleStatusPregnant,
+                      AppL10n(Lang.code).cycleStatusPregnantSub,
                     )),
                     const SizedBox(width: 10),
                     Expanded(child: _statusCard(
                       'postpartum', LucideIcons.baby,
-                      'Après\ngrossesse', 'Post-partum',
+                      AppL10n(Lang.code).cycleStatusPostpartum,
+                      AppL10n(Lang.code).cycleStatusPostpartumSub,
                     )),
                   ]),
                   const SizedBox(height: 24),
@@ -3127,7 +3310,7 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
             ),
           ),
           _CtaButton(
-            label: _status == 'cycle' ? 'Commencer FITEVA' : 'Continuer',
+            label: _status == 'cycle' ? AppL10n(Lang.code).cycleCtaStart : AppL10n(Lang.code).continueBtn,
             onPressed: _status != null
                 ? (_status == 'postpartum'
                     ? (_ppDuration != null ? widget.onNext : null)
@@ -3203,12 +3386,12 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFD8E5D8)),
       ),
-      child: const Row(children: [
-        Icon(Icons.touch_app_outlined, color: _kTextMuted, size: 20),
-        SizedBox(width: 12),
+      child: Row(children: [
+        const Icon(Icons.touch_app_outlined, color: _kTextMuted, size: 20),
+        const SizedBox(width: 12),
         Expanded(
-          child: Text('Sélectionne ta situation ci-dessus',
-              style: TextStyle(
+          child: Text(AppL10n(Lang.code).cycleSelectSituation,
+              style: const TextStyle(
                   fontSize: 13, color: _kTextMuted, height: 1.4)),
         ),
       ]),
@@ -3223,8 +3406,8 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
       children: [
         _phaseStrip(),
         const SizedBox(height: 20),
-        const Text('Durée habituelle de ton cycle',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+        Text(AppL10n(Lang.code).cycleDurationLabel,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                 color: _kTextDark)),
         const SizedBox(height: 10),
         Wrap(
@@ -3255,8 +3438,8 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
           }).toList(),
         ),
         const SizedBox(height: 20),
-        const Text('Dernières règles',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+        Text(AppL10n(Lang.code).cycleLastPeriod,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                 color: _kTextDark)),
         const SizedBox(height: 10),
         GestureDetector(
@@ -3294,11 +3477,12 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
         int.tryParse(_cycleDuration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 28;
     final follDays = max(1, (days * 0.32).round() - 2);
     final lutDays = max(1, days - 5 - follDays - 2);
+    final l10n = AppL10n(Lang.code);
     final phases = [
-      _CyclePhase('Menstruation', 5, const Color(0xFFE8A0A0)),
-      _CyclePhase('Folliculaire', follDays, const Color(0xFFEDD07A)),
-      _CyclePhase('Ovulation', 2, const Color(0xFF7AC998)),
-      _CyclePhase('Lutéale', lutDays, const Color(0xFFB8A8D4)),
+      _CyclePhase(l10n.cyclePhaseMenstruation, 5, const Color(0xFFE8A0A0)),
+      _CyclePhase(l10n.cyclePhaseFollicular, follDays, const Color(0xFFEDD07A)),
+      _CyclePhase(l10n.cyclePhaseOvulation, 2, const Color(0xFF7AC998)),
+      _CyclePhase(l10n.cyclePhaseLuteal, lutDays, const Color(0xFFB8A8D4)),
     ];
     return Container(
       padding: const EdgeInsets.all(16),
@@ -3308,8 +3492,8 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
         border: Border.all(color: const Color(0xFFD8E5D8)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Ton cycle en un coup d\'œil',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+        Text(AppL10n(Lang.code).cycleAtAGlance,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                 color: _kTextMuted, letterSpacing: 0.4)),
         const SizedBox(height: 10),
         ClipRRect(
@@ -3343,11 +3527,12 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
 
   Widget _nextPeriodPill() {
     final diff = _nextPeriod.difference(DateTime.now()).inDays;
+    final l10n = AppL10n(Lang.code);
     final label = diff > 0
-        ? 'Prochaines règles dans $diff jours · ${_fmt(_nextPeriod)}'
+        ? '${l10n.cycleNextPeriodIn} $diff ${l10n.cycleNextPeriodDays} · ${_fmt(_nextPeriod)}'
         : diff == 0
-            ? 'Prochaines règles aujourd\'hui · ${_fmt(_nextPeriod)}'
-            : 'Période attendue · ${_fmt(_nextPeriod)}';
+            ? '${l10n.cycleNextPeriodToday} · ${_fmt(_nextPeriod)}'
+            : '${l10n.cycleNextPeriodExpected} · ${_fmt(_nextPeriod)}';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -3373,7 +3558,7 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
       key: const ValueKey('pregnancy'),
       children: [
         _DrumPicker(
-          label: 'SEMAINES D\'AMÉNORRHÉE',
+          label: AppL10n(Lang.code).cyclePregnancyWeeksLabel,
           unit: 'SA',
           selectedIndex: _weekIdx,
           controller: _weekCtrl,
@@ -3446,11 +3631,12 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
   }
 
   Widget _adviceCard() {
+    final l10n = AppL10n(Lang.code);
     final label = _trimester == 1
-        ? '1er trimestre'
+        ? l10n.cycleTrimester1Label
         : _trimester == 2
-            ? '2ème trimestre'
-            : '3ème trimestre';
+            ? l10n.cycleTrimester2Label
+            : l10n.cycleTrimester3Label;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -3497,11 +3683,11 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
         const SizedBox(height: 4),
 
         // ── Titre + sous-titre ────────────────────────────────────────────
-        const Text('Quand as-tu accouché ?',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextDark)),
+        Text(AppL10n(Lang.code).ppWhenDidYouGiveBirth,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextDark)),
         const SizedBox(height: 4),
-        const Text('On calcule ta phase de récupération automatiquement',
-          style: TextStyle(fontSize: 12, color: _kTextMuted)),
+        Text(AppL10n(Lang.code).ppAutoCalculate,
+          style: const TextStyle(fontSize: 12, color: _kTextMuted)),
         const SizedBox(height: 14),
 
         // ── Date picker card ──────────────────────────────────────────────
@@ -3512,8 +3698,8 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
               initialDate: _birthDate ?? DateTime.now(),
               firstDate: DateTime.now().subtract(const Duration(days: 365 * 2)),
               lastDate: DateTime.now(),
-              title: 'Date d\'accouchement',
-              subtitle: 'Quand est ne votre bebe ?',
+              title: AppL10n(Lang.code).datePickerBirthTitle,
+              subtitle: AppL10n(Lang.code).datePickerBirthSub,
               icon: Icons.child_care_rounded,
               accentColor: const Color(0xFF2D4A2D),
             );
@@ -3560,8 +3746,8 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
               const SizedBox(width: 14),
               Expanded(
                 child: _birthDate == null
-                  ? Text('Sélectionne la date d\'accouchement',
-                      style: TextStyle(fontSize: 13.5, color: _kTextMuted))
+                  ? Text(AppL10n(Lang.code).ppSelectBirthDate,
+                      style: const TextStyle(fontSize: 13.5, color: _kTextMuted))
                   : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(
                         '${_birthDate!.day.toString().padLeft(2,'0')} / '
@@ -3572,8 +3758,8 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
                       const SizedBox(height: 2),
                       Text(
                         weeks == 0
-                          ? 'Moins d\'une semaine'
-                          : '$weeks ${weeks == 1 ? 'semaine' : 'semaines'} depuis l\'accouchement',
+                          ? AppL10n(Lang.code).ppLessThanOneWeek
+                          : '$weeks ${weeks == 1 ? (AppL10n(Lang.code).isFrench ? 'semaine' : 'week') : (AppL10n(Lang.code).isFrench ? 'semaines' : 'weeks')} ${AppL10n(Lang.code).ppWeeksSince}',
                         style: TextStyle(fontSize: 12, color: _kGreenDark.withValues(alpha: 0.75))),
                     ]),
               ),
@@ -3620,7 +3806,7 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [
-                    Text('Programme ', style: TextStyle(
+                    Text('${AppL10n(Lang.code).ppProgramLabel} ', style: TextStyle(
                       fontSize: 11.5, color: _ppProgramColor, fontWeight: FontWeight.w500)),
                     Text(_ppProgram, style: TextStyle(
                       fontSize: 15, color: _ppProgramColor, fontWeight: FontWeight.w800,
@@ -3700,7 +3886,7 @@ class _BirthWeekBar extends StatelessWidget {
               border: Border.all(color: phases[activeIdx].color.withValues(alpha: 0.30)),
             ),
             child: Text(
-              'Phase : ${phases[activeIdx].label}',
+              '${AppL10n(Lang.code).ppPhaseLabel} : ${phases[activeIdx].label}',
               style: TextStyle(
                 fontSize: 11.5, fontWeight: FontWeight.w600,
                 color: phases[activeIdx].color),
@@ -3912,12 +4098,12 @@ class _StepAvatarState extends State<StepAvatar> {
     (MascotType.leaf,  'Leafy',   '🍃'),
   ];
 
-  static const _moods = [
-    (MascotMood.happy,       '😊', 'Heureuse'),
-    (MascotMood.excited,     '🤩', 'Excitée'),
-    (MascotMood.proud,       '💪', 'Fière'),
-    (MascotMood.celebrating, '🎉', 'En fête'),
-    (MascotMood.sleepy,      '😴', 'Fatiguée'),
+  static const _moodTypes = [
+    (MascotMood.happy,       '😊'),
+    (MascotMood.excited,     '🤩'),
+    (MascotMood.proud,       '💪'),
+    (MascotMood.celebrating, '🎉'),
+    (MascotMood.sleepy,      '😴'),
   ];
 
   @override
@@ -3941,8 +4127,8 @@ class _StepAvatarState extends State<StepAvatar> {
                     child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
                   ),
                 ),
-                const Expanded(child: Center(child: Text('TA MASCOTTE',
-                  style: TextStyle(fontSize: 11, letterSpacing: 3.0,
+                Expanded(child: Center(child: Text(AppL10n(Lang.code).avatarTopBarTitle,
+                  style: const TextStyle(fontSize: 11, letterSpacing: 3.0,
                     fontWeight: FontWeight.w700, color: _kGreenDark)))),
                 const SizedBox(width: 36),
               ]),
@@ -3978,14 +4164,14 @@ class _StepAvatarState extends State<StepAvatar> {
                     child: Center(child: MascotWidget(type: _type, mood: _mood, size: 110)),
                   ),
                   const SizedBox(height: 16),
-                  Text('Choisis ta mascotte !',
+                  Text(AppL10n(Lang.code).avatarChooseTitle,
                     style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800,
                       color: _kTextDark, letterSpacing: -0.3)),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Elle t\'accompagnera tout au long\nde ton aventure FitEva.',
+                  Text(
+                    AppL10n(Lang.code).avatarSubtitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12.5, color: _kTextMuted, height: 1.5),
+                    style: const TextStyle(fontSize: 12.5, color: _kTextMuted, height: 1.5),
                   ),
                 ]),
               ),
@@ -3998,7 +4184,7 @@ class _StepAvatarState extends State<StepAvatar> {
               padding: const EdgeInsets.only(left: 24, bottom: 10),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('FORME', style: TextStyle(
+                child: Text(AppL10n(Lang.code).avatarShapeLabel, style: const TextStyle(
                   fontSize: 10, fontWeight: FontWeight.w800,
                   color: _kGreenMid, letterSpacing: 2.5)),
               ),
@@ -4058,7 +4244,7 @@ class _StepAvatarState extends State<StepAvatar> {
               padding: const EdgeInsets.only(left: 24, bottom: 10),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('HUMEUR', style: TextStyle(
+                child: Text(AppL10n(Lang.code).avatarMoodLabel, style: const TextStyle(
                   fontSize: 10, fontWeight: FontWeight.w800,
                   color: _kGreenMid, letterSpacing: 2.5)),
               ),
@@ -4067,8 +4253,17 @@ class _StepAvatarState extends State<StepAvatar> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Wrap(
                 spacing: 8, runSpacing: 8,
-                children: _moods.map((m) {
-                  final (mood, emoji, label) = m;
+                children: (() {
+                  final l10n = AppL10n(Lang.code);
+                  final _moodLabels = [
+                    l10n.avatarMoodHappy, l10n.avatarMoodExcited,
+                    l10n.avatarMoodProud, l10n.avatarMoodCelebrating, l10n.avatarMoodSleepy,
+                  ];
+                  return _moodTypes.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final m = entry.value;
+                  final (mood, emoji) = m;
+                  final label = _moodLabels[i];
                   final selected = _mood == mood;
                   return GestureDetector(
                     onTap: () {
@@ -4103,7 +4298,8 @@ class _StepAvatarState extends State<StepAvatar> {
                       ]),
                     ),
                   );
-                }).toList(),
+                }).toList();
+                })(),
               ),
             ),
 
@@ -4124,14 +4320,14 @@ class _StepAvatarState extends State<StepAvatar> {
                     borderRadius: BorderRadius.circular(40),
                     boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('COMMENCER !',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
+                      Text(AppL10n(Lang.code).avatarCta,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
                           color: Colors.white, letterSpacing: 1.5)),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
                     ],
                   ),
                 ),
@@ -4173,11 +4369,8 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
   late final AnimationController _ctrl;
   late final List<Animation<double>> _fades;
 
-  static const _options = [
-    (value: 'gym',  emoji: '🏋️', label: 'Salle de sport',   sub: 'Accès aux machines\net aux équipements'),
-    (value: 'home', emoji: '🏠', label: 'À la maison',       sub: 'Sans matériel ou\navec haltères'),
-    (value: 'both', emoji: '💪', label: 'Les deux',           sub: 'Flexibilité totale\nselon tes envies'),
-  ];
+  static const _optionValues = ['gym', 'home', 'both'];
+  static const _optionEmojis = ['🏋️', '🏠', '💪'];
 
   @override
   void initState() {
@@ -4187,7 +4380,7 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
       vsync: this,
       duration: const Duration(milliseconds: 750),
     )..forward();
-    _fades = List.generate(_options.length, (i) {
+    _fades = List.generate(_optionValues.length, (i) {
       final s = 0.10 + i * 0.22;
       final e = (s + 0.50).clamp(0.0, 1.0);
       return CurvedAnimation(parent: _ctrl, curve: Interval(s, e, curve: Curves.easeOut));
@@ -4228,11 +4421,11 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                         child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
                       ),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Center(
                         child: Text(
-                          'LIEU D\'ENTRAÎNEMENT',
-                          style: TextStyle(
+                          AppL10n(Lang.code).locationTopBarTitle,
+                          style: const TextStyle(
                             fontSize: 11,
                             letterSpacing: 3.0,
                             fontWeight: FontWeight.w700,
@@ -4265,10 +4458,10 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                     child: const Icon(Icons.location_on_outlined, size: 28, color: Colors.white),
                   ),
                   const SizedBox(height: 14),
-                  const Text(
-                    'Où est-ce que tu\nt\'entraînes ?',
+                  Text(
+                    AppL10n(Lang.code).locationTitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: _kTextDark,
@@ -4277,10 +4470,10 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Choisis ton environnement principal',
+                  Text(
+                    AppL10n(Lang.code).locationSubtitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12.5, color: _kTextMuted),
+                    style: const TextStyle(fontSize: 12.5, color: _kTextMuted),
                   ),
                 ]),
               ),
@@ -4291,13 +4484,19 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
-                  children: List.generate(_options.length, (i) {
-                    final opt = _options[i];
-                    final sel = _selected == opt.value;
+                  children: List.generate(_optionValues.length, (i) {
+                    final l10n = AppL10n(Lang.code);
+                    final _locLabels = [l10n.locationGym, l10n.locationHome, l10n.locationBoth];
+                    final _locSubs = [l10n.locationGymDetail, l10n.locationHomeDetail, l10n.locationBothDetail];
+                    final value = _optionValues[i];
+                    final emoji = _optionEmojis[i];
+                    final label = _locLabels[i];
+                    final sub = _locSubs[i];
+                    final sel = _selected == value;
                     return FadeTransition(
                       opacity: _fades[i],
                       child: GestureDetector(
-                        onTap: () => _select(opt.value),
+                        onTap: () => _select(value),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 220),
                           curve: Curves.easeOut,
@@ -4329,7 +4528,7 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: Center(
-                                  child: Text(opt.emoji, style: const TextStyle(fontSize: 26)),
+                                  child: Text(emoji, style: const TextStyle(fontSize: 26)),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -4338,7 +4537,7 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      opt.label,
+                                      label,
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
@@ -4347,7 +4546,7 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      opt.sub,
+                                      sub,
                                       style: TextStyle(
                                         fontSize: 12.5,
                                         height: 1.4,

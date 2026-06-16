@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../l10n/app_localizations.dart';
 
 class CommunityScreen extends ConsumerWidget {
   const CommunityScreen({super.key});
@@ -20,6 +21,7 @@ class CommunityScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tabIndex = ref.watch(communityTabProvider);
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -30,6 +32,7 @@ class CommunityScreen extends ConsumerWidget {
             onComposerTap: () => _openComposer(context, tabIndex),
             onTabTap: (i) => ref.read(communityTabProvider.notifier).state = i,
             colorScheme: cs,
+            l10n: l10n,
           ),
         ],
         body: IndexedStack(
@@ -61,12 +64,14 @@ class _CommunityAppBar extends StatelessWidget {
   final VoidCallback onComposerTap;
   final ValueChanged<int> onTabTap;
   final ColorScheme colorScheme;
+  final AppL10n l10n;
 
   const _CommunityAppBar({
     required this.tabIndex,
     required this.onComposerTap,
     required this.onTabTap,
     required this.colorScheme,
+    required this.l10n,
   });
 
   @override
@@ -94,7 +99,7 @@ class _CommunityAppBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'COMMUNAUTÉ',
+                      l10n.communityEyebrow,
                       style: GoogleFonts.inter(
                         color: colorScheme.secondary,
                         fontSize: 9,
@@ -128,7 +133,7 @@ class _CommunityAppBar extends StatelessWidget {
                   child: Row(children: [
                     Icon(LucideIcons.plus, size: 13, color: colorScheme.onPrimary),
                     const SizedBox(width: 6),
-                    Text('Créer',
+                    Text(l10n.communityCreate,
                       style: GoogleFonts.inter(
                         color: colorScheme.onPrimary, fontSize: 12,
                         fontWeight: FontWeight.w700, letterSpacing: 0.3)),

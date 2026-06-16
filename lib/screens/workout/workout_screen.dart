@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/workout_progress_provider.dart';
 import 'favorites_screen.dart';
 import 'theme/color.dart';
@@ -49,7 +50,11 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
   final _keyZones     = GlobalKey();
   final _keyGrossesse = GlobalKey();
 
-  final List<String>   _chipLabels = ['Tout', 'Salle', 'Maison', 'Danse', 'Récup.', 'Grossesse'];
+  // Chip labels are built dynamically from l10n in the build method
+  List<String> _localizedChipLabels(AppL10n l10n) => [
+    l10n.workoutChipAll, l10n.workoutChipSalle, l10n.workoutChipMaison,
+    l10n.workoutChipDance, l10n.workoutChipRecup, l10n.workoutChipGrossesse,
+  ];
   final List<Color>    _chipColors = [
     WorkoutColors.zone, WorkoutColors.salle, WorkoutColors.maison,
     WorkoutColors.dance, WorkoutColors.recuperation, WorkoutColors.grossesse,
@@ -153,6 +158,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n         = ref.watch(l10nProvider);
     final workouts     = ref.watch(workoutsProvider);
     final cycle        = ref.watch(cycleProvider);
     final bodyZones    = ref.watch(bodyZonesProvider);
@@ -202,7 +208,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             // ── Common header ─────────────────────────
             SharedAppHeader(
               eyebrow:    'Workout',
-              title:      'Mes entraînements',
+              title:      l10n.workoutMyTrainings,
               accentColor: WorkoutColors.salle,
               actions: [
                 Stack(
@@ -315,60 +321,62 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
 
             // ── Chips de navigation ───────────────────
             const SizedBox(height: 18),
-            SizedBox(
-              height: 42,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _chipLabels.length,
-                itemBuilder: (_, i) {
-                  final sel = _selectedChip == i;
-                  final color = _chipColors[i];
-                  return GestureDetector(
-                    onTap: () => _onChipTap(i),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      margin: const EdgeInsets.only(right: 10),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 0),
-                      decoration: BoxDecoration(
-                        color: sel
-                            ? color
-                            : color.withValues(alpha: 0.07),
-                        borderRadius: BorderRadius.circular(50),
-                        border: Border.all(
+            Builder(builder: (ctx) {
+              final chips = _localizedChipLabels(l10n);
+              return SizedBox(
+                height: 42,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: chips.length,
+                  itemBuilder: (_, i) {
+                    final sel = _selectedChip == i;
+                    final color = _chipColors[i];
+                    return GestureDetector(
+                      onTap: () => _onChipTap(i),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        margin: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 0),
+                        decoration: BoxDecoration(
                           color: sel
                               ? color
-                              : color.withValues(alpha: 0.25),
-                          width: 1.5,
+                              : color.withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(50),
+                          border: Border.all(
+                            color: sel
+                                ? color
+                                : color.withValues(alpha: 0.25),
+                            width: 1.5,
+                          ),
                         ),
-                       
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _chipIcons[i],
-                            size: 14,
-                            color: sel ? Colors.white : color,
-                          ),
-                          const SizedBox(width: 7),
-                          Text(
-                            _chipLabels[i],
-                            style: GoogleFonts.inter(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _chipIcons[i],
+                              size: 14,
                               color: sel ? Colors.white : color,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                              letterSpacing: 0.1,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 7),
+                            Text(
+                              chips[i],
+                              style: GoogleFonts.inter(
+                                color: sel ? Colors.white : color,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            ),
+                    );
+                  },
+                ),
+              );
+            }),
 
             const SizedBox(height: 12),
 
@@ -377,6 +385,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               selected: _selectedPhase,
               onSelect: (p) => setState(() =>
                   _selectedPhase = _selectedPhase == p ? null : p),
+              l10n: l10n,
             ),
 
             const SizedBox(height: 8),
@@ -390,7 +399,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
-                    title: 'Programmes Salle',
+                    title: l10n.workoutSalleTitle,
                     color: WorkoutColors.salle,
                     icon: LucideIcons.dumbbell,
                     programs: filteredSalle,
@@ -410,7 +419,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
-                    title: 'Programmes Maison',
+                    title: l10n.workoutMaisonTitle,
                     color: WorkoutColors.maison,
                     icon: LucideIcons.house,
                     programs: filteredMaison,
@@ -432,7 +441,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
-                    title: 'Danse & Cardio',
+                    title: l10n.workoutDanceTitle,
                     color: WorkoutColors.dance,
                     icon: LucideIcons.music,
                     programs: filteredDance,
@@ -452,7 +461,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
-                    title: 'Récupération',
+                    title: l10n.workoutRecupTitle,
                     color: WorkoutColors.recuperation,
                     icon: LucideIcons.wind,
                     programs: filteredRecuperation,
@@ -472,7 +481,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
-                    title: 'Grossesse',
+                    title: l10n.workoutGrossesseTitle,
                     color: WorkoutColors.grossesse,
                     icon: LucideIcons.heart,
                     programs: filteredGrossesse,
@@ -502,7 +511,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
 }
 
 // ── Programs Filter Sheet ─────────────────────────────────────────────────────
-class _ProgramsFilterSheet extends StatefulWidget {
+class _ProgramsFilterSheet extends ConsumerStatefulWidget {
   final String title;
   final Color color;
   final IconData icon;
@@ -522,10 +531,10 @@ class _ProgramsFilterSheet extends StatefulWidget {
   });
 
   @override
-  State<_ProgramsFilterSheet> createState() => _ProgramsFilterSheetState();
+  ConsumerState<_ProgramsFilterSheet> createState() => _ProgramsFilterSheetState();
 }
 
-class _ProgramsFilterSheetState extends State<_ProgramsFilterSheet> {
+class _ProgramsFilterSheetState extends ConsumerState<_ProgramsFilterSheet> {
   late TextEditingController _searchController;
 
   @override
@@ -553,6 +562,7 @@ class _ProgramsFilterSheetState extends State<_ProgramsFilterSheet> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -579,7 +589,7 @@ class _ProgramsFilterSheetState extends State<_ProgramsFilterSheet> {
                   controller: _searchController,
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
-                    hintText: 'Rechercher...',
+                    hintText: l10n.workoutSearchHint,
                     hintStyle: GoogleFonts.inter(
                       color: cs.onSurface.withValues(alpha: 0.5),
                       fontSize: 14,
@@ -626,7 +636,7 @@ class _ProgramsFilterSheetState extends State<_ProgramsFilterSheet> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Aucun programme trouvé',
+                            l10n.workoutNoProgramFound,
                             style: GoogleFonts.inter(
                               color: cs.onSurface.withValues(alpha: 0.5),
                               fontSize: 14,
@@ -662,7 +672,7 @@ class _ProgramsFilterSheetState extends State<_ProgramsFilterSheet> {
 }
 
 // ── Workouts Filter Sheet ─────────────────────────────────────────────────────
-class _WorkoutsFilterSheet extends StatefulWidget {
+class _WorkoutsFilterSheet extends ConsumerStatefulWidget {
   final String title;
   final Color color;
   final IconData icon;
@@ -682,10 +692,10 @@ class _WorkoutsFilterSheet extends StatefulWidget {
   });
 
   @override
-  State<_WorkoutsFilterSheet> createState() => _WorkoutsFilterSheetState();
+  ConsumerState<_WorkoutsFilterSheet> createState() => _WorkoutsFilterSheetState();
 }
 
-class _WorkoutsFilterSheetState extends State<_WorkoutsFilterSheet> {
+class _WorkoutsFilterSheetState extends ConsumerState<_WorkoutsFilterSheet> {
   late TextEditingController _searchController;
 
   @override
@@ -713,6 +723,7 @@ class _WorkoutsFilterSheetState extends State<_WorkoutsFilterSheet> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -739,7 +750,7 @@ class _WorkoutsFilterSheetState extends State<_WorkoutsFilterSheet> {
                   controller: _searchController,
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
-                    hintText: 'Rechercher...',
+                    hintText: l10n.workoutSearchHint,
                     hintStyle: GoogleFonts.inter(
                       color: cs.onSurface.withValues(alpha: 0.5),
                       fontSize: 14,
@@ -786,7 +797,7 @@ class _WorkoutsFilterSheetState extends State<_WorkoutsFilterSheet> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Aucun entraînement trouvé',
+                            l10n.workoutNoWorkoutFound,
                             style: GoogleFonts.inter(
                               color: cs.onSurface.withValues(alpha: 0.5),
                               fontSize: 14,
@@ -970,7 +981,8 @@ class _ProgramTile extends StatelessWidget {
 class _PhaseFilterRow extends StatelessWidget {
   final CyclePhase? selected;
   final void Function(CyclePhase) onSelect;
-  const _PhaseFilterRow({required this.selected, required this.onSelect});
+  final AppL10n l10n;
+  const _PhaseFilterRow({required this.selected, required this.onSelect, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -992,7 +1004,7 @@ class _PhaseFilterRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Phase du cycle',
+                l10n.workoutPhaseFilter,
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -1005,7 +1017,7 @@ class _PhaseFilterRow extends StatelessWidget {
                 GestureDetector(
                   onTap: () => onSelect(selected!),
                   child: Text(
-                    'Tout afficher',
+                    l10n.workoutShowAll,
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

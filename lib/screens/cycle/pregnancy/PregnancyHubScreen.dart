@@ -356,11 +356,11 @@ class _HeroCard extends StatelessWidget {
 
     return Column(children: [
 
-      // ── image — complètement libre, aucun container ──────────────────────
+      // ── baby visual ──────────────────────────────────────────────────────
       AnimatedSwitcher(
         duration: const Duration(milliseconds: 450),
         transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
-        child: _FetusPic(key: ValueKey(week), week: week),
+        child: _BabyVisual(key: ValueKey(week), week: week, fruit: fruit),
       ),
 
       // ── info card — commence après l'image ──────────────────────────────
@@ -934,38 +934,125 @@ Widget _cardTitle(String t, BuildContext context) => Text(t, style: GoogleFonts.
   fontSize: 16, fontWeight: FontWeight.w600, color: context._p.textDark));
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FETUS PICTURE
+//  BABY VISUAL  — illustration fruit + taille (remplace la photo fœtus)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _FetusPic extends StatelessWidget {
+class _BabyVisual extends StatefulWidget {
   final int week;
-  const _FetusPic({super.key, required this.week});
-
+  final String fruit;
+  const _BabyVisual({super.key, required this.week, required this.fruit});
   @override
-  Widget build(BuildContext context) => Image.asset(
-    'assets/fetus/week_$week.png',
-    width: double.infinity,
-    fit: BoxFit.fitWidth,
-    errorBuilder: (_, __, ___) => _FetusPlaceholder(week: week),
-  );
+  State<_BabyVisual> createState() => _BabyVisualState();
 }
 
-class _FetusPlaceholder extends StatelessWidget {
-  final int week;
-  const _FetusPlaceholder({required this.week});
+class _BabyVisualState extends State<_BabyVisual>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulse;
+  late Animation<double> _scale;
+
+  static const _emojiMap = {
+    'Poppy seed': '🌱', 'Sesame seed': '🌿', 'Grain of rice': '🌾',
+    'Apple seed': '🍏', 'Blueberry': '🫐', 'Raspberry': '🍇',
+    'Kidney bean': '🫘', 'Cherry': '🍒', 'Strawberry': '🍓',
+    'Lime': '🍋', 'Plum': '🍑', 'Peach': '🍑', 'Lemon': '🍋',
+    'Apple': '🍎', 'Avocado': '🥑', 'Pear': '🍐',
+    'Sweet potato': '🍠', 'Mango': '🥭', 'Banana': '🍌',
+    'Carrot': '🥕', 'Papaya': '🥭', 'Grapefruit': '🍊',
+    'Ear of corn': '🌽', 'Rutabaga': '🥔', 'Scallion': '🧅',
+    'Cauliflower': '🥦', 'Eggplant': '🍆', 'Butternut squash': '🎃',
+    'Cabbage': '🥬', 'Coconut': '🥥', 'Squash': '🎃',
+    'Pineapple': '🍍', 'Cantaloupe': '🍈', 'Honeydew melon': '🍈',
+    'Winter melon': '🍈', 'Leek': '🧅', 'Watermelon': '🍉',
+    'Small pumpkin': '🎃',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 2000))
+      ..repeat(reverse: true);
+    _scale = Tween<double>(begin: 0.97, end: 1.03)
+        .animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() { _pulse.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
-    final r = (10.0 + (week - 1) * (44.0 / 41.0)).clamp(10.0, 54.0);
+    final w = MediaQuery.of(context).size.width;
+    // orb size grows linearly week 1→40: 72→180 px
+    final orbR = (72.0 + (widget.week - 1) * (108.0 / 39.0)).clamp(72.0, 180.0);
+    final emoji = _emojiMap[widget.fruit] ?? '🌱';
+    final emojiFontSize = (orbR * 0.40).clamp(22.0, 70.0);
+
     return Container(
-      width: 168, height: 168, color: context._p.mintLight,
-      child: Center(child: Container(
-        width: r * 2, height: r * 2.4,
-        decoration: BoxDecoration(
-          border: Border.all(color: context._p.mint.withOpacity(0.4), width: 1.5),
-          borderRadius: BorderRadius.circular(r),
+      width: double.infinity,
+      height: 230,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF0B1A0E), Color(0xFF112A18)],
         ),
-      )),
+      ),
+      child: Stack(alignment: Alignment.center, children: [
+        // outer ring (faint)
+        Container(
+          width: orbR * 2.6, height: orbR * 2.6,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFF2E7050).withOpacity(0.18), width: 1.5)),
+        ),
+        // mid ring
+        Container(
+          width: orbR * 2.0, height: orbR * 2.0,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFF2E7050).withOpacity(0.28), width: 1.5)),
+        ),
+        // pulsing orb
+        ScaleTransition(
+          scale: _scale,
+          child: Container(
+            width: orbR * 2, height: orbR * 2,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const RadialGradient(
+                colors: [Color(0xFF3A8C54), Color(0xFF1C4D30)],
+                stops: [0.0, 1.0],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF3A8C54).withOpacity(0.35),
+                  blurRadius: 32, spreadRadius: 4),
+              ],
+            ),
+            child: Center(
+              child: Text(emoji,
+                style: TextStyle(fontSize: emojiFontSize),
+                textAlign: TextAlign.center),
+            ),
+          ),
+        ),
+        // fruit label bottom-left
+        Positioned(
+          bottom: 14, left: w * 0.08,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Semaine ${widget.week}', style: GoogleFonts.inter(
+              color: Colors.white.withOpacity(0.45), fontSize: 10,
+              fontWeight: FontWeight.w500, letterSpacing: 1.5)),
+            const SizedBox(height: 2),
+            Text('comme une ${widget.fruit.toLowerCase()}',
+              style: GoogleFonts.outfit(
+                color: Colors.white.withOpacity(0.80), fontSize: 13,
+                fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      ]),
     );
   }
 }

@@ -338,38 +338,61 @@ class _CategoryGrid extends StatelessWidget {
         const SizedBox(height: 4),
         Text('Choisis une catégorie pour commencer',
           style: GoogleFonts.inter(fontSize: 13, color: t.text2)),
-        const SizedBox(height: 22),
-        GridView.count(
-          crossAxisCount: 2, shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12, mainAxisSpacing: 12,
-          childAspectRatio: 1.45,
-          children: appCategories.map((cat) => GestureDetector(
-            onTap: () => onSelect(cat),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: t.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: t.border)),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Container(
-                  width: 38, height: 38,
+        const SizedBox(height: 20),
+        LayoutBuilder(builder: (context, constraints) {
+          final w = constraints.maxWidth;
+          final cardW = (w - 14) / 2;
+          final cardH = cardW * 0.85;
+          return Wrap(
+            spacing: 14, runSpacing: 14,
+            children: appCategories.map((cat) => GestureDetector(
+              onTap: () => onSelect(cat),
+              child: SizedBox(
+                width: cardW, height: cardH,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: cat.color.withOpacity(0.14),
-                    borderRadius: BorderRadius.circular(12)),
-                  child: Center(child: Text(cat.emoji,
-                      style: const TextStyle(fontSize: 18)))),
-                const Spacer(),
-                Text(cat.label, style: GoogleFonts.outfit(
-                  fontSize: 14, fontWeight: FontWeight.w700, color: t.text1)),
-                const SizedBox(height: 2),
-                Text('${cat.questions.length} questions',
-                  style: GoogleFonts.inter(fontSize: 10, color: t.text2)),
-              ]),
-            ),
-          )).toList(),
-        ),
+                    color: t.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: t.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: cat.color.withOpacity(0.07),
+                        blurRadius: 10, offset: const Offset(0, 4)),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 42, height: 42,
+                        decoration: BoxDecoration(
+                          color: cat.color.withOpacity(0.13),
+                          borderRadius: BorderRadius.circular(14)),
+                        child: Center(child: Text(cat.emoji,
+                            style: const TextStyle(fontSize: 22)))),
+                      const Spacer(),
+                      Text(cat.label, style: GoogleFonts.outfit(
+                        fontSize: 15, fontWeight: FontWeight.w700,
+                        color: t.text1, letterSpacing: -0.2)),
+                      const SizedBox(height: 3),
+                      Row(children: [
+                        Container(
+                          width: 5, height: 5,
+                          margin: const EdgeInsets.only(right: 5),
+                          decoration: BoxDecoration(
+                            color: cat.color, shape: BoxShape.circle)),
+                        Text('${cat.questions.length} questions',
+                          style: GoogleFonts.inter(
+                            fontSize: 11, color: t.text2)),
+                      ]),
+                    ],
+                  ),
+                ),
+              ),
+            )).toList(),
+          );
+        }),
       ]),
     );
   }
@@ -513,27 +536,34 @@ class _Bubble extends StatelessWidget {
             ],
           ),
 
-          // Quick replies
+          // Quick replies — horizontal scroll
           if (!msg.isUser && msg.quickReplies.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.only(left: 36),
-              child: Wrap(spacing: 7, runSpacing: 7,
-                children: msg.quickReplies.map((r) => GestureDetector(
-                  onTap: () => onQuickReply(r),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: t.accentBg,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: _accent.withOpacity(0.35))),
-                    child: Text(r, style: GoogleFonts.inter(
-                      fontSize: 12, fontWeight: FontWeight.w600,
-                      color: _accent)),
-                  ),
-                )).toList(),
+            SizedBox(
+              height: 36,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(left: 36, right: 16),
+                itemCount: msg.quickReplies.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final r = msg.quickReplies[i];
+                  return GestureDetector(
+                    onTap: () => onQuickReply(r),
+                    child: Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: t.accentBg,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: _accent.withOpacity(0.35))),
+                      child: Text(r, style: GoogleFonts.inter(
+                        fontSize: 12, fontWeight: FontWeight.w600,
+                        color: _accent)),
+                    ),
+                  );
+                },
               ),
             ),
           ],

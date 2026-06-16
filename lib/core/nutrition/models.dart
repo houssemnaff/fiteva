@@ -16,6 +16,13 @@ enum MealType {
     MealType.dinner    => 'Dîner',
   };
 
+  String labelFor(String lang) => switch (this) {
+    MealType.breakfast => lang == 'en' ? 'Breakfast'     : 'Petit déjeuner',
+    MealType.lunch     => lang == 'en' ? 'Lunch'         : 'Déjeuner',
+    MealType.snack     => lang == 'en' ? 'Snack'         : 'Collation',
+    MealType.dinner    => lang == 'en' ? 'Dinner'        : 'Dîner',
+  };
+
   String get id => switch (this) {
     MealType.breakfast => 'breakfast',
     MealType.lunch     => 'lunch',
