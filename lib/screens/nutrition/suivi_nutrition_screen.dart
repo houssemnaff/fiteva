@@ -75,11 +75,28 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
     if (result == null || !mounted) return;
     final entries = result['entries'] as List<MealEntry>?;
     if (entries != null && entries.isNotEmpty) {
+      // Snapshot calories BEFORE adding new entries
+      final nutrition = ref.read(nutritionProvider);
+      final calGoal   = nutrition.userProfile.dailyKcal;
+      final calBefore = ref.read(dailyTotalsProvider(todayKey)).calories;
+
       for (final entry in entries) {
         ref.read(nutritionProvider.notifier).addMeal(entry);
       }
-      ref.read(xpProvider.notifier).rewardMealLogged();
-      XpToast.show(context, XpAmounts.mealLogged, label: 'Repas enregistré !');
+
+      // Calories AFTER
+      final calAfter = ref.read(dailyTotalsProvider(todayKey)).calories;
+
+      // Reward daily calorie goal completion (only once per day)
+      final goalJustReached = calGoal > 0
+          && calBefore < calGoal
+          && calAfter >= calGoal;
+
+      if (goalJustReached) {
+        ref.read(xpProvider.notifier).addCustomXp(20);
+        XpToast.show(context, 20, label: 'Objectif calorique atteint ! 🎉');
+      }
+
       HapticFeedback.mediumImpact();
     }
   }
