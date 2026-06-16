@@ -672,45 +672,45 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
 
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
+                padding: EdgeInsets.symmetric(horizontal: sh < 700 ? 22 : 28),
                 child: Column(
                   children: [
-                    const SizedBox(height: 28),
+                    SizedBox(height: sh * 0.032),
                     FadeTransition(
                       opacity: _logoFade,
                       child: SlideTransition(
-                          position: _logoSlide, child: _buildLogo()),
+                          position: _logoSlide, child: _buildLogo(sh)),
                     ),
-                    const Spacer(flex: 2),
+                    Spacer(flex: sh < 700 ? 1 : 2),
                     FadeTransition(
                       opacity: _headFade,
                       child: SlideTransition(
-                          position: _headSlide, child: _buildHeadline()),
+                          position: _headSlide, child: _buildHeadline(sh)),
                     ),
-                    const SizedBox(height: 32),
-                    FadeTransition(opacity: _chipsFade, child: _buildChips()),
-                    const SizedBox(height: 28),
-                    FadeTransition(opacity: _proofFade, child: _buildSocialProof()),
-                    const Spacer(flex: 3),
+                    SizedBox(height: sh * 0.030),
+                    FadeTransition(opacity: _chipsFade, child: _buildChips(sh)),
+                    SizedBox(height: sh * 0.024),
+                    FadeTransition(opacity: _proofFade, child: _buildSocialProof(sh)),
+                    Spacer(flex: sh < 700 ? 1 : 3),
                     FadeTransition(
                       opacity: _btnFade,
                       child: SlideTransition(
-                          position: _btnSlide, child: _buildCTA()),
+                          position: _btnSlide, child: _buildCTA(sh)),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: sh * 0.014),
                     FadeTransition(
                       opacity: _btnFade,
                       child: Text(
                         "En continuant, tu acceptes nos Conditions d'utilisation",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: sh < 700 ? 10 : 11,
                           color: Colors.white.withValues(alpha: 0.28),
                           height: 1.4,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    SizedBox(height: sh * 0.028),
                   ],
                 ),
               ),
@@ -730,111 +730,104 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
         ),
       );
 
-  Widget _buildLogo() => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(11),
-              child: Image.asset('assets/images/logfiteva.jpeg',
-                  fit: BoxFit.cover),
-            ),
+  Widget _buildLogo(double sh) {
+    final logoSz = sh < 700 ? 36.0 : 44.0;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: logoSz, height: logoSz,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(logoSz * 0.27),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
           ),
-          const SizedBox(width: 13),
-          const Text(
-            "FITEVA",
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(logoSz * 0.25),
+            child: Image.asset('assets/images/logfiteva.jpeg', fit: BoxFit.cover),
+          ),
+        ),
+        const SizedBox(width: 13),
+        Text(
+          "FITEVA",
+          style: TextStyle(
+            fontSize: sh < 700 ? 18 : 22,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            letterSpacing: 3.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeadline(double sh) {
+    final headFs = (sh * 0.051).clamp(28.0, 46.0);
+    final subFs  = (sh * 0.018).clamp(12.0, 16.0);
+    return Column(
+      children: [
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
+              fontSize: headFs,
+              fontWeight: FontWeight.w900,
               color: Colors.white,
-              letterSpacing: 3.5,
+              height: 1.08,
+              letterSpacing: -1.2,
             ),
+            children: const [
+              TextSpan(text: "Transforme\nton corps,\n"),
+              TextSpan(text: "libère ta force.",
+                style: TextStyle(color: Color(0xFF5CD57A))),
+            ],
           ),
-        ],
-      );
+        ),
+        SizedBox(height: sh * 0.018),
+        Text(
+          "Fitness, cycle & nutrition —\ntout ce dont une femme a besoin.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: subFs,
+            color: Colors.white.withValues(alpha: 0.50),
+            height: 1.55,
+          ),
+        ),
+      ],
+    );
+  }
 
-  Widget _buildHeadline() => Column(
-        children: [
-          RichText(
-            textAlign: TextAlign.center,
-            text: const TextSpan(
-              style: TextStyle(
-                fontSize: 44,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                height: 1.08,
-                letterSpacing: -1.2,
-              ),
-              children: [
-                TextSpan(text: "Transforme\nton corps,\n"),
-                TextSpan(
-                  text: "libère ta force.",
-                  style: TextStyle(color: Color(0xFF5CD57A)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            "Fitness, cycle & nutrition —\ntout ce dont une femme a besoin.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15.5,
-              color: Colors.white.withValues(alpha: 0.50),
-              height: 1.55,
-            ),
-          ),
-        ],
-      );
-
-  Widget _buildChips() {
+  Widget _buildChips(double sh) {
     const features = [
       (Icons.fitness_center_rounded,  "Workouts"),
       (Icons.water_drop_outlined,     "Cycle"),
       (Icons.restaurant_menu_rounded, "Nutrition"),
-      (Icons.supervised_user_circle, "Comunauty"),
-
+      (Icons.supervised_user_circle,  "Communauté"),
     ];
+    final chipPadV = sh < 700 ? 7.0 : 10.0;
+    final chipFs   = sh < 700 ? 12.0 : 13.0;
     return Wrap(
       alignment: WrapAlignment.center,
-      spacing: 10,
-      runSpacing: 10,
-      children: features
-          .map((f) => Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.07),
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.13)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(f.$1, color: const Color(0xFF5CD57A), size: 15),
-                    const SizedBox(width: 7),
-                    Text(f.$2,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        )),
-                  ],
-                ),
-              ))
-          .toList(),
+      spacing: 8,
+      runSpacing: 8,
+      children: features.map((f) => Container(
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: chipPadV),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(40),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(f.$1, color: const Color(0xFF5CD57A), size: 14),
+          const SizedBox(width: 7),
+          Text(f.$2, style: TextStyle(
+            fontSize: chipFs, color: Colors.white, fontWeight: FontWeight.w500)),
+        ]),
+      )).toList(),
     );
   }
 
-  Widget _buildSocialProof() => Container(
+  Widget _buildSocialProof(double sh) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.05),
@@ -896,11 +889,11 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
         ),
       );
 
-  Widget _buildCTA() => GestureDetector(
+  Widget _buildCTA(double sh) => GestureDetector(
         onTap: widget.onNext,
         child: Container(
           width: double.infinity,
-          height: 58,
+          height: sh < 700 ? 50 : 58,
           decoration: BoxDecoration(
            color: Color.fromARGB(255, 21, 80, 44),
             borderRadius: BorderRadius.circular(18),
