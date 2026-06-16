@@ -232,11 +232,8 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
     final filtered   = _filtered;
     final shop       = ref.watch(shopProvider);
     final userPoints = shop.points;
-<<<<<<< HEAD
     final l10n       = ref.watch(l10nProvider);
-=======
     final wishlist   = ref.watch(shopWishlistProvider);
->>>>>>> d96131fd75f15096a7fcd05615ec90358554703e
 
     return Scaffold(
       backgroundColor: c.bg,

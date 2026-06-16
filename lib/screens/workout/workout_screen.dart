@@ -13,11 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
-<<<<<<< HEAD
 import '../../l10n/app_localizations.dart';
-=======
 import '../../providers/workout_progress_provider.dart';
->>>>>>> d96131fd75f15096a7fcd05615ec90358554703e
 import 'favorites_screen.dart';
 import 'theme/color.dart';
 import 'theme/cycle_theme.dart';
@@ -402,7 +399,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
-                    title: 'Programmes Salle',
+                    title: l10n.workoutSalleTitle,
                     color: WorkoutColors.salle,
                     icon: LucideIcons.dumbbell,
                     programs: filteredSalle,
@@ -422,7 +419,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
-                    title: 'Programmes Maison',
+                    title: l10n.workoutMaisonTitle,
                     color: WorkoutColors.maison,
                     icon: LucideIcons.house,
                     programs: filteredMaison,
@@ -444,7 +441,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
-                    title: 'Danse & Cardio',
+                    title: l10n.workoutDanceTitle,
                     color: WorkoutColors.dance,
                     icon: LucideIcons.music,
                     programs: filteredDance,
@@ -464,7 +461,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
-                    title: 'Récupération',
+                    title: l10n.workoutRecupTitle,
                     color: WorkoutColors.recuperation,
                     icon: LucideIcons.wind,
                     programs: filteredRecuperation,
@@ -484,7 +481,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
-                    title: 'Grossesse',
+                    title: l10n.workoutGrossesseTitle,
                     color: WorkoutColors.grossesse,
                     icon: LucideIcons.heart,
                     programs: filteredGrossesse,

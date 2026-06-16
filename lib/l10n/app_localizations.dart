@@ -145,6 +145,11 @@ class AppL10n {
   String get workoutChipDance       => _fr ? 'Danse'                 : 'Dance';
   String get workoutChipRecup       => _fr ? 'Récup.'                : 'Recovery';
   String get workoutChipGrossesse   => _fr ? 'Grossesse'             : 'Pregnancy';
+  String get workoutSalleTitle      => _fr ? 'Programmes Salle'      : 'Gym Programs';
+  String get workoutMaisonTitle     => _fr ? 'Programmes Maison'     : 'Home Programs';
+  String get workoutDanceTitle      => _fr ? 'Danse & Cardio'        : 'Dance & Cardio';
+  String get workoutRecupTitle      => _fr ? 'Récupération'          : 'Recovery';
+  String get workoutGrossesseTitle  => _fr ? 'Grossesse'             : 'Pregnancy';
 
   // ── Nutrition screen ───────────────────────────────────────────────────────
   String get nutritionMyDiet        => _fr ? 'Mon alimentation'      : 'My diet';
