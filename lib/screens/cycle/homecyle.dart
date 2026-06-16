@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/xp_provider.dart';
+import '../../widgets/xp_toast.dart';
 import 'package:fiteva/screens/cycle/cycle_colors.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/material.dart';
@@ -483,6 +484,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
             });
             if (!wasLogged) {
               ref.read(xpProvider.notifier).rewardSymptomAdded();
+              XpToast.show(context, XpAmounts.symptomAdded, label: 'Symptôme noté !');
             }
           },
         )).toList(),
