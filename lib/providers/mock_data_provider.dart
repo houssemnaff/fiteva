@@ -62,6 +62,8 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       imageUrl: 'assets/images/fullbody.jpg',
       compatibleCycles: const ['Folliculaire', 'Ovulation'],
       totalPoints: 100,
+      level: 'Tous niveaux',
+      equipment: const ['Mat', 'Dumbbells'],
       workouts: [
         WorkoutModel(
           id: 'home_glow_1',
@@ -123,6 +125,8 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       imageUrl: 'assets/images/pilates.jpg',
       compatibleCycles: const ['Règles', 'Lutéale'],
       totalPoints: 100,
+      level: 'Débutant',
+      equipment: const ['Mat'],
       workouts: [
         WorkoutModel(
           id: 'pilates_reset_1',
@@ -184,6 +188,8 @@ final homeProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       imageUrl: 'assets/images/strength.jpg',
       compatibleCycles: const ['Folliculaire', 'Lutéale'],
       totalPoints: 100,
+      level: 'Intermédiaire',
+      equipment: const ['Mat', 'Resistance Band'],
       workouts: [
         WorkoutModel(
           id: 'booty_home_1',
@@ -250,6 +256,8 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       imageUrl: 'assets/images/strength.jpg',
       compatibleCycles: const ['Folliculaire', 'Ovulation'],
       totalPoints: 100,
+      level: 'Intermédiaire',
+      equipment: const ['Barbell', 'Dumbbells', 'Bench'],
       workouts: [
         WorkoutModel(
           id: 'salle_body_1',
@@ -311,6 +319,8 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       imageUrl: 'assets/images/upper.jpg',
       compatibleCycles: const ['Règles', 'Ovulation'],
       totalPoints: 100,
+      level: 'Avancé',
+      equipment: const ['Dumbbells', 'Cable Machine'],
       workouts: [
         WorkoutModel(
           id: 'salle_stronger_1',
@@ -372,6 +382,8 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       imageUrl: 'assets/images/fullbody.jpg',
       compatibleCycles: const ['Règles', 'Folliculaire', 'Lutéale'],
       totalPoints: 100,
+      level: 'Tous niveaux',
+      equipment: const ['Barbell', 'Dumbbells'],
       workouts: [
         WorkoutModel(
           id: 'salle_lean_1',
@@ -535,6 +547,8 @@ final danceProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       imageUrl: 'assets/images/fullbody.jpg',
       compatibleCycles: const ['Folliculaire', 'Ovulation'],
       totalPoints: 100,
+      level: 'Tous niveaux',
+      equipment: const [],
       workouts: [
         WorkoutModel(
           id: 'dance_zumba_1',
@@ -602,6 +616,8 @@ final recuperationProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       imageUrl: 'assets/images/fullbody.jpg',
       compatibleCycles: const ['Règles', 'Lutéale'],
       totalPoints: 80,
+      level: 'Tous niveaux',
+      equipment: const ['Mat'],
       workouts: [
         WorkoutModel(
           id: 'recup_gentle_1',
@@ -669,6 +685,8 @@ final grossesseProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
       imageUrl: 'assets/images/fullbody.jpg',
       compatibleCycles: const ['Grossesse'],
       totalPoints: 120,
+      level: 'Débutant',
+      equipment: const ['Mat'],
       workouts: [
         WorkoutModel(
           id: 'preg_safe_1',
