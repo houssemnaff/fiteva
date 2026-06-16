@@ -12,6 +12,8 @@ class HomeProgramModel {
   final List<WorkoutModel> workouts;
   final List<String> compatibleCycles;
   final int totalPoints;
+  final String? level;
+  final List<String> equipment;
 
   HomeProgramModel({
     required this.id,
@@ -24,5 +26,7 @@ class HomeProgramModel {
     required this.workouts,
     this.compatibleCycles = const [],
     this.totalPoints = 100,
+    this.level,
+    this.equipment = const [],
   });
 }

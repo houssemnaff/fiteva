@@ -6,6 +6,7 @@ import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:fiteva/widgets/mascot_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';

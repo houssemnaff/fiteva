@@ -9,6 +9,7 @@ import 'package:fiteva/screens/workout/programme_detail_screen.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
 import 'package:fiteva/providers/workout_progress_provider.dart';
+import 'package:fiteva/providers/program_recommendations_provider.dart';
 import 'package:fiteva/services/workout_progress_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -197,14 +198,11 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
   @override
   void initState() {
     super.initState();
-    final programs = ref.read(homeProgramsProvider);
-    if (programs.isNotEmpty) {
-      _currentIndex = Random().nextInt(programs.length);
-    }
     _timer = Timer.periodic(const Duration(seconds: 6), (_) {
-      final ps = ref.read(homeProgramsProvider);
-      if (ps.isNotEmpty && mounted) {
-        setState(() => _currentIndex = (_currentIndex + 1) % ps.length);
+      if (mounted) {
+        setState(() {
+          _currentIndex++;
+        });
       }
     });
   }
@@ -217,10 +215,19 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
 
   @override
   Widget build(BuildContext context) {
-    final programs = ref.watch(homeProgramsProvider);
-    if (programs.isEmpty) return const SizedBox.shrink();
+    final recommendations = ref.watch(programRecommendationsProvider);
 
-    final program = programs[_currentIndex % programs.length];
+    debugPrint('Building HeroSection with ${recommendations.length} recommendations');
+    if (recommendations.isEmpty) return const SizedBox.shrink();
+
+    // Initialize current index on first load
+    if (_currentIndex == 0 && recommendations.isNotEmpty) {
+      _currentIndex = Random().nextInt(recommendations.length);
+    }
+
+    // Ensure index stays within bounds
+    final safeIndex = recommendations.isEmpty ? 0 : _currentIndex % recommendations.length;
+    final program = recommendations[safeIndex];
     final h = MediaQuery.of(context).size.height * 0.62;
     final cs = Theme.of(context).colorScheme;
 
