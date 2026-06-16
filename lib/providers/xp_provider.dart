@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/legacy.dart';
 // ── XP amounts ───────────────────────────────────────────────────────────────
 class XpAmounts {
   static const dailyLogin          = 5;
+  static const mealLogged          = 8;
   static const cycleTracking       = 10;
   static const symptomAdded        = 3;
   static const healthTipRead       = 2;
@@ -124,6 +125,7 @@ class XpNotifier extends StateNotifier<XpModel> {
     state = state.copyWith(loginRewardedToday: true);
   }
 
+  Future<void> rewardMealLogged()       => _addXp(XpAmounts.mealLogged);
   Future<void> rewardCycleTracking()    => _addXp(XpAmounts.cycleTracking);
   Future<void> rewardSymptomAdded()     => _addXp(XpAmounts.symptomAdded);
   Future<void> rewardHealthTipRead()    => _addXp(XpAmounts.healthTipRead);
