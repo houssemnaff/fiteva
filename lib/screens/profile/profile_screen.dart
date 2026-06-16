@@ -1,5 +1,7 @@
+import 'package:fiteva/models/xp_model.dart';
 import 'package:fiteva/providers/onboarding_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
+import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,6 +55,7 @@ class ProfileScreen extends ConsumerWidget {
     final bgColor   = ref.watch(avatarBgColorProvider);
     final avatarUrl = _buildDiceBearUrl(seed, styleName, bgColor);
         final points = ref.watch(pointsProvider);
+    final xp     = ref.watch(xpProvider);
 
     return Scaffold(
       backgroundColor: cs.background,
@@ -95,11 +98,11 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 12),
 
             // ── Hero card ──
-            _buildHeroCard(context, ref, user, avatarUrl, cs, theme, textSub, seed, styleName),
+            _buildHeroCard(context, ref, user, avatarUrl, cs, theme, textSub, seed, styleName, xp),
             const SizedBox(height: 14),
 
             // ── 3 stat cards ──
-            _buildStatsRow(context, user, cs, theme,points),
+            _buildStatsRow(context, user, cs, theme, points, xp),
             const SizedBox(height: 14),
 
             // ── Weekly tracker ──
@@ -107,7 +110,11 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 20),
 
             // ── Badges ──
-            _buildBadgesSection(context, cs, theme, textSub),
+            _buildBadgesSection(context, cs, theme, textSub, xp),
+            const SizedBox(height: 20),
+
+            // ── Challenges ──
+            _buildChallengesSection(context, ref, cs, theme, textSub, xp),
             const SizedBox(height: 20),
 
             // ── Settings ──
@@ -130,10 +137,10 @@ class ProfileScreen extends ConsumerWidget {
     Color textSub,
     String seed,
     String styleName,
+    XpModel xpData,
   ) {
-    const int xp     = 2340;
-    const int xpGoal = 3000;
-    const double progress = xp / xpGoal;
+    final int    xpGoal   = xpData.xpForNextLevel;
+    final double progress = xpData.levelProgress;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
@@ -269,7 +276,7 @@ class ProfileScreen extends ConsumerWidget {
                 Icon(LucideIcons.star, size: 12, color: cs.onPrimary),
                 const SizedBox(width: 5),
                 Text(
-                  'Niveau ${user.level} · Élite',
+                  'Niveau ${xpData.level} · ${XpModel.levelTitles[xpData.level]}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -299,7 +306,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    '$xp / $xpGoal XP',
+                    '${xpData.totalXp} / $xpGoal XP',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -320,7 +327,9 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                '${xpGoal - xp} XP avant le prochain niveau',
+                xpData.level >= 4
+                    ? '🏆 Niveau maximum atteint !'
+                    : '${xpGoal - xpData.totalXp} XP avant le prochain niveau',
                 style: TextStyle(fontSize: 11, color: textSub),
               ),
             ],
@@ -335,7 +344,9 @@ class ProfileScreen extends ConsumerWidget {
     BuildContext context,
     dynamic user,
     ColorScheme cs,
-    ThemeData theme, int points,
+    ThemeData theme,
+    int points,
+    XpModel xpData,
   ) {
     final textSub = theme.textTheme.bodyMedium?.color
         ?? cs.onSurface.withOpacity(0.55);
@@ -408,7 +419,7 @@ class ProfileScreen extends ConsumerWidget {
 ),
         const SizedBox(width: 10),
         statCard(
-          value: '${user.streak}j',
+          value: '${xpData.streak}j',
           label: 'Streak',
           icon: LucideIcons.flame,
           color: const Color(0xFFFF6B35),
@@ -543,38 +554,20 @@ class ProfileScreen extends ConsumerWidget {
     ColorScheme cs,
     ThemeData theme,
     Color textSub,
+    XpModel xpData,
   ) {
+    final earned = xpData.badges.toSet();
     final badges = [
-      _BadgeData(
-        icon: LucideIcons.flame,
-        label: '14 jours',
-        color: const Color(0xFFFF6B35),
-        earned: true,
-      ),
-      _BadgeData(
-        icon: LucideIcons.trophy,
-        label: 'Top 10%',
-        color: cs.primary,
-        earned: true,
-      ),
-      _BadgeData(
-        icon: LucideIcons.zap,
-        label: '50 séances',
-        color: const Color(0xFF5B5FEF),
-        earned: true,
-      ),
-      _BadgeData(
-        icon: LucideIcons.medal,
-        label: 'Marathon',
-        color: textSub,
-        earned: false,
-      ),
-      _BadgeData(
-        icon: LucideIcons.flag,
-        label: 'Pionnier',
-        color: textSub,
-        earned: false,
-      ),
+      _BadgeData(icon: LucideIcons.sprout,    label: 'Débutante',  color: const Color(0xFF4CAF50), earned: earned.contains('level1')),
+      _BadgeData(icon: LucideIcons.flower2,   label: 'Exploratrice', color: const Color(0xFFE91E8C), earned: earned.contains('level2')),
+      _BadgeData(icon: LucideIcons.dumbbell,  label: 'Engagée',    color: const Color(0xFF5B5FEF), earned: earned.contains('level3')),
+      _BadgeData(icon: LucideIcons.trophy,    label: 'Championne', color: const Color(0xFFFF9800), earned: earned.contains('level4')),
+      _BadgeData(icon: LucideIcons.flame,     label: '3j streak',  color: const Color(0xFFFF6B35), earned: earned.contains('streak3')),
+      _BadgeData(icon: LucideIcons.zap,       label: '7j streak',  color: const Color(0xFF9C27B0), earned: earned.contains('streak7')),
+      _BadgeData(icon: LucideIcons.medal,     label: '30j streak', color: const Color(0xFFFFD700), earned: earned.contains('streak30')),
+      _BadgeData(icon: LucideIcons.droplets,  label: 'Hydratée',   color: const Color(0xFF03A9F4), earned: earned.contains('challenge_water')),
+      _BadgeData(icon: LucideIcons.smile,     label: 'Humeur+',    color: const Color(0xFFFF7043), earned: earned.contains('challenge_mood7')),
+      _BadgeData(icon: LucideIcons.moon,      label: 'Cycle Pro',  color: const Color(0xFFE91E8C), earned: earned.contains('challenge_cycleWeek')),
     ];
 
     return Column(
@@ -650,6 +643,121 @@ class ProfileScreen extends ConsumerWidget {
             );
           }).toList(),
         ),
+      ],
+    );
+  }
+
+  // ─── Challenges Section ────────────────────────────────────────────────────
+  Widget _buildChallengesSection(
+    BuildContext context,
+    WidgetRef ref,
+    ColorScheme cs,
+    ThemeData theme,
+    Color textSub,
+    XpModel xpData,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Défis',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: cs.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...XpChallenge.all.map((c) {
+          final progress  = xpData.challengeProgress[c.key] ?? 0;
+          final completed = xpData.completedChallenges.contains(c.key);
+          final ratio     = (progress / c.targetDays).clamp(0.0, 1.0);
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: completed
+                  ? Border.all(color: cs.primary.withOpacity(0.4), width: 1.5)
+                  : null,
+              boxShadow: [
+                BoxShadow(
+                  color: cs.shadow.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: (completed ? cs.primary : cs.outlineVariant).withOpacity(0.13),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Center(child: Text(c.emoji, style: const TextStyle(fontSize: 22))),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(c.titleFr,
+                            style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                          Text('+${c.xpReward} XP',
+                            style: TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w700,
+                              color: completed ? cs.primary : textSub)),
+                        ],
+                      ),
+                      const SizedBox(height: 7),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: ratio,
+                          minHeight: 6,
+                          backgroundColor: cs.outlineVariant.withOpacity(0.3),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            completed ? cs.primary : cs.primary.withOpacity(0.55)),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        completed
+                            ? '✅ Complété !'
+                            : '$progress / ${c.targetDays} jours',
+                        style: TextStyle(fontSize: 11, color: textSub),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!completed)
+                  GestureDetector(
+                    onTap: () => ref.read(xpProvider.notifier).incrementChallenge(c.key),
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: cs.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text('+1j',
+                        style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w700, color: cs.onPrimary)),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }

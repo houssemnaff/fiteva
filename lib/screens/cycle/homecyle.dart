@@ -2,6 +2,8 @@
 import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/xp_provider.dart';
+import '../../widgets/xp_toast.dart';
 import 'package:fiteva/screens/cycle/cycle_colors.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +41,15 @@ extension FloSymptomX on FloSymptom {
       case FloSymptom.mood:   return 'Humeur';
       case FloSymptom.energy: return 'Énergie';
       case FloSymptom.cramps: return 'Crampes';
+    }
+  }
+
+  String labelFor(AppL10n l10n) {
+    switch (this) {
+      case FloSymptom.flow:   return l10n.cycleSymptomFlow;
+      case FloSymptom.mood:   return l10n.cycleSymptomMood;
+      case FloSymptom.energy: return l10n.cycleSymptomEnergy;
+      case FloSymptom.cramps: return l10n.cycleSymptomCramps;
     }
   }
 
@@ -268,12 +279,13 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             child: Row(children: [
-              Expanded(child: _PeriodCard(nextDate: profile.nextPeriodDate, cc: cc)),
+              Expanded(child: _PeriodCard(nextDate: profile.nextPeriodDate, cc: cc, l10n: l10n)),
               const SizedBox(width: 12),
               Expanded(child: _OvulationCard(
                 lastPeriod: profile.lastPeriod,
                 cycleDays:  profile.cycleDays,
                 cc:         cc,
+                l10n:       l10n,
               )),
             ]),
           ),
@@ -281,16 +293,16 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           const SizedBox(height: 28),
           _buildSectionLabel(l10n.cycleHowDoYouFeel, theme.primary),
           const SizedBox(height: 14),
-          _buildChips(cc, theme),
+          _buildChips(cc, theme, l10n),
 
           const SizedBox(height: 28),
-          _PhaseCard(phase: phase, theme: theme, cc: cc),
+          _PhaseCard(phase: phase, theme: theme, cc: cc, l10n: l10n),
 
           const SizedBox(height: 16),
-          _PhaseTipsCard(phase: phase, theme: theme, cc: cc),
+          _PhaseTipsCard(phase: phase, theme: theme, cc: cc, l10n: l10n),
 
           const SizedBox(height: 16),
-          _CycleStatsCard(profile: profile, currentDay: _currentDay, theme: theme, cc: cc),
+          _CycleStatsCard(profile: profile, currentDay: _currentDay, theme: theme, cc: cc, l10n: l10n),
           const SizedBox(height: 48),
         ],
       ),
@@ -453,7 +465,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
     );
   }
 
-  Widget _buildChips(CycleColors cc, CycleTheme theme) {
+  Widget _buildChips(CycleColors cc, CycleTheme theme, AppL10n l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -463,11 +475,17 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           logged:  _logged.contains(s),
           color:   theme.primary,
           cc:      cc,
+          l10n:    l10n,
           onTap: () {
             HapticFeedback.lightImpact();
+            final wasLogged = _logged.contains(s);
             setState(() {
-              _logged.contains(s) ? _logged.remove(s) : _logged.add(s);
+              wasLogged ? _logged.remove(s) : _logged.add(s);
             });
+            if (!wasLogged) {
+              ref.read(xpProvider.notifier).rewardSymptomAdded();
+              XpToast.show(context, XpAmounts.symptomAdded, label: 'Symptôme noté !');
+            }
           },
         )).toList(),
       ),
@@ -637,12 +655,13 @@ class _InfoCard extends StatelessWidget {
 class _PeriodCard extends StatelessWidget {
   final DateTime? nextDate;
   final CycleColors cc;
+  final AppL10n l10n;
 
   static const _months = [
     'jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'
   ];
 
-  const _PeriodCard({required this.nextDate, required this.cc});
+  const _PeriodCard({required this.nextDate, required this.cc, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -651,13 +670,13 @@ class _PeriodCard extends StatelessWidget {
     if (nextDate != null) {
       final daysLeft = nextDate!
           .difference(DateTime(today.year, today.month, today.day)).inDays;
-      value = daysLeft <= 0 ? "Aujourd'hui" : 'Dans $daysLeft j';
+      value = daysLeft <= 0 ? l10n.cycleToday : l10n.cycleDaysLeft(daysLeft);
       sub   = '${nextDate!.day} ${_months[nextDate!.month - 1]}';
     }
     return _InfoCard(
       icon: Icons.water_drop_outlined,
       color: const Color(0xFFE58F8A),
-      title: 'Prochains règles',
+      title: l10n.cycleNextPeriod,
       value: value, subtitle: sub, cc: cc,
     );
   }
@@ -671,13 +690,14 @@ class _OvulationCard extends StatelessWidget {
   final DateTime? lastPeriod;
   final int cycleDays;
   final CycleColors cc;
+  final AppL10n l10n;
 
   static const _months = [
     'jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'
   ];
 
   const _OvulationCard({
-    required this.lastPeriod, required this.cycleDays, required this.cc,
+    required this.lastPeriod, required this.cycleDays, required this.cc, required this.l10n,
   });
 
   @override
@@ -688,14 +708,14 @@ class _OvulationCard extends StatelessWidget {
       final ovDate   = lastPeriod!.add(Duration(days: cycleDays ~/ 2));
       final daysLeft = ovDate
           .difference(DateTime(today.year, today.month, today.day)).inDays;
-      value = daysLeft < 0 ? 'Passée'
-          : daysLeft == 0 ? "Aujourd'hui" : 'Dans $daysLeft j';
+      value = daysLeft < 0 ? l10n.cyclePast
+          : daysLeft == 0 ? l10n.cycleToday : l10n.cycleDaysLeft(daysLeft);
       sub = '${ovDate.day} ${_months[ovDate.month - 1]}';
     }
     return _InfoCard(
       icon: Icons.spa_outlined,
       color: const Color(0xFF7ABB98),
-      title: 'Ovulation',
+      title: l10n.cycleOvulation,
       value: value, subtitle: sub, cc: cc,
     );
   }
@@ -711,10 +731,11 @@ class _SymptomChip extends StatelessWidget {
   final Color color;
   final CycleColors cc;
   final VoidCallback onTap;
+  final AppL10n l10n;
 
   const _SymptomChip({
     required this.symptom, required this.logged,
-    required this.color, required this.cc, required this.onTap,
+    required this.color, required this.cc, required this.onTap, required this.l10n,
   });
 
   @override
@@ -747,7 +768,7 @@ class _SymptomChip extends StatelessWidget {
           Icon(symptom.icon, size: 22,
               color: logged ? color : inactiveIcon),
           const SizedBox(height: 7),
-          Text(symptom.label, style: GoogleFonts.inter(
+          Text(symptom.labelFor(l10n), style: GoogleFonts.inter(
             fontSize: 10, fontWeight: FontWeight.w600,
             color: logged ? color : inactiveIcon),
             textAlign: TextAlign.center),
@@ -765,15 +786,9 @@ class _PhaseCard extends StatelessWidget {
   final CyclePhase phase;
   final CycleTheme theme;
   final CycleColors cc;
+  final AppL10n l10n;
 
-  const _PhaseCard({required this.phase, required this.theme, required this.cc});
-
-  static const _descriptions = {
-    'Règles':       'Ton corps se nettoie. Repos, chaleur et douceur sont essentiels.',
-    'Folliculaire': "Énergie montante. C'est le moment d'explorer et commencer.",
-    'Ovulation':    'Pic d\'énergie et de confiance. Performe et connecte-toi.',
-    'Lutéale':      'Phase introspective. Écoute tes besoins et ralentis.',
-  };
+  const _PhaseCard({required this.phase, required this.theme, required this.cc, required this.l10n});
 
   static const _emojis = {
     'Règles': '🌸', 'Folliculaire': '🌱', 'Ovulation': '✨', 'Lutéale': '🍂',
@@ -781,7 +796,7 @@ class _PhaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final desc  = _descriptions[phase.name] ?? 'Suis ton cycle avec bienveillance.';
+    final desc  = l10n.cyclePhaseDesc(phase.name);
     final emoji = _emojis[phase.name] ?? '🌙';
     final gradOpacity = cc.isDark ? 0.22 : 0.18;
 
@@ -848,26 +863,15 @@ class _PhaseTipsCard extends StatelessWidget {
   final CyclePhase phase;
   final CycleTheme theme;
   final CycleColors cc;
+  final AppL10n l10n;
 
   const _PhaseTipsCard({
-    required this.phase, required this.theme, required this.cc,
+    required this.phase, required this.theme, required this.cc, required this.l10n,
   });
-
-  static const _tips = {
-    'Règles':       (workout: 'Yoga doux, marche légère — évite l\'intensité élevée.',
-                     nutrition: 'Favorise le fer (épinards, lentilles) et le magnésium.'),
-    'Folliculaire': (workout: 'Cardio, HIIT et force — ton énergie est au top.',
-                     nutrition: 'Protéines et glucides complexes pour alimenter l\'effort.'),
-    'Ovulation':    (workout: 'Séances intenses, sports collectifs — performance maximale.',
-                     nutrition: 'Légumes crucifères et aliments anti-inflammatoires.'),
-    'Lutéale':      (workout: 'Pilates, natation, yoga — écoute ton corps.',
-                     nutrition: 'Limite le sel et le sucre, privilégie les oméga-3.'),
-  };
 
   @override
   Widget build(BuildContext context) {
-    final tip = _tips[phase.name];
-    if (tip == null) return const SizedBox.shrink();
+    final tip = l10n.cyclePhaseTips(phase.name);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -890,19 +894,19 @@ class _PhaseTipsCard extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: theme.primary, shape: BoxShape.circle)),
               const SizedBox(width: 8),
-              Text('Conseils du jour', style: GoogleFonts.outfit(
+              Text(l10n.cycleDailyTips, style: GoogleFonts.outfit(
                 fontSize: 14, fontWeight: FontWeight.w700, color: theme.primary)),
             ]),
             const SizedBox(height: 16),
             _TipRow(icon: Icons.fitness_center_rounded,
-                label: 'Entraînement', text: tip.workout,
+                label: l10n.cycleWorkout, text: tip.workout,
                 color: theme.primary, cc: cc),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Divider(color: cc.border, height: 1),
             ),
             _TipRow(icon: Icons.restaurant_outlined,
-                label: 'Nutrition', text: tip.nutrition,
+                label: l10n.cycleNutrition, text: tip.nutrition,
                 color: theme.primary, cc: cc),
           ],
         ),
@@ -959,10 +963,11 @@ class _CycleStatsCard extends StatelessWidget {
   final int currentDay;
   final CycleTheme theme;
   final CycleColors cc;
+  final AppL10n l10n;
 
   const _CycleStatsCard({
     required this.profile, required this.currentDay,
-    required this.theme, required this.cc,
+    required this.theme, required this.cc, required this.l10n,
   });
 
   static const _months = [
@@ -995,22 +1000,22 @@ class _CycleStatsCard extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: theme.primary, shape: BoxShape.circle)),
               const SizedBox(width: 8),
-              Text('Mon cycle', style: GoogleFonts.outfit(
+              Text(l10n.cycleMyCycle, style: GoogleFonts.outfit(
                 fontSize: 14, fontWeight: FontWeight.w700, color: theme.primary)),
             ]),
             const SizedBox(height: 18),
             IntrinsicHeight(
               child: Row(children: [
-                Expanded(child: _StatCell(label: 'Durée',
+                Expanded(child: _StatCell(label: l10n.cycleDuration,
                     value: '$cycleDays j', icon: Icons.loop_rounded,
                     color: theme.primary, cc: cc)),
                 VerticalDivider(color: cc.border, width: 1, thickness: 1),
-                Expanded(child: _StatCell(label: 'Jour actuel',
+                Expanded(child: _StatCell(label: l10n.cycleCurrentDay,
                     value: 'J$currentDay', icon: Icons.today_outlined,
                     color: theme.primary, cc: cc)),
                 VerticalDivider(color: cc.border, width: 1, thickness: 1),
                 Expanded(child: _StatCell(
-                  label: 'Derniers règles',
+                  label: l10n.cycleLastPeriod,
                   value: lastPeriod != null
                       ? '${lastPeriod.day} ${_months[lastPeriod.month - 1]}'
                       : '—',

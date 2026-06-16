@@ -119,27 +119,27 @@ const _doctors = [
     location: 'Tunis', hospital: 'Clinique El Manar',
     phone: '+216 71 000 001', email: 's.mansouri@manar.tn',
     initials: 'SM', color: Color(0xFF1C4D30), rating: 4.9, consultations: 342,
-    photoAsset: 'images/gynecologue.jpg'),
+    photoAsset: 'assets/images/gynecologue.jpg'),
   _Doctor(name: 'Dr. Karim Belhadj', specialty: 'Endocrinologie',
     location: 'Sousse', hospital: 'CHU Farhat Hached',
     phone: '+216 73 000 002', email: 'k.belhadj@chu-sousse.tn',
     initials: 'KB', color: Color(0xFF2563EB), rating: 4.7, consultations: 215,
-    photoAsset: 'images/medecin3.jpg'),
+    photoAsset: 'assets/images/medecin3.jpg'),
   _Doctor(name: 'Dr. Nadia Trabelsi', specialty: 'Médecine du Sport',
     location: 'Sfax', hospital: 'Centre Médical Sportif',
     phone: '+216 74 000 003', email: 'n.trabelsi@cms-sfax.tn',
     initials: 'NT', color: Color(0xFF7C3AED), rating: 4.8, consultations: 178,
-    photoAsset: 'images/medecin4.jpg'),
+    photoAsset: 'assets/images/medecin4.jpg'),
   _Doctor(name: 'Dr. Amine Chokri', specialty: 'Nutrition',
     location: 'Ariana', hospital: 'Cabinet Privé',
     phone: '+216 70 000 004', email: 'a.chokri@nutrition.tn',
     initials: 'AC', color: Color(0xFFB45309), rating: 4.6, consultations: 290,
-    photoAsset: 'images/cover_nutrition.jpg'),
+    photoAsset: 'assets/images/cover_nutrition.jpg'),
   _Doctor(name: 'Dr. Leila Gharbi', specialty: 'Psychiatrie',
     location: 'Tunis', hospital: 'Hôpital Razi',
     phone: '+216 71 000 005', email: 'l.gharbi@razi.tn',
     initials: 'LG', color: Color(0xFF0369A1), rating: 4.9, consultations: 401,
-    photoAsset: 'images/medecin5.jpg'),
+    photoAsset: 'assets/images/medecin5.jpg'),
 ];
 
 final _conseils = [
@@ -190,15 +190,15 @@ const _articles = [
   _Article(title: 'Le microbiome intestinal féminin', author: 'Dr. Amine Chokri',
     excerpt: 'Les recherches récentes montrent un lien direct entre la composition du microbiome et les fluctuations hormonales.',
     category: 'Nutrition', readMin: 8, color: Color(0xFFB45309),
-    photoAsset: 'images/microbiomee.jpg'),
+    photoAsset: 'assets/images/microbiomee.jpg'),
   _Article(title: 'Anxiété prémenstruelle : comprendre le PMDD', author: 'Dr. Leila Gharbi',
     excerpt: 'Le trouble dysphorique prémenstruel touche 3 à 8% des femmes et est souvent confondu avec une dépression.',
     category: 'Mental', readMin: 11, color: Color(0xFF0369A1),
-    photoAsset: 'images/pmdd.png'),
+    photoAsset: 'assets/images/pmdd.png'),
   _Article(title: 'Périménopause et sport : adapter sa pratique', author: 'Dr. Nadia Trabelsi',
     excerpt: 'La musculation devient essentielle pendant la périménopause pour préserver la densité osseuse et le métabolisme.',
     category: 'Sport', readMin: 9, color: Color(0xFF7C3AED),
-    photoAsset: 'images/perimenopause.png'),
+    photoAsset: 'assets/images/perimenopause.png'),
 ];
 
 const _lexique = [
@@ -226,30 +226,30 @@ const _rappels = [
 
 final _videoSeries = [
   _VideoSeries(doctor: _doctors[3], title: 'Nutrition Féminine',
-    color: const Color(0xFFB45309), coverAsset: 'images/cover_nutrition.jpg', episodes: const [
+    color: const Color(0xFFB45309), coverAsset: 'assets/images/cover_nutrition.jpg', episodes: const [
       _VideoEpisode(episode: 1, title: 'Carences & SPM : ce que ton assiette dit de toi', duration: '4:32', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 2, title: 'Carence en fer : reconnaître les signes', duration: '5:10', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 3, title: 'Alimentation anti-inflammatoire', duration: '6:15', asset: 'assets/videos/sante.mov'),
     ]),
   _VideoSeries(doctor: _doctors[0], title: 'Comprendre ton corps',
-    color: const Color(0xFF1C4D30), coverAsset: 'images/gynecologue.jpg', episodes: const [
+    color: const Color(0xFF1C4D30), coverAsset: 'assets/images/gynecologue.jpg', episodes: const [
       _VideoEpisode(episode: 1, title: 'Le cycle menstruel en 5 min', duration: '5:00', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 2, title: 'SOPK : symptômes & traitement', duration: '7:20', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 3, title: 'Endométriose : briser le tabou', duration: '8:45', asset: 'assets/videos/sante.mov'),
     ]),
   _VideoSeries(doctor: _doctors[1], title: 'Hormones & Équilibre',
-    color: const Color(0xFF2563EB), coverAsset: 'images/medecin3.jpg',episodes: const [
+    color: const Color(0xFF2563EB), coverAsset: 'assets/images/medecin3.jpg',episodes: const [
       _VideoEpisode(episode: 1, title: 'Résistance à l\'insuline', duration: '6:05', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 2, title: 'Thyroïde et prise de poids', duration: '5:48', asset: 'assets/videos/sante.mov'),
     ]),
   _VideoSeries(doctor: _doctors[2], title: 'Bouger Mieux',
-    color: const Color(0xFF7C3AED), coverAsset: 'images/medecin4.jpg',episodes: const [
+    color: const Color(0xFF7C3AED), coverAsset: 'assets/images/medecin4.jpg',episodes: const [
       _VideoEpisode(episode: 1, title: 'Sport et cycle menstruel', duration: '4:50', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 2, title: 'Récupération active', duration: '3:47', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 3, title: 'Périménopause et musculation', duration: '7:30', asset: 'assets/videos/sante.mov'),
     ]),
   _VideoSeries(doctor: _doctors[4], title: 'Santé Mentale',
-    color: const Color(0xFF0369A1),coverAsset: 'images/medecin5.jpg', episodes: const [
+    color: const Color(0xFF0369A1),coverAsset: 'assets/images/medecin5.jpg', episodes: const [
       _VideoEpisode(episode: 1, title: 'Anxiété et hormones', duration: '5:08', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 2, title: 'Cohérence cardiaque guidée', duration: '5:00', asset: 'assets/videos/sante.mov'),
     ]),
