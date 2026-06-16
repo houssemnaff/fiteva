@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/workout_model.dart';
 import '../../services/workout_progress_service.dart';
 import 'exercise_player_screen.dart';
@@ -102,6 +103,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final exercises = widget.workout.exercises;
     final progressVal = exercises.isEmpty ? 0.0 : _completedExercises / exercises.length;
     final textSecondary = theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha:0.72);
+    final l10n = ref.watch(l10nProvider);
 
     if (progressVal >= 1.0) {
       Future.microtask(() => _markWorkoutCompleteIfNeeded());
@@ -181,7 +183,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                             children: [
                               _infoPill(
                                 icon: Icons.calendar_today_outlined,
-                                label: 'Semaine 1 · Séance 1',
+                                label: l10n.workoutWeekSession,
                               ),
                             ],
                           ),
@@ -207,11 +209,11 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                               Icon(Icons.fitness_center_outlined, size: 14, color: textSecondary),
                               const SizedBox(width: 6),
                               Text(
-                                'Matériel : ',
+                                l10n.workoutEquipment,
                                 style: TextStyle(color: textSecondary, fontSize: 13),
                               ),
                               Text(
-                                'Tapis de sol, Haltères',
+                                l10n.workoutEquipmentList,
                                 style: TextStyle(
                                   color: colorScheme.onSurface,
                                   fontWeight: FontWeight.w600,
@@ -233,7 +235,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Progression',
+                              l10n.workoutProgress,
                               style: TextStyle(
                                 color: colorScheme.onSurface,
                                 fontWeight: FontWeight.w700,
@@ -243,7 +245,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${widget.workout.points} points possibles',
+                              l10n.workoutPossiblePoints(widget.workout.points),
                               style: TextStyle(
                                 color: colorScheme.onSurface.withValues(alpha: 0.60),
                                 fontWeight: FontWeight.w500,
@@ -431,7 +433,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '45 sec · 3 séries',
+                                      l10n.workoutExerciseDuration,
                                       style: TextStyle(color: textSecondary, fontSize: 12),
                                     ),
                                     const SizedBox(height: 6),
@@ -504,7 +506,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        progressVal >= 1.0 ? 'Séance terminée ✓' : 'Commencer la séance',
+                        progressVal >= 1.0 ? l10n.workoutSessionDone : l10n.workoutSessionStart,
                         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                       ),
                     ],

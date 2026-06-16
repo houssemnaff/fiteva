@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/locale_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -81,6 +81,47 @@ class AppL10n {
   String get workoutMinutes     => _fr ? 'min'              : 'min';
   String get workoutSets        => _fr ? 'séries'           : 'sets';
   String get workoutReps        => _fr ? 'rép.'             : 'reps';
+
+  // ── Active workout / Exercise player ────────────────────────────────────────
+  String get workoutWeekSession     => _fr ? 'Semaine 1 · Séance 1'              : 'Week 1 · Session 1';
+  String get workoutEquipment       => _fr ? 'Matériel : '                       : 'Equipment: ';
+  String get workoutEquipmentList   => _fr ? 'Tapis de sol, Haltères'            : 'Mat, Dumbbells';
+  String get workoutProgress        => _fr ? 'Progression'                       : 'Progress';
+  String workoutPossiblePoints(int p) => _fr ? '$p points possibles' : '$p possible points';
+  String workoutCompleted(int done, int total) => _fr
+      ? '$done / $total complétés' : '$done / $total completed';
+  String get workoutExerciseDuration => _fr ? '45 sec · 3 séries'               : '45 sec · 3 sets';
+  String get workoutSessionDone     => _fr ? 'Séance terminée ✓'                : 'Workout done ✓';
+  String get workoutSessionStart    => _fr ? 'Commencer la séance'              : 'Start workout';
+
+  // exercise player
+  String get exSessionComplete      => _fr ? 'Séance terminée ! ✓'              : 'Workout complete! ✓';
+  String exPointsEarned(int pts, int total) => _fr
+      ? '+$pts pts gagnés ! Total : $total pts' : '+$pts pts earned! Total: $total pts';
+  String get exWatch80              => _fr ? 'Regardez au moins 80% pour gagner les points'
+                                           : 'Watch at least 80% to earn points';
+  String get exTagGlutes            => _fr ? 'Fessiers'    : 'Glutes';
+  String get exTagMat               => _fr ? 'Tapis'       : 'Mat';
+  String get exTagModerate          => _fr ? 'Modéré'      : 'Moderate';
+  String get exStatSets             => _fr ? 'Séries'      : 'Sets';
+  String get exStatWork             => _fr ? 'Travail'     : 'Work';
+  String get exStatRest             => _fr ? 'Repos'       : 'Rest';
+  String get exStatPoints           => 'Points';
+  String get exTechniqueLabel       => _fr ? 'Technique'   : 'Technique';
+  String get exTechniqueDesc        => _fr
+      ? 'Debout, pieds écartés largeur épaules. Descends en pliant les genoux à 90° en gardant le dos droit et la poitrine sortie. Pousse sur tes talons pour remonter.'
+      : 'Stand with feet shoulder-width apart. Lower by bending your knees to 90°, keeping your back straight and chest up. Push through your heels to rise.';
+  String get exFormTipsTitle        => _fr ? 'Conseils de forme'  : 'Form tips';
+  String get exTip1                 => _fr ? 'Garde les genoux alignés avec tes orteils.'
+                                           : 'Keep your knees aligned with your toes.';
+  String get exTip2                 => _fr ? 'Engage ta sangle abdominale pendant tout le mouvement.'
+                                           : 'Engage your core throughout the movement.';
+  String get exTip3                 => _fr ? 'Expire à la montée, inspire à la descente.'
+                                           : 'Exhale on the way up, inhale on the way down.';
+  String get exPrev                 => _fr ? 'Précédent'    : 'Previous';
+  String get exNext                 => _fr ? 'Suivant'      : 'Next';
+  String get exDoneLabel            => _fr ? 'Exercice terminé !'   : 'Exercise done!';
+  String get exCompleteBtn          => _fr ? "Terminer l'exercice"  : 'Complete exercise';
 
   // ── Nutrition ──────────────────────────────────────────────────────────────
   String get nutritionTitle     => _fr ? 'Nutrition'         : 'Nutrition';
