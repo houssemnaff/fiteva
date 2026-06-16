@@ -2,6 +2,7 @@
 import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/xp_provider.dart';
 import 'package:fiteva/screens/cycle/cycle_colors.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/material.dart';
@@ -476,9 +477,13 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           l10n:    l10n,
           onTap: () {
             HapticFeedback.lightImpact();
+            final wasLogged = _logged.contains(s);
             setState(() {
-              _logged.contains(s) ? _logged.remove(s) : _logged.add(s);
+              wasLogged ? _logged.remove(s) : _logged.add(s);
             });
+            if (!wasLogged) {
+              ref.read(xpProvider.notifier).rewardSymptomAdded();
+            }
           },
         )).toList(),
       ),

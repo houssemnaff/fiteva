@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:fiteva/providers/xp_provider.dart';
 
 import 'package:fiteva/screens/home/library_widget.dart';
 import 'package:fiteva/screens/home/programs_bottom_sheet.dart';
@@ -206,6 +207,10 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
       if (ps.isNotEmpty && mounted) {
         setState(() => _currentIndex = (_currentIndex + 1) % ps.length);
       }
+    });
+    // Daily login XP (once per day, safe to call repeatedly)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(xpProvider.notifier).rewardDailyLogin();
     });
   }
 
