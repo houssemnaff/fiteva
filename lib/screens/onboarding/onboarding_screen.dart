@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../providers/mascot_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../services/storage_service.dart';
 import 'steps/onboarding_steps.dart';
 
@@ -61,6 +62,7 @@ class OnboardingData {
 // Onboarding Steps — enum définissant chaque step
 // ─────────────────────────────────────────────────────────────────────────────
 enum OStep {
+  languageChoice,
   intro,
   welcome,
   goals,
@@ -103,6 +105,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   static const List<OStep> _progressSteps = [
     OStep.intro,
     OStep.welcome,
+    OStep.languageChoice,
     OStep.goals,
     OStep.fitnessLevel,
     OStep.equipment,
@@ -124,7 +127,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   OStep _nextStepFor(OStep current) {
     switch (current) {
       case OStep.intro:             return OStep.welcome;
-      case OStep.welcome:           return OStep.goals;
+      case OStep.welcome:           return OStep.languageChoice;
+      case OStep.languageChoice:    return OStep.goals;
       case OStep.goals:             return OStep.fitnessLevel;
       case OStep.fitnessLevel:      return OStep.equipment;
       case OStep.equipment:         return OStep.trainingLocation;
@@ -246,7 +250,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // 0 — Intro
     StepIntro(onNext: _goNext),
 
-    // 1 — Welcome
+    // 1 — Welcome (login)
     StepWelcome(
       onNext:             _goNext,
       onBack:             _goBack,
@@ -255,7 +259,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       passwordController: _passCtrl,
     ),
 
-    // 2 — Goals
+    // 2 — Language choice
+    StepLanguageChoice(
+      onNext: (locale) {
+        ref.read(localeProvider.notifier).setLocale(locale);
+        _goNext();
+      },
+    ),
+
+    // 3 — Goals
     StepGoals(
       selectedGoals:  _data.goals,
       onBack:         _goBack,

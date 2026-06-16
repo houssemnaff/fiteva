@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../l10n/lang.dart';
+import '../../l10n/app_localizations.dart';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const _kGreen   = Color(0xFF1C4D30);
@@ -21,15 +23,20 @@ const _kSurface = Colors.white;
 enum FoodUnit { g, kg, ml, cup, tbsp, tsp, piece }
 
 extension FoodUnitExt on FoodUnit {
-  String get label => switch (this) {
-    FoodUnit.g     => 'g',
-    FoodUnit.kg    => 'kg',
-    FoodUnit.ml    => 'ml',
-    FoodUnit.cup   => 'cup',
-    FoodUnit.tbsp  => 'c. à soupe',
-    FoodUnit.tsp   => 'c. à café',
-    FoodUnit.piece => 'pièce',
-  };
+  String get label => labelFor(Lang.code);
+
+  String labelFor(String lang) {
+    final l10n = AppL10n(lang);
+    return switch (this) {
+      FoodUnit.g     => 'g',
+      FoodUnit.kg    => 'kg',
+      FoodUnit.ml    => 'ml',
+      FoodUnit.cup   => 'cup',
+      FoodUnit.tbsp  => l10n.unitTbsp,
+      FoodUnit.tsp   => l10n.unitTsp,
+      FoodUnit.piece => l10n.unitPiece,
+    };
+  }
 
   String get shortLabel => switch (this) {
     FoodUnit.g     => 'g',
@@ -331,6 +338,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
     final bottom = MediaQuery.of(context).padding.bottom;
     final nc     = NutritionColors.of(context);
 
+    final l10n = AppL10n(Lang.code);
     return Scaffold(
       backgroundColor: nc.bg,
       body: Column(children: [
@@ -351,13 +359,13 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
               const SizedBox(width: 14),
               Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('AJOUTER', style: GoogleFonts.inter(
+                Text(l10n.addMealTitle, style: GoogleFonts.inter(
                   color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
                   letterSpacing: 2.5)),
                 Text(
                   _preselectedType != null
-                      ? _preselectedType!.label
-                      : 'Un repas',
+                      ? _preselectedType!.labelFor(Lang.code)
+                      : l10n.addMealSubtitle,
                   style: GoogleFonts.outfit(
                     color: _kGreen, fontSize: 22,
                     fontWeight: FontWeight.w800, letterSpacing: -0.4)),
@@ -389,11 +397,11 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                 color: nc.chipBg,
                 borderRadius: BorderRadius.circular(16)),
               child: Row(children: [
-                _ModeTab(icon: LucideIcons.search,    label: 'Recherche', active: _mode == 0,
+                _ModeTab(icon: LucideIcons.search,    label: l10n.addMealSearch,  active: _mode == 0,
                   onTap: () => setState(() { _mode = 0; _selectedFood = null; })),
-                _ModeTab(icon: LucideIcons.squarePen, label: 'Manuel',    active: _mode == 1,
+                _ModeTab(icon: LucideIcons.squarePen, label: l10n.addMealManual,  active: _mode == 1,
                   onTap: () => setState(() => _mode = 1)),
-                _ModeTab(icon: LucideIcons.scanLine,  label: 'Scanner',   active: _mode == 2,
+                _ModeTab(icon: LucideIcons.scanLine,  label: l10n.addMealScanner, active: _mode == 2,
                   onTap: () => setState(() => _mode = 2)),
               ]),
             ),
@@ -448,8 +456,8 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                     Text(
                       _selectedFood != null &&
                           _basket.any((b) => b.food.id == _selectedFood!.id)
-                        ? 'Mettre à jour la quantité'
-                        : 'Ajouter à la liste',
+                        ? l10n.addMealUpdateQty
+                        : l10n.addMealAddToList,
                       style: GoogleFonts.inter(
                         fontSize: 14, fontWeight: FontWeight.w700, color: _kGreen)),
                   ]),
@@ -480,10 +488,8 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
                   const SizedBox(width: 8),
                   Text(
                     _basket.isEmpty
-                        ? 'Ajoutez d\'abord des aliments'
-                        : _basket.length == 1
-                            ? 'Confirmer 1 aliment · $_basketCalories kcal'
-                            : 'Confirmer ${_basket.length} aliments · $_basketCalories kcal',
+                        ? l10n.addMealFirstAdd
+                        : l10n.addMealConfirm(_basket.length, _basketCalories),
                     style: GoogleFonts.inter(
                       fontSize: 14, fontWeight: FontWeight.w700,
                       color: _canSubmit ? Colors.white : nc.text2)),
@@ -571,7 +577,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
             }),
             style: GoogleFonts.inter(fontSize: 14, color: nc.text1),
             decoration: InputDecoration(
-              hintText: 'Rechercher un aliment…',
+              hintText: AppL10n(Lang.code).addMealHint,
               hintStyle: GoogleFonts.inter(fontSize: 14, color: nc.text2),
               border: InputBorder.none, isDense: true,
               contentPadding: EdgeInsets.zero),
@@ -627,10 +633,10 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
       // ── Section label ───────────────────────────────────────────────────────
       Text(
         _searchQuery.isNotEmpty
-            ? 'RÉSULTATS (${_searchResults.length})'
+            ? AppL10n(Lang.code).addMealResults(_searchResults.length)
             : _activeCategory != null
                 ? _activeCategory!.label.toUpperCase()
-                : 'POPULAIRES',
+                : AppL10n(Lang.code).addMealPopular,
         style: GoogleFonts.inter(
           fontSize: 9, fontWeight: FontWeight.w700,
           color: nc.text2, letterSpacing: 2.0)),
@@ -685,7 +691,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
         child: Row(children: [
           const Icon(LucideIcons.chevronLeft, size: 14, color: _kMint),
           const SizedBox(width: 4),
-          Text('Retour à la recherche', style: GoogleFonts.inter(
+          Text(AppL10n(Lang.code).addMealBack, style: GoogleFonts.inter(
             fontSize: 12, color: _kMint, fontWeight: FontWeight.w600)),
         ])),
 
@@ -744,14 +750,14 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           ]),
 
           const SizedBox(height: 16),
-          _MacroBar('Protéines', protein, food.proteinFor(100).round(), _kGreen),
+          _MacroBar(AppL10n(Lang.code).nutritionProtein, protein, food.proteinFor(100).round(), _kGreen),
           const SizedBox(height: 10),
-          _MacroBar('Glucides', carbs, food.carbsFor(100).round(), const Color(0xFF3B7FD4)),
+          _MacroBar(AppL10n(Lang.code).nutritionCarbs, carbs, food.carbsFor(100).round(), const Color(0xFF3B7FD4)),
           const SizedBox(height: 10),
-          _MacroBar('Lipides', fat, food.fatFor(100).round(), const Color(0xFFC47A00)),
+          _MacroBar(AppL10n(Lang.code).nutritionFat, fat, food.fatFor(100).round(), const Color(0xFFC47A00)),
           if (food.fiber > 0) ...[
             const SizedBox(height: 10),
-            _MacroBar('Fibres', food.fiberFor(grams).round(),
+            _MacroBar(AppL10n(Lang.code).addMealFibers, food.fiberFor(grams).round(),
               food.fiberFor(100).round(), const Color(0xFF5BAE8A)),
           ],
 
@@ -759,7 +765,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           Divider(height: 1, color: nc.border),
           const SizedBox(height: 14),
 
-          Text('QUANTITÉ', style: GoogleFonts.inter(
+          Text(AppL10n(Lang.code).addMealQuantity, style: GoogleFonts.inter(
             color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
             letterSpacing: 2.5)),
           const SizedBox(height: 10),
@@ -838,7 +844,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
         const Icon(LucideIcons.pencilLine, size: 14, color: _kGreen),
         const SizedBox(width: 10),
         Expanded(child: Text(
-          'Saisis les informations nutritionnelles manuellement.',
+          AppL10n(Lang.code).addMealInfoHint,
           style: GoogleFonts.inter(fontSize: 12, color: _kGreen, height: 1.5))),
       ])),
 
@@ -854,31 +860,31 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           color: Colors.black.withOpacity(0.04),
           blurRadius: 14, offset: const Offset(0, 4))]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('INFORMATIONS', style: GoogleFonts.inter(
+        Text(AppL10n(Lang.code).addMealInfoTitle, style: GoogleFonts.inter(
           color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
           letterSpacing: 2.5)),
         const SizedBox(height: 14),
-        _AppField('Nom du plat *', 'Ex : Riz thaï au poulet', _nameCtrl,
+        _AppField(AppL10n(Lang.code).addMealNameLabel, AppL10n(Lang.code).addMealNameHint, _nameCtrl,
           onChanged: (_) => setState(() {})),
         const SizedBox(height: 12),
-        _AppField('Calories (kcal) *', 'Ex : 450', _calCtrl,
+        _AppField(AppL10n(Lang.code).addMealCalLabel, AppL10n(Lang.code).addMealCalHint, _calCtrl,
           keyboard: TextInputType.number,
           onChanged: (_) => setState(() {})),
         const SizedBox(height: 20),
         Divider(height: 1, color: nc.border),
         const SizedBox(height: 18),
-        Text('MACRONUTRIMENTS', style: GoogleFonts.inter(
+        Text(AppL10n(Lang.code).addMealMacros, style: GoogleFonts.inter(
           color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
           letterSpacing: 2.5)),
         const SizedBox(height: 4),
-        Text('Optionnel', style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
+        Text(AppL10n(Lang.code).addMealOptional, style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
         const SizedBox(height: 14),
         Row(children: [
-          Expanded(child: _MacroInput('Protéines', 'g', _kGreen, _protCtrl)),
+          Expanded(child: _MacroInput(AppL10n(Lang.code).nutritionProtein, 'g', _kGreen, _protCtrl)),
           const SizedBox(width: 12),
-          Expanded(child: _MacroInput('Glucides', 'g', const Color(0xFF3B7FD4), _glucCtrl)),
+          Expanded(child: _MacroInput(AppL10n(Lang.code).nutritionCarbs, 'g', const Color(0xFF3B7FD4), _glucCtrl)),
           const SizedBox(width: 12),
-          Expanded(child: _MacroInput('Lipides', 'g', const Color(0xFFC47A00), _lipCtrl)),
+          Expanded(child: _MacroInput(AppL10n(Lang.code).nutritionFat, 'g', const Color(0xFFC47A00), _lipCtrl)),
         ]),
       ])),
   ]);
@@ -907,7 +913,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
         const Icon(LucideIcons.scanLine, size: 14, color: _kGreen),
         const SizedBox(width: 10),
         Expanded(child: Text(
-          'Scanne un code-barre ou prends une photo de ton repas.',
+          AppL10n(Lang.code).addMealScanHint,
           style: GoogleFonts.inter(fontSize: 12, color: _kGreen, height: 1.5))),
       ])),
     const SizedBox(height: 16),
@@ -929,7 +935,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           const SizedBox(height: 12),
           const Icon(LucideIcons.scanLine, size: 38, color: Colors.white24),
           const SizedBox(height: 10),
-          Text('Appuie sur Photo pour analyser', style: GoogleFonts.inter(
+          Text(AppL10n(Lang.code).addMealScanPress, style: GoogleFonts.inter(
             fontSize: 12, color: Colors.white54)),
         ])),
         _Corner(_kMint, top: true,  left: true),
@@ -955,7 +961,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             const Icon(LucideIcons.scanLine, size: 17, color: Colors.white),
             const SizedBox(width: 8),
-            Text('Scanner', style: GoogleFonts.inter(
+            Text(AppL10n(Lang.code).addMealScanner, style: GoogleFonts.inter(
               fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
           ])))),
       const SizedBox(width: 10),
@@ -969,7 +975,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             const Icon(LucideIcons.image, size: 17, color: Colors.white),
             const SizedBox(width: 8),
-            Text('Photo', style: GoogleFonts.inter(
+            Text(AppL10n(Lang.code).nutritionPhoto, style: GoogleFonts.inter(
               fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
           ])))),
     ]),
@@ -990,10 +996,10 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
         Column(mainAxisSize: MainAxisSize.min, children: [
           const _ScanningDots(),
           const SizedBox(height: 16),
-          Text('Analyse en cours…', style: GoogleFonts.inter(
+          Text(AppL10n(Lang.code).addMealAnalyzing, style: GoogleFonts.inter(
             fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
           const SizedBox(height: 6),
-          Text('Identification des nutriments', style: GoogleFonts.inter(
+          Text(AppL10n(Lang.code).addMealNutrients, style: GoogleFonts.inter(
             fontSize: 11, color: Colors.white38)),
         ]),
       ])),
@@ -1009,7 +1015,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           child: CircularProgressIndicator(
             strokeWidth: 2, color: _kGreen)),
         const SizedBox(width: 10),
-        Text('Analyse de l\'image avec l\'IA…',
+        Text(AppL10n(Lang.code).addMealAiAnalysis,
           style: GoogleFonts.inter(fontSize: 12, color: _kGreen)),
       ])),
   ]);
@@ -1033,13 +1039,13 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             const Icon(LucideIcons.sparkles, size: 12, color: _kGreen),
             const SizedBox(width: 4),
-            Text('Résultat scan', style: GoogleFonts.inter(
+            Text(AppL10n(Lang.code).addMealScanResult, style: GoogleFonts.inter(
               fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen)),
           ])),
         const Spacer(),
         GestureDetector(
           onTap: _resetScan,
-          child: Text('Nouvelle photo', style: GoogleFonts.inter(
+          child: Text(AppL10n(Lang.code).addMealNewPhoto, style: GoogleFonts.inter(
             fontSize: 12, color: nc.text2,
             decoration: TextDecoration.underline))),
       ]),
@@ -1087,18 +1093,18 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
 
           // Macro pills
           Row(children: [
-            _ScanMacroPill('Protéines', protein, 'g', const Color(0xFF4CAF82)),
+            _ScanMacroPill(AppL10n(Lang.code).nutritionProtein, protein, 'g', const Color(0xFF4CAF82)),
             const SizedBox(width: 8),
-            _ScanMacroPill('Glucides', carbs, 'g', const Color(0xFF7BD4FF)),
+            _ScanMacroPill(AppL10n(Lang.code).nutritionCarbs, carbs, 'g', const Color(0xFF7BD4FF)),
             const SizedBox(width: 8),
-            _ScanMacroPill('Lipides', fat, 'g', const Color(0xFFFFB347)),
+            _ScanMacroPill(AppL10n(Lang.code).nutritionFat, fat, 'g', const Color(0xFFFFB347)),
           ]),
 
           const SizedBox(height: 16),
 
           // Quantity selector
           Row(children: [
-            Text('Quantité :', style: GoogleFonts.inter(
+            Text(AppL10n(Lang.code).addMealQtyLabel, style: GoogleFonts.inter(
               fontSize: 13, fontWeight: FontWeight.w600, color: nc.text1)),
             const SizedBox(width: 12),
             SizedBox(width: 72,
@@ -1143,7 +1149,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(LucideIcons.camera, size: 16, color: _kGreen),
               const SizedBox(width: 6),
-              Text('Autre photo', style: GoogleFonts.inter(
+              Text(AppL10n(Lang.code).addMealOtherPhoto, style: GoogleFonts.inter(
                 fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen)),
             ])))),
         const SizedBox(width: 10),
@@ -1163,7 +1169,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(LucideIcons.check, size: 16, color: Colors.white),
               const SizedBox(width: 6),
-              Text('Ajouter', style: GoogleFonts.inter(
+              Text(AppL10n(Lang.code).addMealAdd, style: GoogleFonts.inter(
                 fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
             ])))),
       ]),
@@ -1187,7 +1193,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Icon(LucideIcons.search, size: 15, color: nc.text2),
             const SizedBox(width: 7),
-            Text('+ Ajouter des ingrédients', style: GoogleFonts.inter(
+            Text(AppL10n(Lang.code).addMealMoreIngr, style: GoogleFonts.inter(
               fontSize: 13, fontWeight: FontWeight.w600, color: nc.text2)),
           ]))),
     ]);
@@ -1235,14 +1241,14 @@ class _BasketSheetState extends State<_BasketSheet> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
           child: Row(children: [
-            Text('Liste d\'aliments', style: GoogleFonts.outfit(
+            Text(AppL10n(Lang.code).addMealBasketTitle, style: GoogleFonts.outfit(
               fontSize: 18, fontWeight: FontWeight.w800, color: nc.text1)),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: nc.mintBg, borderRadius: BorderRadius.circular(20)),
-              child: Text('${widget.basket.length} aliment${widget.basket.length > 1 ? 's' : ''}',
+              child: Text(AppL10n(Lang.code).addMealBasketCount(widget.basket.length),
                 style: GoogleFonts.inter(
                   fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
           ])),
@@ -1258,9 +1264,9 @@ class _BasketSheetState extends State<_BasketSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _TotalChip('$totalCal', 'kcal', const Color(0xFF7BA7FF)),
-              _TotalChip('${totalProt}g', 'prot.', _kGreen),
-              _TotalChip('${totalCarb}g', 'gluc.', const Color(0xFF3B7FD4)),
-              _TotalChip('${totalFat}g', 'lip.', const Color(0xFFC47A00)),
+              _TotalChip('${totalProt}g', AppL10n(Lang.code).addMealProt, _kGreen),
+              _TotalChip('${totalCarb}g', AppL10n(Lang.code).addMealGluc, const Color(0xFF3B7FD4)),
+              _TotalChip('${totalFat}g', AppL10n(Lang.code).addMealLip, const Color(0xFFC47A00)),
             ],
           ),
         ),
@@ -1321,7 +1327,7 @@ class _BasketSheetState extends State<_BasketSheet> {
               decoration: BoxDecoration(
                 color: _kGreen,
                 borderRadius: BorderRadius.circular(16)),
-              child: Center(child: Text('Fermer', style: GoogleFonts.inter(
+              child: Center(child: Text(AppL10n(Lang.code).addMealClose, style: GoogleFonts.inter(
                 fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)))),
           )),
       ]),
@@ -1398,7 +1404,7 @@ class _UnitPickerSheet extends StatelessWidget {
             color: nc.border,
             borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 14),
-        Text('Unité de mesure', style: GoogleFonts.outfit(
+        Text(AppL10n(Lang.code).addMealUnitTitle, style: GoogleFonts.outfit(
           fontSize: 18, fontWeight: FontWeight.w800, color: nc.text1)),
         const SizedBox(height: 16),
         Wrap(
@@ -1448,7 +1454,7 @@ class _MealTypePickerSheet extends StatelessWidget {
             color: nc.border,
             borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 16),
-        Text('Quel repas ?', style: GoogleFonts.outfit(
+        Text(AppL10n(Lang.code).addMealWhichMeal, style: GoogleFonts.outfit(
           fontSize: 20, fontWeight: FontWeight.w800,
           color: nc.text1)),
         const SizedBox(height: 16),
@@ -1473,7 +1479,7 @@ class _MealTypePickerSheet extends StatelessWidget {
                 child: Icon(_typeIcon(type), size: 16,
                   color: const Color(0xFF1C4D30))),
               const SizedBox(width: 12),
-              Text(type.label, style: GoogleFonts.inter(
+              Text(type.labelFor(Lang.code), style: GoogleFonts.inter(
                 fontSize: 15, fontWeight: FontWeight.w600,
                 color: nc.text1)),
               const Spacer(),
@@ -1626,10 +1632,10 @@ class _EmptySearch extends StatelessWidget {
     child: Column(children: [
       Icon(LucideIcons.searchX, size: 32, color: nc.text2),
       const SizedBox(height: 10),
-      Text('Aucun résultat pour "$query"',
+      Text(AppL10n(Lang.code).addMealNoResults(query),
         style: GoogleFonts.inter(fontSize: 13, color: nc.text2)),
       const SizedBox(height: 4),
-      Text('Essaie le mode Manuel pour l\'ajouter',
+      Text(AppL10n(Lang.code).addMealTryManual,
         style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
     ]));
   }

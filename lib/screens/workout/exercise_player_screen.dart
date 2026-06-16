@@ -1,4 +1,4 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/points_provider.dart';
 import '../../core/shop/shop_provider.dart';
 import '../../providers/workout_progress_provider.dart';
@@ -125,8 +126,8 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                 const Icon(LucideIcons.checkCircle,
                     color: Colors.white, size: 18),
                 const SizedBox(width: 8),
-                const Expanded(
-                  child: Text('Séance terminée ! ✓'),
+                Expanded(
+                  child: Text(widget.ref.read(l10nProvider).exSessionComplete),
                 ),
               ],
             ),
@@ -184,7 +185,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                   const Icon(LucideIcons.checkCircle,
                       color: Colors.white, size: 18),
                   const SizedBox(width: 8),
-                  Text('+$points pts gagnés! Total: $total pts'),
+                  Text(widget.ref.read(l10nProvider).exPointsEarned(points, total)),
                 ],
               ),
               duration: const Duration(seconds: 3),
@@ -236,8 +237,8 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                 const Icon(LucideIcons.alertCircle,
                     color: Colors.white, size: 18),
                 const SizedBox(width: 8),
-                const Expanded(
-                  child: Text('Regardez au moins 80% pour gagner les points'),
+                Expanded(
+                  child: Text(widget.ref.read(l10nProvider).exWatch80),
                 ),
               ],
             ),
@@ -266,7 +267,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
           Positioned.fill(
             child: _isVideoReady && _chewieCtrl != null
                 ? Chewie(controller: _chewieCtrl!)
-                : const _VideoPlaceholder(),
+                : _VideoPlaceholder(l10n: widget.ref.read(l10nProvider)),
           ),
 
           // ── Top progress bar ─────────────────────────────────────────────
@@ -300,6 +301,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
               onPrev: () => Navigator.of(context).pop(),
               onNext: () {},
               pointsPerExercise: _calculatePointsForExercise(widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex),
+              l10n: widget.ref.read(l10nProvider),
             ),
           ),
         ],
@@ -415,6 +417,7 @@ class _TopBar extends StatelessWidget {
 // BOTTOM PANEL
 // ══════════════════════════════════════════════════════════════════════════════
 class _BottomPanel extends StatelessWidget {
+  final AppL10n l10n;
     final int pointsPerExercise;
 
   final ScrollController scrollCtrl;
@@ -433,6 +436,7 @@ class _BottomPanel extends StatelessWidget {
     required this.onCompleteAll,
     required this.onPrev,
     required this.onNext, required this.pointsPerExercise,
+    required this.l10n,
   });
 
   @override
@@ -488,11 +492,11 @@ class _BottomPanel extends StatelessWidget {
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
-                  children: const [
-                    _Tag(label: 'Fessiers', icon: LucideIcons.zap),
-                    _Tag(label: 'Tapis', icon: LucideIcons.layoutDashboard),
+                  children: [
+                    _Tag(label: l10n.exTagGlutes, icon: LucideIcons.zap),
+                    _Tag(label: l10n.exTagMat, icon: LucideIcons.layoutDashboard),
                     _Tag(
-                        label: 'Modéré',
+                        label: l10n.exTagModerate,
                         icon: LucideIcons.flame,
                         isAccent: true),
                   ],
@@ -508,11 +512,11 @@ class _BottomPanel extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const _StatCell(value: '3', label: 'Séries'),
+                      _StatCell(value: '3', label: l10n.exStatSets),
                       _VertDivider(),
-                      const _StatCell(value: '45s', label: 'Travail'),
+                      _StatCell(value: '45s', label: l10n.exStatWork),
                       _VertDivider(),
-                      const _StatCell(value: '15s', label: 'Repos'),
+                      _StatCell(value: '15s', label: l10n.exStatRest),
                       _VertDivider(),
                        _StatCell(
                         value: '$pointsPerExercise',
@@ -524,10 +528,10 @@ class _BottomPanel extends StatelessWidget {
                 const SizedBox(height: 22),
 
                 // ── Description ───────────────────────────────────────────
-                _SectionLabel(label: 'Technique'),
+                _SectionLabel(label: l10n.exTechniqueLabel),
                 const SizedBox(height: 10),
                 Text(
-                  'Debout, pieds écartés largeur épaules. Descends en pliant les genoux à 90° en gardant le dos droit et la poitrine sortie. Pousse sur tes talons pour remonter.',
+                  l10n.exTechniqueDesc,
                   style: GoogleFonts.inter(
                     color: _kMuted,
                     fontSize: 13.5,
@@ -538,7 +542,7 @@ class _BottomPanel extends StatelessWidget {
                 const SizedBox(height: 22),
 
                 // ── Tips card ─────────────────────────────────────────────
-                _TipsCard(),
+                _TipsCard(l10n: l10n),
                 const SizedBox(height: 22),
 
                 // ── Prev / Next ───────────────────────────────────────────
@@ -547,13 +551,13 @@ class _BottomPanel extends StatelessWidget {
                     Expanded(
                         child: _NavBtn(
                             icon: LucideIcons.skipBack,
-                            label: 'Précédent',
+                            label: l10n.exPrev,
                             onTap: onPrev)),
                     const SizedBox(width: 10),
                     Expanded(
                         child: _NavBtn(
                             icon: LucideIcons.skipForward,
-                            label: 'Suivant',
+                            label: l10n.exNext,
                             onTap: onNext,
                             isPrimary: true)),
                   ],
@@ -598,8 +602,8 @@ class _BottomPanel extends StatelessWidget {
                           const SizedBox(width: 10),
                           Text(
                             isDone
-                                ? 'Exercice terminé !'
-                                : 'Terminer l\'exercice',
+                                ? l10n.exDoneLabel
+                                : l10n.exCompleteBtn,
                             style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 15,
@@ -623,6 +627,8 @@ class _BottomPanel extends StatelessWidget {
 
 // ── Tips card ─────────────────────────────────────────────────────────────────
 class _TipsCard extends StatelessWidget {
+  final AppL10n l10n;
+  const _TipsCard({required this.l10n});
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(16),
@@ -638,7 +644,7 @@ class _TipsCard extends StatelessWidget {
               const Icon(LucideIcons.lightbulb, size: 15, color: _kGold),
               const SizedBox(width: 8),
               Text(
-                'Conseils de forme',
+                l10n.exFormTipsTitle,
                 style: GoogleFonts.inter(
                   color: _kGold,
                   fontSize: 13,
@@ -647,11 +653,11 @@ class _TipsCard extends StatelessWidget {
               ),
             ]),
             const SizedBox(height: 10),
-            _TipRow('Garde les genoux alignés avec tes orteils.'),
+            _TipRow(l10n.exTip1),
             const SizedBox(height: 6),
-            _TipRow('Engage ta sangle abdominale pendant tout le mouvement.'),
+            _TipRow(l10n.exTip2),
             const SizedBox(height: 6),
-            _TipRow('Expire à la montée, inspire à la descente.'),
+            _TipRow(l10n.exTip3),
           ],
         ),
       );
@@ -851,7 +857,8 @@ class _NavBtn extends StatelessWidget {
 }
 
 class _VideoPlaceholder extends StatelessWidget {
-  const _VideoPlaceholder();
+  final AppL10n l10n;
+  const _VideoPlaceholder({required this.l10n});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -875,7 +882,7 @@ class _VideoPlaceholder extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Chargement…',
+                l10n.loading,
                 style: GoogleFonts.inter(
                     color: _kMuted, fontSize: 13, fontWeight: FontWeight.w500),
               ),

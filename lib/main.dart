@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'theme/app_theme.dart';
 import 'router/app_router.dart';
 import 'providers/theme_provider.dart';
+// locale_provider is used via l10nProvider in individual screens
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +44,6 @@ class _FitevaAppState extends ConsumerState<FitevaApp> {
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
-
     return MaterialApp.router(
       title: 'FITEVA',
       theme: AppTheme.lightTheme,

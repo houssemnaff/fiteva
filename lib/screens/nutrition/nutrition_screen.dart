@@ -11,6 +11,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'models/models.dart';
 import 'widgets/home/home_widgets.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/lang.dart';
 
 import 'suivi_nutrition_screen.dart';
 import 'recipes_list_screen.dart';
@@ -111,7 +113,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
       final entries    = ref.watch(mealsForTypeProvider((dateKey: key, type: type)));
       final typeTotals = core.DailyTotals.from(entries);
       return MealCategoryData(
-        _mealImageUrl(type), type.label,
+        _mealImageUrl(type), type.labelFor(Lang.code),
         typeTotals.calories, type.budgetKcal,
         typeTotals.protein.toDouble(), typeTotals.carbs.toDouble(),
         time: _mealTime(type), recipeCount: entries.length,
@@ -125,20 +127,25 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
     return Scaffold(
       backgroundColor: nc.bg,
       // Fix #1 — FAB "Ajouter un aliment"
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () { HapticFeedback.mediumImpact(); _goToAjout(); },
-        backgroundColor: const Color(0xFF1C4D30),
-        elevation: 4,
-        icon: const Icon(LucideIcons.plus, color: Colors.white, size: 18),
-        label: Text('Ajouter', style: GoogleFonts.inter(
-          fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+      floatingActionButton: Consumer(
+        builder: (ctx, r, _) {
+          final l10n = r.watch(l10nProvider);
+          return FloatingActionButton.extended(
+            onPressed: () { HapticFeedback.mediumImpact(); _goToAjout(); },
+            backgroundColor: const Color(0xFF1C4D30),
+            elevation: 4,
+            icon: const Icon(LucideIcons.plus, color: Colors.white, size: 18),
+            label: Text(l10n.nutritionAdd, style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+          );
+        },
       ),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
 
           SharedAppHeader.sliver(
-            eyebrow: 'Nutrition', title: 'Mon alimentation', accentColor: _kMint,
+            eyebrow: 'Nutrition', title: ref.watch(l10nProvider).nutritionMyDiet, accentColor: _kMint,
             actions: [
               Consumer(builder: (ctx, r, _) {
                 final favCount = r.watch(favoritesProvider).length;
@@ -189,6 +196,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
                   proteinGoal: profile.dailyProtein,
                   carbsGoal:   profile.dailyCarbs,
                   fatGoal:     profile.dailyFat,
+                  l10n: ref.watch(l10nProvider),
                 ),
               ),
             ),
@@ -222,7 +230,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
               child: SectionHeader(
-                eyebrow: 'RECETTES', title: 'Nouvelles recettes',
+                eyebrow: ref.watch(l10nProvider).nutritionRecipesEyebrow, title: ref.watch(l10nProvider).nutritionNewRecipes,
                 onSeeAll: _goToRecipes))),
 
           // Fix #4 — recipes from allRecipes
@@ -261,12 +269,14 @@ class _CalorieRingCard extends StatelessWidget {
   final int consumed, goal;
   final int protein, carbs, fat;
   final int proteinGoal, carbsGoal, fatGoal;
+  final AppL10n l10n;
 
   const _CalorieRingCard({
     required this.anim,
     required this.consumed, required this.goal,
     required this.protein,  required this.carbs,  required this.fat,
     required this.proteinGoal, required this.carbsGoal, required this.fatGoal,
+    required this.l10n,
   });
 
   @override
@@ -333,8 +343,8 @@ class _CalorieRingCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20)),
             child: Text(
               over
-                  ? '+${(-remaining)} kcal dépassés'
-                  : '$remaining kcal restantes',
+                  ? '+${(-remaining)} ${l10n.nutritionKcalOver}'
+                  : '$remaining ${l10n.nutritionKcalLeft}',
               style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w700,
                 color: over ? const Color(0xFFFF6B6B) : const Color(0xFF7ABB98)))),
@@ -388,6 +398,7 @@ class _EmptyDayBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppL10n(Lang.code);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -407,11 +418,11 @@ class _EmptyDayBanner extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Aucun repas aujourd\'hui', style: GoogleFonts.outfit(
+            Text(l10n.nutritionNoMealsToday, style: GoogleFonts.outfit(
               fontSize: 14, fontWeight: FontWeight.w700,
               color: const Color(0xFF1C4D30))),
             const SizedBox(height: 2),
-            Text('Commence à suivre ton alimentation →', style: GoogleFonts.inter(
+            Text(l10n.nutritionStartTracking, style: GoogleFonts.inter(
               fontSize: 12, color: const Color(0xFF6B7280))),
           ])),
         ]),
@@ -428,6 +439,7 @@ class _FavoritesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n     = ref.watch(l10nProvider);
     final top      = MediaQuery.of(context).padding.top;
     final favNames = ref.watch(favoritesProvider);
 
@@ -466,10 +478,10 @@ class _FavoritesScreen extends ConsumerWidget {
                       color: kRed, size: 18))),
                 const SizedBox(width: 14),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('MES RECETTES', style: GoogleFonts.inter(
+                  Text(l10n.nutritionMyRecipes, style: GoogleFonts.inter(
                     color: kRed, fontSize: 9,
                     fontWeight: FontWeight.w700, letterSpacing: 3)),
-                  Text('Favoris', style: GoogleFonts.outfit(
+                  Text(l10n.nutritionFavorites, style: GoogleFonts.outfit(
                     color: nc.text1, fontSize: 22,
                     fontWeight: FontWeight.w800, letterSpacing: -0.4)),
                 ]),
@@ -499,11 +511,11 @@ class _FavoritesScreen extends ConsumerWidget {
                   child: const Icon(LucideIcons.heart,
                     color: kRed, size: 28)),
                 const SizedBox(height: 16),
-                Text('Aucun favori', style: GoogleFonts.outfit(
+                Text(l10n.nutritionNoFavorites, style: GoogleFonts.outfit(
                   fontSize: 18, fontWeight: FontWeight.w700,
                   color: nc.text1)),
                 const SizedBox(height: 6),
-                Text('Appuie sur ♥ dans une recette\npour la retrouver ici',
+                Text(l10n.nutritionFavoriteHint,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 13, color: nc.text2)),
@@ -515,7 +527,7 @@ class _FavoritesScreen extends ConsumerWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
-                child: Text('Recettes photos',
+                child: Text(l10n.nutritionPhotoRecipes,
                   style: GoogleFonts.outfit(
                     fontSize: 16, fontWeight: FontWeight.w700,
                     color: nc.text1)))),
@@ -573,7 +585,7 @@ class _FavoritesScreen extends ConsumerWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
-                child: Text('Recettes vidéos',
+                child: Text(l10n.nutritionVideoRecipes,
                   style: GoogleFonts.outfit(
                     fontSize: 16, fontWeight: FontWeight.w700,
                     color: nc.text1)))),

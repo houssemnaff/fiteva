@@ -115,7 +115,7 @@ class DailyInsightCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A2E),
+                      color: Color(0xFF111110),
                       height: 1.25,
                       letterSpacing: -0.4,
                     ),

@@ -1,6 +1,7 @@
 ﻿// ignore_for_file: deprecated_member_use
 import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
+import '../../l10n/app_localizations.dart';
 import 'package:fiteva/screens/cycle/cycle_colors.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/material.dart';
@@ -160,19 +161,20 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
 
     // Semaine de grossesse
     int selectedWeek = 12;
+    final l10n = ref.read(l10nProvider);
     final week = await showDialog<int>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlg) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('Je suis enceinte',
+          title: Text(l10n.cycleIAmPregnant,
             style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700,
                 color: const Color(0xFF1A2E20))),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('A quelle semaine en es-tu ?',
+            Text(l10n.cycleWhichWeek,
               style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5A7A65))),
             const SizedBox(height: 20),
-            Text('Semaine $selectedWeek',
+            Text('${l10n.cycleWeekLabel} $selectedWeek',
               style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w800,
                   color: const Color(0xFF1C4D30))),
             Slider(
@@ -184,15 +186,15 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
               onChanged: (v) => setDlg(() => selectedWeek = v.round()),
             ),
             Text(
-              selectedWeek <= 13 ? '1er trimestre'
-                  : selectedWeek <= 26 ? '2e trimestre' : '3e trimestre',
+              selectedWeek <= 13 ? l10n.cycleTrimester1
+                  : selectedWeek <= 26 ? l10n.cycleTrimester2 : l10n.cycleTrimester3,
               style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600,
                   color: const Color(0xFF7ABB98))),
           ]),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Annuler',
+              child: Text(l10n.cancel,
                 style: GoogleFonts.inter(color: const Color(0xFF888888)))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -203,7 +205,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               ),
               onPressed: () => Navigator.pop(ctx, selectedWeek),
-              child: Text('Confirmer',
+              child: Text(l10n.confirm,
                 style: GoogleFonts.inter(fontWeight: FontWeight.w700))),
           ],
         ),
@@ -242,7 +244,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
             duration: const Duration(milliseconds: 320),
             transitionBuilder: (child, anim) =>
                 FadeTransition(opacity: anim, child: child),
-            child: _buildHome(cc, theme, phase),
+            child: _buildHome(cc, theme, phase, ref.watch(l10nProvider)),
           ),
         ),
       ),
@@ -251,7 +253,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
 
   // ── Home view ──────────────────────────────────────────────────────────────
 
-  Widget _buildHome(CycleColors cc, CycleTheme theme, CyclePhase phase) {
+  Widget _buildHome(CycleColors cc, CycleTheme theme, CyclePhase phase, AppL10n l10n) {
     final profile      = ref.watch(userProfileProvider);
     final showPregnancy = profile.showPregnancyContent;
 
@@ -261,7 +263,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHero(cc, theme, phase, profile, showPregnancy),
+          _buildHero(cc, theme, phase, profile, showPregnancy, l10n),
 
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -277,7 +279,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           ),
 
           const SizedBox(height: 28),
-          _buildSectionLabel('Comment tu te sens ?', theme.primary),
+          _buildSectionLabel(l10n.cycleHowDoYouFeel, theme.primary),
           const SizedBox(height: 14),
           _buildChips(cc, theme),
 
@@ -303,6 +305,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
     CyclePhase phase,
     UserProfile profile,
     bool showPregnancy,
+    AppL10n l10n,
   ) {
     // In dark mode the hero gradient overlays the dark bg
     final heroOpacityTop = cc.isDark ? 0.22 : 0.16;
@@ -323,8 +326,8 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
       ),
       child: Column(children: [
         SharedAppHeader(
-          eyebrow:    'CYCLE',
-          title:      'Mon Cycle',
+          eyebrow:    l10n.navCycle.toUpperCase(),
+          title:      l10n.cycleTitle,
           accentColor: theme.primary,
           bgColor:    Colors.transparent,
           onBack: Navigator.canPop(context)
@@ -347,7 +350,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
                   child: Row(children: [
                     const Text('🤰', style: TextStyle(fontSize: 16)),
                     const SizedBox(width: 10),
-                    Text('Grossesse', style: GoogleFonts.inter(
+                    Text(l10n.navPregnancy, style: GoogleFonts.inter(
                       fontSize: 13, fontWeight: FontWeight.w600,
                       color: const Color(0xFF1A2E20))),
                   ]),
@@ -414,7 +417,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
                 child: Row(children: [
                   Icon(Icons.calendar_month_rounded, size: 15, color: theme.primary),
                   const SizedBox(width: 5),
-                  Text('Calendrier', style: GoogleFonts.inter(
+                  Text(l10n.cycleCalendar, style: GoogleFonts.inter(
                     fontSize: 12, fontWeight: FontWeight.w600, color: theme.primary)),
                 ]),
               ),
