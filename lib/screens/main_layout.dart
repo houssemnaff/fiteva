@@ -605,17 +605,14 @@ class _WavingRobot extends StatefulWidget {
 class _WavingRobotState extends State<_WavingRobot>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
-  late final Animation<double> _wave;
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
-    )..repeat(reverse: true);
-    _wave = Tween<double>(begin: -0.5, end: 0.5)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+      duration: const Duration(seconds: 3),
+    )..repeat();
   }
 
   @override
@@ -627,89 +624,80 @@ class _WavingRobotState extends State<_WavingRobot>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _wave,
+      animation: _ctrl,
       builder: (_, __) => CustomPaint(
         size: const Size(56, 56),
-        painter: _RobotWavePainter(waveAngle: _wave.value),
+        painter: _StarCirclePainter(t: _ctrl.value),
       ),
     );
   }
 }
 
-class _RobotWavePainter extends CustomPainter {
-  final double waveAngle;
-  const _RobotWavePainter({required this.waveAngle});
+class _StarCirclePainter extends CustomPainter {
+  final double t;
+  const _StarCirclePainter({required this.t});
+
+  void _drawStar(Canvas canvas, Offset center, double r, Paint p) {
+    final path = Path();
+    for (int i = 0; i < 10; i++) {
+      final angle = (i * math.pi / 5) - math.pi / 2;
+      final radius = i.isEven ? r : r * 0.45;
+      final x = center.dx + radius * math.cos(angle);
+      final y = center.dy + radius * math.sin(angle);
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
+    }
+    path.close();
+    canvas.drawPath(path, p);
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final s  = size.width / 56.0;
 
-    final body   = Paint()..color = const Color(0xFF1C4D30);
-    final green  = Paint()..color = const Color(0xFF3DA85A);
-    final pupil  = Paint()..color = Colors.white;
-    final stroke = Paint()
-      ..color = const Color(0xFF1C4D30)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5 * s
-      ..strokeCap = StrokeCap.round;
+    // Shadow
+    canvas.drawCircle(
+      Offset(cx, cy + 2),
+      26,
+      Paint()..color = const Color(0xFF1C4D30).withOpacity(0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
 
-    // ── Antenna ──
-    canvas.drawLine(Offset(cx, cy - 14*s), Offset(cx, cy - 20*s), stroke);
-    canvas.drawCircle(Offset(cx, cy - 21*s), 2.5*s, green);
+    // Main green circle gradient
+    final gradient = Paint()
+      ..shader = RadialGradient(
+        colors: [const Color(0xFF4ADE80), const Color(0xFF16A34A)],
+      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 26));
+    canvas.drawCircle(Offset(cx, cy), 26, gradient);
 
-    // ── Head ──
-    canvas.drawRRect(RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(cx, cy - 8*s), width: 26*s, height: 20*s),
-      Radius.circular(7*s)), body);
+    // Sparkle stars orbiting
+    final starPaint = Paint()..color = Colors.white.withOpacity(0.9);
+    final starPositions = [
+      (0.0, 18.0),
+      (2.0 / 3.0, 20.0),
+      (1.0 / 3.0, 15.0),
+    ];
+    for (final (phase, dist) in starPositions) {
+      final angle = (t + phase) * 2 * math.pi;
+      final sx = cx + dist * math.cos(angle);
+      final sy = cy + dist * math.sin(angle);
+      _drawStar(canvas, Offset(sx, sy), 4.5, starPaint);
+    }
 
-    // ── Eyes ──
-    canvas.drawRRect(RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(cx - 6*s, cy - 9*s), width: 7*s, height: 6*s),
-      Radius.circular(2*s)), green);
-    canvas.drawRRect(RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(cx + 6*s, cy - 9*s), width: 7*s, height: 6*s),
-      Radius.circular(2*s)), green);
-    canvas.drawCircle(Offset(cx - 6*s, cy - 9*s), 1.8*s, pupil);
-    canvas.drawCircle(Offset(cx + 6*s, cy - 9*s), 1.8*s, pupil);
+    // Center sparkle ✦
+    final centerStar = Paint()..color = Colors.white;
+    _drawStar(canvas, Offset(cx, cy), 9, centerStar);
 
-    // ── Mouth ──
-    final mouth = Path()
-      ..moveTo(cx - 5*s, cy - 3*s)
-      ..quadraticBezierTo(cx, cy + 1*s, cx + 5*s, cy - 3*s);
-    canvas.drawPath(mouth, stroke);
-
-    // ── Body ──
-    canvas.drawRRect(RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(cx, cy + 8*s), width: 22*s, height: 14*s),
-      Radius.circular(5*s)), body);
-    canvas.drawRRect(RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(cx, cy + 8*s), width: 6*s, height: 10*s),
-      Radius.circular(3*s)), green);
-
-    // ── Left arm + dumbbell ──
-    canvas.drawRRect(RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(cx - 14*s, cy + 4*s), width: 5*s, height: 11*s),
-      Radius.circular(3*s)), body);
-    canvas.drawLine(Offset(cx - 20*s, cy - 3*s), Offset(cx - 10*s, cy - 3*s),
-      Paint()..color = const Color(0xFF1C4D30)..strokeWidth = 2*s..strokeCap = StrokeCap.round);
-    canvas.drawCircle(Offset(cx - 20*s, cy - 3*s), 3.5*s, green);
-    canvas.drawCircle(Offset(cx - 10*s, cy - 3*s), 3.5*s, green);
-
-    // ── Right arm (waving) ──
-    canvas.save();
-    canvas.translate(cx + 11*s, cy + 3*s);
-    canvas.rotate(waveAngle);
-    canvas.drawRRect(RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(3*s, -6*s), width: 5*s, height: 13*s),
-      Radius.circular(3*s)), body);
-    canvas.drawCircle(Offset(3*s, -13*s), 3*s, green);
-    canvas.restore();
+    // Shimmer dot top-left
+    canvas.drawCircle(
+      Offset(cx - 8, cy - 10),
+      2.5,
+      Paint()..color = Colors.white.withOpacity(0.6 + 0.4 * math.sin(t * 2 * math.pi)),
+    );
   }
 
   @override
-  bool shouldRepaint(_RobotWavePainter old) => old.waveAngle != waveAngle;
+  bool shouldRepaint(_StarCirclePainter old) => old.t != t;
 }
 
 class _AiChatButton extends StatelessWidget {
