@@ -44,28 +44,29 @@ class _XpToastWidgetState extends State<_XpToastWidget>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 2800),
     );
 
+    // ~280ms fade-in | ~2100ms visible | ~420ms fade-out (out of 2800ms total)
     _opacity = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0)
-          .chain(CurveTween(curve: Curves.easeOut)), weight: 20),
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 55),
+          .chain(CurveTween(curve: Curves.easeOut)), weight: 10),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 75),
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0)
-          .chain(CurveTween(curve: Curves.easeIn)), weight: 25),
+          .chain(CurveTween(curve: Curves.easeIn)), weight: 15),
     ]).animate(_ctrl);
 
     _slide = TweenSequence<Offset>([
       TweenSequenceItem(
         tween: Tween(begin: const Offset(0, 0.5), end: Offset.zero)
             .chain(CurveTween(curve: Curves.easeOutBack)),
-        weight: 25,
+        weight: 10,
       ),
-      TweenSequenceItem(tween: ConstantTween(Offset.zero), weight: 50),
+      TweenSequenceItem(tween: ConstantTween(Offset.zero), weight: 75),
       TweenSequenceItem(
         tween: Tween(begin: Offset.zero, end: const Offset(0, -0.4))
             .chain(CurveTween(curve: Curves.easeIn)),
-        weight: 25,
+        weight: 15,
       ),
     ]).animate(_ctrl);
 
