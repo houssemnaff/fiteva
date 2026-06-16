@@ -524,6 +524,61 @@ class AppL10n {
   String get cyclePhaseOvulation    => _fr ? 'Ovulation'               : 'Ovulation';
   String get cyclePhaseLuteal       => _fr ? 'Lutéale'                 : 'Luteal';
 
+  // Cycle home screen
+  String get cycleNextPeriod         => _fr ? 'Prochains règles'         : 'Next period';
+  String get cycleMyCycle            => _fr ? 'Mon cycle'                : 'My cycle';
+  String get cycleDuration           => _fr ? 'Durée'                   : 'Duration';
+  String get cycleCurrentDay         => _fr ? 'Jour actuel'              : 'Current day';
+  String get cycleDailyTips          => _fr ? 'Conseils du jour'         : 'Daily tips';
+  String get cycleWorkout            => _fr ? 'Entraînement'             : 'Workout';
+  String get cycleNutrition          => _fr ? 'Nutrition'                : 'Nutrition';
+  String get cycleToday              => _fr ? "Aujourd'hui"              : 'Today';
+  String get cyclePast               => _fr ? 'Passée'                   : 'Past';
+  String cycleDaysLeft(int d)        => _fr ? 'Dans $d j'                : 'In $d d';
+  String get cycleSymptomFlow        => _fr ? 'Flux'                     : 'Flow';
+  String get cycleSymptomMood        => _fr ? 'Humeur'                   : 'Mood';
+  String get cycleSymptomEnergy      => _fr ? 'Énergie'                  : 'Energy';
+  String get cycleSymptomCramps      => _fr ? 'Crampes'                  : 'Cramps';
+  String get cycleHowFeeling         => _fr ? 'Comment tu te sens ?'     : 'How are you feeling?';
+
+  // Cycle phase descriptions
+  String cyclePhaseDesc(String phase) {
+    if (_fr) {
+      switch (phase) {
+        case 'Règles':       return 'Ton corps se nettoie. Repos, chaleur et douceur sont essentiels.';
+        case 'Folliculaire': return "Énergie montante. C'est le moment d'explorer et commencer.";
+        case 'Ovulation':    return 'Pic d\'énergie et de confiance. Performe et connecte-toi.';
+        default:             return 'Phase introspective. Écoute tes besoins et ralentis.';
+      }
+    } else {
+      switch (phase) {
+        case 'Règles':       return 'Your body is cleansing. Rest, warmth and gentleness are key.';
+        case 'Folliculaire': return 'Rising energy. Time to explore and start new things.';
+        case 'Ovulation':    return 'Peak energy and confidence. Perform and connect.';
+        default:             return 'Introspective phase. Listen to your needs and slow down.';
+      }
+    }
+  }
+
+  // Cycle phase tips
+  ({String workout, String nutrition}) cyclePhaseTips(String phase) {
+    if (_fr) {
+      switch (phase) {
+        case 'Règles':       return (workout: 'Yoga doux, marche légère — évite l\'intensité élevée.', nutrition: 'Favorise le fer (épinards, lentilles) et le magnésium.');
+        case 'Folliculaire': return (workout: 'Cardio, HIIT et force — ton énergie est au top.',       nutrition: 'Protéines et glucides complexes pour alimenter l\'effort.');
+        case 'Ovulation':    return (workout: 'Séances intenses, sports collectifs — performance maximale.', nutrition: 'Légumes crucifères et aliments anti-inflammatoires.');
+        default:             return (workout: 'Pilates, natation, yoga — écoute ton corps.',            nutrition: 'Limite le sel et le sucre, privilégie les oméga-3.');
+      }
+    } else {
+      switch (phase) {
+        case 'Règles':       return (workout: 'Gentle yoga, light walking — avoid high intensity.',     nutrition: 'Prioritize iron (spinach, lentils) and magnesium.');
+        case 'Folliculaire': return (workout: 'Cardio, HIIT and strength — your energy is at its peak.', nutrition: 'Proteins and complex carbs to fuel your effort.');
+        case 'Ovulation':    return (workout: 'Intense sessions, team sports — peak performance.',      nutrition: 'Cruciferous vegetables and anti-inflammatory foods.');
+        default:             return (workout: 'Pilates, swimming, yoga — listen to your body.',         nutrition: 'Limit salt and sugar, prioritize omega-3s.');
+      }
+    }
+  }
+
   // Date picker titles
   String get datePickerLastPeriodTitle   => _fr ? 'Dernieres regles'     : 'Last period';
   String get datePickerLastPeriodSub     => _fr ? 'Date du premier jour' : 'First day date';

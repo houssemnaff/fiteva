@@ -1393,6 +1393,7 @@ class _StepWelcomeState extends State<StepWelcome>
         obscureText: obscure,
         keyboardType: keyboardType,
         onChanged: onChanged,
+        autofillHints: const [],
         style: const TextStyle(fontSize: 15, color: Color.fromARGB(255, 1, 1, 1),
             fontWeight: FontWeight.w500),
         decoration: InputDecoration(
