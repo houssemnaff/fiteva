@@ -820,6 +820,30 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
           ),
 
           const SizedBox(height: 16),
+
+
+          if (sel != null)
+  Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 24),
+    child: _DayDetailCard(
+      plan: sel,
+      dayIndex: _selectedDay,
+      onAddWorkout: () => _showPicker(_selectedDay),
+      onMarkDone: () {
+        ref.read(weeklyPlanProvider.notifier)
+            .markAsDone(_selectedDay);
+      },
+      onRemove: () {
+        ref.read(weeklyPlanProvider.notifier)
+            .removeWorkout(_selectedDay);
+      },
+      onViewDetail: () {
+        if (sel.workout != null) {
+          // navigation vers détail workout
+        }
+      },
+    ),
+  ),
         ],
       ),
     );
