@@ -11,6 +11,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'ajout_rapide_screen.dart';
 import '../../l10n/lang.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/xp_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCREEN
@@ -76,6 +77,7 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
       for (final entry in entries) {
         ref.read(nutritionProvider.notifier).addMeal(entry);
       }
+      ref.read(xpProvider.notifier).rewardMealLogged();
       HapticFeedback.mediumImpact();
     }
   }
