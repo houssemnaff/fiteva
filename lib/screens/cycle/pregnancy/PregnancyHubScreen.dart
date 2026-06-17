@@ -12,7 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:fiteva/widgets/home_header.dart';
+import 'package:fiteva/widgets/shared_app_header.dart';
 
 // ── Brand colors (matches AppTheme) ──────────────────────────────────────────
 const _primary   = Color(0xFF1C4D30);
@@ -163,14 +163,55 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
           physics: const BouncingScrollPhysics(),
           slivers: [
 
+            // ── Shared header (same as cycle screen) ─────────────────────
+            SharedAppHeader.sliver(
+              eyebrow: 'GROSSESSE',
+              title: 'Mon suivi',
+              accentColor: _accent,
+              bgColor: cs.surface,
+              actions: [
+                PopupMenuButton<String>(
+                  enabled: !_switching,
+                  onSelected: (v) {
+                    if (v == 'cycle') _switchToCycle();
+                    if (v == 'postpartum') _switchToPostpartum();
+                  },
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  color: cs.surfaceContainerHighest,
+                  offset: const Offset(0, 44),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'postpartum',
+                      child: Text('Post-partum →',
+                        style: GoogleFonts.inter(
+                          fontSize: 13, fontWeight: FontWeight.w500,
+                          color: cs.onSurface))),
+                    PopupMenuItem(
+                      value: 'cycle',
+                      child: Text('Mon cycle →',
+                        style: GoogleFonts.inter(
+                          fontSize: 13, fontWeight: FontWeight.w500,
+                          color: _accent))),
+                  ],
+                  child: Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(
+                      color: _accent.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.more_horiz_rounded,
+                        size: 18, color: _primary),
+                  ),
+                ),
+              ],
+            ),
+
             // ── Dark editorial hero ──────────────────────────────────────
             SliverToBoxAdapter(
               child: _Hero(
                 week: week, tri: tri, left: left, fmtDue: fmtDue,
                 fruit: _fruit[week] ?? 'fruit',
-                switching: _switching,
-                onCycle: _switchToCycle,
-                onPostpartum: _switchToPostpartum,
               ),
             ),
 
@@ -244,23 +285,19 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
 class _Hero extends StatelessWidget {
   final int week, tri, left;
   final String fmtDue, fruit;
-  final bool switching;
-  final VoidCallback onCycle, onPostpartum;
 
   const _Hero({
     required this.week, required this.tri, required this.left,
     required this.fmtDue, required this.fruit,
-    required this.switching, required this.onCycle, required this.onPostpartum,
   });
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.of(context).padding.top;
     final progress = (week / 42).clamp(0.0, 1.0);
     final triLabel = tri == 1 ? '1ER TRIMESTRE' : tri == 2 ? '2E TRIMESTRE' : '3E TRIMESTRE';
 
     return SizedBox(
-      height: 320 + topPad,
+      height: 260,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -278,7 +315,7 @@ class _Hero extends StatelessWidget {
 
           // Subtle radial glow
           Positioned(
-            right: -40, top: topPad + 20,
+            right: -40, top: 20,
             child: Container(
               width: 240, height: 240,
               decoration: BoxDecoration(
@@ -296,50 +333,10 @@ class _Hero extends StatelessWidget {
           // Content
           Positioned.fill(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(24, topPad + 12, 24, 28),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
-                  // ── Shared header ─────────────────────────────────────
-                  Row(children: [
-                    Expanded(child: const HomeHeader()),
-                    const SizedBox(width: 10),
-                    PopupMenuButton<String>(
-                      enabled: !switching,
-                      onSelected: (v) {
-                        if (v == 'cycle') onCycle();
-                        if (v == 'postpartum') onPostpartum();
-                      },
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                      color: const Color(0xFF1A2E1E),
-                      offset: const Offset(0, 44),
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'postpartum',
-                          child: Text('Post-partum →',
-                            style: GoogleFonts.inter(
-                              fontSize: 13, color: Colors.white70,
-                              fontWeight: FontWeight.w500))),
-                        PopupMenuItem(
-                          value: 'cycle',
-                          child: Text('Mon cycle →',
-                            style: GoogleFonts.inter(
-                              fontSize: 13, color: _accent,
-                              fontWeight: FontWeight.w500))),
-                      ],
-                      child: Container(
-                        width: 38, height: 38,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.more_horiz_rounded,
-                            size: 18, color: Colors.white),
-                      ),
-                    ),
-                  ]),
 
                   const Spacer(),
 
