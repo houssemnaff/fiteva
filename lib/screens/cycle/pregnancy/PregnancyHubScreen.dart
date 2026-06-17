@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fiteva/widgets/home_header.dart';
 
 // ── Brand colors (matches AppTheme) ──────────────────────────────────────────
 const _primary   = Color(0xFF1C4D30);
@@ -300,24 +301,10 @@ class _Hero extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
-                  // ── Top bar ──────────────────────────────────────────
+                  // ── Shared header ─────────────────────────────────────
                   Row(children: [
-                    if (Navigator.canPop(context))
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 36, height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.12)),
-                          ),
-                          child: const Icon(Icons.arrow_back_ios_new_rounded,
-                              size: 14, color: Colors.white),
-                        ),
-                      ),
-                    const Spacer(),
+                    Expanded(child: const HomeHeader()),
+                    const SizedBox(width: 10),
                     PopupMenuButton<String>(
                       enabled: !switching,
                       onSelected: (v) {
@@ -343,12 +330,10 @@ class _Hero extends StatelessWidget {
                               fontWeight: FontWeight.w500))),
                       ],
                       child: Container(
-                        width: 36, height: 36,
+                        width: 38, height: 38,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.08),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.12)),
+                          color: Colors.black.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(Icons.more_horiz_rounded,
                             size: 18, color: Colors.white),
