@@ -21,6 +21,7 @@ final avatarSeedProvider    = StateProvider<String>((ref) => 'sarah');
 final avatarStyleProvider   = StateProvider<String>((ref) => 'lorelei');
 final avatarBgColorProvider = StateProvider<String>((ref) => 'b6e3f4');
 final expandBadgesProvider  = StateProvider<bool>((ref) => false);
+final chatbotVisibilityProvider = StateProvider<bool>((ref) => true);
 
 String _buildDiceBearUrl(String seed, String styleName, String bgColor) {
   final style = DiceBearStyle.values.firstWhere(
@@ -738,6 +739,7 @@ class ProfileScreen extends ConsumerWidget {
   ) {
     final l10n     = ref.watch(l10nProvider);
     final isFrench = ref.watch(localeProvider).languageCode == 'fr';
+    final chatbotEnabled = ref.watch(chatbotVisibilityProvider);
 
     final items = [
       _SettingsItemData(
@@ -757,6 +759,19 @@ class ProfileScreen extends ConsumerWidget {
               ref.read(themeModeProvider.notifier).toggleThemeMode(),
         ),
         onTap: () => ref.read(themeModeProvider.notifier).toggleThemeMode(),
+      ),
+      _SettingsItemData(
+        icon: LucideIcons.messageCircle,
+        title: 'Assistant IA',
+        iconColor: const Color(0xFF5B5FEF),
+        trailing: chatbotEnabled ? 'Activé' : 'Désactivé',
+        trailingWidget: Switch.adaptive(
+          value: chatbotEnabled,
+          onChanged: (_) =>
+              ref.read(chatbotVisibilityProvider.notifier).state = !chatbotEnabled,
+        ),
+        onTap: () =>
+            ref.read(chatbotVisibilityProvider.notifier).state = !chatbotEnabled,
       ),
       _SettingsItemData(
         icon: LucideIcons.heart,
