@@ -508,10 +508,12 @@ class _CreatePartnerSheetState extends State<CreatePartnerSheet>
               onTap: _isPublishing ? null : _publish,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 15),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: _isPublishing ? _K.mint : _K.green,
-                  borderRadius: BorderRadius.circular(14),
+                  color: _isPublishing
+                      ? _K.green.withValues(alpha: 0.55)
+                      : _K.green,
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
                   child: _isPublishing
@@ -519,20 +521,13 @@ class _CreatePartnerSheetState extends State<CreatePartnerSheet>
                           width: 18, height: 18,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(LucideIcons.sparkles,
-                                size: 15, color: Colors.white),
-                            const SizedBox(width: 8),
-                            Text('Publier mon profil',
-                                style: GoogleFonts.inter(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                )),
-                          ],
-                        ),
+                      : Text('Publier mon profil',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          )),
                 ),
               ),
             ),

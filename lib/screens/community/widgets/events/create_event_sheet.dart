@@ -479,10 +479,12 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
             onTap: _publishing ? null : _publish,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(vertical: 15),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: _publishing ? cs.secondary : cs.primary,
-                borderRadius: BorderRadius.circular(14),
+                color: _publishing
+                    ? cs.primary.withValues(alpha: 0.55)
+                    : cs.primary,
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
                 child: _publishing
@@ -490,20 +492,13 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                         width: 18, height: 18,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(LucideIcons.send,
-                              color: Colors.white, size: 15),
-                          const SizedBox(width: 8),
-                          Text('Publier l\'événement',
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              )),
-                        ],
-                      ),
+                    : Text('Publier l\'événement',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        )),
               ),
             ),
           ),
