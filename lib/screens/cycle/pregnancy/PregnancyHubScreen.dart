@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ── Brand colors (matches AppTheme) ──────────────────────────────────────────
 const _primary   = Color(0xFF1C4D30);
@@ -36,15 +37,6 @@ const _fruit = <int, String>{
   41:'pastèque', 42:'pastèque géante',
 };
 
-const _fruitEmoji = <int, String>{
-  1:'🌱', 2:'🌿', 3:'🌿', 4:'🫘', 5:'🫘', 6:'🫘', 7:'🫐',
-  8:'🍇', 9:'🫒', 10:'🍑', 11:'🍈', 12:'🍑', 13:'🍑', 14:'🍋',
-  15:'🍎', 16:'🥑', 17:'🍐', 18:'🫑', 19:'🍅', 20:'🍌',
-  21:'🥕', 22:'🥭', 23:'🥭', 24:'🌽', 25:'🥦', 26:'🥬',
-  27:'🥬', 28:'🍆', 29:'🎃', 30:'🥬', 31:'🍍', 32:'🍍',
-  33:'🍈', 34:'🍈', 35:'🍈', 36:'🥬', 37:'🌿', 38:'🎃',
-  39:'🍉', 40:'🍉', 41:'🍉', 42:'🍉',
-};
 
 const _fitData = <int, (String, String)>{
   1:  ('Marche douce',        '20 à 30 min par jour, ton corps sait ce dont il a besoin.'),
@@ -175,7 +167,6 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
               child: _Hero(
                 week: week, tri: tri, left: left, fmtDue: fmtDue,
                 fruit: _fruit[week] ?? 'fruit',
-                emoji: _fruitEmoji[week] ?? '🌱',
                 switching: _switching,
                 onCycle: _switchToCycle,
                 onPostpartum: _switchToPostpartum,
@@ -251,13 +242,13 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
 // ─────────────────────────────────────────────────────────────────────────────
 class _Hero extends StatelessWidget {
   final int week, tri, left;
-  final String fmtDue, fruit, emoji;
+  final String fmtDue, fruit;
   final bool switching;
   final VoidCallback onCycle, onPostpartum;
 
   const _Hero({
     required this.week, required this.tri, required this.left,
-    required this.fmtDue, required this.fruit, required this.emoji,
+    required this.fmtDue, required this.fruit,
     required this.switching, required this.onCycle, required this.onPostpartum,
   });
 
@@ -397,7 +388,7 @@ class _Hero extends StatelessWidget {
 
                   // ── Fruit size ─────────────────────────────────────────
                   Row(children: [
-                    Text(emoji, style: const TextStyle(fontSize: 16)),
+                    Icon(LucideIcons.sprout, size: 14, color: _accent),
                     const SizedBox(width: 8),
                     Text('comme une $fruit', style: GoogleFonts.inter(
                       fontSize: 13, color: Colors.white60)),
@@ -532,7 +523,11 @@ class _MoodRow extends StatelessWidget {
   const _MoodRow({required this.selected, required this.onSelect});
 
   static const _labels = ['Bien', 'Fatiguée', 'Joyeuse'];
-  static const _icons  = ['😊', '😴', '✨'];
+  static const _icons  = [
+    LucideIcons.smile,
+    LucideIcons.moonStar,
+    LucideIcons.sparkles,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -553,8 +548,9 @@ class _MoodRow extends StatelessWidget {
                 color: sel ? _primary : cs.outline, width: 1),
             ),
             child: Column(children: [
-              Text(_icons[i], style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 4),
+              Icon(_icons[i], size: 20,
+                color: sel ? Colors.white : cs.onSurface.withOpacity(0.5)),
+              const SizedBox(height: 6),
               Text(_labels[i], style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w600,
                 color: sel ? Colors.white : cs.onSurface.withOpacity(0.6))),
@@ -786,7 +782,7 @@ class _FitCard extends StatelessWidget {
             color: _primary,
             borderRadius: BorderRadius.circular(14)),
           child: const Center(
-            child: Text('🏃', style: TextStyle(fontSize: 22))),
+            child: Icon(LucideIcons.activity, size: 22, color: Colors.white)),
         ),
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
