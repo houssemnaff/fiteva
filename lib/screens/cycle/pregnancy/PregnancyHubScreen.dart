@@ -12,20 +12,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ── Palette ───────────────────────────────────────────────────────────────────
-const _rose      = Color(0xFFF2A8B8);
-const _roseDark  = Color(0xFFD4607A);
-const _roseSoft  = Color(0xFFFFF0F3);
-const _sage      = Color(0xFF7ABB98);
-const _sageDark  = Color(0xFF1C4D30);
-const _sageSoft  = Color(0xFFEAF5EE);
-const _cream     = Color(0xFFFDFAF7);
-const _peach     = Color(0xFFFFF3EC);
-const _warmText  = Color(0xFF2D1F1A);
-const _mutedText = Color(0xFF9A857D);
-const _gold      = Color(0xFFF4A940);
+// ── Brand colors (matches AppTheme) ──────────────────────────────────────────
+const _primary   = Color(0xFF1C4D30);
+const _accent    = Color(0xFF7ABB98);
+const _heroBg    = Color(0xFF0B1A0E);
+const _heroMid   = Color(0xFF122015);
 
-// ── Fruit sizes ───────────────────────────────────────────────────────────────
+// ── Data ─────────────────────────────────────────────────────────────────────
+const _months = ['janv.','févr.','mars','avr.','mai','juin',
+  'juil.','août','sept.','oct.','nov.','déc.'];
+
 const _fruit = <int, String>{
   1:'grain de pavot', 2:'graine de sésame', 3:'graine de sésame',
   4:'lentille', 5:'lentille', 6:'lentille', 7:'myrtille',
@@ -50,7 +46,6 @@ const _fruitEmoji = <int, String>{
   39:'🍉', 40:'🍉', 41:'🍉', 42:'🍉',
 };
 
-// ── Fitness tips ──────────────────────────────────────────────────────────────
 const _fitData = <int, (String, String)>{
   1:  ('Marche douce',        '20 à 30 min par jour, ton corps sait ce dont il a besoin.'),
   7:  ('Yoga prénatal',       'Soulage les nausées et maintient la souplesse.'),
@@ -61,6 +56,7 @@ const _fitData = <int, (String, String)>{
   34: ('Marche quotidienne',  "Prépare le corps naturellement à l'accouchement."),
   38: ('Respiration',         'Cohérence cardiaque 5 min — matin et soir.'),
 };
+
 String _fitLabel(int w) {
   final k = _fitData.keys.where((k) => k <= w).fold(1, (p, k) => k > p ? k : p);
   return _fitData[k]!.$1;
@@ -69,9 +65,6 @@ String _fitTip(int w) {
   final k = _fitData.keys.where((k) => k <= w).fold(1, (p, k) => k > p ? k : p);
   return _fitData[k]!.$2;
 }
-
-const _months = ['janv.','févr.','mars','avr.','mai','juin',
-  'juil.','août','sept.','oct.','nov.','déc.'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 class PregnancyHubScreen extends ConsumerStatefulWidget {
@@ -86,23 +79,23 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
   bool _switching = false;
 
   late final AnimationController _switchAnim = AnimationController(
-    vsync: this, duration: const Duration(milliseconds: 600));
+      vsync: this, duration: const Duration(milliseconds: 500));
   late final Animation<double> _fadeOut =
       Tween<double>(begin: 1, end: 0).animate(
           CurvedAnimation(parent: _switchAnim, curve: Curves.easeInCubic));
-  late final Animation<double> _scaleOut =
-      Tween<double>(begin: 1, end: 0.94).animate(
-          CurvedAnimation(parent: _switchAnim, curve: Curves.easeInCubic));
 
   @override
-  void dispose() { _switchAnim.dispose(); super.dispose(); }
+  void dispose() {
+    _switchAnim.dispose();
+    super.dispose();
+  }
 
   Future<void> _switchToCycle() async {
-    final confirm = await _confirmDialog(
+    final ok = await _confirm(
       'Quitter le suivi grossesse ?',
-      'Votre application passera en mode Cycle menstruel. Vos données de grossesse seront conservées.',
+      'L\'app passera en mode Cycle. Vos données sont conservées.',
     );
-    if (confirm != true || !mounted) return;
+    if (ok != true || !mounted) return;
     setState(() => _switching = true);
     await _switchAnim.forward();
     if (!mounted) return;
@@ -120,17 +113,17 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
       title: "Date d'accouchement",
       subtitle: 'Quand est né votre bébé ?',
       icon: Icons.child_care_rounded,
-      accentColor: _sageDark,
+      accentColor: _primary,
     );
     if (birthDate == null || !mounted) return;
     final weeks = DateTime.now().difference(birthDate).inDays ~/ 7;
     final ppDuration = weeks < 2 ? '0-2' : weeks < 6 ? '2-6'
         : weeks < 12 ? '6-12' : weeks < 26 ? '3-6m' : '6m+';
-    final confirm = await _confirmDialog(
+    final ok = await _confirm(
       'Passer en mode Post-partum ?',
-      'Accouchement le ${birthDate.day}/${birthDate.month}/${birthDate.year} ($weeks semaines). Votre suivi passera en mode post-partum.',
+      'Accouchement le ${birthDate.day}/${birthDate.month}/${birthDate.year} · $weeks semaines.',
     );
-    if (confirm != true || !mounted) return;
+    if (ok != true || !mounted) return;
     setState(() => _switching = true);
     await _switchAnim.forward();
     if (!mounted) return;
@@ -140,32 +133,27 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
     await n.updateField('pregnancy_week', null);
   }
 
-  Future<bool?> _confirmDialog(String title, String body) => showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      backgroundColor: _cream,
-      title: Text(title, style: GoogleFonts.outfit(
-        fontSize: 17, fontWeight: FontWeight.w700, color: _warmText)),
-      content: Text(body, style: GoogleFonts.inter(
-        fontSize: 13, height: 1.6, color: _mutedText)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: Text('Annuler', style: GoogleFonts.inter(color: _mutedText))),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _sageDark, foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-          onPressed: () => Navigator.pop(ctx, true),
-          child: Text('Confirmer', style: GoogleFonts.inter(fontWeight: FontWeight.w700))),
-      ],
-    ),
-  );
+  Future<bool?> _confirm(String title, String body) => showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 17)),
+          content: Text(body, style: GoogleFonts.inter(fontSize: 13, height: 1.6,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Confirmer')),
+          ],
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
+    final cs      = Theme.of(context).colorScheme;
     final profile = ref.watch(userProfileProvider);
     final week    = (profile.pregnancyWeekSA ?? 1).clamp(1, 42);
     final insight = PregnancyInsightRepository.forWeek(week);
@@ -173,105 +161,84 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
     final left    = due.difference(DateTime.now()).inDays.clamp(0, 300);
     final fmtDue  = '${due.day} ${_months[due.month - 1]} ${due.year}';
     final tri     = week <= 13 ? 1 : week <= 26 ? 2 : 3;
-    final triLabel = tri == 1 ? '1er trimestre' : tri == 2 ? '2e trimestre' : '3e trimestre';
 
     return Scaffold(
-      backgroundColor: _cream,
-      body: AnimatedBuilder(
-        animation: _switchAnim,
-        builder: (_, child) => FadeTransition(
-          opacity: _fadeOut,
-          child: ScaleTransition(scale: _scaleOut, child: child),
-        ),
+      backgroundColor: cs.surface,
+      body: FadeTransition(
+        opacity: _fadeOut,
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
 
-            // ── Header ──────────────────────────────────────────────────────
+            // ── Dark editorial hero ──────────────────────────────────────
             SliverToBoxAdapter(
-              child: _AppBar(
+              child: _Hero(
+                week: week, tri: tri, left: left, fmtDue: fmtDue,
+                fruit: _fruit[week] ?? 'fruit',
+                emoji: _fruitEmoji[week] ?? '🌱',
                 switching: _switching,
                 onCycle: _switchToCycle,
                 onPostpartum: _switchToPostpartum,
               ),
             ),
 
-            SliverToBoxAdapter(child: Column(children: [
+            // ── Body ────────────────────────────────────────────────────
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
 
-              // ── Hero ────────────────────────────────────────────────────
-              _HeroSection(
-                week: week, tri: tri, triLabel: triLabel,
-                left: left, fmtDue: fmtDue,
-                fruit: _fruit[week] ?? 'fruit',
-                emoji: _fruitEmoji[week] ?? '🌱',
+                  // Progress strip (3 trimesters)
+                  _ProgressStrip(week: week),
+                  const SizedBox(height: 24),
+
+                  // Mood check-in
+                  _SectionLabel('Comment tu te sens ?'),
+                  const SizedBox(height: 10),
+                  _MoodRow(selected: _mood, onSelect: (i) {
+                    HapticFeedback.lightImpact();
+                    setState(() => _mood = i);
+                  }),
+
+                  // Mood response
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOutCubic,
+                    child: _mood == null
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: _MoodResponse(mood: _mood!, week: week),
+                          ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // Week insight
+                  _SectionLabel('Semaine $week'),
+                  const SizedBox(height: 10),
+                  _WeekCard(insight: insight, cs: cs),
+                  const SizedBox(height: 16),
+
+                  // Fitness
+                  _FitCard(week: week, cs: cs),
+                  const SizedBox(height: 28),
+
+                  // Navigation
+                  _SectionLabel('Explorer'),
+                  const SizedBox(height: 10),
+                  _NavList(week: week, cs: cs),
+
+                  // Born CTA
+                  if (week >= 37) ...[
+                    const SizedBox(height: 16),
+                    _BornBanner(cs: cs),
+                  ],
+
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
+                ]),
               ),
-
-              const SizedBox(height: 20),
-
-              // ── Trimester strip ────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _TrimesterStrip(week: week),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Mood check-in ──────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _MoodCard(selected: _mood, onSelect: (i) {
-                  HapticFeedback.lightImpact();
-                  setState(() => _mood = i);
-                }),
-              ),
-
-              // ── Mood response ──────────────────────────────────────────
-              AnimatedSize(
-                duration: const Duration(milliseconds: 350),
-                curve: Curves.easeOutCubic,
-                child: _mood == null
-                    ? const SizedBox.shrink()
-                    : Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                        child: _MoodResponseCard(mood: _mood!, week: week),
-                      ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Week insight ───────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _WeekInsightCard(insight: insight),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Fitness tip ────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _FitCard(week: week),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Nav grid ───────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _NavGrid(week: week, ctx: context),
-              ),
-
-              // ── Born CTA (week 37+) ────────────────────────────────────
-              if (week >= 37) ...[
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _BornCard(ctx: context),
-                ),
-              ],
-
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
-            ])),
+            ),
           ],
         ),
       ),
@@ -280,269 +247,230 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  APP BAR
+//  HERO  (full-bleed dark editorial, matches home screen language)
 // ─────────────────────────────────────────────────────────────────────────────
-class _AppBar extends StatelessWidget {
+class _Hero extends StatelessWidget {
+  final int week, tri, left;
+  final String fmtDue, fruit, emoji;
   final bool switching;
   final VoidCallback onCycle, onPostpartum;
-  const _AppBar({required this.switching, required this.onCycle, required this.onPostpartum});
 
-  @override
-  Widget build(BuildContext context) {
-    final top = MediaQuery.of(context).padding.top;
-    return Container(
-      color: _cream,
-      padding: EdgeInsets.fromLTRB(20, top + 12, 16, 12),
-      child: Row(children: [
-        if (Navigator.canPop(context))
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 8, offset: const Offset(0, 2))]),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: _warmText),
-            ),
-          ),
-        const SizedBox(width: 12),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('MA GROSSESSE', style: GoogleFonts.inter(
-            fontSize: 9, fontWeight: FontWeight.w700,
-            color: _rose, letterSpacing: 2.5)),
-          Text('Suivi prénatal', style: GoogleFonts.outfit(
-            fontSize: 20, fontWeight: FontWeight.w700, color: _warmText)),
-        ]),
-        const Spacer(),
-        PopupMenuButton<String>(
-          enabled: !switching,
-          onSelected: (v) {
-            if (v == 'cycle') onCycle();
-            if (v == 'postpartum') onPostpartum();
-          },
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 6,
-          color: Colors.white,
-          offset: const Offset(0, 48),
-          itemBuilder: (_) => [
-            PopupMenuItem(
-              value: 'postpartum',
-              child: Row(children: [
-                const Text('👶', style: TextStyle(fontSize: 16)),
-                const SizedBox(width: 10),
-                Text('Post-partum', style: GoogleFonts.inter(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: _warmText)),
-              ]),
-            ),
-            PopupMenuItem(
-              value: 'cycle',
-              child: Row(children: [
-                const Icon(Icons.water_drop_rounded, size: 16, color: _roseDark),
-                const SizedBox(width: 10),
-                Text('Mon cycle', style: GoogleFonts.inter(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: _roseDark)),
-              ]),
-            ),
-          ],
-          child: Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(
-                color: Colors.black.withOpacity(0.07),
-                blurRadius: 8, offset: const Offset(0, 2))]),
-            child: const Icon(Icons.more_horiz_rounded, size: 18, color: _warmText),
-          ),
-        ),
-      ]),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  HERO SECTION
-// ─────────────────────────────────────────────────────────────────────────────
-class _HeroSection extends StatefulWidget {
-  final int week, tri, left;
-  final String triLabel, fmtDue, fruit, emoji;
-  const _HeroSection({
-    required this.week, required this.tri, required this.triLabel,
-    required this.left, required this.fmtDue, required this.fruit, required this.emoji,
+  const _Hero({
+    required this.week, required this.tri, required this.left,
+    required this.fmtDue, required this.fruit, required this.emoji,
+    required this.switching, required this.onCycle, required this.onPostpartum,
   });
-  @override
-  State<_HeroSection> createState() => _HeroSectionState();
-}
-
-class _HeroSectionState extends State<_HeroSection>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _pulse;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))
-      ..repeat(reverse: true);
-    _scale = Tween(begin: 0.96, end: 1.04)
-        .animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() { _pulse.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
-    final progress = (widget.week / 42).clamp(0.0, 1.0);
+    final topPad = MediaQuery.of(context).padding.top;
+    final progress = (week / 42).clamp(0.0, 1.0);
+    final triLabel = tri == 1 ? '1ER TRIMESTRE' : tri == 2 ? '2E TRIMESTRE' : '3E TRIMESTRE';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFFF5F7), Color(0xFFF0F9F4)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _rose.withOpacity(0.18),
-            blurRadius: 28, offset: const Offset(0, 8)),
-        ],
-        border: Border.all(color: _rose.withOpacity(0.18), width: 1),
-      ),
-      child: Column(children: [
+    return SizedBox(
+      height: 320 + topPad,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
 
-        // ── Top row: week + emoji ─────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Week number
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(widget.triLabel.toUpperCase(), style: GoogleFonts.inter(
-                  fontSize: 9, fontWeight: FontWeight.w700,
-                  color: _roseDark.withOpacity(0.6), letterSpacing: 2)),
-                const SizedBox(height: 2),
-                Row(crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text('S', style: GoogleFonts.outfit(
-                        fontSize: 28, fontWeight: FontWeight.w300, color: _mutedText)),
-                      Text('${widget.week}', style: GoogleFonts.outfit(
-                        fontSize: 72, fontWeight: FontWeight.w800,
-                        color: _roseDark, height: 0.9)),
-                    ]),
-                const SizedBox(height: 4),
-                Text('comme une ${widget.fruit}', style: GoogleFonts.inter(
-                  fontSize: 12, color: _mutedText)),
-              ]),
+          // Deep dark background gradient
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [_heroBg, _heroMid, Color(0xFF0D1A10)],
+              ),
+            ),
+          ),
 
-              const Spacer(),
-
-              // Fruit emoji orb
-              ScaleTransition(
-                scale: _scale,
-                child: Container(
-                  width: 110, height: 110,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        _rose.withOpacity(0.4),
-                        _roseSoft,
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _rose.withOpacity(0.3),
-                        blurRadius: 24, spreadRadius: 4),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(widget.emoji,
-                      style: const TextStyle(fontSize: 52)),
-                  ),
+          // Subtle radial glow
+          Positioned(
+            right: -40, top: topPad + 20,
+            child: Container(
+              width: 240, height: 240,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    _primary.withOpacity(0.35),
+                    Colors.transparent,
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // ── Progress bar ──────────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('${(progress * 100).round()}% accompli',
-                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
-                  color: _sageDark.withOpacity(0.7))),
-              Text('${ widget.left } jours restants',
-                style: GoogleFonts.inter(fontSize: 11, color: _mutedText)),
-            ]),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Stack(children: [
-                Container(height: 8, color: Colors.white.withOpacity(0.8)),
-                FractionallySizedBox(
-                  widthFactor: progress,
-                  child: Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      gradient: const LinearGradient(
-                        colors: [_rose, _sage]),
-                    ),
-                  ),
-                ),
-              ]),
             ),
-          ]),
-        ),
-
-        const SizedBox(height: 16),
-
-        // ── Due date chip ─────────────────────────────────────────────────
-        Container(
-          margin: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(14),
           ),
-          child: Row(children: [
-            const Icon(Icons.calendar_today_rounded, size: 14, color: _sageDark),
-            const SizedBox(width: 8),
-            Text('Date prévue · ', style: GoogleFonts.inter(
-              fontSize: 12, color: _mutedText)),
-            Text(widget.fmtDue, style: GoogleFonts.inter(
-              fontSize: 12, fontWeight: FontWeight.w700, color: _sageDark)),
-          ]),
-        ),
-      ]),
+
+          // Content
+          Positioned.fill(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(24, topPad + 12, 24, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  // ── Top bar ──────────────────────────────────────────
+                  Row(children: [
+                    if (Navigator.canPop(context))
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.08),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.12)),
+                          ),
+                          child: const Icon(Icons.arrow_back_ios_new_rounded,
+                              size: 14, color: Colors.white),
+                        ),
+                      ),
+                    const Spacer(),
+                    PopupMenuButton<String>(
+                      enabled: !switching,
+                      onSelected: (v) {
+                        if (v == 'cycle') onCycle();
+                        if (v == 'postpartum') onPostpartum();
+                      },
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      color: const Color(0xFF1A2E1E),
+                      offset: const Offset(0, 44),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'postpartum',
+                          child: Text('Post-partum →',
+                            style: GoogleFonts.inter(
+                              fontSize: 13, color: Colors.white70,
+                              fontWeight: FontWeight.w500))),
+                        PopupMenuItem(
+                          value: 'cycle',
+                          child: Text('Mon cycle →',
+                            style: GoogleFonts.inter(
+                              fontSize: 13, color: _accent,
+                              fontWeight: FontWeight.w500))),
+                      ],
+                      child: Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.12)),
+                        ),
+                        child: const Icon(Icons.more_horiz_rounded,
+                            size: 18, color: Colors.white),
+                      ),
+                    ),
+                  ]),
+
+                  const Spacer(),
+
+                  // ── Eyebrow (matches home screen) ─────────────────────
+                  Row(children: [
+                    Container(width: 24, height: 2, color: _accent),
+                    const SizedBox(width: 10),
+                    Text(triLabel, style: GoogleFonts.inter(
+                      fontSize: 10, fontWeight: FontWeight.w700,
+                      color: _accent, letterSpacing: 3)),
+                  ]),
+
+                  const SizedBox(height: 10),
+
+                  // ── Week number (big editorial) ────────────────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text('SEMAINE ', style: GoogleFonts.outfit(
+                        fontSize: 18, fontWeight: FontWeight.w300,
+                        color: Colors.white54, letterSpacing: 1)),
+                      Text('$week', style: GoogleFonts.outfit(
+                        fontSize: 80, fontWeight: FontWeight.w900,
+                        color: Colors.white, height: 0.9,
+                        letterSpacing: -2)),
+                    ],
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  // ── Fruit size ─────────────────────────────────────────
+                  Row(children: [
+                    Text(emoji, style: const TextStyle(fontSize: 16)),
+                    const SizedBox(width: 8),
+                    Text('comme une $fruit', style: GoogleFonts.inter(
+                      fontSize: 13, color: Colors.white60)),
+                    const Spacer(),
+                    Text('$left jours restants', style: GoogleFonts.inter(
+                      fontSize: 12, color: Colors.white38)),
+                  ]),
+
+                  const SizedBox(height: 16),
+
+                  // ── Progress bar ───────────────────────────────────────
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Stack(children: [
+                      Container(height: 3,
+                        color: Colors.white.withOpacity(0.12)),
+                      FractionallySizedBox(
+                        widthFactor: progress,
+                        child: Container(height: 3, color: _accent),
+                      ),
+                    ]),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // ── Due date ───────────────────────────────────────────
+                  Row(children: [
+                    Icon(Icons.event_rounded, size: 13,
+                        color: Colors.white38),
+                    const SizedBox(width: 6),
+                    Text('Terme estimé · ', style: GoogleFonts.inter(
+                      fontSize: 12, color: Colors.white38)),
+                    Text(fmtDue, style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w600,
+                      color: Colors.white60)),
+                  ]),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  TRIMESTER STRIP
+//  SECTION LABEL
 // ─────────────────────────────────────────────────────────────────────────────
-class _TrimesterStrip extends StatelessWidget {
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(text,
+    style: GoogleFonts.outfit(
+      fontSize: 18, fontWeight: FontWeight.w700,
+      color: Theme.of(context).colorScheme.onSurface));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PROGRESS STRIP  (3 trimesters, minimal)
+// ─────────────────────────────────────────────────────────────────────────────
+class _ProgressStrip extends StatelessWidget {
   final int week;
-  const _TrimesterStrip({required this.week});
+  const _ProgressStrip({required this.week});
 
   @override
   Widget build(BuildContext context) {
+    final cs  = Theme.of(context).colorScheme;
     final tri = week <= 13 ? 0 : week <= 26 ? 1 : 2;
-    final labels = ['1er trimestre', '2e trimestre', '3e trimestre'];
-    final subtitles = ['S1 – S13', 'S14 – S26', 'S27 – S42'];
+    final labels   = ['1er trim.', '2e trim.', '3e trim.'];
+    final subtitles = ['S1–S13', 'S14–S26', 'S27–S42'];
 
     return Row(children: List.generate(3, (i) {
       final active = i == tri;
@@ -550,30 +478,43 @@ class _TrimesterStrip extends StatelessWidget {
       return Expanded(
         child: Container(
           margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
           decoration: BoxDecoration(
-            color: active ? _roseDark : done ? _sageSoft : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            color: active
+                ? _primary
+                : done
+                    ? _primary.withOpacity(0.08)
+                    : cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: active ? _roseDark : done ? _sage.withOpacity(0.4) : Colors.grey.withOpacity(0.12),
+              color: active
+                  ? _primary
+                  : done
+                      ? _primary.withOpacity(0.2)
+                      : cs.outline,
+              width: 1,
             ),
-            boxShadow: active ? [BoxShadow(
-              color: _roseDark.withOpacity(0.22),
-              blurRadius: 12, offset: const Offset(0, 4))] : [],
           ),
           child: Column(children: [
-            Text(done ? '✓' : '${i + 1}',
+            Text(
+              done ? '✓' : '${i + 1}',
               style: GoogleFonts.outfit(
-                fontSize: 16, fontWeight: FontWeight.w800,
-                color: active ? Colors.white : done ? _sage : _mutedText)),
+                fontSize: 15, fontWeight: FontWeight.w800,
+                color: active
+                    ? Colors.white
+                    : done
+                        ? _primary
+                        : cs.onSurface.withOpacity(0.35)),
+            ),
             const SizedBox(height: 3),
             Text(labels[i], style: GoogleFonts.inter(
               fontSize: 9, fontWeight: FontWeight.w700,
-              color: active ? Colors.white.withOpacity(0.9) : done ? _sageDark : _mutedText),
+              color: active ? Colors.white : done ? _primary : cs.onSurface.withOpacity(0.45),
+              letterSpacing: 0.2),
               textAlign: TextAlign.center),
             Text(subtitles[i], style: GoogleFonts.inter(
               fontSize: 9,
-              color: active ? Colors.white.withOpacity(0.65) : _mutedText.withOpacity(0.7)),
+              color: active ? Colors.white54 : cs.onSurface.withOpacity(0.3)),
               textAlign: TextAlign.center),
           ]),
         ),
@@ -583,94 +524,73 @@ class _TrimesterStrip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  MOOD CARD
+//  MOOD ROW
 // ─────────────────────────────────────────────────────────────────────────────
-class _MoodCard extends StatelessWidget {
+class _MoodRow extends StatelessWidget {
   final int? selected;
   final void Function(int) onSelect;
-  const _MoodCard({required this.selected, required this.onSelect});
+  const _MoodRow({required this.selected, required this.onSelect});
 
-  static const _moods = [
-    ('Bien 😊',     _sageSoft,  _sage),
-    ('Fatiguée 😴', _peach,     _gold),
-    ('Joyeuse 🌟',  _roseSoft,  _roseDark),
-  ];
+  static const _labels = ['Bien', 'Fatiguée', 'Joyeuse'];
+  static const _icons  = ['😊', '😴', '✨'];
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecor,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const Text('💭', style: TextStyle(fontSize: 18)),
-          const SizedBox(width: 10),
-          Text("Comment tu te sens aujourd'hui ?",
-            style: GoogleFonts.outfit(
-              fontSize: 15, fontWeight: FontWeight.w700, color: _warmText)),
-        ]),
-        const SizedBox(height: 16),
-        Row(children: List.generate(3, (i) {
-          final sel = selected == i;
-          final (label, bg, color) = _moods[i];
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onSelect(i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: sel ? bg : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: sel ? color : Colors.grey.withOpacity(0.12), width: 1.5),
-                  boxShadow: sel ? [BoxShadow(
-                    color: color.withOpacity(0.2),
-                    blurRadius: 10, offset: const Offset(0, 3))] : [],
-                ),
-                child: Text(label,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 11, fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                    color: sel ? color : _mutedText)),
-              ),
+    final cs = Theme.of(context).colorScheme;
+    return Row(children: List.generate(3, (i) {
+      final sel = selected == i;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => onSelect(i),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: EdgeInsets.only(right: i < 2 ? 10 : 0),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: sel ? _primary : cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: sel ? _primary : cs.outline, width: 1),
             ),
-          );
-        })),
-      ]),
-    );
+            child: Column(children: [
+              Text(_icons[i], style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 4),
+              Text(_labels[i], style: GoogleFonts.inter(
+                fontSize: 11, fontWeight: FontWeight.w600,
+                color: sel ? Colors.white : cs.onSurface.withOpacity(0.6))),
+            ]),
+          ),
+        ),
+      );
+    }));
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  MOOD RESPONSE CARD
+//  MOOD RESPONSE
 // ─────────────────────────────────────────────────────────────────────────────
-class _MoodResponseCard extends StatefulWidget {
+class _MoodResponse extends StatefulWidget {
   final int mood, week;
-  const _MoodResponseCard({required this.mood, required this.week});
+  const _MoodResponse({required this.mood, required this.week});
   @override
-  State<_MoodResponseCard> createState() => _MoodResponseCardState();
+  State<_MoodResponse> createState() => _MoodResponseState();
 }
 
-class _MoodResponseCardState extends State<_MoodResponseCard>
+class _MoodResponseState extends State<_MoodResponse>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _fade;
-  late final Animation<Offset> _slide;
+  late final AnimationController _ctrl =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
+  late final Animation<double> _fade =
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+  late final Animation<Offset> _slide =
+      Tween(begin: const Offset(0, 0.05), end: Offset.zero)
+          .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
 
   @override
-  void initState() {
-    super.initState();
-    _ctrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 380));
-    _fade  = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-    _slide = Tween(begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
-    _ctrl.forward();
-  }
+  void initState() { super.initState(); _ctrl.forward(); }
 
   @override
-  void didUpdateWidget(_MoodResponseCard old) {
+  void didUpdateWidget(_MoodResponse old) {
     super.didUpdateWidget(old);
     if (old.mood != widget.mood) _ctrl.forward(from: 0);
   }
@@ -683,29 +603,29 @@ class _MoodResponseCardState extends State<_MoodResponseCard>
     switch (widget.mood) {
       case 0:
         return tri == 1
-            ? ('Tu traverses le premier trimestre avec sérénité — c\'est précieux.',
-               'Profite de cette énergie pour une marche de 20 min aujourd\'hui.')
+            ? ('Tu traverses le 1er trimestre avec sérénité.',
+               'Profite de cette énergie pour une marche de 20 min.')
             : tri == 2
-            ? ('Le beau trimestre te va bien. Ton corps et ton bébé sont en harmonie.',
-               'C\'est le bon moment pour un cours de yoga prénatal.')
-            : ('Être en forme à la semaine ${widget.week}, c\'est une vraie force.',
+            ? ('Ton corps et ton bébé sont en harmonie.',
+               'Moment idéal pour un cours de yoga prénatal.')
+            : ('Être en forme à la semaine ${ widget.week }, c\'est une vraie force.',
                'Une marche douce le matin prépare ton corps naturellement.');
       case 1:
         return tri == 1
-            ? ('La fatigue du 1er trimestre est l\'une des plus intenses — ton corps construit tout.',
-               'Accorde-toi une sieste aujourd\'hui. C\'est du soin, pas de la paresse.')
+            ? ('La fatigue du 1er trimestre est normale — ton corps construit tout.',
+               'Une sieste aujourd\'hui, c\'est du soin, pas de la paresse.')
             : tri == 2
-            ? ('Une fatigue au 2e trimestre peut signaler une croissance rapide de bébé.',
-               'Vérifie ton apport en fer et en protéines — et dors dès que tu peux.')
-            : ('À la semaine ${widget.week}, la fatigue est le signal que ton corps se prépare.',
-               'Surélève les pieds 20 min ce soir et laisse quelqu\'un t\'aider.');
+            ? ('Une fatigue au 2e trimestre peut signaler une croissance rapide.',
+               'Vérifie ton apport en fer et en protéines.')
+            : ('À la semaine ${ widget.week }, ton corps se prépare activement.',
+               'Surélève les pieds 20 min ce soir.');
       default:
         return tri == 1
-            ? ('Cette joie est un beau cadeau — savoure chaque instant de ce début.',
-               'Note ce moment dans un journal de grossesse. Tu seras heureuse de le relire.')
+            ? ('Cette joie est un beau cadeau en ce début de grossesse.',
+               'Note ce moment dans un journal — tu seras heureuse de le relire.')
             : tri == 2
             ? ('Ta joie rayonne — bébé la perçoit vraiment.',
-               'Mets de la musique que tu aimes et danse doucement avec bébé.')
+               'Mets de la musique et danse doucement avec bébé.')
             : ('Cette joie à l\'approche du grand jour est la plus belle des préparations.',
                'Partage ce moment avec quelqu\'un que tu aimes.');
     }
@@ -713,47 +633,34 @@ class _MoodResponseCardState extends State<_MoodResponseCard>
 
   @override
   Widget build(BuildContext context) {
-    final colors = [
-      (_sageSoft, _sage, _sageDark),
-      (_peach, _gold, const Color(0xFF8A6500)),
-      (_roseSoft, _rose, _roseDark),
-    ];
-    final (bg, accent, textColor) = colors[widget.mood.clamp(0, 2)];
+    final cs = Theme.of(context).colorScheme;
     final (message, tip) = _content();
-
     return FadeTransition(
       opacity: _fade,
       child: SlideTransition(
         position: _slide,
         child: Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: accent.withOpacity(0.3)),
+            color: _primary.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _primary.withOpacity(0.12)),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Pour toi aujourd\'hui', style: GoogleFonts.inter(
-              fontSize: 10, fontWeight: FontWeight.w700,
-              color: textColor, letterSpacing: 1.5)),
-            const SizedBox(height: 10),
             Text(message, style: GoogleFonts.outfit(
-              fontSize: 14, height: 1.65, color: _warmText,
-              fontStyle: FontStyle.italic)),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(12)),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Icon(Icons.lightbulb_outline_rounded, size: 14, color: textColor),
-                const SizedBox(width: 8),
-                Expanded(child: Text(tip, style: GoogleFonts.inter(
-                  fontSize: 12, color: _mutedText, height: 1.55,
-                  fontWeight: FontWeight.w500))),
-              ]),
-            ),
+              fontSize: 14, height: 1.6,
+              color: cs.onSurface, fontStyle: FontStyle.italic)),
+            const SizedBox(height: 10),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(width: 3, height: 36,
+                margin: const EdgeInsets.only(right: 10, top: 2),
+                decoration: BoxDecoration(
+                  color: _accent,
+                  borderRadius: BorderRadius.circular(2))),
+              Expanded(child: Text(tip, style: GoogleFonts.inter(
+                fontSize: 12, height: 1.6,
+                color: cs.onSurface.withOpacity(0.6)))),
+            ]),
           ]),
         ),
       ),
@@ -764,51 +671,49 @@ class _MoodResponseCardState extends State<_MoodResponseCard>
 // ─────────────────────────────────────────────────────────────────────────────
 //  WEEK INSIGHT CARD
 // ─────────────────────────────────────────────────────────────────────────────
-class _WeekInsightCard extends StatelessWidget {
+class _WeekCard extends StatelessWidget {
   final dynamic insight;
-  const _WeekInsightCard({required this.insight});
+  final ColorScheme cs;
+  const _WeekCard({required this.insight, required this.cs});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecor,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const Text('🍼', style: TextStyle(fontSize: 18)),
-          const SizedBox(width: 10),
-          Text('Cette semaine', style: GoogleFonts.outfit(
-            fontSize: 16, fontWeight: FontWeight.w700, color: _warmText)),
-        ]),
-        const SizedBox(height: 16),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outline),
+      ),
+      child: Column(children: [
 
-        // Baby insight
-        _InsightTile(
-          emoji: '👶', label: 'Votre bébé',
+        // Baby row
+        _InsightRow(
+          label: 'VOTRE BÉBÉ',
           text: insight.babyInsight,
-          bg: _sageSoft, labelColor: _sageDark,
+          accent: _primary,
+          cs: cs,
+          topRadius: true,
         ),
-        const SizedBox(height: 10),
 
-        // Mom tip
-        _InsightTile(
-          emoji: '💗', label: 'Pour vous',
+        Divider(height: 1, color: cs.outline),
+
+        // Mom row
+        _InsightRow(
+          label: 'POUR VOUS',
           text: insight.momTip,
-          bg: _roseSoft, labelColor: _roseDark,
+          accent: _accent,
+          cs: cs,
+          bottomRadius: true,
         ),
 
         if ((insight.poeticLine as String).isNotEmpty) ...[
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: _peach,
-              borderRadius: BorderRadius.circular(14)),
+          Divider(height: 1, color: cs.outline),
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Text('"${insight.poeticLine}"',
               style: GoogleFonts.outfit(
                 fontSize: 13, fontStyle: FontStyle.italic,
-                color: _mutedText, height: 1.7),
+                color: cs.onSurface.withOpacity(0.45), height: 1.7),
               textAlign: TextAlign.center),
           ),
         ],
@@ -817,66 +722,40 @@ class _WeekInsightCard extends StatelessWidget {
   }
 }
 
-class _InsightTile extends StatelessWidget {
-  final String emoji, label, text;
-  final Color bg, labelColor;
-  const _InsightTile({
-    required this.emoji, required this.label, required this.text,
-    required this.bg, required this.labelColor,
+class _InsightRow extends StatelessWidget {
+  final String label, text;
+  final Color accent;
+  final ColorScheme cs;
+  final bool topRadius, bottomRadius;
+  const _InsightRow({
+    required this.label, required this.text, required this.accent,
+    required this.cs, this.topRadius = false, this.bottomRadius = false,
   });
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
-    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(emoji, style: const TextStyle(fontSize: 18)),
-      const SizedBox(width: 10),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label.toUpperCase(), style: GoogleFonts.inter(
-          fontSize: 9, fontWeight: FontWeight.w700,
-          color: labelColor, letterSpacing: 1.8)),
-        const SizedBox(height: 5),
-        Text(text, style: GoogleFonts.inter(
-          fontSize: 13, color: _warmText, height: 1.6)),
-      ])),
-    ]),
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  FITNESS CARD
-// ─────────────────────────────────────────────────────────────────────────────
-class _FitCard extends StatelessWidget {
-  final int week;
-  const _FitCard({required this.week});
-
-  @override
   Widget build(BuildContext context) {
+    final r = BorderRadius.vertical(
+      top: topRadius ? const Radius.circular(18) : Radius.zero,
+      bottom: bottomRadius ? const Radius.circular(18) : Radius.zero,
+    );
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecor,
-      child: Row(children: [
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(borderRadius: r),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
-          width: 52, height: 52,
+          width: 3, height: 40,
+          margin: const EdgeInsets.only(right: 12, top: 2),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [_sageSoft, Color(0xFFD4EDDD)],
-              begin: Alignment.topLeft, end: Alignment.bottomRight),
-            borderRadius: BorderRadius.circular(16)),
-          child: const Center(child: Text('🧘', style: TextStyle(fontSize: 24))),
+            color: accent, borderRadius: BorderRadius.circular(2)),
         ),
-        const SizedBox(width: 16),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('FORME & MOUVEMENT', style: GoogleFonts.inter(
+          Text(label, style: GoogleFonts.inter(
             fontSize: 9, fontWeight: FontWeight.w700,
-            color: _sage, letterSpacing: 1.8)),
-          const SizedBox(height: 4),
-          Text(_fitLabel(week), style: GoogleFonts.outfit(
-            fontSize: 15, fontWeight: FontWeight.w700, color: _warmText)),
-          const SizedBox(height: 3),
-          Text(_fitTip(week), style: GoogleFonts.inter(
-            fontSize: 12, color: _mutedText, height: 1.5)),
+            color: accent, letterSpacing: 1.8)),
+          const SizedBox(height: 5),
+          Text(text, style: GoogleFonts.inter(
+            fontSize: 13, height: 1.6,
+            color: cs.onSurface.withOpacity(0.85))),
         ])),
       ]),
     );
@@ -884,131 +763,173 @@ class _FitCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  NAV GRID  (2 × 2)
+//  FITNESS CARD
 // ─────────────────────────────────────────────────────────────────────────────
-class _NavGrid extends StatelessWidget {
+class _FitCard extends StatelessWidget {
   final int week;
-  final BuildContext ctx;
-  const _NavGrid({required this.week, required this.ctx});
+  final ColorScheme cs;
+  const _FitCard({required this.week, required this.cs});
 
   @override
   Widget build(BuildContext context) {
-    Route fade(Widget p) => PageRouteBuilder(
-      pageBuilder: (_, a, __) => p,
-      transitionsBuilder: (_, a, __, c) =>
-          FadeTransition(opacity: CurvedAnimation(parent: a, curve: Curves.easeInOut), child: c),
-      transitionDuration: const Duration(milliseconds: 280),
-    );
-
-    final items = [
-      ('💗', 'Symptômes',   'Journaliser aujourd\'hui', _roseSoft,  _roseDark,
-        () { HapticFeedback.lightImpact(); Navigator.push(ctx, fade(SymptomsHomeScreen(currentWeek: week))); }),
-      ('👶', 'Votre bébé',  'Sem. $week — développement', _sageSoft, _sageDark,
-        () { HapticFeedback.lightImpact(); Navigator.push(ctx, fade(BabyStoryScreen(currentWeek: week))); }),
-      ('🌸', 'Votre corps', 'Évolutions physiques', _peach,     const Color(0xFFB87A20),
-        () { HapticFeedback.lightImpact(); Navigator.push(ctx, fade(PregnancyBodyScreen(currentWeek: week))); }),
-      ('✅', 'Ma checklist','Préparatifs & RDV',     Color(0xFFF0F0FF), Color(0xFF5B5FEF),
-        () { HapticFeedback.lightImpact(); Navigator.push(ctx, fade(PregnancyChecklistScreen(currentWeek: week))); }),
-    ];
-
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.35,
-      children: items.map((item) {
-        final (emoji, title, sub, bg, color, onTap) = item;
-        return GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: color.withOpacity(0.15)),
-              boxShadow: [BoxShadow(
-                color: color.withOpacity(0.08),
-                blurRadius: 12, offset: const Offset(0, 4))],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(emoji, style: const TextStyle(fontSize: 26)),
-                const Spacer(),
-                Text(title, style: GoogleFonts.outfit(
-                  fontSize: 14, fontWeight: FontWeight.w700, color: color)),
-                const SizedBox(height: 2),
-                Text(sub, style: GoogleFonts.inter(
-                  fontSize: 10, color: color.withOpacity(0.7))),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outline),
+      ),
+      child: Row(children: [
+        Container(
+          width: 48, height: 48,
+          decoration: BoxDecoration(
+            color: _primary,
+            borderRadius: BorderRadius.circular(14)),
+          child: const Center(
+            child: Text('🏃', style: TextStyle(fontSize: 22))),
+        ),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('MOUVEMENT', style: GoogleFonts.inter(
+            fontSize: 9, fontWeight: FontWeight.w700,
+            color: _accent, letterSpacing: 1.8)),
+          const SizedBox(height: 3),
+          Text(_fitLabel(week), style: GoogleFonts.outfit(
+            fontSize: 15, fontWeight: FontWeight.w700,
+            color: cs.onSurface)),
+          const SizedBox(height: 2),
+          Text(_fitTip(week), style: GoogleFonts.inter(
+            fontSize: 12, color: cs.onSurface.withOpacity(0.55), height: 1.5)),
+        ])),
+      ]),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  BORN CTA
+//  NAV LIST  (clean rows, matches app style)
 // ─────────────────────────────────────────────────────────────────────────────
-class _BornCard extends StatelessWidget {
-  final BuildContext ctx;
-  const _BornCard({required this.ctx});
+class _NavList extends StatelessWidget {
+  final int week;
+  final ColorScheme cs;
+  const _NavList({required this.week, required this.cs});
+
+  @override
+  Widget build(BuildContext context) {
+    Route fadeTo(Widget p) => PageRouteBuilder(
+      pageBuilder: (_, a, __) => p,
+      transitionsBuilder: (_, a, __, c) =>
+          FadeTransition(opacity: CurvedAnimation(parent: a, curve: Curves.easeInOut), child: c),
+      transitionDuration: const Duration(milliseconds: 260),
+    );
+
+    final items = [
+      ('Symptômes',   'Suivre vos symptômes du jour',  Icons.favorite_border_rounded,
+        () => Navigator.push(context, fadeTo(SymptomsHomeScreen(currentWeek: week)))),
+      ('Votre bébé',  'Développement — semaine $week', Icons.child_care_rounded,
+        () => Navigator.push(context, fadeTo(BabyStoryScreen(currentWeek: week)))),
+      ('Votre corps', 'Évolutions et changements',     Icons.self_improvement_rounded,
+        () => Navigator.push(context, fadeTo(PregnancyBodyScreen(currentWeek: week)))),
+      ('Ma checklist','Préparatifs et rendez-vous',    Icons.check_circle_outline_rounded,
+        () => Navigator.push(context, fadeTo(PregnancyChecklistScreen(currentWeek: week)))),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outline),
+      ),
+      child: Column(children: List.generate(items.length, (i) {
+        final (title, sub, icon, onTap) = items[i];
+        final isLast = i == items.length - 1;
+        return Column(children: [
+          InkWell(
+            onTap: () { HapticFeedback.lightImpact(); onTap(); },
+            borderRadius: BorderRadius.vertical(
+              top: i == 0 ? const Radius.circular(18) : Radius.zero,
+              bottom: isLast ? const Radius.circular(18) : Radius.zero,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(children: [
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: _primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12)),
+                  child: Icon(icon, size: 18, color: _primary),
+                ),
+                const SizedBox(width: 14),
+                Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(title, style: GoogleFonts.outfit(
+                    fontSize: 14, fontWeight: FontWeight.w700,
+                    color: cs.onSurface)),
+                  Text(sub, style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: cs.onSurface.withOpacity(0.5))),
+                ])),
+                Icon(Icons.chevron_right_rounded,
+                    size: 18, color: cs.onSurface.withOpacity(0.3)),
+              ]),
+            ),
+          ),
+          if (!isLast) Divider(height: 1, indent: 70, color: cs.outline),
+        ]);
+      })),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BORN BANNER  (week 37+)
+// ─────────────────────────────────────────────────────────────────────────────
+class _BornBanner extends StatelessWidget {
+  final ColorScheme cs;
+  const _BornBanner({required this.cs});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
-        Navigator.push(ctx, PageRouteBuilder(
-          pageBuilder: (_, a, __) => PostpartumHubScreen(birthDate: DateTime.now()),
+        Navigator.push(context, PageRouteBuilder(
+          pageBuilder: (_, a, __) =>
+              PostpartumHubScreen(birthDate: DateTime.now()),
           transitionsBuilder: (_, a, __, c) => FadeTransition(
-            opacity: CurvedAnimation(parent: a, curve: Curves.easeInOut), child: c),
-          transitionDuration: const Duration(milliseconds: 280),
+            opacity: CurvedAnimation(parent: a, curve: Curves.easeInOut),
+            child: c),
+          transitionDuration: const Duration(milliseconds: 260),
         ));
       },
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [_sageDark, Color(0xFF2E6B45)],
-            begin: Alignment.topLeft, end: Alignment.bottomRight),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [BoxShadow(
-            color: _sageDark.withOpacity(0.3),
-            blurRadius: 16, offset: const Offset(0, 6))],
+          color: _primary,
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Row(children: [
-          const Text('👶', style: TextStyle(fontSize: 28)),
-          const SizedBox(width: 14),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             Text('Mon bébé est né !', style: GoogleFonts.outfit(
-              fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+              fontSize: 16, fontWeight: FontWeight.w700,
+              color: Colors.white)),
+            const SizedBox(height: 2),
             Text('Passer au suivi post-partum', style: GoogleFonts.inter(
-              fontSize: 12, color: Colors.white.withOpacity(0.65))),
+              fontSize: 12, color: Colors.white60)),
           ])),
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              shape: BoxShape.circle),
-            child: const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
+              color: Colors.white.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.arrow_forward_rounded,
+                size: 16, color: Colors.white),
           ),
         ]),
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  SHARED DECORATION
-// ─────────────────────────────────────────────────────────────────────────────
-const _cardDecor = BoxDecoration(
-  color: Colors.white,
-  borderRadius: BorderRadius.all(Radius.circular(22)),
-  boxShadow: [BoxShadow(
-    color: Color(0x0A000000), blurRadius: 16, offset: Offset(0, 4))],
-);
