@@ -160,30 +160,6 @@ class _ZonesHeader extends StatelessWidget {
             ),
           ),
 
-          GestureDetector(
-            onTap: () {},
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                      color: color.withValues(alpha: 0.30),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3))
-                ],
-              ),
-              child: Text(
-                'Voir tout',
-                style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
         ],
       ),
     );

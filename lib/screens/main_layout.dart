@@ -18,6 +18,7 @@ import 'home/home_screen.dart';
 import 'workout/workout_screen.dart';
 import 'nutrition/nutrition_screen.dart';
 import 'community/community_screen.dart';
+import 'profile/profile_screen.dart';
 import '../l10n/app_localizations.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -156,6 +157,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
   Widget build(BuildContext context) {
     final profile = ref.watch(userProfileProvider);
     final l10n    = ref.watch(l10nProvider);
+    final chatbotVisible = ref.watch(chatbotVisibilityProvider);
     final size    = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
     const btnSize = 85.0;
@@ -221,20 +223,21 @@ class _MainLayoutState extends ConsumerState<MainLayout>
           ),
 
           // ── Draggable AI chatbot ───────────────────────────────
-          Positioned(
-            left: _x, top: _y,
-            child: GestureDetector(
-              onPanUpdate: (d) => setState(() {
-                _x = (_x + d.delta.dx).clamp(0, size.width - btnSize);
-                _y = (_y + d.delta.dy).clamp(padding.top, size.height - btnSize - navH);
-              }),
-              onPanEnd: (_) => setState(() {
-                _x = _x < size.width / 2 ? 0 : size.width - btnSize;
-              }),
+          if (chatbotVisible)
+            Positioned(
+              left: _x, top: _y,
               child: GestureDetector(
-                onTap: _openChatbot,
-                child: const _AiChatButton())),
-          ),
+                onPanUpdate: (d) => setState(() {
+                  _x = (_x + d.delta.dx).clamp(0, size.width - btnSize);
+                  _y = (_y + d.delta.dy).clamp(padding.top, size.height - btnSize - navH);
+                }),
+                onPanEnd: (_) => setState(() {
+                  _x = _x < size.width / 2 ? 0 : size.width - btnSize;
+                }),
+                child: GestureDetector(
+                  onTap: _openChatbot,
+                  child: const _AiChatButton())),
+            ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
