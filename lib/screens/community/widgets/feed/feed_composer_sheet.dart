@@ -356,10 +356,12 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
             onTap: _publishing ? null : _publish,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(vertical: 15),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: _publishing ? cs.secondary : cs.primary,
-                borderRadius: BorderRadius.circular(14),
+                color: _publishing
+                    ? cs.primary.withValues(alpha: 0.55)
+                    : cs.primary,
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
                 child: _publishing
@@ -367,20 +369,13 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                         width: 18, height: 18,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: cs.onPrimary))
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(LucideIcons.send,
-                              color: cs.onPrimary, size: 15),
-                          const SizedBox(width: 8),
-                          Text('Publier',
-                              style: GoogleFonts.inter(
-                                color: cs.onPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              )),
-                        ],
-                      ),
+                    : Text('Publier',
+                        style: GoogleFonts.outfit(
+                          color: cs.onPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        )),
               ),
             ),
           ),

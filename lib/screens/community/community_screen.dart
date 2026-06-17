@@ -125,19 +125,18 @@ class _CommunityAppBar extends StatelessWidget {
               GestureDetector(
                 onTap: onComposerTap,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   decoration: BoxDecoration(
                     color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(50),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Row(children: [
-                    Icon(LucideIcons.plus, size: 13, color: colorScheme.onPrimary),
-                    const SizedBox(width: 6),
-                    Text(l10n.communityCreate,
-                      style: GoogleFonts.inter(
-                        color: colorScheme.onPrimary, fontSize: 12,
-                        fontWeight: FontWeight.w700, letterSpacing: 0.3)),
-                  ]),
+                  child: Text(l10n.communityCreate,
+                    style: GoogleFonts.outfit(
+                      color: colorScheme.onPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    )),
                 ),
               ),
               const SizedBox(width: 10),
