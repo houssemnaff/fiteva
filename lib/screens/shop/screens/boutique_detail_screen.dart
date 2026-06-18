@@ -726,10 +726,12 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                   children: [
                     const Icon(CupertinoIcons.info_circle, size: 14, color: Color(0xFFFB8C00)),
                     const SizedBox(width: 7),
-                    Text(
-                      'Il te manque $shortage étoile${shortage > 1 ? 's' : ''} pour débloquer cette offre',
-                      style: const TextStyle(color: Color(0xFFFB8C00),
-                        fontSize: 12.5, fontWeight: FontWeight.w500)),
+                    Flexible(
+                      child: Text(
+                        'Il te manque $shortage étoile${shortage > 1 ? 's' : ''} pour débloquer cette offre',
+                        style: const TextStyle(color: Color(0xFFFB8C00),
+                          fontSize: 12.5, fontWeight: FontWeight.w500)),
+                    ),
                   ],
                 ),
               ),
@@ -927,10 +929,12 @@ class _StepRow extends StatelessWidget {
           ],
         ),
         const SizedBox(width: 14),
-        Padding(
-          padding: const EdgeInsets.only(top: 5),
-          child: Text(text,
-            style: TextStyle(fontSize: 14, color: nc.text2, fontWeight: FontWeight.w400, height: 1.4)),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Text(text,
+              style: TextStyle(fontSize: 14, color: nc.text2, fontWeight: FontWeight.w400, height: 1.4)),
+          ),
         ),
       ],
     );

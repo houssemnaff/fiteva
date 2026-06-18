@@ -226,7 +226,25 @@ class _PostCardState extends ConsumerState<_PostCard>
                   tag: 'avatar_${post.username}',
                   child: CircleAvatar(
                     radius: 20,
-                    backgroundImage: NetworkImage(post.userAvatarUrl),
+                    backgroundColor: cs.primary.withValues(alpha: 0.15),
+                    backgroundImage: post.userAvatarUrl.isNotEmpty
+                        ? NetworkImage(post.userAvatarUrl)
+                        : null,
+                    onBackgroundImageError: post.userAvatarUrl.isNotEmpty
+                        ? (_, __) {}
+                        : null,
+                    child: post.userAvatarUrl.isEmpty
+                        ? Text(
+                            post.username.isNotEmpty
+                                ? post.username[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              color: cs.primary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          )
+                        : null,
                   ),
                 ),
               ),
@@ -297,7 +315,13 @@ class _PostCardState extends ConsumerState<_PostCard>
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(0)),
                 child: SizedBox(
                   height: 200, width: double.infinity,
-                  child: Image.network(post.imageUrl, fit: BoxFit.cover),
+                  child: Image.network(
+                    post.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: cs.primary.withValues(alpha: 0.08),
+                    ),
+                  ),
                 ),
               ),
             ),

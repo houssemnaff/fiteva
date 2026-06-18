@@ -11,6 +11,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:dice_bear/dice_bear.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../providers/mock_data_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -46,6 +47,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user       = ref.watch(userProvider);
+    final profile    = ref.watch(userProfileProvider);
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
     final theme      = Theme.of(context);
     final cs         = theme.colorScheme;
@@ -56,8 +58,11 @@ class ProfileScreen extends ConsumerWidget {
     final styleName = ref.watch(avatarStyleProvider);
     final bgColor   = ref.watch(avatarBgColorProvider);
     final avatarUrl = _buildDiceBearUrl(seed, styleName, bgColor);
-        final points = ref.watch(pointsProvider);
+    final points = ref.watch(pointsProvider);
     final xp     = ref.watch(xpProvider);
+
+    final displayName = profile.username.isNotEmpty ? profile.username : user.name;
+    final displayEmail = profile.email.isNotEmpty ? profile.email : 'sarah.martin@icloud.com';
 
     final screenWidth = MediaQuery.of(context).size.width;
     final horizontalPadding = screenWidth < 400 ? 12.0 : 16.0;
@@ -90,7 +95,7 @@ class ProfileScreen extends ConsumerWidget {
             child: IconButton(
               padding: EdgeInsets.zero,
               icon: Icon(LucideIcons.settings, size: 18, color: textSub),
-              onPressed: () {},
+              onPressed: () => _showEditProfile(context, ref, profile, cs),
             ),
           ),
         ],
@@ -103,7 +108,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 12),
 
             // ── Hero card ──
-            _buildHeroCard(context, ref, user, avatarUrl, cs, theme, textSub, seed, styleName, xp, screenWidth),
+            _buildHeroCard(context, ref, displayName, displayEmail, avatarUrl, cs, theme, textSub, seed, styleName, xp, profile, screenWidth),
             const SizedBox(height: 14),
 
             // ── 3 stat cards ──
@@ -131,11 +136,21 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  void _showEditProfile(BuildContext context, WidgetRef ref, UserProfile profile, ColorScheme cs) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _EditProfileSheet(profile: profile, ref: ref),
+    );
+  }
+
   // ─── Hero Card ─────────────────────────────────────────────────────────────
   Widget _buildHeroCard(
     BuildContext context,
     WidgetRef ref,
-    dynamic user,
+    String displayName,
+    String displayEmail,
     String avatarUrl,
     ColorScheme cs,
     ThemeData theme,
@@ -143,6 +158,7 @@ class ProfileScreen extends ConsumerWidget {
     String seed,
     String styleName,
     XpModel xpData,
+    UserProfile profile,
     double screenWidth,
   ) {
     final int    xpGoal   = xpData.xpForNextLevel;
@@ -255,7 +271,7 @@ class ProfileScreen extends ConsumerWidget {
 
           // ── Name ──
           Text(
-            user.name,
+            displayName.isNotEmpty ? displayName : 'Utilisateur',
             style: TextStyle(
               fontSize: 21,
               fontWeight: FontWeight.w800,
@@ -265,8 +281,26 @@ class ProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            'sarah.martin@icloud.com',
+            displayEmail,
             style: TextStyle(fontSize: 13, color: textSub),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => _showEditProfile(context, ref, profile, cs),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: cs.outline),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(LucideIcons.edit3, size: 12, color: textSub),
+                const SizedBox(width: 5),
+                Text('Modifier le profil',
+                    style: TextStyle(fontSize: 12, color: textSub, fontWeight: FontWeight.w600)),
+              ]),
+            ),
           ),
 
           const SizedBox(height: 12),
@@ -1185,6 +1219,590 @@ class _SettingsItemData {
     this.trailingWidget,
     required this.onTap,
   });
+}
+
+// ─── Edit Profile Sheet ──────────────────────────────────────────────────────
+class _EditProfileSheet extends StatefulWidget {
+  final UserProfile profile;
+  final WidgetRef ref;
+  const _EditProfileSheet({required this.profile, required this.ref});
+
+  @override
+  State<_EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends State<_EditProfileSheet> {
+  late TextEditingController _nameCtrl;
+  late TextEditingController _emailCtrl;
+  late TextEditingController _heightCtrl;
+  late TextEditingController _weightCtrl;
+  late TextEditingController _ageCtrl;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl   = TextEditingController(text: widget.profile.username);
+    _emailCtrl  = TextEditingController(text: widget.profile.email);
+    _heightCtrl = TextEditingController(text: '${widget.profile.heightCm}');
+    _weightCtrl = TextEditingController(text: widget.profile.weightKg.toStringAsFixed(1));
+    _ageCtrl    = TextEditingController(text: '${widget.profile.age}');
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _heightCtrl.dispose();
+    _weightCtrl.dispose();
+    _ageCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    final notifier = widget.ref.read(userProfileProvider.notifier);
+    await notifier.updateField('username', _nameCtrl.text.trim());
+    await notifier.updateField('email', _emailCtrl.text.trim());
+    await notifier.updateField('height_cm', int.tryParse(_heightCtrl.text) ?? widget.profile.heightCm);
+    await notifier.updateField('weight_kg', double.tryParse(_weightCtrl.text) ?? widget.profile.weightKg);
+    await notifier.updateField('age', int.tryParse(_ageCtrl.text) ?? widget.profile.age);
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textSub = cs.onSurface.withValues(alpha: 0.55);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 38, height: 4,
+                  decoration: BoxDecoration(
+                    color: cs.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text('Modifier le profil',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: cs.onSurface, letterSpacing: -0.4)),
+              const SizedBox(height: 6),
+              Text('Vos informations personnelles', style: TextStyle(fontSize: 13, color: textSub)),
+              const SizedBox(height: 24),
+
+              _Field(label: 'Nom d\'utilisateur', ctrl: _nameCtrl, icon: LucideIcons.user, cs: cs,
+                  keyboardType: TextInputType.name),
+              const SizedBox(height: 14),
+              _Field(label: 'Email', ctrl: _emailCtrl, icon: LucideIcons.mail, cs: cs,
+                  keyboardType: TextInputType.emailAddress),
+              const SizedBox(height: 20),
+
+              Divider(color: cs.outlineVariant.withValues(alpha: 0.5)),
+              const SizedBox(height: 16),
+              Text('Données physiques',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textSub, letterSpacing: 0.3)),
+              const SizedBox(height: 14),
+
+              Row(children: [
+                Expanded(child: _Field(label: 'Taille (cm)', ctrl: _heightCtrl, icon: LucideIcons.ruler, cs: cs,
+                    keyboardType: TextInputType.number)),
+                const SizedBox(width: 12),
+                Expanded(child: _Field(label: 'Poids (kg)', ctrl: _weightCtrl, icon: LucideIcons.scale, cs: cs,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true))),
+              ]),
+              const SizedBox(height: 14),
+              _Field(label: 'Âge', ctrl: _ageCtrl, icon: LucideIcons.cake, cs: cs,
+                  keyboardType: TextInputType.number),
+
+              const SizedBox(height: 16),
+              // Advanced edit button
+              GestureDetector(
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => _AdvancedEditSheet(profile: widget.profile, ref: widget.ref),
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: cs.primary.withValues(alpha: 0.20)),
+                  ),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(LucideIcons.settings2, size: 15, color: cs.primary),
+                    const SizedBox(width: 8),
+                    Text('Édition avancée',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.primary)),
+                    const SizedBox(width: 6),
+                    Icon(LucideIcons.chevronRight, size: 14, color: cs.primary),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: _saving
+                      ? SizedBox(width: 20, height: 20,
+                          child: CircularProgressIndicator(color: cs.onPrimary, strokeWidth: 2.5))
+                      : const Text('Enregistrer', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Field extends StatelessWidget {
+  final String label;
+  final TextEditingController ctrl;
+  final IconData icon;
+  final ColorScheme cs;
+  final TextInputType keyboardType;
+  const _Field({required this.label, required this.ctrl, required this.icon,
+      required this.cs, required this.keyboardType});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: ctrl,
+      keyboardType: keyboardType,
+      style: TextStyle(fontSize: 15, color: cs.onSurface, fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.55)),
+        prefixIcon: Icon(icon, size: 18, color: cs.primary.withValues(alpha: 0.7)),
+        filled: true,
+        fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.outline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.primary, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
+    );
+  }
+}
+
+// ─── Advanced Edit Sheet ─────────────────────────────────────────────────────
+class _AdvancedEditSheet extends StatefulWidget {
+  final UserProfile profile;
+  final WidgetRef ref;
+  const _AdvancedEditSheet({required this.profile, required this.ref});
+
+  @override
+  State<_AdvancedEditSheet> createState() => _AdvancedEditSheetState();
+}
+
+class _AdvancedEditSheetState extends State<_AdvancedEditSheet> {
+  // ── Training
+  late List<String> _goals;
+  late String? _fitnessLevel;
+  late String? _frequency;
+  late String? _trainingLocation;
+  late List<String> _equipment;
+  // ── Health
+  late String? _healthStatus;
+  late String? _cycleDuration;
+  late String? _ppRecovery;
+  late String? _ppDuration;
+  late int? _pregnancyWeek;
+
+  bool _saving = false;
+
+  // ── Option lists (matching onboarding)
+  static const _goalOptions = [
+    'Prendre de la force\net me sentir plus forte',
+    'Tonifier et sculpter\ntout mon corps',
+    'Améliorer\nma souplesse\net mobilité',
+    'Réduire le stress\net me sentir plus\néquilibrée',
+    'Reprendre\nune routine',
+  ];
+  static const _levelOptions   = ['Débutant', 'Intermédiaire', 'Avancé'];
+  static const _freqOptions    = ['2 jours', '3 jours', '4 jours', '5 jours', '6 jours'];
+  static const _locOptions     = ['gym', 'home', 'both'];
+  static const _locLabels      = ['Salle de sport', 'Maison', 'Mixte'];
+  static const _equipOptions   = ['Aucun matériel', 'Haltères', 'Barre & poids', 'Machines', 'Résistances', 'Tapis de yoga'];
+  static const _cycleOptions   = ['24 jours', '26 jours', '28 jours', '30 jours', '32 jours'];
+  static const _ppRecovOptions = ['recent', 'slowly', 'active'];
+  static const _ppRecovLabels  = ['Récente', 'Progressive', 'Active'];
+  static const _ppDurOptions   = ['0-2', '2-6', '6-12', '3-6m', '6m+'];
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.profile;
+    _goals           = List<String>.from(p.goals);
+    _fitnessLevel    = p.fitnessLevel;
+    _frequency       = p.frequency;
+    _trainingLocation = p.healthStatus; // misnamed — stored separately below
+    _equipment       = List<String>.from(
+        StorageService.getOnboardingData()['equipment'] != null
+            ? List<String>.from(StorageService.getOnboardingData()['equipment'] as List)
+            : []);
+    _trainingLocation = StorageService.getOnboardingData()['training_location'] as String?;
+    _healthStatus    = p.healthStatus;
+    _cycleDuration   = p.cycleDuration;
+    _ppRecovery      = p.ppRecovery;
+    _ppDuration      = p.ppDuration;
+    _pregnancyWeek   = p.pregnancyWeekSA;
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    final n = widget.ref.read(userProfileProvider.notifier);
+    await n.updateField('goals',             _goals);
+    await n.updateField('fitness_level',     _fitnessLevel);
+    await n.updateField('frequency',         _frequency);
+    await n.updateField('training_location', _trainingLocation);
+    await n.updateField('equipment',         _equipment);
+    await n.updateField('health_status',     _healthStatus);
+    await n.updateField('cycle_duration',    _cycleDuration);
+    await n.updateField('pp_recovery',       _ppRecovery);
+    await n.updateField('pp_duration',       _ppDuration);
+    await n.updateField('pregnancy_week',    _pregnancyWeek);
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs      = Theme.of(context).colorScheme;
+    final textSub = cs.onSurface.withValues(alpha: 0.55);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.90,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (_, scrollCtrl) => ListView(
+            controller: scrollCtrl,
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 38, height: 4,
+                  decoration: BoxDecoration(color: cs.outlineVariant, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text('Édition avancée',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
+                      color: cs.onSurface, letterSpacing: -0.4)),
+              const SizedBox(height: 4),
+              Text('Objectifs, entraînement & santé', style: TextStyle(fontSize: 13, color: textSub)),
+              const SizedBox(height: 24),
+
+              // ── Objectifs ──────────────────────────────────────────────
+              _SectionTitle(label: 'Objectifs', icon: LucideIcons.target, cs: cs),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8, runSpacing: 8,
+                children: _goalOptions.map((g) {
+                  final sel = _goals.contains(g);
+                  final display = g.replaceAll('\n', ' ');
+                  return GestureDetector(
+                    onTap: () => setState(() =>
+                        sel ? _goals.remove(g) : _goals.add(g)),
+                    child: _Chip(label: display, selected: sel, cs: cs),
+                  );
+                }).toList(),
+              ),
+
+              _Divider(cs: cs),
+
+              // ── Niveau de fitness ──────────────────────────────────────
+              _SectionTitle(label: 'Niveau de fitness', icon: LucideIcons.barChart2, cs: cs),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8, runSpacing: 8,
+                children: _levelOptions.map((l) => GestureDetector(
+                  onTap: () => setState(() => _fitnessLevel = l),
+                  child: _Chip(label: l, selected: _fitnessLevel == l, cs: cs),
+                )).toList(),
+              ),
+
+              _Divider(cs: cs),
+
+              // ── Fréquence ──────────────────────────────────────────────
+              _SectionTitle(label: 'Fréquence d\'entraînement', icon: LucideIcons.calendarDays, cs: cs),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8, runSpacing: 8,
+                children: _freqOptions.map((f) => GestureDetector(
+                  onTap: () => setState(() => _frequency = f),
+                  child: _Chip(label: f, selected: _frequency == f, cs: cs),
+                )).toList(),
+              ),
+
+              _Divider(cs: cs),
+
+              // ── Lieu d'entraînement ────────────────────────────────────
+              _SectionTitle(label: 'Lieu d\'entraînement', icon: LucideIcons.mapPin, cs: cs),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8, runSpacing: 8,
+                children: List.generate(_locOptions.length, (i) => GestureDetector(
+                  onTap: () => setState(() => _trainingLocation = _locOptions[i]),
+                  child: _Chip(label: _locLabels[i], selected: _trainingLocation == _locOptions[i], cs: cs),
+                )),
+              ),
+
+              _Divider(cs: cs),
+
+              // ── Équipement ─────────────────────────────────────────────
+              _SectionTitle(label: 'Équipement', icon: LucideIcons.dumbbell, cs: cs),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8, runSpacing: 8,
+                children: _equipOptions.map((e) {
+                  final sel = _equipment.contains(e);
+                  return GestureDetector(
+                    onTap: () => setState(() =>
+                        sel ? _equipment.remove(e) : _equipment.add(e)),
+                    child: _Chip(label: e, selected: sel, cs: cs),
+                  );
+                }).toList(),
+              ),
+
+              _Divider(cs: cs),
+
+              // ── Profil de santé ────────────────────────────────────────
+              _SectionTitle(label: 'Profil de santé', icon: LucideIcons.heart, cs: cs),
+              const SizedBox(height: 12),
+              ...[
+                ('cycle',      'Cycle menstruel', '🌸'),
+                ('pregnant',   'Enceinte',        '🤰'),
+                ('postpartum', 'Post-partum',     '👶'),
+              ].map(((String, String, String) item) {
+                final (value, label, emoji) = item;
+                final sel = _healthStatus == value;
+                return GestureDetector(
+                  onTap: () => setState(() => _healthStatus = sel ? null : value),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: sel ? cs.primary.withValues(alpha: 0.08) : cs.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: sel ? cs.primary : cs.outline),
+                    ),
+                    child: Row(children: [
+                      Text(emoji, style: const TextStyle(fontSize: 20)),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(label,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+                              color: sel ? cs.primary : cs.onSurface))),
+                      if (sel) Icon(LucideIcons.checkCircle, size: 16, color: cs.primary),
+                    ]),
+                  ),
+                );
+              }),
+
+              // ── Conditional: Cycle ─────────────────────────────────────
+              if (_healthStatus == 'cycle') ...[
+                const SizedBox(height: 16),
+                _SectionTitle(label: 'Durée du cycle', icon: LucideIcons.clock, cs: cs),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8, runSpacing: 8,
+                  children: _cycleOptions.map((d) => GestureDetector(
+                    onTap: () => setState(() => _cycleDuration = d),
+                    child: _Chip(label: d, selected: _cycleDuration == d, cs: cs),
+                  )).toList(),
+                ),
+              ],
+
+              // ── Conditional: Pregnant ──────────────────────────────────
+              if (_healthStatus == 'pregnant') ...[
+                const SizedBox(height: 16),
+                _SectionTitle(label: 'Semaine de grossesse (SA)', icon: LucideIcons.baby, cs: cs),
+                const SizedBox(height: 12),
+                Row(children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _pregnancyWeek = ((_pregnancyWeek ?? 12) - 1).clamp(1, 42)),
+                    child: _StepperBtn(icon: LucideIcons.minus, cs: cs),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Center(
+                      child: Text('${_pregnancyWeek ?? 12} SA',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: cs.onSurface)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  GestureDetector(
+                    onTap: () => setState(() => _pregnancyWeek = ((_pregnancyWeek ?? 12) + 1).clamp(1, 42)),
+                    child: _StepperBtn(icon: LucideIcons.plus, cs: cs),
+                  ),
+                ]),
+              ],
+
+              // ── Conditional: Postpartum ────────────────────────────────
+              if (_healthStatus == 'postpartum') ...[
+                const SizedBox(height: 16),
+                _SectionTitle(label: 'Récupération', icon: LucideIcons.activity, cs: cs),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8, runSpacing: 8,
+                  children: List.generate(_ppRecovOptions.length, (i) => GestureDetector(
+                    onTap: () => setState(() => _ppRecovery = _ppRecovOptions[i]),
+                    child: _Chip(label: _ppRecovLabels[i], selected: _ppRecovery == _ppRecovOptions[i], cs: cs),
+                  )),
+                ),
+                const SizedBox(height: 16),
+                _SectionTitle(label: 'Durée post-partum', icon: LucideIcons.clock3, cs: cs),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8, runSpacing: 8,
+                  children: _ppDurOptions.map((d) => GestureDetector(
+                    onTap: () => setState(() => _ppDuration = d),
+                    child: _Chip(label: d, selected: _ppDuration == d, cs: cs),
+                  )).toList(),
+                ),
+              ],
+
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity, height: 52,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: _saving
+                      ? SizedBox(width: 20, height: 20,
+                          child: CircularProgressIndicator(color: cs.onPrimary, strokeWidth: 2.5))
+                      : const Text('Enregistrer', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Small reusable widgets for the advanced sheet ─────────────────────────────
+
+class _SectionTitle extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final ColorScheme cs;
+  const _SectionTitle({required this.label, required this.icon, required this.cs});
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+    Container(
+      width: 28, height: 28,
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(icon, size: 14, color: cs.primary),
+    ),
+    const SizedBox(width: 10),
+    Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cs.onSurface)),
+  ]);
+}
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final ColorScheme cs;
+  const _Chip({required this.label, required this.selected, required this.cs});
+
+  @override
+  Widget build(BuildContext context) => AnimatedContainer(
+    duration: const Duration(milliseconds: 160),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    decoration: BoxDecoration(
+      color: selected ? cs.primary : cs.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(50),
+      border: Border.all(color: selected ? cs.primary : cs.outline),
+    ),
+    child: Text(label, style: TextStyle(
+      fontSize: 12, fontWeight: FontWeight.w600,
+      color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.7),
+    )),
+  );
+}
+
+class _Divider extends StatelessWidget {
+  final ColorScheme cs;
+  const _Divider({required this.cs});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 20),
+    child: Divider(color: cs.outlineVariant.withValues(alpha: 0.5), height: 1),
+  );
+}
+
+class _StepperBtn extends StatelessWidget {
+  final IconData icon;
+  final ColorScheme cs;
+  const _StepperBtn({required this.icon, required this.cs});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 42, height: 42,
+    decoration: BoxDecoration(
+      color: cs.primary.withValues(alpha: 0.10),
+      shape: BoxShape.circle,
+      border: Border.all(color: cs.primary.withValues(alpha: 0.25)),
+    ),
+    child: Icon(icon, size: 18, color: cs.primary),
+  );
 }
 
 class _LangOption extends StatelessWidget {

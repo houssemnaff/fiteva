@@ -308,9 +308,13 @@ class _PartnerCardState extends State<PartnerCard> {
       _avatarColors[widget.index % _avatarColors.length];
 
   String get _initials {
-    final parts = widget.partner.name.trim().split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    return parts[0].substring(0, 2).toUpperCase();
+    final name = widget.partner.name.trim();
+    if (name.isEmpty) return 'P';
+    final parts = name.split(' ');
+    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return parts[0].substring(0, parts[0].length >= 2 ? 2 : parts[0].length).toUpperCase();
   }
 
   @override
@@ -364,15 +368,19 @@ class _PartnerCardState extends State<PartnerCard> {
                     Row(children: [
                       Icon(LucideIcons.mapPin, size: 11, color: cs.onSurface.withValues(alpha: 0.5)),
                       const SizedBox(width: 3),
-                      Text(p.region, style: GoogleFonts.inter(
-                        fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5),
-                      )),
+                      Flexible(
+                        child: Text(p.region, style: GoogleFonts.inter(
+                          fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5),
+                        ), overflow: TextOverflow.ellipsis),
+                      ),
                       const SizedBox(width: 10),
                       Icon(LucideIcons.calendarDays, size: 11, color: cs.onSurface.withValues(alpha: 0.5)),
                       const SizedBox(width: 3),
-                      Text(p.frequency, style: GoogleFonts.inter(
-                        fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5),
-                      )),
+                      Flexible(
+                        child: Text(p.frequency, style: GoogleFonts.inter(
+                          fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5),
+                        ), overflow: TextOverflow.ellipsis),
+                      ),
                     ]),
                   ],
                 ),

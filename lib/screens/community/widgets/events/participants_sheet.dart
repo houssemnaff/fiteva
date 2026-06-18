@@ -38,7 +38,22 @@ class ParticipantsSheet extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 22,
-                        backgroundImage: NetworkImage(e.value),
+                        backgroundColor: colorScheme.primary.withValues(alpha: 0.15),
+                        backgroundImage: e.value.isNotEmpty
+                            ? NetworkImage(e.value)
+                            : null,
+                        onBackgroundImageError: e.value.isNotEmpty
+                            ? (_, __) {}
+                            : null,
+                        child: e.value.isEmpty
+                            ? Text(
+                                '${e.key + 1}',
+                                style: TextStyle(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              )
+                            : null,
                       ),
                       const SizedBox(width: 14),
                       Text(
