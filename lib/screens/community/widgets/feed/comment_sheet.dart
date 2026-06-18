@@ -202,7 +202,7 @@ class _CommentRow extends StatelessWidget {
         CircleAvatar(
           radius: 16,
           backgroundColor: colorScheme.secondary.withValues(alpha: 0.20),
-          child: Text(author[0].toUpperCase(),
+          child: Text(author.isNotEmpty ? author[0].toUpperCase() : '?',
             style: GoogleFonts.outfit(
               color: colorScheme.primary, fontSize: 13, fontWeight: FontWeight.w700)),
         ),

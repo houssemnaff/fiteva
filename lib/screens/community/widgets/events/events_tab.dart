@@ -359,9 +359,13 @@ class _ParticipantsStack extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: colorScheme.surfaceContainerHighest, width: 1.5),
               ),
-              child: ClipOval(child: Image.network(shown[i], fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Container(color: colorScheme.secondary.withValues(alpha: 0.3)))),
+              child: ClipOval(
+                child: shown[i].isNotEmpty
+                    ? Image.network(shown[i], fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: colorScheme.secondary.withValues(alpha: 0.3)))
+                    : Container(color: colorScheme.secondary.withValues(alpha: 0.3)),
+              ),
             ),
           )),
         ),
@@ -436,12 +440,15 @@ class _ProAvatar extends StatelessWidget {
       width: radius * 2, height: radius * 2,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        color: colorScheme.secondary.withValues(alpha: 0.3),
         border: Border.all(color: colorScheme.surfaceContainerHighest, width: 1),
       ),
       child: ClipOval(
-        child: Image.network(url, fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(color: colorScheme.secondary.withValues(alpha: 0.3))),
+        child: url.isNotEmpty
+            ? Image.network(url, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    Container(color: colorScheme.secondary.withValues(alpha: 0.3)))
+            : Container(color: colorScheme.secondary.withValues(alpha: 0.3)),
       ),
     );
   }

@@ -4114,10 +4114,10 @@ class _StepAvatarState extends State<StepAvatar> {
       child: SafeArea(
         child: Column(
           children: [
-            // ── Top bar ──────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: Row(children: [
+              // ── Top bar ──────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                child: Row(children: [
                 GestureDetector(
                   onTap: widget.onBack,
                   child: Container(
@@ -4138,174 +4138,181 @@ class _StepAvatarState extends State<StepAvatar> {
 
             const SizedBox(height: 16),
 
-            // ── Mascot preview card ───────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.55),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
-                  boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 6))],
+            // ── Scrollable content ────────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // ── Mascot preview card ───────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.55),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+                          boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 6))],
+                        ),
+                        child: Column(children: [
+                          // Mascot with glow ring
+                          Container(
+                            width: 140, height: 140,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const RadialGradient(
+                                colors: [Color(0xFFD6EBE0), Color(0xFFB8CFC4)],
+                              ),
+                              boxShadow: [
+                                BoxShadow(color: _kGreenDark.withOpacity(0.20), blurRadius: 24, spreadRadius: 2),
+                              ],
+                            ),
+                            child: Center(child: MascotWidget(type: _type, mood: _mood, size: 110)),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(AppL10n(Lang.code).avatarChooseTitle,
+                            style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800,
+                              color: _kTextDark, letterSpacing: -0.3)),
+                          const SizedBox(height: 4),
+                          Text(
+                            AppL10n(Lang.code).avatarSubtitle,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 12.5, color: _kTextMuted, height: 1.5),
+                          ),
+                        ]),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // ── Choix mascotte (horizontal scroll) ─────────────────
+                    Padding(
+                      padding: const EdgeInsets.only(left: 24, bottom: 10),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(AppL10n(Lang.code).avatarShapeLabel, style: const TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.w800,
+                          color: _kGreenMid, letterSpacing: 2.5)),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 96,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        itemCount: _types.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        itemBuilder: (_, i) {
+                          final (type, name, _) = _types[i];
+                          final selected = _type == type;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() => _type = type);
+                              HapticFeedback.selectionClick();
+                              widget.onAvatarChanged(type.name, type.name, '');
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 82,
+                              decoration: BoxDecoration(
+                                gradient: selected
+                                    ? const LinearGradient(
+                                        colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                                        begin: Alignment.topLeft, end: Alignment.bottomRight)
+                                    : null,
+                                color: selected ? null : Colors.white.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: selected ? Colors.transparent : const Color(0xFFB8D4C0),
+                                  width: 1.5,
+                                ),
+                                boxShadow: selected
+                                    ? [BoxShadow(color: _kGreenDark.withOpacity(0.32), blurRadius: 14, offset: const Offset(0, 5))]
+                                    : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
+                              ),
+                              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                MascotWidget(type: type, mood: MascotMood.happy, size: 48),
+                                const SizedBox(height: 4),
+                                Text(name, style: TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.w700,
+                                  color: selected ? Colors.white : _kTextMuted)),
+                              ]),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // ── Humeur ───────────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.only(left: 24, bottom: 10),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(AppL10n(Lang.code).avatarMoodLabel, style: const TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.w800,
+                          color: _kGreenMid, letterSpacing: 2.5)),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Wrap(
+                        spacing: 8, runSpacing: 8,
+                        children: (() {
+                          final l10n = AppL10n(Lang.code);
+                          final _moodLabels = [
+                            l10n.avatarMoodHappy, l10n.avatarMoodExcited,
+                            l10n.avatarMoodProud, l10n.avatarMoodCelebrating, l10n.avatarMoodSleepy,
+                          ];
+                          return _moodTypes.asMap().entries.map((entry) {
+                          final i = entry.key;
+                          final m = entry.value;
+                          final (mood, emoji) = m;
+                          final label = _moodLabels[i];
+                          final selected = _mood == mood;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() => _mood = mood);
+                              HapticFeedback.selectionClick();
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                gradient: selected
+                                    ? const LinearGradient(
+                                        colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                                        begin: Alignment.topLeft, end: Alignment.bottomRight)
+                                    : null,
+                                color: selected ? null : Colors.white.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(40),
+                                border: Border.all(
+                                  color: selected ? Colors.transparent : const Color(0xFFB8D4C0),
+                                  width: 1.2,
+                                ),
+                                boxShadow: selected
+                                    ? [BoxShadow(color: _kGreenDark.withOpacity(0.28), blurRadius: 10, offset: const Offset(0, 3))]
+                                    : [],
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                Text(emoji, style: const TextStyle(fontSize: 16)),
+                                const SizedBox(width: 6),
+                                Text(label, style: TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w600,
+                                  color: selected ? Colors.white : _kTextDark)),
+                              ]),
+                            ),
+                          );
+                        }).toList();
+                        })(),
+                      ),
+                    ),
+                  ],
                 ),
-                child: Column(children: [
-                  // Mascot with glow ring
-                  Container(
-                    width: 140, height: 140,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const RadialGradient(
-                        colors: [Color(0xFFD6EBE0), Color(0xFFB8CFC4)],
-                      ),
-                      boxShadow: [
-                        BoxShadow(color: _kGreenDark.withOpacity(0.20), blurRadius: 24, spreadRadius: 2),
-                      ],
-                    ),
-                    child: Center(child: MascotWidget(type: _type, mood: _mood, size: 110)),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(AppL10n(Lang.code).avatarChooseTitle,
-                    style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800,
-                      color: _kTextDark, letterSpacing: -0.3)),
-                  const SizedBox(height: 4),
-                  Text(
-                    AppL10n(Lang.code).avatarSubtitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12.5, color: _kTextMuted, height: 1.5),
-                  ),
-                ]),
               ),
             ),
-
-            const SizedBox(height: 20),
-
-            // ── Choix mascotte (horizontal scroll) ───────────────────────
-            Padding(
-              padding: const EdgeInsets.only(left: 24, bottom: 10),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(AppL10n(Lang.code).avatarShapeLabel, style: const TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w800,
-                  color: _kGreenMid, letterSpacing: 2.5)),
-              ),
-            ),
-            SizedBox(
-              height: 96,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                itemCount: _types.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (_, i) {
-                  final (type, name, _) = _types[i];
-                  final selected = _type == type;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() => _type = type);
-                      HapticFeedback.selectionClick();
-                      widget.onAvatarChanged(type.name, type.name, '');
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 82,
-                      decoration: BoxDecoration(
-                        gradient: selected
-                            ? const LinearGradient(
-                                colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
-                                begin: Alignment.topLeft, end: Alignment.bottomRight)
-                            : null,
-                        color: selected ? null : Colors.white.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: selected ? Colors.transparent : const Color(0xFFB8D4C0),
-                          width: 1.5,
-                        ),
-                        boxShadow: selected
-                            ? [BoxShadow(color: _kGreenDark.withOpacity(0.32), blurRadius: 14, offset: const Offset(0, 5))]
-                            : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
-                      ),
-                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        MascotWidget(type: type, mood: MascotMood.happy, size: 48),
-                        const SizedBox(height: 4),
-                        Text(name, style: TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w700,
-                          color: selected ? Colors.white : _kTextMuted)),
-                      ]),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            // ── Humeur ───────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.only(left: 24, bottom: 10),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(AppL10n(Lang.code).avatarMoodLabel, style: const TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w800,
-                  color: _kGreenMid, letterSpacing: 2.5)),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Wrap(
-                spacing: 8, runSpacing: 8,
-                children: (() {
-                  final l10n = AppL10n(Lang.code);
-                  final _moodLabels = [
-                    l10n.avatarMoodHappy, l10n.avatarMoodExcited,
-                    l10n.avatarMoodProud, l10n.avatarMoodCelebrating, l10n.avatarMoodSleepy,
-                  ];
-                  return _moodTypes.asMap().entries.map((entry) {
-                  final i = entry.key;
-                  final m = entry.value;
-                  final (mood, emoji) = m;
-                  final label = _moodLabels[i];
-                  final selected = _mood == mood;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() => _mood = mood);
-                      HapticFeedback.selectionClick();
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        gradient: selected
-                            ? const LinearGradient(
-                                colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
-                                begin: Alignment.topLeft, end: Alignment.bottomRight)
-                            : null,
-                        color: selected ? null : Colors.white.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(40),
-                        border: Border.all(
-                          color: selected ? Colors.transparent : const Color(0xFFB8D4C0),
-                          width: 1.2,
-                        ),
-                        boxShadow: selected
-                            ? [BoxShadow(color: _kGreenDark.withOpacity(0.28), blurRadius: 10, offset: const Offset(0, 3))]
-                            : [],
-                      ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Text(emoji, style: const TextStyle(fontSize: 16)),
-                        const SizedBox(width: 6),
-                        Text(label, style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600,
-                          color: selected ? Colors.white : _kTextDark)),
-                      ]),
-                    ),
-                  );
-                }).toList();
-                })(),
-              ),
-            ),
-
-            const Spacer(),
 
             // ── CTA ──────────────────────────────────────────────────────
             Padding(

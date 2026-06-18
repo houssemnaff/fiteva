@@ -3,9 +3,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pedometer/pedometer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/points_provider.dart';
 import '../services/step_service.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -14,14 +17,14 @@ const _kGreenDark = Color(0xFF0E2B1A);
 const _kGold      = Color(0xFFB8966E);
 const _kGoldLight = Color(0xFFFFD89B);
 
-class MesPasCard extends StatefulWidget {
+class MesPasCard extends ConsumerStatefulWidget {
   const MesPasCard({super.key});
 
   @override
-  State<MesPasCard> createState() => _MesPasCardState();
+  ConsumerState<MesPasCard> createState() => _MesPasCardState();
 }
 
-class _MesPasCardState extends State<MesPasCard>
+class _MesPasCardState extends ConsumerState<MesPasCard>
     with TickerProviderStateMixin {
   late AnimationController _arcCtrl;
   late Animation<double> _arcAnim;
@@ -32,10 +35,11 @@ class _MesPasCardState extends State<MesPasCard>
   StreamSubscription<StepCount>? _stepSubscription;
 
   int _stepsToday   = 0;
-  static const int _goalSteps = 10000;
+  static const int _goalSteps = 100;
   bool _isSyncing   = false;
   bool _isLoading   = true;
   String? _errorMessage;
+  bool _goalAlreadyRewarded = false;
 
   @override
   void initState() {
@@ -53,6 +57,22 @@ class _MesPasCardState extends State<MesPasCard>
         CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
 
     _initializeStepService();
+    _checkIfAlreadyRewarded();
+  }
+
+  Future<void> _checkIfAlreadyRewarded() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = _todayKey();
+    if (mounted) {
+      setState(() {
+        _goalAlreadyRewarded = prefs.getBool(today) ?? false;
+      });
+    }
+  }
+
+  String _todayKey() {
+    final now = DateTime.now();
+    return 'step_goal_rewarded_${now.year}-${now.month}-${now.day}';
   }
 
   void _animateTo(double target) {
@@ -85,6 +105,7 @@ class _MesPasCardState extends State<MesPasCard>
               _isLoading = false;
             });
             _animateTo(_progress);
+            _checkGoalCompletion();
           }
         },
         onError: (_) {
@@ -106,6 +127,64 @@ class _MesPasCardState extends State<MesPasCard>
     }
   }
 
+  Future<void> _checkGoalCompletion() async {
+    if (_progress < 1.0 || _goalAlreadyRewarded) return;
+    final prefs = await SharedPreferences.getInstance();
+    final today = _todayKey();
+    if (prefs.getBool(today) ?? false) {
+      if (mounted) setState(() => _goalAlreadyRewarded = true);
+      return;
+    }
+    await prefs.setBool(today, true);
+    if (mounted) setState(() => _goalAlreadyRewarded = true);
+    await ref.read(pointsProvider.notifier).addPoints(50);
+    if (mounted) _showGoalNotification();
+  }
+
+  void _showGoalNotification() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        backgroundColor: _kGreen,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        duration: const Duration(seconds: 4),
+        content: Row(children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: _kGold.withValues(alpha: 0.20),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(LucideIcons.trophy, color: _kGold, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Objectif atteint !',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    )),
+                Text('+50 points ajoutés',
+                    style: GoogleFonts.inter(
+                      color: _kGoldLight,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    )),
+              ],
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _stepSubscription?.cancel();
@@ -122,6 +201,7 @@ class _MesPasCardState extends State<MesPasCard>
   }
 
   double get _progress => (_stepsToday / _goalSteps).clamp(0.0, 1.0);
+  bool get _isGoalDone => _progress >= 1.0;
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +297,7 @@ class _MesPasCardState extends State<MesPasCard>
                           progress: _isLoading || _errorMessage != null
                               ? 0
                               : _arcAnim.value,
+                          goalDone: _isGoalDone,
                         ),
                       ),
                     ),
@@ -226,6 +307,8 @@ class _MesPasCardState extends State<MesPasCard>
                       _LoadingCenter()
                     else if (_errorMessage != null)
                       _ErrorCenter()
+                    else if (_isGoalDone)
+                      _GoalDoneCenter(steps: _stepsToday)
                     else
                       _StepCenter(
                           steps: _stepsToday,
@@ -261,6 +344,63 @@ class _MesPasCardState extends State<MesPasCard>
   }
 }
 
+// ── Goal done center ──────────────────────────────────────────────────────────
+class _GoalDoneCenter extends StatelessWidget {
+  final int steps;
+  const _GoalDoneCenter({required this.steps});
+
+  @override
+  Widget build(BuildContext context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: _kGold.withValues(alpha: 0.20),
+              shape: BoxShape.circle,
+              border: Border.all(color: _kGold.withValues(alpha: 0.50), width: 2),
+            ),
+            child: const Icon(LucideIcons.trophy, size: 24, color: _kGold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            StepService.formatNumber(steps),
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 38,
+              fontWeight: FontWeight.w900,
+              height: 1,
+              letterSpacing: -1.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Objectif atteint !',
+            style: GoogleFonts.inter(
+              color: _kGoldLight,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: _kGold.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: Text('+50 pts',
+                style: GoogleFonts.outfit(
+                  color: _kGold,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                )),
+          ),
+        ],
+      );
+}
+
 // ── Step center ───────────────────────────────────────────────────────────────
 class _StepCenter extends StatelessWidget {
   final int steps;
@@ -275,7 +415,6 @@ class _StepCenter extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Animated footstep icon
           ScaleTransition(
             scale: pulseAnim,
             child: Container(
@@ -290,8 +429,6 @@ class _StepCenter extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-
-          // Step count
           Text(
             StepService.formatNumber(steps),
             style: GoogleFonts.outfit(
@@ -312,7 +449,6 @@ class _StepCenter extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          // Gold percentage
           Text(
             '${(progress * 100).toStringAsFixed(0)}%',
             style: GoogleFonts.outfit(
@@ -450,7 +586,8 @@ class _StatTile extends StatelessWidget {
 // ── Arc painter ───────────────────────────────────────────────────────────────
 class _ArcPainter extends CustomPainter {
   final double progress;
-  const _ArcPainter({required this.progress});
+  final bool goalDone;
+  const _ArcPainter({required this.progress, this.goalDone = false});
 
   static const double _startAngle = math.pi * 0.65;
   static const double _sweepFull  = math.pi * 1.70;
@@ -487,32 +624,37 @@ class _ArcPainter extends CustomPainter {
         ..shader = SweepGradient(
           startAngle: _startAngle,
           endAngle: _startAngle + _sweepFull,
-          colors: const [_kGold, _kGoldLight, _kGold],
+          colors: goalDone
+              ? const [_kGoldLight, _kGold, _kGoldLight]
+              : const [_kGold, _kGoldLight, _kGold],
           stops: const [0.0, 0.5, 1.0],
         ).createShader(rect)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
+        ..strokeWidth = goalDone ? 13.0 : strokeWidth
         ..strokeCap = StrokeCap.round,
     );
 
-    // Tip glow dot
-    final tipAngle = _startAngle + _sweepFull * progress;
-    final tipX = center.dx + radius * math.cos(tipAngle);
-    final tipY = center.dy + radius * math.sin(tipAngle);
-    canvas.drawCircle(
-      Offset(tipX, tipY),
-      7,
-      Paint()
-        ..color = _kGoldLight
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-    );
-    canvas.drawCircle(
-      Offset(tipX, tipY),
-      4,
-      Paint()..color = _kGoldLight,
-    );
+    if (!goalDone) {
+      // Tip glow dot (only when not complete)
+      final tipAngle = _startAngle + _sweepFull * progress;
+      final tipX = center.dx + radius * math.cos(tipAngle);
+      final tipY = center.dy + radius * math.sin(tipAngle);
+      canvas.drawCircle(
+        Offset(tipX, tipY),
+        7,
+        Paint()
+          ..color = _kGoldLight
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+      canvas.drawCircle(
+        Offset(tipX, tipY),
+        4,
+        Paint()..color = _kGoldLight,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(_ArcPainter old) => old.progress != progress;
+  bool shouldRepaint(_ArcPainter old) =>
+      old.progress != progress || old.goalDone != goalDone;
 }

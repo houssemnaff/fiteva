@@ -96,8 +96,7 @@ class AppL10n {
 
   // exercise player
   String get exSessionComplete      => _fr ? 'Séance terminée ! ✓'              : 'Workout complete! ✓';
-  String exPointsEarned(int pts, int total) => _fr
-      ? '+$pts pts gagnés ! Total : $total pts' : '+$pts pts earned! Total: $total pts';
+  String exPointsEarned(int pts, int total) => _fr  ? '+$pts pts gagnés ! ' : '+$pts pts earned! ';
   String get exWatch80              => _fr ? 'Regardez au moins 80% pour gagner les points'
                                            : 'Watch at least 80% to earn points';
   String get exTagGlutes            => _fr ? 'Fessiers'    : 'Glutes';
