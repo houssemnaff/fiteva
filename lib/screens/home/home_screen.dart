@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:fiteva/providers/xp_provider.dart';
 
 import 'package:fiteva/screens/home/library_widget.dart';
+import 'package:fiteva/screens/home/referral_card.dart';
 import 'package:fiteva/screens/home/programs_bottom_sheet.dart';
 import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
 import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
@@ -171,6 +172,11 @@ class HomeScreen extends ConsumerWidget {
           // ── Library ───────────────────────────────────
           SliverToBoxAdapter(
             child: LibrarySection(),
+          ),
+
+          // ── Referral / Invite ─────────────────────────
+          const SliverToBoxAdapter(
+            child: ReferralCard(),
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 110)),

@@ -318,14 +318,15 @@ class _SummaryCard extends StatelessWidget {
               fontWeight: FontWeight.w700, letterSpacing: 2.5)),
             const SizedBox(height: 2),
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Text('${totals.calories}', style: GoogleFonts.outfit(
-                fontSize: 38, fontWeight: FontWeight.w800,
-                color: nc.text1, height: 1)),
+              Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+                child: Text('${totals.calories}', style: GoogleFonts.outfit(
+                  fontSize: 38, fontWeight: FontWeight.w800,
+                  color: nc.text1, height: 1)))),
               const SizedBox(width: 6),
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text('/ $goal kcal', style: GoogleFonts.inter(
-                  fontSize: 13, color: nc.text2))),
+                  fontSize: 12, color: nc.text2))),
             ]),
           ]),
           const Spacer(),

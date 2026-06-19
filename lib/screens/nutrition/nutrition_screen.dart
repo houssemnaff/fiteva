@@ -250,7 +250,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
             child: Padding(
               padding: const EdgeInsets.only(top: 12),
               child: SizedBox(
-                height: 162,
+                height: MediaQuery.of(context).size.height < 700 ? 148 : 162,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -309,32 +309,36 @@ class _CalorieRingCard extends StatelessWidget {
       child: Row(children: [
 
         // ── Ring ────────────────────────────────────────────────────────────
-        AnimatedBuilder(
-          animation: anim,
-          builder: (_, __) => SizedBox(
-            width: 110, height: 110,
-            child: Stack(alignment: Alignment.center, children: [
-              SizedBox(
-                width: 110, height: 110,
-                child: CircularProgressIndicator(
-                  value: pct * anim.value,
-                  strokeWidth: 9,
-                  backgroundColor: Colors.white.withOpacity(0.12),
-                  valueColor: AlwaysStoppedAnimation(
-                    over ? const Color(0xFFFF6B6B) : const Color(0xFF7ABB98)),
-                  strokeCap: StrokeCap.round,
+        LayoutBuilder(builder: (_, c) {
+          // Adapt ring to available space: smaller on narrow phones
+          final ringSize = (MediaQuery.of(context).size.width < 380) ? 90.0 : 110.0;
+          return AnimatedBuilder(
+            animation: anim,
+            builder: (_, __) => SizedBox(
+              width: ringSize, height: ringSize,
+              child: Stack(alignment: Alignment.center, children: [
+                SizedBox(
+                  width: ringSize, height: ringSize,
+                  child: CircularProgressIndicator(
+                    value: pct * anim.value,
+                    strokeWidth: 9,
+                    backgroundColor: Colors.white.withOpacity(0.12),
+                    valueColor: AlwaysStoppedAnimation(
+                      over ? const Color(0xFFFF6B6B) : const Color(0xFF7ABB98)),
+                    strokeCap: StrokeCap.round,
+                  ),
                 ),
-              ),
-              Column(mainAxisSize: MainAxisSize.min, children: [
-                Text('$consumed', style: GoogleFonts.outfit(
-                  fontSize: 26, fontWeight: FontWeight.w800,
-                  color: Colors.white, height: 1)),
-                Text('kcal', style: GoogleFonts.inter(
-                  fontSize: 10, color: const Color(0xFF7ABB98))),
+                Column(mainAxisSize: MainAxisSize.min, children: [
+                  FittedBox(fit: BoxFit.scaleDown, child: Text('$consumed', style: GoogleFonts.outfit(
+                    fontSize: 22, fontWeight: FontWeight.w800,
+                    color: Colors.white, height: 1))),
+                  Text('kcal', style: GoogleFonts.inter(
+                    fontSize: 9, color: const Color(0xFF7ABB98))),
+                ]),
               ]),
-            ]),
-          ),
-        ),
+            ),
+          );
+        }),
 
         const SizedBox(width: 20),
 

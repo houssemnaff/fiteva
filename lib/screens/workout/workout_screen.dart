@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:fiteva/models/home_program_model.dart';
+import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:fiteva/screens/workout/widgets/DanceSection.dart';
 import 'package:fiteva/screens/workout/widgets/GrossesseSection.dart';
 import 'package:fiteva/screens/workout/widgets/MaisonSection.dart';
@@ -195,12 +196,59 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
           children: [
 
             // ── Header ────────────────────────────────────────────────────
-            _WorkoutHeader(
-              favorites: favorites,
-              onFavTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const FavoritesScreen())),
-              onCalTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const WeeklyPlanScreen())),
+            SharedAppHeader(
+              eyebrow: 'Workout',
+              title: l10n.workoutMyTrainings,
+              accentColor: WorkoutColors.salle,
+              actions: [
+                Stack(clipBehavior: Clip.none, children: [
+                  GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const FavoritesScreen())),
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: WorkoutColors.grossesse.withValues(alpha: 0.10),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.favorite_rounded,
+                          size: 18, color: WorkoutColors.grossesse),
+                    ),
+                  ),
+                  if (favorites.isNotEmpty)
+                    Positioned(
+                      top: -2, right: -2,
+                      child: Container(
+                        width: 16, height: 16,
+                        decoration: BoxDecoration(
+                          color: WorkoutColors.salle,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text('${favorites.length}',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ),
+                ]),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const WeeklyPlanScreen())),
+                  child: Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(
+                      color: WorkoutColors.salle.withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(LucideIcons.calendarDays,
+                        size: 17, color: WorkoutColors.salle),
+                  ),
+                ),
+              ],
             ),
 
             // ── Phase Hero Card ───────────────────────────────────────────
@@ -333,140 +381,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             SizedBox(height: bottomGap),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// HEADER
-// ══════════════════════════════════════════════════════════════════════════════
-class _WorkoutHeader extends StatelessWidget {
-  final Set<String> favorites;
-  final VoidCallback onFavTap;
-  final VoidCallback onCalTap;
-  const _WorkoutHeader(
-      {required this.favorites, required this.onFavTap, required this.onCalTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs   = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    const accent = Color(0xFF1C4D30);
-
-    return Container(
-      color: dark ? const Color(0xFF0D0D0D) : const Color(0xFFF5F5F3),
-      padding: EdgeInsets.fromLTRB(
-          20, MediaQuery.of(context).padding.top + 16, 20, 20),
-      child: Row(
-        children: [
-          // Left — title block
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Container(
-                    width: 6, height: 6,
-                    decoration: const BoxDecoration(
-                        color: accent, shape: BoxShape.circle),
-                  ),
-                  const SizedBox(width: 7),
-                  Text('MES ENTRAÎNEMENTS',
-                      style: GoogleFonts.inter(
-                          color: accent,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.5)),
-                ]),
-                const SizedBox(height: 6),
-                Text('Workout',
-                    style: GoogleFonts.outfit(
-                        color: cs.onSurface,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -1.0,
-                        height: 1.0)),
-              ],
-            ),
-          ),
-
-          // Right — action buttons
-          _HeaderBtn(
-            icon: LucideIcons.heart,
-            color: WorkoutColors.grossesse,
-            badge: favorites.isNotEmpty ? '${favorites.length}' : null,
-            onTap: onFavTap,
-            dark: dark,
-          ),
-          const SizedBox(width: 10),
-          _HeaderBtn(
-            icon: LucideIcons.calendarDays,
-            color: accent,
-            onTap: onCalTap,
-            dark: dark,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeaderBtn extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String? badge;
-  final VoidCallback onTap;
-  final bool dark;
-  const _HeaderBtn(
-      {required this.icon,
-      required this.color,
-      required this.onTap,
-      required this.dark,
-      this.badge});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: dark
-                  ? const Color(0xFF1A1A1A)
-                  : Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(
-                  color: color.withValues(alpha: 0.20)),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withValues(alpha: dark ? 0.25 : 0.07),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3))
-              ],
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          if (badge != null)
-            Positioned(
-              top: -3,
-              right: -3,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                    color: color, shape: BoxShape.circle),
-                child: Text(badge!,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w800)),
-              ),
-            ),
-        ],
       ),
     );
   }

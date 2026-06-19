@@ -64,7 +64,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
     final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: dark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F5),
+      backgroundColor: dark ? const Color(0xFF0D0D0D) : const Color.fromARGB(255, 255, 255, 255),
       body: Stack(
         children: [
           CustomScrollView(

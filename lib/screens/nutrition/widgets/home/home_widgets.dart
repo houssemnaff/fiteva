@@ -85,25 +85,29 @@ class DailyTrackingCard extends StatelessWidget {
         // ── Main content: ring + right panel ─────────────────────────────────
         Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
 
-          // Donut ring
-          SizedBox(
-            width: 110, height: 110,
-            child: AnimatedBuilder(
-              animation: anim,
-              builder: (_, __) => CustomPaint(
-                painter: DonutPainter(
-                  proteinRatio: 0.25, carbsRatio: 0.54, fatRatio: 0.41,
-                  animValue: anim.value),
-                child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text('$caloriesConsumed', style: GoogleFonts.outfit(
-                    fontSize: 24, fontWeight: FontWeight.w800,
-                    color: Colors.white, height: 1)),
-                  Text('kcal', style: GoogleFonts.inter(
-                    fontSize: 10, color: _kMint)),
-                ])),
+          // Donut ring — adaptive size
+          Builder(builder: (ctx) {
+            final sw = MediaQuery.of(ctx).size.width;
+            final ringSize = sw < 380 ? 90.0 : 110.0;
+            return SizedBox(
+              width: ringSize, height: ringSize,
+              child: AnimatedBuilder(
+                animation: anim,
+                builder: (_, __) => CustomPaint(
+                  painter: DonutPainter(
+                    proteinRatio: 0.25, carbsRatio: 0.54, fatRatio: 0.41,
+                    animValue: anim.value),
+                  child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    FittedBox(fit: BoxFit.scaleDown, child: Text('$caloriesConsumed', style: GoogleFonts.outfit(
+                      fontSize: 22, fontWeight: FontWeight.w800,
+                      color: Colors.white, height: 1))),
+                    Text('kcal', style: GoogleFonts.inter(
+                      fontSize: 9, color: _kMint)),
+                  ])),
+                ),
               ),
-            ),
-          ),
+            );
+          }),
 
           const SizedBox(width: 18),
 
@@ -387,7 +391,7 @@ class RecipeCard extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
     child: Container(
-      width: 160,
+      width: MediaQuery.of(context).size.width < 380 ? 140 : 160,
       decoration: BoxDecoration(
         color: recipe.bgColor,
         borderRadius: BorderRadius.circular(20),
