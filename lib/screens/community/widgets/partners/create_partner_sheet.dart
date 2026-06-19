@@ -8,23 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  DESIGN TOKENS
-// ─────────────────────────────────────────────────────────────────────────────
-abstract class _K {
-  static const green      = Color(0xFF1C4D30);
-  static const mint       = Color(0xFF7ABB98);
-  static const mintBg     = Color(0xFFEAF3EC);
-  static const surface    = Colors.white;
-  static const ink        = Color(0xFF111110);
-  static const inkMuted   = Color(0xFF6B7280);
-  static const inkSubtle  = Color(0xFFAAAAAA);
-  static const divider    = Color(0xFFEEEEEC);
-  static const chipBg     = Color(0xFFF4F4F3);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  ENTRY POINT
-// ─────────────────────────────────────────────────────────────────────────────
 void showCreatePartnerSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
@@ -36,16 +19,14 @@ void showCreatePartnerSheet(BuildContext context) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  MAIN WIDGET
-// ─────────────────────────────────────────────────────────────────────────────
-class CreatePartnerSheet extends StatefulWidget {
+class CreatePartnerSheet extends ConsumerStatefulWidget {
   const CreatePartnerSheet({super.key});
 
   @override
-  State<CreatePartnerSheet> createState() => _CreatePartnerSheetState();
+  ConsumerState<CreatePartnerSheet> createState() => _CreatePartnerSheetState();
 }
 
-class _CreatePartnerSheetState extends State<CreatePartnerSheet>
+class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
     with SingleTickerProviderStateMixin {
 
   final _descCtrl   = TextEditingController();
@@ -60,20 +41,14 @@ class _CreatePartnerSheetState extends State<CreatePartnerSheet>
   late final AnimationController _enterCtrl;
   late final Animation<double>   _enterAnim;
 
-  // ── Data ──────────────────────────────────────────────────────────────────
-
   static const _goals = [
-    (label: 'Perdre du poids', icon: LucideIcons.flame,    color: Color(0xFFFF6B6B)),
-    (label: 'Tonifier',        icon: LucideIcons.zap,      color: Color(0xFFFFA500)),
-    (label: 'Prise de masse',  icon: LucideIcons.dumbbell, color: Color(0xFF7ABB98)),
-    (label: 'Bien-être',       icon: LucideIcons.heart,    color: Color(0xFF9B7FC7)),
+    (label: 'Perdre du poids', icon: LucideIcons.flame),
+    (label: 'Tonifier',        icon: LucideIcons.zap),
+    (label: 'Prise de masse',  icon: LucideIcons.dumbbell),
+    (label: 'Bien-être',       icon: LucideIcons.heart),
   ];
 
-  static const _levels = [
-    (label: 'Débutant',       dot: Color(0xFF7ABB98)),
-    (label: 'Intermédiaire',  dot: Color(0xFFFFA500)),
-    (label: 'Avancé',         dot: Color(0xFFFF6B6B)),
-  ];
+  static const _levels = ['Débutant', 'Intermédiaire', 'Avancé'];
 
   static const _regions = ['Sousse', 'Monastir', 'Tunis', 'Sfax', 'Autre'];
 
@@ -84,15 +59,12 @@ class _CreatePartnerSheetState extends State<CreatePartnerSheet>
     (label: '5x / sem', icon: LucideIcons.flame),
   ];
 
-  // ── Lifecycle ──────────────────────────────────────────────────────────────
-
   @override
   void initState() {
     super.initState();
     _enterCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 400));
-    _enterAnim =
-        CurvedAnimation(parent: _enterCtrl, curve: Curves.easeOutCubic);
+    _enterAnim = CurvedAnimation(parent: _enterCtrl, curve: Curves.easeOutCubic);
     _enterCtrl.forward();
   }
 
@@ -104,307 +76,309 @@ class _CreatePartnerSheetState extends State<CreatePartnerSheet>
     super.dispose();
   }
 
-  // ── Publish ────────────────────────────────────────────────────────────────
-
   Future<void> _publish() async {
     HapticFeedback.mediumImpact();
     setState(() => _isPublishing = true);
-    await Future.delayed(const Duration(milliseconds: 1200));
+    final partner = PartnerModel(
+      id: 'pt_${DateTime.now().millisecondsSinceEpoch}',
+      name: 'Moi',
+      avatar: 'https://i.pravatar.cc/150?img=1',
+      goal: _selectedGoal,
+      level: _selectedLevel,
+      region: _selectedRegion,
+      frequency: _selectedFreq,
+      description: _descCtrl.text.trim().isNotEmpty
+          ? _descCtrl.text.trim()
+          : 'Passionné de fitness, cherche partenaire motivé.',
+      tags: [_selectedGoal.split(' ').first, _selectedLevel],
+    );
+    await ref.read(partnersNotifierProvider.notifier).addPartner(partner);
     if (!mounted) return;
     setState(() => _isPublishing = false);
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: _K.green,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        duration: const Duration(seconds: 3),
-        content: Row(children: [
-          const Icon(LucideIcons.checkCircle, color: Colors.white, size: 18),
-          const SizedBox(width: 10),
-          Text('Profil publié !',
-              style: GoogleFonts.inter(
-                  color: Colors.white, fontWeight: FontWeight.w600)),
-        ]),
-      ),
-    );
+    final cs = Theme.of(context).colorScheme;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: cs.primary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      duration: const Duration(seconds: 3),
+      content: Row(children: [
+        Icon(LucideIcons.checkCircle, color: cs.onPrimary, size: 18),
+        const SizedBox(width: 10),
+        Text('Profil publié !',
+            style: GoogleFonts.inter(color: cs.onPrimary, fontWeight: FontWeight.w600)),
+      ]),
+    ));
   }
-
-  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    final cs     = Theme.of(context).colorScheme;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final screenH = MediaQuery.of(context).size.height;
 
     return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(0, 1),
-        end: Offset.zero,
-      ).animate(_enterAnim),
+      position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+          .animate(_enterAnim),
       child: Container(
         constraints: BoxConstraints(maxHeight: screenH * 0.92),
-        decoration: const BoxDecoration(
-          color: _K.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHandle(),
-            _buildHeader(),
-            const Divider(color: _K.divider, height: 1),
+            _Handle(cs: cs),
+            _TopBar(cs: cs, onClose: () => Navigator.of(context).pop()),
             Flexible(
               child: SingleChildScrollView(
                 controller: _scrollCtrl,
-                padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 16),
+                padding: EdgeInsets.fromLTRB(20, 0, 20, bottom + 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _label('Objectif'),
+                    // ── Objectif ─────────────────────────────────
+                    _SectionLabel(text: 'Objectif', cs: cs),
                     const SizedBox(height: 10),
-                    _buildGoalGrid(),
+                    _GoalGrid(
+                      goals: _goals,
+                      selected: _selectedGoal,
+                      cs: cs,
+                      onSelect: (v) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _selectedGoal = v);
+                      },
+                    ),
                     const SizedBox(height: 24),
-                    _label('Niveau'),
+
+                    // ── Niveau ───────────────────────────────────
+                    _SectionLabel(text: 'Niveau', cs: cs),
                     const SizedBox(height: 10),
-                    _buildLevelRow(),
+                    _PillRow(
+                      items: _levels,
+                      selected: _selectedLevel,
+                      cs: cs,
+                      onSelect: (v) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _selectedLevel = v);
+                      },
+                    ),
                     const SizedBox(height: 24),
-                    _label('Fréquence'),
+
+                    // ── Fréquence ────────────────────────────────
+                    _SectionLabel(text: 'Fréquence', cs: cs),
                     const SizedBox(height: 10),
-                    _buildFreqRow(),
+                    _FreqRow(
+                      freqs: _freqs,
+                      selected: _selectedFreq,
+                      cs: cs,
+                      onSelect: (v) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _selectedFreq = v);
+                      },
+                    ),
                     const SizedBox(height: 24),
-                    _label('Région'),
+
+                    // ── Région ───────────────────────────────────
+                    _SectionLabel(text: 'Région', cs: cs),
                     const SizedBox(height: 10),
-                    _buildRegionWrap(),
+                    _RegionWrap(
+                      regions: _regions,
+                      selected: _selectedRegion,
+                      cs: cs,
+                      onSelect: (v) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _selectedRegion = v);
+                      },
+                    ),
                     const SizedBox(height: 24),
-                    _label('À propos de toi  (optionnel)'),
-                    const SizedBox(height: 10),
-                    _buildDescField(),
+
+                    // ── À propos ─────────────────────────────────
+                    _SectionLabel(text: 'À propos de toi  (optionnel)', cs: cs),
+                    const SizedBox(height: 8),
+                    _DescriptionField(controller: _descCtrl, cs: cs),
                     const SizedBox(height: 8),
                   ],
                 ),
               ),
             ),
-            _buildActions(),
+            _BottomBar(cs: cs, publishing: _isPublishing, onPublish: _publish),
           ],
         ),
       ),
     );
   }
+}
 
-  // ── Handle ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  HANDLE
+// ─────────────────────────────────────────────────────────────────────────────
+class _Handle extends StatelessWidget {
+  final ColorScheme cs;
+  const _Handle({required this.cs});
 
-  Widget _buildHandle() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 4),
-      child: Center(
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 12, bottom: 6),
+    child: Center(
+      child: Container(
+        width: 36, height: 4,
+        decoration: BoxDecoration(
+          color: cs.outline.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(2)),
+      ),
+    ),
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  TOP BAR
+// ─────────────────────────────────────────────────────────────────────────────
+class _TopBar extends StatelessWidget {
+  final ColorScheme cs;
+  final VoidCallback onClose;
+  const _TopBar({required this.cs, required this.onClose});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
+    child: Row(children: [
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('PARTENAIRE', style: GoogleFonts.inter(
+          fontSize: 9, fontWeight: FontWeight.w700,
+          color: cs.primary, letterSpacing: 2.5)),
+        const SizedBox(height: 2),
+        Text('Décris ton profil', style: GoogleFonts.outfit(
+          fontSize: 19, fontWeight: FontWeight.w700,
+          color: cs.onSurface, letterSpacing: -0.3)),
+      ])),
+      GestureDetector(
+        onTap: onClose,
         child: Container(
-          width: 40, height: 4,
+          width: 36, height: 36,
           decoration: BoxDecoration(
-            color: _K.divider,
-            borderRadius: BorderRadius.circular(2),
-          ),
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12)),
+          child: Icon(LucideIcons.x, size: 16,
+              color: cs.onSurface.withValues(alpha: 0.6)),
         ),
       ),
-    );
-  }
+    ]),
+  );
+}
 
-  // ── Header ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  SECTION LABEL
+// ─────────────────────────────────────────────────────────────────────────────
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  final ColorScheme cs;
+  const _SectionLabel({required this.text, required this.cs});
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
-      child: Row(
-        children: [
-          Container(
-            width: 48, height: 48,
-            decoration: BoxDecoration(
-              color: _K.mintBg,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(LucideIcons.users, color: _K.green, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Trouver un partenaire',
-                    style: GoogleFonts.outfit(
-                      color: _K.ink,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    )),
-                const SizedBox(height: 2),
-                Text('Décris ton profil pour trouver le match parfait',
-                    style: GoogleFonts.inter(
-                        color: _K.inkMuted, fontSize: 12)),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(
-                color: _K.chipBg,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(LucideIcons.x, size: 15, color: _K.inkMuted),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  @override
+  Widget build(BuildContext context) => Text(
+    text,
+    style: GoogleFonts.inter(
+      color: cs.onSurface.withValues(alpha: 0.5),
+      fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5,
+    ),
+  );
+}
 
-  // ── Goal 2×2 grid ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  GOAL GRID
+// ─────────────────────────────────────────────────────────────────────────────
+class _GoalGrid extends StatelessWidget {
+  final List<({String label, IconData icon})> goals;
+  final String selected;
+  final ColorScheme cs;
+  final ValueChanged<String> onSelect;
+  const _GoalGrid({
+    required this.goals, required this.selected,
+    required this.cs, required this.onSelect,
+  });
 
-  Widget _buildGoalGrid() {
+  @override
+  Widget build(BuildContext context) {
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
       childAspectRatio: 2.8,
-      children: _goals.map((g) {
-        final sel = _selectedGoal == g.label;
+      children: goals.map((g) {
+        final sel = selected == g.label;
         return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() => _selectedGoal = g.label);
-          },
+          onTap: () => onSelect(g.label),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
             decoration: BoxDecoration(
-              color: sel ? g.color.withOpacity(0.1) : _K.chipBg,
+              color: sel ? cs.primary : cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: sel ? g.color.withOpacity(0.6) : Colors.transparent,
-                width: 1.5,
+                color: sel ? cs.primary : cs.outline,
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(g.icon,
-                    size: 15,
-                    color: sel ? g.color : _K.inkSubtle),
-                const SizedBox(width: 7),
-                Text(g.label,
-                    style: GoogleFonts.inter(
-                      color: sel ? g.color : _K.inkMuted,
-                      fontSize: 12,
-                      fontWeight:
-                          sel ? FontWeight.w600 : FontWeight.w400,
-                    )),
-              ],
-            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(g.icon, size: 14,
+                  color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.5)),
+              const SizedBox(width: 7),
+              Text(g.label, style: GoogleFonts.inter(
+                color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
+                fontSize: 12,
+                fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
+              )),
+            ]),
           ),
         );
       }).toList(),
     );
   }
+}
 
-  // ── Level row ──────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  PILL ROW  (level)
+// ─────────────────────────────────────────────────────────────────────────────
+class _PillRow extends StatelessWidget {
+  final List<String> items;
+  final String selected;
+  final ColorScheme cs;
+  final ValueChanged<String> onSelect;
+  const _PillRow({
+    required this.items, required this.selected,
+    required this.cs, required this.onSelect,
+  });
 
-  Widget _buildLevelRow() {
+  @override
+  Widget build(BuildContext context) {
     return Row(
-      children: _levels.asMap().entries.map((e) {
-        final lvl = e.value;
-        final sel = _selectedLevel == lvl.label;
+      children: items.asMap().entries.map((e) {
+        final sel = selected == e.value;
         return Expanded(
           child: Padding(
-            padding: EdgeInsets.only(right: e.key < _levels.length - 1 ? 8 : 0),
+            padding: EdgeInsets.only(right: e.key < items.length - 1 ? 8 : 0),
             child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() => _selectedLevel = lvl.label);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: sel ? lvl.dot.withOpacity(0.1) : _K.chipBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: sel ? lvl.dot.withOpacity(0.6) : Colors.transparent,
-                    width: 1.5,
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 7, height: 7,
-                      decoration: BoxDecoration(
-                          color: lvl.dot, shape: BoxShape.circle),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(lvl.label,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          color: sel ? lvl.dot : _K.inkMuted,
-                          fontSize: 11,
-                          fontWeight:
-                              sel ? FontWeight.w600 : FontWeight.w400,
-                        )),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // ── Frequency row ──────────────────────────────────────────────────────────
-
-  Widget _buildFreqRow() {
-    return Row(
-      children: _freqs.asMap().entries.map((e) {
-        final f = e.value;
-        final sel = _selectedFreq == f.label;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: e.key < _freqs.length - 1 ? 8 : 0),
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() => _selectedFreq = f.label);
-              },
+              onTap: () => onSelect(e.value),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 decoration: BoxDecoration(
-                  color: sel ? _K.mintBg : _K.chipBg,
+                  color: sel ? cs.primary : cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: sel ? _K.mint.withOpacity(0.6) : Colors.transparent,
-                    width: 1.5,
+                    color: sel ? cs.primary : cs.outline,
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(f.icon,
-                        size: 15,
-                        color: sel ? _K.green : _K.inkSubtle),
-                    const SizedBox(height: 5),
-                    Text(f.label,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          color: sel ? _K.green : _K.inkMuted,
-                          fontSize: 10,
-                          fontWeight:
-                              sel ? FontWeight.w700 : FontWeight.w400,
-                        )),
-                  ],
+                child: Center(
+                  child: Text(e.value, textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
+                        fontSize: 12,
+                        fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
+                      )),
                 ),
               ),
             ),
@@ -413,197 +387,205 @@ class _CreatePartnerSheetState extends State<CreatePartnerSheet>
       }).toList(),
     );
   }
+}
 
-  // ── Region wrap ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  FREQ ROW
+// ─────────────────────────────────────────────────────────────────────────────
+class _FreqRow extends StatelessWidget {
+  final List<({String label, IconData icon})> freqs;
+  final String selected;
+  final ColorScheme cs;
+  final ValueChanged<String> onSelect;
+  const _FreqRow({
+    required this.freqs, required this.selected,
+    required this.cs, required this.onSelect,
+  });
 
-  Widget _buildRegionWrap() {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: freqs.asMap().entries.map((e) {
+        final f = e.value;
+        final sel = selected == f.label;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: e.key < freqs.length - 1 ? 8 : 0),
+            child: GestureDetector(
+              onTap: () => onSelect(f.label),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                decoration: BoxDecoration(
+                  color: sel ? cs.primary : cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: sel ? cs.primary : cs.outline,
+                  ),
+                ),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(f.icon, size: 14,
+                      color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.5)),
+                  const SizedBox(height: 5),
+                  Text(f.label, textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
+                        fontSize: 10,
+                        fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
+                      )),
+                ]),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  REGION WRAP
+// ─────────────────────────────────────────────────────────────────────────────
+class _RegionWrap extends StatelessWidget {
+  final List<String> regions;
+  final String selected;
+  final ColorScheme cs;
+  final ValueChanged<String> onSelect;
+  const _RegionWrap({
+    required this.regions, required this.selected,
+    required this.cs, required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _regions.map((r) {
-        final sel = _selectedRegion == r;
+      spacing: 8, runSpacing: 8,
+      children: regions.map((r) {
+        final sel = selected == r;
         return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() => _selectedRegion = r);
-          },
+          onTap: () => onSelect(r),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
-              color: sel ? _K.mintBg : _K.chipBg,
+              color: sel ? cs.primary : cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: sel ? _K.mint.withOpacity(0.7) : Colors.transparent,
-                width: 1.5,
+                color: sel ? cs.primary : cs.outline,
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (sel) ...[
-                  const Icon(LucideIcons.mapPin,
-                      size: 11, color: _K.green),
-                  const SizedBox(width: 5),
-                ],
-                Text(r,
-                    style: GoogleFonts.inter(
-                      color: sel ? _K.green : _K.inkMuted,
-                      fontSize: 13,
-                      fontWeight:
-                          sel ? FontWeight.w600 : FontWeight.w400,
-                    )),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (sel) ...[
+                Icon(LucideIcons.mapPin, size: 11, color: cs.onPrimary),
+                const SizedBox(width: 5),
               ],
-            ),
+              Text(r, style: GoogleFonts.inter(
+                color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
+                fontSize: 13,
+                fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
+              )),
+            ]),
           ),
         );
       }).toList(),
     );
   }
-
-  // ── Description field ──────────────────────────────────────────────────────
-
-  Widget _buildDescField() {
-    return _FocusField(
-      controller: _descCtrl,
-      hint: 'Je cherche une partenaire pour salle 3x/semaine à Sousse…',
-      maxLines: 4,
-    );
-  }
-
-  // ── Actions bar ────────────────────────────────────────────────────────────
-
-  Widget _buildActions() {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-          20, 12, 20, 12 + MediaQuery.of(context).padding.bottom),
-      decoration: const BoxDecoration(
-        color: _K.surface,
-        border: Border(top: BorderSide(color: _K.divider)),
-      ),
-      child: Row(
-        children: [
-          // Cancel
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              decoration: BoxDecoration(
-                color: _K.chipBg,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text('Annuler',
-                  style: GoogleFonts.inter(
-                      color: _K.inkMuted,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500)),
-            ),
-          ),
-
-          const SizedBox(width: 10),
-
-          // Publish
-          Expanded(
-            child: GestureDetector(
-              onTap: _isPublishing ? null : _publish,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: _isPublishing
-                      ? _K.green.withValues(alpha: 0.55)
-                      : _K.green,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: _isPublishing
-                      ? const SizedBox(
-                          width: 18, height: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : Text('Publier mon profil',
-                          style: GoogleFonts.outfit(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
-                          )),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Section label ──────────────────────────────────────────────────────────
-
-  Widget _label(String text) => Text(
-        text,
-        style: GoogleFonts.inter(
-          color: _K.inkMuted,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
-        ),
-      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FOCUS TEXT FIELD
+//  DESCRIPTION FIELD
 // ─────────────────────────────────────────────────────────────────────────────
-class _FocusField extends StatefulWidget {
+class _DescriptionField extends StatefulWidget {
   final TextEditingController controller;
-  final String hint;
-  final int maxLines;
-
-  const _FocusField({
-    required this.controller,
-    required this.hint,
-    this.maxLines = 1,
-  });
+  final ColorScheme cs;
+  const _DescriptionField({required this.controller, required this.cs});
 
   @override
-  State<_FocusField> createState() => _FocusFieldState();
+  State<_DescriptionField> createState() => _DescriptionFieldState();
 }
 
-class _FocusFieldState extends State<_FocusField> {
+class _DescriptionFieldState extends State<_DescriptionField> {
   bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
+    final cs = widget.cs;
     return Focus(
       onFocusChange: (f) => setState(() => _focused = f),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: _focused ? Colors.white : _K.chipBg,
+          color: _focused ? cs.surface : cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _focused ? _K.mint : Colors.transparent,
-            width: 1.5,
+            color: _focused ? cs.primary : cs.outline,
+            width: _focused ? 1.5 : 1,
           ),
           boxShadow: _focused
               ? [BoxShadow(
-                  color: _K.mint.withOpacity(0.12),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2))]
+                  color: cs.primary.withValues(alpha: 0.08),
+                  blurRadius: 8, offset: const Offset(0, 2))]
               : [],
         ),
         child: TextField(
           controller: widget.controller,
-          maxLines: widget.maxLines,
-          style: GoogleFonts.inter(
-              color: _K.ink, fontSize: 14, height: 1.55),
+          maxLines: 4,
+          style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14, height: 1.55),
           decoration: InputDecoration(
-            hintText: widget.hint,
+            hintText: 'Je cherche une partenaire pour salle 3x/semaine à Sousse…',
             hintStyle: GoogleFonts.inter(
-                color: _K.inkSubtle, fontSize: 13, height: 1.5),
+                color: cs.onSurface.withValues(alpha: 0.35), fontSize: 13, height: 1.5),
             contentPadding: const EdgeInsets.all(14),
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BOTTOM BAR
+// ─────────────────────────────────────────────────────────────────────────────
+class _BottomBar extends StatelessWidget {
+  final ColorScheme cs;
+  final bool publishing;
+  final VoidCallback onPublish;
+  const _BottomBar({required this.cs, required this.publishing, required this.onPublish});
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + bottomPad),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        border: Border(top: BorderSide(color: cs.outline.withValues(alpha: 0.6))),
+      ),
+      child: GestureDetector(
+        onTap: publishing ? null : onPublish,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 17),
+          decoration: BoxDecoration(
+            color: publishing ? cs.primary.withValues(alpha: 0.5) : cs.primary,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            child: publishing
+                ? SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: cs.onPrimary))
+                : Text('Publier mon profil',
+                    style: GoogleFonts.outfit(
+                      color: cs.onPrimary,
+                      fontSize: 16, fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    )),
           ),
         ),
       ),

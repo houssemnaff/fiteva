@@ -80,7 +80,11 @@ class CommunityScreen extends ConsumerWidget {
         ],
         body: IndexedStack(
           index: tabIndex,
-          children: const [FeedTab(), EventsTab(), PartnerTab()],
+          children: const [
+            PrimaryScrollController.none(child: FeedTab()),
+            PrimaryScrollController.none(child: EventsTab()),
+            PrimaryScrollController.none(child: PartnerTab()),
+          ],
         ),
       ),
     );

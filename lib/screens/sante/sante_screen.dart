@@ -324,7 +324,7 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
                   Tab(icon: Icon(LucideIcons.video, size: 14), text: 'Ressources'),
                   Tab(icon: Icon(LucideIcons.messageCircleQuestion, size: 14), text: 'Q & R'),
                   Tab(icon: Icon(LucideIcons.userRound, size: 14), text: 'Médecins'),
-                  Tab(icon: Icon(LucideIcons.notebookPen, size: 14), text: 'Carnet'),
+                 
                 ],
               ),
             ),
@@ -344,8 +344,8 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
               onSpec: (s) => setState(() => _spec = s),
               onMarker: (i) => setState(() => _marker = _marker == i ? null : i),
               onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark))),
-            _CarnetTab(dark: dark, wCtrl: _wCtrl, bCtrl: _bCtrl, history: _history,
-              onSave: (e) => setState(() => _history.insert(0, e))),
+            
+            
           ],
         ),
       ),
@@ -1377,103 +1377,6 @@ class _MapPopup extends StatelessWidget {
 
 // ─── Tab 5 · Carnet ───────────────────────────────────────────────────────────
 
-class _CarnetTab extends StatelessWidget {
-  final bool dark;
-  final TextEditingController wCtrl, bCtrl;
-  final List<Map<String, String>> history;
-  final ValueChanged<Map<String, String>> onSave;
-  const _CarnetTab({required this.dark, required this.wCtrl, required this.bCtrl,
-    required this.history, required this.onSave});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 110),
-      children: [
-        _Label(text: 'Constantes du jour', dark: dark),
-        const SizedBox(height: 16),
-        // Input row
-        Row(children: [
-          Expanded(child: _InputBox(ctrl: wCtrl, label: 'Poids', hint: '62 kg',
-            icon: LucideIcons.weight, dark: dark)),
-          const SizedBox(width: 12),
-          Expanded(child: _InputBox(ctrl: bCtrl, label: 'Tension', hint: '120/80',
-            icon: LucideIcons.activity, dark: dark)),
-        ]),
-        const SizedBox(height: 12),
-        GestureDetector(
-          onTap: () {
-            if (wCtrl.text.isEmpty && bCtrl.text.isEmpty) return;
-            onSave({'date': 'Aujourd\'hui', 'poids': wCtrl.text, 'tension': bCtrl.text});
-            wCtrl.clear(); bCtrl.clear();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: _T.t1(dark), borderRadius: BorderRadius.circular(14)),
-            child: Center(child: Text('Enregistrer', style: GoogleFonts.inter(
-              fontSize: 14, fontWeight: FontWeight.w600, color: _T.card(dark))))),
-        ),
-        const SizedBox(height: 36),
-
-        // Rappels
-        _Label(text: 'Rappels', dark: dark),
-        const SizedBox(height: 16),
-        ..._rappels.map((r) => Padding(
-          padding: const EdgeInsets.only(bottom: 1),
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: Row(children: [
-                Icon(r.icon, size: 18,
-                  color: r.done ? _T.t3(dark) : _T.accent(dark)),
-                const SizedBox(width: 14),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(r.title, style: GoogleFonts.inter(fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: r.done ? _T.t3(dark) : _T.t1(dark),
-                    decoration: r.done ? TextDecoration.lineThrough : null)),
-                  Text(r.due, style: GoogleFonts.inter(fontSize: 12, color: _T.t3(dark))),
-                ])),
-                Icon(r.done ? LucideIcons.circleCheck : LucideIcons.circle,
-                  size: 18, color: r.done ? _T.accent(dark) : _T.t3(dark)),
-              ]),
-            ),
-            Divider(height: 1, color: _T.border(dark)),
-          ]),
-        )),
-
-        // History
-        if (history.isNotEmpty) ...[
-          const SizedBox(height: 32),
-          _Label(text: 'Historique', dark: dark),
-          const SizedBox(height: 12),
-          ...history.map((e) => Padding(
-            padding: const EdgeInsets.only(bottom: 1),
-            child: Column(children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(children: [
-                  Text(e['date'] ?? '', style: GoogleFonts.inter(fontSize: 13, color: _T.t2(dark))),
-                  const Spacer(),
-                  if ((e['poids']??'').isNotEmpty)
-                    Text('${e['poids']} kg', style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600, color: _T.t1(dark))),
-                  if ((e['tension']??'').isNotEmpty) ...[
-                    const SizedBox(width: 16),
-                    Text(e['tension']!, style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600, color: _T.t1(dark))),
-                  ],
-                ]),
-              ),
-              Divider(height: 1, color: _T.border(dark)),
-            ]),
-          )),
-        ],
-      ],
-    );
-  }
-}
 
 // ─── Doctor sheet ─────────────────────────────────────────────────────────────
 
