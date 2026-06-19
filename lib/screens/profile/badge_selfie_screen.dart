@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -241,7 +242,7 @@ class BadgeSelfieScreen extends StatefulWidget {
 
 class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
     with SingleTickerProviderStateMixin {
-  File? _photo;
+  Uint8List? _photoBytes;
   bool _saving = false;
   bool _saved = false;
   final _boundaryKey = GlobalKey();
@@ -272,8 +273,9 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
       preferredCameraDevice: CameraDevice.front,
     );
     if (picked != null) {
+      final bytes = await picked.readAsBytes();
       setState(() {
-        _photo = File(picked.path);
+        _photoBytes = bytes;
         _saved = false;
       });
     }
@@ -295,10 +297,9 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
       final bytes = byteData!.buffer.asUint8List();
 
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/fiteva_badge_${DateTime.now().millisecondsSinceEpoch}.png');
-      await file.writeAsBytes(bytes);
-
-      await Gal.putImage(file.path, album: 'FitEva');
+      final path = '${dir.path}/fiteva_badge_${DateTime.now().millisecondsSinceEpoch}.png';
+      await File(path).writeAsBytes(bytes);
+      await Gal.putImage(path, album: 'FitEva');
       setState(() { _saved = true; _saving = false; });
 
       if (mounted) {
@@ -369,7 +370,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
                       ],
                     ),
                   ),
-                  if (_photo != null)
+                  if (_photoBytes != null)
                     GestureDetector(
                       onTap: _saving ? null : _exportImage,
                       child: AnimatedContainer(
@@ -407,9 +408,9 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
 
             // ── Preview area ──
             Expanded(
-              child: _photo == null
+              child: _photoBytes == null
                   ? _buildEmptyState(cs, badge)
-                  : _buildPhotoWithBadge(sw, sh, badge),
+                  : _buildPhotoWithBadge(sw, sh, badge, _photoBytes!),
             ),
 
             // ── Bottom actions ──
@@ -460,7 +461,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
     );
   }
 
-  Widget _buildPhotoWithBadge(double sw, double sh, ProgrammeBadge badge) {
+  Widget _buildPhotoWithBadge(double sw, double sh, ProgrammeBadge badge, Uint8List photoBytes) {
     final photoHeight = sh * 0.62;
 
     return Column(
@@ -474,7 +475,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
               fit: StackFit.expand,
               children: [
                 // Photo
-                Image.file(_photo!, fit: BoxFit.cover),
+                Image.memory(photoBytes, fit: BoxFit.cover),
 
                 // Gradient overlay at bottom
                 Positioned(
@@ -581,7 +582,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
               onTap: () => _pickPhoto(ImageSource.gallery),
             ),
           ),
-          if (_photo != null) ...[
+          if (_photoBytes != null) ...[
             const SizedBox(width: 12),
             Expanded(
               child: _ActionBtn(
