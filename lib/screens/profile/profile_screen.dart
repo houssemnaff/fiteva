@@ -1,4 +1,5 @@
 import 'package:fiteva/models/xp_model.dart';
+import 'badge_selfie_screen.dart';
 import 'package:fiteva/providers/onboarding_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/xp_provider.dart';
@@ -121,6 +122,10 @@ class ProfileScreen extends ConsumerWidget {
 
             // ── Badges ──
             _buildBadgesSection(context, cs, theme, textSub, xp, screenWidth),
+            const SizedBox(height: 24),
+
+            // ── Programme badges ──
+            const ProgrammeBadgesSection(),
             const SizedBox(height: 20),
 
             // ── Challenges ──
