@@ -3,6 +3,9 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'badge_download_stub.dart'
+    if (dart.library.html) 'badge_download_web.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:gal/gal.dart';
@@ -286,30 +289,34 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
     setState(() => _saving = true);
 
     try {
-      // Check/request gallery permission
-      final hasAccess = await Gal.hasAccess();
-      if (!hasAccess) await Gal.requestAccess();
-
       final boundary = _boundaryKey.currentContext!.findRenderObject()
           as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final bytes = byteData!.buffer.asUint8List();
 
-      final dir = await getTemporaryDirectory();
-      final path = '${dir.path}/fiteva_badge_${DateTime.now().millisecondsSinceEpoch}.png';
-      await File(path).writeAsBytes(bytes);
-      await Gal.putImage(path, album: 'FitEva');
-      setState(() { _saved = true; _saving = false; });
+      if (kIsWeb) {
+        // On web: trigger browser download via anchor element
+        _downloadOnWeb(bytes);
+      } else {
+        // On mobile: save to gallery
+        final hasAccess = await Gal.hasAccess();
+        if (!hasAccess) await Gal.requestAccess();
+        final dir = await getTemporaryDirectory();
+        final path = '${dir.path}/fiteva_badge_${DateTime.now().millisecondsSinceEpoch}.png';
+        await File(path).writeAsBytes(bytes);
+        await Gal.putImage(path, album: 'FitEva');
+      }
 
+      setState(() { _saved = true; _saving = false; });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(children: [
-              Icon(LucideIcons.checkCircle, color: Colors.white, size: 18),
+              const Icon(LucideIcons.checkCircle, color: Colors.white, size: 18),
               const SizedBox(width: 10),
-              const Text('Sauvegardé dans la galerie !',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(kIsWeb ? 'Image téléchargée !' : 'Sauvegardé dans la galerie !',
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             ]),
             backgroundColor: const Color(0xFF1D9E75),
             behavior: SnackBarBehavior.floating,
@@ -327,6 +334,10 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
         );
       }
     }
+  }
+
+  void _downloadOnWeb(Uint8List bytes) {
+    downloadImageOnWeb(bytes);
   }
 
   @override
@@ -515,18 +526,14 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
                   left: sw * _badgeOffset.dx - 70,
                   top: photoHeight * _badgeOffset.dy - 70,
                   child: GestureDetector(
-                    onPanUpdate: (d) {
-                      setState(() {
-                        _badgeOffset = Offset(
-                          (_badgeOffset.dx + d.delta.dx / sw)
-                              .clamp(0.1, 0.9),
-                          (_badgeOffset.dy + d.delta.dy / photoHeight)
-                              .clamp(0.1, 0.9),
-                        );
-                      });
-                    },
                     onScaleUpdate: (d) {
                       setState(() {
+                        _badgeOffset = Offset(
+                          (_badgeOffset.dx + d.focalPointDelta.dx / sw)
+                              .clamp(0.1, 0.9),
+                          (_badgeOffset.dy + d.focalPointDelta.dy / photoHeight)
+                              .clamp(0.1, 0.9),
+                        );
                         _badgeScale = (_badgeScale * d.scale).clamp(0.5, 2.5);
                       });
                     },
