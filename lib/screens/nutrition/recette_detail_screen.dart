@@ -286,8 +286,9 @@ class _HeroSection extends StatelessWidget {
               ]),
               const SizedBox(height: 10),
               // Recipe name
-              Text(recipeName, style: TextStyle(
-                fontSize: 26, fontWeight: FontWeight.w700,
+              Text(recipeName, maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                fontSize: 22, fontWeight: FontWeight.w700,
                 color: cs.onSurface, height: 1.15, letterSpacing: -.3,
               )),
               const SizedBox(height: 10),
@@ -534,13 +535,14 @@ class _PortionKcalSection extends StatelessWidget {
               Row(crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text('${198 * portions}',
-                    style: TextStyle(
-                      fontSize: 26, fontWeight: FontWeight.w700,
-                      color: colorScheme.onSurface)),
+                  Flexible(child: FittedBox(fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text('${198 * portions}',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface)))),
                   const SizedBox(width: 4),
                   Text('kcal',
-                    style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant)),
+                    style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
                 ]),
             ]),
             const Spacer(),
@@ -853,7 +855,7 @@ class _KcalCard extends StatelessWidget {
       child: Row(children: [
         // Ring
         SizedBox(
-          width: 72, height: 72,
+          width: 68, height: 68,
           child: CustomPaint(
             painter: _RingPainter(
               progress: progress * 0.11,
@@ -1033,10 +1035,13 @@ class _MealTypeModalState extends State<_MealTypeModal> {
             style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant)),
           const SizedBox(height: 20),
 
-          GridView.count(
-            crossAxisCount: 2,
+          LayoutBuilder(builder: (ctx, constraints) {
+            final cols = constraints.maxWidth < 340 ? 1 : 2;
+            final ratio = cols == 1 ? 4.0 : 2.6;
+            return GridView.count(
+            crossAxisCount: cols,
             crossAxisSpacing: 12, mainAxisSpacing: 12,
-            childAspectRatio: 2.6,
+            childAspectRatio: ratio,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: _meals.map((m) {
@@ -1070,7 +1075,7 @@ class _MealTypeModalState extends State<_MealTypeModal> {
                 ),
               );
             }).toList(),
-          ),
+          );}),
 
           const SizedBox(height: 22),
 

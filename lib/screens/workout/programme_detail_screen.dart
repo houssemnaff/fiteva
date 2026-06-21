@@ -4,14 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../models/home_program_model.dart';
+import '../../models/workout_model.dart';
 import '../../services/workout_progress_service.dart';
 import 'active_workout_screen.dart';
-
-// ── Brand tokens (jamais changés par le thème) ────────────────────────────────
-const _kGreen     = Color(0xFF1C4D30);
-const _kGreenMid  = Color(0xFF2E7D52);
-const _kGold      = Color(0xFFB8966E);
-const _kGoldLight = Color(0xFFF0DFC0);
 
 class WorkoutDetailScreen extends StatefulWidget {
   final HomeProgramModel program;
@@ -22,78 +17,100 @@ class WorkoutDetailScreen extends StatefulWidget {
 }
 
 class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   int _tab = 0;
-  int _selectedWeek = 0;
-  late final AnimationController _fabAnim;
   bool _isProgramCompleted = false;
+  late final AnimationController _enterAnim;
 
   @override
   void initState() {
     super.initState();
-    _fabAnim = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    )..forward();
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ));
+    _enterAnim = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700))
+      ..forward();
     _checkProgramCompletion();
   }
 
+  @override
+  void dispose() {
+    _enterAnim.dispose();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
+  }
+
   Future<void> _checkProgramCompletion() async {
-    final isCompleted = await WorkoutProgressService.isProgramCompleted(widget.program.id);
-    if (mounted) {
-      setState(() => _isProgramCompleted = isCompleted);
-    }
+    final done =
+        await WorkoutProgressService.isProgramCompleted(widget.program.id);
+    if (mounted) setState(() => _isProgramCompleted = done);
   }
 
   Future<int> _getFirstIncompleteWorkoutIndex() async {
-    final completedWorkouts = await WorkoutProgressService.getCompletedWorkouts();
+    final completed = await WorkoutProgressService.getCompletedWorkouts();
     for (int i = 0; i < widget.program.workouts.length; i++) {
-      if (!completedWorkouts.contains(widget.program.workouts[i].id)) {
-        return i;
-      }
+      if (!completed.contains(widget.program.workouts[i].id)) return i;
     }
     return 0;
   }
 
   @override
-  void dispose() {
-    _fabAnim.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final p  = widget.program;
+    final p = widget.program;
     final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: cs.surface,
+      backgroundColor: dark ? const Color(0xFF0D0D0D) : const Color.fromARGB(255, 255, 255, 255),
       body: Stack(
         children: [
           CustomScrollView(
+            physics: const BouncingScrollPhysics(),
             slivers: [
-              _HeroAppBar(program: p, isCompleted: _isProgramCompleted),
-              _TabBarSliver(current: _tab, onTab: (i) => setState(() => _tab = i)),
-              _tab == 0
-                  ? _AboutTab(program: p)
-                  : _SessionsTab(
-                      program: p,
-                      selectedWeek: _selectedWeek,
-                      onWeekTap: (i) => setState(() => _selectedWeek = i),
-                    ),
+              _HeroSliver(
+                program: p,
+                isCompleted: _isProgramCompleted,
+                anim: _enterAnim,
+                onBack: () => Navigator.pop(context),
+              ),
+              _TabBarSliver(
+                  current: _tab, onTab: (i) => setState(() => _tab = i)),
+              if (_tab == 0)
+                _AboutSliver(program: p)
+              else
+                _SessionsSliver(
+                    program: p,
+                    onWorkoutTap: (w) async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => ActiveWorkoutScreen(workout: w)),
+                      );
+                      if (mounted) {
+                        setState(() {});
+                        _checkProgramCompletion();
+                      }
+                    }),
+              const SliverToBoxAdapter(child: SizedBox(height: 110)),
             ],
           ),
           _BottomCta(
-            anim: _fabAnim,
             workouts: p.workouts,
             onTap: () async {
-              final workoutIndex = await _getFirstIncompleteWorkoutIndex();
+              final nav = Navigator.of(context);
+              final idx = await _getFirstIncompleteWorkoutIndex();
+              if (!mounted) return;
+              await nav.push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        ActiveWorkoutScreen(workout: p.workouts[idx])),
+              );
               if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: p.workouts[workoutIndex])),
-                );
+                setState(() {});
+                _checkProgramCompletion();
               }
             },
           ),
@@ -104,227 +121,242 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// HERO APP BAR
+// HERO
 // ══════════════════════════════════════════════════════════════════════════════
-class _HeroAppBar extends StatelessWidget {
+class _HeroSliver extends StatelessWidget {
   final HomeProgramModel program;
   final bool isCompleted;
-  const _HeroAppBar({required this.program, this.isCompleted = false});
+  final AnimationController anim;
+  final VoidCallback onBack;
+
+  const _HeroSliver({
+    required this.program,
+    required this.isCompleted,
+    required this.anim,
+    required this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
-      expandedHeight: 360,
+      expandedHeight: 420,
       pinned: true,
       stretch: true,
-      backgroundColor: _kGreen,
+      backgroundColor: Colors.black,
       elevation: 0,
       automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
         stretchModes: const [StretchMode.zoomBackground],
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              program.imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: program.color,
-                child: Center(
-                  child: Icon(LucideIcons.package, size: 80, color: Colors.white.withValues(alpha: 0.2)),
-                ),
-              ),
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.30),
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.70),
-                    Colors.black.withValues(alpha: 0.92),
-                  ],
-                  stops: const [0.0, 0.35, 0.72, 1.0],
-                ),
-              ),
-            ),
-           Positioned(
-  top: 0,
-  left: 0,
-  right: 0,
-  child: SafeArea(
-    bottom: false,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        children: [
-          _GlassButton(
-            icon: LucideIcons.arrowLeft,
-            onTap: () => Navigator.pop(context),
-          ),
-          const Spacer(),
-          _GlassButton(
-            icon: LucideIcons.share2,
-            onTap: () {},
-          ),
-          const SizedBox(width: 10),
-          _GlassButton(
-            icon: LucideIcons.bookmark,
-            onTap: () {},
-          ),
-        ],
+        background: _HeroBg(
+            program: program, isCompleted: isCompleted, onBack: onBack),
       ),
-    ),
-  ),
-),
-            Positioned(
-              left: 22, right: 22, bottom: 26,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                        decoration: BoxDecoration(color: _kGold, borderRadius: BorderRadius.circular(20)),
-                        child: Text(
-                          'PROGRAMME',
-                          style: GoogleFonts.inter(
-                            color: Colors.white, fontSize: 9,
-                            fontWeight: FontWeight.w800, letterSpacing: 1.6,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(LucideIcons.zap, size: 12, color: _kGold),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${program.totalPoints} pts',
-                              style: GoogleFonts.inter(
-                                color: Colors.white, fontSize: 10,
-                                fontWeight: FontWeight.w700, letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(program.name, style: GoogleFonts.outfit(
-                          color: Colors.white, fontSize: 30,
-                          fontWeight: FontWeight.w800, letterSpacing: -0.8, height: 1.1,
-                        )),
-                      ),
-                      if (isCompleted)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: _kGold.withValues(alpha: 0.20),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: _kGold.withValues(alpha: 0.50)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(LucideIcons.checkCircle, size: 14, color: _kGold),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Terminé',
-                                style: GoogleFonts.inter(
-                                  color: _kGold, fontSize: 11,
-                                  fontWeight: FontWeight.w700, letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Row(children: [
-                      _HeroStatPill(icon: LucideIcons.clock,     label: program.duration),
-                      const SizedBox(width: 8),
-                      _HeroStatPill(icon: LucideIcons.layers,    label: '${program.workouts.length} séances'),
-                      const SizedBox(width: 8),
-                      _HeroStatPill(icon: LucideIcons.zap,       label: '${program.totalPoints} PTS'),
-                    ]),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      // collapsed top bar
+      title: FadeTransition(
+        opacity: const AlwaysStoppedAnimation(0),
+        child: Text(program.name,
+            style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w800)),
+      ),
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: _CircleBtn(icon: LucideIcons.arrowLeft, onTap: onBack),
       ),
     );
   }
 }
 
-class _GlassButton extends StatelessWidget {
+class _HeroBg extends StatelessWidget {
+  final HomeProgramModel program;
+  final bool isCompleted;
+  final VoidCallback onBack;
+  const _HeroBg(
+      {required this.program,
+      required this.isCompleted,
+      required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // ── Photo ──────────────────────────────────────────────────────────
+        Image.asset(
+          program.imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              Container(color: const Color(0xFF1A2E1A)),
+        ),
+
+        // ── Gradient overlay ───────────────────────────────────────────────
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.25),
+                Colors.transparent,
+                Colors.black.withValues(alpha: 0.55),
+                Colors.black.withValues(alpha: 0.90),
+              ],
+              stops: const [0.0, 0.30, 0.65, 1.0],
+            ),
+          ),
+        ),
+
+        // ── Top buttons ────────────────────────────────────────────────────
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(children: [
+              //  _CircleBtn(icon: LucideIcons.arrowLeft, onTap: onBack),
+                const Spacer(),
+                _CircleBtn(icon: LucideIcons.share2, onTap: () {}),
+                const SizedBox(width: 10),
+                _CircleBtn(icon: LucideIcons.bookmark, onTap: () {}),
+              ]),
+            ),
+          ),
+        ),
+
+        // ── Bottom content ─────────────────────────────────────────────────
+        Positioned(
+          left: 22,
+          right: 22,
+          bottom: 28,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // badges row
+              Row(children: [
+                _HeroBadge(label: 'PROGRAMME', accent: true),
+                const SizedBox(width: 8),
+                if (isCompleted) _HeroBadge(label: '✓ TERMINÉ'),
+                const Spacer(),
+                _HeroBadge(label: '${program.totalPoints} PTS', icon: LucideIcons.zap),
+              ]),
+              const SizedBox(height: 12),
+              // title
+              Text(
+                program.name,
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 34,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1.0,
+                  height: 1.05,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // stat pills
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  _StatPill(icon: LucideIcons.clock, label: program.duration),
+                  _StatPill(
+                      icon: LucideIcons.layers,
+                      label: '${program.workouts.length} séances'),
+                  _StatPill(icon: LucideIcons.flame, label: 'Intermédiaire'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CircleBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _GlassButton({required this.icon, required this.onTap});
+  const _CircleBtn({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(50),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
-              ),
-              child: Icon(icon, color: Colors.white, size: 18),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+              border:
+                  Border.all(color: Colors.white.withValues(alpha: 0.25)),
             ),
+            child: Icon(icon, color: Colors.white, size: 18),
           ),
         ),
       );
 }
 
-class _HeroStatPill extends StatelessWidget {
-  final IconData icon;
+class _HeroBadge extends StatelessWidget {
   final String label;
-  const _HeroStatPill({required this.icon, required this.label});
+  final bool accent;
+  final IconData? icon;
+  const _HeroBadge({required this.label, this.accent = false, this.icon});
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
+          color: accent
+              ? const Color(0xFFD4A853)
+              : Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+          border: Border.all(
+              color: accent
+                  ? Colors.transparent
+                  : Colors.white.withValues(alpha: 0.25)),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 11, color: _kGoldLight),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (icon != null) ...[
+            Icon(icon, size: 11, color: Colors.white),
             const SizedBox(width: 5),
-            Text(label, overflow: TextOverflow.ellipsis, softWrap: false, style: GoogleFonts.inter(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
           ],
+          Text(label,
+              style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0)),
+        ]),
+      );
+}
+
+class _StatPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _StatPill({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
         ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 11, color: Colors.white70),
+          const SizedBox(width: 5),
+          Text(label,
+              style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600)),
+        ]),
       );
 }
 
@@ -338,75 +370,183 @@ class _TabBarSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final bg = dark ? const Color(0xFF1A1A1A) : Colors.white;
+
     return SliverToBoxAdapter(
-      child: Padding(
+      child: Container(
+        color: dark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F5),
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
         child: Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: cs.outline.withValues(alpha: 0.15)),
+            color: bg,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: dark ? 0.30 : 0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4))
+            ],
           ),
           child: Row(children: [
             Expanded(
-              child: _TabPill(
-                label: 'À propos',
-                selected: current == 0,
-                onTap: () => onTab(0),
-              ),
-            ),
+                child: _Tab(
+                    label: 'À propos',
+                    icon: LucideIcons.info,
+                    selected: current == 0,
+                    onTap: () => onTab(0))),
             Expanded(
-              child: _TabPill(
-                label: 'Les séances',
-                selected: current == 1,
-                onTap: () => onTab(1),
-              ),
-            ),
+                child: _Tab(
+                    label: 'Les séances',
+                    icon: LucideIcons.layoutList,
+                    selected: current == 1,
+                    onTap: () => onTab(1))),
           ]),
-
         ),
       ),
     );
   }
 }
 
-class _TabPill extends StatelessWidget {
+class _Tab extends StatelessWidget {
   final String label;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
-  const _TabPill({required this.label, required this.selected, required this.onTap});
+  const _Tab(
+      {required this.label,
+      required this.icon,
+      required this.selected,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    const accent = Color(0xFF1C4D30);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(vertical: 11),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? _kGreen : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          color: selected ? accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: _kGreen.withValues(alpha: 0.30),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  )
+                      color: accent.withValues(alpha: 0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4))
                 ]
               : [],
         ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
-            color: selected ? Colors.white : cs.onSurface.withValues(alpha: 0.50),
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-            letterSpacing: 0.1,
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon,
+              size: 14,
+              color: selected
+                  ? Colors.white
+                  : cs.onSurface.withValues(alpha: 0.40)),
+          const SizedBox(width: 7),
+          Text(label,
+              style: GoogleFonts.inter(
+                  color: selected
+                      ? Colors.white
+                      : cs.onSurface.withValues(alpha: 0.50),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// À PROPOS
+// ══════════════════════════════════════════════════════════════════════════════
+class _AboutSliver extends StatelessWidget {
+  final HomeProgramModel program;
+  const _AboutSliver({required this.program});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final bg = dark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F5);
+
+    return SliverToBoxAdapter(
+      child: Container(
+        color: bg,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Quick stats grid ───────────────────────────────────────
+              Row(children: [
+                Expanded(
+                    child: _QuickStat(
+                        icon: LucideIcons.calendarDays,
+                        value: '4',
+                        label: 'Semaines')),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: _QuickStat(
+                        icon: LucideIcons.layers,
+                        value: '${program.workouts.length}',
+                        label: 'Séances')),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: _QuickStat(
+                        icon: LucideIcons.flame,
+                        value: '~350',
+                        label: 'Cal/séance')),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: _QuickStat(
+                        icon: LucideIcons.zap,
+                        value: '${program.totalPoints}',
+                        label: 'Points')),
+              ]),
+              const SizedBox(height: 28),
+
+              // ── Description ────────────────────────────────────────────
+              _SectionTitle(label: 'Description'),
+              const SizedBox(height: 12),
+              Text(
+                'Ce programme complet de musculation et cardio te permettra de sculpter ton corps et d\'améliorer ton endurance. Chaque séance est pensée pour des résultats optimaux, en respectant ton cycle.',
+                style: GoogleFonts.inter(
+                  color: cs.onSurface.withValues(alpha: 0.60),
+                  fontSize: 14,
+                  height: 1.70,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // ── Coach ──────────────────────────────────────────────────
+              _SectionTitle(label: 'Ton coach'),
+              const SizedBox(height: 12),
+              _CoachCard(dark: dark, cs: cs),
+              const SizedBox(height: 28),
+
+              // ── Objectifs ──────────────────────────────────────────────
+              _SectionTitle(label: 'Objectifs'),
+              const SizedBox(height: 14),
+              Wrap(spacing: 8, runSpacing: 8, children: const [
+                _GoalChip(label: 'Tonification', icon: LucideIcons.sparkles),
+                _GoalChip(label: 'Cardio', icon: LucideIcons.heart),
+                _GoalChip(label: 'Minceur', icon: LucideIcons.trendingDown),
+                _GoalChip(label: 'Fessiers', icon: LucideIcons.zap),
+                _GoalChip(label: 'Ventre plat', icon: LucideIcons.target),
+              ]),
+              const SizedBox(height: 28),
+
+              // ── Programme phases ───────────────────────────────────────
+              _SectionTitle(label: 'Les phases'),
+              const SizedBox(height: 14),
+              _PhaseList(dark: dark),
+            ],
           ),
         ),
       ),
@@ -414,198 +554,174 @@ class _TabPill extends StatelessWidget {
   }
 }
 
-
-// ══════════════════════════════════════════════════════════════════════════════
-// À PROPOS TAB
-// ══════════════════════════════════════════════════════════════════════════════
-class _AboutTab extends StatelessWidget {
-  final HomeProgramModel program;
-  const _AboutTab({required this.program});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(children: [
-                _StatTile(icon: LucideIcons.calendarDays, value: '4 sem.',              label: 'Durée'),
-                const SizedBox(width: 10),
-                _StatTile(icon: LucideIcons.layers,       value: '${program.workouts.length}',  label: 'Séances'),
-                const SizedBox(width: 10),
-                _StatTile(icon: LucideIcons.clock,        value: program.duration,     label: 'Durée totale'),
-                const SizedBox(width: 10),
-                _StatTile(icon: LucideIcons.star,         value: '${program.totalPoints}', label: 'Points'),
-              ]),
-            ),
-            const SizedBox(height: 28),
-            const _SectionLabel(label: 'Description'),
-            const SizedBox(height: 12),
-            Text(
-              'Ce programme complet de musculation et cardio vous aidera à sculpter votre corps et améliorer votre endurance globale. Chaque séance est pensée pour des résultats optimaux, en respectant votre cycle.',
-              style: GoogleFonts.inter(
-                color: cs.onSurface.withValues(alpha: 0.60),
-                fontSize: 14, height: 1.65, fontWeight: FontWeight.w400,
-              ),
-            ),
-            const SizedBox(height: 28),
-            const _SectionLabel(label: 'Coach'),
-            const SizedBox(height: 12),
-            const _CoachCard(),
-            const SizedBox(height: 28),
-            const _SectionLabel(label: 'Objectifs'),
-            const SizedBox(height: 14),
-            const Wrap(
-              spacing: 8, runSpacing: 8,
-              children: [
-                _GoalChip(label: 'Tonification', icon: LucideIcons.sparkles),
-                _GoalChip(label: 'Cardio',       icon: LucideIcons.heart),
-                _GoalChip(label: 'Minceur',      icon: LucideIcons.trendingDown),
-                _GoalChip(label: 'Fessiers',     icon: LucideIcons.zap),
-                _GoalChip(label: 'Ventre plat',  icon: LucideIcons.target),
-              ],
-            ),
-            const SizedBox(height: 28),
-            const _SectionLabel(label: 'Programme'),
-            const SizedBox(height: 14),
-            const _PhaseStrip(),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
+class _SectionTitle extends StatelessWidget {
   final String label;
-  const _SectionLabel({required this.label});
+  const _SectionTitle({required this.label});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Row(children: [
       Container(
-        width: 16, height: 2,
-        decoration: BoxDecoration(color: _kGold, borderRadius: BorderRadius.circular(2)),
-      ),
-      const SizedBox(width: 8),
-      Text(label, style: GoogleFonts.outfit(
-        color: cs.onSurface, fontSize: 17,
-        fontWeight: FontWeight.w800, letterSpacing: -0.3,
-      )),
+          width: 4,
+          height: 18,
+          decoration: BoxDecoration(
+              color: const Color(0xFF1C4D30),
+              borderRadius: BorderRadius.circular(4))),
+      const SizedBox(width: 10),
+      Text(label,
+          style: GoogleFonts.outfit(
+              color: cs.onSurface,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4)),
     ]);
   }
 }
 
-class _StatTile extends StatelessWidget {
+class _QuickStat extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
-  const _StatTile({required this.icon, required this.value, required this.label});
+  const _QuickStat(
+      {required this.icon, required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    const accent = Color(0xFF1C4D30);
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
+        color: dark ? const Color(0xFF1A1A1A) : Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
-            color: _kGreen.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          )
+              color: Colors.black.withValues(alpha: dark ? 0.25 : 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
         ],
       ),
-      child: Column(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: _kGreen.withValues(alpha: 0.10),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 16, color: _kGreen),
+      child: Column(children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.10),
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            textAlign: TextAlign.center,
+          child: Icon(icon, size: 16, color: accent),
+        ),
+        const SizedBox(height: 8),
+        Text(value,
             style: GoogleFonts.outfit(
-              color: cs.onSurface,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
+                color: cs.onSurface,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.3)),
+        const SizedBox(height: 2),
+        Text(label,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              color: cs.onSurface.withValues(alpha: 0.50),
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+                color: cs.onSurface.withValues(alpha: 0.45),
+                fontSize: 10,
+                fontWeight: FontWeight.w500)),
+      ]),
     );
   }
 }
 
-
 class _CoachCard extends StatelessWidget {
-  const _CoachCard();
+  final bool dark;
+  final ColorScheme cs;
+  const _CoachCard({required this.dark, required this.cs});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    const accent = Color(0xFF1C4D30);
+    const gold = Color(0xFFD4A853);
+    final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
+        color: cardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.15)),
-        boxShadow: [BoxShadow(color: _kGreen.withValues(alpha: 0.06), blurRadius: 14, offset: const Offset(0, 5))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: dark ? 0.25 : 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4))
+        ],
       ),
       child: Row(children: [
         Container(
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: _kGold, width: 2)),
+          padding: const EdgeInsets.all(2.5),
+          decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                  colors: [gold, Color(0xFFB8833A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight)),
           child: const CircleAvatar(
-            radius: 26, backgroundColor: _kGreen,
-            child: Text('S', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            radius: 26,
+            backgroundColor: accent,
+            child: Text('S',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800)),
           ),
         ),
         const SizedBox(width: 14),
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Coach Sarah', style: GoogleFonts.outfit(
-              color: cs.onSurface, fontSize: 15, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 3),
-            Text('Expert Fitness & Nutrition', style: GoogleFonts.inter(
-              color: cs.onSurface.withValues(alpha: 0.50), fontSize: 12, fontWeight: FontWeight.w500)),
-          ],
-        )),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            color: _kGold.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _kGold.withValues(alpha: 0.35)),
+        Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Coach Sarah',
+              style: GoogleFonts.outfit(
+                  color: cs.onSurface,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800)),
+          const SizedBox(height: 3),
+          Text('Expert Fitness & Nutrition',
+              style: GoogleFonts.inter(
+                  color: cs.onSurface.withValues(alpha: 0.50),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500)),
+          const SizedBox(height: 6),
+          Row(children: [
+            Icon(LucideIcons.star,
+                size: 11, color: gold),
+            const SizedBox(width: 4),
+            Text('4.9  ·  1 200 élèves',
+                style: GoogleFonts.inter(
+                    color: cs.onSurface.withValues(alpha: 0.50),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500)),
+          ]),
+        ])),
+        GestureDetector(
+          onTap: () {},
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: accent,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                    color: accent.withValues(alpha: 0.30),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4))
+              ],
+            ),
+            child: Text('Suivre',
+                style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700)),
           ),
-          child: Text('Suivre', style: GoogleFonts.inter(color: _kGold, fontSize: 12, fontWeight: FontWeight.w700)),
         ),
       ]),
     );
@@ -618,55 +734,137 @@ class _GoalChip extends StatelessWidget {
   const _GoalChip({required this.label, required this.icon});
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: _kGreen.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _kGreen.withValues(alpha: 0.18)),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 12, color: _kGreen),
-          const SizedBox(width: 6),
-          Text(label, style: GoogleFonts.inter(color: _kGreen, fontSize: 12, fontWeight: FontWeight.w600)),
-        ]),
-      );
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    const accent = Color(0xFF1C4D30);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+      decoration: BoxDecoration(
+        color: dark
+            ? accent.withValues(alpha: 0.15)
+            : accent.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accent.withValues(alpha: 0.20)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13, color: accent),
+        const SizedBox(width: 6),
+        Text(label,
+            style: GoogleFonts.inter(
+                color: accent, fontSize: 12, fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
 }
 
-class _PhaseStrip extends StatelessWidget {
-  const _PhaseStrip();
-  static const _phases = ['Semaine 1', 'Semaine 2', 'Semaine 3', 'Semaine 4'];
+class _PhaseList extends StatelessWidget {
+  final bool dark;
+  const _PhaseList({required this.dark});
+
+  static const _phases = [
+    (week: 'Semaine 1', title: 'Mise en route', tag: 'Fondations'),
+    (week: 'Semaine 2', title: 'Montée en charge', tag: 'Progression'),
+    (week: 'Semaine 3', title: 'Intensification', tag: 'Challenge'),
+    (week: 'Semaine 4', title: 'Pic de forme', tag: 'Peak'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Row(
+    const accent = Color(0xFF1C4D30);
+    const gold = Color(0xFFD4A853);
+
+    return Column(
       children: List.generate(_phases.length, (i) {
+        final phase = _phases[i];
         final active = i == 0;
-        return Expanded(
-          child: Container(
-            margin: EdgeInsets.only(right: i < _phases.length - 1 ? 6 : 0),
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: active ? _kGreen : cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: active ? _kGreen : cs.outline.withValues(alpha: 0.15)),
-              boxShadow: active
-                  ? [BoxShadow(color: _kGreen.withValues(alpha: 0.28), blurRadius: 8, offset: const Offset(0, 3))]
-                  : [],
-            ),
-            child: Column(children: [
-              Text('${i + 1}', style: GoogleFonts.outfit(
-                color: active ? Colors.white : cs.onSurface.withValues(alpha: 0.50),
-                fontSize: 16, fontWeight: FontWeight.w800,
-              )),
-              const SizedBox(height: 2),
-              Text('sem.', style: GoogleFonts.inter(
-                color: active ? Colors.white.withValues(alpha: 0.75) : cs.onSurface.withValues(alpha: 0.40),
-                fontSize: 9, fontWeight: FontWeight.w500,
-              )),
-            ]),
+        final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: active ? accent : cardBg,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+                color: active
+                    ? accent
+                    : cs.outline.withValues(alpha: 0.12)),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                        color: accent.withValues(alpha: 0.30),
+                        blurRadius: 14,
+                        offset: const Offset(0, 5))
+                  ]
+                : [
+                    BoxShadow(
+                        color:
+                            Colors.black.withValues(alpha: dark ? 0.20 : 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3))
+                  ],
           ),
+          child: Row(children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: active
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : accent.withValues(alpha: 0.09),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text('${i + 1}',
+                    style: GoogleFonts.outfit(
+                        color: active ? Colors.white : accent,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900)),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(phase.week,
+                      style: GoogleFonts.inter(
+                          color: active
+                              ? Colors.white.withValues(alpha: 0.65)
+                              : cs.onSurface.withValues(alpha: 0.45),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5)),
+                  const SizedBox(height: 3),
+                  Text(phase.title,
+                      style: GoogleFonts.outfit(
+                          color: active ? Colors.white : cs.onSurface,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2)),
+                ])),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: active
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : gold.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: active
+                        ? Colors.white.withValues(alpha: 0.25)
+                        : gold.withValues(alpha: 0.30)),
+              ),
+              child: Text(phase.tag,
+                  style: GoogleFonts.inter(
+                      color: active ? Colors.white : gold,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4)),
+            ),
+          ]),
         );
       }),
     );
@@ -674,320 +872,282 @@ class _PhaseStrip extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// LES SÉANCES TAB
+// LES SÉANCES
 // ══════════════════════════════════════════════════════════════════════════════
-class _SessionsTab extends StatelessWidget {
+class _SessionsSliver extends StatelessWidget {
   final HomeProgramModel program;
-  final int selectedWeek;
-  final void Function(int) onWeekTap;
+  final void Function(WorkoutModel) onWorkoutTap;
 
-  const _SessionsTab({
-    required this.program,
-    required this.selectedWeek,
-    required this.onWeekTap,
-  });
+  const _SessionsSliver(
+      {required this.program, required this.onWorkoutTap});
 
-  Future<int> _getFirstIncompleteWorkoutIndex() async {
-    final completedWorkouts = await WorkoutProgressService.getCompletedWorkouts();
+  Future<int> _getFirstIncomplete() async {
+    final done = await WorkoutProgressService.getCompletedWorkouts();
     for (int i = 0; i < program.workouts.length; i++) {
-      if (!completedWorkouts.contains(program.workouts[i].id)) {
-        return i;
-      }
+      if (!done.contains(program.workouts[i].id)) return i;
     }
     return 0;
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final bg = dark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F5);
+
     return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: cs.outline.withValues(alpha: 0.15)),
-              ),
-              child: Row(
-                children: List.generate(4, (i) {
-                  final sel = selectedWeek == i;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => onWeekTap(i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(vertical: 9),
-                        decoration: BoxDecoration(
-                          color: sel ? _kGreen : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: sel
-                              ? [BoxShadow(color: _kGreen.withValues(alpha: 0.28), blurRadius: 8, offset: const Offset(0, 3))]
-                              : [],
-                        ),
-                        child: Text('Sem ${i + 1}',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
-                            color: sel ? Colors.white : cs.onSurface.withValues(alpha: 0.50),
-                            fontWeight: FontWeight.w700, fontSize: 12,
-                          )),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-            const SizedBox(height: 20),
-            FutureBuilder<int>(
-              future: _getFirstIncompleteWorkoutIndex(),
-              builder: (context, snapshotIndex) {
-                final nextIndex = snapshotIndex.data ?? 0;
-                return Column(
-                  children: List.generate(program.workouts.length, (i) {
-                    final w = program.workouts[i];
-                    return FutureBuilder<bool>(
-                      future: WorkoutProgressService.isWorkoutCompleted(w.id),
-                      builder: (context, snapshot) {
-                        final isDone = snapshot.hasData && snapshot.data == true;
-                        final isCurrent = !isDone && i == nextIndex;
-                        return _SessionCard(
-                          index: i,
-                          title: w.title,
-                          imageUrl: w.imageUrl,
-                          points: w.points,
-                          isDone: isDone,
-                          isLocked: false,
-                          isCurrent: isCurrent,
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(
-                              builder: (_) => ActiveWorkoutScreen(workout: w),
-                            ));
-                          },
-                        );
-                      },
+      child: Container(
+        color: bg,
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+        child: FutureBuilder<int>(
+          future: _getFirstIncomplete(),
+          builder: (context, snap) {
+            final nextIdx = snap.data ?? 0;
+            return Column(
+              children: List.generate(program.workouts.length, (i) {
+                final w = program.workouts[i];
+                return FutureBuilder<bool>(
+                  future: WorkoutProgressService.isWorkoutCompleted(w.id),
+                  builder: (context, s) {
+                    final isDone = s.data == true;
+                    final isCurrent = !isDone && i == nextIdx;
+                    return _SessionCard(
+                      index: i,
+                      workout: w,
+                      isDone: isDone,
+                      isCurrent: isCurrent,
+                      onTap: () => onWorkoutTap(w),
                     );
-                  }),
+                  },
                 );
-              },
-            ),
-          ],
+              }),
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _SessionCard extends StatefulWidget {
+class _SessionCard extends StatelessWidget {
   final int index;
-  final String title;
-  final String imageUrl;
-  final int points;
+  final WorkoutModel workout;
   final bool isDone;
-  final bool isLocked;
   final bool isCurrent;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   const _SessionCard({
     required this.index,
-    required this.title,
-    required this.imageUrl,
-    required this.points,
+    required this.workout,
     required this.isDone,
-    required this.isLocked,
+    required this.isCurrent,
     required this.onTap,
-    this.isCurrent = false,
   });
 
   @override
-  State<_SessionCard> createState() => _SessionCardState();
-}
-
-class _SessionCardState extends State<_SessionCard> {
-  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final accentColor = widget.isCurrent ? const Color(0xFF2E7D52) : _kGreen;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    const accent = Color(0xFF1C4D30);
+    const gold = Color(0xFFD4A853);
+    final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
 
     return GestureDetector(
-      onTap: widget.onTap,
-      child: Opacity(
-        opacity: widget.isLocked ? 0.50 : 1.0,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: widget.isDone
-                  ? _kGreen.withValues(alpha: 0.35)
-                  : widget.isCurrent
-                      ? accentColor.withValues(alpha: 0.35)
-                      : cs.outline.withValues(alpha: 0.15),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: widget.isCurrent
-                    ? accentColor.withValues(alpha: 0.12)
-                    : cs.shadow.withValues(alpha: 0.06),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: isDone
+                ? accent.withValues(alpha: 0.35)
+                : isCurrent
+                    ? accent.withValues(alpha: 0.50)
+                    : cs.outline.withValues(alpha: 0.10),
+            width: isCurrent ? 1.5 : 1,
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(children: [
+          boxShadow: [
+            BoxShadow(
+              color: isCurrent
+                  ? accent.withValues(alpha: 0.14)
+                  : Colors.black.withValues(alpha: dark ? 0.20 : 0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 5),
+            )
+          ],
+        ),
+        child: Column(
+          children: [
+            // ── Current indicator strip ───────────────────────────────────
+            if (isCurrent)
               Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  color: widget.isDone
-                      ? _kGreen
-                      : widget.isCurrent
-                          ? accentColor
-                          : accentColor.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: widget.isDone
-                        ? _kGreen
-                        : widget.isCurrent
-                            ? accentColor
-                            : accentColor.withValues(alpha: 0.25),
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 7, horizontal: 16),
+                decoration: const BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(21)),
+                ),
+                child: Row(children: [
+                  const Icon(LucideIcons.play,
+                      size: 11, color: Colors.white),
+                  const SizedBox(width: 6),
+                  Text('Prochaine séance',
+                      style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3)),
+                ]),
+              ),
+
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(children: [
+                // ── Number badge ─────────────────────────────────────────
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: isDone
+                        ? accent
+                        : isCurrent
+                            ? accent.withValues(alpha: 0.12)
+                            : cs.surfaceContainerHighest,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDone
+                          ? accent
+                          : isCurrent
+                              ? accent.withValues(alpha: 0.40)
+                              : cs.outline.withValues(alpha: 0.15),
+                    ),
                   ),
-                  boxShadow: (widget.isDone || widget.isCurrent)
-                      ? [BoxShadow(color: accentColor.withValues(alpha: 0.30), blurRadius: 8, offset: const Offset(0, 3))]
-                      : [],
+                  child: Center(
+                    child: isDone
+                        ? const Icon(LucideIcons.check,
+                            color: Colors.white, size: 16)
+                        : Text('${index + 1}',
+                            style: GoogleFonts.outfit(
+                                color: isCurrent
+                                    ? accent
+                                    : cs.onSurface.withValues(alpha: 0.45),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900)),
+                  ),
                 ),
-                child: Center(
-                  child: widget.isDone
-                      ? const Icon(LucideIcons.check, color: Colors.white, size: 16)
-                      : widget.isLocked
-                          ? Icon(LucideIcons.lock, color: cs.onSurface.withValues(alpha: 0.40), size: 14)
-                          : Text(
-                              '${widget.index + 1}',
-                              style: GoogleFonts.outfit(
-                                color: widget.isCurrent ? Colors.white : accentColor,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  width: 62, height: 62,
-                  child: Image.asset(widget.imageUrl, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: _kGreen.withValues(alpha: 0.10))),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Séance ${widget.index + 1}', style: GoogleFonts.inter(
-                                color: _kGold, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
-                              const SizedBox(height: 3),
-                              Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.outfit(
-                                  color: cs.onSurface, fontSize: 14,
-                                  fontWeight: FontWeight.w700, letterSpacing: -0.2,
-                                )),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _kGold.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: _kGold.withValues(alpha: 0.30)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(LucideIcons.zap, size: 10, color: _kGold),
-                              const SizedBox(width: 3),
-                              Text(
-                                '${widget.points} pts',
-                                style: GoogleFonts.inter(
-                                  color: _kGold,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                const SizedBox(width: 12),
+
+                // ── Thumbnail ────────────────────────────────────────────
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Stack(children: [
+                    SizedBox(
+                      width: 68,
+                      height: 68,
+                      child: Image.asset(workout.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              Container(color: accent.withValues(alpha: 0.12))),
                     ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(LucideIcons.clock,
-                                size: 10,
-                                color: cs.onSurface.withValues(alpha: 0.45)),
-                            const SizedBox(width: 4),
-                            Text(
-                              widget.index % 2 == 0 ? '25 min' : '40 min',
+                    if (isDone)
+                      Positioned.fill(
+                          child: Container(
+                        color: accent.withValues(alpha: 0.65),
+                        child: const Icon(LucideIcons.check,
+                            color: Colors.white, size: 22),
+                      )),
+                  ]),
+                ),
+                const SizedBox(width: 12),
+
+                // ── Info ─────────────────────────────────────────────────
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text('Séance ${index + 1}',
+                          style: GoogleFonts.inter(
+                              color: gold,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8)),
+                      const SizedBox(height: 3),
+                      Text(workout.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                              color: isDone
+                                  ? cs.onSurface.withValues(alpha: 0.45)
+                                  : cs.onSurface,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                              decoration: isDone
+                                  ? TextDecoration.lineThrough
+                                  : null)),
+                      const SizedBox(height: 6),
+                      Row(children: [
+                        Icon(LucideIcons.clock,
+                            size: 10,
+                            color: cs.onSurface.withValues(alpha: 0.40)),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(workout.duration,
+                              overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                color: cs.onSurface.withValues(alpha: 0.45),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                                  color: cs.onSurface.withValues(alpha: 0.45),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500)),
                         ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(LucideIcons.dumbbell,
-                                size: 10,
-                                color: cs.onSurface.withValues(alpha: 0.45)),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Haltères · Tapis',
+                        const SizedBox(width: 10),
+                        Icon(LucideIcons.flame,
+                            size: 10,
+                            color: cs.onSurface.withValues(alpha: 0.40)),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text('${workout.calories} cal',
+                              overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                color: cs.onSurface.withValues(alpha: 0.45),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                                  color: cs.onSurface.withValues(alpha: 0.45),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500)),
                         ),
-                      ],
+                      ]),
+                    ])),
+
+                // ── Points + chevron ─────────────────────────────────────
+                Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: gold.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border:
+                          Border.all(color: gold.withValues(alpha: 0.30)),
                     ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 30, height: 30,
-                decoration: BoxDecoration(
-                  color: widget.isLocked ? Colors.transparent : accentColor.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(LucideIcons.chevronRight, size: 16,
-                  color: widget.isLocked ? cs.onSurface.withValues(alpha: 0.30) : accentColor),
-              ),
-            ]),
-          ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(LucideIcons.zap, size: 10, color: gold),
+                      const SizedBox(width: 3),
+                      Text('${workout.points} pts',
+                          style: GoogleFonts.inter(
+                              color: gold,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                  const SizedBox(height: 12),
+                  Icon(LucideIcons.chevronRight,
+                      size: 16,
+                      color: cs.onSurface.withValues(alpha: 0.30)),
+                ]),
+              ]),
+            ),
+          ],
         ),
       ),
     );
@@ -998,89 +1158,89 @@ class _SessionCardState extends State<_SessionCard> {
 // BOTTOM CTA
 // ══════════════════════════════════════════════════════════════════════════════
 class _BottomCta extends StatelessWidget {
-  final AnimationController anim;
-  final VoidCallback onTap;
   final List workouts;
-  const _BottomCta({required this.anim, required this.onTap, required this.workouts});
+  final VoidCallback onTap;
+  const _BottomCta({required this.workouts, required this.onTap});
 
-  Future<bool> _areAllWorkoutsCompleted() async {
-    final completedWorkouts = await WorkoutProgressService.getCompletedWorkouts();
+  Future<bool> _allDone() async {
+    final done = await WorkoutProgressService.getCompletedWorkouts();
     for (final w in workouts) {
-      if (!completedWorkouts.contains(w.id)) {
-        return false;
-      }
+      if (!done.contains(w.id)) return false;
     }
     return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    const accent = Color(0xFF1C4D30);
+    const gold = Color(0xFFD4A853);
+    final bg = dark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F5);
+
     return Positioned(
-      bottom: 0, left: 0, right: 0,
-      child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-            .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              colors: [cs.surface, cs.surface.withValues(alpha: 0.0)],
-              stops: const [0.55, 1.0],
-            ),
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+            20, 14, 20, MediaQuery.of(context).padding.bottom + 18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [bg, bg.withValues(alpha: 0)],
+            stops: const [0.60, 1.0],
           ),
-          child: FutureBuilder<bool>(
-            future: _areAllWorkoutsCompleted(),
-            builder: (context, snapshot) {
-              final allCompleted = snapshot.data ?? false;
-              return GestureDetector(
-                onTap: allCompleted ? null : onTap,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 17),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: allCompleted
-                          ? [_kGold.withValues(alpha: 0.60), _kGold.withValues(alpha: 0.60)]
-                          : [_kGreen, _kGreenMid],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(50),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (allCompleted ? _kGold : _kGreen).withValues(alpha: 0.40),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+        ),
+        child: FutureBuilder<bool>(
+          future: _allDone(),
+          builder: (context, snap) {
+            final done = snap.data ?? false;
+            return GestureDetector(
+              onTap: done ? null : onTap,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: done
+                        ? [gold.withValues(alpha: 0.70), gold]
+                        : [accent, const Color(0xFF2E7D52)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                   ),
-                  child: Row(
+                  borderRadius: BorderRadius.circular(50),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (done ? gold : accent).withValues(alpha: 0.40),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    )
+                  ],
+                ),
+                child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        allCompleted ? LucideIcons.checkCircle : LucideIcons.play,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        allCompleted ? 'Programme terminé ✓' : 'Commencer le programme',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
+                  Icon(
+                      done ? LucideIcons.checkCircle : LucideIcons.play,
+                      color: Colors.white,
+                      size: 18),
+                  const SizedBox(width: 10),
+                  Text(
+                    done
+                        ? 'Programme terminé ✓'
+                        : 'Commencer le programme',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
+                ]),
+              ),
+            );
+          },
         ),
       ),
     );

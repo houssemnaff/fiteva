@@ -642,20 +642,6 @@ class _BentoCardState extends State<_BentoCard>
                     child: _DiscountBadge(label: widget.item.discount as String)),
               Positioned(top: 8, right: 8,
                   child: _WishButton(isActive: widget.isWishlisted, onTap: widget.onWish)),
-              if (widget.isRedeemed)
-                Positioned(bottom: 10, left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32),
-                      borderRadius: BorderRadius.circular(8)),
-                    child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.check_circle_rounded, size: 10, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text('Échangé', style: TextStyle(
-                        color: Colors.white, fontSize: 9,
-                        fontWeight: FontWeight.w700, letterSpacing: 0.3)),
-                    ]))),
               Positioned(
                 left: 12, right: 12, bottom: 12,
                 child: Column(
@@ -672,11 +658,25 @@ class _BentoCardState extends State<_BentoCard>
                             color: Colors.white, height: 1.3)),
                     ],
                     const SizedBox(height: 8),
-                    _StarsBadge(
-                      etoiles: widget.item.etoiles as int,
-                      canAfford: widget.userEtoiles >= (widget.item.etoiles as int),
-                      onDark: true,
-                    ),
+                    if (widget.isRedeemed)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2E7D32),
+                          borderRadius: BorderRadius.circular(8)),
+                        child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.check_circle_rounded, size: 10, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text('Échangé', style: TextStyle(
+                            color: Colors.white, fontSize: 9,
+                            fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+                        ]))
+                    else
+                      _StarsBadge(
+                        etoiles: widget.item.etoiles as int,
+                        canAfford: widget.userEtoiles >= (widget.item.etoiles as int),
+                        onDark: true,
+                      ),
                   ],
                 ),
               ),

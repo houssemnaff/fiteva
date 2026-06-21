@@ -1,15 +1,13 @@
 import 'package:fiteva/screens/community/model/partner_model.dart';
+import 'package:fiteva/screens/community/UserProfileScreen.dart';
+import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/community_providers.dart';
 
-
-const _avatarColors = [
-  Color(0xFF7C3AED), Color(0xFF059669), Color(0xFFD97706),
-  Color(0xFF2563EB), Color(0xFFDB2777),
-];
 
 // ─── Partners Tab ─────────────────────────────────────────────
 class PartnerTab extends ConsumerStatefulWidget {
@@ -304,27 +302,13 @@ class PartnerCard extends StatefulWidget {
 class _PartnerCardState extends State<PartnerCard> {
   bool _messaged = false;
 
-  Color get _avatarColor =>
-      _avatarColors[widget.index % _avatarColors.length];
-
-  String get _initials {
-    final name = widget.partner.name.trim();
-    if (name.isEmpty) return 'P';
-    final parts = name.split(' ');
-    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return parts[0].substring(0, parts[0].length >= 2 ? 2 : parts[0].length).toUpperCase();
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = widget.colorScheme;
     final p = widget.partner;
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: cs.outline),
         boxShadow: [
@@ -339,104 +323,121 @@ class _PartnerCardState extends State<PartnerCard> {
         children: [
 
           // ── Avatar + Name row ────────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Avatar
-              Container(
-                width: 50, height: 50,
-                decoration: BoxDecoration(
-                  color: _avatarColor,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                alignment: Alignment.center,
-                child: Text(_initials, style: GoogleFonts.outfit(
-                  fontSize: 16, fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                )),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(p.name, style: GoogleFonts.outfit(
-                      fontSize: 15, fontWeight: FontWeight.w800,
-                      color: cs.onSurface, letterSpacing: -0.3,
-                    )),
-                    const SizedBox(height: 4),
-                    Row(children: [
-                      Icon(LucideIcons.mapPin, size: 11, color: cs.onSurface.withValues(alpha: 0.5)),
-                      const SizedBox(width: 3),
-                      Flexible(
-                        child: Text(p.region, style: GoogleFonts.inter(
-                          fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5),
-                        ), overflow: TextOverflow.ellipsis),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => UserProfileScreen(
+                        userId: p.name,
+                        heroTag: 'partner_avatar_${p.name}',
                       ),
-                      const SizedBox(width: 10),
-                      Icon(LucideIcons.calendarDays, size: 11, color: cs.onSurface.withValues(alpha: 0.5)),
-                      const SizedBox(width: 3),
-                      Flexible(
-                        child: Text(p.frequency, style: GoogleFonts.inter(
-                          fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5),
-                        ), overflow: TextOverflow.ellipsis),
-                      ),
-                    ]),
-                  ],
+                    ));
+                  },
+                  child: Hero(
+                    tag: 'partner_avatar_${p.name}',
+                    child: CommunityAvatar(
+                      avatarUrl: widget.partner.avatar,
+                      name: p.name,
+                      radius: 20,
+                    ),
+                  ),
                 ),
-              ),
-              // Level badge
-              _LevelBadge(level: p.level, colorScheme: cs),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // ── Goal badge ───────────────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: cs.secondary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(50),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => UserProfileScreen(
+                          userId: p.name,
+                          heroTag: 'partner_avatar_${p.name}',
+                        ),
+                      ));
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(p.name, style: GoogleFonts.outfit(
+                          fontSize: 14, fontWeight: FontWeight.w700,
+                          color: cs.onSurface, letterSpacing: -0.2,
+                        )),
+                        const SizedBox(height: 3),
+                        Row(children: [
+                          Icon(LucideIcons.mapPin, size: 11, color: cs.onSurface.withValues(alpha: 0.5)),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(p.region, style: GoogleFonts.inter(
+                              fontSize: 11, color: cs.onSurface.withValues(alpha: 0.6),
+                            ), overflow: TextOverflow.ellipsis),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(LucideIcons.calendarDays, size: 11, color: cs.onSurface.withValues(alpha: 0.5)),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(p.frequency, style: GoogleFonts.inter(
+                              fontSize: 11, color: cs.onSurface.withValues(alpha: 0.6),
+                            ), overflow: TextOverflow.ellipsis),
+                          ),
+                        ]),
+                      ],
+                    ),
+                  ),
+                ),
+                _LevelBadge(level: p.level, colorScheme: cs),
+              ],
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(LucideIcons.target, size: 10, color: cs.primary),
-              const SizedBox(width: 5),
-              Text(p.goal, style: GoogleFonts.inter(
-                fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary,
-              )),
-            ]),
           ),
 
-          const SizedBox(height: 10),
-
-          // ── Description ──────────────────────────────────
-          Text(p.description, style: GoogleFonts.inter(
-            fontSize: 13, color: cs.onSurface.withValues(alpha: 0.6), height: 1.5,
-          )),
-
-          const SizedBox(height: 10),
-
-          // ── Tags ─────────────────────────────────────────
-          Wrap(
-            spacing: 5, runSpacing: 5,
-            children: p.tags.map((tag) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-              decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: Text('#$tag', style: GoogleFonts.inter(
-                fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary,
-              )),
-            )).toList(),
+          // ── Post text (description) ───────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+            child: Text(p.description, style: GoogleFonts.inter(
+              fontSize: 14, color: cs.onSurface,
+              height: 1.5, letterSpacing: -0.1,
+            )),
           ),
 
-          const SizedBox(height: 14),
+          // ── Goal + Tags row ───────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+            child: Wrap(
+              spacing: 5, runSpacing: 5,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: cs.secondary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(LucideIcons.target, size: 10, color: cs.primary),
+                    const SizedBox(width: 4),
+                    Text(p.goal, style: GoogleFonts.inter(
+                      fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary,
+                    )),
+                  ]),
+                ),
+                ...p.tags.map((tag) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Text('#$tag', style: GoogleFonts.inter(
+                    fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary,
+                  )),
+                )),
+              ],
+            ),
+          ),
 
           // ── CTA ──────────────────────────────────────────
-          SizedBox(
-            width: double.infinity,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 12, 12),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               child: _messaged
@@ -504,17 +505,17 @@ class _MessageBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: colorScheme.primary,
-          borderRadius: BorderRadius.circular(14),
+          color: colorScheme.outline.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(50),
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(LucideIcons.messageSquare, size: 13, color: colorScheme.onPrimary),
-          const SizedBox(width: 8),
-          Text('Envoyer un message', style: GoogleFonts.inter(
-            fontSize: 12, fontWeight: FontWeight.w800,
-            color: colorScheme.onPrimary, letterSpacing: 0.2,
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(LucideIcons.messageSquare, size: 15, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+          const SizedBox(width: 5),
+          Text('Message', style: GoogleFonts.inter(
+            fontSize: 12, fontWeight: FontWeight.w700,
+            color: colorScheme.onSurface.withValues(alpha: 0.6),
           )),
         ]),
       ),
@@ -529,17 +530,17 @@ class _MessagedBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: colorScheme.secondary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colorScheme.secondary.withValues(alpha: 0.4)),
+        color: colorScheme.secondary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(50),
+        border: Border.all(color: colorScheme.secondary.withValues(alpha: 0.3)),
       ),
-      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(LucideIcons.checkCircle, size: 13, color: colorScheme.primary),
-        const SizedBox(width: 8),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(LucideIcons.checkCircle, size: 15, color: colorScheme.primary),
+        const SizedBox(width: 5),
         Text('Message envoyé !', style: GoogleFonts.inter(
-          fontSize: 12, fontWeight: FontWeight.w800, color: colorScheme.primary,
+          fontSize: 12, fontWeight: FontWeight.w700, color: colorScheme.primary,
         )),
       ]),
     );

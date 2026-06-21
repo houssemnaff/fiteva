@@ -1,6 +1,7 @@
 import 'package:fiteva/models/post_model.dart';
 import 'package:fiteva/screens/community/UserProfileScreen.dart';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
+import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:fiteva/screens/community/widgets/feed/comment_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -224,27 +225,10 @@ class _PostCardState extends ConsumerState<_PostCard>
                 onTap: _openProfile,
                 child: Hero(
                   tag: 'avatar_${post.username}',
-                  child: CircleAvatar(
+                  child: CommunityAvatar(
+                    avatarUrl: post.userAvatarUrl,
+                    name: post.username,
                     radius: 20,
-                    backgroundColor: cs.primary.withValues(alpha: 0.15),
-                    backgroundImage: post.userAvatarUrl.isNotEmpty
-                        ? NetworkImage(post.userAvatarUrl)
-                        : null,
-                    onBackgroundImageError: post.userAvatarUrl.isNotEmpty
-                        ? (_, __) {}
-                        : null,
-                    child: post.userAvatarUrl.isEmpty
-                        ? Text(
-                            post.username.isNotEmpty
-                                ? post.username[0].toUpperCase()
-                                : '?',
-                            style: TextStyle(
-                              color: cs.primary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          )
-                        : null,
                   ),
                 ),
               ),

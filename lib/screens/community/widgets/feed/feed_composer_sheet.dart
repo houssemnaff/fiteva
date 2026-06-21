@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/models/post_model.dart';
 import 'package:fiteva/providers/mock_data_provider.dart';
+import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -50,17 +51,23 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
     super.dispose();
   }
 
+  String _resolvedName(WidgetRef ref) {
+    final profile = ref.read(userProfileProvider);
+    final user    = ref.read(userProvider);
+    return profile.username.isNotEmpty ? profile.username : user.name;
+  }
+
   Future<void> _publish() async {
     final title   = _titleCtrl.text.trim();
     final content = _contentCtrl.text.trim();
     if (title.isEmpty && content.isEmpty) return;
     HapticFeedback.mediumImpact();
     setState(() => _publishing = true);
-    final user = ref.read(userProvider);
+    final displayName = _resolvedName(ref);
     final post = PostModel(
       id: 'p_${DateTime.now().millisecondsSinceEpoch}',
-      username: user.name.isNotEmpty ? user.name : 'Moi',
-      userAvatarUrl: 'https://i.pravatar.cc/150?img=1',
+      username: displayName,
+      userAvatarUrl: '',
       content: [title, content].where((s) => s.isNotEmpty).join('\n'),
       imageUrl: '',
       likes: 0,
@@ -93,6 +100,8 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
     final cs      = Theme.of(context).colorScheme;
     final bottom  = MediaQuery.of(context).viewInsets.bottom;
     final screenH = MediaQuery.of(context).size.height;
+    final displayName = _resolvedName(ref);
+    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
 
     return SlideTransition(
       position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
@@ -108,6 +117,28 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
           children: [
             _Handle(cs: cs),
             _TopBar(cs: cs, onClose: () => Navigator.of(context).pop()),
+
+            // ── Posting as ──────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Row(children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: cs.primary.withValues(alpha: 0.15),
+                  child: Text(initial, style: TextStyle(
+                    color: cs.primary, fontWeight: FontWeight.w700, fontSize: 14)),
+                ),
+                const SizedBox(width: 10),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(displayName, style: GoogleFonts.outfit(
+                    fontSize: 14, fontWeight: FontWeight.w700,
+                    color: cs.onSurface, letterSpacing: -0.2)),
+                  Text('Publier sur la communauté', style: GoogleFonts.inter(
+                    fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5))),
+                ]),
+              ]),
+            ),
+
             Flexible(
               child: SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(20, 0, 20, bottom + 16),

@@ -307,6 +307,26 @@ final salleProgramsProvider = Provider<List<HomeProgramModel>>((ref) {
             VideoModel(id: 'vid_sb3_3', title: 'Cool Down', duration: '4 min', points: 10),
           ],
         ),
+        WorkoutModel(
+          id: 'salle_body_squat',
+          title: 'Squat',
+          category: 'SALLE',
+          duration: '15 min',
+          level: 'Intermédiaire',
+          calories: '200',
+          imageUrl: 'assets/images/strength.jpg',
+          exercises: ['Back Squat', 'Goblet Squat', 'Jump Squat'],
+          points: 30,
+          videos: [
+            VideoModel(
+              id: 'vid_squat_1',
+              title: 'Technique Squat',
+              duration: '3 min',
+              points: 30,
+              url: 'assets/videos/squat.mp4',
+            ),  
+          ],
+        ),
       ],
     ),
     HomeProgramModel(

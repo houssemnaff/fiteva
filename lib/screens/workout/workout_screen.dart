@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:fiteva/models/home_program_model.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:fiteva/screens/workout/widgets/DanceSection.dart';
@@ -20,12 +21,10 @@ import 'theme/color.dart';
 import 'theme/cycle_theme.dart';
 import 'programme_detail_screen.dart';
 import 'active_workout_screen.dart';
-
-
-
+import 'weekly_plan_screen.dart';
 
 // ═══════════════════════════════════════════════════════════
-// MAIN SCREEN — HomeWorkoutScreen
+// MAIN SCREEN
 // ═══════════════════════════════════════════════════════════
 class WorkoutScreen extends ConsumerStatefulWidget {
   const WorkoutScreen({super.key});
@@ -36,13 +35,10 @@ class WorkoutScreen extends ConsumerStatefulWidget {
 
 class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     with SingleTickerProviderStateMixin {
-
   int _selectedChip = 0;
   CyclePhase? _selectedPhase;
-
   final _scrollController = ScrollController();
 
-  // GlobalKeys pour scroll par section
   final _keySalle     = GlobalKey();
   final _keyMaison    = GlobalKey();
   final _keyDance     = GlobalKey();
@@ -50,22 +46,22 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
   final _keyZones     = GlobalKey();
   final _keyGrossesse = GlobalKey();
 
-  // Chip labels are built dynamically from l10n in the build method
-  List<String> _localizedChipLabels(AppL10n l10n) => [
-    l10n.workoutChipAll, l10n.workoutChipSalle, l10n.workoutChipMaison,
-    l10n.workoutChipDance, l10n.workoutChipRecup, l10n.workoutChipGrossesse,
-  ];
-  final List<Color>    _chipColors = [
-    WorkoutColors.zone, WorkoutColors.salle, WorkoutColors.maison,
-    WorkoutColors.dance, WorkoutColors.recuperation, WorkoutColors.grossesse,
-  ];
-  final List<IconData> _chipIcons  = [
+  static const _chipIcons = [
     LucideIcons.layoutGrid,
     LucideIcons.dumbbell,
     LucideIcons.house,
     LucideIcons.music,
     LucideIcons.wind,
     LucideIcons.heart,
+  ];
+
+  static const _chipColors = [
+    WorkoutColors.zone,
+    WorkoutColors.salle,
+    WorkoutColors.maison,
+    WorkoutColors.dance,
+    WorkoutColors.recuperation,
+    WorkoutColors.grossesse,
   ];
 
   @override
@@ -83,19 +79,16 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
 
   void _onChipTap(int index) {
     setState(() => _selectedChip = index);
-    final keys = [
-      null, _keySalle, _keyMaison, _keyDance, _keyRecup, _keyGrossesse,
-    ];
-    if (index < keys.length && keys[index] != null) {
-      Future.delayed(const Duration(milliseconds: 100),
-          () => _scrollToKey(keys[index]!));
-    } else if (index == 0) {
+    final keys = [null, _keySalle, _keyMaison, _keyDance, _keyRecup, _keyGrossesse];
+    if (index == 0) {
       _scrollController.animateTo(0,
           duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
+    } else if (index < keys.length && keys[index] != null) {
+      Future.delayed(const Duration(milliseconds: 100),
+          () => _scrollToKey(keys[index]!));
     }
   }
 
-  // ── "Voir tout" bottom sheet — programmes (HomeProgramModel) ─────────────────
   void _showProgramsSheet({
     required String title,
     required Color color,
@@ -117,15 +110,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
         onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
         onSelectProgram: (p) {
           Navigator.pop(ctx);
-          Navigator.push(context, MaterialPageRoute(
-            builder: (_) => WorkoutDetailScreen(program: p),
-          ));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (_) => WorkoutDetailScreen(program: p)));
         },
       ),
     );
   }
 
-  // ── "Voir tout" bottom sheet — workouts (WorkoutModel) ───────────────────────
   void _showWorkoutsSheet({
     required String title,
     required Color color,
@@ -146,9 +137,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
         onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
         onSelectWorkout: (w) {
           Navigator.pop(ctx);
-          Navigator.push(context, MaterialPageRoute(
-            builder: (_) => ActiveWorkoutScreen(workout: w),
-          ));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: w)));
         },
       ),
     );
@@ -156,242 +146,139 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final l10n         = ref.watch(l10nProvider);
-    final workouts     = ref.watch(workoutsProvider);
-    final cycle        = ref.watch(cycleProvider);
-    final bodyZones    = ref.watch(bodyZonesProvider);
-    final sallePrograms = ref.watch(salleProgramsProvider);
-    final homePrograms = ref.watch(homeProgramsProvider);
-    final dancePrograms = ref.watch(danceProgramsProvider);
+    final cs        = Theme.of(context).colorScheme;
+    final dark      = Theme.of(context).brightness == Brightness.dark;
+    final l10n      = ref.watch(l10nProvider);
+    final workouts  = ref.watch(workoutsProvider);
+    final cycle     = ref.watch(cycleProvider);
+    final bodyZones = ref.watch(bodyZonesProvider);
+    final sallePrograms       = ref.watch(salleProgramsProvider);
+    final homePrograms        = ref.watch(homeProgramsProvider);
+    final dancePrograms       = ref.watch(danceProgramsProvider);
     final recuperationPrograms = ref.watch(recuperationProgramsProvider);
-    final grossessePrograms = ref.watch(grossesseProgramsProvider);
-    final favorites    = ref.watch(favoritesProvider);
+    final grossessePrograms   = ref.watch(grossesseProgramsProvider);
+    final favorites = ref.watch(favoritesProvider);
 
     final screenH  = MediaQuery.of(context).size.height;
     final bottomGap = screenH < 700 ? 80.0 : 110.0;
 
-    // Filtrage par catégorie + phase
     bool matchesPhase(String phases) {
       if (_selectedPhase == null) return true;
       return parseCyclePhases(phases).contains(_selectedPhase);
     }
 
-    List<WorkoutModel> byCat(String cat) => workouts
-        .where((w) =>
-            w.category.toUpperCase() == cat && matchesPhase(w.phases))
-        .toList();
+    List<HomeProgramModel> fp(List<HomeProgramModel> list) =>
+        list.where((p) => matchesPhase(p.phases)).toList();
 
-    List<HomeProgramModel> filterPrograms(List<HomeProgramModel> programs) =>
-        programs.where((p) => matchesPhase(p.phases)).toList();
+    final filteredSalle       = fp(sallePrograms);
+    final filteredMaison      = fp(homePrograms);
+    final filteredDance       = fp(dancePrograms);
+    final filteredRecuperation = fp(recuperationPrograms);
+    final filteredGrossesse   = fp(grossessePrograms);
 
-    final filteredSalle =
-        filterPrograms(sallePrograms);
-    final filteredMaison =
-        filterPrograms(homePrograms);
-    final filteredDance =
-        filterPrograms(dancePrograms);
-    final filteredRecuperation =
-        filterPrograms(recuperationPrograms);
-    final filteredGrossesse =
-        filterPrograms(grossessePrograms);
+    final chips = [
+      l10n.workoutChipAll,
+      l10n.workoutChipSalle,
+      l10n.workoutChipMaison,
+      l10n.workoutChipDance,
+      l10n.workoutChipRecup,
+      l10n.workoutChipGrossesse,
+    ];
+
+    final bg = dark ? const Color(0xFF0D0D0D) : const Color.fromARGB(255, 255, 255, 255);
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: bg,
       body: SingleChildScrollView(
         controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // ── Common header ─────────────────────────
+            // ── Header ────────────────────────────────────────────────────
             SharedAppHeader(
-              eyebrow:    'Workout',
-              title:      l10n.workoutMyTrainings,
+              eyebrow: 'Workout',
+              title: l10n.workoutMyTrainings,
               accentColor: WorkoutColors.salle,
               actions: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => const FavoritesScreen(),
-                      )),
+                Stack(clipBehavior: Clip.none, children: [
+                  GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const FavoritesScreen())),
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: WorkoutColors.grossesse.withValues(alpha: 0.10),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.favorite_rounded,
+                          size: 18, color: WorkoutColors.grossesse),
+                    ),
+                  ),
+                  if (favorites.isNotEmpty)
+                    Positioned(
+                      top: -2, right: -2,
                       child: Container(
-                        width: 40, height: 40,
+                        width: 16, height: 16,
                         decoration: BoxDecoration(
-                          color: WorkoutColors.grossesse.withValues(alpha: 0.1),
+                          color: WorkoutColors.salle,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.favorite_rounded,
-                            size: 18, color: WorkoutColors.grossesse),
-                      ),
-                    ),
-                    if (favorites.isNotEmpty)
-                      Positioned(
-                        top: -2, right: -2,
-                        child: Container(
-                          width: 16, height: 16,
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text('${favorites.length}',
-                              style: TextStyle(
-                                color: colorScheme.onPrimary,
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                              )),
-                          ),
+                        child: Center(
+                          child: Text('${favorites.length}',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold)),
                         ),
                       ),
-                  ],
+                    ),
+                ]),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const WeeklyPlanScreen())),
+                  child: Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(
+                      color: WorkoutColors.salle.withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(LucideIcons.calendarDays,
+                        size: 17, color: WorkoutColors.salle),
+                  ),
                 ),
               ],
             ),
 
-            // ── Phase Banner ──────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colorScheme.primary.withValues(alpha: 0.92),
-                      colorScheme.secondary.withValues(alpha: 0.92),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.30),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(children: [
-                            Container(
-                                width: 6, height: 6,
-                              decoration: BoxDecoration(
-                                color: colorScheme.onPrimary,
-                                shape: BoxShape.circle)),
-                            const SizedBox(width: 6),
-                            Text('PHASE ${cycle.name.toUpperCase()}',
-                              style: TextStyle(
-                                color: colorScheme.onPrimary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.5)),
-                          ]),
-                          const SizedBox(height: 6),
-                          Text(cycle.advice,
-                              style: TextStyle(
-                                color: colorScheme.onPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                height: 1.5)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: colorScheme.onPrimary.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Text('🌿', style: TextStyle(fontSize: 22)),
-                    ),
-                  ],
-                ),
-              ),
+            // ── Phase Hero Card ───────────────────────────────────────────
+            _PhaseBanner(cycle: cycle, dark: dark, cs: cs),
+
+            const SizedBox(height: 22),
+
+            // ── Category chips ────────────────────────────────────────────
+            _CategoryChips(
+              chips: chips,
+              icons: _chipIcons,
+              colors: _chipColors,
+              selected: _selectedChip,
+              onTap: _onChipTap,
             ),
 
-            // ── Chips de navigation ───────────────────
             const SizedBox(height: 18),
-            Builder(builder: (ctx) {
-              final chips = _localizedChipLabels(l10n);
-              return SizedBox(
-                height: 42,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: chips.length,
-                  itemBuilder: (_, i) {
-                    final sel = _selectedChip == i;
-                    final color = _chipColors[i];
-                    return GestureDetector(
-                      onTap: () => _onChipTap(i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        margin: const EdgeInsets.only(right: 10),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 0),
-                        decoration: BoxDecoration(
-                          color: sel
-                              ? color
-                              : color.withValues(alpha: 0.07),
-                          borderRadius: BorderRadius.circular(50),
-                          border: Border.all(
-                            color: sel
-                                ? color
-                                : color.withValues(alpha: 0.25),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _chipIcons[i],
-                              size: 14,
-                              color: sel ? Colors.white : color,
-                            ),
-                            const SizedBox(width: 7),
-                            Text(
-                              chips[i],
-                              style: GoogleFonts.inter(
-                                color: sel ? Colors.white : color,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                                letterSpacing: 0.1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            }),
 
-            const SizedBox(height: 12),
-
-            // ── Filtre par phase de cycle ─────────────
+            // ── Phase filter ──────────────────────────────────────────────
             _PhaseFilterRow(
               selected: _selectedPhase,
-              onSelect: (p) => setState(() =>
-                  _selectedPhase = _selectedPhase == p ? null : p),
+              onSelect: (p) =>
+                  setState(() => _selectedPhase = _selectedPhase == p ? null : p),
               l10n: l10n,
             ),
 
             const SizedBox(height: 8),
 
-            // ── Section Salle ─────────────────────────
-            if (filteredSalle.isNotEmpty)
+            // ── Sections ──────────────────────────────────────────────────
+            if (filteredSalle.isNotEmpty) ...[
               KeyedSubtree(
                 key: _keySalle,
                 child: SalleSection(
@@ -407,11 +294,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   ),
                 ),
               ),
+              const SizedBox(height: 4),
+            ],
 
-            if (filteredSalle.isNotEmpty) const SizedBox(height: 8),
-
-            // ── Section Maison ────────────────────────
-            if (filteredMaison.isNotEmpty)
+            if (filteredMaison.isNotEmpty) ...[
               KeyedSubtree(
                 key: _keyMaison,
                 child: MaisonSection(
@@ -427,13 +313,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   ),
                 ),
               ),
+              const SizedBox(height: 4),
+            ],
 
-            if (filteredMaison.isNotEmpty) const SizedBox(height: 8),
-
-            const SizedBox(height: 8),
-
-            // ── Section Danse ─────────────────────────
-            if (filteredDance.isNotEmpty)
+            if (filteredDance.isNotEmpty) ...[
               KeyedSubtree(
                 key: _keyDance,
                 child: DanceSection(
@@ -449,11 +332,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   ),
                 ),
               ),
+              const SizedBox(height: 4),
+            ],
 
-            if (filteredDance.isNotEmpty) const SizedBox(height: 8),
-
-            // ── Section Récupération ──────────────────
-            if (filteredRecuperation.isNotEmpty)
+            if (filteredRecuperation.isNotEmpty) ...[
               KeyedSubtree(
                 key: _keyRecup,
                 child: RecuperationSection(
@@ -469,11 +351,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   ),
                 ),
               ),
+              const SizedBox(height: 4),
+            ],
 
-            if (filteredRecuperation.isNotEmpty) const SizedBox(height: 8),
-
-            // ── Section Grossesse ─────────────────────
-            if (filteredGrossesse.isNotEmpty)
+            if (filteredGrossesse.isNotEmpty) ...[
               KeyedSubtree(
                 key: _keyGrossesse,
                 child: GrossesseSection(
@@ -489,18 +370,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   ),
                 ),
               ),
+              const SizedBox(height: 4),
+            ],
 
-            if (filteredGrossesse.isNotEmpty) const SizedBox(height: 8),
-
-
-            const SizedBox(height: 8),
-
-           // ── Section Zones du corps ────────────────
             KeyedSubtree(
               key: _keyZones,
               child: ZonesSection(bodyZones: bodyZones),
             ),
-
 
             SizedBox(height: bottomGap),
           ],
@@ -510,7 +386,317 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
   }
 }
 
-// ── Programs Filter Sheet ─────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// PHASE BANNER
+// ══════════════════════════════════════════════════════════════════════════════
+class _PhaseBanner extends StatelessWidget {
+  final CycleStatus cycle;
+  final bool dark;
+  final ColorScheme cs;
+  const _PhaseBanner(
+      {required this.cycle, required this.dark, required this.cs});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              cs.primary.withValues(alpha: 0.95),
+              cs.secondary.withValues(alpha: 0.85),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+                color: cs.primary.withValues(alpha: 0.35),
+                blurRadius: 18,
+                offset: const Offset(0, 6))
+          ],
+        ),
+        child: Row(children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Phase pill
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.30)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                            color: Colors.white, shape: BoxShape.circle)),
+                    const SizedBox(width: 6),
+                    Text('PHASE ${cycle.name.toUpperCase()}',
+                        style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.4)),
+                  ]),
+                ),
+                const SizedBox(height: 10),
+                Text(cycle.advice,
+                    style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        height: 1.55)),
+                const SizedBox(height: 12),
+                // CTA link
+                Row(children: [
+                  Flexible(
+                    child: Text('Voir mes séances recommandées',
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                            color: Colors.white.withValues(alpha: 0.80),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(LucideIcons.arrowRight,
+                      size: 12,
+                      color: Colors.white.withValues(alpha: 0.80)),
+                ]),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Icon bubble
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.25)),
+                ),
+                child: const Center(
+                    child: Text('🌿', style: TextStyle(fontSize: 28))),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CATEGORY CHIPS
+// ══════════════════════════════════════════════════════════════════════════════
+class _CategoryChips extends StatelessWidget {
+  final List<String> chips;
+  final List<IconData> icons;
+  final List<Color> colors;
+  final int selected;
+  final void Function(int) onTap;
+
+  const _CategoryChips({
+    required this.chips,
+    required this.icons,
+    required this.colors,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    return SizedBox(
+      height: 46,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: chips.length,
+        itemBuilder: (_, i) {
+          final sel   = selected == i;
+          final color = colors[i];
+          final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
+
+          return GestureDetector(
+            onTap: () => onTap(i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              margin: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: sel ? color : cardBg,
+                borderRadius: BorderRadius.circular(50),
+                border: Border.all(
+                  color: sel ? color : color.withValues(alpha: 0.20),
+                  width: 1.5,
+                ),
+                boxShadow: sel
+                    ? [
+                        BoxShadow(
+                            color: color.withValues(alpha: 0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4))
+                      ]
+                    : [
+                        BoxShadow(
+                            color: Colors.black
+                                .withValues(alpha: dark ? 0.25 : 0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2))
+                      ],
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(icons[i],
+                    size: 14,
+                    color: sel ? Colors.white : color),
+                const SizedBox(width: 8),
+                Text(chips[i],
+                    style: GoogleFonts.inter(
+                        color: sel ? Colors.white : color,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13)),
+              ]),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PHASE FILTER ROW
+// ══════════════════════════════════════════════════════════════════════════════
+class _PhaseFilterRow extends StatelessWidget {
+  final CyclePhase? selected;
+  final void Function(CyclePhase) onSelect;
+  final AppL10n l10n;
+  const _PhaseFilterRow(
+      {required this.selected, required this.onSelect, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs   = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Label row
+        Row(children: [
+          Text('Filtrer par phase',
+              style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface.withValues(alpha: 0.45),
+                  letterSpacing: 0.3)),
+          if (selected != null) ...[
+            const Spacer(),
+            GestureDetector(
+              onTap: () => onSelect(selected!),
+              child: Row(children: [
+                Icon(LucideIcons.x, size: 11, color: selected!.color),
+                const SizedBox(width: 4),
+                Text(l10n.workoutShowAll,
+                    style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: selected!.color)),
+              ]),
+            ),
+          ],
+        ]),
+        const SizedBox(height: 10),
+        // Phase chips
+        Row(
+          children: CyclePhase.values.map((phase) {
+            final isSel = selected == phase;
+            final isLast = phase == CyclePhase.values.last;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => onSelect(phase),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: EdgeInsets.only(right: isLast ? 0 : 8),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSel
+                        ? phase.color
+                        : dark
+                            ? const Color(0xFF1A1A1A)
+                            : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSel
+                          ? phase.color
+                          : phase.color.withValues(alpha: 0.25),
+                      width: 1.5,
+                    ),
+                    boxShadow: isSel
+                        ? [
+                            BoxShadow(
+                                color: phase.color.withValues(alpha: 0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4))
+                          ]
+                        : [
+                            BoxShadow(
+                                color: Colors.black
+                                    .withValues(alpha: dark ? 0.25 : 0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2))
+                          ],
+                  ),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isSel ? Colors.white : phase.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(phase.label,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: isSel ? Colors.white : phase.color,
+                            letterSpacing: 0.1)),
+                  ]),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ]),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BOTTOM SHEETS (unchanged logic, same design)
+// ══════════════════════════════════════════════════════════════════════════════
 class _ProgramsFilterSheet extends ConsumerStatefulWidget {
   final String title;
   final Color color;
@@ -531,147 +717,84 @@ class _ProgramsFilterSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_ProgramsFilterSheet> createState() => _ProgramsFilterSheetState();
+  ConsumerState<_ProgramsFilterSheet> createState() =>
+      _ProgramsFilterSheetState();
 }
 
-class _ProgramsFilterSheetState extends ConsumerState<_ProgramsFilterSheet> {
-  late TextEditingController _searchController;
+class _ProgramsFilterSheetState
+    extends ConsumerState<_ProgramsFilterSheet> {
+  late final TextEditingController _searchCtrl;
 
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
+    _searchCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
-  List<HomeProgramModel> get _filteredPrograms {
-    final query = _searchController.text.toLowerCase();
-    if (query.isEmpty) {
-      return widget.programs;
-    }
-    return widget.programs
-        .where((p) => p.name.toLowerCase().contains(query))
-        .toList();
+  List<HomeProgramModel> get _filtered {
+    final q = _searchCtrl.text.toLowerCase();
+    if (q.isEmpty) return widget.programs;
+    return widget.programs.where((p) => p.name.toLowerCase().contains(q)).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs   = Theme.of(context).colorScheme;
     final l10n = ref.watch(l10nProvider);
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
       maxChildSize: 0.95,
-      builder: (ctx, controller) => Container(
+      builder: (ctx, ctrl) => Container(
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: Column(
-          children: [
-            _SheetHandle(title: widget.title, color: widget.color, icon: widget.icon, onClose: () => Navigator.pop(context)),
-
-            // Search filter
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: cs.onSurface.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: widget.color.withValues(alpha: 0.2)),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: l10n.workoutSearchHint,
-                    hintStyle: GoogleFonts.inter(
-                      color: cs.onSurface.withValues(alpha: 0.5),
-                      fontSize: 14,
-                    ),
-                    prefixIcon: Icon(
-                      LucideIcons.search,
-                      color: widget.color,
-                      size: 18,
-                    ),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? GestureDetector(
-                            onTap: () {
-                              _searchController.clear();
-                              setState(() {});
-                            },
-                            child: Icon(
-                              LucideIcons.x,
-                              color: cs.onSurface.withValues(alpha: 0.5),
-                              size: 18,
-                            ),
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(children: [
+          _SheetHandle(
+              title: widget.title,
+              color: widget.color,
+              icon: widget.icon,
+              onClose: () => Navigator.pop(context)),
+          _SearchBar(
+              ctrl: _searchCtrl,
+              color: widget.color,
+              hint: l10n.workoutSearchHint,
+              onChanged: () => setState(() {})),
+          Expanded(
+            child: _filtered.isEmpty
+                ? _EmptySearch(label: l10n.workoutNoProgramFound)
+                : ListView.builder(
+                    controller: ctrl,
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    itemCount: _filtered.length,
+                    itemBuilder: (_, i) {
+                      final p = _filtered[i];
+                      return _ProgramTile(
+                        imageUrl: p.imageUrl,
+                        title: p.name,
+                        subtitle: '${p.duration} · ${p.sessions}',
+                        phases: p.phases,
+                        color: widget.color,
+                        isFav: widget.favorites.contains(p.name),
+                        onToggleFav: () => widget.onToggleFav(p.name),
+                        onTap: () => widget.onSelectProgram(p),
+                      );
+                    },
                   ),
-                  style: GoogleFonts.inter(
-                    color: cs.onSurface,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-
-            Expanded(
-              child: _filteredPrograms.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LucideIcons.search,
-                            size: 48,
-                            color: cs.onSurface.withValues(alpha: 0.3),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            l10n.workoutNoProgramFound,
-                            style: GoogleFonts.inter(
-                              color: cs.onSurface.withValues(alpha: 0.5),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: controller,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      itemCount: _filteredPrograms.length,
-                      itemBuilder: (_, i) {
-                        final p = _filteredPrograms[i];
-                        return _ProgramTile(
-                          imageUrl: p.imageUrl,
-                          title: p.name,
-                          subtitle: '${p.duration} · ${p.sessions}',
-                          phases: p.phases,
-                          color: widget.color,
-                          isFav: widget.favorites.contains(p.name),
-                          onToggleFav: () => widget.onToggleFav(p.name),
-                          onTap: () => widget.onSelectProgram(p),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
   }
 }
 
-// ── Workouts Filter Sheet ─────────────────────────────────────────────────────
 class _WorkoutsFilterSheet extends ConsumerStatefulWidget {
   final String title;
   final Color color;
@@ -692,208 +815,210 @@ class _WorkoutsFilterSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_WorkoutsFilterSheet> createState() => _WorkoutsFilterSheetState();
+  ConsumerState<_WorkoutsFilterSheet> createState() =>
+      _WorkoutsFilterSheetState();
 }
 
-class _WorkoutsFilterSheetState extends ConsumerState<_WorkoutsFilterSheet> {
-  late TextEditingController _searchController;
+class _WorkoutsFilterSheetState
+    extends ConsumerState<_WorkoutsFilterSheet> {
+  late final TextEditingController _searchCtrl;
 
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
+    _searchCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
-  List<WorkoutModel> get _filteredWorkouts {
-    final query = _searchController.text.toLowerCase();
-    if (query.isEmpty) {
-      return widget.workouts;
-    }
-    return widget.workouts
-        .where((w) => w.title.toLowerCase().contains(query))
-        .toList();
+  List<WorkoutModel> get _filtered {
+    final q = _searchCtrl.text.toLowerCase();
+    if (q.isEmpty) return widget.workouts;
+    return widget.workouts.where((w) => w.title.toLowerCase().contains(q)).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs   = Theme.of(context).colorScheme;
     final l10n = ref.watch(l10nProvider);
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
       maxChildSize: 0.95,
-      builder: (ctx, controller) => Container(
+      builder: (ctx, ctrl) => Container(
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: Column(
-          children: [
-            _SheetHandle(title: widget.title, color: widget.color, icon: widget.icon, onClose: () => Navigator.pop(context)),
+        child: Column(children: [
+          _SheetHandle(
+              title: widget.title,
+              color: widget.color,
+              icon: widget.icon,
+              onClose: () => Navigator.pop(context)),
+          _SearchBar(
+              ctrl: _searchCtrl,
+              color: widget.color,
+              hint: l10n.workoutSearchHint,
+              onChanged: () => setState(() {})),
+          Expanded(
+            child: _filtered.isEmpty
+                ? _EmptySearch(label: l10n.workoutNoWorkoutFound)
+                : ListView.builder(
+                    controller: ctrl,
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    itemCount: _filtered.length,
+                    itemBuilder: (_, i) {
+                      final w = _filtered[i];
+                      return _ProgramTile(
+                        imageUrl: w.imageUrl,
+                        title: w.title,
+                        subtitle: '${w.duration} · ${w.level}',
+                        phases: w.phases,
+                        color: widget.color,
+                        isFav: widget.favorites.contains(w.id),
+                        onToggleFav: () => widget.onToggleFav(w.id),
+                        onTap: () => widget.onSelectWorkout(w),
+                      );
+                    },
+                  ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
 
-            // Search filter
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+// ── Shared sheet sub-widgets ──────────────────────────────────────────────────
+class _SheetHandle extends StatelessWidget {
+  final String title;
+  final Color color;
+  final IconData icon;
+  final VoidCallback onClose;
+  const _SheetHandle(
+      {required this.title,
+      required this.color,
+      required this.icon,
+      required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+          width: 40,
+          height: 4,
+          margin: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+              color: cs.onSurface.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(2))),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 16, 14),
+        child: Row(children: [
+          Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: color, size: 18)),
+          const SizedBox(width: 12),
+          Expanded(
+              child: Text(title,
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
+                      color: cs.onSurface,
+                      letterSpacing: -0.3))),
+          GestureDetector(
+              onTap: onClose,
               child: Container(
-                decoration: BoxDecoration(
-                  color: cs.onSurface.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: widget.color.withValues(alpha: 0.2)),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: l10n.workoutSearchHint,
-                    hintStyle: GoogleFonts.inter(
-                      color: cs.onSurface.withValues(alpha: 0.5),
-                      fontSize: 14,
-                    ),
-                    prefixIcon: Icon(
-                      LucideIcons.search,
-                      color: widget.color,
-                      size: 18,
-                    ),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? GestureDetector(
-                            onTap: () {
-                              _searchController.clear();
-                              setState(() {});
-                            },
-                            child: Icon(
-                              LucideIcons.x,
-                              color: cs.onSurface.withValues(alpha: 0.5),
-                              size: 18,
-                            ),
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  style: GoogleFonts.inter(
-                    color: cs.onSurface,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                      color: cs.onSurface.withValues(alpha: 0.08),
+                      shape: BoxShape.circle),
+                  child: Icon(LucideIcons.x,
+                      size: 17,
+                      color: cs.onSurface.withValues(alpha: 0.55)))),
+        ]),
+      ),
+      Divider(height: 1, color: cs.onSurface.withValues(alpha: 0.10)),
+    ]);
+  }
+}
 
-            Expanded(
-              child: _filteredWorkouts.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LucideIcons.search,
-                            size: 48,
-                            color: cs.onSurface.withValues(alpha: 0.3),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            l10n.workoutNoWorkoutFound,
-                            style: GoogleFonts.inter(
-                              color: cs.onSurface.withValues(alpha: 0.5),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: controller,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      itemCount: _filteredWorkouts.length,
-                      itemBuilder: (_, i) {
-                        final w = _filteredWorkouts[i];
-                        return _ProgramTile(
-                          imageUrl: w.imageUrl,
-                          title: w.title,
-                          subtitle: '${w.duration} · ${w.level}',
-                          phases: w.phases,
-                          color: widget.color,
-                          isFav: widget.favorites.contains(w.id),
-                          onToggleFav: () => widget.onToggleFav(w.id),
-                          onTap: () => widget.onSelectWorkout(w),
-                        );
-                      },
-                    ),
-            ),
-          ],
+class _SearchBar extends StatelessWidget {
+  final TextEditingController ctrl;
+  final Color color;
+  final String hint;
+  final VoidCallback onChanged;
+  const _SearchBar(
+      {required this.ctrl,
+      required this.color,
+      required this.hint,
+      required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.onSurface.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.20)),
+        ),
+        child: TextField(
+          controller: ctrl,
+          onChanged: (_) => onChanged(),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(
+                color: cs.onSurface.withValues(alpha: 0.45), fontSize: 14),
+            prefixIcon: Icon(LucideIcons.search, color: color, size: 18),
+            suffixIcon: ctrl.text.isNotEmpty
+                ? GestureDetector(
+                    onTap: () {
+                      ctrl.clear();
+                      onChanged();
+                    },
+                    child: Icon(LucideIcons.x,
+                        color: cs.onSurface.withValues(alpha: 0.45), size: 18))
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 13),
+          ),
+          style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14),
         ),
       ),
     );
   }
 }
 
-// ── Sheet header handle ───────────────────────────────────────────────────────
-class _SheetHandle extends StatelessWidget {
-  final String title;
-  final Color color;
-  final IconData icon;
-  final VoidCallback onClose;
-  const _SheetHandle({required this.title, required this.color, required this.icon, required this.onClose});
+class _EmptySearch extends StatelessWidget {
+  final String label;
+  const _EmptySearch({required this.label});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 40, height: 4,
-          margin: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: cs.onSurface.withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 38, height: 38,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(title, style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.w800, fontSize: 20,
-                  color: cs.onSurface, letterSpacing: -0.3,
-                )),
-              ),
-              GestureDetector(
-                onTap: onClose,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: cs.onSurface.withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.close_rounded, size: 18, color: cs.onSurface.withValues(alpha: 0.55)),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Divider(height: 1, color: cs.onSurface.withValues(alpha: 0.10)),
-      ],
+    return Center(
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(LucideIcons.search, size: 48, color: cs.onSurface.withValues(alpha: 0.25)),
+        const SizedBox(height: 12),
+        Text(label,
+            style: GoogleFonts.inter(
+                color: cs.onSurface.withValues(alpha: 0.45), fontSize: 14)),
+      ]),
     );
   }
 }
 
-// ── Program list tile (utilisé dans les bottom sheets) ───────────────────────
 class _ProgramTile extends StatelessWidget {
   final String imageUrl;
   final String title;
@@ -924,176 +1049,73 @@ class _ProgramTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.18)),
-          boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
-        ),
-        child: Row(
-          children: [
-            // Image
-            ClipRRect(
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-              child: Image.asset(imageUrl, width: 80, height: 80, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(width: 80, height: 80, color: color.withValues(alpha: 0.12))),
-            ),
-            const SizedBox(width: 12),
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 15,
-                        color: cs.onSurface, letterSpacing: -0.2)),
-                    const SizedBox(height: 3),
-                    Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: cs.onSurface.withValues(alpha: 0.55))),
-                    if (phases.isNotEmpty) ...[
-                      const SizedBox(height: 5),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(phases, maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: color)),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            // Arrow
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Icon(LucideIcons.chevronRight, size: 16, color: color),
-            ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
+          boxShadow: [
+            BoxShadow(
+                color: cs.shadow.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3))
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── Phase filter row ──────────────────────────────────────────────────────────
-class _PhaseFilterRow extends StatelessWidget {
-  final CyclePhase? selected;
-  final void Function(CyclePhase) onSelect;
-  final AppL10n l10n;
-  const _PhaseFilterRow({required this.selected, required this.onSelect, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Label row
-          Row(
-            children: [
-              Container(
-                width: 14,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFB39DDB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                l10n.workoutPhaseFilter,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-                  letterSpacing: 0.2,
-                ),
-              ),
-              if (selected != null) ...[
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => onSelect(selected!),
-                  child: Text(
-                    l10n.workoutShowAll,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: selected!.color,
-                    ),
-                  ),
-                ),
-              ],
-            ],
+        child: Row(children: [
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.horizontal(left: Radius.circular(18)),
+            child: Image.asset(imageUrl,
+                width: 82,
+                height: 82,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                    width: 82,
+                    height: 82,
+                    color: color.withValues(alpha: 0.12))),
           ),
-          const SizedBox(height: 10),
-          // Phase chips
-          Row(
-            children: CyclePhase.values.map((phase) {
-              final isSel = selected == phase;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => onSelect(phase),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: EdgeInsets.only(
-                        right: phase != CyclePhase.values.last ? 8 : 0),
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    decoration: BoxDecoration(
-                      color: isSel
-                          ? phase.color
-                          : phase.color.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSel
-                            ? phase.color
-                            : phase.color.withValues(alpha: 0.30),
-                        width: 1.5,
-                      ),
-                      boxShadow: isSel
-                          ? [
-                              BoxShadow(
-                                color: phase.color.withValues(alpha: 0.35),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              )
-                            ]
-                          : [],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: isSel
-                                ? Colors.white
-                                : phase.color,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          phase.label,
-                          textAlign: TextAlign.center,
+          const SizedBox(width: 12),
+          Expanded(
+              child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: cs.onSurface,
+                          letterSpacing: -0.2)),
+                  const SizedBox(height: 3),
+                  Text(subtitle,
+                      style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: cs.onSurface.withValues(alpha: 0.50))),
+                  if (phases.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Text(phases,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: isSel ? Colors.white : phase.color,
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                      ],
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: color)),
                     ),
-                  ),
-                ),
-              );
-            }).toList(),
+                  ],
+                ]),
+          )),
+          Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: Icon(LucideIcons.chevronRight,
+                size: 16, color: color.withValues(alpha: 0.70)),
           ),
-        ],
+        ]),
       ),
     );
   }

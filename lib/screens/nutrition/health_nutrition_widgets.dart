@@ -298,9 +298,10 @@ class VitalityScoreCard extends ConsumerWidget {
           // Calories big number
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${totals.calories}', style: GoogleFonts.outfit(
+            FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+            child: Text('${totals.calories}', style: GoogleFonts.outfit(
               fontSize: 36, fontWeight: FontWeight.w800,
-              color: Colors.white, height: 1)),
+              color: Colors.white, height: 1))),
             Text('/ ${profile.dailyKcal} kcal', style: GoogleFonts.inter(
               fontSize: 12, color: _kMint)),
             const SizedBox(height: 4),
@@ -379,12 +380,14 @@ class _MacroRow extends StatelessWidget {
     final pct       = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
     final remaining = (goal - consumed).clamp(0, 9999);
     return Row(children: [
-      SizedBox(width: 74, child: Column(
+      SizedBox(width: 70, child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: GoogleFonts.inter(
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
           fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600)),
         Text(
-          remaining > 0 ? '-$remaining$unit' : 'Objectif ✓',
+          remaining > 0 ? '-$remaining$unit' : 'OK ✓',
+          maxLines: 1, overflow: TextOverflow.ellipsis,
           style: GoogleFonts.inter(
             fontSize: 9,
             color: remaining > 0 ? color.withOpacity(0.75) : _kMint)),
@@ -644,18 +647,20 @@ class WaterTrackerCard extends ConsumerWidget {
       child: Column(children: [
 
         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text((currentMl / 1000).toStringAsFixed(1),
-            style: GoogleFonts.outfit(
-              fontSize: 42, fontWeight: FontWeight.w800,
-              color: _kGreen, height: 1)),
+          Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+            child: Text((currentMl / 1000).toStringAsFixed(1),
+              style: GoogleFonts.outfit(
+                fontSize: 42, fontWeight: FontWeight.w800,
+                color: _kGreen, height: 1)))),
           const SizedBox(width: 6),
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text('L / ${(goalMl / 1000).toStringAsFixed(1)} L',
-              style: GoogleFonts.inter(fontSize: 15, color: _kText2))),
+              style: GoogleFonts.inter(fontSize: 13, color: _kText2))),
           const Spacer(),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(remaining > 0 ? '$remaining ml restants' : 'Objectif atteint !',
+            Text(remaining > 0 ? '$remaining ml restants' : 'Atteint !',
+              maxLines: 1,
               style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w600,
                 color: remaining > 0 ? _kText2 : _kGreen)),
@@ -688,7 +693,7 @@ class WaterTrackerCard extends ConsumerWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                width: 36, height: 40,
+                width: 34, height: 38,
                 decoration: BoxDecoration(
                   color: filled ? const Color(0xFFD6EEFF) : const Color(0xFFF4F4F4),
                   borderRadius: BorderRadius.circular(8),
@@ -1138,10 +1143,10 @@ class _DynamicCalorieCardState extends State<DynamicCalorieCard>
           AnimatedBuilder(
             animation: _anim,
             builder: (_, __) => SizedBox(
-              width: 108, height: 108,
+              width: 100, height: 100,
               child: Stack(alignment: Alignment.center, children: [
                 SizedBox(
-                  width: 108, height: 108,
+                  width: 100, height: 100,
                   child: CircularProgressIndicator(
                     value: progress * _anim.value,
                     strokeWidth: 9,
@@ -1375,14 +1380,15 @@ class _SleepQualityCardState extends State<SleepQualityCard> {
 
         // Hours slider
         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text(_hours.toStringAsFixed(1), style: GoogleFonts.outfit(
-            fontSize: 42, fontWeight: FontWeight.w800,
-            color: _kGreen, height: 1)),
+          Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+            child: Text(_hours.toStringAsFixed(1), style: GoogleFonts.outfit(
+              fontSize: 42, fontWeight: FontWeight.w800,
+              color: _kGreen, height: 1)))),
           const SizedBox(width: 6),
           Padding(
             padding: const EdgeInsets.only(bottom: 7),
             child: Text('heures', style: GoogleFonts.inter(
-              fontSize: 15, color: _kText2))),
+              fontSize: 14, color: _kText2))),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

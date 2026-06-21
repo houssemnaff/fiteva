@@ -231,35 +231,29 @@ class ObjectifCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 100,
-                height: 100,
-                child: CustomPaint(
-                  painter: const SimpleDonutPainter(pct: 0.45),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '865',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          'kcal',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+              Builder(builder: (ctx) {
+                final sw = MediaQuery.of(ctx).size.width;
+                final ring = sw < 380 ? 82.0 : 96.0;
+                return SizedBox(
+                  width: ring, height: ring,
+                  child: CustomPaint(
+                    painter: const SimpleDonutPainter(pct: 0.45),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FittedBox(fit: BoxFit.scaleDown,
+                            child: Text('865', style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w800,
+                              color: colorScheme.onSurface))),
+                          Text('kcal', style: TextStyle(
+                            fontSize: 9, color: colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              }),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -402,59 +396,44 @@ class PendingMealItem extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: colorScheme.secondaryContainer.withOpacity(0.55),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Center(child: Text(emoji, style: const TextStyle(fontSize: 26))),
+            child: Center(child: Text(emoji, style: const TextStyle(fontSize: 22))),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '🥗 $category',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('🥗 $category',
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 10, color: colorScheme.primary,
+                      fontWeight: FontWeight.w600)),
                 const SizedBox(height: 1),
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                Text(
-                  '● Calories : $calories kcal',
-                  style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
-                ),
+                Text(name,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface)),
+                Text('$calories kcal',
+                  style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
               ],
             ),
           ),
           GestureDetector(
             onTap: () {},
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
               decoration: BoxDecoration(
                 color: colorScheme.primary,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
-                'Repas mangé 😊',
-                style: TextStyle(
-                  color: colorScheme.onPrimary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: Text('Mangé 😊',
+                style: TextStyle(color: colorScheme.onPrimary,
+                    fontSize: 10, fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -484,21 +463,19 @@ class MealSectionWidget extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(section.emoji, style: const TextStyle(fontSize: 22)),
+            Text(section.emoji, style: const TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
-            Text(
-              section.title,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface,
-              ),
+            Expanded(
+              child: Row(children: [
+                Flexible(child: Text(section.title,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface))),
+                Text(' · $_totalKcal kcal',
+                  style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+              ]),
             ),
-            Text(
-              ' ($_totalKcal kcal)',
-              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-            ),
-            const Spacer(),
+            const SizedBox(width: 8),
             GestureDetector(
               onTap: onAdd,
               child: Container(
@@ -534,7 +511,7 @@ class MealSectionWidget extends StatelessWidget {
                       color: colorScheme.secondaryContainer.withOpacity(0.55),
                       borderRadius: BorderRadius.circular(9),
                     ),
-                    child: Center(child: Text(e.emoji, style: const TextStyle(fontSize: 24))),
+                    child: Center(child: Text(e.emoji, style: const TextStyle(fontSize: 20))),
                   ),
                   const SizedBox(width: 10),
                   Expanded(

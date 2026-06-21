@@ -12,29 +12,19 @@ import '../../core/shop/shop_provider.dart';
 import '../../providers/workout_progress_provider.dart';
 import '../../services/workout_progress_service.dart';
 
-// ── Design tokens (always dark — immersive player) ────────────────────────────
-const _kGreen = Color(0xFF1C4D30);
-const _kGreenMid = Color(0xFF2E7D52);
-const _kGold = Color(0xFFB8966E);
-const _kGoldFade = Color(0x33B8966E);
-const _kSheet = Color(0xFF111111);
-const _kCard = Color(0xFF1C1C1C);
-const _kBorder = Color(0xFF2C2C2C);
-const _kMuted = Color(0xFF8A8A8A);
-const _kWhite = Colors.white;
-
-int _calculatePointsForExercise(int totalPoints, int totalExercises, int exerciseIndex) {
-  if (totalExercises == 0) return 0;
-  final base = totalPoints ~/ totalExercises;
-  final remainder = totalPoints % totalExercises;
-  return exerciseIndex < remainder ? base + 1 : base;
+int _pointsForExercise(int total, int count, int idx) {
+  if (count == 0) return 0;
+  final base = total ~/ count;
+  return idx < total % count ? base + 1 : base;
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
 class ExercisePlayerScreen extends StatefulWidget {
   final WidgetRef ref;
   final String workoutTitle;
   final String exerciseName;
   final String videoId;
+  final String? videoUrl;
   final int exerciseIndex;
   final int totalExercises;
   final int totalWorkoutPoints;
@@ -48,6 +38,7 @@ class ExercisePlayerScreen extends StatefulWidget {
     required this.workoutTitle,
     required this.exerciseName,
     required this.videoId,
+    this.videoUrl,
     required this.exerciseIndex,
     required this.totalExercises,
     required this.totalWorkoutPoints,
@@ -62,21 +53,23 @@ class ExercisePlayerScreen extends StatefulWidget {
 
 class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     with TickerProviderStateMixin {
-  // ── State ──────────────────────────────────────────────────────────────────
   bool _isDone = false;
-  bool _pointsAwarded = false;
   bool _hasWatched80Percent = false;
+  int _tab = 0;
+  bool _showPoints = false;
+  int _earnedPoints = 0;
 
-  // ── Animations ─────────────────────────────────────────────────────────────
+  // Max position reached — used to block forward seeking
+  int _maxPositionMs = 0;
+
   late final AnimationController _doneCtrl;
-  late final Animation<double> _doneAnim;
+  late final Animation<double> _doneScale;
 
-  // ── Video ──────────────────────────────────────────────────────────────────
   VideoPlayerController? _videoCtrl;
   ChewieController? _chewieCtrl;
   bool _isVideoReady = false;
 
-  static const _videoUrls = [
+  static const _fallback = [
     'assets/videos/workout1.mp4',
     'assets/videos/workout2.mp4',
     'assets/videos/workout3.mp4',
@@ -85,74 +78,41 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
-    _doneCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
-    _doneAnim = CurvedAnimation(parent: _doneCtrl, curve: Curves.elasticOut);
-
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _doneCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _doneScale = CurvedAnimation(parent: _doneCtrl, curve: Curves.elasticOut);
     _checkVideoCompletion();
     _initVideo();
   }
 
   Future<void> _checkVideoCompletion() async {
-    final isCompleted = await WorkoutProgressService.isVideoCompleted(widget.videoId);
-    if (mounted) {
-      setState(() => _hasWatched80Percent = isCompleted);
-    }
-  }
-
-  Future<void> _checkAndMarkWorkoutComplete() async {
-    if (widget.workoutId == null || widget.totalWorkoutExercises == null) return;
-
-    final completedVideos = await WorkoutProgressService.getCompletedVideos();
-
-    bool allExercisesCompleted = true;
-    for (int i = 0; i < widget.totalWorkoutExercises!; i++) {
-      final videoId = '${widget.workoutTitle}_exercise_$i';
-      if (!completedVideos.contains(videoId)) {
-        allExercisesCompleted = false;
-        break;
-      }
-    }
-
-    if (allExercisesCompleted) {
-      await WorkoutProgressService.markWorkoutComplete(widget.workoutId!);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(LucideIcons.checkCircle,
-                    color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(widget.ref.read(l10nProvider).exSessionComplete),
-                ),
-              ],
-            ),
-            duration: const Duration(seconds: 2),
-            backgroundColor: _kGreen,
-          ),
-        );
-      }
-    }
+    final done = await WorkoutProgressService.isVideoCompleted(widget.videoId);
+    if (mounted) setState(() => _hasWatched80Percent = done);
   }
 
   Future<void> _initVideo() async {
-    final url = _videoUrls[widget.exerciseIndex % _videoUrls.length];
+    final url = (widget.videoUrl != null && widget.videoUrl!.isNotEmpty)
+        ? widget.videoUrl!
+        : _fallback[widget.exerciseIndex % _fallback.length];
     _videoCtrl = VideoPlayerController.asset(url);
     try {
       await _videoCtrl!.initialize();
-      _videoCtrl!.addListener(_onVideoProgress);
+      _videoCtrl!.addListener(_onProgress);
       if (!mounted) return;
+      final cs = Theme.of(context).colorScheme;
       _chewieCtrl = ChewieController(
         videoPlayerController: _videoCtrl!,
         autoPlay: true,
-        looping: true,
+        looping: false,
         showControls: true,
         aspectRatio: _videoCtrl!.value.aspectRatio,
         placeholder: const ColoredBox(color: Colors.black),
+        materialProgressColors: ChewieProgressColors(
+          playedColor: cs.primary,
+          handleColor: cs.primary,
+          bufferedColor: Colors.white30,
+          backgroundColor: Colors.white12,
+        ),
       );
       setState(() => _isVideoReady = true);
     } catch (e) {
@@ -160,734 +120,706 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     }
   }
 
-  void _onVideoProgress() {
-    if (_pointsAwarded) return;
+
+  void _onProgress() {
     final ctrl = _videoCtrl;
     if (ctrl == null || !ctrl.value.isInitialized) return;
     final dur = ctrl.value.duration.inMilliseconds;
     final pos = ctrl.value.position.inMilliseconds;
     if (dur <= 0) return;
-    if (pos / dur >= 0.80) {
-      _pointsAwarded = true;
 
-      if (!_hasWatched80Percent) {
-        setState(() => _hasWatched80Percent = true);
-        final points = _calculatePointsForExercise(widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex);
-        widget.ref.read(pointsProvider.notifier).addPoints(points);
-        widget.ref.read(shopProvider.notifier).refresh();
-        WorkoutProgressService.updateVideoProgress(widget.videoId, 0.80);
-        final total = widget.ref.read(pointsProvider);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(LucideIcons.checkCircle,
-                      color: Colors.white, size: 18),
-                  const SizedBox(width: 8),
-                  Text(widget.ref.read(l10nProvider).exPointsEarned(points, total)),
-                ],
-              ),
-              duration: const Duration(seconds: 3),
-              backgroundColor: _kGreen,
-            ),
-          );
-        }
-        _checkAndMarkWorkoutComplete();
-
-        // Invalidate providers to update UI instantly
-        widget.ref.invalidate(completedVideosProvider);
-        widget.ref.invalidate(workoutCompletionPercentageProvider);
-        widget.ref.invalidate(programCompletionPercentageProvider);
-        widget.ref.invalidate(programStatusProvider);
-      }
+    // ── Block forward seeking ──────────────────────────────────────────────
+    // Allow up to 1.5 s ahead of the max reached (buffering tolerance)
+    if (pos > _maxPositionMs + 1500) {
+      ctrl.seekTo(Duration(milliseconds: _maxPositionMs));
+      return;
     }
+    if (pos > _maxPositionMs) _maxPositionMs = pos;
+
+    // ── Track 80 % threshold ───────────────────────────────────────────────
+    if (!_hasWatched80Percent && pos / dur >= 0.80) {
+      setState(() => _hasWatched80Percent = true);
+      WorkoutProgressService.updateVideoProgress(widget.videoId, 0.80);
+    }
+  }
+
+  Future<void> _checkAndMarkComplete() async {
+    if (widget.workoutId == null || widget.totalWorkoutExercises == null) return;
+    final done = await WorkoutProgressService.getCompletedVideos();
+    for (int i = 0; i < widget.totalWorkoutExercises!; i++) {
+      if (!done.contains('${widget.workoutTitle}_exercise_$i')) return;
+    }
+    await WorkoutProgressService.markWorkoutComplete(widget.workoutId!);
+  }
+
+  Future<void> _complete() async {
+    if (_isDone) return;
+
+    // ── Not watched 80 % → show warning, block completion ─────────────────
+    if (!_hasWatched80Percent) {
+      _showIncompleteWarning();
+      return;
+    }
+
+    HapticFeedback.mediumImpact();
+
+    // ── Award points ───────────────────────────────────────────────────────
+    final pts = _pointsForExercise(
+        widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex);
+    widget.ref.read(pointsProvider.notifier).addPoints(pts);
+    widget.ref.read(shopProvider.notifier).refresh();
+    widget.ref.invalidate(completedVideosProvider);
+    widget.ref.invalidate(workoutCompletionPercentageProvider);
+    widget.ref.invalidate(programCompletionPercentageProvider);
+    widget.ref.invalidate(programStatusProvider);
+    await _checkAndMarkComplete();
+
+    // ── Show floating badge then navigate back ─────────────────────────────
+    setState(() { _isDone = true; _earnedPoints = pts; _showPoints = true; });
+    _doneCtrl.forward();
+    widget.onCompleted();
+
+    await Future.delayed(const Duration(milliseconds: 2000));
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  void _showIncompleteWarning() {
+    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
+    final t1 = dark ? const Color(0xFFF0F0F0) : const Color(0xFF111111);
+    final t2 = dark ? const Color(0xFF888888) : const Color(0xFF666666);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: EdgeInsets.fromLTRB(
+            24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // Handle
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(
+              color: dark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0),
+              borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(height: 24),
+          // Icon
+          Container(
+            width: 64, height: 64,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(LucideIcons.alertTriangle,
+                color: Color(0xFFF59E0B), size: 28),
+          ),
+          const SizedBox(height: 16),
+          Text('Vidéo non terminée',
+            style: GoogleFonts.outfit(
+                fontSize: 20, fontWeight: FontWeight.w800, color: t1)),
+          const SizedBox(height: 10),
+          Text(
+            'Tu dois regarder au moins 80 % de la vidéo pour débloquer tes points. Continue à regarder !',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 14, color: t2, height: 1.6),
+          ),
+          const SizedBox(height: 24),
+          // Progress bar showing how far she got
+          Builder(builder: (_) {
+            final ctrl = _videoCtrl;
+            final pct = (ctrl != null && ctrl.value.isInitialized &&
+                    ctrl.value.duration.inMilliseconds > 0)
+                ? (_maxPositionMs / ctrl.value.duration.inMilliseconds).clamp(0.0, 1.0)
+                : 0.0;
+            return Column(children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('Progression', style: GoogleFonts.inter(fontSize: 12, color: t2)),
+                Text('${(pct * 100).toInt()} % / 80 %',
+                  style: GoogleFonts.outfit(
+                      fontSize: 12, fontWeight: FontWeight.w700,
+                      color: pct >= 0.80 ? cs.primary : const Color(0xFFF59E0B))),
+              ]),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: pct,
+                  minHeight: 8,
+                  backgroundColor:
+                      dark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE),
+                  valueColor: AlwaysStoppedAnimation(
+                      pct >= 0.80 ? cs.primary : const Color(0xFFF59E0B)),
+                ),
+              ),
+            ]);
+          }),
+          const SizedBox(height: 24),
+          // CTA — back to video
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cs.primary,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: cs.primary.withValues(alpha: 0.30),
+                      blurRadius: 14, offset: const Offset(0, 5)),
+                  ],
+                ),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  const Icon(LucideIcons.play, color: Colors.white, size: 16),
+                  const SizedBox(width: 10),
+                  Text('Continuer la vidéo',
+                    style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800)),
+                ]),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
   }
 
   @override
   void dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _doneCtrl.dispose();
     _chewieCtrl?.dispose();
     _videoCtrl?.dispose();
     super.dispose();
   }
 
-  Future<void> _completExercise() async {
-    if (_isDone) return;
-    HapticFeedback.mediumImpact();
-    setState(() => _isDone = true);
-
-    // Mark video as completed if not already
-    if (!_hasWatched80Percent) {
-      await WorkoutProgressService.updateVideoProgress(widget.videoId, 0.80);
-      await _checkAndMarkWorkoutComplete();
-
-      // Invalidate providers to update UI instantly
-      widget.ref.invalidate(completedVideosProvider);
-      widget.ref.invalidate(workoutCompletionPercentageProvider);
-      widget.ref.invalidate(programCompletionPercentageProvider);
-      widget.ref.invalidate(programStatusProvider);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(LucideIcons.alertCircle,
-                    color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(widget.ref.read(l10nProvider).exWatch80),
-                ),
-              ],
-            ),
-            duration: const Duration(seconds: 4),
-            backgroundColor: const Color(0xFFFFA500),
-          ),
-        );
-      }
-    }
-
-    _doneCtrl.forward();
-    widget.onCompleted();
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (mounted) Navigator.of(context).pop();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final progress = (widget.exerciseIndex + 1) / widget.totalExercises;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final l10n = widget.ref.read(l10nProvider);
+    final pts = _pointsForExercise(widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex);
+
+    final bg     = dark ? const Color(0xFF0F0F0F) : const Color(0xFFF6F6F6);
+    final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
+    final t1     = dark ? const Color(0xFFF0F0F0) : const Color(0xFF111111);
+    final t2     = dark ? const Color(0xFF888888) : const Color(0xFF777777);
+    final t3     = dark ? const Color(0xFF3A3A3A) : const Color(0xFFE8E8E8);
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // ── Video fullscreen ─────────────────────────────────────────────
-          Positioned.fill(
-            child: _isVideoReady && _chewieCtrl != null
-                ? Chewie(controller: _chewieCtrl!)
-                : _VideoPlaceholder(l10n: widget.ref.read(l10nProvider)),
+      backgroundColor: bg,
+      body: Stack(children: [
+       Column(children: [
+        // ── Video zone ─────────────────────────────────────────────────────
+        Container(
+          color: Colors.black,
+          child: SafeArea(
+            bottom: false,
+            child: Column(children: [
+              // Top bar over video
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
+                child: Row(children: [
+                  IconButton(
+                    icon: const Icon(LucideIcons.chevronDown, color: Colors.white, size: 22),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Spacer(),
+                  // step indicator dots
+                  Row(
+                    children: List.generate(widget.totalExercises, (i) {
+                      final active = i == widget.exerciseIndex;
+                      final done   = i < widget.exerciseIndex;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.only(left: 5),
+                        width: active ? 20 : 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: done || active
+                              ? cs.primary
+                              : Colors.white.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
+                ]),
+              ),
+              // 16:9 player
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: _isVideoReady && _chewieCtrl != null
+                    ? Chewie(controller: _chewieCtrl!)
+                    : Center(child: CircularProgressIndicator(
+                        color: cs.primary, strokeWidth: 2)),
+              ),
+            ]),
           ),
+        ),
 
-          // ── Top progress bar ─────────────────────────────────────────────
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _TopBar(
-              workoutTitle: widget.workoutTitle,
-              exerciseName: widget.exerciseName,
-              exerciseIndex: widget.exerciseIndex,
-              totalExercises: widget.totalExercises,
-              progress: progress,
-              onBack: () => Navigator.of(context).pop(),
+        // ── Scrollable body ────────────────────────────────────────────────
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+              // ── Exercise header ──────────────────────────────────────────
+              Container(
+                color: cardBg,
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  // Eyebrow: workout name + counter
+                  Row(children: [
+                    Expanded(
+                      child: Text(
+                        widget.workoutTitle.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          fontSize: 10, fontWeight: FontWeight.w700,
+                          letterSpacing: 2, color: cs.primary),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${widget.exerciseIndex + 1} / ${widget.totalExercises}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12, fontWeight: FontWeight.w700, color: cs.primary),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 8),
+
+                  // Exercise name
+                  Text(
+                    widget.exerciseName,
+                    style: GoogleFonts.outfit(
+                      fontSize: 26, fontWeight: FontWeight.w900,
+                      color: t1, height: 1.1, letterSpacing: -0.5),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Stat chips row
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(children: [
+                      _StatChip(icon: LucideIcons.repeat2, value: '3', label: l10n.exStatSets, color: cs.primary, t3: t3, t2: t2),
+                      const SizedBox(width: 8),
+                      _StatChip(icon: LucideIcons.timer, value: '45s', label: l10n.exStatWork, color: const Color(0xFF2563EB), t3: t3, t2: t2),
+                      const SizedBox(width: 8),
+                      _StatChip(icon: LucideIcons.pause, value: '15s', label: l10n.exStatRest, color: const Color(0xFF7C3AED), t3: t3, t2: t2),
+                      const SizedBox(width: 8),
+                      _StatChip(icon: LucideIcons.star, value: '$pts', label: 'pts', color: const Color(0xFFF59E0B), t3: t3, t2: t2),
+                    ]),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Segment tabs
+                  Row(children: [
+                    _TabBtn(label: 'Technique', active: _tab == 0, cs: cs, t2: t2, onTap: () => setState(() => _tab = 0)),
+                    const SizedBox(width: 8),
+                    _TabBtn(label: 'Muscles', active: _tab == 1, cs: cs, t2: t2, onTap: () => setState(() => _tab = 1)),
+                    const SizedBox(width: 8),
+                    _TabBtn(label: 'Conseils', active: _tab == 2, cs: cs, t2: t2, onTap: () => setState(() => _tab = 2)),
+                  ]),
+                  const SizedBox(height: 2),
+
+                  // Tab underline
+                  Container(height: 1, color: t3),
+                ]),
+              ),
+
+              // ── Tab content ──────────────────────────────────────────────
+              Container(
+                color: cardBg,
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _tab == 0
+                      ? _TechniqueTab(key: const ValueKey(0), l10n: l10n, t1: t1, t2: t2, cs: cs)
+                      : _tab == 1
+                          ? _MusclesTab(key: const ValueKey(1), t1: t1, t2: t2, t3: t3, cs: cs)
+                          : _ConseilsTab(key: const ValueKey(2), l10n: l10n, t1: t1, t2: t2),
+                ),
+              ),
+
+              const SizedBox(height: 100), // space for bottom bar
+            ]),
+          ),
+        ),
+      ]), // end Column
+
+      // ── Floating +pts badge ──────────────────────────────────────────────
+      if (_showPoints)
+        Positioned(
+          bottom: 100,
+          left: 0, right: 0,
+          child: _FloatingPoints(pts: _earnedPoints, cs: cs),
+        ),
+    ]), // end Stack
+
+      // ── Fixed bottom bar ─────────────────────────────────────────────────
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          border: Border(top: BorderSide(color: t3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: dark ? 0.40 : 0.08),
+              blurRadius: 20, offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: Row(children: [
+          // Prev button
+          GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Container(
+              width: 52, height: 52,
+              decoration: BoxDecoration(
+                color: dark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: t3),
+              ),
+              child: Icon(LucideIcons.skipBack, size: 18, color: t2),
             ),
           ),
+          const SizedBox(width: 12),
 
-          // ── Bottom sheet ─────────────────────────────────────────────────
-          DraggableScrollableSheet(
-            initialChildSize: 0.14,
-            minChildSize: 0.14,
-            maxChildSize: 0.72,
-            snap: true,
-            snapSizes: const [0.14, 0.72],
-            builder: (context, scrollCtrl) => _BottomPanel(
-              scrollCtrl: scrollCtrl,
-              exerciseName: widget.exerciseName,
-              isDone: _isDone,
-              doneAnim: _doneAnim,
-              onCompleteAll: _completExercise,
-              onPrev: () => Navigator.of(context).pop(),
-              onNext: () {},
-              pointsPerExercise: _calculatePointsForExercise(widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex),
-              l10n: widget.ref.read(l10nProvider),
+          // Complete button
+          Expanded(
+            child: ScaleTransition(
+              scale: _isDone ? _doneScale : const AlwaysStoppedAnimation(1.0),
+              child: GestureDetector(
+                onTap: _isDone ? null : _complete,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: _isDone
+                        ? Colors.green.shade600
+                        : cs.primary,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: cs.primary.withValues(alpha: 0.35),
+                        blurRadius: 16, offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(
+                      _isDone ? LucideIcons.checkCircle : LucideIcons.check,
+                      color: Colors.white, size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      _isDone ? l10n.exDoneLabel : l10n.exCompleteBtn,
+                      style: GoogleFonts.outfit(
+                        color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                    ),
+                  ]),
+                ),
+              ),
             ),
           ),
-        ],
+        ]),
       ),
     );
   }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TOP BAR
+// TAB CONTENTS
 // ══════════════════════════════════════════════════════════════════════════════
-class _TopBar extends StatelessWidget {
-  final String workoutTitle;
-  final String exerciseName;
-  final int exerciseIndex;
-  final int totalExercises;
-  final double progress;
-  final VoidCallback onBack;
 
-  const _TopBar({
-    required this.workoutTitle,
-    required this.exerciseName,
-    required this.exerciseIndex,
-    required this.totalExercises,
-    required this.progress,
-    required this.onBack,
-  });
+class _TechniqueTab extends StatelessWidget {
+  final AppL10n l10n;
+  final Color t1, t2;
+  final ColorScheme cs;
+  const _TechniqueTab({super.key, required this.l10n, required this.t1, required this.t2, required this.cs});
 
   @override
   Widget build(BuildContext context) {
+    final steps = [l10n.exTip1, l10n.exTip2, l10n.exTip3];
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Thin gold progress bar
-        LinearProgressIndicator(
-          value: progress,
-          backgroundColor: Colors.white.withValues(alpha: 0.08),
-          valueColor: const AlwaysStoppedAnimation<Color>(_kGold),
-          minHeight: 2,
-        ),
-
-        SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                // Back button
-                _GlassBtn(icon: LucideIcons.arrowLeft, onTap: onBack),
-                const SizedBox(width: 12),
-
-                // Title block
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        workoutTitle.toUpperCase(),
-                        style: GoogleFonts.inter(
-                          color: _kGold,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.8,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        exerciseName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.outfit(
-                          color: _kWhite,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          shadows: const [
-                            Shadow(blurRadius: 12, color: Colors.black54)
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Counter pill
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _kGoldFade,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _kGold.withValues(alpha: 0.40)),
-                  ),
-                  child: Text(
-                    '${exerciseIndex + 1} / $totalExercises',
-                    style: GoogleFonts.inter(
-                      color: _kGold,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
+        Text(l10n.exTechniqueDesc,
+          style: GoogleFonts.inter(fontSize: 14, color: t2, height: 1.7)),
+        const SizedBox(height: 20),
+        Text('Étapes clés',
+          style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700, color: t1)),
+        const SizedBox(height: 12),
+        ...List.generate(steps.length, (i) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text('${i + 1}',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13, fontWeight: FontWeight.w800, color: cs.primary)),
+              ),
             ),
-          ),
-        ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 5),
+                child: Text(steps[i],
+                  style: GoogleFonts.inter(fontSize: 13.5, color: t2, height: 1.6)),
+              ),
+            ),
+          ]),
+        )),
       ],
     );
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// BOTTOM PANEL
-// ══════════════════════════════════════════════════════════════════════════════
-class _BottomPanel extends StatelessWidget {
-  final AppL10n l10n;
-    final int pointsPerExercise;
-
-  final ScrollController scrollCtrl;
-  final String exerciseName;
-  final bool isDone;
-  final Animation<double> doneAnim;
-  final VoidCallback onCompleteAll;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
-
-  const _BottomPanel({
-    required this.scrollCtrl,
-    required this.exerciseName,
-    required this.isDone,
-    required this.doneAnim,
-    required this.onCompleteAll,
-    required this.onPrev,
-    required this.onNext, required this.pointsPerExercise,
-    required this.l10n,
-  });
+class _MusclesTab extends StatelessWidget {
+  final Color t1, t2, t3;
+  final ColorScheme cs;
+  const _MusclesTab({super.key, required this.t1, required this.t2, required this.t3, required this.cs});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _kSheet,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.60),
-            blurRadius: 30,
-            offset: const Offset(0, -8),
-          ),
-        ],
-      ),
-      child: ListView(
-        controller: scrollCtrl,
-        padding: EdgeInsets.zero,
-        children: [
-          // ── Drag handle ──────────────────────────────────────────────────
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 20),
-              width: 36,
-              height: 3,
-              decoration: BoxDecoration(
-                color: _kGold.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(2),
-              ),
+    final primary = [
+      (icon: LucideIcons.zap, name: 'Quadriceps', level: 1.0),
+      (icon: LucideIcons.activity, name: 'Fessiers', level: 0.85),
+      (icon: LucideIcons.zap, name: 'Ischio-jambiers', level: 0.60),
+    ];
+    final secondary = [
+      (name: 'Mollets', level: 0.40),
+      (name: 'Abdominaux', level: 0.30),
+      (name: 'Lombaires', level: 0.35),
+    ];
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Muscles principaux',
+        style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700, color: t1)),
+      const SizedBox(height: 14),
+      ...primary.map((m) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(m.icon, size: 13, color: cs.primary),
+            const SizedBox(width: 8),
+            Expanded(child: Text(m.name,
+              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: t1))),
+            Text('${(m.level * 100).toInt()}%',
+              style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: cs.primary)),
+          ]),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: m.level,
+              minHeight: 5,
+              backgroundColor: t3,
+              valueColor: AlwaysStoppedAnimation(cs.primary),
             ),
           ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Exercise name ─────────────────────────────────────────
-                Text(
-                  exerciseName,
-                  style: GoogleFonts.outfit(
-                    color: _kWhite,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                    height: 1.15,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // ── Tags ──────────────────────────────────────────────────
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _Tag(label: l10n.exTagGlutes, icon: LucideIcons.zap),
-                    _Tag(label: l10n.exTagMat, icon: LucideIcons.layoutDashboard),
-                    _Tag(
-                        label: l10n.exTagModerate,
-                        icon: LucideIcons.flame,
-                        isAccent: true),
-                  ],
-                ),
-                const SizedBox(height: 22),
-
-                // ── Stats row ─────────────────────────────────────────────
-                Container(
-                  decoration: BoxDecoration(
-                    color: _kCard,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: _kBorder),
-                  ),
-                  child: Row(
-                    children: [
-                      _StatCell(value: '3', label: l10n.exStatSets),
-                      _VertDivider(),
-                      _StatCell(value: '45s', label: l10n.exStatWork),
-                      _VertDivider(),
-                      _StatCell(value: '15s', label: l10n.exStatRest),
-                      _VertDivider(),
-                       _StatCell(
-                        value: '$pointsPerExercise',
-                        label: 'Points',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-
-                // ── Description ───────────────────────────────────────────
-                _SectionLabel(label: l10n.exTechniqueLabel),
-                const SizedBox(height: 10),
-                Text(
-                  l10n.exTechniqueDesc,
-                  style: GoogleFonts.inter(
-                    color: _kMuted,
-                    fontSize: 13.5,
-                    height: 1.65,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 22),
-
-                // ── Tips card ─────────────────────────────────────────────
-                _TipsCard(l10n: l10n),
-                const SizedBox(height: 22),
-
-                // ── Prev / Next ───────────────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                        child: _NavBtn(
-                            icon: LucideIcons.skipBack,
-                            label: l10n.exPrev,
-                            onTap: onPrev)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: _NavBtn(
-                            icon: LucideIcons.skipForward,
-                            label: l10n.exNext,
-                            onTap: onNext,
-                            isPrimary: true)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // ── CTA ───────────────────────────────────────────────────
-                ScaleTransition(
-                  scale: isDone ? doneAnim : const AlwaysStoppedAnimation(1.0),
-                  child: GestureDetector(
-                    onTap: isDone ? null : onCompleteAll,
-                    child: Container(
-                      width: double.infinity,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors:
-                              isDone ? [_kGold, _kGold] : [_kGreen, _kGreenMid],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(50),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isDone ? _kGold : _kGreen)
-                                .withValues(alpha: 0.45),
-                            blurRadius: 20,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            isDone
-                                ? LucideIcons.checkCircle
-                                : LucideIcons.check,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            isDone
-                                ? l10n.exDoneLabel
-                                : l10n.exCompleteBtn,
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-              ],
-            ),
+        ]),
+      )),
+      const SizedBox(height: 8),
+      Text('Muscles secondaires',
+        style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700, color: t1)),
+      const SizedBox(height: 10),
+      Wrap(spacing: 8, runSpacing: 8,
+        children: secondary.map((m) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: t3,
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
+          child: Text(m.name,
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: t2)),
+        )).toList(),
       ),
+    ]);
+  }
+}
+
+class _ConseilsTab extends StatelessWidget {
+  final AppL10n l10n;
+  final Color t1, t2;
+  const _ConseilsTab({super.key, required this.l10n, required this.t1, required this.t2});
+
+  @override
+  Widget build(BuildContext context) {
+    final conseils = [
+      (icon: LucideIcons.eye, title: 'Regard', tip: l10n.exTip1),
+      (icon: LucideIcons.wind, title: 'Respiration', tip: l10n.exTip2),
+      (icon: LucideIcons.moveVertical, title: 'Amplitude', tip: l10n.exTip3),
+    ];
+    return Column(crossAxisAlignment: CrossAxisAlignment.start,
+      children: conseils.map((c) => Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(c.icon, size: 17, color: const Color(0xFFF59E0B)),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(c.title,
+              style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700, color: t1)),
+            const SizedBox(height: 3),
+            Text(c.tip,
+              style: GoogleFonts.inter(fontSize: 13, color: t2, height: 1.55)),
+          ])),
+        ]),
+      )).toList(),
     );
   }
 }
 
-// ── Tips card ─────────────────────────────────────────────────────────────────
-class _TipsCard extends StatelessWidget {
-  final AppL10n l10n;
-  const _TipsCard({required this.l10n});
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _kGoldFade,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _kGold.withValues(alpha: 0.28)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              const Icon(LucideIcons.lightbulb, size: 15, color: _kGold),
-              const SizedBox(width: 8),
-              Text(
-                l10n.exFormTipsTitle,
-                style: GoogleFonts.inter(
-                  color: _kGold,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ]),
-            const SizedBox(height: 10),
-            _TipRow(l10n.exTip1),
-            const SizedBox(height: 6),
-            _TipRow(l10n.exTip2),
-            const SizedBox(height: 6),
-            _TipRow(l10n.exTip3),
-          ],
-        ),
-      );
-}
+// ══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-class _GlassBtn extends StatelessWidget {
+class _StatChip extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onTap;
-  const _GlassBtn({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(50),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-              ),
-              child: Icon(icon, color: _kWhite, size: 17),
-            ),
-          ),
-        ),
-      );
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) => Row(children: [
-        Container(
-          width: 14,
-          height: 2,
-          decoration: BoxDecoration(
-              color: _kGold, borderRadius: BorderRadius.circular(2)),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: GoogleFonts.outfit(
-            color: _kWhite,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
-          ),
-        ),
-      ]);
-}
-
-class _Tag extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool isAccent;
-  const _Tag({required this.label, required this.icon, this.isAccent = false});
+  final String value, label;
+  final Color color, t3, t2;
+  const _StatChip({required this.icon, required this.value, required this.label,
+    required this.color, required this.t3, required this.t2});
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(
-          color: isAccent
-              ? _kGold.withValues(alpha: 0.12)
-              : _kGreen.withValues(alpha: 0.18),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isAccent
-                ? _kGold.withValues(alpha: 0.30)
-                : _kGreen.withValues(alpha: 0.35),
-          ),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon,
-              size: 11, color: isAccent ? _kGold : const Color(0xFF7ABB98)),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              color: isAccent ? _kGold : const Color(0xFF9ED4B5),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ]),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: color.withValues(alpha: 0.18)),
+    ),
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 14, color: color),
+      const SizedBox(height: 5),
+      Text(value, style: GoogleFonts.outfit(
+        fontSize: 17, fontWeight: FontWeight.w900, color: color, height: 1)),
+      const SizedBox(height: 2),
+      Text(label, style: GoogleFonts.inter(
+        fontSize: 10, fontWeight: FontWeight.w500, color: t2)),
+    ]),
+  );
 }
 
-class _StatCell extends StatelessWidget {
-  final String value;
+class _TabBtn extends StatelessWidget {
   final String label;
-  const _StatCell({required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) => Expanded(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Column(children: [
-            Text(
-              value,
-              style: GoogleFonts.outfit(
-                color: _kWhite,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                  color: _kMuted, fontSize: 10, fontWeight: FontWeight.w500),
-            ),
-          ]),
-        ),
-      );
-}
-
-class _VertDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) =>
-      Container(width: 1, height: 30, color: _kBorder);
-}
-
-class _TipRow extends StatelessWidget {
-  final String text;
-  const _TipRow(this.text);
-
-  @override
-  Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 4),
-            child: Icon(LucideIcons.dot, size: 12, color: _kGold),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.inter(
-                color: _kWhite.withValues(alpha: 0.70),
-                fontSize: 13,
-                height: 1.55,
-              ),
-            ),
-          ),
-        ],
-      );
-}
-
-class _NavBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
+  final bool active;
+  final ColorScheme cs;
+  final Color t2;
   final VoidCallback onTap;
-  final bool isPrimary;
-  const _NavBtn({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.isPrimary = false,
-  });
+  const _TabBtn({required this.label, required this.active,
+    required this.cs, required this.t2, required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
+    onTap: onTap,
+    child: Column(children: [
+      Text(label, style: GoogleFonts.outfit(
+        fontSize: 14,
+        fontWeight: active ? FontWeight.w800 : FontWeight.w500,
+        color: active ? cs.primary : t2,
+      )),
+      const SizedBox(height: 10),
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 2,
+        width: active ? label.length * 8.5 : 0,
+        decoration: BoxDecoration(
+          color: cs.primary,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    ]),
+  );
+}
+
+// ── Floating points badge ─────────────────────────────────────────────────────
+class _FloatingPoints extends StatefulWidget {
+  final int pts;
+  final ColorScheme cs;
+  const _FloatingPoints({required this.pts, required this.cs});
+
+  @override
+  State<_FloatingPoints> createState() => _FloatingPointsState();
+}
+
+class _FloatingPointsState extends State<_FloatingPoints>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800));
+    _opacity = TweenSequence([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 15),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 55),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 30),
+    ]).animate(_ctrl);
+    _slide = Tween(begin: Offset.zero, end: const Offset(0, -1.2))
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) => SlideTransition(
+    position: _slide,
+    child: FadeTransition(
+      opacity: _opacity,
+      child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
-            color: isPrimary ? _kGreen.withValues(alpha: 0.18) : _kCard,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isPrimary ? _kGreen.withValues(alpha: 0.40) : _kBorder,
-            ),
-          ),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(icon,
-                size: 14, color: isPrimary ? const Color(0xFF7ABB98) : _kMuted),
-            const SizedBox(width: 7),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                color: isPrimary ? const Color(0xFF9ED4B5) : _kMuted,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ]),
-        ),
-      );
-}
-
-class _VideoPlaceholder extends StatelessWidget {
-  final AppL10n l10n;
-  const _VideoPlaceholder({required this.l10n});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        color: Colors.black,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: _kGreen.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _kGreen.withValues(alpha: 0.30)),
-                ),
-                child: const CircularProgressIndicator(
-                  color: _kGold,
-                  strokeWidth: 2,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.loading,
-                style: GoogleFonts.inter(
-                    color: _kMuted, fontSize: 13, fontWeight: FontWeight.w500),
+            color: widget.cs.primary,
+            borderRadius: BorderRadius.circular(50),
+            boxShadow: [
+              BoxShadow(
+                color: widget.cs.primary.withValues(alpha: 0.45),
+                blurRadius: 20, offset: const Offset(0, 6),
               ),
             ],
           ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(LucideIcons.star, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              '+${widget.pts} pts',
+              style: GoogleFonts.outfit(
+                color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.3),
+            ),
+          ]),
         ),
-      );
+      ),
+    ),
+  );
 }

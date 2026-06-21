@@ -1,4 +1,5 @@
 import 'package:fiteva/screens/community/model/event_model.dart';
+import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -151,158 +152,206 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs        = colorScheme;
     final spotsLeft = event.maxSpots - event.joinedCount;
     final isFull    = spotsLeft <= 0;
     final isJoined  = event.isJoined;
 
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outline),
+        border: Border.all(color: cs.outline),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: cs.shadow.withValues(alpha: 0.04),
+            blurRadius: 14, offset: const Offset(0, 3),
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          // Banner
-          Stack(children: [
-            SizedBox(
-              height: 160, width: double.infinity,
-              child: Image.network(
-                event.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 160,
-                  color: colorScheme.primary.withValues(alpha: 0.1),
-                  child: Center(child: Icon(LucideIcons.image,
-                      color: colorScheme.primary.withValues(alpha: 0.3), size: 32)),
+          // ── Header row (mirrors feed post header) ─────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
+            child: Row(children: [
+              CommunityAvatar(
+                avatarUrl: event.organizerAvatar,
+                name: event.organizer,
+                radius: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(event.organizer, style: GoogleFonts.outfit(
+                      fontSize: 14, fontWeight: FontWeight.w700,
+                      color: cs.onSurface, letterSpacing: -0.2,
+                    )),
+                    const SizedBox(height: 3),
+                    Row(children: [
+                      Flexible(
+                        child: Text('${event.date} · ${event.time}',
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: cs.onSurface.withValues(alpha: 0.6),
+                          )),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(width: 3, height: 3,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: cs.outline.withValues(alpha: 0.3))),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(typeIcon, size: 9, color: cs.primary),
+                          const SizedBox(width: 3),
+                          Text(event.type, style: GoogleFonts.inter(
+                            fontSize: 10, fontWeight: FontWeight.w700,
+                            color: cs.primary,
+                          )),
+                        ]),
+                      ),
+                    ]),
+                  ],
                 ),
               ),
-            ),
-            // Scrim
-            Positioned(
-              bottom: 0, left: 0, right: 0, height: 80,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [colorScheme.primary.withValues(alpha: 0.75), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-            // Type badge
-            Positioned(
-              top: 12, left: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(typeIcon, size: 10, color: colorScheme.secondary),
-                  const SizedBox(width: 5),
-                  Text(event.type.toUpperCase(), style: GoogleFonts.inter(
-                    fontSize: 9, color: colorScheme.onPrimary,
-                    fontWeight: FontWeight.w800, letterSpacing: 1,
-                  )),
-                ]),
-              ),
-            ),
-            // Spots badge
-            Positioned(
-              top: 12, right: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              // Spots pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: isFull
-                      ? Colors.red.withOpacity(0.85)
-                      : Colors.black.withOpacity(0.5),
+                      ? cs.error.withValues(alpha: 0.1)
+                      : cs.outline.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: Text(
                   isFull ? 'Complet' : '$spotsLeft places',
                   style: GoogleFonts.inter(
-                    fontSize: 9, color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 10, fontWeight: FontWeight.w700,
+                    color: isFull
+                        ? cs.error
+                        : cs.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ),
-            ),
-          ]),
+            ]),
+          ),
 
+          // ── Event title + location ─────────────────────────
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title
-                Text(event.title, style: GoogleFonts.outfit(
-                  color: colorScheme.onSurface, fontSize: 17,
-                  fontWeight: FontWeight.w800, letterSpacing: -0.4,
+                Text(event.title, style: GoogleFonts.inter(
+                  fontSize: 14, color: cs.onSurface,
+                  height: 1.5, letterSpacing: -0.1,
+                  fontWeight: FontWeight.w700,
                 )),
-                const SizedBox(height: 12),
-
-                // Meta
-                Wrap(
-                  spacing: 8, runSpacing: 8,
-                  children: [
-                    _MetaChip(icon: LucideIcons.calendarDays,
-                        label: '${event.date} · ${event.time}', colorScheme: colorScheme),
-                    _MetaChip(icon: LucideIcons.mapPin, label: event.location, colorScheme: colorScheme),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                Divider(height: 1, color: colorScheme.outline),
-                const SizedBox(height: 14),
-
-                // Organizer + participants
+                const SizedBox(height: 6),
                 Row(children: [
-                  _ProAvatar(url: event.organizerAvatar, radius: 14, colorScheme: colorScheme),
-                  const SizedBox(width: 9),
+                  Icon(LucideIcons.mapPin, size: 11,
+                      color: cs.onSurface.withValues(alpha: 0.5)),
+                  const SizedBox(width: 4),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Organisé par', style: GoogleFonts.inter(
-                          color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 10,
-                        )),
-                        Text(event.organizer, style: GoogleFonts.inter(
-                          color: colorScheme.onSurface, fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        )),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: onViewParticipants,
-                    child: _ParticipantsStack(
-                      avatars: event.participantAvatars,
-                      count: event.joinedCount,
-                      colorScheme: colorScheme,
-                    ),
+                    child: Text(event.location, style: GoogleFonts.inter(
+                      fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6),
+                    ), overflow: TextOverflow.ellipsis),
                   ),
                 ]),
-
-                const SizedBox(height: 14),
-
-                // CTA
-                _JoinButton(isJoined: isJoined, isFull: isFull,
-                    onTap: isFull ? null : onJoin, colorScheme: colorScheme),
               ],
             ),
+          ),
+
+          // ── Action row (mirrors feed action row) ──────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 4, 12, 12),
+            child: Row(children: [
+              // Join pill
+              GestureDetector(
+                onTap: isFull ? null : onJoin,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isJoined
+                        ? cs.secondary.withValues(alpha: 0.1)
+                        : isFull
+                            ? cs.error.withValues(alpha: 0.08)
+                            : cs.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(50),
+                    border: isJoined
+                        ? Border.all(
+                            color: cs.primary.withValues(alpha: 0.3))
+                        : null,
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(
+                      isJoined
+                          ? LucideIcons.checkCircle
+                          : isFull
+                              ? LucideIcons.xCircle
+                              : LucideIcons.userPlus,
+                      size: 15,
+                      color: isJoined
+                          ? cs.primary
+                          : isFull
+                              ? cs.error
+                              : cs.primary,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      isJoined ? 'Inscrit' : isFull ? 'Complet' : 'Rejoindre',
+                      style: GoogleFonts.inter(
+                        fontSize: 12, fontWeight: FontWeight.w700,
+                        color: isJoined
+                            ? cs.primary
+                            : isFull
+                                ? cs.error
+                                : cs.primary,
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // Participants pill
+              GestureDetector(
+                onTap: onViewParticipants,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: cs.outline.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(LucideIcons.users, size: 15,
+                        color: cs.onSurface.withValues(alpha: 0.6)),
+                    const SizedBox(width: 5),
+                    Text('${event.joinedCount}', style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w700,
+                      color: cs.onSurface.withValues(alpha: 0.6),
+                    )),
+                  ]),
+                ),
+              ),
+            ]),
           ),
         ],
       ),
@@ -310,146 +359,3 @@ class EventCard extends StatelessWidget {
   }
 }
 
-class _MetaChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final ColorScheme colorScheme;
-  const _MetaChip({required this.icon, required this.label, required this.colorScheme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 11, color: colorScheme.primary),
-        const SizedBox(width: 6),
-        Text(label, style: GoogleFonts.inter(
-          fontSize: 11, color: colorScheme.onSurface, fontWeight: FontWeight.w500,
-        )),
-      ]),
-    );
-  }
-}
-
-class _ParticipantsStack extends StatelessWidget {
-  final List<String> avatars;
-  final int count;
-  final ColorScheme colorScheme;
-  const _ParticipantsStack({required this.avatars, required this.count, required this.colorScheme});
-
-  @override
-  Widget build(BuildContext context) {
-    const size = 26.0;
-    const overlap = 18.0;
-    final shown = avatars.take(3).toList();
-    return Row(children: [
-      SizedBox(
-        width: shown.length * overlap + (size - overlap),
-        height: size,
-        child: Stack(
-          children: List.generate(shown.length, (i) => Positioned(
-            left: i * overlap,
-            child: Container(
-              width: size, height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: colorScheme.surfaceContainerHighest, width: 1.5),
-              ),
-              child: ClipOval(
-                child: shown[i].isNotEmpty
-                    ? Image.network(shown[i], fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            Container(color: colorScheme.secondary.withValues(alpha: 0.3)))
-                    : Container(color: colorScheme.secondary.withValues(alpha: 0.3)),
-              ),
-            ),
-          )),
-        ),
-      ),
-      const SizedBox(width: 7),
-      Text('+$count', style: GoogleFonts.inter(
-        color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 11, fontWeight: FontWeight.w600,
-      )),
-    ]);
-  }
-}
-
-class _JoinButton extends StatelessWidget {
-  final bool isJoined, isFull;
-  final VoidCallback? onTap;
-  final ColorScheme colorScheme;
-  const _JoinButton({required this.isJoined, required this.isFull, required this.onTap, required this.colorScheme});
-
-  @override
-  Widget build(BuildContext context) {
-    final Color bg;
-    final Color fg;
-    final IconData icon;
-    final String label;
-
-    if (isJoined) {
-      bg = colorScheme.secondary.withValues(alpha: 0.15); fg = colorScheme.primary;
-      icon = LucideIcons.checkCircle; label = 'Inscrit ✓';
-    } else if (isFull) {
-      bg = colorScheme.error.withValues(alpha: 0.08); fg = colorScheme.error;
-      icon = LucideIcons.xCircle; label = 'Complet';
-    } else {
-      bg = colorScheme.primary; fg = colorScheme.onPrimary;
-      icon = LucideIcons.userPlus; label = 'Rejoindre';
-    }
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-          border: (isJoined || isFull)
-              ? Border.all(color: fg.withOpacity(0.25))
-              : null,
-        ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, size: 14, color: fg),
-          const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.inter(
-            color: fg, fontSize: 13,
-            fontWeight: FontWeight.w800, letterSpacing: 0.2,
-          )),
-        ]),
-      ),
-    );
-  }
-}
-
-class _ProAvatar extends StatelessWidget {
-  final String url;
-  final double radius;
-  final ColorScheme colorScheme;
-  const _ProAvatar({required this.url, required this.radius, required this.colorScheme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: radius * 2, height: radius * 2,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: colorScheme.secondary.withValues(alpha: 0.3),
-        border: Border.all(color: colorScheme.surfaceContainerHighest, width: 1),
-      ),
-      child: ClipOval(
-        child: url.isNotEmpty
-            ? Image.network(url, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(color: colorScheme.secondary.withValues(alpha: 0.3)))
-            : Container(color: colorScheme.secondary.withValues(alpha: 0.3)),
-      ),
-    );
-  }
-}

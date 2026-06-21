@@ -3,10 +3,12 @@ import 'dart:math';
 import 'package:fiteva/providers/xp_provider.dart';
 
 import 'package:fiteva/screens/home/library_widget.dart';
+import 'package:fiteva/screens/home/referral_card.dart';
 import 'package:fiteva/screens/home/programs_bottom_sheet.dart';
 import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
 import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
 import 'package:fiteva/screens/workout/programme_detail_screen.dart';
+import 'package:fiteva/screens/workout/exercise_player_screen.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
 import 'package:fiteva/providers/workout_progress_provider.dart';
@@ -171,6 +173,11 @@ class HomeScreen extends ConsumerWidget {
           // ── Library ───────────────────────────────────
           SliverToBoxAdapter(
             child: LibrarySection(),
+          ),
+
+          // ── Referral / Invite ─────────────────────────
+          const SliverToBoxAdapter(
+            child: ReferralCard(),
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 110)),
@@ -851,9 +858,26 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
             .removeWorkout(_selectedDay);
       },
       onViewDetail: () {
-        if (sel.workout != null) {
-          // navigation vers détail workout
-        }
+        final w = sel.workout;
+        if (w == null || w.exercises.isEmpty) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ExercisePlayerScreen(
+              ref: ref,
+              workoutTitle: w.title,
+              exerciseName: w.exercises[0],
+              videoId: '${w.title}_exercise_0',
+              videoUrl: w.videos.isNotEmpty ? w.videos[0].url : null,
+              exerciseIndex: 0,
+              totalExercises: w.exercises.length,
+              totalWorkoutPoints: w.points,
+              onCompleted: () {},
+              workoutId: w.id,
+              totalWorkoutExercises: w.exercises.length,
+            ),
+          ),
+        );
       },
     ),
   ),

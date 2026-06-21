@@ -318,14 +318,15 @@ class _SummaryCard extends StatelessWidget {
               fontWeight: FontWeight.w700, letterSpacing: 2.5)),
             const SizedBox(height: 2),
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Text('${totals.calories}', style: GoogleFonts.outfit(
-                fontSize: 38, fontWeight: FontWeight.w800,
-                color: nc.text1, height: 1)),
+              Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+                child: Text('${totals.calories}', style: GoogleFonts.outfit(
+                  fontSize: 38, fontWeight: FontWeight.w800,
+                  color: nc.text1, height: 1)))),
               const SizedBox(width: 6),
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text('/ $goal kcal', style: GoogleFonts.inter(
-                  fontSize: 13, color: nc.text2))),
+                  fontSize: 12, color: nc.text2))),
             ]),
           ]),
           const Spacer(),
@@ -685,21 +686,22 @@ class _EntryRow extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 13, fontWeight: FontWeight.w600, color: nc.text1)),
             const SizedBox(height: 3),
-            Row(children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: nc.chipBg,
-                  borderRadius: BorderRadius.circular(5)),
-                child: Text('${entry.grams.round()}g', style: GoogleFonts.inter(
-                  fontSize: 10, color: nc.text2, fontWeight: FontWeight.w500))),
-              const SizedBox(width: 5),
-              _Tag('P ${entry.protein}g', nc.greenFg, nc.mintBg),
-              const SizedBox(width: 3),
-              _Tag('G ${entry.carbs}g', nc.blueFg, nc.blueBg),
-              const SizedBox(width: 3),
-              _Tag('L ${entry.fat}g', nc.amberFg, nc.amberBg),
-            ]),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: nc.chipBg,
+                    borderRadius: BorderRadius.circular(5)),
+                  child: Text('${entry.grams.round()}g', style: GoogleFonts.inter(
+                    fontSize: 10, color: nc.text2, fontWeight: FontWeight.w500))),
+                _Tag('P ${entry.protein}g', nc.greenFg, nc.mintBg),
+                _Tag('G ${entry.carbs}g', nc.blueFg, nc.blueBg),
+                _Tag('L ${entry.fat}g', nc.amberFg, nc.amberBg),
+              ],
+            ),
           ])),
 
           const SizedBox(width: 8),

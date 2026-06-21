@@ -1,3 +1,4 @@
+import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/screens/shop/models/boutique_item.dart';
 import 'package:fiteva/services/points_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,6 +48,7 @@ class ShopNotifier extends Notifier<ShopState> {
   Future<void> addPoints(int amount) async {
     final updated = await PointsService.addPoints(amount);
     state = state.copyWith(points: updated);
+    ref.read(pointsProvider.notifier).loadPoints();
   }
 
   /// Redeem an offer — deducts points and marks item as redeemed.
@@ -61,6 +63,7 @@ class ShopNotifier extends Notifier<ShopState> {
     await prefs.setStringList(_redeemedKey, newIds.toList());
 
     state = state.copyWith(points: updated, redeemed: newIds);
+    ref.read(pointsProvider.notifier).loadPoints();
     return true;
   }
 }

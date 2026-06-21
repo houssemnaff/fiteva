@@ -4,6 +4,7 @@ class VideoModel {
   final String duration;
   final int points;
   final String thumbnailUrl;
+  final String url; // asset path or network URL — empty = use default cycling
 
   VideoModel({
     required this.id,
@@ -11,5 +12,6 @@ class VideoModel {
     required this.duration,
     required this.points,
     this.thumbnailUrl = '',
+    this.url = '',
   });
 }

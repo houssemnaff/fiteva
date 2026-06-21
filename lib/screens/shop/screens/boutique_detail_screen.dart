@@ -704,14 +704,16 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                 decoration: BoxDecoration(
                   color: const Color(0xFF2E7D32).withOpacity(nc.isDark ? 0.20 : 0.10),
                   borderRadius: BorderRadius.circular(10)),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF2E7D32)),
-                    SizedBox(width: 7),
-                    Text('Offre déjà échangée — consulte ton code ci-dessus',
-                      style: TextStyle(color: Color(0xFF2E7D32),
-                        fontSize: 12.5, fontWeight: FontWeight.w500)),
+                    const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF2E7D32)),
+                    const SizedBox(width: 7),
+                    Flexible(
+                      child: Text('Offre déjà échangée — consulte ton code ci-dessus',
+                        style: const TextStyle(color: Color(0xFF2E7D32),
+                          fontSize: 12.5, fontWeight: FontWeight.w500)),
+                    ),
                   ])))
           else if (!canAfford)
             Padding(

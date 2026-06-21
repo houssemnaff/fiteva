@@ -80,7 +80,11 @@ class CommunityScreen extends ConsumerWidget {
         ],
         body: IndexedStack(
           index: tabIndex,
-          children: const [FeedTab(), EventsTab(), PartnerTab()],
+          children: const [
+            PrimaryScrollController.none(child: FeedTab()),
+            PrimaryScrollController.none(child: EventsTab()),
+            PrimaryScrollController.none(child: PartnerTab()),
+          ],
         ),
       ),
     );
@@ -89,7 +93,7 @@ class CommunityScreen extends ConsumerWidget {
   void _openComposer(BuildContext context, int tabIndex) {
     final sheet = switch (tabIndex) {
       1 => const CreateEventSheet(),
-      2 => const CreatePartnerSheet(),
+      2 =>  CreatePartnerSheet(),
       _ => const FeedComposerSheet(),
     };
     showModalBottomSheet<void>(
