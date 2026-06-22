@@ -448,7 +448,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           ),
           child: _CircularRing(
             day: _currentDay, total: profile.cycleDays,
-            theme: theme, phase: phase, cc: cc,
+            theme: theme, phase: phase, cc: cc, l10n: l10n,
           ),
         ),
         const SizedBox(height: 28),
@@ -502,10 +502,12 @@ class _CircularRing extends StatelessWidget {
   final CycleTheme theme;
   final CyclePhase phase;
   final CycleColors cc;
+  final AppL10n l10n;
 
   const _CircularRing({
     required this.day, required this.total,
     required this.theme, required this.phase, required this.cc,
+    required this.l10n,
   });
 
   @override
@@ -521,7 +523,7 @@ class _CircularRing extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Jour', style: GoogleFonts.inter(
+              Text(l10n.cycleJour, style: GoogleFonts.inter(
                 fontSize: 13, color: cc.muted)),
               const SizedBox(height: 2),
               Text('$day', style: GoogleFonts.outfit(

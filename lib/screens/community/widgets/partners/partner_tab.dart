@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/community_providers.dart';
+import '../../../../l10n/app_localizations.dart';
 
 
 // ─── Partners Tab ─────────────────────────────────────────────
@@ -29,6 +30,7 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
     final partners = ref.watch(partnersProvider);
     final filtered = partners.where((p) {
       final goalOk   = _goal   == 'Tous' || p.goal   == _goal;
@@ -53,7 +55,7 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('PARTNERS', style: GoogleFonts.inter(
+                        Text(l10n.communityPartnerLabel, style: GoogleFonts.inter(
                           color: cs.secondary, fontSize: 9,
                           fontWeight: FontWeight.w700, letterSpacing: 3,
                         )),
@@ -100,7 +102,7 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
                             size: 13,
                             color: _filtersOpen ? cs.primary : cs.onSurface.withValues(alpha: 0.6)),
                         const SizedBox(width: 6),
-                        Text('Filtres', style: GoogleFonts.inter(
+                        Text(l10n.communityFilters, style: GoogleFonts.inter(
                           color: _filtersOpen ? cs.primary : cs.onSurface.withValues(alpha: 0.6),
                           fontSize: 12, fontWeight: FontWeight.w700,
                         )),
@@ -495,13 +497,14 @@ class _LevelBadge extends StatelessWidget {
 }
 
 // ─── Message Buttons ──────────────────────────────────────────
-class _MessageBtn extends StatelessWidget {
+class _MessageBtn extends ConsumerWidget {
   final VoidCallback onTap;
   final ColorScheme colorScheme;
   const _MessageBtn({super.key, required this.onTap, required this.colorScheme});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -513,7 +516,7 @@ class _MessageBtn extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(LucideIcons.messageSquare, size: 15, color: colorScheme.onSurface.withValues(alpha: 0.6)),
           const SizedBox(width: 5),
-          Text('Message', style: GoogleFonts.inter(
+          Text(l10n.communityMessageBtn, style: GoogleFonts.inter(
             fontSize: 12, fontWeight: FontWeight.w700,
             color: colorScheme.onSurface.withValues(alpha: 0.6),
           )),
@@ -523,12 +526,13 @@ class _MessageBtn extends StatelessWidget {
   }
 }
 
-class _MessagedBtn extends StatelessWidget {
+class _MessagedBtn extends ConsumerWidget {
   final ColorScheme colorScheme;
   const _MessagedBtn({super.key, required this.colorScheme});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
@@ -539,7 +543,7 @@ class _MessagedBtn extends StatelessWidget {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(LucideIcons.checkCircle, size: 15, color: colorScheme.primary),
         const SizedBox(width: 5),
-        Text('Message envoyé !', style: GoogleFonts.inter(
+        Text(l10n.communityMessageSent, style: GoogleFonts.inter(
           fontSize: 12, fontWeight: FontWeight.w700, color: colorScheme.primary,
         )),
       ]),

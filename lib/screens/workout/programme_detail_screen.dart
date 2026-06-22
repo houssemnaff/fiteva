@@ -1,14 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/home_program_model.dart';
 import '../../models/workout_model.dart';
 import '../../services/workout_progress_service.dart';
 import 'active_workout_screen.dart';
 
-class WorkoutDetailScreen extends StatefulWidget {
+class WorkoutDetailScreen extends ConsumerStatefulWidget {
   final HomeProgramModel program;
   const WorkoutDetailScreen({super.key, required this.program});
 
@@ -16,7 +18,7 @@ class WorkoutDetailScreen extends StatefulWidget {
   State<WorkoutDetailScreen> createState() => _WorkoutDetailScreenState();
 }
 
-class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
+class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
     with TickerProviderStateMixin {
   int _tab = 0;
   bool _isProgramCompleted = false;
@@ -62,6 +64,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
     final p = widget.program;
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = ref.watch(l10nProvider);
 
     return Scaffold(
       backgroundColor: dark ? const Color(0xFF0D0D0D) : const Color.fromARGB(255, 255, 255, 255),
@@ -74,15 +77,17 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
                 program: p,
                 isCompleted: _isProgramCompleted,
                 anim: _enterAnim,
+                l10n: l10n,
                 onBack: () => Navigator.pop(context),
               ),
               _TabBarSliver(
-                  current: _tab, onTab: (i) => setState(() => _tab = i)),
+                  current: _tab, l10n: l10n, onTab: (i) => setState(() => _tab = i)),
               if (_tab == 0)
-                _AboutSliver(program: p)
+                _AboutSliver(program: p, l10n: l10n)
               else
                 _SessionsSliver(
                     program: p,
+                    l10n: l10n,
                     onWorkoutTap: (w) async {
                       await Navigator.push(
                         context,
@@ -99,6 +104,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen>
           ),
           _BottomCta(
             workouts: p.workouts,
+            l10n: l10n,
             onTap: () async {
               final nav = Navigator.of(context);
               final idx = await _getFirstIncompleteWorkoutIndex();
@@ -127,12 +133,14 @@ class _HeroSliver extends StatelessWidget {
   final HomeProgramModel program;
   final bool isCompleted;
   final AnimationController anim;
+  final AppL10n l10n;
   final VoidCallback onBack;
 
   const _HeroSliver({
     required this.program,
     required this.isCompleted,
     required this.anim,
+    required this.l10n,
     required this.onBack,
   });
 
@@ -148,7 +156,7 @@ class _HeroSliver extends StatelessWidget {
       flexibleSpace: FlexibleSpaceBar(
         stretchModes: const [StretchMode.zoomBackground],
         background: _HeroBg(
-            program: program, isCompleted: isCompleted, onBack: onBack),
+            program: program, isCompleted: isCompleted, l10n: l10n, onBack: onBack),
       ),
       // collapsed top bar
       title: FadeTransition(
@@ -170,10 +178,12 @@ class _HeroSliver extends StatelessWidget {
 class _HeroBg extends StatelessWidget {
   final HomeProgramModel program;
   final bool isCompleted;
+  final AppL10n l10n;
   final VoidCallback onBack;
   const _HeroBg(
       {required this.program,
       required this.isCompleted,
+      required this.l10n,
       required this.onBack});
 
   @override
@@ -237,9 +247,9 @@ class _HeroBg extends StatelessWidget {
             children: [
               // badges row
               Row(children: [
-                _HeroBadge(label: 'PROGRAMME', accent: true),
+                _HeroBadge(label: l10n.progProgramme, accent: true),
                 const SizedBox(width: 8),
-                if (isCompleted) _HeroBadge(label: '✓ TERMINÉ'),
+                if (isCompleted) _HeroBadge(label: l10n.progCompleted),
                 const Spacer(),
                 _HeroBadge(label: '${program.totalPoints} PTS', icon: LucideIcons.zap),
               ]),
@@ -264,7 +274,7 @@ class _HeroBg extends StatelessWidget {
                   _StatPill(icon: LucideIcons.clock, label: program.duration),
                   _StatPill(
                       icon: LucideIcons.layers,
-                      label: '${program.workouts.length} séances'),
+                      label: '${program.workouts.length} ${l10n.progSeances}'),
                   _StatPill(icon: LucideIcons.flame, label: 'Intermédiaire'),
                 ],
               ),
@@ -365,8 +375,9 @@ class _StatPill extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 class _TabBarSliver extends StatelessWidget {
   final int current;
+  final AppL10n l10n;
   final void Function(int) onTab;
-  const _TabBarSliver({required this.current, required this.onTab});
+  const _TabBarSliver({required this.current, required this.l10n, required this.onTab});
 
   @override
   Widget build(BuildContext context) {
@@ -392,13 +403,13 @@ class _TabBarSliver extends StatelessWidget {
           child: Row(children: [
             Expanded(
                 child: _Tab(
-                    label: 'À propos',
+                    label: l10n.progAbout,
                     icon: LucideIcons.info,
                     selected: current == 0,
                     onTap: () => onTab(0))),
             Expanded(
                 child: _Tab(
-                    label: 'Les séances',
+                    label: l10n.progSessions,
                     icon: LucideIcons.layoutList,
                     selected: current == 1,
                     onTap: () => onTab(1))),
@@ -466,7 +477,8 @@ class _Tab extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 class _AboutSliver extends StatelessWidget {
   final HomeProgramModel program;
-  const _AboutSliver({required this.program});
+  final AppL10n l10n;
+  const _AboutSliver({required this.program, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -488,30 +500,30 @@ class _AboutSliver extends StatelessWidget {
                     child: _QuickStat(
                         icon: LucideIcons.calendarDays,
                         value: '4',
-                        label: 'Semaines')),
+                        label: l10n.progWeeks)),
                 const SizedBox(width: 10),
                 Expanded(
                     child: _QuickStat(
                         icon: LucideIcons.layers,
                         value: '${program.workouts.length}',
-                        label: 'Séances')),
+                        label: l10n.progSessions)),
                 const SizedBox(width: 10),
                 Expanded(
                     child: _QuickStat(
                         icon: LucideIcons.flame,
                         value: '~350',
-                        label: 'Cal/séance')),
+                        label: l10n.progCalPerSession)),
                 const SizedBox(width: 10),
                 Expanded(
                     child: _QuickStat(
                         icon: LucideIcons.zap,
                         value: '${program.totalPoints}',
-                        label: 'Points')),
+                        label: l10n.progPtsUnit)),
               ]),
               const SizedBox(height: 28),
 
               // ── Description ────────────────────────────────────────────
-              _SectionTitle(label: 'Description'),
+              _SectionTitle(label: l10n.progDescription),
               const SizedBox(height: 12),
               Text(
                 'Ce programme complet de musculation et cardio te permettra de sculpter ton corps et d\'améliorer ton endurance. Chaque séance est pensée pour des résultats optimaux, en respectant ton cycle.',
@@ -525,13 +537,13 @@ class _AboutSliver extends StatelessWidget {
               const SizedBox(height: 28),
 
               // ── Coach ──────────────────────────────────────────────────
-              _SectionTitle(label: 'Ton coach'),
+              _SectionTitle(label: l10n.progCoach),
               const SizedBox(height: 12),
-              _CoachCard(dark: dark, cs: cs),
+              _CoachCard(dark: dark, cs: cs, l10n: l10n),
               const SizedBox(height: 28),
 
               // ── Objectifs ──────────────────────────────────────────────
-              _SectionTitle(label: 'Objectifs'),
+              _SectionTitle(label: l10n.progObjectives),
               const SizedBox(height: 14),
               Wrap(spacing: 8, runSpacing: 8, children: const [
                 _GoalChip(label: 'Tonification', icon: LucideIcons.sparkles),
@@ -543,7 +555,7 @@ class _AboutSliver extends StatelessWidget {
               const SizedBox(height: 28),
 
               // ── Programme phases ───────────────────────────────────────
-              _SectionTitle(label: 'Les phases'),
+              _SectionTitle(label: l10n.progPhases),
               const SizedBox(height: 14),
               _PhaseList(dark: dark),
             ],
@@ -636,7 +648,8 @@ class _QuickStat extends StatelessWidget {
 class _CoachCard extends StatelessWidget {
   final bool dark;
   final ColorScheme cs;
-  const _CoachCard({required this.dark, required this.cs});
+  final AppL10n l10n;
+  const _CoachCard({required this.dark, required this.cs, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -678,13 +691,13 @@ class _CoachCard extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Coach Sarah',
+          Text(l10n.progCoachName,
               style: GoogleFonts.outfit(
                   color: cs.onSurface,
                   fontSize: 15,
                   fontWeight: FontWeight.w800)),
           const SizedBox(height: 3),
-          Text('Expert Fitness & Nutrition',
+          Text(l10n.progCoachTitle,
               style: GoogleFonts.inter(
                   color: cs.onSurface.withValues(alpha: 0.50),
                   fontSize: 12,
@@ -694,7 +707,7 @@ class _CoachCard extends StatelessWidget {
             Icon(LucideIcons.star,
                 size: 11, color: gold),
             const SizedBox(width: 4),
-            Text('4.9  ·  1 200 élèves',
+            Text(l10n.progCoachRating,
                 style: GoogleFonts.inter(
                     color: cs.onSurface.withValues(alpha: 0.50),
                     fontSize: 11,
@@ -716,7 +729,7 @@ class _CoachCard extends StatelessWidget {
                     offset: const Offset(0, 4))
               ],
             ),
-            child: Text('Suivre',
+            child: Text(l10n.progFollow,
                 style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 12,
@@ -876,10 +889,11 @@ class _PhaseList extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 class _SessionsSliver extends StatelessWidget {
   final HomeProgramModel program;
+  final AppL10n l10n;
   final void Function(WorkoutModel) onWorkoutTap;
 
   const _SessionsSliver(
-      {required this.program, required this.onWorkoutTap});
+      {required this.program, required this.l10n, required this.onWorkoutTap});
 
   Future<int> _getFirstIncomplete() async {
     final done = await WorkoutProgressService.getCompletedWorkouts();
@@ -915,6 +929,7 @@ class _SessionsSliver extends StatelessWidget {
                       workout: w,
                       isDone: isDone,
                       isCurrent: isCurrent,
+                      l10n: l10n,
                       onTap: () => onWorkoutTap(w),
                     );
                   },
@@ -933,6 +948,7 @@ class _SessionCard extends StatelessWidget {
   final WorkoutModel workout;
   final bool isDone;
   final bool isCurrent;
+  final AppL10n l10n;
   final VoidCallback onTap;
 
   const _SessionCard({
@@ -940,6 +956,7 @@ class _SessionCard extends StatelessWidget {
     required this.workout,
     required this.isDone,
     required this.isCurrent,
+    required this.l10n,
     required this.onTap,
   });
 
@@ -992,7 +1009,7 @@ class _SessionCard extends StatelessWidget {
                   const Icon(LucideIcons.play,
                       size: 11, color: Colors.white),
                   const SizedBox(width: 6),
-                  Text('Prochaine séance',
+                  Text(l10n.progNextSession,
                       style: GoogleFonts.inter(
                           color: Colors.white,
                           fontSize: 11,
@@ -1066,7 +1083,7 @@ class _SessionCard extends StatelessWidget {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                      Text('Séance ${index + 1}',
+                      Text('${l10n.progSession} ${index + 1}',
                           style: GoogleFonts.inter(
                               color: gold,
                               fontSize: 10,
@@ -1159,8 +1176,9 @@ class _SessionCard extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 class _BottomCta extends StatelessWidget {
   final List workouts;
+  final AppL10n l10n;
   final VoidCallback onTap;
-  const _BottomCta({required this.workouts, required this.onTap});
+  const _BottomCta({required this.workouts, required this.l10n, required this.onTap});
 
   Future<bool> _allDone() async {
     final done = await WorkoutProgressService.getCompletedWorkouts();
@@ -1228,8 +1246,8 @@ class _BottomCta extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     done
-                        ? 'Programme terminé ✓'
-                        : 'Commencer le programme',
+                        ? l10n.progDone
+                        : l10n.progStart,
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 16,

@@ -159,17 +159,17 @@ class AppL10n {
   String get langEnglish      => _fr ? 'Anglais'            : 'English';
 
   // ── Home screen ────────────────────────────────────────────────────────────
-  String get homeStartProgram       => _fr ? 'START PROGRAM'         : 'START PROGRAM';
+  String get homeStartProgram       => _fr ? 'COMMENCER'             : 'START';
   String get homeProgrammeLabel     => _fr ? 'PROGRAMME'             : 'PROGRAM';
-  String get homeWeekPlan           => _fr ? 'WEEK PLAN'             : 'WEEK PLAN';
-  String get homePlanYourWeek       => _fr ? 'Plan Your\nWeek'       : 'Plan Your\nWeek';
-  String get homeDone               => _fr ? 'DONE'                  : 'DONE';
+  String get homeWeekPlan           => _fr ? 'PLAN SEMAINE'          : 'WEEK PLAN';
+  String get homePlanYourWeek       => _fr ? 'Planifie ta\nsemaine'  : 'Plan Your\nWeek';
+  String get homeDone               => _fr ? 'TERMINÉ'               : 'DONE';
   String get homeInProgress         => _fr ? 'PROGRAMMES EN COURS'   : 'IN PROGRESS';
   String get homeContinueSection    => _fr ? 'Continuer'             : 'Continue';
   String get homeVoirTout           => _fr ? 'voir tout'             : 'see all';
   String get homePickWorkout        => _fr ? 'Pick a workout'        : 'Pick a workout';
-  String get homeStart              => _fr ? 'START'                 : 'START';
-  String get homeReview             => _fr ? 'REVIEW'                : 'REVIEW';
+  String get homeStart              => _fr ? 'DÉMARRER'              : 'START';
+  String get homeReview             => _fr ? 'REVOIR'                : 'REVIEW';
   String get homeResume             => _fr ? 'RESUME'                : 'RESUME';
 
   // ── Workout screen ─────────────────────────────────────────────────────────
@@ -583,4 +583,408 @@ class AppL10n {
   String get datePickerLastPeriodSub     => _fr ? 'Date du premier jour' : 'First day date';
   String get datePickerBirthTitle        => _fr ? "Date d'accouchement"  : 'Birth date';
   String get datePickerBirthSub         => _fr ? 'Quand est ne votre bebe ?' : 'When was your baby born?';
+
+  // ── Programme detail screen ────────────────────────────────────────────────
+  String get progAbout          => _fr ? 'À propos'         : 'About';
+  String get progSessions       => _fr ? 'Les séances'      : 'Sessions';
+  String get progWeeks          => _fr ? 'Semaines'         : 'Weeks';
+  String get progDescription    => _fr ? 'Description'      : 'Description';
+  String get progCoach          => _fr ? 'Ton coach'        : 'Your coach';
+  String get progObjectives     => _fr ? 'Objectifs'        : 'Objectives';
+  String get progPhases         => _fr ? 'Les phases'       : 'Phases';
+  String get progFollow         => _fr ? 'Suivre'           : 'Follow';
+  String get progNextSession    => _fr ? 'Prochaine séance' : 'Next session';
+  String get progSession        => _fr ? 'Séance'           : 'Session';
+  String get progCompleted      => _fr ? '✓ TERMINÉ'        : '✓ DONE';
+  String get progProgramme      => _fr ? 'PROGRAMME'        : 'PROGRAM';
+  String get progSeances        => _fr ? 'séances'          : 'sessions';
+  String get progCalPerSession  => _fr ? 'Cal/séance'       : 'Cal/session';
+  String get progDone           => _fr ? 'Programme terminé ✓' : 'Program done ✓';
+  String get progStart          => _fr ? 'Commencer le programme' : 'Start program';
+  String get progCalUnit        => 'cal';
+  String get progPtsUnit        => 'pts';
+
+  // ── Santé screen ── (UI labels only, content data stays hardcoded) ─────────
+  String get santeMySpace          => _fr ? 'Mon Espace Santé'              : 'My Health Space';
+  String get santeWatch            => _fr ? 'Regarder'                      : 'Watch';
+  String get santeCall             => _fr ? 'Appeler'                       : 'Call';
+  String get santeAppointment      => _fr ? 'Rendez-vous'                   : 'Appointment';
+  String get santeLikeBtn          => _fr ? "J'aime"                        : 'Like';
+  String get santeShareBtn         => _fr ? 'Partager'                      : 'Share';
+  String get santeFollowBtn        => _fr ? 'Suivre'                        : 'Follow';
+  String get santeInThisSeries     => _fr ? 'Dans cette série'              : 'In this series';
+  String get santeEpisodeLabel     => _fr ? 'Épisode'                       : 'Episode';
+  String get santeSendBtn          => _fr ? 'Envoyer'                       : 'Send';
+  String get santeSeriesSection    => _fr ? 'Séries vidéo'                  : 'Video series';
+  String get santeArticlesSection  => _fr ? 'Articles'                      : 'Articles';
+  String get santeLexiqueSection   => _fr ? 'Lexique médical'               : 'Medical lexicon';
+  String get santeLexiqueSubtitle  => _fr ? 'Termes & définitions'          : 'Terms & definitions';
+  String get santeLexiqueHint      => _fr ? 'Rechercher un terme…'          : 'Search a term…';
+  String get santeYourQuestion     => _fr ? 'Votre question'                : 'Your question';
+  String get santeAnonPost         => _fr ? 'Publication anonyme'           : 'Anonymous post';
+  String get santeAskDoctorHint    => _fr ? 'Poser une question à un médecin…' : 'Ask a doctor a question…';
+  String santeSeriesCount(int n)       => _fr ? '$n séries · médecins experts' : '$n series · expert doctors';
+  String santeArticlesCount(int n)     => _fr ? '$n articles scientifiques'    : '$n scientific articles';
+  String santeSpecialistsCount(int n) => _fr ? 'Tunisie · $n spécialistes'  : 'Tunisia · $n specialists';
+  String santeEpisodesCount(int n)    => _fr ? '$n épisodes'                : '$n episodes';
+  String santeConsultationsCount(int n) => _fr ? '$n consultations'         : '$n consultations';
+
+  // ── Community screens ──────────────────────────────────────────────────────
+  String get communityTopPosts          => _fr ? 'Top Posts'                  : 'Top Posts';
+  String get communityEventsLabel       => _fr ? 'Événements'                 : 'Events';
+  String get communityFilters           => _fr ? 'Filtres'                    : 'Filters';
+  String get communityNewPost           => _fr ? 'NOUVEAU POST'               : 'NEW POST';
+  String get communityShareWith         => _fr ? 'Partage avec la communauté' : 'Share with the community';
+  String get communityPublish           => _fr ? 'Publier'                    : 'Publish';
+  String get communityPublished         => _fr ? 'Post publié !'              : 'Post published!';
+  String get communityNewEvent          => _fr ? 'NOUVEL ÉVÉNEMENT'           : 'NEW EVENT';
+  String get communityInvite            => _fr ? 'Invite la communauté'       : 'Invite the community';
+  String get communityPublishEvent      => _fr ? "Publier l'événement"        : 'Publish event';
+  String get communityOrganizeEvent     => _fr ? 'Organiser un événement'     : 'Organize an event';
+  String get communityEventPublished    => _fr ? 'Événement publié !'         : 'Event published!';
+  String get communityOrganizerLabel    => _fr ? 'ORGANISATEUR'               : 'ORGANIZER';
+  String get communityOrganizerSub      => _fr ? 'Organisateur'               : 'Organizer';
+  String get communityParticipantsLabel => _fr ? 'PARTICIPANTS'               : 'PARTICIPANTS';
+  String get communityAboutLabel        => _fr ? 'À PROPOS'                   : 'ABOUT';
+  String get communityMessageBtn        => _fr ? 'Message'                    : 'Message';
+  String get communityComments          => _fr ? 'Commentaires'               : 'Comments';
+  String get communityNoComments        => _fr ? 'Aucun commentaire pour l\'instant.\nSois la première ! 💬'
+                                               : 'No comments yet.\nBe the first! 💬';
+  String get communityAddComment        => _fr ? 'Ajouter un commentaire…'    : 'Add a comment…';
+  String get communityPartnerLabel      => _fr ? 'PARTENAIRE'                 : 'PARTNER';
+  String get communityDescribeProfile   => _fr ? 'Décris ton profil'          : 'Describe your profile';
+  String get communityPublishProfile    => _fr ? 'Publier mon profil'         : 'Publish my profile';
+  String get communityPublishProfileFull => _fr ? 'Publier mon profil partenaire' : 'Publish my partner profile';
+  String get communityProfilePublished  => _fr ? 'Profil publié !'            : 'Profile published!';
+  String get communityMessageSent       => _fr ? 'Message envoyé'             : 'Message sent';
+  String get communitySendMessage       => _fr ? 'Envoyer un message'         : 'Send a message';
+  String get communityReport            => _fr ? 'Signaler ce profil'         : 'Report this profile';
+  String get communityHidePosts         => _fr ? 'Masquer les publications'   : 'Hide posts';
+  String get communityCannotLoad        => _fr ? 'Impossible de charger ce profil' : 'Cannot load this profile';
+  String get communityTagsLabel         => 'TAGS';
+  String get communityLevelLabel        => _fr ? 'Niveau'                     : 'Level';
+  String get communityPublishCommunity  => _fr ? 'Publier sur la communauté'  : 'Post to the community';
+  String communityXPToNext(int n)       => _fr ? '$n XP avant le prochain niveau' : '$n XP to next level';
+  String communityPlaces(int n)         => _fr ? '$n places'                  : '$n spots';
+  String communityParticipantsCount(int n) => '$n participant${n > 1 ? 's' : ''}';
+  String communityHaveJoined(int n)     => _fr ? 'ont rejoint cet événement'  : 'have joined this event';
+  String get communityAvailableSpots   => _fr ? 'Places disponibles'          : 'Available spots';
+
+  // ── Badge selfie screen ────────────────────────────────────────────────────
+  String get badgeSelfieTitle     => _fr ? 'BADGE SELFIE'                    : 'BADGE SELFIE';
+  String get badgeProgCompleted   => _fr ? 'PROGRAMME COMPLÉTÉ'              : 'PROGRAM COMPLETED';
+  String get badgeSelfieBtn       => 'SELFIE';
+  String get badgeMoveHint        => _fr ? 'DÉPLACE · REDIMENSIONNE'         : 'MOVE · RESIZE';
+  String get badgeHeadline1       => _fr ? 'TON TROPHÉE,'                   : 'YOUR TROPHY,';
+  String get badgeHeadline2       => _fr ? "TU L'AS MÉRITÉ."                : 'YOU EARNED IT.';
+  String get badgeSubtext         => _fr ? 'Prends un selfie et partage ta victoire.' : 'Take a selfie and share your victory.';
+  String get badgeSavedGallery    => _fr ? 'Sauvegardé dans la galerie !'   : 'Saved to gallery!';
+  String get badgeDownloaded      => _fr ? 'Téléchargé !'                   : 'Downloaded!';
+  String get badgeMesTophees      => _fr ? 'MES TROPHÉES'                   : 'MY TROPHIES';
+  String get badgeSelfieHint      => _fr ? 'Appuie sur un badge débloqué pour le selfie' : 'Tap an unlocked badge for a selfie';
+  String get badgeFitEva          => 'FITEVA';
+  String get badgeExportBtn      => _fr ? 'EXPORTER'                         : 'EXPORT';
+  String get badgeSavedBtn       => _fr ? 'SAUVÉ !'                         : 'SAVED!';
+  String get badgeGalleryBtn     => _fr ? 'GALERIE'                         : 'GALLERY';
+
+// ── Home screen (additional keys) ─────────────────────────────────────────
+  String get homeProgramme      => _fr ? 'PROGRAMME'              : 'PROGRAM';
+  String get homeSerieActive    => _fr ? 'SÉRIE ACTIVE'           : 'ACTIVE SERIES';
+  String get homeJours          => _fr ? 'JOURS'                  : 'DAYS';
+  String get homeEnFeu          => _fr ? '🔥 EN FEU'              : '🔥 ON FIRE';
+  String homeDoneCount(int done) => _fr ? '$done/7 FAITS'         : '$done/7 DONE';
+
+// ── Referral card ──────────────────────────────────────────────────────────
+  String get referralTitle       => _fr ? 'INVITE & GAGNE'                           : 'INVITE & EARN';
+  String get referralHeadline    => _fr ? 'Scratch & Débloque\ntes récompenses 🎁'   : 'Scratch & Unlock\nyour rewards 🎁';
+  String get referralHint        => _fr ? 'Gratte chaque carte pour révéler ta récompense' : 'Scratch each card to reveal your reward';
+  String get referralScratch     => _fr ? 'Gratte !'                                 : 'Scratch!';
+  String get referralAllUnlocked => _fr ? 'Toutes les récompenses débloquées !'     : 'All rewards unlocked!';
+  String get referralCodeLabel   => _fr ? 'TON CODE DE PARRAINAGE'                  : 'YOUR REFERRAL CODE';
+  String get referralShare       => _fr ? "Partager le lien d'invitation"            : 'Share invitation link';
+  String get referralFriends     => _fr ? 'Amies inscrites via ton lien'             : 'Friends signed up via your link';
+  String get referralRegistered  => _fr ? 'Inscrite ✔'                               : 'Registered ✔';
+  String get referralPending     => _fr ? 'En attente…'                              : 'Pending…';
+  String get referralShareTitle  => _fr ? 'Partage avec tes amies 🎁'               : 'Share with your friends 🎁';
+  String get referralCopied      => _fr ? 'Message copié — colle-le dans WhatsApp ou Insta !' : 'Message copied — paste it in WhatsApp or Insta!';
+  String get referralCopyMsg     => _fr ? 'Copier le message'                        : 'Copy message';
+  String referralNeedMore(int n) => _fr ? 'Encore $n amie${n > 1 ? 's' : ''} pour ta prochaine récompense' : '$n more friend${n > 1 ? 's' : ''} for your next reward';
+  String referralCodeCopied(String code) => _fr ? 'Code $code copié !' : 'Code $code copied!';
+
+// ── Boutique screen ────────────────────────────────────────────────────────
+  String get boutiqueALaUne       => _fr ? 'À LA UNE'               : 'FEATURED';
+  String get boutiquePartner      => _fr ? 'Devenir partenaire'      : 'Become a partner';
+  String get boutiquePartnerSub   => _fr ? 'Rejoignez notre réseau et bénéficiez de plus de visibilité.' : 'Join our network and gain more visibility.';
+  String get boutiquePartenaires  => _fr ? 'PARTENAIRES'             : 'PARTNERS';
+  String get boutiqueVoirPlus     => _fr ? 'Voir plus'               : 'See more';
+  String get boutiqueAucunProduit => _fr ? 'Aucun produit trouvé'    : 'No products found';
+  String get boutiqueAucunArticle => _fr ? 'Aucun article ne correspond\nà tes filtres actuels.' : 'No items match\nyour current filters.';
+  String get boutiqueReset        => _fr ? 'Réinitialiser les filtres' : 'Reset filters';
+  String get boutiqueTrier        => _fr ? 'Trier'                   : 'Sort';
+  String get boutiqueEchange      => _fr ? 'Échangé'                 : 'Redeemed';
+
+// ── Boutique detail screen ─────────────────────────────────────────────────
+  String get detailOffreLimitee   => _fr ? 'OFFRE LIMITÉE'           : 'LIMITED OFFER';
+  String get detailSurSite        => _fr ? 'sur le site'             : 'on the website';
+  String get detailResume         => _fr ? "Résumé de l'offre"       : 'Offer summary';
+  String get detailCout           => _fr ? "Coût de l'offre"         : 'Offer cost';
+  String get detailEtoiles        => _fr ? 'étoiles'                 : 'stars';
+  String get detailValable        => _fr ? "Valable jusqu'au"        : 'Valid until';
+  String get detailNonPrecise     => _fr ? 'Non précisé'             : 'Not specified';
+  String get detailExpireDemain   => _fr ? 'Expire demain !'         : 'Expires tomorrow!';
+  String get detailMesEtoiles     => _fr ? 'Mes étoiles'             : 'My stars';
+  String get detailDisponibles    => _fr ? 'disponibles'             : 'available';
+  String get detailAPropos        => _fr ? "À propos de l'offre"     : 'About the offer';
+  String get detailComment        => _fr ? 'Comment ça marche ?'     : 'How does it work?';
+  String get detailStep1          => _fr ? 'Appuie sur "Échanger mes étoiles"' : 'Tap "Exchange my stars"';
+  String get detailStep2          => _fr ? 'Reçois ton code promo et QR code' : 'Receive your promo code and QR code';
+  String get detailStep3          => _fr ? 'Télécharge ta carte en PDF' : 'Download your card as PDF';
+  String get detailStep4          => _fr ? 'Utilise-le lors de ta commande' : 'Use it when ordering';
+  String get detailOffresSimilaires => _fr ? 'Offres similaires'     : 'Similar offers';
+  String get detailDejaEchange    => _fr ? 'Offre déjà échangée — consulte ton code ci-dessus' : 'Offer already redeemed — see your code above';
+  String get detailEtoilesInsuff  => _fr ? 'Étoiles insuffisantes'   : 'Insufficient stars';
+  String get detailDejaEchangeBtn => _fr ? 'Offre déjà échangée'     : 'Offer already redeemed';
+  String detailManque(int n)      => _fr ? 'Il te manque $n étoile${n > 1 ? 's' : ''} pour débloquer cette offre' : 'You need $n more star${n > 1 ? 's' : ''} to unlock this offer';
+  String detailEchangerEtoiles(int n) => _fr ? 'Échanger $n étoiles' : 'Exchange $n stars';
+  String detailCopierCode(String c)   => _fr ? 'Copier le code : $c' : 'Copy code: $c';
+
+// ── All partenaires screen ─────────────────────────────────────────────────
+  String get allPartBoutique     => _fr ? 'Boutique'                  : 'Shop';
+  String get allPartPartenaires  => _fr ? 'Partenaires'               : 'Partners';
+  String get allPartSearch       => _fr ? 'Rechercher un partenaire…' : 'Search a partner…';
+  String get allPartAucun        => _fr ? 'Aucun partenaire trouvé'   : 'No partner found';
+  String get allPartEssayer      => _fr ? 'Essayez un autre filtre ou mot-clé.' : 'Try another filter or keyword.';
+
+// ── Partner form screen ────────────────────────────────────────────────────
+  String get formDevenirPart     => _fr ? 'Devenir partenaire'        : 'Become a partner';
+  String get formSubtitle        => _fr ? 'Rejoignez 150+ marques sur Fiteva et touchez\nune communauté de 12 000 mamans.' : 'Join 150+ brands on Fiteva and reach\na community of 12,000 moms.';
+  String get formCoordonnees     => _fr ? 'Vos coordonnées'           : 'Your details';
+  String get formNomComplet      => _fr ? 'Nom complet *'             : 'Full name *';
+  String get formChampRequis     => _fr ? 'Champ requis'              : 'Required field';
+  String get formEmail           => _fr ? 'Email *'                   : 'Email *';
+  String get formEmailInvalid    => _fr ? 'Email invalide'            : 'Invalid email';
+  String get formTelephone       => _fr ? 'Téléphone'                 : 'Phone';
+  String get formVotreMarque     => _fr ? 'Votre marque'              : 'Your brand';
+  String get formNomMarque       => _fr ? 'Nom de la marque *'        : 'Brand name *';
+  String get formSiteWeb         => _fr ? 'Site web ou Instagram'     : 'Website or Instagram';
+  String get formPresenter       => _fr ? 'Présentez votre marque'    : 'Introduce your brand';
+  String get formProduits        => _fr ? 'Vos produits, vos valeurs…' : 'Your products, your values…';
+  String get formCategorie       => _fr ? 'Catégorie'                 : 'Category';
+  String get formSelectCat       => _fr ? 'Veuillez sélectionner une catégorie.' : 'Please select a category.';
+  String get formAcceptCond      => _fr ? 'Veuillez accepter les conditions partenaires.' : 'Please accept the partner conditions.';
+  String get formJAccepte        => _fr ? "J'accepte les "            : 'I accept the ';
+  String get formConditions      => _fr ? 'conditions du programme partenaire' : 'partner program conditions';
+  String get formDeFiteva        => _fr ? ' de Fiteva.'               : ' of Fiteva.';
+  String get formEnvoyer         => _fr ? 'Envoyer ma candidature'    : 'Send my application';
+  String get formSecurise        => _fr ? 'Données sécurisées — aucun partage tiers' : 'Secured data — no third-party sharing';
+  String get formCandidature     => _fr ? 'Candidature envoyée !'     : 'Application sent!';
+  String get formRecontact       => _fr ? 'Notre équipe vous recontactera sous 48h.' : 'Our team will contact you within 48h.';
+  String get formVerif           => _fr ? 'Vérification du dossier'   : 'File review';
+  String get formAppel           => _fr ? 'Appel de présentation Fiteva' : 'Fiteva presentation call';
+  String get formMiseEnLigne     => _fr ? 'Mise en ligne de la boutique' : 'Shop goes live';
+  String get formParfait         => _fr ? 'Parfait, merci !'          : 'Perfect, thank you!';
+
+// ── Promo modal ────────────────────────────────────────────────────────────
+  String get promoCodeTitle      => _fr ? 'Ton code promo'            : 'Your promo code';
+  String get promoScanQR         => _fr ? 'Scanne le QR code'         : 'Scan the QR code';
+  String get promoOuSaisis       => _fr ? 'ou saisis le code manuellement lors de ta commande en ligne.' : 'or enter the code manually when ordering online.';
+  String get promoReserve        => _fr ? "Réservé aux abonnés TSE"   : 'For TSE subscribers only';
+  String get promoPersonnel      => _fr ? 'Carte personnelle · Non cessible · Généré via l\'app TSE' : 'Personal card · Non-transferable · Generated via TSE app';
+  String get promoReady          => _fr ? 'Ta récompense est prête !' : 'Your reward is ready!';
+  String get promoUseCode        => _fr ? 'Utilise le code ou le QR code sur le site partenaire.' : 'Use the code or QR code on the partner site.';
+  String get promoCodeLabel      => _fr ? 'Code promo'                : 'Promo code';
+  String get promoCopied         => _fr ? 'Copié !'                   : 'Copied!';
+  String get promoCopier         => _fr ? 'Copier'                    : 'Copy';
+  String get promoOuManuel       => _fr ? 'Ou saisis le code manuellement lors de ta commande.' : 'Or enter the code manually when ordering.';
+  String get promoTelecharger    => _fr ? 'Télécharger en PDF'        : 'Download as PDF';
+  String get promoFermer         => _fr ? 'Fermer'                    : 'Close';
+
+// ── UserProfileScreen ──────────────────────────────────────────────────────
+  String get profileApercu       => _fr ? 'Aperçu'                    : 'Overview';
+  String get profilePosts        => _fr ? 'Posts'                     : 'Posts';
+  String get profileEvenements   => _fr ? 'Événements'               : 'Events';
+  String get profileSuivi        => _fr ? 'Suivi'                     : 'Follow';
+  String get profileSuivre       => _fr ? 'Suivre'                    : 'Follow';
+  String get profileStats        => _fr ? 'STATISTIQUES'              : 'STATISTICS';
+  String get profileSeances      => _fr ? 'Séances'                   : 'Sessions';
+  String get profileSerie        => _fr ? 'Série en cours'            : 'Current streak';
+  String get profileCalories     => _fr ? 'Calories brûlées'          : 'Calories burned';
+  String get profileTemps        => _fr ? 'Temps total'               : 'Total time';
+  String get profileRepartition  => _fr ? 'RÉPARTITION'               : 'BREAKDOWN';
+  String get profileCompletes    => _fr ? 'Complétés'                 : 'Completed';
+  String get profileProgrammes   => _fr ? 'Programmes'               : 'Programs';
+  String get profileEnCours      => _fr ? 'En cours'                  : 'In progress';
+  String get profileSignaler     => _fr ? 'Signaler ce profil'        : 'Report this profile';
+  String get profileMasquer      => _fr ? 'Masquer les publications'  : 'Hide posts';
+  String get profileAnnuler      => _fr ? 'Annuler'                   : 'Cancel';
+  String get profileAucunPost    => _fr ? 'Aucun post publié'         : 'No posts yet';
+  String get profileAucunEvt     => _fr ? 'Aucun événement créé'      : 'No events created';
+  String get profileAVenir       => _fr ? 'À VENIR'                   : 'UPCOMING';
+  String get profilePasses       => _fr ? 'PASSÉS'                    : 'PAST';
+  String get profileProgEnCours  => _fr ? 'PROGRAMMES EN COURS'       : 'PROGRAMS IN PROGRESS';
+  String get profileImpossible   => _fr ? 'Impossible de charger ce profil' : 'Cannot load this profile';
+  String get profileDebutant     => _fr ? 'Débutant'                  : 'Beginner';
+  String get profileInter        => _fr ? 'Intermédiaire'             : 'Intermediate';
+  String get profileAvance       => _fr ? 'Avancé'                    : 'Advanced';
+  String get profileExpert       => _fr ? 'Expert'                    : 'Expert';
+  String profileNiveau(String lbl) => _fr ? 'Niveau $lbl'            : 'Level $lbl';
+  String profileXPToNext(int n)    => _fr ? '$n XP avant le prochain niveau' : '$n XP to next level';
+  String profileTimeAgoMin(int n)  => _fr ? 'il y a ${n} min'        : '${n}m ago';
+  String profileTimeAgoH(int n)    => _fr ? 'il y a ${n}h'           : '${n}h ago';
+  String profileTimeAgoD(int n)    => _fr ? 'il y a ${n}j'           : '${n}d ago';
+
+  // ── Cycle home screen ──────────────────────────────────────────────────────
+  String get cycleFlux          => _fr ? 'Flux'         : 'Flow';
+  String get cycleHumeur        => _fr ? 'Humeur'       : 'Mood';
+  String get cycleEnergie       => _fr ? 'Énergie'      : 'Energy';
+  String get cycleCrampes       => _fr ? 'Crampes'      : 'Cramps';
+  String get cycleRegles        => _fr ? 'Règles'       : 'Period';
+  String get cycleFolliculaire  => _fr ? 'Folliculaire' : 'Follicular';
+  String get cycleOvulationLabel => _fr ? 'Ovulation'   : 'Ovulation';
+  String get cycleLuteale       => _fr ? 'Lutéale'      : 'Luteal';
+  String get cycleJour          => _fr ? 'Jour'         : 'Day';
+  String get cycleCeMois        => _fr ? 'Ce mois'      : 'This month';
+  String get cycleAuj           => _fr ? 'auj.'         : 'today';
+
+  // ── Cycle header ───────────────────────────────────────────────────────────
+  String get cycleHeaderTitle    => _fr ? 'MON CYCLE'   : 'MY CYCLE';
+  String get cycleHeaderRoue     => _fr ? 'Roue'        : 'Wheel';
+  String get cycleHeaderCal      => _fr ? 'Calendrier'  : 'Calendar';
+  String get cycleHeaderGrossesse=> _fr ? 'Grossesse'   : 'Pregnancy';
+
+  // ── Calendar screen ────────────────────────────────────────────────────────
+  String get calTitle            => _fr ? 'Calendrier du cycle'    : 'Cycle calendar';
+  String get calRegles           => _fr ? 'Règles'                 : 'Period';
+  String get calOvulation        => _fr ? 'Ovulation'              : 'Ovulation';
+  String get calModifier         => _fr ? 'Modifier mes règles'    : 'Edit my period';
+  String get calDateDebut        => _fr ? 'Date de début'          : 'Start date';
+  String get calDuree            => _fr ? 'Durée des règles'       : 'Period duration';
+  String get calDateFin          => _fr ? 'Date de fin (calculée automatiquement)' : 'End date (auto-calculated)';
+  String get calChoisir          => _fr ? 'Choisir la date de debut' : 'Choose start date';
+  String get calAnnuler          => _fr ? 'Annuler'                : 'Cancel';
+  String get calSauvegarder      => _fr ? 'Sauvegarder'            : 'Save';
+
+  // ── Onboarding steps ──────────────────────────────────────────────────────
+  String get oboCycleTitle       => _fr ? 'Durée de ton cycle'     : 'Your cycle length';
+  String get oboCycleSub         => _fr ? 'La moyenne est de 28 jours mais chaque femme est unique' : 'The average is 28 days but every woman is unique';
+  String get oboCycleDuree       => _fr ? 'Durée habituelle'       : 'Usual duration';
+  String get oboCycleLastPeriod  => _fr ? 'Début de tes dernières règles' : 'Start of your last period';
+  String get oboCycleCommencer   => _fr ? 'Commencer FITEVA'       : 'Start FITEVA';
+  String get oboPregnancyWeek   => _fr ? 'À quelle semaine es-tu ?' : 'What week are you at?';
+  String get oboPregnancySA     => _fr ? 'SA'                      : 'WA';
+  String get oboPregnancyTri1   => _fr ? '1er trimestre (S1–S13)'  : '1st trimester (W1–W13)';
+  String get oboPregnancyTri2   => _fr ? '2e trimestre (S14–S27)'  : '2nd trimester (W14–W27)';
+  String get oboPregnancyTri3   => _fr ? '3e trimestre (S28–S42)'  : '3rd trimester (W28–W42)';
+  String get oboPregnancyNo     => _fr ? 'Non'                     : 'No';
+  String get oboPregnancyNoSub  => _fr ? 'Je ne suis pas enceinte' : "I'm not pregnant";
+  String get oboPregnancyYes    => _fr ? 'Oui'                     : 'Yes';
+  String get oboPregnancyYesSub => _fr ? 'Je suis enceinte'        : "I'm pregnant";
+  String get oboPregnancyContinue => _fr ? 'Continuer'             : 'Continue';
+  String get oboHealthHeight    => _fr ? 'Height'                   : 'Height';
+  String get oboHealthWeight    => _fr ? 'Weight'                   : 'Weight';
+  String get oboHealthContinue  => _fr ? 'Continuer'                : 'Continue';
+
+  // ── Pregnancy screens ──────────────────────────────────────────────────────
+  String get pregTitle          => _fr ? 'GROSSESSE'                         : 'PREGNANCY';
+  String get pregMonSuivi       => _fr ? 'Mon suivi'                         : 'My tracking';
+  String get pregQuitter        => _fr ? 'Quitter le suivi grossesse ?'      : 'Exit pregnancy tracking?';
+  String get pregQuitterSub     => _fr ? "L'app passera en mode Cycle. Vos données sont conservées." : 'The app will switch to Cycle mode. Your data is saved.';
+  String get pregDateAccouch    => _fr ? "Date d'accouchement"               : 'Due date';
+  String get pregQuandNe        => _fr ? 'Quand est né votre bébé ?'         : 'When was your baby born?';
+  String get pregPostPartum     => _fr ? 'Passer en mode Post-partum ?'      : 'Switch to Post-partum mode?';
+  String get pregAnnuler        => _fr ? 'Annuler'                           : 'Cancel';
+  String get pregConfirmer      => _fr ? 'Confirmer'                         : 'Confirm';
+  String get pregPostPartumBtn  => _fr ? 'Post-partum →'                     : 'Post-partum →';
+  String get pregMonCycle       => _fr ? 'Mon cycle →'                       : 'My cycle →';
+  String get pregCommentTuTeSens=> _fr ? 'Comment tu te sens ?'              : 'How are you feeling?';
+  String get pregExplorer       => _fr ? 'Explorer'                          : 'Explore';
+  String get pregBabyBorn       => _fr ? 'Mon bébé est né !'                 : 'My baby is born!';
+  String get pregPasserSuivi    => _fr ? 'Passer au suivi post-partum'       : 'Switch to post-partum tracking';
+  String get pregTrim1Short     => _fr ? '1er trim.'                         : '1st trim.';
+  String get pregTrim2Short     => _fr ? '2e trim.'                          : '2nd trim.';
+  String get pregTrim3Short     => _fr ? '3e trim.'                          : '3rd trim.';
+  String get pregVotreBebe      => _fr ? 'Votre bébé'                        : 'Your baby';
+  String get pregDeveloppement  => _fr ? 'Développement'                     : 'Development';
+  String get pregVotreCorps     => _fr ? 'Votre corps'                       : 'Your body';
+  String get pregEvolutions     => _fr ? 'Évolutions et changements'         : 'Changes and evolutions';
+  String get pregMaChecklist    => _fr ? 'Ma checklist'                      : 'My checklist';
+  String get pregPreparatifs    => _fr ? 'Préparatifs et rendez-vous'        : 'Preparations and appointments';
+  String get pregSymptomes      => _fr ? 'Symptômes'                         : 'Symptoms';
+  String get pregSuivreSymptomes=> _fr ? 'Suivre vos symptômes du jour'      : 'Track your symptoms today';
+  String get pregJoursRestants  => _fr ? 'jours restants'                    : 'days remaining';
+  String get pregSemaine        => _fr ? 'SEMAINE'                           : 'WEEK';
+  String pregSemaineN(int w)    => _fr ? 'Semaine $w'                        : 'Week $w';
+  String pregCommeFruit(String f) => _fr ? 'comme une $f'                   : 'like a $f';
+
+  // ── Baby story screen ──────────────────────────────────────────────────────
+  String get babyTitle          => _fr ? "L'HISTOIRE DE BÉBÉ"                : "BABY'S STORY";
+  String get babyTrim1          => _fr ? '1er trimestre'                     : '1st trimester';
+  String get babyTrim2          => _fr ? '2e trimestre'                      : '2nd trimester';
+  String get babyTrim3          => _fr ? '3e trimestre'                      : '3rd trimester';
+  String get babyBebeTRaconte   => _fr ? 'Bébé te raconte…'                  : 'Baby tells you…';
+  String get babySaviezVous     => _fr ? 'Le saviez-vous ?'                  : 'Did you know?';
+  String get babyDevSemaine     => _fr ? 'Développement cette semaine'       : 'Development this week';
+
+  // ── Pregnancy body screen ──────────────────────────────────────────────────
+  String get bodyTitle          => _fr ? 'VOTRE CORPS'                       : 'YOUR BODY';
+  String get bodyTrim1          => _fr ? '1er trimestre'                     : '1st trimester';
+  String get bodyTrim2          => _fr ? '2e trimestre'                      : '2nd trimester';
+  String get bodyTrim3          => _fr ? '3e trimestre'                      : '3rd trimester';
+  String get bodyVecuTitle      => _fr ? 'Ce que ton corps vit'              : 'What your body is going through';
+  String get bodyConseils       => _fr ? 'CONSEILS POUR CETTE PÉRIODE'       : 'TIPS FOR THIS PERIOD';
+  String get bodyPoids          => _fr ? 'Prise de poids recommandée'        : 'Recommended weight gain';
+
+  // ── Pregnancy checklist ────────────────────────────────────────────────────
+  String get checkTitle         => _fr ? 'MA CHECKLIST'                      : 'MY CHECKLIST';
+  String get checkAucune        => _fr ? 'Aucune tâche cette semaine'        : 'No tasks this week';
+  String get checkToutFait      => _fr ? 'Tout est fait — bravo !'           : 'All done — great job!';
+  String get checkMedical       => _fr ? 'Médical'                           : 'Medical';
+  String get checkBienEtre      => _fr ? 'Bien-être'                         : 'Well-being';
+  String get checkPratique      => _fr ? 'Pratique'                          : 'Practical';
+  String get checkAVenir        => _fr ? 'À venir'                           : 'Coming up';
+  String get checkRien          => _fr ? 'Rien de prévu cette semaine'       : 'Nothing planned this week';
+  String get checkCalme         => _fr ? 'Profite de ce moment de calme.\nLes prochaines tâches arrivent bientôt.' : 'Enjoy this quiet moment.\nMore tasks coming soon.';
+  String checkTaches(int done, int total) => _fr ? '$done sur $total tâches complétées' : '$done of $total tasks completed';
+
+  // ── Postpartum hub ─────────────────────────────────────────────────────────
+  String get ppTitle            => _fr ? 'POST-PARTUM'                       : 'POST-PARTUM';
+  String get ppTrim4            => _fr ? '4e trimestre'                      : '4th trimester';
+  String get ppDateAccouch      => _fr ? "Date d'accouchement"               : 'Due date';
+  String get ppQuandNe          => _fr ? 'Quand est né votre bébé ?'         : 'When was your baby born?';
+  String get ppMesRegles        => _fr ? 'Mes règles'                        : 'My period';
+  String get ppQuandRegles      => _fr ? 'Quand ont-elles commencé ?'        : 'When did they start?';
+  String get ppPasserCycle      => _fr ? 'Passer au suivi de cycle ?'        : 'Switch to cycle tracking?';
+  String get ppAnnuler          => _fr ? 'Annuler'                           : 'Cancel';
+  String get ppConfirmer        => _fr ? 'Confirmer'                         : 'Confirm';
+  String get ppModifier         => _fr ? 'Modifier'                          : 'Edit';
+  String get ppCommentSentez    => _fr ? 'Comment vous sentez-vous ?'        : 'How are you feeling?';
+  String get ppVotreBebe        => _fr ? 'Votre bébé'                        : 'Your baby';
+  String get ppVotreCorps       => _fr ? 'Votre corps'                       : 'Your body';
+  String get ppVotreMental      => _fr ? 'Votre mental'                      : 'Your mental health';
+  String ppDaysNaissance(int d) => _fr ? '$d jours depuis la naissance'      : '$d days since birth';
+  String ppSemainesRestantes(int n) => _fr ? '$n semaines restantes de suivi post-partum' : '$n weeks of post-partum tracking remaining';
+
+  // ── Add symptom sheet ──────────────────────────────────────────────────────
+  String get symptomTitle       => _fr ? 'Comment tu te sens ?'              : 'How are you feeling?';
+  String get symptomChoisis     => _fr ? 'Choisis un symptôme'               : 'Choose a symptom';
+  String get symptomNote        => _fr ? 'Note (optionnel)'                  : 'Note (optional)';
+  String get symptomHint        => _fr ? 'Un détail à retenir…'              : 'A detail to remember…';
+  String get symptomEnregistrer    => _fr ? 'Enregistrer'                    : 'Save';
+  String get symptomIntensiteLabel => _fr ? 'Intensité'                      : 'Intensity';
+  String get symptomLegere      => _fr ? 'Légère'                            : 'Mild';
+  String get symptomModeree     => _fr ? 'Modérée'                           : 'Moderate';
+  String get symptomForte       => _fr ? 'Forte'                             : 'Strong';
+  String get symptomIntense     => _fr ? 'Intense'                           : 'Intense';
+
+  // ── Symptoms home screen ───────────────────────────────────────────────────
+  String get sympHomeTitle      => _fr ? 'MES SYMPTÔMES'                     : 'MY SYMPTOMS';
+  String get sympHomeCetteSem   => _fr ? 'CETTE SEMAINE'                     : 'THIS WEEK';
+  String get sympHomeRien       => _fr ? 'Rien de noté cette semaine'        : 'Nothing logged this week';
+  String get sympHomeHint       => _fr ? 'Appuie sur le bouton ci-dessous\npour enregistrer comment tu te sens.' : 'Tap the button below\nto log how you feel.';
+  String get sympHomeAjouter    => _fr ? 'Ajouter un symptôme'               : 'Add a symptom';
+  String get sympHomeConseil    => _fr ? 'Conseil de la semaine'             : 'Tip of the week';
+  String get sympHomeTendance   => _fr ? 'Tendance hebdomadaire'             : 'Weekly trend';
+  String get sympHomeHier       => _fr ? 'Hier'                              : 'Yesterday';
+  String get sympHomeAuj        => _fr ? "Auj'"                              : "Today";
+  String sympHomeCount(int n)   => _fr ? '$n ce mois'                        : '$n this month';
 }

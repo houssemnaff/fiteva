@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../l10n/app_localizations.dart';
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 final referralCodeProvider =
@@ -153,14 +154,14 @@ class _ReferralCardState extends ConsumerState<ReferralCard>
       ..forward();
   }
 
-  void _copyCode(BuildContext context, String code) {
+  void _copyCode(BuildContext context, String code, AppL10n l10n) {
     Clipboard.setData(ClipboardData(text: code));
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(children: [
         const Icon(LucideIcons.checkCircle, color: Colors.white, size: 15),
         const SizedBox(width: 8),
-        Text('Code $code copié !',
+        Text(l10n.referralCodeCopied(code),
             style: GoogleFonts.inter(
                 color: Colors.white, fontWeight: FontWeight.w600)),
       ]),
@@ -172,7 +173,7 @@ class _ReferralCardState extends ConsumerState<ReferralCard>
     ));
   }
 
-  void _shareCode(BuildContext context, String code) {
+  void _shareCode(BuildContext context, String code, AppL10n l10n) {
     final msg = 'Rejoins-moi sur FitEva ! 🏋️‍♀️\n'
         'Utilise mon code $code à l\'inscription '
         'et on gagne toutes les deux des points 💪\n'
@@ -180,12 +181,13 @@ class _ReferralCardState extends ConsumerState<ReferralCard>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ShareSheet(code: code, message: msg),
+      builder: (_) => _ShareSheet(code: code, message: msg, l10n: l10n),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     final codeAsync  = ref.watch(referralCodeProvider);
     final countAsync = ref.watch(referralCountProvider);
     final count = countAsync.asData?.value ?? 0;
@@ -207,7 +209,7 @@ class _ReferralCardState extends ConsumerState<ReferralCard>
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
             // ── Header ───────────────────────────────────────────────────
-            _SectionHeader(),
+            _SectionHeader(l10n: l10n),
             const SizedBox(height: 16),
 
             // ── Scratch cards row ─────────────────────────────────────────
@@ -223,6 +225,7 @@ class _ReferralCardState extends ConsumerState<ReferralCard>
                       reward: r,
                       unlocked: unlocked,
                       onComplete: () => _onScratchComplete(i),
+                      l10n: l10n,
                     ),
                   ),
                 );
@@ -238,6 +241,7 @@ class _ReferralCardState extends ConsumerState<ReferralCard>
               pct: nextPct,
               isMaxed: isMaxed,
               nextThreshold: nextReward.threshold,
+              l10n: l10n,
             ),
 
             const SizedBox(height: 20),
@@ -249,15 +253,16 @@ class _ReferralCardState extends ConsumerState<ReferralCard>
               data: (code) => _CodeBlock(
                 code: code,
                 dark: dark,
-                onCopy: () => _copyCode(context, code),
-                onShare: () => _shareCode(context, code),
+                onCopy: () => _copyCode(context, code, l10n),
+                onShare: () => _shareCode(context, code, l10n),
+                l10n: l10n,
               ),
             ),
 
             const SizedBox(height: 20),
 
             // ── Friends ───────────────────────────────────────────────────
-            _FriendsList(count: count, dark: dark),
+            _FriendsList(count: count, dark: dark, l10n: l10n),
           ]),
 
           // ── Confetti ──────────────────────────────────────────────────────
@@ -287,12 +292,14 @@ class ScratchCardTile extends StatefulWidget {
   final _Reward reward;
   final bool unlocked;
   final VoidCallback onComplete;
+  final AppL10n l10n;
 
   const ScratchCardTile({
     super.key,
     required this.reward,
     required this.unlocked,
     required this.onComplete,
+    required this.l10n,
   });
 
   @override
@@ -384,7 +391,7 @@ class _ScratchCardTileState extends State<ScratchCardTile> {
                           const Icon(LucideIcons.fingerprint,
                               color: Colors.white54, size: 22),
                           const SizedBox(height: 4),
-                          Text('Gratte !',
+                          Text(widget.l10n.referralScratch,
                               style: GoogleFonts.inter(
                                   color: Colors.white54,
                                   fontSize: 11,
@@ -594,6 +601,9 @@ class _ScratchPainter extends CustomPainter {
 // SECTION HEADER
 // ══════════════════════════════════════════════════════════════════════════════
 class _SectionHeader extends StatelessWidget {
+  final AppL10n l10n;
+  const _SectionHeader({required this.l10n});
+
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -623,7 +633,7 @@ class _SectionHeader extends StatelessWidget {
                 color: const Color(0xFFD4A853),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text('INVITE & GAGNE',
+              child: Text(l10n.referralTitle,
                   style: GoogleFonts.inter(
                       color: Colors.white,
                       fontSize: 9,
@@ -631,7 +641,7 @@ class _SectionHeader extends StatelessWidget {
                       letterSpacing: 1.3)),
             ),
             const SizedBox(height: 8),
-            Text('Scratch & Débloque\ntes récompenses 🎁',
+            Text(l10n.referralHeadline,
                 style: GoogleFonts.outfit(
                     color: Colors.white,
                     fontSize: 19,
@@ -639,7 +649,7 @@ class _SectionHeader extends StatelessWidget {
                     letterSpacing: -0.4,
                     height: 1.2)),
             const SizedBox(height: 6),
-            Text('Gratte chaque carte pour révéler ta récompense',
+            Text(l10n.referralHint,
                 style: GoogleFonts.inter(
                     color: Colors.white.withValues(alpha: 0.65),
                     fontSize: 12)),
@@ -661,12 +671,14 @@ class _ProgressBlock extends StatelessWidget {
   final double pct;
   final bool isMaxed;
   final int nextThreshold;
+  final AppL10n l10n;
   const _ProgressBlock({
     required this.count,
     required this.dark,
     required this.pct,
     required this.isMaxed,
     required this.nextThreshold,
+    required this.l10n,
   });
 
   @override
@@ -693,8 +705,8 @@ class _ProgressBlock extends StatelessWidget {
           Expanded(
             child: Text(
               isMaxed
-                  ? 'Toutes les récompenses débloquées !'
-                  : 'Encore $needed amie${needed > 1 ? 's' : ''} pour ta prochaine récompense',
+                  ? l10n.referralAllUnlocked
+                  : l10n.referralNeedMore(needed),
               style: GoogleFonts.inter(
                   color: const Color(0xFF1C4D30),
                   fontSize: 12,
@@ -786,11 +798,13 @@ class _CodeBlock extends StatelessWidget {
   final bool dark;
   final VoidCallback onCopy;
   final VoidCallback onShare;
+  final AppL10n l10n;
   const _CodeBlock(
       {required this.code,
       required this.dark,
       required this.onCopy,
-      required this.onShare});
+      required this.onShare,
+      required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -812,7 +826,7 @@ class _CodeBlock extends StatelessWidget {
         Row(children: [
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('TON CODE DE PARRAINAGE',
+              Text(l10n.referralCodeLabel,
                   style: GoogleFonts.inter(
                       color: const Color(0xFF1C4D30),
                       fontSize: 9,
@@ -860,7 +874,7 @@ class _CodeBlock extends StatelessWidget {
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(LucideIcons.share2, color: Colors.white, size: 15),
               const SizedBox(width: 8),
-              Text('Partager le lien d\'invitation',
+              Text(l10n.referralShare,
                   style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 14,
@@ -879,7 +893,8 @@ class _CodeBlock extends StatelessWidget {
 class _FriendsList extends StatelessWidget {
   final int count;
   final bool dark;
-  const _FriendsList({required this.count, required this.dark});
+  final AppL10n l10n;
+  const _FriendsList({required this.count, required this.dark, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -902,7 +917,7 @@ class _FriendsList extends StatelessWidget {
         Row(children: [
           const Icon(LucideIcons.users, size: 14, color: Color(0xFF1C4D30)),
           const SizedBox(width: 7),
-          Text('Amies inscrites via ton lien',
+          Text(l10n.referralFriends,
               style: GoogleFonts.inter(
                   color: const Color(0xFF1C4D30),
                   fontSize: 12,
@@ -945,7 +960,7 @@ class _FriendsList extends StatelessWidget {
                           color: dark ? Colors.white : const Color(0xFF111111),
                           fontSize: 13,
                           fontWeight: FontWeight.w700)),
-                  Text(f.joined ? 'Inscrite ✔' : 'En attente...',
+                  Text(f.joined ? l10n.referralRegistered : l10n.referralPending,
                       style: GoogleFonts.inter(
                           color: f.joined
                               ? const Color(0xFF4CAF50)
@@ -978,7 +993,7 @@ class _FriendsList extends StatelessWidget {
                         : const Color(0xFFEEEEEE),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text('En attente',
+                  child: Text(l10n.referralPending,
                       style: GoogleFonts.inter(
                           color: dark ? Colors.white38 : Colors.black38,
                           fontSize: 10,
@@ -1046,7 +1061,8 @@ class _ConfettiPainter extends CustomPainter {
 class _ShareSheet extends StatelessWidget {
   final String code;
   final String message;
-  const _ShareSheet({required this.code, required this.message});
+  final AppL10n l10n;
+  const _ShareSheet({required this.code, required this.message, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -1072,7 +1088,7 @@ class _ShareSheet extends StatelessWidget {
                     : const Color(0xFFDDDDDD),
                 borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 20),
-        Text('Partage avec tes amies 🎁',
+        Text(l10n.referralShareTitle,
             style: GoogleFonts.outfit(
                 fontSize: 18, fontWeight: FontWeight.w800, color: t1)),
         const SizedBox(height: 16),
@@ -1099,7 +1115,7 @@ class _ShareSheet extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                      'Message copié — colle-le dans WhatsApp ou Insta !',
+                      l10n.referralCopied,
                       style: GoogleFonts.inter(
                           color: Colors.white,
                           fontWeight: FontWeight.w600)),
@@ -1132,7 +1148,7 @@ class _ShareSheet extends StatelessWidget {
                 children: [
               const Icon(LucideIcons.copy, color: Colors.white, size: 15),
               const SizedBox(width: 8),
-              Text('Copier le message',
+              Text(l10n.referralCopyMsg,
                   style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 15,

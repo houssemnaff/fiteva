@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../l10n/app_localizations.dart';
 
 
 class CommentSheet extends ConsumerStatefulWidget {
@@ -62,6 +63,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -86,7 +88,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
             child: Row(children: [
               Expanded(
-                child: Text('Commentaires',
+                child: Text(l10n.communityComments,
                   style: GoogleFonts.outfit(
                     fontSize: 17, fontWeight: FontWeight.w700,
                     color: cs.onSurface, letterSpacing: -0.3)),
@@ -112,7 +114,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                 : _comments.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.all(32),
-                        child: Text('Aucun commentaire pour l\'instant.\nSois le premier ! 💬',
+                        child: Text(l10n.communityNoComments,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.6), fontSize: 13, height: 1.5)),
                       )
@@ -145,7 +147,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                   onSubmitted: (_) => _send(),
                   style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
                   decoration: InputDecoration(
-                    hintText: 'Ajouter un commentaire…',
+                    hintText: l10n.communityAddComment,
                     hintStyle: GoogleFonts.inter(
                         color: cs.onSurface.withValues(alpha: 0.6), fontSize: 13),
                     filled: true,

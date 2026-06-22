@@ -1,4 +1,5 @@
 import 'package:fiteva/core/shop/shop_provider.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -118,6 +119,7 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
     final filtered = _filtered;
     final wishlist = ref.watch(shopWishlistProvider);
 
+    final l10n = ref.watch(l10nProvider);
     return Scaffold(
       backgroundColor: p.bg,
       body: Column(
@@ -125,6 +127,7 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
           // ── Sticky header ──────────────────────────────────────────────
           _StickyHeader(
             p: p,
+            l10n: l10n,
             elevated: _elevated,
             cat: _cat,
             searchCtrl: _searchCtrl,
@@ -152,7 +155,7 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
           // ── List ──────────────────────────────────────────────────────
           Expanded(
             child: filtered.isEmpty
-                ? _EmptyState(p: p)
+                ? _EmptyState(p: p, l10n: l10n)
                 : ListView.separated(
                     controller: _scrollCtrl,
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
@@ -185,6 +188,7 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _StickyHeader extends StatelessWidget {
   final _P p;
+  final AppL10n l10n;
   final bool elevated;
   final String cat;
   final TextEditingController searchCtrl;
@@ -195,6 +199,7 @@ class _StickyHeader extends StatelessWidget {
 
   const _StickyHeader({
     required this.p,
+    required this.l10n,
     required this.elevated,
     required this.cat,
     required this.searchCtrl,
@@ -234,7 +239,7 @@ class _StickyHeader extends StatelessWidget {
                         children: [
                           Icon(CupertinoIcons.chevron_left, size: 15, color: p.ink),
                           const SizedBox(width: 3),
-                          Text('Boutique',
+                          Text(l10n.allPartBoutique,
                               style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w400,
@@ -243,7 +248,7 @@ class _StickyHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Text('Partenaires',
+                  Text(l10n.allPartPartenaires,
                       style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -274,7 +279,7 @@ class _StickyHeader extends StatelessWidget {
                         focusNode: searchFocus,
                         style: TextStyle(fontSize: 14, color: p.ink),
                         decoration: InputDecoration(
-                          hintText: 'Rechercher un partenaire…',
+                          hintText: l10n.allPartSearch,
                           hintStyle: TextStyle(fontSize: 14, color: p.inkSubtle),
                           border: InputBorder.none,
                           isDense: true,
@@ -607,7 +612,8 @@ class _NetImage extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final _P p;
-  const _EmptyState({required this.p});
+  final AppL10n l10n;
+  const _EmptyState({required this.p, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -621,13 +627,13 @@ class _EmptyState extends StatelessWidget {
             child: Icon(CupertinoIcons.bag, size: 32, color: p.inkSubtle),
           ),
           const SizedBox(height: 20),
-          Text('Aucun partenaire trouvé',
+          Text(l10n.allPartAucun,
               style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: p.ink)),
           const SizedBox(height: 8),
-          Text('Essayez un autre filtre ou mot-clé.',
+          Text(l10n.allPartEssayer,
               style: TextStyle(fontSize: 14, color: p.inkMuted)),
         ],
       ),

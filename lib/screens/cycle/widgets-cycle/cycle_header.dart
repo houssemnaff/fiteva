@@ -1,8 +1,10 @@
 import 'package:fiteva/screens/cycle/widgets-cycle/cycle_common_widgets.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CycleHeader extends StatelessWidget {
+class CycleHeader extends ConsumerWidget {
   final int currentDay;
   final bool showWheel;
   final VoidCallback onShowWheel;
@@ -31,7 +33,8 @@ class CycleHeader extends StatelessWidget {
   static const _phaseDays = [5, 8, 3, 14]; // durées proportionnelles
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n  = ref.watch(l10nProvider);
     final phase = phaseForDay(currentDay);
     final phaseColor = phase.color;
 
@@ -49,7 +52,7 @@ class CycleHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'MON CYCLE',
+                      l10n.cycleHeaderTitle,
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -75,7 +78,10 @@ class CycleHeader extends StatelessWidget {
 
               // 👇 NEW: Pregnancy switch button
               if (onSwitchToPregnancy != null)
-                _PregnancySwitchButton(onTap: onSwitchToPregnancy!),
+                _PregnancySwitchButton(
+                  onTap: onSwitchToPregnancy!,
+                  label: l10n.cycleHeaderGrossesse,
+                ),
             ],
           ),
 
@@ -88,6 +94,8 @@ class CycleHeader extends StatelessWidget {
             onShowWheel: onShowWheel,
             onShowCalendar: onShowCalendar,
             phaseColor: phaseColor,
+            labelRoue: l10n.cycleHeaderRoue,
+            labelCal: l10n.cycleHeaderCal,
           ),
 
           const SizedBox(height: 10),
@@ -96,7 +104,7 @@ class CycleHeader extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              'Jour $currentDay / 30',
+              '${l10n.cycleJour} $currentDay / 30',
               style: TextStyle(
                 fontSize: 11,
                 color: Colors.black.withOpacity(0.55),
@@ -113,8 +121,9 @@ class CycleHeader extends StatelessWidget {
 }
 class _PregnancySwitchButton extends StatelessWidget {
   final VoidCallback onTap;
+  final String label;
 
-  const _PregnancySwitchButton({required this.onTap});
+  const _PregnancySwitchButton({required this.onTap, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +145,7 @@ class _PregnancySwitchButton extends StatelessWidget {
             const Text('🤰', style: TextStyle(fontSize: 14)),
             const SizedBox(width: 5),
             Text(
-              'Grossesse',
+              label,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -159,12 +168,16 @@ class _ToggleBar extends StatelessWidget {
   final VoidCallback onShowWheel;
   final VoidCallback onShowCalendar;
   final Color phaseColor;
+  final String labelRoue;
+  final String labelCal;
 
   const _ToggleBar({
     required this.showWheel,
     required this.onShowWheel,
     required this.onShowCalendar,
     required this.phaseColor,
+    required this.labelRoue,
+    required this.labelCal,
   });
 
   @override
@@ -179,14 +192,14 @@ class _ToggleBar extends StatelessWidget {
       child: Row(
         children: [
           _ToggleItem(
-            label: 'Roue',
+            label: labelRoue,
             icon: Icons.donut_large_rounded,
             isActive: showWheel,
             onTap: onShowWheel,
             phaseColor: phaseColor,
           ),
           _ToggleItem(
-            label: 'Calendrier',
+            label: labelCal,
             icon: Icons.calendar_today_rounded,
             isActive: !showWheel,
             onTap: onShowCalendar,

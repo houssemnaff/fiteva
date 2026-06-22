@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 class FeedComposerSheet extends ConsumerStatefulWidget {
@@ -89,7 +90,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
       content: Row(children: [
         Icon(LucideIcons.checkCircle, color: cs.onPrimary, size: 18),
         const SizedBox(width: 10),
-        Text('Post publié !',
+        Text(ref.read(l10nProvider).communityPublished,
             style: GoogleFonts.inter(color: cs.onPrimary, fontWeight: FontWeight.w600)),
       ]),
     ));
@@ -133,7 +134,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                   Text(displayName, style: GoogleFonts.outfit(
                     fontSize: 14, fontWeight: FontWeight.w700,
                     color: cs.onSurface, letterSpacing: -0.2)),
-                  Text('Publier sur la communauté', style: GoogleFonts.inter(
+                  Text(ref.watch(l10nProvider).communityPublishCommunity, style: GoogleFonts.inter(
                     fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5))),
                 ]),
               ]),
@@ -244,21 +245,23 @@ class _Handle extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 //  TOP BAR
 // ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
+class _TopBar extends ConsumerWidget {
   final ColorScheme cs;
   final VoidCallback onClose;
   const _TopBar({required this.cs, required this.onClose});
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
+    return Padding(
     padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
     child: Row(children: [
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('NOUVEAU POST', style: GoogleFonts.inter(
+        Text(l10n.communityNewPost, style: GoogleFonts.inter(
           fontSize: 9, fontWeight: FontWeight.w700,
           color: cs.primary, letterSpacing: 2.5)),
         const SizedBox(height: 2),
-        Text('Partage avec la communauté', style: GoogleFonts.outfit(
+        Text(l10n.communityShareWith, style: GoogleFonts.outfit(
           fontSize: 19, fontWeight: FontWeight.w700,
           color: cs.onSurface, letterSpacing: -0.3)),
       ])),
@@ -406,14 +409,15 @@ class _PhotoSlot extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 //  BOTTOM BAR
 // ─────────────────────────────────────────────────────────────────────────────
-class _BottomBar extends StatelessWidget {
+class _BottomBar extends ConsumerWidget {
   final ColorScheme cs;
   final bool publishing;
   final VoidCallback onPublish;
   const _BottomBar({required this.cs, required this.publishing, required this.onPublish});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     final bottomPad = MediaQuery.of(context).padding.bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + bottomPad),
@@ -439,7 +443,7 @@ class _BottomBar extends StatelessWidget {
                     width: 20, height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: cs.onPrimary))
-                : Text('Publier',
+                : Text(l10n.communityPublish,
                     style: GoogleFonts.outfit(
                       color: cs.onPrimary,
                       fontSize: 16,

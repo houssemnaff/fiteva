@@ -1,8 +1,10 @@
 ﻿  // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../pregnancy_colors.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 
 extension _Pg on BuildContext {
   PgColors get _p => PgColors.of(this);
@@ -331,15 +333,15 @@ _BodyData _dataForWeek(int week, BuildContext context) {
 //  SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 
-class PregnancyBodyScreen extends StatelessWidget {
+class PregnancyBodyScreen extends ConsumerWidget {
   final int currentWeek;
   const PregnancyBodyScreen({super.key, required this.currentWeek});
 
-  String get _trimestre => currentWeek <= 13
-      ? '1er trimestre'
+  String _trimestre(AppL10n l10n) => currentWeek <= 13
+      ? l10n.bodyTrim1
       : currentWeek <= 26
-          ? '2e trimestre'
-          : '3e trimestre';
+          ? l10n.bodyTrim2
+          : l10n.bodyTrim3;
 
   Color _triColor(BuildContext context) => currentWeek <= 13
       ? context._p.mint
@@ -354,7 +356,8 @@ class PregnancyBodyScreen extends StatelessWidget {
           : context._p.amberSoft;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n   = ref.watch(l10nProvider);
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
     final data   = _dataForWeek(currentWeek, context);
@@ -384,11 +387,11 @@ class PregnancyBodyScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('VOTRE CORPS', style: GoogleFonts.inter(
+                  Text(l10n.bodyTitle, style: GoogleFonts.inter(
                     fontSize: 9, fontWeight: FontWeight.w600,
                     color: context._p.textSoft, letterSpacing: 2.5)),
                   const SizedBox(height: 1),
-                  Text('Semaine $currentWeek · $_trimestre',
+                  Text('${l10n.pregSemaineN(currentWeek)} · ${_trimestre(l10n)}',
                       style: GoogleFonts.inter(
                         fontSize: 14, fontWeight: FontWeight.w700,
                         color: context._p.textDark)),
@@ -400,7 +403,7 @@ class PregnancyBodyScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: _triBg(context),
                     borderRadius: BorderRadius.circular(20)),
-                  child: Text(_trimestre, style: GoogleFonts.inter(
+                  child: Text(_trimestre(l10n), style: GoogleFonts.inter(
                     fontSize: 11, fontWeight: FontWeight.w700,
                     color: _triColor(context))),
                 ),
@@ -499,7 +502,7 @@ class PregnancyBodyScreen extends StatelessWidget {
                             size: 15, color: context._p.warmPink),
                       ),
                       const SizedBox(width: 10),
-                      Text('Ce que ton corps vit',
+                      Text(l10n.bodyVecuTitle,
                           style: GoogleFonts.inter(
                             fontSize: 13, fontWeight: FontWeight.w700,
                             color: context._p.textDark)),
@@ -556,7 +559,7 @@ class PregnancyBodyScreen extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10, left: 2),
-                  child: Text('CONSEILS POUR CETTE PÉRIODE',
+                  child: Text(l10n.bodyConseils,
                       style: GoogleFonts.inter(
                         fontSize: 9, fontWeight: FontWeight.w600,
                         color: context._p.textSoft, letterSpacing: 2)),
@@ -574,7 +577,7 @@ class PregnancyBodyScreen extends StatelessWidget {
           // ── POIDS DE RÉFÉRENCE ──────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _WeightCard(week: currentWeek),
+            child: _WeightCard(week: currentWeek, l10n: l10n),
           ),
 
           SizedBox(height: bottom + 40),
@@ -634,7 +637,8 @@ class _TipCard extends StatelessWidget {
 
 class _WeightCard extends StatelessWidget {
   final int week;
-  const _WeightCard({required this.week});
+  final AppL10n l10n;
+  const _WeightCard({required this.week, required this.l10n});
 
   // prise de poids recommandée (IMC normal)
   String get _weightRange {
@@ -674,7 +678,7 @@ class _WeightCard extends StatelessWidget {
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Prise de poids recommandée',
+            Text(l10n.bodyPoids,
                 style: GoogleFonts.inter(
                   fontSize: 10, fontWeight: FontWeight.w600,
                   color: context._p.amber, letterSpacing: 1.2)),

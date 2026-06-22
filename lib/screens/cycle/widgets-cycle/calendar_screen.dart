@@ -1,9 +1,11 @@
 ﻿// ignore_for_file: deprecated_member_use
 import 'dart:math' as math;
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:fiteva/screens/cycle/cycle_colors.dart';
 import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // ── Couleurs fixes (identiques light/dark) ────────────────────────────────────
@@ -21,7 +23,7 @@ const _monthNames = [
 //  PUBLIC WIDGET
 // ─────────────────────────────────────────────────────────────────────────────
 
-class CycleCalendar extends StatefulWidget {
+class CycleCalendar extends ConsumerStatefulWidget {
   final int      displayYear;
   final int      displayMonth;
   final DateTime today;
@@ -44,10 +46,10 @@ class CycleCalendar extends StatefulWidget {
   });
 
   @override
-  State<CycleCalendar> createState() => _CycleCalendarState();
+  ConsumerState<CycleCalendar> createState() => _CycleCalendarState();
 }
 
-class _CycleCalendarState extends State<CycleCalendar> {
+class _CycleCalendarState extends ConsumerState<CycleCalendar> {
   bool _editMode = false;
   late Set<DateTime> _loggedPeriod;
   late DateTime _editStart;
@@ -180,6 +182,7 @@ class _CycleCalendarState extends State<CycleCalendar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n   = ref.watch(l10nProvider);
     final cc     = CycleColors.of(context);
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
@@ -193,7 +196,7 @@ class _CycleCalendarState extends State<CycleCalendar> {
       backgroundColor: cc.bg,
       body: Column(
         children: [
-          _buildHeader(cc, top),
+          _buildHeader(cc, top, l10n),
           Expanded(
             child: Stack(
               children: [
@@ -212,6 +215,7 @@ class _CycleCalendarState extends State<CycleCalendar> {
                           isToday:           _isToday,
                           editMode:          _editMode,
                           cc:                cc,
+                          l10n:              l10n,
                           onToggleDay: _editMode
                               ? (_) {}
                               : (d) {
@@ -239,6 +243,7 @@ class _CycleCalendarState extends State<CycleCalendar> {
                       editDuration:      _editDuration,
                       fmtDate:           _fmtDate,
                       cc:                cc,
+                      l10n:              l10n,
                       onPickStart:       _pickStartDate,
                       onDurationChanged: (v) => setState(() => _editDuration = v),
                       onCancel:          _cancelEdit,
@@ -270,7 +275,7 @@ class _CycleCalendarState extends State<CycleCalendar> {
                             const Icon(Icons.edit_outlined,
                                 size: 16, color: Colors.white),
                             const SizedBox(width: 8),
-                            Text('Modifier mes règles', style: GoogleFonts.inter(
+                            Text(l10n.calModifier, style: GoogleFonts.inter(
                                 color: Colors.white, fontSize: 15,
                                 fontWeight: FontWeight.w700)),
                           ]),
@@ -286,7 +291,7 @@ class _CycleCalendarState extends State<CycleCalendar> {
     );
   }
 
-  Widget _buildHeader(CycleColors cc, double top) {
+  Widget _buildHeader(CycleColors cc, double top, AppL10n l10n) {
     return Container(
       decoration: BoxDecoration(
         color: cc.surface,
@@ -313,7 +318,7 @@ class _CycleCalendarState extends State<CycleCalendar> {
             ),
             Expanded(
               child: Center(
-                child: Text('Calendrier du cycle', style: GoogleFonts.outfit(
+                child: Text(l10n.calTitle, style: GoogleFonts.outfit(
                   fontSize: 18, fontWeight: FontWeight.w800,
                   color: cc.text, letterSpacing: -0.3)),
               ),
@@ -322,9 +327,9 @@ class _CycleCalendarState extends State<CycleCalendar> {
           ]),
           const SizedBox(height: 14),
           Row(children: [
-            _legendChip(cc, color: _kRed,       label: 'Règles',    filled: true),
+            _legendChip(cc, color: _kRed,       label: l10n.calRegles,    filled: true),
             const SizedBox(width: 8),
-            _legendChip(cc, color: _kOvulation, label: 'Ovulation', filled: false),
+            _legendChip(cc, color: _kOvulation, label: l10n.calOvulation, filled: false),
           ]),
         ],
       ),
@@ -366,6 +371,7 @@ class _EditPanel extends StatelessWidget {
   final int editDuration;
   final String Function(DateTime) fmtDate;
   final CycleColors cc;
+  final AppL10n l10n;
   final VoidCallback onPickStart;
   final ValueChanged<int> onDurationChanged;
   final VoidCallback onCancel, onSave;
@@ -373,6 +379,7 @@ class _EditPanel extends StatelessWidget {
   const _EditPanel({
     required this.bottom, required this.editStart, required this.editEnd,
     required this.editDuration, required this.fmtDate, required this.cc,
+    required this.l10n,
     required this.onPickStart, required this.onDurationChanged,
     required this.onCancel, required this.onSave,
   });
@@ -411,14 +418,14 @@ class _EditPanel extends StatelessWidget {
               child: const Icon(Icons.water_drop_outlined, size: 17, color: _kRed),
             ),
             const SizedBox(width: 12),
-            Text('Modifier mes règles', style: GoogleFonts.outfit(
+            Text(l10n.calModifier, style: GoogleFonts.outfit(
               fontSize: 18, fontWeight: FontWeight.w800,
               color: cc.text, letterSpacing: -0.3)),
           ]),
           const SizedBox(height: 22),
 
           // ── Date de début ────────────────────────────────────────────
-          _FieldLabel('Date de début', cc),
+          _FieldLabel(l10n.calDateDebut, cc),
           const SizedBox(height: 8),
           GestureDetector(
             onTap: onPickStart,
@@ -455,7 +462,7 @@ class _EditPanel extends StatelessWidget {
           const SizedBox(height: 18),
 
           // ── Durée ──────────────────────────────────────────────────────
-          _FieldLabel('Durée des règles', cc),
+          _FieldLabel(l10n.calDuree, cc),
           const SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -496,7 +503,7 @@ class _EditPanel extends StatelessWidget {
           const SizedBox(height: 18),
 
           // ── Date de fin ──────────────────────────────────────────────
-          _FieldLabel('Date de fin (calculée automatiquement)', cc),
+          _FieldLabel(l10n.calDateFin, cc),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -533,7 +540,7 @@ class _EditPanel extends StatelessWidget {
                     borderRadius: BorderRadius.circular(50),
                     border: Border.all(color: cc.border),
                   ),
-                  child: Center(child: Text('Annuler', style: GoogleFonts.inter(
+                  child: Center(child: Text(l10n.calAnnuler, style: GoogleFonts.inter(
                     fontSize: 15, fontWeight: FontWeight.w600, color: cc.muted))),
                 ),
               ),
@@ -556,7 +563,7 @@ class _EditPanel extends StatelessWidget {
                       blurRadius: 14, offset: const Offset(0, 5),
                     )],
                   ),
-                  child: Center(child: Text('Sauvegarder', style: GoogleFonts.inter(
+                  child: Center(child: Text(l10n.calSauvegarder, style: GoogleFonts.inter(
                     fontSize: 15, fontWeight: FontWeight.w700,
                     color: Colors.white))),
                 ),
@@ -594,6 +601,7 @@ class _MonthBlock extends StatelessWidget {
   final bool editMode;
   final CycleColors cc;
   final ValueChanged<DateTime> onToggleDay;
+  final AppL10n l10n;
 
   const _MonthBlock({
     required this.month, required this.today,
@@ -601,6 +609,7 @@ class _MonthBlock extends StatelessWidget {
     required this.isPredictedPeriod, required this.isOvulation,
     required this.isToday, required this.editMode,
     required this.cc, required this.onToggleDay,
+    required this.l10n,
   });
 
   int get _startOffset => DateTime(month.year, month.month, 1).weekday - 1;
@@ -635,7 +644,7 @@ class _MonthBlock extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: _kGreen.withOpacity(0.22)),
                   ),
-                  child: Text('Ce mois', style: GoogleFonts.inter(
+                  child: Text(l10n.cycleCeMois, style: GoogleFonts.inter(
                     fontSize: 10, color: _kGreen, fontWeight: FontWeight.w700,
                     letterSpacing: 0.2)),
                 ),
@@ -684,6 +693,7 @@ class _MonthBlock extends StatelessWidget {
                   isToday:     isToday(date),
                   editMode:    editMode,
                   cc:          cc,
+                  l10n:        l10n,
                 )),
               ),
             ),
@@ -702,11 +712,13 @@ class _DayCircle extends StatelessWidget {
   final int day;
   final bool isPeriod, isPredicted, isOvulation, isToday, editMode;
   final CycleColors cc;
+  final AppL10n l10n;
 
   const _DayCircle({
     required this.day, required this.isPeriod,
     required this.isPredicted, required this.isOvulation,
     required this.isToday, required this.editMode, required this.cc,
+    required this.l10n,
   });
 
   @override
@@ -763,7 +775,7 @@ class _DayCircle extends StatelessWidget {
           Text(label, style: GoogleFonts.inter(
             fontSize: 14, fontWeight: FontWeight.w800, color: _kGreen)),
           const SizedBox(height: 1),
-          Text('auj.', style: GoogleFonts.inter(
+          Text(l10n.cycleAuj, style: GoogleFonts.inter(
             fontSize: 8, fontWeight: FontWeight.w700,
             color: _kGreen, letterSpacing: 0.3)),
         ],

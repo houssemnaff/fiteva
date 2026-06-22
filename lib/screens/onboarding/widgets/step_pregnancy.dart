@@ -1,10 +1,12 @@
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'shared_onboarding_widgets.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // STEP 8 — StepPregnancy (fond mint + pills Oui/Non)
 // ══════════════════════════════════════════════════════════════════════════════
-class StepPregnancy extends StatefulWidget {
+class StepPregnancy extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
   final void Function(bool isPregnant, int? weekSA) onChanged;
@@ -17,10 +19,10 @@ class StepPregnancy extends StatefulWidget {
   });
 
   @override
-  State<StepPregnancy> createState() => _StepPregnancyState();
+  ConsumerState<StepPregnancy> createState() => _StepPregnancyState();
 }
 
-class _StepPregnancyState extends State<StepPregnancy> {
+class _StepPregnancyState extends ConsumerState<StepPregnancy> {
   bool? _isPregnant;
   double _week = 12;
 
@@ -32,11 +34,11 @@ class _StepPregnancyState extends State<StepPregnancy> {
     return 3;
   }
 
-  String get _trimesterLabel {
+  String _trimesterLabel(AppL10n l10n) {
     switch (_trimester) {
-      case 1: return '1er trimestre (S1–S13)';
-      case 2: return '2e trimestre (S14–S27)';
-      default: return '3e trimestre (S28–S42)';
+      case 1: return l10n.oboPregnancyTri1;
+      case 2: return l10n.oboPregnancyTri2;
+      default: return l10n.oboPregnancyTri3;
     }
   }
 
@@ -53,6 +55,7 @@ class _StepPregnancyState extends State<StepPregnancy> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     return mintScaffold(
       child: Column(
         children: [
@@ -71,11 +74,11 @@ class _StepPregnancyState extends State<StepPregnancy> {
                   const SizedBox(height: 28),
                   // Oui / Non en pills pleine largeur
                   Row(children: [
-                    Expanded(child: _pregnancyPill(false, 'Non',
-                        'Je ne suis pas enceinte', Icons.do_not_disturb_alt_outlined)),
+                    Expanded(child: _pregnancyPill(false, l10n.oboPregnancyNo,
+                        l10n.oboPregnancyNoSub, Icons.do_not_disturb_alt_outlined)),
                     const SizedBox(width: 12),
-                    Expanded(child: _pregnancyPill(true, 'Oui',
-                        'Je suis enceinte', Icons.pregnant_woman)),
+                    Expanded(child: _pregnancyPill(true, l10n.oboPregnancyYes,
+                        l10n.oboPregnancyYesSub, Icons.pregnant_woman)),
                   ]),
 
                   if (_isPregnant == true) ...[
@@ -90,8 +93,8 @@ class _StepPregnancyState extends State<StepPregnancy> {
                       ),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('À quelle semaine es-tu ?',
-                            style: TextStyle(fontSize: 13,
+                          Text(l10n.oboPregnancyWeek,
+                            style: const TextStyle(fontSize: 13,
                                 fontWeight: FontWeight.w600, color: kTextMuted)),
                           const SizedBox(height: 10),
                           Row(crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -101,7 +104,7 @@ class _StepPregnancyState extends State<StepPregnancy> {
                                   fontSize: 40, fontWeight: FontWeight.w800,
                                   color: kGreenDark)),
                               const SizedBox(width: 6),
-                              const Text('SA', style: TextStyle(fontSize: 18,
+                              Text(l10n.oboPregnancySA, style: const TextStyle(fontSize: 18,
                                   color: kTextMuted, fontWeight: FontWeight.w500)),
                             ]),
                           SliderTheme(
@@ -133,7 +136,7 @@ class _StepPregnancyState extends State<StepPregnancy> {
                         color: kGreenDark,
                         borderRadius: BorderRadius.circular(40),
                       ),
-                      child: Text(_trimesterLabel, textAlign: TextAlign.center,
+                      child: Text(_trimesterLabel(l10n), textAlign: TextAlign.center,
                         style: const TextStyle(fontWeight: FontWeight.w700,
                             fontSize: 13.5, color: Colors.white)),
                     ),
@@ -164,7 +167,7 @@ class _StepPregnancyState extends State<StepPregnancy> {
             ),
           ),
           CtaButton(
-            label: 'Continuer',
+            label: l10n.oboPregnancyContinue,
             onPressed: _canContinue ? widget.onNext : null,
           ),
         ],

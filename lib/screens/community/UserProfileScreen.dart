@@ -10,6 +10,7 @@ import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/providers/user_profile_provider.dart'
     hide UserProfile;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 
 // ─── Models ───────────────────────────────────────────────────
 class UserProfile {
@@ -168,17 +169,19 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
     final profileAsync = ref.watch(communityUserProfileProvider(widget.userId));
 
     return Scaffold(
       backgroundColor: cs.surface,
       body: profileAsync.when(
         loading: () => _ProfileSkeleton(),
-        error: (e, _) => _ProfileError(error: e.toString()),
+        error: (e, _) => _ProfileError(error: e.toString(), l10n: l10n),
         data: (profile) => _ProfileContent(
           profile: profile,
           tabController: _tabController,
           heroTag: widget.heroTag,
+          l10n: l10n,
         ),
       ),
     );
@@ -190,11 +193,13 @@ class _ProfileContent extends StatelessWidget {
   final UserProfile profile;
   final TabController tabController;
   final String? heroTag;
+  final AppL10n l10n;
 
   const _ProfileContent({
     required this.profile,
     required this.tabController,
     this.heroTag,
+    required this.l10n,
   });
 
   @override
@@ -260,10 +265,10 @@ class _ProfileContent extends StatelessWidget {
                     fontSize: 13, fontWeight: FontWeight.w700),
                 unselectedLabelStyle: GoogleFonts.outfit(
                     fontSize: 13, fontWeight: FontWeight.w500),
-                tabs: const [
-                  Tab(text: 'Aperçu'),
-                  Tab(text: 'Posts'),
-                  Tab(text: 'Événements'),
+                tabs: [
+                  Tab(text: l10n.profileApercu),
+                  Tab(text: l10n.profilePosts),
+                  Tab(text: l10n.profileEvenements),
                 ],
               ),
             ),
@@ -272,15 +277,15 @@ class _ProfileContent extends StatelessWidget {
 
         // ── Header ────────────────────────────────────────────
         SliverToBoxAdapter(
-          child: _ProfileHeader(profile: profile, heroTag: heroTag),
+          child: _ProfileHeader(profile: profile, heroTag: heroTag, l10n: l10n),
         ),
       ],
       body: TabBarView(
         controller: tabController,
         children: [
-          _OverviewTab(profile: profile),
-          _PostsTab(posts: profile.posts),
-          _EventsTab(events: profile.events),
+          _OverviewTab(profile: profile, l10n: l10n),
+          _PostsTab(posts: profile.posts, l10n: l10n),
+          _EventsTab(events: profile.events, l10n: l10n),
         ],
       ),
     );
@@ -293,17 +298,17 @@ class _ProfileContent extends StatelessWidget {
         actions: [
           CupertinoActionSheetAction(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Signaler ce profil'),
+            child: Text(l10n.profileSignaler),
           ),
           CupertinoActionSheetAction(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Masquer les publications'),
+            child: Text(l10n.profileMasquer),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
           onPressed: () => Navigator.pop(context),
           isDefaultAction: true,
-          child: const Text('Annuler'),
+          child: Text(l10n.profileAnnuler),
         ),
       ),
     );
@@ -314,8 +319,9 @@ class _ProfileContent extends StatelessWidget {
 class _ProfileHeader extends ConsumerStatefulWidget {
   final UserProfile profile;
   final String? heroTag;
+  final AppL10n l10n;
 
-  const _ProfileHeader({required this.profile, this.heroTag});
+  const _ProfileHeader({required this.profile, this.heroTag, required this.l10n});
 
   @override
   ConsumerState<_ProfileHeader> createState() => _ProfileHeaderState();
@@ -448,7 +454,7 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
                     ),
                   ),
                   child: Text(
-                    _following ? 'Suivi' : 'Suivre',
+                    _following ? widget.l10n.profileSuivi : widget.l10n.profileSuivre,
                     style: GoogleFonts.outfit(
                       fontSize: 13, fontWeight: FontWeight.w800,
                       color: _following ? cs.primary : cs.onPrimary,
@@ -509,15 +515,15 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
           child: Row(children: [
             Expanded(child: _StripStat(
               value: '${profile.reach.totalWorkouts}',
-              label: 'Séances', cs: cs)),
+              label: widget.l10n.profileSeances, cs: cs)),
             _VertDivider(cs: cs),
             Expanded(child: _StripStat(
               value: '${profile.reach.currentStreak}',
-              label: 'Série (j)', cs: cs)),
+              label: widget.l10n.profileSerie, cs: cs)),
             _VertDivider(cs: cs),
             Expanded(child: _StripStat(
               value: _formatKcal(profile.reach.totalKcal),
-              label: 'Calories', cs: cs)),
+              label: widget.l10n.profileCalories, cs: cs)),
           ]),
         ),
 
@@ -531,6 +537,7 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
             xp: profile.niveauXp,
             maxXp: profile.niveauMaxXp,
             cs: cs,
+            l10n: widget.l10n,
           ),
         ),
 
@@ -636,9 +643,10 @@ class _LevelBar extends StatelessWidget {
   final String niveau;
   final int xp, maxXp;
   final ColorScheme cs;
+  final AppL10n l10n;
   const _LevelBar({
     required this.niveau, required this.xp,
-    required this.maxXp, required this.cs});
+    required this.maxXp, required this.cs, required this.l10n});
 
   int get _lvl => int.tryParse(niveau) ?? 1;
 
@@ -656,11 +664,11 @@ class _LevelBar extends StatelessWidget {
     return LucideIcons.crown;
   }
 
-  String get _levelLabel {
-    if (_lvl <= 2) return 'Débutant';
-    if (_lvl <= 4) return 'Intermédiaire';
-    if (_lvl <= 6) return 'Avancé';
-    return 'Expert';
+  String _levelLabel(AppL10n l10n) {
+    if (_lvl <= 2) return l10n.profileDebutant;
+    if (_lvl <= 4) return l10n.profileInter;
+    if (_lvl <= 6) return l10n.profileAvance;
+    return l10n.profileExpert;
   }
 
   @override
@@ -686,7 +694,7 @@ class _LevelBar extends StatelessWidget {
             child: Icon(_icon, size: 14, color: _accent),
           ),
           const SizedBox(width: 10),
-          Text('Niveau $_levelLabel', style: GoogleFonts.outfit(
+          Text(l10n.profileNiveau(_levelLabel(l10n)), style: GoogleFonts.outfit(
             fontSize: 14, fontWeight: FontWeight.w800,
             color: _accent, letterSpacing: -0.2)),
           const Spacer(),
@@ -705,7 +713,7 @@ class _LevelBar extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text('$remaining XP avant le prochain niveau',
+        Text(l10n.profileXPToNext(remaining),
           style: GoogleFonts.inter(
             fontSize: 11, color: cs.onSurface.withValues(alpha: 0.4))),
       ]),
@@ -716,7 +724,8 @@ class _LevelBar extends StatelessWidget {
 // ─── Tab 1 — Overview ─────────────────────────────────────────
 class _OverviewTab extends ConsumerWidget {
   final UserProfile profile;
-  const _OverviewTab({required this.profile});
+  final AppL10n l10n;
+  const _OverviewTab({required this.profile, required this.l10n});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -735,7 +744,7 @@ class _OverviewTab extends ConsumerWidget {
       children: [
 
         // Section label
-        _SectionTitle(label: 'STATISTIQUES', cs: cs),
+        _SectionTitle(label: l10n.profileStats, cs: cs),
         const SizedBox(height: 12),
 
         // 2×2 stat grid
@@ -743,13 +752,13 @@ class _OverviewTab extends ConsumerWidget {
           Expanded(child: _StatCard(
             icon: LucideIcons.dumbbell,
             value: '${reach.totalWorkouts}',
-            label: 'Séances',
+            label: l10n.profileSeances,
             color: cs.primary, cs: cs)),
           const SizedBox(width: 12),
           Expanded(child: _StatCard(
             icon: LucideIcons.zap,
             value: '${reach.currentStreak} j',
-            label: 'Série en cours',
+            label: l10n.profileSerie,
             color: const Color(0xFF3B82F6), cs: cs)),
         ]),
         const SizedBox(height: 12),
@@ -757,18 +766,18 @@ class _OverviewTab extends ConsumerWidget {
           Expanded(child: _StatCard(
             icon: LucideIcons.flame,
             value: _formatKcal(reach.totalKcal),
-            label: 'Calories brûlées',
+            label: l10n.profileCalories,
             color: const Color(0xFFEF4444), cs: cs)),
           const SizedBox(width: 12),
           Expanded(child: _StatCard(
             icon: LucideIcons.clock,
             value: _formatMinutes(reach.totalMinutes),
-            label: 'Temps total',
+            label: l10n.profileTemps,
             color: const Color(0xFFF59E0B), cs: cs)),
         ]),
 
         const SizedBox(height: 24),
-        _SectionTitle(label: 'RÉPARTITION', cs: cs),
+        _SectionTitle(label: l10n.profileRepartition, cs: cs),
         const SizedBox(height: 12),
 
         // Distribution
@@ -917,14 +926,15 @@ class _DistRow extends StatelessWidget {
 // ─── Tab 2 — Posts ────────────────────────────────────────────
 class _PostsTab extends StatelessWidget {
   final List<UserPost> posts;
-  const _PostsTab({required this.posts});
+  final AppL10n l10n;
+  const _PostsTab({required this.posts, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     if (posts.isEmpty) {
       return _EmptyState(
-        icon: LucideIcons.fileText, message: 'Aucun post publié', cs: cs);
+        icon: LucideIcons.fileText, message: l10n.profileAucunPost, cs: cs);
     }
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -935,18 +945,19 @@ class _PostsTab extends StatelessWidget {
   }
 }
 
-class _PostCard extends StatefulWidget {
+class _PostCard extends ConsumerStatefulWidget {
   final UserPost post;
   const _PostCard({required this.post});
   @override
-  State<_PostCard> createState() => _PostCardState();
+  ConsumerState<_PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<_PostCard> {
+class _PostCardState extends ConsumerState<_PostCard> {
   bool _liked = false;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -968,7 +979,7 @@ class _PostCardState extends State<_PostCard> {
         ],
         const SizedBox(height: 14),
         Row(children: [
-          Text(_timeAgo(widget.post.createdAt), style: GoogleFonts.inter(
+          Text(_timeAgo(widget.post.createdAt, l10n), style: GoogleFonts.inter(
             fontSize: 12,
             color: cs.onSurface.withValues(alpha: 0.4))),
           const Spacer(),
@@ -1004,25 +1015,26 @@ class _PostCardState extends State<_PostCard> {
     );
   }
 
-  String _timeAgo(DateTime dt) {
+  String _timeAgo(DateTime dt, AppL10n l10n) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) return 'il y a ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'il y a ${diff.inHours}h';
-    return 'il y a ${diff.inDays}j';
+    if (diff.inMinutes < 60) return l10n.profileTimeAgoMin(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.profileTimeAgoH(diff.inHours);
+    return l10n.profileTimeAgoD(diff.inDays);
   }
 }
 
 // ─── Tab 3 — Events ───────────────────────────────────────────
 class _EventsTab extends StatelessWidget {
   final List<UserEvent> events;
-  const _EventsTab({required this.events});
+  final AppL10n l10n;
+  const _EventsTab({required this.events, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     if (events.isEmpty) {
       return _EmptyState(
-        icon: LucideIcons.calendarX, message: 'Aucun événement créé', cs: cs);
+        icon: LucideIcons.calendarX, message: l10n.profileAucunEvt, cs: cs);
     }
 
     final now = DateTime.now();
@@ -1035,7 +1047,7 @@ class _EventsTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
       children: [
         if (upcoming.isNotEmpty) ...[
-          _SectionTitle(label: 'À VENIR', cs: cs),
+          _SectionTitle(label: l10n.profileAVenir, cs: cs),
           const SizedBox(height: 10),
           Container(
             decoration: BoxDecoration(
@@ -1056,7 +1068,7 @@ class _EventsTab extends StatelessWidget {
           const SizedBox(height: 24),
         ],
         if (past.isNotEmpty) ...[
-          _SectionTitle(label: 'PASSÉS', cs: cs),
+          _SectionTitle(label: l10n.profilePasses, cs: cs),
           const SizedBox(height: 10),
           Container(
             decoration: BoxDecoration(
@@ -1272,10 +1284,11 @@ class _StartedProgramsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
     if (programs.isEmpty) return const SizedBox.shrink();
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _SectionTitle(label: 'PROGRAMMES EN COURS', cs: cs),
+      _SectionTitle(label: l10n.profileProgEnCours, cs: cs),
       const SizedBox(height: 12),
       SizedBox(
         height: 200,
@@ -1395,7 +1408,8 @@ class _CommunityProgramCard extends ConsumerWidget {
 // ─── Error state ──────────────────────────────────────────────
 class _ProfileError extends StatelessWidget {
   final String error;
-  const _ProfileError({required this.error});
+  final AppL10n l10n;
+  const _ProfileError({required this.error, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -1405,7 +1419,7 @@ class _ProfileError extends StatelessWidget {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Icon(LucideIcons.circleAlert, size: 44, color: cs.error),
         const SizedBox(height: 16),
-        Text('Impossible de charger ce profil', style: GoogleFonts.outfit(
+        Text(l10n.profileImpossible, style: GoogleFonts.outfit(
           fontSize: 17, fontWeight: FontWeight.w700,
           color: cs.onSurface), textAlign: TextAlign.center),
         const SizedBox(height: 8),
