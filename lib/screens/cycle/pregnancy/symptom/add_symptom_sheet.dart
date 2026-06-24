@@ -1,15 +1,17 @@
 ﻿// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../pregnancy_colors.dart';
 import 'symptom_entry.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 
 extension _Pg on BuildContext {
   PgColors get _p => PgColors.of(this);
 }
 
-class AddSymptomSheet extends StatefulWidget {
+class AddSymptomSheet extends ConsumerStatefulWidget {
   const AddSymptomSheet({super.key, required this.onSave});
 
   final ValueChanged<SymptomEntry> onSave;
@@ -31,10 +33,10 @@ class AddSymptomSheet extends StatefulWidget {
   }
 
   @override
-  State<AddSymptomSheet> createState() => _AddSymptomSheetState();
+  ConsumerState<AddSymptomSheet> createState() => _AddSymptomSheetState();
 }
 
-class _AddSymptomSheetState extends State<AddSymptomSheet> {
+class _AddSymptomSheetState extends ConsumerState<AddSymptomSheet> {
   SymptomType? _selected;
   double _intensity = 2;
   final TextEditingController _noteCtrl = TextEditingController();
@@ -57,6 +59,7 @@ class _AddSymptomSheetState extends State<AddSymptomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n   = ref.watch(l10nProvider);
     final kb     = MediaQuery.of(context).viewInsets.bottom;
     final bottom = MediaQuery.of(context).padding.bottom;
 
@@ -95,14 +98,14 @@ class _AddSymptomSheetState extends State<AddSymptomSheet> {
                     size: 18, color: context._p.green),
               ),
               const SizedBox(width: 12),
-              Text('Comment tu te sens ?', style: GoogleFonts.outfit(
+              Text(l10n.symptomTitle, style: GoogleFonts.outfit(
                 fontSize: 17, fontWeight: FontWeight.w600, color: context._p.textDark)),
             ]),
 
             const SizedBox(height: 24),
 
             // symptom picker
-            _Label('Choisis un symptôme'),
+            _Label(l10n.symptomChoisis),
             const SizedBox(height: 12),
             _SymptomGrid(
               selected: _selected,
@@ -112,7 +115,7 @@ class _AddSymptomSheetState extends State<AddSymptomSheet> {
             const SizedBox(height: 24),
 
             // intensity
-            _Label('Intensité  •  ${_intensity.round()} / 5'),
+            _Label('${l10n.symptomIntensiteLabel}  •  ${_intensity.round()} / 5'),
             const SizedBox(height: 10),
             _IntensityRow(
               value: _intensity,
@@ -122,14 +125,14 @@ class _AddSymptomSheetState extends State<AddSymptomSheet> {
             const SizedBox(height: 24),
 
             // note
-            _Label('Note (optionnel)'),
+            _Label(l10n.symptomNote),
             const SizedBox(height: 8),
             TextField(
               controller: _noteCtrl,
               maxLines: 2,
               style: GoogleFonts.inter(fontSize: 14, color: context._p.textDark),
               decoration: InputDecoration(
-                hintText: 'Un détail à retenir…',
+                hintText: l10n.symptomHint,
                 hintStyle: GoogleFonts.inter(
                     fontSize: 14, color: context._p.textSoft),
                 filled: true,
@@ -164,7 +167,7 @@ class _AddSymptomSheetState extends State<AddSymptomSheet> {
                           blurRadius: 16, offset: Offset(0, 6))]
                       : null,
                 ),
-                child: Center(child: Text('Enregistrer',
+                child: Center(child: Text(l10n.symptomEnregistrer,
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
@@ -268,15 +271,14 @@ class _SymptomGrid extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _IntensityRow extends StatelessWidget {
+class _IntensityRow extends ConsumerWidget {
   final double value;
   final ValueChanged<double> onChanged;
   const _IntensityRow({required this.value, required this.onChanged});
 
-  static const _labels = ['', 'Légère', 'Légère', 'Modérée', 'Forte', 'Intense'];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     return Column(children: [
       SliderTheme(
         data: SliderTheme.of(context).copyWith(
@@ -298,11 +300,11 @@ class _IntensityRow extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Légère', style: GoogleFonts.inter(
+            Text(l10n.symptomLegere, style: GoogleFonts.inter(
               fontSize: 10, color: context._p.textSoft)),
-            Text(_labels[value.round()], style: GoogleFonts.inter(
+            Text([l10n.symptomLegere, l10n.symptomLegere, l10n.symptomLegere, l10n.symptomModeree, l10n.symptomForte, l10n.symptomIntense][value.round()], style: GoogleFonts.inter(
               fontSize: 11, fontWeight: FontWeight.w700, color: context._p.green)),
-            Text('Intense', style: GoogleFonts.inter(
+            Text(l10n.symptomIntense, style: GoogleFonts.inter(
               fontSize: 10, color: context._p.textSoft)),
           ],
         ),

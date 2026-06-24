@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'badge_download_stub.dart'
@@ -13,6 +14,7 @@ import 'package:flutter/rendering.dart';
 
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../l10n/app_localizations.dart';
 
 // ─── Programme badge model ────────────────────────────────────────────────────
 class ProgrammeBadge {
@@ -98,12 +100,13 @@ final kProgrammeBadges = [
 ];
 
 // ─── Programme Badges Section ─────────────────────────────────────────────────
-class ProgrammeBadgesSection extends StatelessWidget {
+class ProgrammeBadgesSection extends ConsumerWidget {
   const ProgrammeBadgesSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
     final earned = kProgrammeBadges.where((b) => b.earned).length;
 
     return Column(
@@ -119,7 +122,7 @@ class ProgrammeBadgesSection extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            Text('MES TROPHÉES',
+            Text(l10n.badgeMesTophees,
               style: TextStyle(
                 fontSize: 13, fontWeight: FontWeight.w900,
                 color: cs.onSurface, letterSpacing: 1.5,
@@ -140,7 +143,7 @@ class ProgrammeBadgesSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        Text('Appuie sur un badge débloqué pour le selfie',
+        Text(l10n.badgeSelfieHint,
           style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant,
               letterSpacing: 0.2)),
         const SizedBox(height: 16),
@@ -318,15 +321,15 @@ class _HexPainter extends CustomPainter {
 }
 
 // ─── Badge Selfie Screen ──────────────────────────────────────────────────────
-class BadgeSelfieScreen extends StatefulWidget {
+class BadgeSelfieScreen extends ConsumerStatefulWidget {
   final ProgrammeBadge badge;
   const BadgeSelfieScreen({super.key, required this.badge});
 
   @override
-  State<BadgeSelfieScreen> createState() => _BadgeSelfieScreenState();
+  ConsumerState<BadgeSelfieScreen> createState() => _BadgeSelfieScreenState();
 }
 
-class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
+class _BadgeSelfieScreenState extends ConsumerState<BadgeSelfieScreen>
     with SingleTickerProviderStateMixin {
   Uint8List? _photoBytes;
   bool _saving = false;
@@ -391,7 +394,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
           content: Row(children: [
             const Icon(LucideIcons.checkCircle, color: Colors.white, size: 18),
             const SizedBox(width: 10),
-            Text(kIsWeb ? 'Téléchargé !' : 'Sauvegardé dans la galerie !',
+            Text(kIsWeb ? ref.read(l10nProvider).badgeDownloaded : ref.read(l10nProvider).badgeSavedGallery,
               style: const TextStyle(fontWeight: FontWeight.w700)),
           ]),
           backgroundColor: const Color(0xFF00C853),
@@ -416,26 +419,27 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
     final badge = widget.badge;
+    final l10n = ref.watch(l10nProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0F),
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopBar(badge),
+            _buildTopBar(badge, l10n),
             Expanded(
               child: _photoBytes == null
-                  ? _buildEmptyState(badge)
-                  : _buildPhotoPreview(sw, sh, badge),
+                  ? _buildEmptyState(badge, l10n)
+                  : _buildPhotoPreview(sw, sh, badge, l10n),
             ),
-            _buildBottomBar(badge),
+            _buildBottomBar(badge, l10n),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTopBar(ProgrammeBadge badge) {
+  Widget _buildTopBar(ProgrammeBadge badge, AppL10n l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
       child: Row(
@@ -458,7 +462,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('BADGE SELFIE',
+                Text(l10n.badgeSelfieTitle,
                   style: TextStyle(
                     color: Colors.white, fontSize: 13,
                     fontWeight: FontWeight.w900, letterSpacing: 2,
@@ -492,7 +496,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
                           _saved ? LucideIcons.checkCircle : LucideIcons.download,
                           color: Colors.white, size: 14),
                         const SizedBox(width: 6),
-                        Text(_saved ? 'OK !' : 'EXPORTER',
+                        Text(_saved ? l10n.badgeSavedBtn : l10n.badgeExportBtn,
                           style: const TextStyle(
                             color: Colors.white, fontSize: 11,
                             fontWeight: FontWeight.w900, letterSpacing: 1,
@@ -505,7 +509,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
     );
   }
 
-  Widget _buildEmptyState(ProgrammeBadge badge) {
+  Widget _buildEmptyState(ProgrammeBadge badge, AppL10n l10n) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -514,18 +518,18 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
           _SportBadgeGraphic(badge: badge, size: 180, shimmer: _shimmer),
           const SizedBox(height: 36),
           // Bold headline
-          Text('TON TROPHÉE,',
+          Text(l10n.badgeHeadline1,
             style: const TextStyle(
               color: Colors.white, fontSize: 26,
               fontWeight: FontWeight.w900, letterSpacing: -0.5, height: 1.1,
             )),
-          Text('TU L\'AS MÉRITÉ.',
+          Text(l10n.badgeHeadline2,
             style: TextStyle(
               color: badge.primaryColor, fontSize: 26,
               fontWeight: FontWeight.w900, letterSpacing: -0.5, height: 1.1,
             )),
           const SizedBox(height: 12),
-          Text('Prends un selfie et partage ta victoire.',
+          Text(l10n.badgeSubtext,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withOpacity(0.45), fontSize: 13,
@@ -537,7 +541,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
             children: [
               _SportBtn(
                 icon: LucideIcons.camera,
-                label: 'SELFIE',
+                label: l10n.badgeSelfieBtn,
                 color: badge.primaryColor,
                 onTap: () => _pickPhoto(ImageSource.camera),
               ),
@@ -556,7 +560,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
     );
   }
 
-  Widget _buildPhotoPreview(double sw, double sh, ProgrammeBadge badge) {
+  Widget _buildPhotoPreview(double sw, double sh, ProgrammeBadge badge, AppL10n l10n) {
     final photoH = sh * 0.60;
     return Column(
       children: [
@@ -594,12 +598,12 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('FITEVA',
+                        Text(l10n.badgeFitEva,
                           style: TextStyle(
                             color: badge.primaryColor, fontSize: 10,
                             fontWeight: FontWeight.w900, letterSpacing: 2,
                           )),
-                        Text('PROGRAMME COMPLÉTÉ',
+                        Text(l10n.badgeProgCompleted,
                           style: const TextStyle(
                             color: Colors.white, fontSize: 9,
                             fontWeight: FontWeight.w700, letterSpacing: 1,
@@ -648,7 +652,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
             Icon(LucideIcons.move, size: 12,
                 color: Colors.white.withOpacity(0.3)),
             const SizedBox(width: 6),
-            Text('DÉPLACE · REDIMENSIONNE',
+            Text(l10n.badgeMoveHint,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.3), fontSize: 10,
                 fontWeight: FontWeight.w700, letterSpacing: 1.2,
@@ -659,7 +663,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
     );
   }
 
-  Widget _buildBottomBar(ProgrammeBadge badge) {
+  Widget _buildBottomBar(ProgrammeBadge badge, AppL10n l10n) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
       decoration: BoxDecoration(
@@ -670,14 +674,14 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
         children: [
           Expanded(child: _SportBtn(
             icon: LucideIcons.camera,
-            label: 'SELFIE',
+            label: l10n.badgeSelfieBtn,
             color: badge.primaryColor,
             onTap: () => _pickPhoto(ImageSource.camera),
           )),
           const SizedBox(width: 10),
           Expanded(child: _SportBtn(
             icon: LucideIcons.image,
-            label: 'GALERIE',
+            label: l10n.badgeGalleryBtn,
             color: Colors.white.withOpacity(0.08),
             border: Colors.white.withOpacity(0.12),
             onTap: () => _pickPhoto(ImageSource.gallery),
@@ -686,7 +690,7 @@ class _BadgeSelfieScreenState extends State<BadgeSelfieScreen>
             const SizedBox(width: 10),
             Expanded(child: _SportBtn(
               icon: _saved ? LucideIcons.checkCircle : LucideIcons.download,
-              label: _saved ? 'SAUVÉ !' : 'EXPORTER',
+              label: _saved ? l10n.badgeSavedBtn : l10n.badgeExportBtn,
               color: _saved
                   ? const Color(0xFF00C853)
                   : badge.primaryColor,

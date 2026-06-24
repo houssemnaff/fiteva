@@ -2,8 +2,10 @@
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../../l10n/app_localizations.dart';
 
 void showPartnerDetail(BuildContext context, PartnerModel partner, Color color) {
   showModalBottomSheet<void>(
@@ -15,16 +17,16 @@ void showPartnerDetail(BuildContext context, PartnerModel partner, Color color) 
   );
 }
 
-class PartnerDetailSheet extends StatefulWidget {
+class PartnerDetailSheet extends ConsumerStatefulWidget {
   final PartnerModel partner;
   final Color color;
   const PartnerDetailSheet({super.key, required this.partner, required this.color});
 
   @override
-  State<PartnerDetailSheet> createState() => _PartnerDetailSheetState();
+  ConsumerState<PartnerDetailSheet> createState() => _PartnerDetailSheetState();
 }
 
-class _PartnerDetailSheetState extends State<PartnerDetailSheet> {
+class _PartnerDetailSheetState extends ConsumerState<PartnerDetailSheet> {
   bool _messaged = false;
 
   String get _initials {
@@ -46,6 +48,7 @@ class _PartnerDetailSheetState extends State<PartnerDetailSheet> {
   @override
   Widget build(BuildContext context) {
     final cs        = Theme.of(context).colorScheme;
+    final l10n      = ref.watch(l10nProvider);
     final p         = widget.partner;
     final c         = widget.color;
     final screenH   = MediaQuery.of(context).size.height;
@@ -203,7 +206,7 @@ class _PartnerDetailSheetState extends State<PartnerDetailSheet> {
                         const SizedBox(height: 20),
 
                         // ── À propos ──────────────────────────────
-                        Text('À PROPOS', style: GoogleFonts.inter(
+                        Text(l10n.communityAboutLabel, style: GoogleFonts.inter(
                           fontSize: 9, fontWeight: FontWeight.w700,
                           color: cs.onSurface.withValues(alpha: 0.4),
                           letterSpacing: 2)),
@@ -221,7 +224,7 @@ class _PartnerDetailSheetState extends State<PartnerDetailSheet> {
 
                         // ── Tags ──────────────────────────────────
                         if (p.tags.isNotEmpty) ...[
-                          Text('TAGS', style: GoogleFonts.inter(
+                          Text(l10n.communityTagsLabel, style: GoogleFonts.inter(
                             fontSize: 9, fontWeight: FontWeight.w700,
                             color: cs.onSurface.withValues(alpha: 0.4),
                             letterSpacing: 2)),
@@ -303,12 +306,12 @@ class _PartnerDetailSheetState extends State<PartnerDetailSheet> {
                           Icon(LucideIcons.checkCircle,
                               size: 16, color: c),
                           const SizedBox(width: 8),
-                          Text('Message envoyé',
+                          Text(l10n.communityMessageSent,
                               style: GoogleFonts.outfit(
                                 fontSize: 15, fontWeight: FontWeight.w800,
                                 color: c)),
                         ])
-                      : Text('Envoyer un message',
+                      : Text(l10n.communitySendMessage,
                           style: GoogleFonts.outfit(
                             fontSize: 15, fontWeight: FontWeight.w800,
                             color: Colors.white, letterSpacing: 0.2)),

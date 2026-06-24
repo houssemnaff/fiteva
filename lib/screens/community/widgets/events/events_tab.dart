@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/community_providers.dart';
 import 'participants_sheet.dart';
+import '../../../../l10n/app_localizations.dart';
 
 
 // ─── Events Tab ───────────────────────────────────────────────
@@ -31,6 +32,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
     final events = ref.watch(eventsNotifierProvider);
     final filtered = _selectedType == 'Tous'
         ? events
@@ -48,12 +50,12 @@ class _EventsTabState extends ConsumerState<EventsTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('EVENTS', style: GoogleFonts.inter(
+                  Text(l10n.communityEyebrow, style: GoogleFonts.inter(
                     color: cs.secondary, fontSize: 9,
                     fontWeight: FontWeight.w700, letterSpacing: 3,
                   )),
                   const SizedBox(height: 3),
-                  Text('Événements', style: GoogleFonts.outfit(
+                  Text(l10n.communityEventsLabel, style: GoogleFonts.outfit(
                     color: cs.onSurface, fontSize: 26,
                     fontWeight: FontWeight.w800, letterSpacing: -0.5,
                   )),

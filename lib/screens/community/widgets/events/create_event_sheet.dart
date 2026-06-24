@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../l10n/app_localizations.dart';
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -111,7 +112,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
       content: Row(children: [
         Icon(LucideIcons.checkCircle, color: cs.onPrimary, size: 18),
         const SizedBox(width: 10),
-        Text('Événement publié !',
+        Text(ref.read(l10nProvider).communityEventPublished,
             style: GoogleFonts.inter(color: cs.onPrimary, fontWeight: FontWeight.w600)),
       ]),
     ));
@@ -120,6 +121,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
   @override
   Widget build(BuildContext context) {
     final cs      = Theme.of(context).colorScheme;
+    final l10n    = ref.watch(l10nProvider);
     final bottom  = MediaQuery.of(context).viewInsets.bottom;
     final screenH = MediaQuery.of(context).size.height;
 
@@ -151,7 +153,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                   Text(_resolvedName(), style: GoogleFonts.outfit(
                     fontSize: 14, fontWeight: FontWeight.w700,
                     color: cs.onSurface, letterSpacing: -0.2)),
-                  Text('Organiser un événement', style: GoogleFonts.inter(
+                  Text(l10n.communityOrganizeEvent, style: GoogleFonts.inter(
                     fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5))),
                 ]),
               ]),
@@ -292,21 +294,23 @@ class _Handle extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 //  TOP BAR
 // ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
+class _TopBar extends ConsumerWidget {
   final ColorScheme cs;
   final VoidCallback onClose;
   const _TopBar({required this.cs, required this.onClose});
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
+    return Padding(
     padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
     child: Row(children: [
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('NOUVEL ÉVÉNEMENT', style: GoogleFonts.inter(
+        Text(l10n.communityNewEvent, style: GoogleFonts.inter(
           fontSize: 9, fontWeight: FontWeight.w700,
           color: cs.primary, letterSpacing: 2.5)),
         const SizedBox(height: 2),
-        Text('Invite la communauté', style: GoogleFonts.outfit(
+        Text(l10n.communityInvite, style: GoogleFonts.outfit(
           fontSize: 19, fontWeight: FontWeight.w700,
           color: cs.onSurface, letterSpacing: -0.3)),
       ])),
@@ -323,6 +327,7 @@ class _TopBar extends StatelessWidget {
       ),
     ]),
   );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -502,7 +507,7 @@ class _DateCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 //  SPOTS STEPPER
 // ─────────────────────────────────────────────────────────────────────────────
-class _SpotsStepper extends StatelessWidget {
+class _SpotsStepper extends ConsumerWidget {
   final int spots;
   final ColorScheme cs;
   final VoidCallback onDecrement, onIncrement;
@@ -512,7 +517,8 @@ class _SpotsStepper extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -525,11 +531,11 @@ class _SpotsStepper extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Places disponibles', style: GoogleFonts.inter(
+            Text(l10n.communityAvailableSpots, style: GoogleFonts.inter(
               fontSize: 10, color: cs.onSurface.withValues(alpha: 0.5),
               fontWeight: FontWeight.w500,
             )),
-            Text('$spots places', style: GoogleFonts.outfit(
+            Text(l10n.communityPlaces(spots), style: GoogleFonts.outfit(
               fontSize: 16, fontWeight: FontWeight.w800,
               color: cs.onSurface, letterSpacing: -0.3,
             )),
@@ -673,14 +679,15 @@ class _Toggle extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 //  BOTTOM BAR
 // ─────────────────────────────────────────────────────────────────────────────
-class _BottomBar extends StatelessWidget {
+class _BottomBar extends ConsumerWidget {
   final ColorScheme cs;
   final bool publishing;
   final VoidCallback onPublish;
   const _BottomBar({required this.cs, required this.publishing, required this.onPublish});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     final bottomPad = MediaQuery.of(context).padding.bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + bottomPad),
@@ -704,7 +711,7 @@ class _BottomBar extends StatelessWidget {
                     width: 20, height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: cs.onPrimary))
-                : Text('Publier l\'événement',
+                : Text(l10n.communityPublishEvent,
                     style: GoogleFonts.outfit(
                       color: cs.onPrimary,
                       fontSize: 16, fontWeight: FontWeight.w800,

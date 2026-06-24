@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
+import '../../l10n/app_localizations.dart';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 
@@ -290,14 +291,15 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = ref.watch(l10nProvider);
 
     return Scaffold(
       backgroundColor: _T.bg(dark),
       body: NestedScrollView(
         headerSliverBuilder: (_, __) => [
           SharedAppHeader.sliver(
-            eyebrow: 'SANTÉ',
-            title: 'Mon Espace Santé',
+            eyebrow: l10n.santeSanteEyebrow,
+            title: l10n.santeMySpace,
             accentColor: const Color(0xFF0D9488),
             bgColor: Colors.white,
           ),
@@ -336,14 +338,14 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
             _ConseisTab(dark: dark, cat: _cat, liked: _liked,
               onCat: (c) => setState(() => _cat = c),
               onLike: (i) => setState(() { if (_liked.contains(i)) _liked.remove(i); else _liked.add(i); }),
-              onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark))),
-            _RessourcesTab(dark: dark, lex: _lex, onLex: (s) => setState(() => _lex = s)),
-            _QRTab(dark: dark),
+              onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark, l10n: l10n))),
+            _RessourcesTab(dark: dark, lex: _lex, l10n: l10n, onLex: (s) => setState(() => _lex = s)),
+            _QRTab(dark: dark, l10n: l10n),
             _DoctorsTab(
-              dark: dark, spec: _spec, marker: _marker,
+              dark: dark, spec: _spec, marker: _marker, l10n: l10n,
               onSpec: (s) => setState(() => _spec = s),
               onMarker: (i) => setState(() => _marker = _marker == i ? null : i),
-              onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark))),
+              onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark, l10n: l10n))),
             
             
           ],
@@ -630,8 +632,9 @@ class _ConseilTile extends StatelessWidget {
 class _RessourcesTab extends StatelessWidget {
   final bool dark;
   final String lex;
+  final AppL10n l10n;
   final ValueChanged<String> onLex;
-  const _RessourcesTab({required this.dark, required this.lex, required this.onLex});
+  const _RessourcesTab({required this.dark, required this.lex, required this.l10n, required this.onLex});
 
   List<_LexiqueEntry> get _lexFiltered {
     if (lex.isEmpty) return _lexique;
@@ -647,8 +650,8 @@ class _RessourcesTab extends StatelessWidget {
       children: [
         // ── Section header: Séries vidéo ──
         const SizedBox(height: 24),
-        _SectionHeader(title: 'Séries vidéo', icon: LucideIcons.playCircle,
-          subtitle: '${_videoSeries.length} séries · médecins experts', dark: dark),
+        _SectionHeader(title: l10n.santeSeriesSection, icon: LucideIcons.playCircle,
+          subtitle: l10n.santeSeriesCount(_videoSeries.length), dark: dark),
         const SizedBox(height: 16),
         SizedBox(
           height: 230,
@@ -665,7 +668,7 @@ class _RessourcesTab extends StatelessWidget {
                     context: ctx, isScrollControlled: true,
                     backgroundColor: Colors.transparent,
                     builder: (_) => _SeriesSheet(series: s, dark: dark)),
-                  child: _SeriesCard(series: s, dark: dark),
+                  child: _SeriesCard(series: s, dark: dark, l10n: l10n),
                 ),
               );
             },
@@ -674,8 +677,8 @@ class _RessourcesTab extends StatelessWidget {
 
         // ── Section header: Articles ──
         const SizedBox(height: 32),
-        _SectionHeader(title: 'Articles', icon: LucideIcons.bookOpen,
-          subtitle: '${_articles.length} articles scientifiques', dark: dark),
+        _SectionHeader(title: l10n.santeArticlesSection, icon: LucideIcons.bookOpen,
+          subtitle: l10n.santeArticlesCount(_articles.length), dark: dark),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -691,8 +694,8 @@ class _RessourcesTab extends StatelessWidget {
 
         // ── Section header: Lexique ──
         const SizedBox(height: 32),
-        _SectionHeader(title: 'Lexique médical', icon: LucideIcons.microscope,
-          subtitle: 'Termes & définitions', dark: dark),
+        _SectionHeader(title: l10n.santeLexiqueSection, icon: LucideIcons.microscope,
+          subtitle: l10n.santeLexiqueSubtitle, dark: dark),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -705,7 +708,7 @@ class _RessourcesTab extends StatelessWidget {
               onChanged: onLex,
               style: GoogleFonts.inter(fontSize: 14, color: _T.t1(dark)),
               decoration: InputDecoration(
-                hintText: 'Rechercher un terme…',
+                hintText: l10n.santeLexiqueHint,
                 hintStyle: GoogleFonts.inter(fontSize: 14, color: _T.t3(dark)),
                 prefixIcon: Icon(LucideIcons.search, size: 16, color: _T.t3(dark)),
                 border: InputBorder.none,
@@ -758,8 +761,8 @@ class _SectionHeader extends StatelessWidget {
 
 // ── Series card ───────────────────────────────────────────────────────────────
 class _SeriesCard extends StatelessWidget {
-  final _VideoSeries series; final bool dark;
-  const _SeriesCard({required this.series, required this.dark});
+  final _VideoSeries series; final bool dark; final AppL10n l10n;
+  const _SeriesCard({required this.series, required this.dark, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -848,7 +851,7 @@ class _SeriesCard extends StatelessWidget {
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(LucideIcons.play, size: 11, color: series.color),
                   const SizedBox(width: 6),
-                  Text('Regarder', style: GoogleFonts.inter(
+                  Text(l10n.santeWatch, style: GoogleFonts.inter(
                     fontSize: 12, fontWeight: FontWeight.w700, color: series.color)),
                 ]),
               ),
@@ -1018,14 +1021,15 @@ class _LexCardState extends State<_LexCard> {
 
 // ─── Tab 3 · Q & R ───────────────────────────────────────────────────────────
 
-class _QRTab extends StatefulWidget {
+class _QRTab extends ConsumerStatefulWidget {
   final bool dark;
-  const _QRTab({required this.dark});
+  final AppL10n l10n;
+  const _QRTab({required this.dark, required this.l10n});
   @override
-  State<_QRTab> createState() => _QRTabState();
+  ConsumerState<_QRTab> createState() => _QRTabState();
 }
 
-class _QRTabState extends State<_QRTab> {
+class _QRTabState extends ConsumerState<_QRTab> {
   final Set<int> _voted = {};
   bool _open = false;
   final _ctrl = TextEditingController();
@@ -1035,6 +1039,7 @@ class _QRTabState extends State<_QRTab> {
   @override
   Widget build(BuildContext context) {
     final dark = widget.dark;
+    final l10n = widget.l10n;
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 110),
       children: [
@@ -1049,27 +1054,27 @@ class _QRTabState extends State<_QRTab> {
               border: Border.all(color: _open ? _T.accent(dark).withOpacity(0.4) : _T.border(dark))),
             child: _open
                 ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Votre question', style: GoogleFonts.inter(
+                    Text(l10n.santeYourQuestion, style: GoogleFonts.inter(
                       fontSize: 13, fontWeight: FontWeight.w600, color: _T.t1(dark))),
                     const SizedBox(height: 10),
                     TextField(controller: _ctrl, maxLines: 3,
                       style: GoogleFonts.inter(fontSize: 14, color: _T.t1(dark)),
                       decoration: InputDecoration(
-                        hintText: 'Décrivez votre situation…',
+                        hintText: l10n.santeDecrire,
                         hintStyle: GoogleFonts.inter(color: _T.t3(dark)),
                         border: InputBorder.none, contentPadding: EdgeInsets.zero)),
                     const SizedBox(height: 14),
                     Row(children: [
                       Icon(LucideIcons.lockKeyhole, size: 12, color: _T.t3(dark)),
                       const SizedBox(width: 5),
-                      Text('Publication anonyme', style: GoogleFonts.inter(
+                      Text(l10n.santeAnonPost, style: GoogleFonts.inter(
                         fontSize: 12, color: _T.t3(dark))),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                         decoration: BoxDecoration(
                           color: _T.t1(dark), borderRadius: BorderRadius.circular(10)),
-                        child: Text('Envoyer', style: GoogleFonts.inter(
+                        child: Text(l10n.santeSendBtn, style: GoogleFonts.inter(
                           fontSize: 13, fontWeight: FontWeight.w600,
                           color: _T.card(dark)))),
                     ]),
@@ -1077,7 +1082,7 @@ class _QRTabState extends State<_QRTab> {
                 : Row(children: [
                     Icon(LucideIcons.pencil, size: 16, color: _T.t3(dark)),
                     const SizedBox(width: 12),
-                    Text('Poser une question à un médecin…',
+                    Text(l10n.santeAskDoctorHint,
                       style: GoogleFonts.inter(fontSize: 14, color: _T.t2(dark))),
                   ]),
           ),
@@ -1130,7 +1135,7 @@ class _QRTabState extends State<_QRTab> {
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.only(left: 38),
-                  child: Text('En attente de réponse…', style: GoogleFonts.inter(
+                  child: Text(l10n.santeEnAttente, style: GoogleFonts.inter(
                     fontSize: 12, color: _T.t3(dark), fontStyle: FontStyle.italic))),
               ],
               const SizedBox(height: 10),
@@ -1142,7 +1147,7 @@ class _QRTabState extends State<_QRTab> {
                     Icon(LucideIcons.thumbsUp, size: 14,
                       color: voted ? _T.accent(dark) : _T.t3(dark)),
                     const SizedBox(width: 5),
-                    Text('${q.votes + (voted ? 1 : 0)} utiles',
+                    Text('${q.votes + (voted ? 1 : 0)} ${l10n.santeVotesUtiles}',
                       style: GoogleFonts.inter(fontSize: 12,
                         color: voted ? _T.accent(dark) : _T.t3(dark))),
                   ]),
@@ -1164,11 +1169,12 @@ class _DoctorsTab extends StatelessWidget {
   final bool dark;
   final String spec;
   final int? marker;
+  final AppL10n l10n;
   final ValueChanged<String> onSpec;
   final ValueChanged<int> onMarker;
   final ValueChanged<_Doctor> onDoctor;
   const _DoctorsTab({required this.dark, required this.spec, required this.marker,
-    required this.onSpec, required this.onMarker, required this.onDoctor});
+    required this.l10n, required this.onSpec, required this.onMarker, required this.onDoctor});
 
   List<int> get _indexes {
     if (spec == 'Toutes') return List.generate(_doctors.length, (i) => i);
@@ -1213,7 +1219,7 @@ class _DoctorsTab extends StatelessWidget {
                         color: (dark ? const Color(0xFF1A1A1A) : Colors.white).withOpacity(0.92),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: _T.border(dark))),
-                      child: Text('Tunisie · ${_doctors.length} spécialistes',
+                      child: Text(l10n.santeSpecialistsCount(_doctors.length),
                         style: GoogleFonts.inter(fontSize: 11, color: _T.t2(dark))))),
                   if (marker != null && marker! >= 0 && marker! < _doctors.length)
                     _MapPopup(doctor: _doctors[marker!], pos: _doctorPositions[marker!],
@@ -1381,8 +1387,8 @@ class _MapPopup extends StatelessWidget {
 // ─── Doctor sheet ─────────────────────────────────────────────────────────────
 
 class _DoctorSheet extends StatelessWidget {
-  final _Doctor doctor; final bool dark;
-  const _DoctorSheet({required this.doctor, required this.dark});
+  final _Doctor doctor; final bool dark; final AppL10n l10n;
+  const _DoctorSheet({required this.doctor, required this.dark, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -1411,7 +1417,7 @@ class _DoctorSheet extends StatelessWidget {
           const SizedBox(width: 12),
           Text('·', style: GoogleFonts.inter(color: _T.t3(dark))),
           const SizedBox(width: 12),
-          Text('${doctor.consultations} consultations', style: GoogleFonts.inter(
+          Text(l10n.santeConsultationsCount(doctor.consultations), style: GoogleFonts.inter(
             fontSize: 13, color: _T.t2(dark))),
         ]),
         const SizedBox(height: 28),
@@ -1432,7 +1438,7 @@ class _DoctorSheet extends StatelessWidget {
                     decoration: BoxDecoration(
                       border: Border.all(color: _T.border(dark)),
                       borderRadius: BorderRadius.circular(14)),
-                    child: Center(child: Text('Appeler', style: GoogleFonts.inter(
+                    child: Center(child: Text(l10n.santeCall, style: GoogleFonts.inter(
                       fontSize: 14, fontWeight: FontWeight.w600, color: _T.t1(dark)))))),
               ),
               const SizedBox(width: 12),
@@ -1443,7 +1449,7 @@ class _DoctorSheet extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
                       color: _T.t1(dark), borderRadius: BorderRadius.circular(14)),
-                    child: Center(child: Text('Rendez-vous', style: GoogleFonts.inter(
+                    child: Center(child: Text(l10n.santeAppointment, style: GoogleFonts.inter(
                       fontSize: 14, fontWeight: FontWeight.w600, color: _T.card(dark)))))),
               ),
             ]),

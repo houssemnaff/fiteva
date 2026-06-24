@@ -1,5 +1,7 @@
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ── Categories ───────────────────────────────────────────────────────────────
 const _kCats = [
@@ -12,14 +14,14 @@ const _kCats = [
   (key: 'autre',     label: 'Autre',     icon: Icons.more_horiz_rounded),
 ];
 
-class PartnerFormScreen extends StatefulWidget {
+class PartnerFormScreen extends ConsumerStatefulWidget {
   const PartnerFormScreen({super.key});
 
   @override
-  State<PartnerFormScreen> createState() => _PartnerFormScreenState();
+  ConsumerState<PartnerFormScreen> createState() => _PartnerFormScreenState();
 }
 
-class _PartnerFormScreenState extends State<PartnerFormScreen> {
+class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
   final _formKey   = GlobalKey<FormState>();
   final _nameCtrl    = TextEditingController();
   final _emailCtrl   = TextEditingController();
@@ -44,8 +46,8 @@ class _PartnerFormScreenState extends State<PartnerFormScreen> {
 
   void _onSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_cat.isEmpty) { _err('Veuillez sélectionner une catégorie.'); return; }
-    if (!_agreed)     { _err('Veuillez accepter les conditions partenaires.'); return; }
+    if (_cat.isEmpty) { _err(ref.read(l10nProvider).formSelectCat); return; }
+    if (!_agreed)     { _err(ref.read(l10nProvider).formAcceptCond); return; }
 
     setState(() => _loading = true);
     await Future.delayed(const Duration(seconds: 2));
@@ -80,9 +82,10 @@ class _PartnerFormScreenState extends State<PartnerFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final d    = Theme.of(context).brightness == Brightness.dark;
-    final bg   = d ? const Color(0xFF0F0F0F) : const Color(0xFFF8F8F6);
-    final ink  = d ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
+    final l10n  = ref.watch(l10nProvider);
+    final d     = Theme.of(context).brightness == Brightness.dark;
+    final bg    = d ? const Color(0xFF0F0F0F) : const Color(0xFFF8F8F6);
+    final ink   = d ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
     final muted = d ? const Color(0xFF888886) : const Color(0xFF6B6B68);
 
     return GestureDetector(
@@ -96,7 +99,7 @@ class _PartnerFormScreenState extends State<PartnerFormScreen> {
             onTap: () => Navigator.pop(context),
             child: Icon(CupertinoIcons.chevron_left, color: ink, size: 20),
           ),
-          title: Text('Devenir partenaire',
+          title: Text(l10n.formDevenirPart,
               style: TextStyle(color: ink, fontSize: 16, fontWeight: FontWeight.w700)),
           centerTitle: true,
         ),
@@ -119,7 +122,7 @@ class _PartnerFormScreenState extends State<PartnerFormScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Rejoignez 150+ marques sur Fiteva et touchez\nune communauté de 12 000 mamans.',
+                        l10n.formSubtitle,
                         style: TextStyle(fontSize: 13, color: muted, height: 1.5),
                       ),
                     ),
@@ -129,58 +132,58 @@ class _PartnerFormScreenState extends State<PartnerFormScreen> {
               const SizedBox(height: 28),
 
               // ── Coordonnées ────────────────────────────────────────────
-              _sectionLabel('Vos coordonnées', ink),
+              _sectionLabel(l10n.formCoordonnees, ink),
               const SizedBox(height: 12),
               _field(
-                ctrl: _nameCtrl, label: 'Nom complet *', d: d,
+                ctrl: _nameCtrl, label: l10n.formNomComplet, d: d,
                 icon: CupertinoIcons.person,
-                validator: (v) => v!.trim().isEmpty ? 'Champ requis' : null,
+                validator: (v) => v!.trim().isEmpty ? l10n.formChampRequis : null,
               ),
               const SizedBox(height: 10),
               _field(
-                ctrl: _emailCtrl, label: 'Email *', d: d,
+                ctrl: _emailCtrl, label: l10n.formEmail, d: d,
                 icon: CupertinoIcons.mail,
                 keyboard: TextInputType.emailAddress,
                 validator: (v) {
-                  if (v!.trim().isEmpty) return 'Champ requis';
-                  if (!RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-z]{2,}$').hasMatch(v.trim())) return 'Email invalide';
+                  if (v!.trim().isEmpty) return l10n.formChampRequis;
+                  if (!RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-z]{2,}$').hasMatch(v.trim())) return l10n.formEmailInvalid;
                   return null;
                 },
               ),
               const SizedBox(height: 10),
               _field(
-                ctrl: _phoneCtrl, label: 'Téléphone', d: d,
+                ctrl: _phoneCtrl, label: l10n.formTelephone, d: d,
                 icon: CupertinoIcons.phone,
                 keyboard: TextInputType.phone,
               ),
               const SizedBox(height: 28),
 
               // ── Marque ─────────────────────────────────────────────────
-              _sectionLabel('Votre marque', ink),
+              _sectionLabel(l10n.formVotreMarque, ink),
               const SizedBox(height: 12),
               _field(
-                ctrl: _brandCtrl, label: 'Nom de la marque *', d: d,
+                ctrl: _brandCtrl, label: l10n.formNomMarque, d: d,
                 icon: CupertinoIcons.bag,
-                validator: (v) => v!.trim().isEmpty ? 'Champ requis' : null,
+                validator: (v) => v!.trim().isEmpty ? l10n.formChampRequis : null,
               ),
               const SizedBox(height: 10),
               _field(
-                ctrl: _websiteCtrl, label: 'Site web ou Instagram', d: d,
+                ctrl: _websiteCtrl, label: l10n.formSiteWeb, d: d,
                 icon: CupertinoIcons.link,
                 hint: 'https://…  ou  @votremarque',
                 keyboard: TextInputType.url,
               ),
               const SizedBox(height: 10),
               _field(
-                ctrl: _messageCtrl, label: 'Présentez votre marque', d: d,
+                ctrl: _messageCtrl, label: l10n.formPresenter, d: d,
                 icon: CupertinoIcons.text_alignleft,
-                hint: 'Vos produits, vos valeurs…',
+                hint: l10n.formProduits,
                 lines: 3,
               ),
               const SizedBox(height: 28),
 
               // ── Catégorie ──────────────────────────────────────────────
-              _sectionLabel('Catégorie', ink),
+              _sectionLabel(l10n.formCategorie, ink),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
@@ -245,16 +248,16 @@ class _PartnerFormScreenState extends State<PartnerFormScreen> {
                       child: Text.rich(TextSpan(
                         style: TextStyle(fontSize: 13, color: muted, height: 1.5),
                         children: [
-                          const TextSpan(text: "J'accepte les "),
-                          const TextSpan(
-                            text: 'conditions du programme partenaire',
-                            style: TextStyle(
+                          TextSpan(text: l10n.formJAccepte),
+                          TextSpan(
+                            text: l10n.formConditions,
+                            style: const TextStyle(
                               color: _gold, fontWeight: FontWeight.w600,
                               decoration: TextDecoration.underline,
                               decorationColor: _gold,
                             ),
                           ),
-                          const TextSpan(text: ' de Fiteva.'),
+                          TextSpan(text: l10n.formDeFiteva),
                         ],
                       )),
                     ),
@@ -278,8 +281,8 @@ class _PartnerFormScreenState extends State<PartnerFormScreen> {
                   child: _loading
                       ? const SizedBox(width: 20, height: 20,
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                      : const Text('Envoyer ma candidature',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                      : Text(l10n.formEnvoyer,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 ),
               ),
               const SizedBox(height: 14),
@@ -289,7 +292,7 @@ class _PartnerFormScreenState extends State<PartnerFormScreen> {
                   Icon(CupertinoIcons.lock_fill, size: 11,
                       color: d ? const Color(0xFF555553) : const Color(0xFFBBBBB9)),
                   const SizedBox(width: 5),
-                  Text('Données sécurisées — aucun partage tiers',
+                  Text(l10n.formSecurise,
                       style: TextStyle(
                         fontSize: 11.5,
                         color: d ? const Color(0xFF555553) : const Color(0xFFBBBBB9),
@@ -366,16 +369,16 @@ class _PartnerFormScreenState extends State<PartnerFormScreen> {
 }
 
 // ── Success Sheet ─────────────────────────────────────────────────────────────
-class _SuccessSheet extends StatefulWidget {
+class _SuccessSheet extends ConsumerStatefulWidget {
   final bool isDark;
   final VoidCallback onClose;
   const _SuccessSheet({required this.isDark, required this.onClose});
 
   @override
-  State<_SuccessSheet> createState() => _SuccessSheetState();
+  ConsumerState<_SuccessSheet> createState() => _SuccessSheetState();
 }
 
-class _SuccessSheetState extends State<_SuccessSheet>
+class _SuccessSheetState extends ConsumerState<_SuccessSheet>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scale;
@@ -399,6 +402,7 @@ class _SuccessSheetState extends State<_SuccessSheet>
 
   @override
   Widget build(BuildContext context) {
+    final l10n    = ref.watch(l10nProvider);
     final surface = widget.isDark ? const Color(0xFF161616) : Colors.white;
     final ink     = widget.isDark ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
     final muted   = widget.isDark ? const Color(0xFF888886) : const Color(0xFF6B6B68);
@@ -434,20 +438,20 @@ class _SuccessSheetState extends State<_SuccessSheet>
             ),
             const SizedBox(height: 20),
 
-            Text('Candidature envoyée !',
+            Text(l10n.formCandidature,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
                     color: ink, letterSpacing: -0.5)),
             const SizedBox(height: 8),
-            Text('Notre équipe vous recontactera sous 48h.',
+            Text(l10n.formRecontact,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13.5, color: muted, height: 1.5)),
             const SizedBox(height: 24),
 
             // Steps
             ...[
-              ('Vérification du dossier',      '1–2 jours'),
-              ('Appel de présentation Fiteva',  '3–5 jours'),
-              ('Mise en ligne de la boutique',  '1 semaine'),
+              (l10n.formVerif,        '1–2 jours'),
+              (l10n.formAppel,        '3–5 jours'),
+              (l10n.formMiseEnLigne,  '1 semaine'),
             ].map((s) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
@@ -473,8 +477,8 @@ class _SuccessSheetState extends State<_SuccessSheet>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
                 ),
-                child: const Text('Parfait, merci !',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                child: Text(l10n.formParfait,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
               ),
             ),
           ],

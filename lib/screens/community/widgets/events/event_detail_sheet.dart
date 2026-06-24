@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/community_providers.dart';
+import '../../../../l10n/app_localizations.dart';
 
 void showEventDetail(BuildContext context, EventModel event) {
   showModalBottomSheet<void>(
@@ -34,6 +35,7 @@ class EventDetailSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs        = Theme.of(context).colorScheme;
+    final l10n      = ref.watch(l10nProvider);
     final events    = ref.watch(eventsNotifierProvider);
     final ev        = events.firstWhere((e) => e.id == event.id,
         orElse: () => event);
@@ -190,7 +192,7 @@ class EventDetailSheet extends ConsumerWidget {
                         const SizedBox(height: 20),
 
                         // ── Organizer ────────────────────────────
-                        Text('ORGANISATEUR', style: GoogleFonts.inter(
+                        Text(l10n.communityOrganizerLabel, style: GoogleFonts.inter(
                           fontSize: 9, fontWeight: FontWeight.w700,
                           color: cs.onSurface.withValues(alpha: 0.45),
                           letterSpacing: 2)),
@@ -208,7 +210,7 @@ class EventDetailSheet extends ConsumerWidget {
                               Text(ev.organizer, style: GoogleFonts.outfit(
                                 fontSize: 15, fontWeight: FontWeight.w700,
                                 color: cs.onSurface, letterSpacing: -0.2)),
-                              Text('Organisateur', style: GoogleFonts.inter(
+                              Text(l10n.communityOrganizerSub, style: GoogleFonts.inter(
                                 fontSize: 11,
                                 color: cs.onSurface.withValues(alpha: 0.5))),
                             ],
@@ -223,7 +225,7 @@ class EventDetailSheet extends ConsumerWidget {
                               border: Border.all(
                                   color: cs.primary.withValues(alpha: 0.2)),
                             ),
-                            child: Text('Message', style: GoogleFonts.inter(
+                            child: Text(l10n.communityMessageBtn, style: GoogleFonts.inter(
                               fontSize: 12, fontWeight: FontWeight.w700,
                               color: cs.primary)),
                           ),
@@ -234,7 +236,7 @@ class EventDetailSheet extends ConsumerWidget {
                         // ── Participants ─────────────────────────
                         if (ev.participantAvatars.isNotEmpty ||
                             ev.joinedCount > 0) ...[
-                          Text('PARTICIPANTS', style: GoogleFonts.inter(
+                          Text(l10n.communityParticipantsLabel, style: GoogleFonts.inter(
                             fontSize: 9, fontWeight: FontWeight.w700,
                             color: cs.onSurface.withValues(alpha: 0.45),
                             letterSpacing: 2)),
@@ -247,7 +249,7 @@ class EventDetailSheet extends ConsumerWidget {
                         ],
 
                         // ── About / details ──────────────────────
-                        Text('À PROPOS', style: GoogleFonts.inter(
+                        Text(l10n.communityAboutLabel, style: GoogleFonts.inter(
                           fontSize: 9, fontWeight: FontWeight.w700,
                           color: cs.onSurface.withValues(alpha: 0.45),
                           letterSpacing: 2)),
@@ -405,7 +407,7 @@ class _InfoCard extends StatelessWidget {
 }
 
 // ─── Participant strip ────────────────────────────────────────
-class _ParticipantStrip extends StatelessWidget {
+class _ParticipantStrip extends ConsumerWidget {
   final List<String> avatars;
   final int count;
   final ColorScheme cs;
@@ -413,7 +415,8 @@ class _ParticipantStrip extends StatelessWidget {
     required this.avatars, required this.count, required this.cs});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     const size   = 36.0;
     const offset = 26.0;
     final shown  = avatars.take(6).toList();
@@ -443,11 +446,11 @@ class _ParticipantStrip extends StatelessWidget {
       ),
       const SizedBox(width: 10),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('$count participant${count > 1 ? 's' : ''}',
+        Text(l10n.communityParticipantsCount(count),
             style: GoogleFonts.outfit(
               fontSize: 14, fontWeight: FontWeight.w700,
               color: cs.onSurface, letterSpacing: -0.2)),
-        Text('ont rejoint cet événement', style: GoogleFonts.inter(
+        Text(l10n.communityHaveJoined(count), style: GoogleFonts.inter(
           fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5))),
       ]),
     ]);

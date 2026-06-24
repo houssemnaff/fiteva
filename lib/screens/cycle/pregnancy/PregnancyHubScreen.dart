@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 
 // ── Brand colors (matches AppTheme) ──────────────────────────────────────────
 const _primary   = Color(0xFF1C4D30);
@@ -84,9 +85,10 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
   }
 
   Future<void> _switchToCycle() async {
+    final l10n = ref.read(l10nProvider);
     final ok = await _confirm(
-      'Quitter le suivi grossesse ?',
-      'L\'app passera en mode Cycle. Vos données sont conservées.',
+      l10n.pregQuitter,
+      l10n.pregQuitterSub,
     );
     if (ok != true || !mounted) return;
     setState(() => _switching = true);
@@ -98,13 +100,14 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
   }
 
   Future<void> _switchToPostpartum() async {
+    final l10n = ref.read(l10nProvider);
     final birthDate = await showCustomDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 730)),
       lastDate: DateTime.now(),
-      title: "Date d'accouchement",
-      subtitle: 'Quand est né votre bébé ?',
+      title: l10n.pregDateAccouch,
+      subtitle: l10n.pregQuandNe,
       icon: Icons.child_care_rounded,
       accentColor: _primary,
     );
@@ -113,7 +116,7 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
     final ppDuration = weeks < 2 ? '0-2' : weeks < 6 ? '2-6'
         : weeks < 12 ? '6-12' : weeks < 26 ? '3-6m' : '6m+';
     final ok = await _confirm(
-      'Passer en mode Post-partum ?',
+      l10n.pregPostPartum,
       'Accouchement le ${birthDate.day}/${birthDate.month}/${birthDate.year} · $weeks semaines.',
     );
     if (ok != true || !mounted) return;
@@ -136,16 +139,17 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler')),
+              child: Text(ref.read(l10nProvider).pregAnnuler)),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Confirmer')),
+              child: Text(ref.read(l10nProvider).pregConfirmer)),
           ],
         ),
       );
 
   @override
   Widget build(BuildContext context) {
+    final l10n    = ref.watch(l10nProvider);
     final cs      = Theme.of(context).colorScheme;
     final profile = ref.watch(userProfileProvider);
     final week    = (profile.pregnancyWeekSA ?? 1).clamp(1, 42);
@@ -165,8 +169,8 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
 
             // ── Shared header (same as cycle screen) ─────────────────────
             SharedAppHeader.sliver(
-              eyebrow: 'GROSSESSE',
-              title: 'Mon suivi',
+              eyebrow: l10n.pregTitle,
+              title: l10n.pregMonSuivi,
               accentColor: _accent,
               bgColor: cs.surface,
               actions: [
@@ -183,13 +187,13 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
                   itemBuilder: (_) => [
                     PopupMenuItem(
                       value: 'postpartum',
-                      child: Text('Post-partum →',
+                      child: Text(l10n.pregPostPartumBtn,
                         style: GoogleFonts.inter(
                           fontSize: 13, fontWeight: FontWeight.w500,
                           color: cs.onSurface))),
                     PopupMenuItem(
                       value: 'cycle',
-                      child: Text('Mon cycle →',
+                      child: Text(l10n.pregMonCycle,
                         style: GoogleFonts.inter(
                           fontSize: 13, fontWeight: FontWeight.w500,
                           color: _accent))),
@@ -212,6 +216,7 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
               child: _Hero(
                 week: week, tri: tri, left: left, fmtDue: fmtDue,
                 fruit: _fruit[week] ?? 'fruit',
+                l10n: l10n,
               ),
             ),
 
@@ -222,11 +227,11 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
                 delegate: SliverChildListDelegate([
 
                   // Progress strip (3 trimesters)
-                  _ProgressStrip(week: week),
+                  _ProgressStrip(week: week, labels: [l10n.pregTrim1Short, l10n.pregTrim2Short, l10n.pregTrim3Short]),
                   const SizedBox(height: 24),
 
                   // Mood check-in
-                  _SectionLabel('Comment tu te sens ?'),
+                  _SectionLabel(l10n.pregCommentTuTeSens),
                   const SizedBox(height: 10),
                   _MoodRow(selected: _mood, onSelect: (i) {
                     HapticFeedback.lightImpact();
@@ -248,7 +253,7 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
                   const SizedBox(height: 28),
 
                   // Week insight
-                  _SectionLabel('Semaine $week'),
+                  _SectionLabel(l10n.pregSemaineN(week)),
                   const SizedBox(height: 10),
                   _WeekCard(insight: insight, cs: cs),
                   const SizedBox(height: 16),
@@ -258,14 +263,14 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
                   const SizedBox(height: 28),
 
                   // Navigation
-                  _SectionLabel('Explorer'),
+                  _SectionLabel(l10n.pregExplorer),
                   const SizedBox(height: 10),
-                  _NavList(week: week, cs: cs),
+                  _NavList(week: week, cs: cs, l10n: l10n),
 
                   // Born CTA
                   if (week >= 37) ...[
                     const SizedBox(height: 16),
-                    _BornBanner(cs: cs),
+                    _BornBanner(cs: cs, l10n: l10n),
                   ],
 
                   SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
@@ -285,10 +290,11 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
 class _Hero extends StatelessWidget {
   final int week, tri, left;
   final String fmtDue, fruit;
+  final AppL10n l10n;
 
   const _Hero({
     required this.week, required this.tri, required this.left,
-    required this.fmtDue, required this.fruit,
+    required this.fmtDue, required this.fruit, required this.l10n,
   });
 
   @override
@@ -356,7 +362,7 @@ class _Hero extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
                     children: [
-                      Text('SEMAINE ', style: GoogleFonts.outfit(
+                      Text('${l10n.pregSemaine} ', style: GoogleFonts.outfit(
                         fontSize: 18, fontWeight: FontWeight.w300,
                         color: Colors.white54, letterSpacing: 1)),
                       Text('$week', style: GoogleFonts.outfit(
@@ -372,10 +378,10 @@ class _Hero extends StatelessWidget {
                   Row(children: [
                     Icon(LucideIcons.sprout, size: 14, color: _accent),
                     const SizedBox(width: 8),
-                    Text('comme une $fruit', style: GoogleFonts.inter(
+                    Text(l10n.pregCommeFruit(fruit), style: GoogleFonts.inter(
                       fontSize: 13, color: Colors.white60)),
                     const Spacer(),
-                    Text('$left jours restants', style: GoogleFonts.inter(
+                    Text('$left ${l10n.pregJoursRestants}', style: GoogleFonts.inter(
                       fontSize: 12, color: Colors.white38)),
                   ]),
 
@@ -436,13 +442,13 @@ class _SectionLabel extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _ProgressStrip extends StatelessWidget {
   final int week;
-  const _ProgressStrip({required this.week});
+  final List<String> labels;
+  const _ProgressStrip({required this.week, required this.labels});
 
   @override
   Widget build(BuildContext context) {
     final cs  = Theme.of(context).colorScheme;
     final tri = week <= 13 ? 0 : week <= 26 ? 1 : 2;
-    final labels   = ['1er trim.', '2e trim.', '3e trim.'];
     final subtitles = ['S1–S13', 'S14–S26', 'S27–S42'];
 
     return Row(children: List.generate(3, (i) {
@@ -790,7 +796,8 @@ class _FitCard extends StatelessWidget {
 class _NavList extends StatelessWidget {
   final int week;
   final ColorScheme cs;
-  const _NavList({required this.week, required this.cs});
+  final AppL10n l10n;
+  const _NavList({required this.week, required this.cs, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -802,13 +809,13 @@ class _NavList extends StatelessWidget {
     );
 
     final items = [
-      ('Symptômes',   'Suivre vos symptômes du jour',  Icons.favorite_border_rounded,
+      (l10n.pregSymptomes,   l10n.pregSuivreSymptomes,  Icons.favorite_border_rounded,
         () => Navigator.push(context, fadeTo(SymptomsHomeScreen(currentWeek: week)))),
-      ('Votre bébé',  'Développement — semaine $week', Icons.child_care_rounded,
+      (l10n.pregVotreBebe,   '${l10n.pregDeveloppement} — ${l10n.pregSemaineN(week)}', Icons.child_care_rounded,
         () => Navigator.push(context, fadeTo(BabyStoryScreen(currentWeek: week)))),
-      ('Votre corps', 'Évolutions et changements',     Icons.self_improvement_rounded,
+      (l10n.pregVotreCorps,  l10n.pregEvolutions,       Icons.self_improvement_rounded,
         () => Navigator.push(context, fadeTo(PregnancyBodyScreen(currentWeek: week)))),
-      ('Ma checklist','Préparatifs et rendez-vous',    Icons.check_circle_outline_rounded,
+      (l10n.pregMaChecklist, l10n.pregPreparatifs,      Icons.check_circle_outline_rounded,
         () => Navigator.push(context, fadeTo(PregnancyChecklistScreen(currentWeek: week)))),
     ];
 
@@ -866,7 +873,8 @@ class _NavList extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _BornBanner extends StatelessWidget {
   final ColorScheme cs;
-  const _BornBanner({required this.cs});
+  final AppL10n l10n;
+  const _BornBanner({required this.cs, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -891,11 +899,11 @@ class _BornBanner extends StatelessWidget {
         child: Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-            Text('Mon bébé est né !', style: GoogleFonts.outfit(
+            Text(l10n.pregBabyBorn, style: GoogleFonts.outfit(
               fontSize: 16, fontWeight: FontWeight.w700,
               color: Colors.white)),
             const SizedBox(height: 2),
-            Text('Passer au suivi post-partum', style: GoogleFonts.inter(
+            Text(l10n.pregPasserSuivi, style: GoogleFonts.inter(
               fontSize: 12, color: Colors.white60)),
           ])),
           Container(

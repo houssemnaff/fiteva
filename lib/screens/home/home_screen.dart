@@ -332,7 +332,7 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                       duration: const Duration(milliseconds: 400),
                       child: Text(
                         key: ValueKey('cat_$_currentIndex'),
-                        'PROGRAMME',
+                        ref.watch(l10nProvider).homeProgramme,
                         style: GoogleFonts.inter(
                           color: cs.secondary,
                           fontSize: 10,
@@ -397,7 +397,7 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                           ),
                           child: Center(
                             child: Text(
-                              'START PROGRAM',
+                              ref.watch(l10nProvider).homeStartProgram,
                               style: GoogleFonts.outfit(
                                 color: Colors.white,
                                 fontSize: 13,
@@ -472,12 +472,13 @@ class _MetaPill extends StatelessWidget {
 // MOTIVATION STRIP
 // ═══════════════════════════════════════════════════════════
 
-class _MotivationStrip extends StatelessWidget {
+class _MotivationStrip extends ConsumerWidget {
   // Variable heights create an organic flame silhouette
   static const List<double> _barRatios = [0.45, 0.75, 0.55, 0.95, 0.65, 0.38, 0.22];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     const int streak = 12;
     const int daysCompleted = 4; // today = index 4
 
@@ -511,7 +512,7 @@ class _MotivationStrip extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'SÉRIE ACTIVE',
+                  l10n.homeSerieActive,
                   style: GoogleFonts.inter(
                     color: const Color(0xFFFF7A00).withValues(alpha: 0.60),
                     fontSize: 8,
@@ -539,7 +540,7 @@ class _MotivationStrip extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'JOURS',
+                            l10n.homeJours,
                             style: GoogleFonts.inter(
                               color: Colors.white38,
                               fontSize: 9,
@@ -560,7 +561,7 @@ class _MotivationStrip extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              '🔥 EN FEU',
+                              l10n.homeEnFeu,
                               style: GoogleFonts.inter(
                                 color: const Color(0xFF5CD57A),
                                 fontSize: 8,
@@ -714,7 +715,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'WEEK PLAN',
+                        ref.watch(l10nProvider).homeWeekPlan,
                         style: GoogleFonts.inter(
                           color: cs.secondary,
                           fontSize: 9,
@@ -724,7 +725,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Plan Your\nWeek',
+                        ref.watch(l10nProvider).homePlanYourWeek,
                         style: GoogleFonts.outfit(
                           color: cs.onSurface,
                           fontSize: 28,
@@ -744,7 +745,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                     borderRadius: BorderRadius.circular(50),
                   ),
                   child: Text(
-                    '$done/7 DONE',
+                    ref.watch(l10nProvider).homeDoneCount(done),
                     style: GoogleFonts.inter(
                       color: cs.secondary,
                       fontSize: 11,
@@ -889,7 +890,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
 
 // ── Day detail card ────────────────────────────────────────
 
-class _DayDetailCard extends StatelessWidget {
+class _DayDetailCard extends ConsumerWidget {
   final DayPlan plan;
   final int dayIndex;
   final VoidCallback onAddWorkout;
@@ -908,7 +909,8 @@ class _DayDetailCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     final w = plan.workout;
     final isDone = plan.status == DayStatus.done;
 
@@ -1092,7 +1094,7 @@ class _DayDetailCard extends StatelessWidget {
                 if (!isDone) ...[
                   Expanded(
                     child: _Btn(
-                      label: 'DONE',
+                      label: l10n.homeDone,
                       icon: LucideIcons.checkCircle,
                       bg: const Color(0xFF52B788),
                       fg: Colors.white,
@@ -1103,7 +1105,7 @@ class _DayDetailCard extends StatelessWidget {
                 ],
                 Expanded(
                   child: _Btn(
-                    label: isDone ? 'REVIEW' : 'START',
+                    label: isDone ? l10n.homeReview : l10n.homeStart,
                     icon: isDone ? LucideIcons.eye : LucideIcons.play,
                     bg: Theme.of(context).colorScheme.primary,
                     fg: Colors.white,

@@ -1,21 +1,23 @@
 import 'dart:math';
 
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'shared_onboarding_widgets.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // STEP 6 — StepHealthProfile (fond mint, sliders conservés)
 // ══════════════════════════════════════════════════════════════════════════════
-class StepHealthProfile extends StatefulWidget {
+class StepHealthProfile extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
   const StepHealthProfile({super.key, required this.onNext, this.onBack});
 
   @override
-  State<StepHealthProfile> createState() => _StepHealthProfileState();
+  ConsumerState<StepHealthProfile> createState() => _StepHealthProfileState();
 }
 
-class _StepHealthProfileState extends State<StepHealthProfile> {
+class _StepHealthProfileState extends ConsumerState<StepHealthProfile> {
   double _heightCm = 165;
   double _weightKg = 60;
 
@@ -27,6 +29,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     return mintScaffold(
       child: Column(
         children: [
@@ -50,12 +53,12 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
                       children: [
                         Expanded(child: _avatarPanel()),
                         const SizedBox(width: 16),
-                        SizedBox(width: 84, child: _heightPanel()),
+                        SizedBox(width: 84, child: _heightPanel(l10n)),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _weightPanel(),
+                  _weightPanel(l10n),
                   const SizedBox(height: 16),
                   // IMC pill
                   Container(
@@ -74,7 +77,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
             ),
           ),
           CtaButton(
-            label: 'Continuer',
+            label: l10n.oboHealthContinue,
             onPressed: canContinue ? widget.onNext : null,
           ),
         ],
@@ -95,7 +98,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
     );
   }
 
-  Widget _heightPanel() {
+  Widget _heightPanel(AppL10n l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
@@ -104,7 +107,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
         border: Border.all(color: Colors.white.withOpacity(0.8)),
       ),
       child: Column(children: [
-        const Text('Height', style: TextStyle(fontSize: 12,
+        Text(l10n.oboHealthHeight, style: const TextStyle(fontSize: 12,
             fontWeight: FontWeight.w600, color: kTextMuted)),
         const SizedBox(height: 8),
         Text('${_heightCm.round()} cm', style: const TextStyle(
@@ -126,7 +129,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
     );
   }
 
-  Widget _weightPanel() {
+  Widget _weightPanel(AppL10n l10n) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -135,7 +138,7 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
         border: Border.all(color: Colors.white.withOpacity(0.8)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Weight', style: TextStyle(fontSize: 13,
+        Text(l10n.oboHealthWeight, style: const TextStyle(fontSize: 13,
             color: kTextMuted, fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
         Text('${_weightKg.round()} kg', style: const TextStyle(

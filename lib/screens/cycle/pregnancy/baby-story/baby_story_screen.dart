@@ -1,24 +1,26 @@
 ﻿// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../pregnancy_colors.dart';
 import 'baby_story_repository.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 
 extension _Pg on BuildContext {
   PgColors get _p => PgColors.of(this);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-class BabyStoryScreen extends StatefulWidget {
+class BabyStoryScreen extends ConsumerStatefulWidget {
   final int currentWeek;
   const BabyStoryScreen({super.key, required this.currentWeek});
 
   @override
-  State<BabyStoryScreen> createState() => _BabyStoryScreenState();
+  ConsumerState<BabyStoryScreen> createState() => _BabyStoryScreenState();
 }
 
-class _BabyStoryScreenState extends State<BabyStoryScreen>
+class _BabyStoryScreenState extends ConsumerState<BabyStoryScreen>
     with TickerProviderStateMixin {
   late int _week;
   late AnimationController _fadeCtrl;
@@ -47,11 +49,11 @@ class _BabyStoryScreenState extends State<BabyStoryScreen>
     });
   }
 
-  String get _trimestre => _week <= 13
-      ? '1er trimestre'
+  String _trimestre(AppL10n l10n) => _week <= 13
+      ? l10n.babyTrim1
       : _week <= 26
-          ? '2e trimestre'
-          : '3e trimestre';
+          ? l10n.babyTrim2
+          : l10n.babyTrim3;
 
   String _icon() {
     if (_week <= 2)  return '✨';
@@ -78,6 +80,7 @@ class _BabyStoryScreenState extends State<BabyStoryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n   = ref.watch(l10nProvider);
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
     final story  = BabyStoryRepository.forWeek(_week);
@@ -109,11 +112,11 @@ class _BabyStoryScreenState extends State<BabyStoryScreen>
                 ),
                 const SizedBox(width: 14),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('L\'HISTOIRE DE BÉBÉ', style: GoogleFonts.inter(
+                  Text(l10n.babyTitle, style: GoogleFonts.inter(
                     fontSize: 9, fontWeight: FontWeight.w600,
                     color: context._p.textSoft, letterSpacing: 2.5)),
                   const SizedBox(height: 1),
-                  Text(_trimestre, style: GoogleFonts.inter(
+                  Text(_trimestre(l10n), style: GoogleFonts.inter(
                     fontSize: 14, fontWeight: FontWeight.w700,
                     color: context._p.textDark)),
                 ]),
@@ -175,7 +178,7 @@ class _BabyStoryScreenState extends State<BabyStoryScreen>
                     duration: const Duration(milliseconds: 250),
                     transitionBuilder: (child, anim) =>
                         ScaleTransition(scale: anim, child: child),
-                    child: Text('Semaine $_week',
+                    child: Text(l10n.pregSemaineN(_week),
                       key: ValueKey(_week),
                       style: GoogleFonts.outfit(
                         fontSize: 18, fontWeight: FontWeight.w600,
@@ -264,7 +267,7 @@ class _BabyStoryScreenState extends State<BabyStoryScreen>
                               size: 14, color: context._p.warmPink),
                         ),
                         const SizedBox(width: 10),
-                        Text('Bébé te raconte…', style: GoogleFonts.inter(
+                        Text(l10n.babyBebeTRaconte, style: GoogleFonts.inter(
                           fontSize: 10, fontWeight: FontWeight.w600,
                           color: context._p.warmPink, letterSpacing: 1.2)),
                       ]),
@@ -304,7 +307,7 @@ class _BabyStoryScreenState extends State<BabyStoryScreen>
                       Expanded(child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Le saviez-vous ?', style: GoogleFonts.inter(
+                          Text(l10n.babySaviezVous, style: GoogleFonts.inter(
                             fontSize: 10, fontWeight: FontWeight.w700,
                             color: context._p.green, letterSpacing: 1.2)),
                           const SizedBox(height: 6),
@@ -347,7 +350,7 @@ class _BabyStoryScreenState extends State<BabyStoryScreen>
                                 size: 14, color: context._p.green),
                           ),
                           const SizedBox(width: 10),
-                          Text('Développement cette semaine',
+                          Text(l10n.babyDevSemaine,
                             style: GoogleFonts.inter(
                               fontSize: 10, fontWeight: FontWeight.w600,
                               color: context._p.textSoft, letterSpacing: 1.2)),

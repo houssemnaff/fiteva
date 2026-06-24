@@ -4,6 +4,7 @@ import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_insight_rep
 import 'package:fiteva/screens/cycle/pregnancy/pregnancy_colors.dart';
 import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,13 +94,14 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
   // ── Pickers ──────────────────────────────────────────────────────────────────
   Future<void> _pickBirthDate() async {
     HapticFeedback.lightImpact();
+    final l10n = ref.read(l10nProvider);
     final picked = await showCustomDatePicker(
       context: context,
       initialDate: _birthDate,
       firstDate: DateTime.now().subtract(const Duration(days: 730)),
       lastDate: DateTime.now(),
-      title: 'Date d\'accouchement',
-      subtitle: 'Quand est ne votre bebe ?',
+      title: l10n.ppDateAccouch,
+      subtitle: l10n.ppQuandNe,
       icon: Icons.child_care_rounded,
       accentColor: const Color(0xFF1C4D30),
     );
@@ -110,13 +112,14 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
     HapticFeedback.mediumImpact();
 
     // Étape 1 — Calendrier custom
+    final l10n2 = ref.read(l10nProvider);
     final picked = await showCustomDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 180)),
       lastDate: DateTime.now(),
-      title: 'Date de tes regles',
-      subtitle: 'Quand ont-elles commence ?',
+      title: l10n2.ppMesRegles,
+      subtitle: l10n2.ppQuandRegles,
       icon: Icons.water_drop_rounded,
       accentColor: const Color(0xFFD94F6B),
     );
@@ -128,7 +131,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Passer au suivi de cycle ?',
+        title: Text(l10n2.ppPasserCycle,
           style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w700)),
         content: Text(
           'Votre suivi passera du post-partum au cycle menstruel a partir du '
@@ -138,7 +141,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Annuler',
+            child: Text(l10n2.ppAnnuler,
               style: GoogleFonts.inter(color: const Color(0xFF888888)))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -148,7 +151,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                   borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Confirmer',
+            child: Text(l10n2.ppConfirmer,
               style: GoogleFonts.inter(fontWeight: FontWeight.w700))),
         ],
       ),
@@ -174,6 +177,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
   // ── Build ─────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final l10n    = ref.watch(l10nProvider);
     final p       = context.p;
     final insight = PostpartumInsightRepository.forWeek(_weeks.clamp(1, 12));
     final d       = _birthDate;
@@ -194,8 +198,8 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
         slivers: [
           // ── Shared header ────────────────────────────────────────────────
           SharedAppHeader.sliver(
-            eyebrow: 'POST-PARTUM',
-            title: '4e trimestre',
+            eyebrow: l10n.ppTitle,
+            title: l10n.ppTrim4,
             accentColor: p.green,
             bgColor: p.surface,
             actions: [
@@ -216,7 +220,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                       const Icon(Icons.water_drop_rounded,
                           size: 16, color: Color(0xFFD94F6B)),
                       const SizedBox(width: 10),
-                      Text('Mes regles', style: GoogleFonts.inter(
+                      Text(l10n.ppMesRegles, style: GoogleFonts.inter(
                         fontSize: 13, fontWeight: FontWeight.w600,
                         color: const Color(0xFFD94F6B))),
                     ]),
@@ -250,6 +254,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                   phaseColor: _phaseColor,
                   progress: _progress,
                   p: p,
+                  l10n: l10n,
                 ),
 
                 const SizedBox(height: 16),
@@ -262,6 +267,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                     days: _days,
                     onEdit: _pickBirthDate,
                     p: p,
+                    l10n: l10n,
                   ),
                 ),
 
@@ -274,6 +280,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                     selected: _mood,
                     onSelect: (i) { HapticFeedback.selectionClick(); setState(() => _mood = i); },
                     p: p,
+                    l10n: l10n,
                   ),
                 ),
 
@@ -282,7 +289,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                 // ── Cette semaine ────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _WeekInsight(insight: insight, weeks: _weeks, p: p),
+                  child: _WeekInsight(insight: insight, weeks: _weeks, p: p, l10n: l10n),
                 ),
 
                 const SizedBox(height: 16),
@@ -295,6 +302,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                     progress: _progress,
                     phaseColor: _phaseColor,
                     p: p,
+                    l10n: l10n,
                   ),
                 ),
 
@@ -331,7 +339,7 @@ class _CycleSwitchButton extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(LucideIcons.droplets, size: 13, color: Color(0xFFD94F6B)),
           const SizedBox(width: 5),
-          Text('Mes regles',
+          Text('Mes règles',
             style: GoogleFonts.inter(
               fontSize: 11, fontWeight: FontWeight.w700,
               color: const Color(0xFFD94F6B))),
@@ -351,10 +359,12 @@ class _HeroCard extends StatelessWidget {
   final double progress;
   final PgColors p;
 
+  final AppL10n l10n;
   const _HeroCard({
     required this.weeks, required this.rem,
     required this.phaseName, required this.phaseDesc,
     required this.phaseColor, required this.progress, required this.p,
+    required this.l10n,
   });
 
   @override
@@ -414,7 +424,7 @@ class _HeroCard extends StatelessWidget {
                 fontSize: 13, color: Colors.white.withOpacity(0.80),
                 height: 1.5)),
               const SizedBox(height: 12),
-              Text('4e trimestre', style: GoogleFonts.inter(
+              Text(l10n.ppTrim4, style: GoogleFonts.inter(
                 fontSize: 10, fontWeight: FontWeight.w600,
                 color: Colors.white.withOpacity(0.55),
                 letterSpacing: 1.4)),
@@ -434,10 +444,11 @@ class _DateCard extends StatelessWidget {
   final int days;
   final VoidCallback onEdit;
   final PgColors p;
+  final AppL10n l10n;
 
   const _DateCard({
     required this.dateStr, required this.days,
-    required this.onEdit, required this.p,
+    required this.onEdit, required this.p, required this.l10n,
   });
 
   @override
@@ -462,12 +473,12 @@ class _DateCard extends StatelessWidget {
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Date d\'accouchement', style: GoogleFonts.inter(
+            Text(l10n.ppDateAccouch, style: GoogleFonts.inter(
               fontSize: 11, fontWeight: FontWeight.w500, color: p.textSoft)),
             const SizedBox(height: 3),
             Text(dateStr, style: GoogleFonts.outfit(
               fontSize: 17, fontWeight: FontWeight.w700, color: p.textDark)),
-            Text('$days jours depuis la naissance', style: GoogleFonts.inter(
+            Text(l10n.ppDaysNaissance(days), style: GoogleFonts.inter(
               fontSize: 11, color: p.textMid)),
           ],
         )),
@@ -479,7 +490,7 @@ class _DateCard extends StatelessWidget {
               color: p.mintLight,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text('Modifier', style: GoogleFonts.inter(
+            child: Text(l10n.ppModifier, style: GoogleFonts.inter(
               fontSize: 12, fontWeight: FontWeight.w700, color: p.green)),
           ),
         ),
@@ -502,7 +513,8 @@ class _MoodCard extends StatelessWidget {
     LucideIcons.smile, LucideIcons.sun, LucideIcons.sparkles,
   ];
 
-  const _MoodCard({required this.selected, required this.onSelect, required this.p});
+  final AppL10n l10n;
+  const _MoodCard({required this.selected, required this.onSelect, required this.p, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -514,7 +526,7 @@ class _MoodCard extends StatelessWidget {
         border: Border.all(color: p.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Comment vous sentez-vous ?', style: GoogleFonts.inter(
+        Text(l10n.ppCommentSentez, style: GoogleFonts.inter(
           fontSize: 13, fontWeight: FontWeight.w700, color: p.textDark)),
         const SizedBox(height: 14),
         Row(
@@ -556,8 +568,9 @@ class _WeekInsight extends StatelessWidget {
   final PostpartumInsight insight;
   final int weeks;
   final PgColors p;
+  final AppL10n l10n;
 
-  const _WeekInsight({required this.insight, required this.weeks, required this.p});
+  const _WeekInsight({required this.insight, required this.weeks, required this.p, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -571,7 +584,7 @@ class _WeekInsight extends StatelessWidget {
       _InsightRow(
         icon: LucideIcons.baby,
         color: p.mint,
-        title: 'Votre bebe',
+        title: l10n.ppVotreBebe,
         text: insight.babyMilestone,
         p: p,
       ),
@@ -579,7 +592,7 @@ class _WeekInsight extends StatelessWidget {
       _InsightRow(
         icon: LucideIcons.heartPulse,
         color: p.warmPink,
-        title: 'Votre corps',
+        title: l10n.ppVotreCorps,
         text: insight.momRecovery,
         p: p,
       ),
@@ -587,7 +600,7 @@ class _WeekInsight extends StatelessWidget {
       _InsightRow(
         icon: LucideIcons.brain,
         color: p.mint,
-        title: 'Votre mental',
+        title: l10n.ppVotreMental,
         text: insight.mentalHealth,
         p: p,
       ),
@@ -662,13 +675,14 @@ class _ProgressCard extends StatelessWidget {
   final double progress;
   final Color phaseColor;
   final PgColors p;
+  final AppL10n l10n;
 
   static const _phases = ['0-2 sem.', '2-6 sem.', '6-12 sem.', '3-6 mois', '6+ mois'];
   static const _maxW   = [2, 6, 12, 26, 999];
 
   const _ProgressCard({
     required this.weeks, required this.progress,
-    required this.phaseColor, required this.p,
+    required this.phaseColor, required this.p, required this.l10n,
   });
 
   int get _activePhase {
@@ -692,7 +706,7 @@ class _ProgressCard extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('4e trimestre', style: GoogleFonts.outfit(
+          Text(l10n.ppTrim4, style: GoogleFonts.outfit(
             fontSize: 15, fontWeight: FontWeight.w700, color: p.textDark)),
           Text('$weeks / 12 sem.', style: GoogleFonts.inter(
             fontSize: 12, color: p.textMid, fontWeight: FontWeight.w600)),
@@ -741,7 +755,7 @@ class _ProgressCard extends StatelessWidget {
         Text(
           weeks >= 12
               ? 'Felicitations ! Vous avez traverse le 4e trimestre.'
-              : '$remaining semaines restantes de suivi post-partum',
+              : l10n.ppSemainesRestantes(remaining),
           style: GoogleFonts.inter(fontSize: 12, color: p.textMid)),
       ]),
     );

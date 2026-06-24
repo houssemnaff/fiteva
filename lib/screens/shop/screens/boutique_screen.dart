@@ -295,6 +295,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
                   const SizedBox(height: 12),
                   _PicksSection(
                     c: c,
+                    l10n: l10n,
                     items: _picks,
                     userEtoiles: userPoints,
                     wishlist: wishlist,
@@ -315,6 +316,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
               selectedCat: _cat,
               selectedSort: _sort,
               elevated: _filterElevated,
+              l10n: l10n,
               onCat: _selectCat,
               onFilterTap: _showSortSheet,
             ),
@@ -326,6 +328,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
               child: _SectionHeader(
                 c: c,
+                l10n: l10n,
                 cat: _kCats.firstWhere((cat) => cat.key == _cat),
                 count: filtered.length,
                 onSeeAll: () => Navigator.push(context,
@@ -337,7 +340,7 @@ if (filtered.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
-                child: _PartnerBanner(c: c, onTap: _openPartnerForm),
+                child: _PartnerBanner(c: c, l10n: l10n, onTap: _openPartnerForm),
               ),
             ),
 
@@ -345,7 +348,7 @@ if (filtered.isNotEmpty)
           filtered.isEmpty
               ? SliverFillRemaining(
                   hasScrollBody: false,
-                  child: _EmptyState(c: c, onReset: _clearFilters),
+                  child: _EmptyState(c: c, l10n: l10n, onReset: _clearFilters),
                 )
               : SliverPadding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
@@ -393,8 +396,9 @@ if (filtered.isNotEmpty)
 // ─────────────────────────────────────────────────────────────────────────────
 class _PartnerBanner extends StatelessWidget {
   final _C          c;
+  final AppL10n     l10n;
   final VoidCallback onTap;
-  const _PartnerBanner({required this.c, required this.onTap});
+  const _PartnerBanner({required this.c, required this.l10n, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -427,9 +431,9 @@ class _PartnerBanner extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Devenir partenaire',
-                    style: TextStyle(
+                  Text(
+                    l10n.boutiquePartner,
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -438,7 +442,7 @@ class _PartnerBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Rejoignez notre réseau et bénéficiez de plus de visibilité.',
+                    l10n.boutiquePartnerSub,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.6),
@@ -470,6 +474,7 @@ class _PartnerBanner extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _PicksSection extends StatelessWidget {
   final _C c;
+  final AppL10n l10n;
   final List items;
   final int userEtoiles;
   final Set<String> wishlist;
@@ -478,6 +483,7 @@ class _PicksSection extends StatelessWidget {
 
   const _PicksSection({
     required this.c,
+    required this.l10n,
     required this.items,
     required this.userEtoiles,
     required this.wishlist,
@@ -501,7 +507,7 @@ class _PicksSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('À LA UNE', style: _T.overline(c, 10.5)),
+            Text(l10n.boutiqueALaUne, style: _T.overline(c, 10.5)),
             const SizedBox(width: 14),
             Expanded(child: Container(height: 1, color: c.divider)),
           ],
@@ -568,7 +574,7 @@ class _PicksSection extends StatelessWidget {
   }
 }
 
-class _BentoCard extends StatefulWidget {
+class _BentoCard extends ConsumerStatefulWidget {
   final dynamic item;
   final int userEtoiles;
   final bool isWishlisted;
@@ -588,10 +594,10 @@ class _BentoCard extends StatefulWidget {
   });
 
   @override
-  State<_BentoCard> createState() => _BentoCardState();
+  ConsumerState<_BentoCard> createState() => _BentoCardState();
 }
 
-class _BentoCardState extends State<_BentoCard>
+class _BentoCardState extends ConsumerState<_BentoCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
 
@@ -608,6 +614,7 @@ class _BentoCardState extends State<_BentoCard>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     return GestureDetector(
       onTapDown: (_) => _ctrl.reverse(),
       onTapUp:   (_) { _ctrl.forward(); widget.onTap(); },
@@ -664,10 +671,10 @@ class _BentoCardState extends State<_BentoCard>
                         decoration: BoxDecoration(
                           color: const Color(0xFF2E7D32),
                           borderRadius: BorderRadius.circular(8)),
-                        child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.check_circle_rounded, size: 10, color: Colors.white),
-                          SizedBox(width: 4),
-                          Text('Échangé', style: TextStyle(
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.check_circle_rounded, size: 10, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Text(l10n.boutiqueEchange, style: const TextStyle(
                             color: Colors.white, fontSize: 9,
                             fontWeight: FontWeight.w700, letterSpacing: 0.3)),
                         ]))
@@ -696,6 +703,7 @@ class _FilterBarDelegate extends SliverPersistentHeaderDelegate {
   final String      selectedCat;
   final _Sort       selectedSort;
   final bool        elevated;
+  final AppL10n     l10n;
   final ValueChanged<String> onCat;
   final VoidCallback         onFilterTap;
 
@@ -704,6 +712,7 @@ class _FilterBarDelegate extends SliverPersistentHeaderDelegate {
     required this.selectedCat,
     required this.selectedSort,
     required this.elevated,
+    required this.l10n,
     required this.onCat,
     required this.onFilterTap,
   });
@@ -717,7 +726,8 @@ class _FilterBarDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(_FilterBarDelegate old) =>
       old.selectedCat != selectedCat ||
       old.selectedSort != selectedSort ||
-      old.elevated != elevated;
+      old.elevated != elevated ||
+      old.l10n != l10n;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
@@ -772,7 +782,7 @@ class _FilterBarDelegate extends SliverPersistentHeaderDelegate {
                     Icon(CupertinoIcons.slider_horizontal_3, size: 13,
                         color: hasFilter ? c.chipSelFg : c.inkMuted),
                     const SizedBox(width: 6),
-                    Text('Trier',
+                    Text(l10n.boutiqueTrier,
                         style: _T.label(c, 12.5,
                             color: hasFilter ? c.chipSelFg : c.inkMuted,
                             ls: 0.1)),
@@ -975,18 +985,19 @@ class _ChipState extends State<_Chip> with SingleTickerProviderStateMixin {
 // ─────────────────────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   final _C c;
+  final AppL10n l10n;
   final _Cat cat;
   final int count;
   final VoidCallback onSeeAll;
   const _SectionHeader(
-      {required this.c, required this.cat, required this.count, required this.onSeeAll});
+      {required this.c, required this.l10n, required this.cat, required this.count, required this.onSeeAll});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Text(
-          cat.key == 'all' ? 'PARTENAIRES' : cat.label.toUpperCase(),
+          cat.key == 'all' ? l10n.boutiquePartenaires : cat.label.toUpperCase(),
           style: _T.overline(c, 11),
         ),
         const SizedBox(width: 10),
@@ -1000,7 +1011,7 @@ class _SectionHeader extends StatelessWidget {
           onTap: onSeeAll,
           child: Row(
             children: [
-              Text('Voir plus', style: _T.body(c, 13, color: c.ink, fw: FontWeight.w600)),
+              Text(l10n.boutiqueVoirPlus, style: _T.body(c, 13, color: c.ink, fw: FontWeight.w600)),
               const SizedBox(width: 3),
               Icon(CupertinoIcons.chevron_right, size: 12, color: c.ink),
             ],
@@ -1016,8 +1027,9 @@ class _SectionHeader extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final _C c;
+  final AppL10n l10n;
   final VoidCallback onReset;
-  const _EmptyState({required this.c, required this.onReset});
+  const _EmptyState({required this.c, required this.l10n, required this.onReset});
 
   @override
   Widget build(BuildContext context) {
@@ -1032,9 +1044,9 @@ class _EmptyState extends StatelessWidget {
             child: Icon(CupertinoIcons.search, size: 32, color: c.inkSubtle),
           ),
           const SizedBox(height: 22),
-          Text('Aucun produit trouvé', style: _T.heading(c, 20, fw: FontWeight.w600)),
+          Text(l10n.boutiqueAucunProduit, style: _T.heading(c, 20, fw: FontWeight.w600)),
           const SizedBox(height: 10),
-          Text('Aucun article ne correspond\nà tes filtres actuels.',
+          Text(l10n.boutiqueAucunArticle,
               textAlign: TextAlign.center, style: _T.body(c, 14)),
           const SizedBox(height: 28),
           GestureDetector(
@@ -1042,7 +1054,7 @@ class _EmptyState extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
               decoration: BoxDecoration(color: c.chipSel, borderRadius: BorderRadius.circular(_T.rChip)),
-              child: Text('Réinitialiser les filtres',
+              child: Text(l10n.boutiqueReset,
                   style: _T.label(c, 14, color: c.chipSelFg, fw: FontWeight.w600, ls: 0.2)),
             ),
           ),
@@ -1056,7 +1068,7 @@ class _EmptyState extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // PARTNER CARD — horizontal list style
 // ─────────────────────────────────────────────────────────────────────────────
-class _PartnerCard extends StatefulWidget {
+class _PartnerCard extends ConsumerStatefulWidget {
   final dynamic item;
   final int userEtoiles;
   final bool isWishlisted;
@@ -1075,10 +1087,10 @@ class _PartnerCard extends StatefulWidget {
   });
 
   @override
-  State<_PartnerCard> createState() => _PartnerCardState();
+  ConsumerState<_PartnerCard> createState() => _PartnerCardState();
 }
 
-class _PartnerCardState extends State<_PartnerCard>
+class _PartnerCardState extends ConsumerState<_PartnerCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
 
@@ -1097,7 +1109,8 @@ class _PartnerCardState extends State<_PartnerCard>
 
   @override
   Widget build(BuildContext context) {
-    final c = _C.of(context);
+    final c    = _C.of(context);
+    final l10n = ref.watch(l10nProvider);
     return GestureDetector(
       onTapDown:   (_) => _ctrl.reverse(),
       onTapUp:     (_) { _ctrl.forward(); widget.onTap(); },
@@ -1188,10 +1201,10 @@ class _PartnerCardState extends State<_PartnerCard>
                               decoration: BoxDecoration(
                                 color: const Color(0xFFE8F5E9),
                                 borderRadius: BorderRadius.circular(8)),
-                              child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                                Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF2E7D32)),
-                                SizedBox(width: 4),
-                                Text('Échangé', style: TextStyle(
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                const Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF2E7D32)),
+                                const SizedBox(width: 4),
+                                Text(l10n.boutiqueEchange, style: const TextStyle(
                                   color: Color(0xFF2E7D32), fontSize: 11,
                                   fontWeight: FontWeight.w700)),
                               ]))

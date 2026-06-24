@@ -1,21 +1,23 @@
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'shared_onboarding_widgets.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // STEP 7 — StepCycle (fond mint)
 // ══════════════════════════════════════════════════════════════════════════════
-class StepCycle extends StatefulWidget {
+class StepCycle extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
   const StepCycle({super.key, required this.onNext, this.onBack});
 
   @override
-  State<StepCycle> createState() => _StepCycleState();
+  ConsumerState<StepCycle> createState() => _StepCycleState();
 }
 
-class _StepCycleState extends State<StepCycle> {
+class _StepCycleState extends ConsumerState<StepCycle> {
   String? _selectedDuration = '28 jours';
   DateTime _lastPeriodDate  = DateTime(2026, 4, 5);
 
@@ -45,6 +47,7 @@ class _StepCycleState extends State<StepCycle> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     return mintScaffold(
       child: Column(
         children: [
@@ -70,24 +73,24 @@ class _StepCycleState extends State<StepCycle> {
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: Colors.white.withOpacity(0.8)),
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Durée de ton cycle',
-                          style: TextStyle(fontWeight: FontWeight.w700,
+                        Text(l10n.oboCycleTitle,
+                          style: const TextStyle(fontWeight: FontWeight.w700,
                               fontSize: 15, color: kTextDark)),
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
                         Text(
-                          'La moyenne est de 28 jours mais chaque femme est unique',
-                          style: TextStyle(fontSize: 13, color: kTextMuted),
+                          l10n.oboCycleSub,
+                          style: const TextStyle(fontSize: 13, color: kTextMuted),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
                   Align(alignment: Alignment.centerLeft,
-                    child: const Text('Durée habituelle',
-                      style: TextStyle(fontSize: 13, color: kTextMuted))),
+                    child: Text(l10n.oboCycleDuree,
+                      style: const TextStyle(fontSize: 13, color: kTextMuted))),
                   const SizedBox(height: 12),
                   // Pills durée
                   Wrap(
@@ -121,8 +124,8 @@ class _StepCycleState extends State<StepCycle> {
                   ),
                   const SizedBox(height: 24),
                   Align(alignment: Alignment.centerLeft,
-                    child: const Text('Début de tes dernières règles',
-                      style: TextStyle(fontSize: 13, color: kTextMuted))),
+                    child: Text(l10n.oboCycleLastPeriod,
+                      style: const TextStyle(fontSize: 13, color: kTextMuted))),
                   const SizedBox(height: 10),
                   GestureDetector(
                     onTap: _pickDate,
@@ -151,7 +154,7 @@ class _StepCycleState extends State<StepCycle> {
             ),
           ),
           CtaButton(
-            label: 'Commencer FITEVA',
+            label: l10n.oboCycleCommencer,
             onPressed: widget.onNext,
           ),
         ],

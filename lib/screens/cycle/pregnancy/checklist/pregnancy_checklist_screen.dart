@@ -2,20 +2,22 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../pregnancy_colors.dart';
 import 'pregnancy_checklist_repository.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 
 extension _Pg on BuildContext {
   PgColors get _p => PgColors.of(this);
 }
 
 // catégorie → couleur + label
-({Color bg, Color fg, String label}) _catStyle(String cat, BuildContext context) {
+({Color bg, Color fg, String label}) _catStyle(String cat, BuildContext context, AppL10n l10n) {
   switch (cat) {
-    case 'medical':   return (bg: context._p.mintLight, fg: context._p.green,    label: 'Médical');
-    case 'bienetre':  return (bg: context._p.pinkSoft,  fg: context._p.warmPink, label: 'Bien-être');
-    default:          return (bg: context._p.amberSoft, fg: context._p.amber,    label: 'Pratique');
+    case 'medical':   return (bg: context._p.mintLight, fg: context._p.green,    label: l10n.checkMedical);
+    case 'bienetre':  return (bg: context._p.pinkSoft,  fg: context._p.warmPink, label: l10n.checkBienEtre);
+    default:          return (bg: context._p.amberSoft, fg: context._p.amber,    label: l10n.checkPratique);
   }
 }
 
@@ -28,17 +30,17 @@ IconData _catIcon(String cat) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-class PregnancyChecklistScreen extends StatefulWidget {
+class PregnancyChecklistScreen extends ConsumerStatefulWidget {
   final int currentWeek;
   const PregnancyChecklistScreen({super.key, required this.currentWeek});
 
   @override
-  State<PregnancyChecklistScreen> createState() =>
+  ConsumerState<PregnancyChecklistScreen> createState() =>
       _PregnancyChecklistScreenState();
 }
 
 class _PregnancyChecklistScreenState
-    extends State<PregnancyChecklistScreen> {
+    extends ConsumerState<PregnancyChecklistScreen> {
   late final List<ChecklistTask> _tasks;
   final Set<String> _done = {};
 
@@ -59,6 +61,7 @@ class _PregnancyChecklistScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n   = ref.watch(l10nProvider);
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
 
@@ -81,6 +84,7 @@ class _PregnancyChecklistScreenState
             total: _total,
             progress: _progress,
             onBack: () => Navigator.maybePop(context),
+            l10n: l10n,
           ),
 
           const SizedBox(height: 20),
@@ -92,6 +96,7 @@ class _PregnancyChecklistScreenState
               tasks: medical,
               done: _done,
               onToggle: _toggle,
+              l10n: l10n,
             ),
             const SizedBox(height: 12),
           ],
@@ -101,6 +106,7 @@ class _PregnancyChecklistScreenState
               tasks: bienetre,
               done: _done,
               onToggle: _toggle,
+              l10n: l10n,
             ),
             const SizedBox(height: 12),
           ],
@@ -110,14 +116,15 @@ class _PregnancyChecklistScreenState
               tasks: pratique,
               done: _done,
               onToggle: _toggle,
+              l10n: l10n,
             ),
             const SizedBox(height: 12),
           ],
 
-          if (_tasks.isEmpty) _EmptyState(week: widget.currentWeek),
+          if (_tasks.isEmpty) _EmptyState(week: widget.currentWeek, l10n: l10n),
 
           // ── À VENIR ─────────────────────────────────────────────────
-          _UpcomingSection(currentWeek: widget.currentWeek),
+          _UpcomingSection(currentWeek: widget.currentWeek, l10n: l10n),
 
           SizedBox(height: bottom + 40),
         ]),
@@ -135,11 +142,13 @@ class _Header extends StatelessWidget {
   final int week, done, total;
   final double progress;
   final VoidCallback onBack;
+  final AppL10n l10n;
 
   const _Header({
     required this.top, required this.week,
     required this.done, required this.total,
     required this.progress, required this.onBack,
+    required this.l10n,
   });
 
   String get _tri => week <= 13 ? '1er trimestre'
@@ -166,7 +175,7 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('MA CHECKLIST', style: GoogleFonts.inter(
+            Text(l10n.checkTitle, style: GoogleFonts.inter(
               fontSize: 9, fontWeight: FontWeight.w600,
               color: context._p.textSoft, letterSpacing: 2.5)),
             const SizedBox(height: 1),
@@ -203,10 +212,10 @@ class _Header extends StatelessWidget {
         // progress bar + label
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(total == 0
-              ? 'Aucune tâche cette semaine'
+              ? l10n.checkAucune
               : done == total
-                  ? 'Tout est fait — bravo !'
-                  : '$done sur $total tâches complétées',
+                  ? l10n.checkToutFait
+                  : l10n.checkTaches(done, total),
               style: GoogleFonts.inter(
                 fontSize: 12, color: context._p.textMid, fontWeight: FontWeight.w500)),
           Text('${(progress * 100).round()}%',
@@ -272,15 +281,17 @@ class _GroupSection extends StatelessWidget {
   final List<ChecklistTask> tasks;
   final Set<String> done;
   final void Function(String) onToggle;
+  final AppL10n l10n;
 
   const _GroupSection({
     required this.category, required this.tasks,
     required this.done, required this.onToggle,
+    required this.l10n,
   });
 
   @override
   Widget build(BuildContext context) {
-    final style = _catStyle(category, context);
+    final style = _catStyle(category, context, l10n);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -453,7 +464,8 @@ class _TaskTileState extends State<_TaskTile>
 
 class _UpcomingSection extends StatelessWidget {
   final int currentWeek;
-  const _UpcomingSection({required this.currentWeek});
+  final AppL10n l10n;
+  const _UpcomingSection({required this.currentWeek, required this.l10n});
 
   List<MapEntry<int, List<ChecklistTask>>> _upcoming() {
     final out = <MapEntry<int, List<ChecklistTask>>>[];
@@ -494,14 +506,14 @@ class _UpcomingSection extends StatelessWidget {
                       size: 16, color: context._p.green),
                 ),
                 const SizedBox(width: 10),
-                Text('À venir', style: GoogleFonts.inter(
+                Text(l10n.checkAVenir, style: GoogleFonts.inter(
                   fontSize: 13, fontWeight: FontWeight.w700,
                   color: context._p.green)),
               ]),
             ),
             Divider(height: 1, color: context._p.border),
 
-            ...weeks.map((e) => _UpcomingWeekTile(week: e.key, tasks: e.value)),
+            ...weeks.map((e) => _UpcomingWeekTile(week: e.key, tasks: e.value, l10n: l10n)),
           ],
         ),
       ),
@@ -512,7 +524,8 @@ class _UpcomingSection extends StatelessWidget {
 class _UpcomingWeekTile extends StatelessWidget {
   final int week;
   final List<ChecklistTask> tasks;
-  const _UpcomingWeekTile({required this.week, required this.tasks});
+  final AppL10n l10n;
+  const _UpcomingWeekTile({required this.week, required this.tasks, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -531,7 +544,7 @@ class _UpcomingWeekTile extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         ...tasks.map((t) {
-          final style = _catStyle(t.category, context);
+          final style = _catStyle(t.category, context, l10n);
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(children: [
@@ -558,7 +571,8 @@ class _UpcomingWeekTile extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   final int week;
-  const _EmptyState({required this.week});
+  final AppL10n l10n;
+  const _EmptyState({required this.week, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -572,11 +586,11 @@ class _EmptyState extends StatelessWidget {
           child: Icon(Icons.spa_outlined, size: 30, color: context._p.green),
         ),
         const SizedBox(height: 18),
-        Text('Rien de prévu cette semaine', style: GoogleFonts.outfit(
+        Text(l10n.checkRien, style: GoogleFonts.outfit(
           fontSize: 16, fontWeight: FontWeight.w600, color: context._p.textDark),
           textAlign: TextAlign.center),
         const SizedBox(height: 8),
-        Text('Profite de ce moment de calme.\nLes prochaines tâches arrivent bientôt.',
+        Text(l10n.checkCalme,
           style: GoogleFonts.inter(
             fontSize: 13, color: context._p.textMid, height: 1.6),
           textAlign: TextAlign.center),

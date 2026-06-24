@@ -1,4 +1,5 @@
 import 'package:fiteva/core/shop/shop_provider.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -137,7 +138,8 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
   // ── BUILD ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final nc = NutritionColors.of(context);
+    final nc   = NutritionColors.of(context);
+    final l10n = ref.watch(l10nProvider);
     return Scaffold(
       backgroundColor: nc.bg,
       body: Column(
@@ -300,9 +302,9 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                         ),
                       ),
                       const SizedBox(width: 5),
-                      const Text(
-                        'OFFRE LIMITÉE',
-                        style: TextStyle(
+                      Text(
+                        ref.read(l10nProvider).detailOffreLimitee,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
@@ -343,9 +345,9 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                     ),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
-                    'sur le site',
-                    style: TextStyle(
+                  Text(
+                    ref.read(l10nProvider).detailSurSite,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.w300,
@@ -428,7 +430,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Résumé de l\'offre',
+            ref.read(l10nProvider).detailResume,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -454,9 +456,9 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Coût de l\'offre',
+                  Text(ref.read(l10nProvider).detailCout,
                     style: TextStyle(fontSize: 12, color: nc.text2, fontWeight: FontWeight.w400)),
-                  Text('${item.etoiles} étoiles',
+                  Text('${item.etoiles} ${ref.read(l10nProvider).detailEtoiles}',
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
                       color: item.primaryColor, letterSpacing: -0.3)),
                 ],
@@ -480,9 +482,9 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Valable jusqu\'au',
+                    Text(ref.read(l10nProvider).detailValable,
                       style: TextStyle(fontSize: 12, color: nc.text2, fontWeight: FontWeight.w400)),
-                    Text(item.validUntil ?? 'Non précisé',
+                    Text(item.validUntil ?? ref.read(l10nProvider).detailNonPrecise,
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
                         color: nc.text1, letterSpacing: -0.2)),
                     if (_daysLeft < 999) ...[
@@ -498,7 +500,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _daysLeft <= 1 ? 'Expire demain !' : '$_daysLeft jours restants',
+                        _daysLeft <= 1 ? ref.read(l10nProvider).detailExpireDemain : '$_daysLeft jours restants',
                         style: TextStyle(fontSize: 11, color: _progressColor, fontWeight: FontWeight.w500)),
                     ],
                   ],
@@ -528,11 +530,11 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Mes étoiles',
+                  Text(ref.read(l10nProvider).detailMesEtoiles,
                     style: TextStyle(fontSize: 12, color: nc.text2, fontWeight: FontWeight.w400)),
                   Row(
                     children: [
-                      Text('${shop.points} disponibles',
+                      Text('${shop.points} ${ref.read(l10nProvider).detailDisponibles}',
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
                           color: canAfford ? const Color(0xFF2E7D32) : const Color(0xFFFB8C00),
                           letterSpacing: -0.2)),
@@ -567,7 +569,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('À propos de l\'offre',
+          Text(ref.read(l10nProvider).detailAPropos,
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
               color: nc.text1, letterSpacing: -0.1)),
           const SizedBox(height: 12),
@@ -585,25 +587,25 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Comment ça marche ?',
+          Text(ref.read(l10nProvider).detailComment,
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
               color: nc.text1, letterSpacing: -0.1)),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _StepRow(
               number: '01',
-              text: 'Appuie sur "Échanger mes étoiles"',
+              text: ref.read(l10nProvider).detailStep1,
               isLast: false),
           _StepRow(
               number: '02',
-              text: 'Reçois ton code promo et QR code',
+              text: ref.read(l10nProvider).detailStep2,
               isLast: false),
           _StepRow(
               number: '03',
-              text: 'Télécharge ta carte en PDF',
+              text: ref.read(l10nProvider).detailStep3,
               isLast: false),
           _StepRow(
               number: '04',
-              text: 'Utilise-le lors de ta commande',
+              text: ref.read(l10nProvider).detailStep4,
               isLast: true),
         ],
       ),
@@ -618,7 +620,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 2, bottom: 14),
-          child: Text('Offres similaires',
+          child: Text(ref.read(l10nProvider).detailOffresSimilaires,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700,
               color: nc.text1, letterSpacing: -0.4)),
         ),
@@ -710,7 +712,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                     const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF2E7D32)),
                     const SizedBox(width: 7),
                     Flexible(
-                      child: Text('Offre déjà échangée — consulte ton code ci-dessus',
+                      child: Text(ref.read(l10nProvider).detailDejaEchange,
                         style: const TextStyle(color: Color(0xFF2E7D32),
                           fontSize: 12.5, fontWeight: FontWeight.w500)),
                     ),
@@ -730,7 +732,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                     const SizedBox(width: 7),
                     Flexible(
                       child: Text(
-                        'Il te manque $shortage étoile${shortage > 1 ? 's' : ''} pour débloquer cette offre',
+                        ref.read(l10nProvider).detailManque(shortage),
                         style: const TextStyle(color: Color(0xFFFB8C00),
                           fontSize: 12.5, fontWeight: FontWeight.w500)),
                     ),
@@ -788,10 +790,10 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                     const SizedBox(width: 10),
                     Text(
                       redeemed
-                          ? 'Offre déjà échangée'
+                          ? ref.read(l10nProvider).detailDejaEchangeBtn
                           : ctaActive
-                              ? 'Échanger ${widget.item.etoiles} étoiles'
-                              : 'Étoiles insuffisantes',
+                              ? ref.read(l10nProvider).detailEchangerEtoiles(widget.item.etoiles)
+                              : ref.read(l10nProvider).detailEtoilesInsuff,
                       style: TextStyle(
                         color: ctaActive ? Colors.white : const Color(0xFFA0A09A),
                         fontSize: 16,
@@ -814,12 +816,12 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Code copié : ${widget.item.promoCode}'),
+                    content: Text(ref.read(l10nProvider).detailCopierCode(widget.item.promoCode)),
                     duration: const Duration(seconds: 2),
                     backgroundColor: const Color(0xFF2E7D32)));
               },
               child: Text(
-                'Copier le code : ${widget.item.promoCode}',
+                ref.read(l10nProvider).detailCopierCode(widget.item.promoCode),
                 style: const TextStyle(
                   fontSize: 13, fontWeight: FontWeight.w600,
                   color: Color(0xFF2E7D32),

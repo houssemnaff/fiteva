@@ -1,26 +1,28 @@
 ﻿// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../pregnancy_colors.dart';
 import 'symptom_entry.dart';
 import 'add_symptom_sheet.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 
 extension _Pg on BuildContext {
   PgColors get _p => PgColors.of(this);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-class SymptomsHomeScreen extends StatefulWidget {
+class SymptomsHomeScreen extends ConsumerStatefulWidget {
   final int currentWeek;
   const SymptomsHomeScreen({super.key, required this.currentWeek});
 
   @override
-  State<SymptomsHomeScreen> createState() => _SymptomsHomeScreenState();
+  ConsumerState<SymptomsHomeScreen> createState() => _SymptomsHomeScreenState();
 }
 
-class _SymptomsHomeScreenState extends State<SymptomsHomeScreen> {
+class _SymptomsHomeScreenState extends ConsumerState<SymptomsHomeScreen> {
   final List<SymptomEntry> _entries = [];
 
   List<SymptomEntry> get _weekEntries {
@@ -43,6 +45,7 @@ class _SymptomsHomeScreenState extends State<SymptomsHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n   = ref.watch(l10nProvider);
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
     final entries = _weekEntries;
@@ -81,7 +84,7 @@ class _SymptomsHomeScreenState extends State<SymptomsHomeScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
               child: Row(children: [
-                Text('CETTE SEMAINE', style: GoogleFonts.inter(
+                Text(l10n.sympHomeCetteSem, style: GoogleFonts.inter(
                   fontSize: 10, fontWeight: FontWeight.w600,
                   color: context._p.textSoft, letterSpacing: 2)),
                 const Spacer(),
@@ -124,7 +127,7 @@ class _SymptomsHomeScreenState extends State<SymptomsHomeScreen> {
 //  HEADER
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   final double top;
   final int week, count;
   final VoidCallback onBack;
@@ -132,7 +135,8 @@ class _Header extends StatelessWidget {
       required this.count, required this.onBack});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     return Container(
       color: context._p.surface,
       padding: EdgeInsets.fromLTRB(20, top + 12, 20, 20),
@@ -149,11 +153,11 @@ class _Header extends StatelessWidget {
         ),
         const SizedBox(width: 14),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('MES SYMPTÔMES', style: GoogleFonts.inter(
+          Text(l10n.sympHomeTitle, style: GoogleFonts.inter(
             fontSize: 9, fontWeight: FontWeight.w600,
             color: context._p.textSoft, letterSpacing: 2.5)),
           const SizedBox(height: 1),
-          Text('Semaine $week', style: GoogleFonts.inter(
+          Text(l10n.pregSemaineN(week), style: GoogleFonts.inter(
             fontSize: 15, fontWeight: FontWeight.w700, color: context._p.textDark)),
         ]),
         const Spacer(),
@@ -164,7 +168,7 @@ class _Header extends StatelessWidget {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.favorite_outline_rounded, size: 13, color: context._p.green),
             const SizedBox(width: 5),
-            Text('$count ce mois', style: GoogleFonts.inter(
+            Text(l10n.sympHomeCount(count), style: GoogleFonts.inter(
               fontSize: 11, fontWeight: FontWeight.w600, color: context._p.green)),
           ]),
         ),
@@ -177,7 +181,7 @@ class _Header extends StatelessWidget {
 //  INSIGHT BANNER
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _InsightBanner extends StatelessWidget {
+class _InsightBanner extends ConsumerWidget {
   final int week;
   final List<SymptomEntry> entries;
   const _InsightBanner({required this.week, required this.entries});
@@ -193,7 +197,8 @@ class _InsightBanner extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -219,7 +224,7 @@ class _InsightBanner extends StatelessWidget {
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Conseil de la semaine', style: GoogleFonts.inter(
+              Text(l10n.sympHomeConseil, style: GoogleFonts.inter(
                 fontSize: 10, fontWeight: FontWeight.w600,
                 color: Colors.white70, letterSpacing: 1.2)),
               const SizedBox(height: 6),
@@ -238,14 +243,15 @@ class _InsightBanner extends StatelessWidget {
 //  WEEKLY CHART
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _WeeklyChart extends StatelessWidget {
+class _WeeklyChart extends ConsumerWidget {
   final List<SymptomEntry> entries;
   const _WeeklyChart({required this.entries});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     final now = DateTime.now();
-    final labels = ['−6j', '−5j', '−4j', '−3j', '−2j', 'Hier', "Auj'"];
+    final labels = ['−6j', '−5j', '−4j', '−3j', '−2j', l10n.sympHomeHier, l10n.sympHomeAuj];
     final daily = List.generate(7, (i) {
       final day = now.subtract(Duration(days: 6 - i));
       final dayE = entries.where((e) =>
@@ -275,7 +281,7 @@ class _WeeklyChart extends StatelessWidget {
               child: Icon(Icons.bar_chart_rounded, size: 15, color: context._p.green),
             ),
             const SizedBox(width: 10),
-            Text('Tendance hebdomadaire', style: GoogleFonts.inter(
+            Text(l10n.sympHomeTendance, style: GoogleFonts.inter(
               fontSize: 13, fontWeight: FontWeight.w700, color: context._p.textDark)),
           ]),
           const SizedBox(height: 16),
@@ -444,9 +450,10 @@ class _SymptomTileState extends State<_SymptomTile>
 //  EMPTY STATE
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
       child: Container(
@@ -467,12 +474,12 @@ class _EmptyState extends StatelessWidget {
             child: Icon(Icons.spa_outlined, size: 30, color: context._p.green),
           ),
           const SizedBox(height: 18),
-          Text('Rien de noté cette semaine',
+          Text(l10n.sympHomeRien,
             style: GoogleFonts.outfit(
               fontSize: 16, fontWeight: FontWeight.w600, color: context._p.textDark),
             textAlign: TextAlign.center),
           const SizedBox(height: 8),
-          Text('Appuie sur le bouton ci-dessous\npour enregistrer comment tu te sens.',
+          Text(l10n.sympHomeHint,
             style: GoogleFonts.inter(
               fontSize: 13, color: context._p.textMid, height: 1.6),
             textAlign: TextAlign.center),
@@ -486,12 +493,13 @@ class _EmptyState extends StatelessWidget {
 //  FAB
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _LogFAB extends StatelessWidget {
+class _LogFAB extends ConsumerWidget {
   final VoidCallback onTap;
   const _LogFAB({required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     return GestureDetector(
       onTap: () { HapticFeedback.lightImpact(); onTap(); },
       child: Container(
@@ -508,7 +516,7 @@ class _LogFAB extends StatelessWidget {
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Icon(Icons.add_rounded, color: Colors.white, size: 22),
           const SizedBox(width: 8),
-          Text('Ajouter un symptôme', style: GoogleFonts.inter(
+          Text(l10n.sympHomeAjouter, style: GoogleFonts.inter(
             color: Colors.white, fontWeight: FontWeight.w700,
             fontSize: 15, letterSpacing: 0.2)),
         ]),

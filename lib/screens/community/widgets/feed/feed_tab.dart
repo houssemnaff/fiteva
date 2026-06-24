@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // Color scheme is obtained from Theme.of(context).colorScheme
 // No hardcoded colors - all colors are theme-aware
@@ -28,6 +29,7 @@ class _FeedTabState extends ConsumerState<FeedTab> {
   Widget build(BuildContext context) {
     final posts = ref.watch(postsNotifierProvider);
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
@@ -43,19 +45,19 @@ class _FeedTabState extends ConsumerState<FeedTab> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('COMMUNITY', style: GoogleFonts.inter(
+                    Text(l10n.communityEyebrow, style: GoogleFonts.inter(
                       color: cs.secondary, fontSize: 9,
                       fontWeight: FontWeight.w700, letterSpacing: 3,
                     )),
                     const SizedBox(height: 3),
-                    Text('Top Posts', style: GoogleFonts.outfit(
+                    Text(l10n.communityTopPosts, style: GoogleFonts.outfit(
                       color: cs.onSurface, fontSize: 24,
                       fontWeight: FontWeight.w800, letterSpacing: -0.5,
                     )),
                   ],
                 ),
                 const Spacer(),
-                Text('See all', style: GoogleFonts.inter(
+                Text(l10n.seeAll, style: GoogleFonts.inter(
                   color: cs.primary, fontSize: 11,
                   fontWeight: FontWeight.w700, letterSpacing: 0.3,
                 )),

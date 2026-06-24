@@ -1,7 +1,9 @@
 import 'dart:typed_data';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:fiteva/screens/nutrition/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -10,15 +12,15 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/boutique_item.dart';
 
 
-class PromoModal extends StatefulWidget {
+class PromoModal extends ConsumerStatefulWidget {
   final BoutiqueItem item;
   const PromoModal({super.key, required this.item});
 
   @override
-  State<PromoModal> createState() => _PromoModalState();
+  ConsumerState<PromoModal> createState() => _PromoModalState();
 }
 
-class _PromoModalState extends State<PromoModal> {
+class _PromoModalState extends ConsumerState<PromoModal> {
   bool _copied = false;
   bool _generating = false;
 
@@ -239,8 +241,9 @@ class _PromoModalState extends State<PromoModal> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n        = ref.watch(l10nProvider);
     final colorScheme = Theme.of(context).colorScheme;
-    final item = widget.item;
+    final item        = widget.item;
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -262,9 +265,9 @@ class _PromoModalState extends State<PromoModal> {
           ),
           const Text('🎉', style: TextStyle(fontSize: 32)),
           const SizedBox(height: 8),
-          const Text(
-            'Ta récompense est prête !',
-            style: TextStyle(
+          Text(
+            l10n.promoReady,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.3,
@@ -272,7 +275,7 @@ class _PromoModalState extends State<PromoModal> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Utilise le code ou le QR code sur le site partenaire.',
+            l10n.promoUseCode,
             style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
@@ -369,7 +372,7 @@ class _PromoModalState extends State<PromoModal> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Code promo',
+                                      l10n.promoCodeLabel,
                                       style: TextStyle(
                                           fontSize: 11, color: colorScheme.onSurfaceVariant),
                                     ),
@@ -419,7 +422,7 @@ class _PromoModalState extends State<PromoModal> {
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
-                                        _copied ? 'Copié !' : 'Copier',
+                                        _copied ? l10n.promoCopied : l10n.promoCopier,
                                         style: TextStyle(
                                           color: colorScheme.onPrimary,
                                           fontSize: 13,
@@ -460,7 +463,7 @@ class _PromoModalState extends State<PromoModal> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                     Text(
-                                    'Scanne le QR code',
+                                    l10n.promoScanQR,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
@@ -469,7 +472,7 @@ class _PromoModalState extends State<PromoModal> {
                                   ),
                                   const SizedBox(height: 3),
                                     Text(
-                                    'Ou saisis le code manuellement lors de ta commande.',
+                                    l10n.promoOuManuel,
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: colorScheme.onSurfaceVariant,
@@ -523,7 +526,7 @@ class _PromoModalState extends State<PromoModal> {
                               color: colorScheme.onPrimary, size: 20),
                         SizedBox(width: 8),
                         Text(
-                          'Télécharger en PDF',
+                          l10n.promoTelecharger,
                           style: TextStyle(
                               color: colorScheme.onPrimary,
                             fontSize: 15,
@@ -538,7 +541,7 @@ class _PromoModalState extends State<PromoModal> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Fermer',
+              l10n.promoFermer,
               style: TextStyle(
                 color: colorScheme.onSurfaceVariant,
                 fontSize: 14,
