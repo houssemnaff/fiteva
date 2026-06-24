@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+/*import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 // ── Recipe Model ──────────────────────────────────────────────────────────────
@@ -176,4 +176,4 @@ class NutritionNotifier extends StateNotifier<NutritionState> {
 final nutritionProvider =
     StateNotifierProvider<NutritionNotifier, NutritionState>(
   (ref) => NutritionNotifier(),
-);
+);*/
