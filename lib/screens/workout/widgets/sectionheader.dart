@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../l10n/app_localizations.dart';
 
 Widget buildSectionHeader({
   required BuildContext context,
@@ -61,16 +63,19 @@ Widget buildSectionHeader({
 
         // See all
         if (onSeeAll != null)
-          GestureDetector(
-            onTap: onSeeAll,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.09),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withValues(alpha: 0.18))),
-              child: Text('Voir tout', style: GoogleFonts.inter(
-                color: color, fontSize: 11, fontWeight: FontWeight.w700)))),
+          Consumer(builder: (context, ref, _) {
+            final l10n = ref.watch(l10nProvider);
+            return GestureDetector(
+              onTap: onSeeAll,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: color.withValues(alpha: 0.18))),
+                child: Text(l10n.sectionVoirTout, style: GoogleFonts.inter(
+                  color: color, fontSize: 11, fontWeight: FontWeight.w700))));
+          }),
       ],
     ),
   );

@@ -4,6 +4,7 @@ import 'package:fiteva/screens/cycle/widgets-cycle/Phasecolors.dart';
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -286,6 +287,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
     final favorites = ref.watch(favoritesProvider);
     final filtered  = _filtered(favorites);
     final nc        = NutritionColors.of(context);
+    final l10n      = ref.watch(l10nProvider);
     final isFavMode = _activeCategory == 'Favoris';
     final videoFavs = isFavMode
         ? videoRecipes.where((r) => favorites.contains(r.name)).toList()
@@ -303,6 +305,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
               top: top,
               onBack: () => Navigator.pop(context),
               favCount: favorites.length,
+              l10n: l10n,
               onFavTap: () {
                 HapticFeedback.selectionClick();
                 setState(() => _activeCategory =
@@ -367,6 +370,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                     isFavorite: favorites.contains(allRecipes.first.name),
                     onToggleFavorite: () => _toggleFavorite(allRecipes.first.name),
                     onTap: () => _openRecipe(context, allRecipes.first),
+                    l10n: l10n,
                   ),
                 ),
               ),
@@ -552,12 +556,14 @@ class _StickyHeader extends StatelessWidget {
   final VoidCallback onBack;
   final int favCount;
   final VoidCallback onFavTap;
+  final AppL10n l10n;
 
   const _StickyHeader({
     required this.top,
     required this.onBack,
     required this.favCount,
     required this.onFavTap,
+    required this.l10n,
   });
 
   @override
@@ -589,10 +595,10 @@ class _StickyHeader extends StatelessWidget {
             const SizedBox(width: 14),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('RECETTES', style: GoogleFonts.inter(
+                Text(l10n.recettesEyebrow, style: GoogleFonts.inter(
                   color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
                   letterSpacing: 3)),
-                Text('Explorer', style: GoogleFonts.outfit(
+                Text(l10n.recettesExplorer, style: GoogleFonts.outfit(
                   color: nc.text1, fontSize: 22, fontWeight: FontWeight.w800,
                   letterSpacing: -0.4)),
               ]),
@@ -830,11 +836,13 @@ class _HeroCard extends StatelessWidget {
   final bool isFavorite;
   final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
+  final AppL10n l10n;
   const _HeroCard({
     required this.recipe,
     required this.isFavorite,
     required this.onToggleFavorite,
     required this.onTap,
+    required this.l10n,
   });
 
   @override
@@ -877,7 +885,7 @@ class _HeroCard extends StatelessWidget {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(LucideIcons.star, size: 9, color: Colors.white),
                 const SizedBox(width: 5),
-                Text('En vedette', style: GoogleFonts.inter(
+                Text(l10n.recettesEnVedette, style: GoogleFonts.inter(
                   fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
               ]))),
 

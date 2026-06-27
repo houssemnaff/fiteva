@@ -987,4 +987,78 @@ class AppL10n {
   String get sympHomeHier       => _fr ? 'Hier'                              : 'Yesterday';
   String get sympHomeAuj        => _fr ? "Auj'"                              : "Today";
   String sympHomeCount(int n)   => _fr ? '$n ce mois'                        : '$n this month';
+
+  // ── Nutrition / recipes screens ────────────────────────────────────────────
+  String get recettesEyebrow     => _fr ? 'RECETTES'                  : 'RECIPES';
+  String get recettesPhotos      => _fr ? 'Photos & Étapes'           : 'Photos & Steps';
+  String get recettesVideos      => _fr ? 'Vidéos'                    : 'Videos';
+  String get recettesVideo       => _fr ? 'Vidéo'                     : 'Video';
+  String get recettesAucune      => _fr ? 'Aucune recette'            : 'No recipes';
+  String get recettesEssaie      => _fr ? 'Essaie un autre terme'     : 'Try another term';
+  String get recettesExplorer    => _fr ? 'Explorer'                  : 'Explore';
+  String get recettesEnVedette   => _fr ? 'En vedette'                : 'Featured';
+  String get recettesKcal        => _fr ? 'kcal'                      : 'kcal';
+  String recettesCount(int n)    => _fr ? '$n recettes'               : '$n recipes';
+  String recettesResults(int n)  => _fr ? '$n résultat${n > 1 ? "s" : ""}' : '$n result${n > 1 ? "s" : ""}';
+
+  String get detailCaloriesPortion => _fr ? 'Calories par portion'   : 'Calories per serving';
+  String get detailObjectif        => _fr ? 'Objectif journalier'     : 'Daily goal';
+
+  String get videoTotalEstime    => _fr ? 'Total estimé'              : 'Estimated total';
+  String videoPourquoiPhase(String p) => _fr ? 'Pourquoi en phase $p ?' : 'Why in $p phase?';
+
+  // ── Health nutrition widgets ───────────────────────────────────────────────
+  String get healthBilanJour     => _fr ? 'BILAN DU JOUR'             : "TODAY'S SUMMARY";
+  String get healthAujourdhui    => _fr ? "Aujourd'hui"               : 'Today';
+  String get healthEnregistrer   => _fr ? 'Enregistrer mon signal'    : 'Log my signal';
+  String get healthSignalEnreg   => _fr ? 'Signal enregistré !'       : 'Signal logged!';
+  String get healthVerres        => _fr ? 'verres'                    : 'glasses';
+  String get healthAPrivilegier  => _fr ? 'À privilégier'             : 'To favor';
+  String get healthAEviter       => _fr ? 'À éviter'                  : 'To avoid';
+  String get healthExperts       => _fr ? 'EXPERTS'                   : 'EXPERTS';
+  String get healthConseils      => _fr ? 'Conseils personnalisés'    : 'Personalized tips';
+
+  // ── Workout screens ────────────────────────────────────────────────────────
+  String get weeklyMaSemaine     => _fr ? 'Ma semaine'             : 'My week';
+  String get weeklyCetteSemaine  => _fr ? 'Cette semaine'          : 'This week';
+  String get weeklyProgSemaine   => _fr ? 'PROGRAMME SEMAINE'      : 'WEEK PROGRAM';
+  String get weeklyAucuneSeance  => _fr ? 'Aucune séance prévue'   : 'No sessions planned';
+  String get weeklyDeplacer      => _fr ? 'Déplacer vers…'         : 'Move to…';
+  String get weeklyVide          => _fr ? 'Vide'                   : 'Empty';
+
+  // ── Avatar customization screen ────────────────────────────────────────────
+  String get avatarTitle         => _fr ? 'Mon avatar'             : 'My avatar';
+  String get avatarEnregistrer   => _fr ? 'Enregistrer'            : 'Save';
+  String get avatarAleatoire     => _fr ? 'Aléatoire avec le bouton shuffle' : 'Random with the shuffle button';
+  String get avatarStyle         => _fr ? 'Style'                  : 'Style';
+  String get avatarCouleur       => _fr ? 'Couleur de fond'        : 'Background color';
+  String get avatarUtiliser      => _fr ? 'Utiliser cet avatar'    : 'Use this avatar';
+
+  // ── CorpsZone player screen ────────────────────────────────────────────────
+  String corpszonePoints(int earned, int total) => _fr ? '+$earned pts ! Total : $total pts' : '+$earned pts! Total: $total pts';
+
+  // ── Workout widgets ────────────────────────────────────────────────────────
+  String get hcardDemarrer      => _fr ? 'Démarrer'    : 'Start';
+  String get progcardCommencer  => _fr ? 'Commencer'   : 'Start';
+  String get progcardProgramme  => _fr ? 'PROGRAMME'   : 'PROGRAM';
+  String get sectionVoirTout    => _fr ? 'Voir tout'   : 'See all';
+
+  // ── Nutrition widgets ──────────────────────────────────────────────────────
+  String get mealMange          => _fr ? 'Mangé 😊'    : 'Eaten 😊';
+  String get recipeIngredients  => _fr ? 'Ingrédients' : 'Ingredients';
+  String get mealsRecommandations => _fr ? 'RECOMMANDATIONS' : 'RECOMMENDATIONS';
+  String get mealsRepasJour     => _fr ? 'Repas du jour' : "Today's meals";
+
+  // ── Chatbot sheet ──────────────────────────────────────────────────────────
+  String get chatAssistante     => _fr ? 'Assistante personnelle'           : 'Personal assistant';
+  String get chatChoisir        => _fr ? 'Choisis une catégorie pour commencer' : 'Choose a category to start';
+  String get chatComment        => _fr ? 'Comment puis-je t\'aider ?'      : 'How can I help you?';
+  String get chatFitEvaAI       => _fr ? 'FitEva AI'                        : 'FitEva AI';
+  String get chatSelectionner   => _fr ? 'Sélectionne une question'         : 'Select a question';
+
+  // ── Misc widgets ───────────────────────────────────────────────────────────
+  String get datePickerConfirmer => _fr ? 'Confirmer'      : 'Confirm';
+  String get stepPtsAjoutes      => _fr ? '+50 points ajoutés' : '+50 points added';
+  String get stepPts             => _fr ? '+50 pts'            : '+50 pts';
+  String get stepObjectifAtteint => _fr ? 'Objectif atteint !' : 'Goal reached!';
 }

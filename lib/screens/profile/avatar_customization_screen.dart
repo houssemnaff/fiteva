@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dice_bear/dice_bear.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../l10n/app_localizations.dart';
 
-class AvatarCustomizationScreen extends StatefulWidget {
+class AvatarCustomizationScreen extends ConsumerStatefulWidget {
   final String userName;
   const AvatarCustomizationScreen({super.key, required this.userName});
 
   @override
-  State<AvatarCustomizationScreen> createState() => _AvatarCustomizationScreenState();
+  ConsumerState<AvatarCustomizationScreen> createState() => _AvatarCustomizationScreenState();
 }
 
-class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
+class _AvatarCustomizationScreenState extends ConsumerState<AvatarCustomizationScreen> {
   DiceBearStyle _sprite = DiceBearStyle.lorelei;
   String _seed    = '';
   String _bgColor = 'b6e3f4';
@@ -64,6 +66,7 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
   @override
   Widget build(BuildContext context) {
     final cs        = Theme.of(context).colorScheme;
+    final l10n      = ref.watch(l10nProvider);
     final avatarUrl = _avatarUrl;
 
     return Scaffold(
@@ -76,7 +79,7 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: cs.onSurface, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Mon avatar',
+        title: Text(l10n.avatarTitle,
           style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700, color: cs.onSurface)),
         centerTitle: true,
         actions: [
@@ -84,7 +87,7 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
             onPressed: () => Navigator.pop(context, {
               'seed': _seed, 'sprite': _sprite.name, 'url': avatarUrl,
             }),
-            child: Text('Enregistrer',
+            child: Text(l10n.avatarEnregistrer,
               style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: _accent)),
           ),
         ],
@@ -126,13 +129,13 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
           ])),
 
           const SizedBox(height: 8),
-          Center(child: Text('Aléatoire avec le bouton shuffle',
+          Center(child: Text(l10n.avatarAleatoire,
             style: GoogleFonts.inter(fontSize: 12, color: cs.onSurface.withOpacity(0.45)))),
 
           const SizedBox(height: 32),
 
           // ── Style ────────────────────────────────────────────────────
-          Text('Style', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700,
+          Text(l10n.avatarStyle, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700,
             color: cs.onSurface.withOpacity(0.45), letterSpacing: 1.2)),
           const SizedBox(height: 12),
 
@@ -190,7 +193,7 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
           const SizedBox(height: 28),
 
           // ── Couleur de fond ──────────────────────────────────────────
-          Text('Couleur de fond', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700,
+          Text(l10n.avatarCouleur, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700,
             color: cs.onSurface.withOpacity(0.45), letterSpacing: 1.2)),
           const SizedBox(height: 12),
 
@@ -241,7 +244,7 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: Text('Utiliser cet avatar',
+              child: Text(l10n.avatarUtiliser,
                 style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700)),
             ),
           ),

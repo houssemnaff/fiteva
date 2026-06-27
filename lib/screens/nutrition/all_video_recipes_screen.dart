@@ -6,6 +6,7 @@ import 'package:fiteva/screens/nutrition/recipe_video_screen.dart';
 import 'package:fiteva/screens/nutrition/recipes_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -26,6 +27,7 @@ class AllVideoRecipesScreen extends ConsumerWidget {
     final favorites = ref.watch(favoritesProvider);
     final top = MediaQuery.of(context).padding.top;
     final nc  = NutritionColors.of(context);
+    final l10n = ref.watch(l10nProvider);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: (nc.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
@@ -51,9 +53,9 @@ class AllVideoRecipesScreen extends ConsumerWidget {
                       child: const Icon(LucideIcons.chevronLeft, color: _kGreen, size: 18))),
                   const SizedBox(width: 14),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('RECETTES', style: GoogleFonts.inter(
+                    Text(l10n.recettesEyebrow, style: GoogleFonts.inter(
                       color: _kMint, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 3)),
-                    Text('Vidéos', style: GoogleFonts.outfit(
+                    Text(l10n.recettesVideos, style: GoogleFonts.outfit(
                       color: nc.text1, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
                   ]),
                   const Spacer(),
@@ -61,7 +63,7 @@ class AllVideoRecipesScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: nc.mintBg, borderRadius: BorderRadius.circular(20)),
-                    child: Text('${videoRecipes.length} recettes', style: GoogleFonts.inter(
+                    child: Text(l10n.recettesCount(videoRecipes.length), style: GoogleFonts.inter(
                       fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
                 ]),
               ),
@@ -81,6 +83,7 @@ class AllVideoRecipesScreen extends ConsumerWidget {
                     },
                     onTap: () => Navigator.push(ctx, MaterialPageRoute(
                       builder: (_) => RecipeVideoPlayerScreen(recipe: videoRecipes[i]))),
+                    l10n: l10n,
                   ),
                   childCount: videoRecipes.length,
                 ),
@@ -105,11 +108,13 @@ class _VideoGridCard extends StatelessWidget {
   final bool isFavorite;
   final VoidCallback onTap;
   final VoidCallback onToggleFavorite;
+  final AppL10n l10n;
   const _VideoGridCard({
     required this.recipe,
     required this.isFavorite,
     required this.onTap,
     required this.onToggleFavorite,
+    required this.l10n,
   });
 
   @override
@@ -167,7 +172,7 @@ class _VideoGridCard extends StatelessWidget {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(LucideIcons.video, size: 9, color: Colors.white),
                       const SizedBox(width: 3),
-                      Text('Vidéo', style: GoogleFonts.inter(
+                      Text(l10n.recettesVideo, style: GoogleFonts.inter(
                         fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
                     ]))),
               // Fav button

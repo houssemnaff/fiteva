@@ -6,6 +6,7 @@ import 'package:fiteva/screens/nutrition/recette_detail_screen.dart';
 import 'package:fiteva/screens/nutrition/recipes_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -49,6 +50,7 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
     final filtered  = _filtered;
     final favorites = ref.watch(favoritesProvider);
     final nc        = NutritionColors.of(context);
+    final l10n      = ref.watch(l10nProvider);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: (nc.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
@@ -74,9 +76,9 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
                       child: const Icon(LucideIcons.chevronLeft, color: _kGreen, size: 18))),
                   const SizedBox(width: 14),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('RECETTES', style: GoogleFonts.inter(
+                    Text(l10n.recettesEyebrow, style: GoogleFonts.inter(
                       color: _kMint, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 3)),
-                    Text('Photos & Étapes', style: GoogleFonts.outfit(
+                    Text(l10n.recettesPhotos, style: GoogleFonts.outfit(
                       color: _kGreen, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
                   ]),
                   const Spacer(),
@@ -84,7 +86,7 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: _kMintBg, borderRadius: BorderRadius.circular(20)),
-                    child: Text('${allRecipes.length} recettes', style: GoogleFonts.inter(
+                    child: Text(l10n.recettesCount(allRecipes.length), style: GoogleFonts.inter(
                       fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
                 ]),
               ),
@@ -133,7 +135,7 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-                child: Text('${filtered.length} résultat${filtered.length > 1 ? 's' : ''}',
+                child: Text(l10n.recettesResults(filtered.length),
                   style: GoogleFonts.inter(fontSize: 12, color: _kText2, fontWeight: FontWeight.w500)),
               ),
             ),
@@ -149,10 +151,10 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
                       decoration: BoxDecoration(color: _kMintBg, borderRadius: BorderRadius.circular(18)),
                       child: const Icon(LucideIcons.search, color: _kGreen, size: 24)),
                     const SizedBox(height: 14),
-                    Text('Aucune recette', style: GoogleFonts.outfit(
+                    Text(l10n.recettesAucune, style: GoogleFonts.outfit(
                       fontSize: 17, fontWeight: FontWeight.w700, color: _kText1)),
                     const SizedBox(height: 4),
-                    Text('Essaie un autre terme', style: GoogleFonts.inter(
+                    Text(l10n.recettesEssaie, style: GoogleFonts.inter(
                       fontSize: 13, color: _kText2)),
                   ])),
                 ),
