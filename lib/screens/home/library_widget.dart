@@ -19,10 +19,10 @@ class LibrarySection extends ConsumerStatefulWidget {
 class _LibrarySectionState extends ConsumerState<LibrarySection> {
   int _selectedTab = 0;
 
-  final List<Map<String, dynamic>> _tabs = const [
-    {'label': 'Workouts', 'icon': LucideIcons.dumbbell},
-    {'label': 'Recettes', 'icon': LucideIcons.utensils},
-    {'label': 'Boutique', 'icon': LucideIcons.shoppingBag},
+  List<Map<String, dynamic>> _tabs(AppL10n l10n) => [
+    {'label': l10n.navWorkout,  'icon': LucideIcons.dumbbell},
+    {'label': l10n.navNutrition,'icon': LucideIcons.utensils},
+    {'label': l10n.navShop,     'icon': LucideIcons.shoppingBag},
   ];
 
   @override
@@ -104,7 +104,7 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: _tabs.length,
+            itemCount: _tabs(l10n).length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final selected = index == _selectedTab;
@@ -122,13 +122,13 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
                   child: Row(
                     children: [
                       Icon(
-                        _tabs[index]['icon'] as IconData,
+                        _tabs(l10n)[index]['icon'] as IconData,
                         size: 14,
                         color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        _tabs[index]['label'] as String,
+                        _tabs(l10n)[index]['label'] as String,
                         style: GoogleFonts.inter(
                           color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
                           fontSize: 13,
@@ -149,7 +149,7 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
         if (_selectedTab == 0)
           _buildWorkoutList(favorites, allWorkouts, allPrograms, cs),
         if (_selectedTab == 1)
-          _buildRecipeList(recipeFavorites, cs),
+          _buildRecipeList(recipeFavorites, cs, l10n),
         if (_selectedTab == 2)
           _buildProductList(shopWishlist, cs),
       ],
@@ -187,7 +187,7 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
     });
   }
 
-  Widget _buildRecipeList(Set<String> favorites, ColorScheme cs) {
+  Widget _buildRecipeList(Set<String> favorites, ColorScheme cs, AppL10n l10n) {
     // Show only favorited recipe IDs - the actual recipe data should come from a real provider
     if (favorites.isEmpty) {
       return _buildEmptyState(cs);
@@ -197,7 +197,7 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
         .map((id) => {
           'id': id,
           'title': id,
-          'subtitle': 'Recipe',
+          'subtitle': l10n.navNutrition,
           'image': 'assets/images/recipe.jpg',
         })
         .toList();

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../providers/chat_provider.dart';
+import '../providers/mock_data_provider.dart';
 import '../l10n/app_localizations.dart';
+import '../screens/workout/programme_detail_screen.dart';
 
 // ── Adaptive theme ────────────────────────────────────────────────────────────
 
@@ -180,9 +182,15 @@ class _State extends ConsumerState<ChatbotSheet> {
               ],
             )),
             // Back to categories
-            if (_activeCat != null && isEmpty)
+            if (_activeCat != null)
               GestureDetector(
-                onTap: () => setState(() => _activeCat = null),
+                onTap: () {
+                  if (!isEmpty) {
+                    ref.read(chatProvider.notifier).clearChat();
+                    setState(() { _typing = false; });
+                  }
+                  setState(() => _activeCat = null);
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   margin: const EdgeInsets.only(right: 8),
@@ -312,13 +320,22 @@ class _State extends ConsumerState<ChatbotSheet> {
   }
 
   void _navToProgram(ChatProgramCard card) {
+    final allPrograms = [
+      ...ref.read(salleProgramsProvider),
+      ...ref.read(homeProgramsProvider),
+      ...ref.read(danceProgramsProvider),
+      ...ref.read(recuperationProgramsProvider),
+      ...ref.read(grossesseProgramsProvider),
+    ];
+    final program = allPrograms.cast<dynamic>().firstWhere(
+      (p) => p.name.toString().toLowerCase() == card.name.toLowerCase(),
+      orElse: () => null,
+    );
     Navigator.pop(context);
-    Navigator.pushNamed(context, '/program-detail', arguments: {
-      'programId': card.id, 'programName': card.name,
-      'category': card.category, 'imageUrl': card.imageUrl,
-      'duration': card.duration, 'sessions': card.sessions,
-      'phases': card.phases, 'color': card.color,
-    });
+    if (program != null) {
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => WorkoutDetailScreen(program: program)));
+    }
   }
 }
 

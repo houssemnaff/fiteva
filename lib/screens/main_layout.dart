@@ -56,8 +56,8 @@ class _MainLayoutState extends ConsumerState<MainLayout>
 
   int  _currentIndex = 0;
   bool _plusOpen     = false;
-  double _x = 300;
-  double _y = 500;
+  double _x = -1; // -1 = not yet initialized
+  double _y = -1;
 
   late final AnimationController _plusAnim;
   late final Animation<double>   _plusScale;
@@ -224,20 +224,26 @@ class _MainLayoutState extends ConsumerState<MainLayout>
 
           // ── Draggable AI chatbot ───────────────────────────────
           if (chatbotVisible)
-            Positioned(
-              left: _x, top: _y,
-              child: GestureDetector(
-                onPanUpdate: (d) => setState(() {
-                  _x = (_x + d.delta.dx).clamp(0, size.width - btnSize);
-                  _y = (_y + d.delta.dy).clamp(padding.top, size.height - btnSize - navH);
-                }),
-                onPanEnd: (_) => setState(() {
-                  _x = _x < size.width / 2 ? 0 : size.width - btnSize;
-                }),
+            Builder(builder: (ctx) {
+              if (_x < 0) {
+                _x = size.width - btnSize;
+                _y = size.height * 0.55;
+              }
+              return Positioned(
+                left: _x, top: _y,
                 child: GestureDetector(
-                  onTap: _openChatbot,
-                  child: const _AiChatButton())),
-            ),
+                  onPanUpdate: (d) => setState(() {
+                    _x = (_x + d.delta.dx).clamp(0, size.width - btnSize);
+                    _y = (_y + d.delta.dy).clamp(padding.top, size.height - btnSize - navH);
+                  }),
+                  onPanEnd: (_) => setState(() {
+                    _x = _x < size.width / 2 ? 0 : size.width - btnSize;
+                  }),
+                  child: GestureDetector(
+                    onTap: _openChatbot,
+                    child: const _AiChatButton())),
+              );
+            }),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
