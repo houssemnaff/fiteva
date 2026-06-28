@@ -1,0 +1,34 @@
+workflows:
+  ios-unsigned:
+    name: Build iOS IPA (unsigned)
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+    scripts:
+      - name: Flutter pub get
+        script: flutter pub get
+
+      - name: Build iOS (no codesign)
+        script: |
+          flutter build ios --release --no-codesign
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath $CM_BUILD_DIR/DerivedData \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER=""
+
+      - name: Create IPA
+        script: |
+          mkdir Payload
+          cp -r $CM_BUILD_DIR/DerivedData/Build/Products/Release-iphoneos/Runner.app Payload/
+          zip -r app.ipa Payload
+
+    artifacts:
+      - app.ipa
