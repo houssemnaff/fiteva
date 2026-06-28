@@ -351,9 +351,11 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                     child: Text(
                       key: ValueKey('title_$_currentIndex'),
                       program.name.toUpperCase(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
                         color: Colors.white,
-                        fontSize: 40,
+                        fontSize: (MediaQuery.of(context).size.width * 0.105).clamp(28.0, 42.0),
                         fontWeight: FontWeight.w900,
                         height: 1.0,
                         letterSpacing: -1,

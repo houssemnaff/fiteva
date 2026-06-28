@@ -112,7 +112,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         body: Column(children: [
           // ── Hero ──────────────────────────────────────────────────────────
           SizedBox(
-            height: 260,
+            height: (MediaQuery.of(context).size.height * 0.30).clamp(200.0, 300.0),
             child: Stack(fit: StackFit.expand, children: [
               // Image
               Image.asset(widget.workout.imageUrl, fit: BoxFit.cover,

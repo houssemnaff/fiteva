@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
 
-// ── Providers ─────────────────────────────────────────────────────────────────
+// ── Providers ──────────────────────────────────────────────────────────────────
 final referralCodeProvider =
     AsyncNotifierProvider<_CodeNotifier, String>(_CodeNotifier.new);
 
@@ -21,9 +21,8 @@ class _CodeNotifier extends AsyncNotifier<String> {
     if (saved != null) return saved;
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rng = Random();
-    final suffix =
+    final code = 'FITEVA-' +
         List.generate(4, (_) => chars[rng.nextInt(chars.length)]).join();
-    final code = 'FITEVA-$suffix';
     await prefs.setString(_key, code);
     return code;
   }
@@ -41,51 +40,27 @@ class _CountNotifier extends AsyncNotifier<int> {
   }
 }
 
-// ── Reward tiers ──────────────────────────────────────────────────────────────
+// ── Reward model ───────────────────────────────────────────────────────────────
 class _Reward {
-  final int threshold;
-  final String emoji;
-  final String title;
-  final String subtitle;
-  final List<Color> gradient;
-  const _Reward({
-    required this.threshold,
-    required this.emoji,
-    required this.title,
-    required this.subtitle,
-    required this.gradient,
-  });
+  final int     need;
+  final IconData icon;
+  final String  title;
+  final String  sub;
+  final Color   color;
+  const _Reward({required this.need, required this.icon,
+    required this.title, required this.sub, required this.color});
 }
 
 const _rewards = [
-  _Reward(
-    threshold: 1,
-    emoji: '⭐',
-    title: '+50 Points',
-    subtitle: 'Bonus immédiat sur ton compte',
-    gradient: [Color(0xFF2E7D52), Color(0xFF4CAF50)],
-  ),
-  _Reward(
-    threshold: 3,
-    emoji: '🔥',
-    title: 'Premium Day',
-    subtitle: 'Accès illimité pendant 24h',
-    gradient: [Color(0xFFE65100), Color(0xFFFF6B35)],
-  ),
-  _Reward(
-    threshold: 5,
-    emoji: '🏆',
-    title: 'Badge Exclusif',
-    subtitle: 'Visible sur ton profil',
-    gradient: [Color(0xFF8B6914), Color(0xFFD4A853)],
-  ),
+  _Reward(need: 1, icon: LucideIcons.star,   title: '+50 Points',    sub: 'Bonus immédiat sur ton compte', color: Color(0xFF22C55E)),
+  _Reward(need: 3, icon: LucideIcons.flame,  title: 'Premium 24h',   sub: 'Accès illimité pendant 24h',    color: Color(0xFFFF6B35)),
+  _Reward(need: 5, icon: LucideIcons.trophy, title: 'Badge Exclusif', sub: 'Visible sur ton profil',         color: Color(0xFFF59E0B)),
 ];
 
-// Mock friends
 const _mockFriends = [
-  (name: 'Sara B.', avatar: '👩', joined: true),
-  (name: 'Ahmed K.', avatar: '🧑', joined: true),
-  (name: 'Nour M.', avatar: '👩‍🦱', joined: false),
+  (name: 'Sara B.',  initial: 'S', joined: true),
+  (name: 'Ahmed K.', initial: 'A', joined: true),
+  (name: 'Nour M.',  initial: 'N', joined: false),
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -93,79 +68,87 @@ const _mockFriends = [
 // ══════════════════════════════════════════════════════════════════════════════
 class ReferralCard extends ConsumerStatefulWidget {
   const ReferralCard({super.key});
-
   @override
   ConsumerState<ReferralCard> createState() => _ReferralCardState();
 }
 
 class _ReferralCardState extends ConsumerState<ReferralCard>
     with TickerProviderStateMixin {
-  // Which tiles have been fully revealed (confetti shown)
-  final Set<int> _revealed = {};
+
+  int              _selected  = 0;
+  // Per-reward scratch strokes + completion
+  final List<List<Offset>> _strokes = [[], [], []];
+  final List<bool>         _done    = [false, false, false];
+  Size                     _cardSize = Size.zero;
+
   // Confetti
-  List<_Particle> _particles = [];
-  bool _showConfetti = false;
-  late AnimationController _confettiCtrl;
+  late AnimationController _confCtrl;
+  List<_Confetti>          _confetti = [];
+  bool                     _showConf = false;
 
   @override
   void initState() {
     super.initState();
-    _confettiCtrl = AnimationController(
+    _confCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 2200));
-    _confettiCtrl.addStatusListener((s) {
-      if (s == AnimationStatus.completed && mounted) {
-        setState(() => _showConfetti = false);
-      }
+    _confCtrl.addStatusListener((s) {
+      if (s == AnimationStatus.completed && mounted)
+        setState(() => _showConf = false);
     });
   }
 
   @override
   void dispose() {
-    _confettiCtrl.dispose();
+    _confCtrl.dispose();
     super.dispose();
   }
 
-  void _onScratchComplete(int index) {
-    if (_revealed.contains(index)) return;
-    setState(() => _revealed.add(index));
-    HapticFeedback.heavyImpact();
-    _launchConfetti();
+  // ── Scratch logic ─────────────────────────────────────────────────────────
+  void _onPanUpdate(DragUpdateDetails d, int count) {
+    final i = _selected;
+    if (_done[i] || count < _rewards[i].need) return;
+    final pos = d.localPosition;
+    if (pos.dx < 0 || pos.dy < 0 ||
+        pos.dx > _cardSize.width || pos.dy > _cardSize.height) return;
+
+    setState(() => _strokes[i].add(pos));
+    HapticFeedback.selectionClick();
+
+    // Complete when ~65% covered (approx by stroke count + spread)
+    if (_strokes[i].length > 100 && !_done[i]) {
+      setState(() => _done[i] = true);
+      _launchConfetti();
+    }
   }
 
   void _launchConfetti() {
     final rng = Random();
     setState(() {
-      _showConfetti = true;
-      _particles = List.generate(50, (_) => _Particle(
-        x: 0.2 + rng.nextDouble() * 0.6,
-        y: 0.1 + rng.nextDouble() * 0.4,
+      _showConf = true;
+      _confetti = List.generate(55, (_) => _Confetti(
+        x:     0.05 + rng.nextDouble() * 0.9,
+        y:     0.0  + rng.nextDouble() * 0.3,
         color: [
-          const Color(0xFFD4A853), const Color(0xFF4CAF50),
-          const Color(0xFFFF6B35), Colors.white, const Color(0xFF64B5F6),
-          const Color(0xFFE040FB),
+          const Color(0xFF22C55E), const Color(0xFFF59E0B),
+          const Color(0xFFFF6B35), Colors.white,
+          const Color(0xFF818CF8), const Color(0xFFF472B6),
         ][rng.nextInt(6)],
-        size: 5 + rng.nextDouble() * 7,
+        size:  4 + rng.nextDouble() * 6,
         angle: rng.nextDouble() * 2 * pi,
-        speed: 0.5 + rng.nextDouble() * 0.5,
+        speed: 0.4 + rng.nextDouble() * 0.6,
       ));
     });
-    _confettiCtrl
-      ..reset()
-      ..forward();
+    _confCtrl..reset()..forward();
   }
 
-  void _copyCode(BuildContext context, String code, AppL10n l10n) {
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  void _copyCode(BuildContext ctx, String code, AppL10n l10n) {
     Clipboard.setData(ClipboardData(text: code));
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [
-        const Icon(LucideIcons.checkCircle, color: Colors.white, size: 15),
-        const SizedBox(width: 8),
-        Text(l10n.referralCodeCopied(code),
-            style: GoogleFonts.inter(
-                color: Colors.white, fontWeight: FontWeight.w600)),
-      ]),
-      backgroundColor: const Color(0xFF1C4D30),
+    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+      content: Text(l10n.referralCodeCopied(code),
+        style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+      backgroundColor: const Color(0xFF166534),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.all(16),
@@ -173,249 +156,303 @@ class _ReferralCardState extends ConsumerState<ReferralCard>
     ));
   }
 
-  void _shareCode(BuildContext context, String code, AppL10n l10n) {
-    final msg = 'Rejoins-moi sur FitEva ! 🏋️‍♀️\n'
-        'Utilise mon code $code à l\'inscription '
-        'et on gagne toutes les deux des points 💪\n'
-        'fiteva.app/invite/$code';
+  void _share(BuildContext ctx, String code, AppL10n l10n) {
+    final msg = 'Rejoins-moi sur FitEva !\nCode : $code\nfiteva.app/invite/$code';
     showModalBottomSheet(
-      context: context,
+      context: ctx,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ShareSheet(code: code, message: msg, l10n: l10n),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = ref.watch(l10nProvider);
-    final codeAsync  = ref.watch(referralCodeProvider);
-    final countAsync = ref.watch(referralCountProvider);
-    final count = countAsync.asData?.value ?? 0;
-    final dark  = Theme.of(context).brightness == Brightness.dark;
-
-    // Next milestone
-    final nextReward = _rewards.firstWhere(
-      (r) => count < r.threshold,
-      orElse: () => _rewards.last,
-    );
-    final nextPct = (count / nextReward.threshold).clamp(0.0, 1.0);
-    final isMaxed = count >= _rewards.last.threshold;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
-            // ── Header ───────────────────────────────────────────────────
-            _SectionHeader(l10n: l10n),
-            const SizedBox(height: 16),
-
-            // ── Scratch cards row ─────────────────────────────────────────
-            Row(
-              children: List.generate(_rewards.length, (i) {
-                final r = _rewards[i];
-                final unlocked = count >= r.threshold;
-                return Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                        right: i < _rewards.length - 1 ? 10 : 0),
-                    child: ScratchCardTile(
-                      reward: r,
-                      unlocked: unlocked,
-                      onComplete: () => _onScratchComplete(i),
-                      l10n: l10n,
-                    ),
-                  ),
-                );
-              }),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ── Progress ──────────────────────────────────────────────────
-            _ProgressBlock(
-              count: count,
-              dark: dark,
-              pct: nextPct,
-              isMaxed: isMaxed,
-              nextThreshold: nextReward.threshold,
-              l10n: l10n,
-            ),
-
-            const SizedBox(height: 20),
-
-            // ── Code block ────────────────────────────────────────────────
-            codeAsync.when(
-              loading: () => const SizedBox(height: 60),
-              error: (_, __) => const SizedBox(),
-              data: (code) => _CodeBlock(
-                code: code,
-                dark: dark,
-                onCopy: () => _copyCode(context, code, l10n),
-                onShare: () => _shareCode(context, code, l10n),
-                l10n: l10n,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ── Friends ───────────────────────────────────────────────────
-            _FriendsList(count: count, dark: dark, l10n: l10n),
-          ]),
-
-          // ── Confetti ──────────────────────────────────────────────────────
-          if (_showConfetti)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: AnimatedBuilder(
-                  animation: _confettiCtrl,
-                  builder: (_, __) => CustomPaint(
-                    painter: _ConfettiPainter(
-                        particles: _particles,
-                        progress: _confettiCtrl.value),
-                  ),
-                ),
-              ),
-            ),
-        ],
+      builder: (_) => _ShareSheet(
+        message: msg, l10n: l10n,
+        surf: Theme.of(ctx).brightness == Brightness.dark
+            ? const Color(0xFF1A1A1A) : Colors.white,
+        ink: Theme.of(ctx).brightness == Brightness.dark
+            ? const Color(0xFFF0F0EE) : const Color(0xFF111110),
+        muted: Theme.of(ctx).brightness == Brightness.dark
+            ? const Color(0xFF888886) : const Color(0xFF6B6B68),
+        div: Theme.of(ctx).brightness == Brightness.dark
+            ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0EE),
       ),
     );
   }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// REAL SCRATCH CARD TILE
-// ══════════════════════════════════════════════════════════════════════════════
-class ScratchCardTile extends StatefulWidget {
-  final _Reward reward;
-  final bool unlocked;
-  final VoidCallback onComplete;
-  final AppL10n l10n;
-
-  const ScratchCardTile({
-    super.key,
-    required this.reward,
-    required this.unlocked,
-    required this.onComplete,
-    required this.l10n,
-  });
-
-  @override
-  State<ScratchCardTile> createState() => _ScratchCardTileState();
-}
-
-class _ScratchCardTileState extends State<ScratchCardTile> {
-  // Grid-based scratch tracking: 12×16 cells
-  static const _cols = 12;
-  static const _rows = 16;
-  static const _totalCells = _cols * _rows;
-  static const _completeThreshold = 0.60;
-
-  final Set<int> _scratchedCells = {};
-  final List<Offset> _points = [];
-  bool _completed = false;
-  Size _cardSize = Size.zero;
-
-  bool get _scratchPercent =>
-      _scratchedCells.length / _totalCells >= _completeThreshold;
-
-  void _onPanUpdate(DragUpdateDetails d) {
-    if (!widget.unlocked || _completed) return;
-    final pos = d.localPosition;
-    if (pos.dx < 0 || pos.dy < 0 ||
-        pos.dx > _cardSize.width || pos.dy > _cardSize.height) return;
-
-    // Track visual points
-    setState(() => _points.add(pos));
-
-    // Track grid cells
-    final col = (pos.dx / _cardSize.width * _cols).floor().clamp(0, _cols - 1);
-    final row = (pos.dy / _cardSize.height * _rows).floor().clamp(0, _rows - 1);
-    final cell = row * _cols + col;
-    // Also scratch neighbouring cells for smoother feel
-    for (int dc = -1; dc <= 1; dc++) {
-      for (int dr = -1; dr <= 1; dr++) {
-        final nc = (col + dc).clamp(0, _cols - 1);
-        final nr = (row + dr).clamp(0, _rows - 1);
-        _scratchedCells.add(nr * _cols + nc);
-      }
-    }
-
-    HapticFeedback.selectionClick();
-
-    if (!_completed && _scratchPercent) {
-      setState(() => _completed = true);
-      widget.onComplete();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final l10n       = ref.watch(l10nProvider);
+    final codeAsync  = ref.watch(referralCodeProvider);
+    final countAsync = ref.watch(referralCountProvider);
+    final count      = countAsync.asData?.value ?? 0;
+    final dark       = Theme.of(context).brightness == Brightness.dark;
+
+    final surf  = dark ? const Color(0xFF1A1A1A) : Colors.white;
+    final ink   = dark ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
+    final muted = dark ? const Color(0xFF888886) : const Color(0xFF6B6B68);
+    final div   = dark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0EE);
+    final green = const Color(0xFF22C55E);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Stack(clipBehavior: Clip.none, children: [
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+          // ── Header ───────────────────────────────────────────────────────
+          Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.referralHeadline,
+                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800,
+                    color: ink, letterSpacing: -0.4)),
+                const SizedBox(height: 2),
+                Text(l10n.referralHint,
+                  style: GoogleFonts.inter(fontSize: 12, color: muted)),
+              ])),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: green.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(20)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(LucideIcons.users, size: 12, color: green),
+                const SizedBox(width: 5),
+                Text('$count invitée${count != 1 ? 's' : ''}',
+                  style: GoogleFonts.inter(fontSize: 12,
+                    fontWeight: FontWeight.w700, color: green)),
+              ]),
+            ),
+          ]),
+
+          const SizedBox(height: 18),
+
+          // ── Reward selector tabs ─────────────────────────────────────────
+          Row(children: List.generate(3, (i) {
+            final r        = _rewards[i];
+            final unlocked = count >= r.need;
+            final active   = _selected == i;
+            return Expanded(child: Padding(
+              padding: EdgeInsets.only(right: i < 2 ? 8 : 0),
+              child: GestureDetector(
+                onTap: () => setState(() => _selected = i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: active && unlocked
+                        ? r.color.withValues(alpha: 0.12)
+                        : active
+                            ? (dark ? const Color(0xFF222222) : const Color(0xFFF6F7F5))
+                            : (dark ? const Color(0xFF1A1A1A) : const Color(0xFFF0F0EE)),
+                    borderRadius: BorderRadius.circular(12),
+                    border: active
+                        ? Border.all(
+                            color: unlocked
+                                ? r.color.withValues(alpha: 0.35)
+                                : (dark ? const Color(0xFF3A3A3A) : const Color(0xFFDDDDDB)),
+                            width: 1.2)
+                        : null,
+                  ),
+                  child: Column(children: [
+                    Icon(
+                      _done[i] ? LucideIcons.checkCircle2 : (unlocked ? r.icon : LucideIcons.lock),
+                      size: 16,
+                      color: active && unlocked ? r.color : muted),
+                    const SizedBox(height: 4),
+                    Text('${r.need} ami${r.need > 1 ? 'es' : 'e'}',
+                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700,
+                        color: active && unlocked ? r.color : muted)),
+                  ]),
+                ),
+              ),
+            ));
+          })),
+
+          const SizedBox(height: 12),
+
+          // ── Scratch card ──────────────────────────────────────────────────
+          _buildScratchCard(count, dark, muted),
+
+          const SizedBox(height: 16),
+
+          // ── Code ─────────────────────────────────────────────────────────
+          codeAsync.when(
+            loading: () => const SizedBox(height: 60),
+            error:   (_, __) => const SizedBox(),
+            data: (code) => Container(
+              padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+              decoration: BoxDecoration(
+                color: surf,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [BoxShadow(
+                  color: Colors.black.withValues(alpha: dark ? 0.15 : 0.04),
+                  blurRadius: 8, offset: const Offset(0, 2))]),
+              child: Row(children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                 
+                    const SizedBox(height: 4),
+                    Text(code,
+                      style: GoogleFonts.outfit(fontSize: 19, fontWeight: FontWeight.w900,
+                        color: ink, letterSpacing: 1.5)),
+                  ])),
+            
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () => _share(context, code, l10n),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: green,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [BoxShadow(
+                        color: green.withValues(alpha: 0.25),
+                        blurRadius: 8, offset: const Offset(0, 3))]),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(LucideIcons.share2, color: Colors.white, size: 13),
+                      const SizedBox(width: 6),
+                      Text(l10n.referralShare,
+                        style: GoogleFonts.inter(color: Colors.white,
+                          fontSize: 13, fontWeight: FontWeight.w700)),
+                    ]))),
+              ]),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // ── Friends ───────────────────────────────────────────────────────
+         
+        ]),
+
+        // ── Confetti layer ─────────────────────────────────────────────────
+        if (_showConf)
+          Positioned.fill(child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: _confCtrl,
+              builder: (_, __) => CustomPaint(
+                painter: _ConfettiPainter(
+                  particles: _confetti,
+                  progress: _confCtrl.value)),
+            ),
+          )),
+      ]),
+    );
+  }
+
+  // ── Scratch card widget ───────────────────────────────────────────────────
+  Widget _buildScratchCard(int count, bool dark, Color muted) {
+    final i        = _selected;
+    final r        = _rewards[i];
+    final unlocked = count >= r.need;
+
     return AspectRatio(
-      aspectRatio: 0.62,
-      child: LayoutBuilder(builder: (_, constraints) {
-        _cardSize = Size(constraints.maxWidth, constraints.maxHeight);
+      aspectRatio: 2.2,
+      child: LayoutBuilder(builder: (_, c) {
+        _cardSize = Size(c.maxWidth, c.maxHeight);
         return ClipRRect(
           borderRadius: BorderRadius.circular(18),
           child: Stack(children: [
-            // ── Revealed layer (reward) ─────────────────────────────────
-            _RewardLayer(reward: widget.reward, unlocked: widget.unlocked),
 
-            // ── Scratch overlay ─────────────────────────────────────────
-            if (!_completed)
+            // ── LAYER 1 — Reward revealed (always underneath) ────────────
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: double.infinity,
+              height: double.infinity,
+              color: dark
+                  ? r.color.withValues(alpha: 0.15)
+                  : r.color.withValues(alpha: 0.08),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(children: [
+                  Container(
+                    width: 60, height: 60,
+                    decoration: BoxDecoration(
+                      color: r.color.withValues(alpha: 0.18),
+                      shape: BoxShape.circle),
+                    child: Icon(r.icon, size: 26, color: r.color)),
+                  const SizedBox(width: 18),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Récompense',
+                        style: GoogleFonts.inter(fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: r.color, letterSpacing: 1.2)),
+                      const SizedBox(height: 6),
+                      Text(r.title,
+                        style: GoogleFonts.outfit(fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: dark ? Colors.white : const Color(0xFF111110),
+                          letterSpacing: -0.4)),
+                      const SizedBox(height: 3),
+                      Text(r.sub,
+                        style: GoogleFonts.inter(fontSize: 11,
+                          color: muted)),
+                    ])),
+                ]),
+              ),
+            ),
+
+            // ── LAYER 2 — Silver foil (scratched away) ───────────────────
+            if (!_done[i])
               GestureDetector(
-                onPanUpdate: _onPanUpdate,
+                onPanUpdate: unlocked ? (d) => _onPanUpdate(d, count) : null,
                 child: RepaintBoundary(
                   child: CustomPaint(
                     size: _cardSize,
-                    painter: _ScratchPainter(
-                      points: List.from(_points),
-                      unlocked: widget.unlocked,
+                    painter: _FoilPainter(
+                      strokes: List.from(_strokes[i]),
+                      locked: !unlocked,
                     ),
                   ),
                 ),
               ),
 
-            // ── "Gratte ici" hint when not started ─────────────────────
-            if (_points.isEmpty && !_completed && widget.unlocked)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: Column(children: [
-                          const Icon(LucideIcons.fingerprint,
-                              color: Colors.white54, size: 22),
-                          const SizedBox(height: 4),
-                          Text(widget.l10n.referralScratch,
-                              style: GoogleFonts.inter(
-                                  color: Colors.white54,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700)),
-                        ]),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            // ── LAYER 3 — "Scratch here" hint ───────────────────────────
+            if (unlocked && !_done[i] && _strokes[i].isEmpty)
+              Positioned(bottom: 14, left: 0, right: 0,
+                child: IgnorePointer(child: Column(children: [
+                  Icon(LucideIcons.fingerprint,
+                    color: Colors.white.withValues(alpha: 0.45), size: 20),
+                  const SizedBox(height: 3),
+                  Text('Gratte pour révéler',
+                    style: GoogleFonts.inter(fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.45))),
+                ]))),
 
-            // ── Lock overlay when not unlocked ──────────────────────────
-            if (!widget.unlocked)
-              Positioned.fill(
+            // ── LAYER 4 — Lock label when not unlocked ───────────────────
+            if (!unlocked && !_done[i])
+              Positioned(bottom: 14, left: 0, right: 0,
+                child: IgnorePointer(child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(LucideIcons.lock,
+                      size: 11, color: Colors.white.withValues(alpha: 0.45)),
+                    const SizedBox(width: 5),
+                    Text(
+                      '${r.need} amie${r.need > 1 ? 's' : ''} pour débloquer',
+                      style: GoogleFonts.inter(fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.45))),
+                  ]))),
+
+            // ── LAYER 5 — "Reward revealed" badge after scratch ──────────
+            if (_done[i])
+              Positioned(top: 10, right: 10,
                 child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.30),
-                  ),
-                  child: const Center(
-                    child: Icon(LucideIcons.lock,
-                        color: Colors.white54, size: 22),
-                  ),
-                ),
-              ),
+                    color: r.color,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [BoxShadow(
+                      color: r.color.withValues(alpha: 0.35),
+                      blurRadius: 8, offset: const Offset(0, 3))]),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.check_rounded, size: 11, color: Colors.white),
+                    const SizedBox(width: 4),
+                    Text('Débloqué !',
+                      style: GoogleFonts.inter(fontSize: 10,
+                        fontWeight: FontWeight.w800, color: Colors.white)),
+                  ]))),
           ]),
         );
       }),
@@ -423,169 +460,79 @@ class _ScratchCardTileState extends State<ScratchCardTile> {
   }
 }
 
-// ── Reward layer (behind the scratch) ────────────────────────────────────────
-class _RewardLayer extends StatelessWidget {
-  final _Reward reward;
-  final bool unlocked;
-  const _RewardLayer({required this.reward, required this.unlocked});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: reward.gradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(reward.emoji, style: const TextStyle(fontSize: 36)),
-            const SizedBox(height: 10),
-            Text(reward.title,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.3)),
-            const SizedBox(height: 4),
-            Text(reward.subtitle,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                    color: Colors.white.withValues(alpha: 0.75),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    height: 1.4)),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.20),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text('${reward.threshold} amie${reward.threshold > 1 ? 's' : ''}',
-                  style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Scratch painter ───────────────────────────────────────────────────────────
-class _ScratchPainter extends CustomPainter {
-  final List<Offset> points;
-  final bool unlocked;
-  _ScratchPainter({required this.points, required this.unlocked});
+// ══════════════════════════════════════════════════════════════════════════════
+// SILVER FOIL PAINTER
+// ══════════════════════════════════════════════════════════════════════════════
+class _FoilPainter extends CustomPainter {
+  final List<Offset> strokes;
+  final bool         locked;
+  const _FoilPainter({required this.strokes, required this.locked});
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Save layer so BlendMode.clear works
     canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
 
-    // ── Silver lottery card background ───────────────────────────────────
-    final bgPaint = Paint()
-      ..shader = ui.Gradient.linear(
-        Offset.zero,
-        Offset(size.width, size.height),
-        const [
-          Color(0xFF9E9E9E),
-          Color(0xFFBDBDBD),
-          Color(0xFF757575),
-          Color(0xFFBDBDBD),
-          Color(0xFF9E9E9E),
-        ],
-        [0.0, 0.25, 0.5, 0.75, 1.0],
-      );
+    // Silver gradient
     canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()..shader = ui.Gradient.linear(
+        Offset.zero, Offset(size.width, size.height),
+        const [
+          Color(0xFFBBBBBB), Color(0xFFD4D4D4),
+          Color(0xFFA8A8A8), Color(0xFFCCCCCC),
+          Color(0xFFB8B8B8),
+        ], [0.0, 0.25, 0.5, 0.75, 1.0],
+      ),
+    );
 
-    // ── Diagonal hatch pattern (lottery feel) ──────────────────────────
-    final hatchPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.08)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-    const spacing = 10.0;
-    for (double i = -size.height; i < size.width + size.height; i += spacing) {
-      canvas.drawLine(
-          Offset(i, 0), Offset(i + size.height, size.height), hatchPaint);
+    // Diagonal hatch (lottery texture)
+    final hatch = Paint()
+      ..color = Colors.white.withValues(alpha: 0.07)
+      ..strokeWidth = 1.2;
+    for (double x = -size.height; x < size.width + size.height; x += 14) {
+      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), hatch);
     }
 
-    // ── FitEva branding text ──────────────────────────────────────────
+    // Subtle "FitEva" watermark
     final tp = TextPainter(
       text: TextSpan(
         text: 'FitEva',
         style: GoogleFonts.outfit(
-          color: Colors.white.withValues(alpha: 0.18),
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1,
+          color: Colors.white.withValues(alpha: 0.14),
+          fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    // Tile the branding
-    for (double y = 14; y < size.height; y += 32) {
-      for (double x = 4; x < size.width; x += 52) {
+    for (double y = 12; y < size.height; y += 30) {
+      for (double x = 4; x < size.width; x += 58) {
         tp.paint(canvas, Offset(x, y));
       }
     }
 
-    // ── Star pattern ─────────────────────────────────────────────────
-    final starPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.10)
-      ..style = PaintingStyle.fill;
-    final rng = Random(42); // fixed seed for consistent pattern
-    for (int i = 0; i < 12; i++) {
-      canvas.drawCircle(
-        Offset(rng.nextDouble() * size.width, rng.nextDouble() * size.height),
-        1.5 + rng.nextDouble() * 2,
-        starPaint,
-      );
-    }
-
-    // ── Scratch holes (BlendMode.clear) ──────────────────────────────
-    if (points.isNotEmpty) {
-      final clearPaint = Paint()
+    // Scratch erasure with BlendMode.clear
+    if (!locked && strokes.length > 1) {
+      final clear = Paint()
         ..blendMode = BlendMode.clear
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 28
-        ..strokeCap = StrokeCap.round
+        ..style     = PaintingStyle.stroke
+        ..strokeWidth = 38
+        ..strokeCap  = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
 
-      final clearFill = Paint()
-        ..blendMode = BlendMode.clear
-        ..style = PaintingStyle.fill;
-
-      // Draw connected path for smooth scratch
-      if (points.length > 1) {
-        final path = Path()..moveTo(points[0].dx, points[0].dy);
-        for (int i = 1; i < points.length; i++) {
-          // Smooth quadratic bezier
-          if (i < points.length - 1) {
-            final midX = (points[i].dx + points[i + 1].dx) / 2;
-            final midY = (points[i].dy + points[i + 1].dy) / 2;
-            path.quadraticBezierTo(
-                points[i].dx, points[i].dy, midX, midY);
-          } else {
-            path.lineTo(points[i].dx, points[i].dy);
-          }
+      final path = Path()..moveTo(strokes[0].dx, strokes[0].dy);
+      for (int i = 1; i < strokes.length; i++) {
+        if (i < strokes.length - 1) {
+          final mx = (strokes[i].dx + strokes[i + 1].dx) / 2;
+          final my = (strokes[i].dy + strokes[i + 1].dy) / 2;
+          path.quadraticBezierTo(strokes[i].dx, strokes[i].dy, mx, my);
+        } else {
+          path.lineTo(strokes[i].dx, strokes[i].dy);
         }
-        canvas.drawPath(path, clearPaint);
       }
+      canvas.drawPath(path, clear);
 
-      // Dots at each point for precise reveal
-      for (final pt in points) {
-        canvas.drawCircle(pt, 14, clearFill);
+      for (final p in strokes) {
+        canvas.drawCircle(p, 19, Paint()..blendMode = BlendMode.clear);
       }
     }
 
@@ -593,460 +540,42 @@ class _ScratchPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ScratchPainter old) =>
-      old.points.length != points.length;
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION HEADER
-// ══════════════════════════════════════════════════════════════════════════════
-class _SectionHeader extends StatelessWidget {
-  final AppL10n l10n;
-  const _SectionHeader({required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1C4D30), Color(0xFF2E7D52)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-              color: const Color(0xFF1C4D30).withValues(alpha: 0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 6))
-        ],
-      ),
-      child: Row(children: [
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFD4A853),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(l10n.referralTitle,
-                  style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.3)),
-            ),
-            const SizedBox(height: 8),
-            Text(l10n.referralHeadline,
-                style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
-                    height: 1.2)),
-            const SizedBox(height: 6),
-            Text(l10n.referralHint,
-                style: GoogleFonts.inter(
-                    color: Colors.white.withValues(alpha: 0.65),
-                    fontSize: 12)),
-          ]),
-        ),
-        const SizedBox(width: 12),
-        const Text('🎴', style: TextStyle(fontSize: 44)),
-      ]),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// PROGRESS BLOCK
-// ══════════════════════════════════════════════════════════════════════════════
-class _ProgressBlock extends StatelessWidget {
-  final int count;
-  final bool dark;
-  final double pct;
-  final bool isMaxed;
-  final int nextThreshold;
-  final AppL10n l10n;
-  const _ProgressBlock({
-    required this.count,
-    required this.dark,
-    required this.pct,
-    required this.isMaxed,
-    required this.nextThreshold,
-    required this.l10n,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final needed = (nextThreshold - count).clamp(0, 99);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: dark ? const Color(0xFF1A1A1A) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-            color: const Color(0xFF1C4D30).withValues(alpha: 0.15)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: dark ? 0.25 : 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 3))
-        ],
-      ),
-      child: Column(children: [
-        Row(children: [
-          const Icon(LucideIcons.flame, size: 15, color: Color(0xFF1C4D30)),
-          const SizedBox(width: 7),
-          Expanded(
-            child: Text(
-              isMaxed
-                  ? l10n.referralAllUnlocked
-                  : l10n.referralNeedMore(needed),
-              style: GoogleFonts.inter(
-                  color: const Color(0xFF1C4D30),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700),
-            ),
-          ),
-          Text('$count / $nextThreshold',
-              style: GoogleFonts.outfit(
-                  color: const Color(0xFF1C4D30),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900)),
-        ]),
-        const SizedBox(height: 10),
-        _GlowBar(pct: pct),
-      ]),
-    );
-  }
-}
-
-class _GlowBar extends StatefulWidget {
-  final double pct;
-  const _GlowBar({required this.pct});
-
-  @override
-  State<_GlowBar> createState() => _GlowBarState();
-}
-
-class _GlowBarState extends State<_GlowBar>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1400))
-      ..repeat(reverse: true);
-    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) {
-        final glow = 0.20 + _anim.value * 0.50;
-        return Container(
-          height: 10,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1C4D30).withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: LayoutBuilder(builder: (_, c) => Stack(children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 600),
-              curve: Curves.easeOutCubic,
-              width: c.maxWidth * widget.pct,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                    colors: [Color(0xFF1C4D30), Color(0xFF4CAF50)]),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                      color: const Color(0xFF4CAF50).withValues(alpha: glow),
-                      blurRadius: 8,
-                      spreadRadius: 1)
-                ],
-              ),
-            ),
-          ])),
-        );
-      },
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// CODE BLOCK
-// ══════════════════════════════════════════════════════════════════════════════
-class _CodeBlock extends StatelessWidget {
-  final String code;
-  final bool dark;
-  final VoidCallback onCopy;
-  final VoidCallback onShare;
-  final AppL10n l10n;
-  const _CodeBlock(
-      {required this.code,
-      required this.dark,
-      required this.onCopy,
-      required this.onShare,
-      required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: dark ? const Color(0xFF1A1A1A) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-            color: const Color(0xFF1C4D30).withValues(alpha: 0.15)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: dark ? 0.25 : 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 3))
-        ],
-      ),
-      child: Column(children: [
-        Row(children: [
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(l10n.referralCodeLabel,
-                  style: GoogleFonts.inter(
-                      color: const Color(0xFF1C4D30),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.5)),
-              const SizedBox(height: 5),
-              Text(code,
-                  style: GoogleFonts.outfit(
-                      color: dark ? Colors.white : const Color(0xFF111111),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2.0)),
-            ]),
-          ),
-          GestureDetector(
-            onTap: onCopy,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1C4D30).withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(LucideIcons.copy,
-                  color: Color(0xFF1C4D30), size: 18),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 12),
-        GestureDetector(
-          onTap: onShare,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                  colors: [Color(0xFF1C4D30), Color(0xFF2E7D52)]),
-              borderRadius: BorderRadius.circular(50),
-              boxShadow: [
-                BoxShadow(
-                    color: const Color(0xFF1C4D30).withValues(alpha: 0.35),
-                    blurRadius: 12,
-                    offset: const Offset(0, 5))
-              ],
-            ),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(LucideIcons.share2, color: Colors.white, size: 15),
-              const SizedBox(width: 8),
-              Text(l10n.referralShare,
-                  style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800)),
-            ]),
-          ),
-        ),
-      ]),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// FRIENDS LIST
-// ══════════════════════════════════════════════════════════════════════════════
-class _FriendsList extends StatelessWidget {
-  final int count;
-  final bool dark;
-  final AppL10n l10n;
-  const _FriendsList({required this.count, required this.dark, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    final friends = _mockFriends.take(count + 1).toList();
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: dark ? const Color(0xFF1A1A1A) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-            color: const Color(0xFF1C4D30).withValues(alpha: 0.12)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: dark ? 0.25 : 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 3))
-        ],
-      ),
-      child: Column(children: [
-        Row(children: [
-          const Icon(LucideIcons.users, size: 14, color: Color(0xFF1C4D30)),
-          const SizedBox(width: 7),
-          Text(l10n.referralFriends,
-              style: GoogleFonts.inter(
-                  color: const Color(0xFF1C4D30),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700)),
-          const Spacer(),
-          Text('$count inscrite${count > 1 ? 's' : ''}',
-              style: GoogleFonts.outfit(
-                  color: const Color(0xFF1C4D30),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900)),
-        ]),
-        const SizedBox(height: 14),
-        ...friends.asMap().entries.map((e) {
-          final f = e.value;
-          return Padding(
-            padding: EdgeInsets.only(
-                bottom: e.key < friends.length - 1 ? 10 : 0),
-            child: Row(children: [
-              Container(
-                width: 38, height: 38,
-                decoration: BoxDecoration(
-                  color: f.joined
-                      ? const Color(0xFF1C4D30).withValues(alpha: 0.10)
-                      : (dark
-                          ? const Color(0xFF2A2A2A)
-                          : const Color(0xFFEEEEEE)),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                    child:
-                        Text(f.avatar, style: const TextStyle(fontSize: 18))),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text(f.name,
-                      style: GoogleFonts.inter(
-                          color: dark ? Colors.white : const Color(0xFF111111),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700)),
-                  Text(f.joined ? l10n.referralRegistered : l10n.referralPending,
-                      style: GoogleFonts.inter(
-                          color: f.joined
-                              ? const Color(0xFF4CAF50)
-                              : (dark ? Colors.white38 : Colors.black38),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                ]),
-              ),
-              if (f.joined)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text('+50 pts',
-                      style: GoogleFonts.inter(
-                          color: const Color(0xFF4CAF50),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800)),
-                )
-              else
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: dark
-                        ? const Color(0xFF2A2A2A)
-                        : const Color(0xFFEEEEEE),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(l10n.referralPending,
-                      style: GoogleFonts.inter(
-                          color: dark ? Colors.white38 : Colors.black38,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600)),
-                ),
-            ]),
-          );
-        }),
-      ]),
-    );
-  }
+  bool shouldRepaint(_FoilPainter old) =>
+      old.strokes.length != strokes.length;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CONFETTI
 // ══════════════════════════════════════════════════════════════════════════════
-class _Particle {
+class _Confetti {
   final double x, y, size, angle, speed;
-  final Color color;
-  const _Particle({
-    required this.x,
-    required this.y,
-    required this.size,
-    required this.angle,
-    required this.speed,
-    required this.color,
-  });
+  final Color  color;
+  const _Confetti({required this.x, required this.y, required this.size,
+    required this.angle, required this.speed, required this.color});
 }
 
 class _ConfettiPainter extends CustomPainter {
-  final List<_Particle> particles;
-  final double progress;
-  _ConfettiPainter({required this.particles, required this.progress});
+  final List<_Confetti> particles;
+  final double          progress;
+  const _ConfettiPainter({required this.particles, required this.progress});
 
   @override
   void paint(Canvas canvas, Size size) {
     for (final p in particles) {
-      final opacity = (1.0 - progress * 0.9).clamp(0.0, 1.0);
-      final paint = Paint()..color = p.color.withValues(alpha: opacity);
+      final opacity = (1.0 - progress * 0.85).clamp(0.0, 1.0);
       final dx = p.x * size.width +
-          cos(p.angle) * p.speed * progress * size.width * 0.5;
+          cos(p.angle) * p.speed * progress * size.width * 0.45;
       final dy = p.y * size.height +
-          sin(p.angle) * p.speed * progress * size.height * 0.5 +
-          progress * progress * size.height * 0.35;
+          sin(p.angle) * p.speed * progress * size.height * 0.35 +
+          progress * progress * size.height * 0.45;
       canvas.save();
       canvas.translate(dx, dy);
-      canvas.rotate(p.angle + progress * 5);
+      canvas.rotate(p.angle + progress * 7);
       canvas.drawRRect(
-          RRect.fromRectAndRadius(
-              Rect.fromCenter(
-                  center: Offset.zero, width: p.size, height: p.size * 0.55),
-              const Radius.circular(2)),
-          paint);
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size * 0.5),
+          const Radius.circular(1.5)),
+        Paint()..color = p.color.withValues(alpha: opacity));
       canvas.restore();
     }
   }
@@ -1059,102 +588,71 @@ class _ConfettiPainter extends CustomPainter {
 // SHARE SHEET
 // ══════════════════════════════════════════════════════════════════════════════
 class _ShareSheet extends StatelessWidget {
-  final String code;
   final String message;
   final AppL10n l10n;
-  const _ShareSheet({required this.code, required this.message, required this.l10n});
+  final Color surf, ink, muted, div;
+  const _ShareSheet({required this.message, required this.l10n,
+    required this.surf, required this.ink,
+    required this.muted, required this.div});
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final bg = dark ? const Color(0xFF1A1A1A) : Colors.white;
-    final t1 = dark ? Colors.white : const Color(0xFF111111);
-    final t2 = dark ? Colors.white54 : const Color(0xFF666666);
-
+    final green = const Color(0xFF22C55E);
     return Container(
       padding: EdgeInsets.fromLTRB(
-          24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
+        24, 20, 24, MediaQuery.of(context).padding.bottom + 24),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
+        color: surf,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-                color: dark
-                    ? const Color(0xFF3A3A3A)
-                    : const Color(0xFFDDDDDD),
-                borderRadius: BorderRadius.circular(2))),
+        Container(width: 36, height: 4,
+          decoration: BoxDecoration(color: div,
+            borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 20),
         Text(l10n.referralShareTitle,
-            style: GoogleFonts.outfit(
-                fontSize: 18, fontWeight: FontWeight.w800, color: t1)),
-        const SizedBox(height: 16),
+          style: GoogleFonts.outfit(fontSize: 17,
+            fontWeight: FontWeight.w800, color: ink)),
+        const SizedBox(height: 14),
         Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-              color: dark
-                  ? const Color(0xFF242424)
-                  : const Color(0xFFF5F5F3),
-              borderRadius: BorderRadius.circular(16)),
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(color: div,
+            borderRadius: BorderRadius.circular(12)),
           child: Text(message,
-              style:
-                  GoogleFonts.inter(fontSize: 13, color: t2, height: 1.65)),
-        ),
-        const SizedBox(height: 20),
+            style: GoogleFonts.inter(fontSize: 13, color: muted, height: 1.6))),
+        const SizedBox(height: 14),
         GestureDetector(
           onTap: () {
             Clipboard.setData(ClipboardData(text: message));
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Row(children: [
-                const Icon(LucideIcons.checkCircle,
-                    color: Colors.white, size: 15),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                      l10n.referralCopied,
-                      style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600)),
-                ),
-              ]),
-              backgroundColor: const Color(0xFF1C4D30),
+              content: Text(l10n.referralCopied,
+                style: GoogleFonts.inter(color: Colors.white,
+                  fontWeight: FontWeight.w600)),
+              backgroundColor: const Color(0xFF166534),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12)),
               margin: const EdgeInsets.all(16),
-              duration: const Duration(seconds: 3),
+              duration: const Duration(seconds: 2),
             ));
           },
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                  colors: [Color(0xFF1C4D30), Color(0xFF2E7D52)]),
-              borderRadius: BorderRadius.circular(50),
-              boxShadow: [
-                BoxShadow(
-                    color: const Color(0xFF1C4D30).withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5))
-              ],
-            ),
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-              const Icon(LucideIcons.copy, color: Colors.white, size: 15),
+              color: green,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(
+                color: green.withValues(alpha: 0.25),
+                blurRadius: 10, offset: const Offset(0, 4))]),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(LucideIcons.copy, color: Colors.white, size: 14),
               const SizedBox(width: 8),
               Text(l10n.referralCopyMsg,
-                  style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800)),
-            ]),
-          ),
+                style: GoogleFonts.inter(color: Colors.white,
+                  fontSize: 14, fontWeight: FontWeight.w700)),
+            ])),
         ),
       ]),
     );

@@ -72,7 +72,6 @@ class FavoritesScreen extends ConsumerWidget {
         child: Column(
           children: [
             _buildHeader(context),
-            Container(height: 0.5, color: _divider(brightness)),
             Expanded(
               child: favorites.isEmpty
                   ? _buildEmptyState(brightness)
@@ -88,40 +87,50 @@ class FavoritesScreen extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context) {
     final brightness = Theme.of(context).brightness;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: SizedBox(
-        height: 52,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  color: Colors.transparent,
-                  child: Icon(
-                    CupertinoIcons.chevron_left,
+    final dark = brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 8, 20, 12),
+      decoration: BoxDecoration(
+        color: _surface(brightness),
+        border: Border(bottom: BorderSide(color: _divider(brightness), width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 40, height: 40,
+              alignment: Alignment.center,
+              color: Colors.transparent,
+              child: Icon(CupertinoIcons.chevron_left, color: _ink(brightness), size: 20),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2E7D32).withValues(alpha: dark ? 0.2 : 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(CupertinoIcons.heart_fill, size: 15, color: Color(0xFF2E7D32)),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Mes favoris',
+                  style: TextStyle(
                     color: _ink(brightness),
-                    size: 20,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.4,
                   ),
                 ),
-              ),
+              ],
             ),
-            Text(
-              'Mes favoris',
-              style: TextStyle(
-                color: _ink(brightness),
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -168,13 +177,13 @@ class FavoritesScreen extends ConsumerWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: _chipBg(brightness),
+                color: const Color(0xFF2E7D32).withValues(alpha: brightness == Brightness.dark ? 0.15 : 0.08),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                CupertinoIcons.heart,
+              child: const Icon(
+                CupertinoIcons.heart_fill,
                 size: 32,
-                color: _inkSubtle(brightness),
+                color: Color(0xFF2E7D32),
               ),
             ),
             const SizedBox(height: 20),

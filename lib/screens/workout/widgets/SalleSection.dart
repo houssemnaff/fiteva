@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../l10n/app_localizations.dart';
 
 class SalleSection extends StatelessWidget {
   final List<HomeProgramModel> sallePrograms;
@@ -63,12 +64,13 @@ class SalleSection extends StatelessWidget {
 }
 
 // ── Section header ────────────────────────────────────────────────────────────
-class _SalleHeader extends StatelessWidget {
+class _SalleHeader extends ConsumerWidget {
   final VoidCallback onSeeAll;
   const _SalleHeader({required this.onSeeAll});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     const color = WorkoutColors.salle;
 
     return Padding(
@@ -146,7 +148,7 @@ class _SalleHeader extends StatelessWidget {
                 ],
               ),
               child: Text(
-                'Voir tout',
+                l10n.sectionVoirTout,
                 style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 12,
@@ -176,6 +178,7 @@ class _SalleProgramCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     const color = WorkoutColors.salle;
 
     return GestureDetector(
@@ -341,7 +344,7 @@ class _SalleProgramCard extends ConsumerWidget {
                               color: Colors.white, size: 13),
                           const SizedBox(width: 8),
                           Text(
-                            'Commencer',
+                            l10n.progcardCommencer,
                             style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 13,

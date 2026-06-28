@@ -29,7 +29,7 @@ class OnboardingData {
   String? ppRecovery;       // 'recent' | 'slowly' | 'active'
   String? ppDuration;       // '0-2' | '2-6' | '6-12' | '3-6m' | '6m+'
   String? cycleDuration;
-  DateTime? lastPeriod;
+  DateTime? lastPeriod = DateTime.now().subtract(const Duration(days: 14));
   String avatarSeed  = 'fiteva';
   String avatarStyle = 'lorelei';
   String avatarBg    = 'b6e3f4';
@@ -55,6 +55,8 @@ class OnboardingData {
     'last_period':        lastPeriod?.toIso8601String(),
     'mascot_type':        mascotType,
     'mascot_mood':        'happy',
+    'avatar_seed':        avatarSeed,
+    'avatar_style':       avatarStyle,
   };
 }
 

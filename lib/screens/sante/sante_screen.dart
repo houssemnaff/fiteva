@@ -1101,7 +1101,7 @@ class _QRTabState extends ConsumerState<_QRTab> {
                   child: Icon(LucideIcons.userRound, size: 14, color: _T.t3(dark))),
                 const SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Anonyme · ${q.postedAgo}', style: GoogleFonts.inter(
+                  Text('${l10n.santeAnonyme} · ${q.postedAgo}', style: GoogleFonts.inter(
                     fontSize: 12, color: _T.t3(dark))),
                   const SizedBox(height: 6),
                   Text(q.question, style: GoogleFonts.outfit(
@@ -1462,12 +1462,13 @@ class _DoctorSheet extends StatelessWidget {
 
 // ─── Series sheet ─────────────────────────────────────────────────────────────
 
-class _SeriesSheet extends StatelessWidget {
+class _SeriesSheet extends ConsumerWidget {
   final _VideoSeries series; final bool dark;
   const _SeriesSheet({required this.series, required this.dark});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     final bg = dark ? const Color(0xFF111111) : Colors.white;
     final doc = series.doctor;
     return Container(
@@ -1524,7 +1525,7 @@ class _SeriesSheet extends StatelessWidget {
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           const Icon(LucideIcons.play, size: 10, color: Colors.white),
                           const SizedBox(width: 5),
-                          Text('${series.episodes.length} épisodes', style: GoogleFonts.inter(
+                          Text(l10n.santeEpisodes(series.episodes.length), style: GoogleFonts.inter(
                             color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
                         ]),
                       ),
@@ -1615,14 +1616,14 @@ class _SeriesSheet extends StatelessWidget {
 
 // ─── Video player page ────────────────────────────────────────────────────────
 
-class _PlayerPage extends StatefulWidget {
+class _PlayerPage extends ConsumerStatefulWidget {
   final _VideoEpisode episode; final _VideoSeries series;
   const _PlayerPage({required this.episode, required this.series});
   @override
-  State<_PlayerPage> createState() => _PlayerPageState();
+  ConsumerState<_PlayerPage> createState() => _PlayerPageState();
 }
 
-class _PlayerPageState extends State<_PlayerPage> {
+class _PlayerPageState extends ConsumerState<_PlayerPage> {
   late VideoPlayerController _vpc;
   ChewieController? _chewie;
   bool _liked = false;
@@ -1660,6 +1661,7 @@ class _PlayerPageState extends State<_PlayerPage> {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = ref.watch(l10nProvider);
     final s = widget.series;
     final ep = widget.episode;
     final doc = s.doctor;
@@ -1728,7 +1730,7 @@ class _PlayerPageState extends State<_PlayerPage> {
                         decoration: BoxDecoration(
                           color: s.color.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(10)),
-                        child: Text('Épisode ${ep.episode}', style: GoogleFonts.inter(
+                        child: Text(l10n.santeEpisode(ep.episode), style: GoogleFonts.inter(
                           color: s.color, fontSize: 11, fontWeight: FontWeight.w700)),
                       ),
                       const SizedBox(width: 8),
@@ -1771,7 +1773,7 @@ class _PlayerPageState extends State<_PlayerPage> {
                             Icon(LucideIcons.heart, size: 15,
                               color: _liked ? s.color : _T.t2(dark)),
                             const SizedBox(width: 6),
-                            Text('J\'aime', style: GoogleFonts.inter(
+                            Text(l10n.santeLike, style: GoogleFonts.inter(
                               fontSize: 13, fontWeight: FontWeight.w600,
                               color: _liked ? s.color : _T.t2(dark))),
                           ]),
@@ -1786,7 +1788,7 @@ class _PlayerPageState extends State<_PlayerPage> {
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(LucideIcons.share2, size: 15, color: _T.t2(dark)),
                           const SizedBox(width: 6),
-                          Text('Partager', style: GoogleFonts.inter(
+                          Text(l10n.santeShare, style: GoogleFonts.inter(
                             fontSize: 13, fontWeight: FontWeight.w600, color: _T.t2(dark))),
                         ]),
                       ),
@@ -1811,7 +1813,7 @@ class _PlayerPageState extends State<_PlayerPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                           color: s.color, borderRadius: BorderRadius.circular(20)),
-                        child: Text('Suivre', style: GoogleFonts.inter(
+                        child: Text(l10n.santeFollow, style: GoogleFonts.inter(
                           fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
                       ),
                     ]),
@@ -1823,7 +1825,7 @@ class _PlayerPageState extends State<_PlayerPage> {
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                    child: Text('Dans cette série', style: GoogleFonts.outfit(
+                    child: Text(l10n.santeDansCetteSerie, style: GoogleFonts.outfit(
                       fontSize: 16, fontWeight: FontWeight.w700, color: _T.t1(dark))),
                   ),
                   ...others.map((other) => Padding(
@@ -1877,7 +1879,7 @@ class _PlayerPageState extends State<_PlayerPage> {
                               decoration: BoxDecoration(
                                 color: s.color.withOpacity(0.10),
                                 borderRadius: BorderRadius.circular(8)),
-                              child: Text('Ep. ${other.episode}', style: GoogleFonts.inter(
+                              child: Text(l10n.santeEpShort(other.episode), style: GoogleFonts.inter(
                                 fontSize: 10, fontWeight: FontWeight.w700, color: s.color)),
                             ),
                             const SizedBox(height: 5),

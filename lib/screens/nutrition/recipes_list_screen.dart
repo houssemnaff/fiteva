@@ -378,7 +378,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                 child: _SectionHeader(
                   icon: LucideIcons.play, eyebrow: 'VIDÉOS',
                   title: 'Recettes rapides',
-                  action: 'Voir tout',
+                  action: l10n.sectionVoirTout,
                   onAction: () => Navigator.push(context, MaterialPageRoute(
                     builder: (_) => const AllVideoRecipesScreen())),
                 ),
@@ -475,7 +475,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                 title: _activeCategory == 'Favoris'
                     ? 'Mes favoris'
                     : _activeCategory == 'Tout' ? 'Photos & Étapes' : _activeCategory,
-                action: _activeCategory == 'Tout' ? 'Voir tout' : '${filtered.length} résultat${filtered.length > 1 ? "s" : ""}',
+                action: _activeCategory == 'Tout' ? l10n.sectionVoirTout : '${filtered.length} résultat${filtered.length > 1 ? "s" : ""}',
                 onAction: _activeCategory == 'Tout'
                     ? () => Navigator.push(context, MaterialPageRoute(
                         builder: (_) => const AllImageRecipesScreen()))

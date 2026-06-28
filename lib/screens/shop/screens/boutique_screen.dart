@@ -407,60 +407,74 @@ class _PartnerBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: c.isDark
-                ? [const Color(0xFF1C1C1C), const Color(0xFF0D0D0D)]
-                : [const Color(0xFF1A1A18), const Color(0xFF0D0D0B)],
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF00695C)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2E7D32).withValues(alpha: 0.30),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Row(
           children: [
+            // Icon container with frosted glass effect
             Container(
-              width: 44, height: 44,
+              width: 48, height: 48,
               decoration: BoxDecoration(
-                color: _C.gold.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
               ),
-              child: const Icon(Icons.handshake_rounded, color: _C.gold, size: 22),
+              child: const Icon(Icons.handshake_rounded, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('NOUVEAU', style: TextStyle(
+                        fontSize: 8, fontWeight: FontWeight.w800,
+                        color: Colors.white.withValues(alpha: 0.9), letterSpacing: 1.2)),
+                    ),
+                  ]),
+                  const SizedBox(height: 5),
                   Text(
                     l10n.boutiquePartner,
                     style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: -0.3,
-                    ),
+                      fontSize: 15, fontWeight: FontWeight.w800,
+                      color: Colors.white, letterSpacing: -0.3),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     l10n.boutiquePartnerSub,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.6),
-                      height: 1.4,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.75), height: 1.4),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Container(
-              width: 32, height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(CupertinoIcons.chevron_right,
-                  size: 13, color: Colors.white.withValues(alpha: 0.8)),
+              child: Text('→', style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w800,
+                color: const Color(0xFF2E7D32))),
             ),
           ],
         ),
@@ -514,7 +528,7 @@ class _PicksSection extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         SizedBox(
-          height: 280,
+          height: (MediaQuery.of(context).size.height * 0.33).clamp(220.0, 300.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -901,79 +915,47 @@ class _SortSheet extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // CHIP — icon + label
 // ─────────────────────────────────────────────────────────────────────────────
-class _Chip extends StatefulWidget {
+class _Chip extends StatelessWidget {
   final IconData icon;
   final String   label;
   final bool     isSelected;
   final VoidCallback onTap;
-
-  const _Chip({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  State<_Chip> createState() => _ChipState();
-}
-
-class _ChipState extends State<_Chip> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this,
-        duration: const Duration(milliseconds: 90),
-        lowerBound: 0.93, upperBound: 1.0, value: 1.0);
-  }
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  const _Chip({required this.icon, required this.label, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final c = _C.of(context);
     return GestureDetector(
-      onTapDown: (_) => _ctrl.reverse(),
-      onTapUp:   (_) { _ctrl.forward(); widget.onTap(); },
-      onTapCancel: () => _ctrl.forward(),
-      child: ScaleTransition(
-        scale: _ctrl,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-          decoration: BoxDecoration(
-            color: widget.isSelected ? c.chipSel : c.chipBg,
-            borderRadius: BorderRadius.circular(_T.rChip),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2E7D32) : c.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF2E7D32) : c.divider,
+            width: 1.2,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  widget.icon,
-                  key: ValueKey(widget.isSelected),
-                  size: 14,
-                  color: widget.isSelected ? c.chipSelFg : c.inkMuted,
-                ),
-              ),
-              const SizedBox(width: 6),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
+          boxShadow: isSelected ? [
+            BoxShadow(color: const Color(0xFF2E7D32).withValues(alpha: 0.25),
+                blurRadius: 8, offset: const Offset(0, 3))
+          ] : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13,
+                color: isSelected ? Colors.white : c.inkMuted),
+            const SizedBox(width: 5),
+            Text(label,
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? Colors.white : c.inkMuted,
                   letterSpacing: 0.1,
-                  color: widget.isSelected ? c.chipSelFg : c.inkMuted,
-                ),
-                child: Text(widget.label),
-              ),
-            ],
-          ),
+                )),
+          ],
         ),
       ),
     );

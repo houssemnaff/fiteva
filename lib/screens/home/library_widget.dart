@@ -7,6 +7,7 @@ import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/core/nutrition/favorites_provider.dart' as nutrition;
 import 'package:fiteva/core/shop/shop_provider.dart' as shop_provider;
 import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 
 class LibrarySection extends ConsumerStatefulWidget {
   const LibrarySection();
@@ -27,6 +28,7 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
     final favorites = ref.watch(favoritesProvider);
     final recipeFavorites = ref.watch(nutrition.favoritesProvider);
     final shopWishlist = ref.watch(shop_provider.shopWishlistProvider);
@@ -82,7 +84,7 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
                   );
                 },
                 child: Text(
-                  'Voir tout',
+                  l10n.sectionVoirTout,
                   style: GoogleFonts.inter(
                     color: cs.secondary,
                     fontSize: 13,

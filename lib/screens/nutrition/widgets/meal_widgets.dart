@@ -222,7 +222,7 @@ class ObjectifCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Objectif du jour : ~1920 kcal',
+            'Objectif du jour',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,

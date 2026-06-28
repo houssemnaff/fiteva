@@ -512,8 +512,9 @@ class _CircularRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ringSize = (MediaQuery.of(context).size.width * 0.54).clamp(180.0, 230.0);
     return SizedBox(
-      width: 220, height: 220,
+      width: ringSize, height: ringSize,
       child: CustomPaint(
         painter: _RingPainter(
           day: day, total: total,

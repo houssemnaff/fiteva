@@ -215,7 +215,7 @@ class AppL10n {
   String get nutritionKcalRemaining => _fr ? 'kcal restantes'                                        : 'kcal left';
   String get nutritionMyMeals       => _fr ? 'MES REPAS'                                             : 'MY MEALS';
   String get nutritionToday         => _fr ? 'Aujourd\'hui'                                          : 'Today';
-  String get nutritionDailyTotal    => _fr ? 'total journée'                                         : 'daily total';
+
   String get nutritionSeeAll        => _fr ? 'Tout voir'                                             : 'See all';
   String get nutritionKcalGoal      => _fr ? 'kcal objectif'                                         : 'kcal goal';
   String get nutritionPhoto         => _fr ? 'Photo'                                                  : 'Photo';
@@ -1061,4 +1061,52 @@ class AppL10n {
   String get stepPtsAjoutes      => _fr ? '+50 points ajoutés' : '+50 points added';
   String get stepPts             => _fr ? '+50 pts'            : '+50 pts';
   String get stepObjectifAtteint => _fr ? 'Objectif atteint !' : 'Goal reached!';
+
+  // ── Missing keys (added retroactively) ────────────────────────────────────
+  String get santeSanteEyebrow => _fr ? 'SANTÉ'                         : 'HEALTH';
+  String get progCoachName     => _fr ? 'Coach Sarah'                   : 'Coach Sarah';
+  String get progCoachTitle    => _fr ? 'Expert Fitness & Nutrition'    : 'Fitness & Nutrition Expert';
+  String get progCoachRating   => '4.9  ·  1 200 élèves';
+
+  // ── Profile screen ──────────────────────────────────────────────────────────
+  String get profileTitle          => _fr ? 'Profil'                      : 'Profile';
+  String get profileEditBtn        => _fr ? 'Modifier le profil'          : 'Edit profile';
+  String get profileUser           => _fr ? 'Utilisateur'                 : 'User';
+  String get profileXpProgress     => _fr ? 'Progression XP'              : 'XP Progress';
+  String get profileMaxLevel       => _fr ? '🏆 Niveau maximum atteint !' : '🏆 Max level reached!';
+  String profileXpToNext(int xp)   => _fr ? '$xp XP avant le prochain niveau' : '$xp XP to next level';
+  String get profileWeeklyGoal     => _fr ? 'Objectif hebdomadaire'       : 'Weekly goal';
+  String profileWeeklyDays(int d)  => _fr ? '$d jours complétés cette semaine' : '$d days completed this week';
+  String get profileBadges         => _fr ? 'Badges'                      : 'Badges';
+  String get profileHide           => _fr ? 'Masquer'                     : 'Hide';
+  String get profileSeeAll         => _fr ? 'Voir tout'                   : 'See all';
+  String get profileChallenges     => _fr ? 'Défis'                       : 'Challenges';
+  String get profileCompleted      => _fr ? '✅ Complété !'               : '✅ Completed!';
+  String profileDays(int d, int t) => _fr ? '$d / $t jours'              : '$d / $t days';
+  String get profileAiAssistant    => _fr ? 'Assistant IA'                : 'AI Assistant';
+  String get profileEnabled        => _fr ? 'Activé'                      : 'On';
+  String get profileDisabled       => _fr ? 'Désactivé'                   : 'Off';
+  String get profileStreak         => _fr ? 'Streak'                      : 'Streak';
+  String get profileSessions       => _fr ? 'Séances'                     : 'Sessions';
+  // ── Edit profile sheet ────────────────────────────────────────────────────
+  String get editProfileTitle      => _fr ? 'Modifier le profil'          : 'Edit profile';
+  String get editProfileSubtitle   => _fr ? 'Vos informations personnelles' : 'Your personal info';
+  String get editUsername          => _fr ? 'Nom d\'utilisateur'          : 'Username';
+  String get editPhysicalData      => _fr ? 'Données physiques'           : 'Physical data';
+  String get editHeight            => _fr ? 'Taille (cm)'                 : 'Height (cm)';
+  String get editWeight            => _fr ? 'Poids (kg)'                  : 'Weight (kg)';
+  String get editAge               => _fr ? 'Âge'                         : 'Age';
+  String get editAdvanced          => _fr ? 'Édition avancée'             : 'Advanced edit';
+  String get editSave              => _fr ? 'Enregistrer'                 : 'Save';
+
+  // ── Santé screen remaining strings ──────────────────────────────────────────
+  String get santeAnonyme           => _fr ? 'Anonyme'                  : 'Anonymous';
+  String santeEpisodes(int n)       => _fr ? '$n épisodes'              : '$n episodes';
+  String santeEpisode(int n)        => _fr ? 'Épisode $n'               : 'Episode $n';
+  String santeEpShort(int n)        => _fr ? 'Ep. $n'                   : 'Ep. $n';
+  String get santeLike              => _fr ? 'J\'aime'                  : 'Like';
+  String get santeShare             => _fr ? 'Partager'                 : 'Share';
+  String get santeFollow            => _fr ? 'Suivre'                   : 'Follow';
+  String get santeDansCetteSerie    => _fr ? 'Dans cette série'         : 'In this series';
+  String get santeMedecin           => _fr ? 'Médecin'                  : 'Physician';
 }
