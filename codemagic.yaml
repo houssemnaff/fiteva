@@ -9,26 +9,44 @@ workflows:
       - name: Flutter pub get
         script: flutter pub get
 
-      - name: Build iOS (no codesign)
+      - name: Build Flutter iOS (no codesign)
         script: |
-          flutter build ios --release --no-codesign
+          flutter build ios --release --no-codesign --no-tree-shake-icons
+
+      - name: Build with xcodebuild
+        script: |
           xcodebuild \
             -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath $CM_BUILD_DIR/DerivedData \
+            -derivedDataPath "$CM_BUILD_DIR/DerivedData" \
+            DEVELOPMENT_TEAM="" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER=""
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build
+
+      - name: Verify .app bundle
+        script: |
+          APP_PATH="$CM_BUILD_DIR/DerivedData/Build/Products/Release-iphoneos/Runner.app"
+          echo "=== Checking Runner.app ==="
+          ls -la "$APP_PATH"
+          echo "=== Info.plist ==="
+          plutil -p "$APP_PATH/Info.plist"
 
       - name: Create IPA
         script: |
-          mkdir Payload
-          cp -r $CM_BUILD_DIR/DerivedData/Build/Products/Release-iphoneos/Runner.app Payload/
+          APP_PATH="$CM_BUILD_DIR/DerivedData/Build/Products/Release-iphoneos/Runner.app"
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/Runner.app
+          # Convert Info.plist to binary format (required by AltStore)
+          plutil -convert binary1 Payload/Runner.app/Info.plist
           zip -r app.ipa Payload
+          echo "=== IPA size ==="
+          ls -lh app.ipa
 
     artifacts:
       - app.ipa
