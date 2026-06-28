@@ -1674,7 +1674,7 @@ class _StepGoalsState extends State<StepGoals>
               ]),
             ),
 
-            const Spacer(),
+            SizedBox(height: context.rv(24)),
 
             // ── Circle cluster ────────────────────────────────────
             Padding(
@@ -1728,7 +1728,7 @@ class _StepGoalsState extends State<StepGoals>
               ),
             ),
 
-            const Spacer(),
+            const Spacer(flex: 1),
           ],
         ),
       ),
@@ -1976,7 +1976,7 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
               ]),
             ),
 
-            const Spacer(),
+            SizedBox(height: context.rv(24)),
 
             // ── Triangle circle layout ────────────────────────────
             Padding(
@@ -2030,7 +2030,7 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
               ),
             ),
 
-            SizedBox(height: context.rv(16)),
+            const Spacer(flex: 1),
           ],
         ),
       ),
