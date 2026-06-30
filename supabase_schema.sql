@@ -1036,3 +1036,4 @@ INSERT INTO pregnancy_checklist_items (trimester, title, description, sort_order
 (3,'Plan de naissance','Rédiger votre plan de naissance.',2),
 (3,'Valise de maternité','Préparer la valise pour la maternité.',3),
 (3,'Installation bébé','Monter le lit, le bain, les vêtements.',4);
+

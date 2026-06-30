@@ -1,5 +1,4 @@
 // ignore_for_file: deprecated_member_use
-import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
@@ -39,21 +38,24 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
   final _detailsCtrl  = TextEditingController();
   final _scrollCtrl   = ScrollController();
 
-  int  _typeIndex  = 0;
-  int  _spots      = 12;
-  bool _isPublic   = true;
-  bool _publishing = false;
+  int       _typeIndex    = 0;
+  int       _spots        = 12;
+  bool      _isPublic     = true;
+  bool      _publishing   = false;
+  DateTime  _selectedDate = DateTime.now().add(const Duration(days: 1));
+  TimeOfDay _selectedTime = const TimeOfDay(hour: 8, minute: 0);
 
   late final AnimationController _anim;
   late final Animation<double>   _slide;
 
+  // label → Supabase enum value
   static const _types = [
-    (icon: LucideIcons.footprints, label: 'Running'),
-    (icon: LucideIcons.dumbbell,   label: 'Muscu'),
-    (icon: LucideIcons.wind,       label: 'Yoga'),
-    (icon: LucideIcons.waves,      label: 'Natation'),
-    (icon: LucideIcons.bike,       label: 'Vélo'),
-    (icon: LucideIcons.plus,       label: 'Autre'),
+    (icon: LucideIcons.footprints, label: 'Running',  value: 'running'),
+    (icon: LucideIcons.dumbbell,   label: 'Muscu',    value: 'gym'),
+    (icon: LucideIcons.wind,       label: 'Yoga',     value: 'yoga'),
+    (icon: LucideIcons.waves,      label: 'Natation', value: 'swimming'),
+    (icon: LucideIcons.bike,       label: 'Vélo',     value: 'cycling'),
+    (icon: LucideIcons.plus,       label: 'Autre',    value: 'other'),
   ];
 
   @override
@@ -76,33 +78,81 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 
   String _resolvedName() {
     final profile = ref.read(userProfileProvider);
-    final user    = ref.read(userProvider);
-    return profile.username.isNotEmpty ? profile.username : user.name;
+    final user    = ref.read(userProfileProvider);
+    return profile.username.isNotEmpty ? profile.username : user.username;
   }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _selectedDate = picked);
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime,
+    );
+    if (picked != null) setState(() => _selectedTime = picked);
+  }
+
+  String get _displayDate {
+    const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    const days   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    return '${days[_selectedDate.weekday - 1]} ${_selectedDate.day} ${months[_selectedDate.month - 1]}';
+  }
+
+  String get _displayTime {
+    final h = _selectedTime.hour.toString().padLeft(2, '0');
+    final m = _selectedTime.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  String get _isoDate =>
+      '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2,'0')}-${_selectedDate.day.toString().padLeft(2,'0')}';
 
   Future<void> _publish() async {
     if (_titleCtrl.text.trim().isEmpty || _locationCtrl.text.trim().isEmpty) return;
     HapticFeedback.mediumImpact();
     setState(() => _publishing = true);
     final event = EventModel(
-      id: 'ev_${DateTime.now().millisecondsSinceEpoch}',
-      title: _titleCtrl.text.trim(),
-      organizer: _resolvedName(),
-      organizerAvatar: '',
-      type: _types[_typeIndex].label.toLowerCase(),
-      date: 'Sam 3 Mai',
-      time: '06:30',
-      location: _locationCtrl.text.trim(),
-      maxSpots: _spots,
-      joinedCount: 0,
+      id:                 '',
+      title:              _titleCtrl.text.trim(),
+      organizer:          _resolvedName(),
+      organizerAvatar:    '',
+      type:               _types[_typeIndex].value,
+      date:               _isoDate,        // ISO for Supabase; service converts to display
+      time:               _displayTime,
+      location:           _locationCtrl.text.trim(),
+      maxSpots:           _spots,
+      joinedCount:        0,
       participantAvatars: [],
-      imageUrl: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&q=80',
+      imageUrl:           '',
     );
-    await ref.read(eventsNotifierProvider.notifier).addEvent(event);
+    final ok = await ref.read(eventsNotifierProvider.notifier).addEvent(event);
     if (!mounted) return;
     setState(() => _publishing = false);
-    Navigator.of(context).pop();
     final cs = Theme.of(context).colorScheme;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: cs.error,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        content: Row(children: [
+          Icon(LucideIcons.circleAlert, color: cs.onError, size: 18),
+          const SizedBox(width: 10),
+          Expanded(child: Text('Erreur lors de la création. Vérifiez votre connexion.',
+              style: GoogleFonts.inter(color: cs.onError, fontWeight: FontWeight.w600))),
+        ]),
+      ));
+      return;
+    }
+    Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       behavior: SnackBarBehavior.floating,
       backgroundColor: cs.primary,
@@ -200,7 +250,14 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                     // ── Date & time ──────────────────────────────
                     _SectionLabel(text: 'Date & heure', cs: cs),
                     const SizedBox(height: 10),
-                    _DateTimeRow(cs: cs),
+                    _DateTimeRow(
+                      cs:          cs,
+                      dateLabel:   _displayDate,
+                      dateYear:    '${_selectedDate.year}',
+                      timeLabel:   _displayTime,
+                      onDateTap:   _pickDate,
+                      onTimeTap:   _pickTime,
+                    ),
                     const SizedBox(height: 24),
 
                     // ── Location ─────────────────────────────────
@@ -352,7 +409,7 @@ class _SectionLabel extends StatelessWidget {
 //  TYPE PICKER  (pill wrap, green when selected)
 // ─────────────────────────────────────────────────────────────────────────────
 class _TypePicker extends StatelessWidget {
-  final List<({IconData icon, String label})> types;
+  final List<({IconData icon, String label, String value})> types;
   final int selectedIndex;
   final ColorScheme cs;
   final void Function(int) onSelect;
@@ -436,19 +493,31 @@ class _BorderlessField extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _DateTimeRow extends StatelessWidget {
   final ColorScheme cs;
-  const _DateTimeRow({required this.cs});
+  final String dateLabel;
+  final String dateYear;
+  final String timeLabel;
+  final VoidCallback onDateTap;
+  final VoidCallback onTimeTap;
+  const _DateTimeRow({
+    required this.cs,
+    required this.dateLabel,
+    required this.dateYear,
+    required this.timeLabel,
+    required this.onDateTap,
+    required this.onTimeTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(children: [
       Expanded(child: _DateCard(
-        label: 'Date', value: 'Sam 3 Mai', sub: '2025',
-        icon: LucideIcons.calendarDays, cs: cs,
+        label: 'Date', value: dateLabel, sub: dateYear,
+        icon: LucideIcons.calendarDays, cs: cs, onTap: onDateTap,
       )),
       const SizedBox(width: 10),
       Expanded(child: _DateCard(
-        label: 'Heure', value: '06 : 30', sub: 'du matin',
-        icon: LucideIcons.clock, cs: cs,
+        label: 'Heure', value: timeLabel, sub: '',
+        icon: LucideIcons.clock, cs: cs, onTap: onTimeTap,
       )),
     ]);
   }
@@ -458,16 +527,17 @@ class _DateCard extends StatelessWidget {
   final String label, value, sub;
   final IconData icon;
   final ColorScheme cs;
+  final VoidCallback onTap;
   const _DateCard({
     required this.label, required this.value, required this.sub,
-    required this.icon, required this.cs,
+    required this.icon, required this.cs, required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs        = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: () => HapticFeedback.selectionClick(),
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(

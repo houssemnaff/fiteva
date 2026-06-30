@@ -5,7 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/app_localizations.dart';
-import '../models/mock_data.dart';
+import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 import 'favorites_screen.dart';
 import 'partner_form_screen.dart';
@@ -141,12 +141,13 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
   bool   _filterElevated = false;
 
   final _scrollCtrl = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollCtrl.addListener(_onScroll);
-  }
+@override
+void initState() {
+  super.initState();
+  _scrollCtrl.addListener(_onScroll);
+  // Recharge le catalogue à chaque ouverture du screen
+  Future.microtask(() => ref.invalidate(shopItemsProvider));
+}
 
   void _onScroll() {
     final elevated = _scrollCtrl.offset > 80;
@@ -159,25 +160,25 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
     super.dispose();
   }
 
-  List get _picks => mockItems.take(3).toList();
+  List<BoutiqueItem> _picks(List<BoutiqueItem> items) => items.take(3).toList();
 
-  List get _filtered {
-    var list = List.from(mockItems);
+  List<BoutiqueItem> _getFiltered(List<BoutiqueItem> items) {
+    var list = List<BoutiqueItem>.from(items);
     if (_cat != 'all') list = list.where((e) => e.category == _cat).toList();
     switch (_sort) {
       case _Sort.topDeals:
-        list.sort((a, b) => (b.etoiles as int).compareTo(a.etoiles as int));
+        list.sort((a, b) => b.etoiles.compareTo(a.etoiles));
       case _Sort.mostPopular:
-        list.sort((a, b) => (a.etoiles as int).compareTo(b.etoiles as int));
+        list.sort((a, b) => a.etoiles.compareTo(b.etoiles));
       case _Sort.expiringSoon:
-        list = list.where((e) => e.discount != null && (e.discount as String).isNotEmpty).toList();
+        list = list.where((e) => e.discount.isNotEmpty).toList();
       case _Sort.discount10:
-        list = list.where((e) => (e.discount as String? ?? '').contains('10')).toList();
+        list = list.where((e) => e.discount.contains('10')).toList();
       case _Sort.discount20:
-        list = list.where((e) => (e.discount as String? ?? '').contains('20')).toList();
+        list = list.where((e) => e.discount.contains('20')).toList();
       case _Sort.discount30:
         list = list.where((e) {
-          final d = e.discount as String? ?? '';
+          final d = e.discount;
           return d.contains('30') || d.contains('40') || d.contains('50');
         }).toList();
       case _Sort.none:
@@ -229,11 +230,12 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
   @override
   Widget build(BuildContext context) {
     final c          = _C.of(context);
-    final filtered   = _filtered;
     final shop       = ref.watch(shopProvider);
     final userPoints = shop.points;
     final l10n       = ref.watch(l10nProvider);
     final wishlist   = ref.watch(shopWishlistProvider);
+    final allItems   = ref.watch(shopItemsProvider).asData?.value ?? <BoutiqueItem>[];
+    final filtered   = _getFiltered(allItems);
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -249,17 +251,43 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
             accentColor: _C.gold,
             bgColor:     c.bg,
             actions: [
-              GestureDetector(
-                onTap: _openFavorites,
-                child: Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: c.divider, width: 1),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  GestureDetector(
+                    onTap: _openFavorites,
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: c.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: c.divider, width: 1),
+                      ),
+                      child: Icon(CupertinoIcons.heart, size: 17, color: c.ink),
+                    ),
                   ),
-                  child: Icon(CupertinoIcons.heart, size: 17, color: c.ink),
-                ),
+                  if (wishlist.isNotEmpty)
+                    Positioned(
+                      top: -2, right: -2,
+                      child: Container(
+                        width: 16, height: 16,
+                        decoration: const BoxDecoration(
+                          color: _C.wishRed,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${wishlist.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(width: 8),
               Container(
@@ -296,7 +324,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
                   _PicksSection(
                     c: c,
                     l10n: l10n,
-                    items: _picks,
+                    items: _picks(allItems),
                     userEtoiles: userPoints,
                     wishlist: wishlist,
                     redeemed: shop.redeemed,
@@ -356,18 +384,17 @@ if (filtered.isNotEmpty)
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) {
                         final item       = filtered[i];
-                        final id         = '${item.brand}_${item.title}';
                         final isRedeemed = shop.isRedeemed(item.id);
                         return Padding(
                           padding: EdgeInsets.only(
                               bottom: i < filtered.length - 1 ? 12 : 0),
                           child: _PartnerCard(
-                            key: ValueKey(id),
+                            key: ValueKey(item.id),
                             item: item,
                             userEtoiles: userPoints,
-                            isWishlisted: wishlist.contains(id),
+                            isWishlisted: wishlist.contains(item.id),
                             isRedeemed: isRedeemed,
-                            onWish: () => _toggleWish(id),
+                            onWish: () => _toggleWish(item.id),
                             onTap: () => Navigator.push(
                                 ctx,
                                 CupertinoPageRoute(
@@ -380,9 +407,6 @@ if (filtered.isNotEmpty)
                   ),
                 ),
 
-          // ── Devenir partenaire banner ────────────────────────────────
-          
-          // ── Footer ──────────────────────────────────────────────────────
         
         ],
       ),
@@ -475,7 +499,7 @@ class _PartnerBanner extends StatelessWidget {
 class _PicksSection extends StatelessWidget {
   final _C c;
   final AppL10n l10n;
-  final List items;
+  final List<BoutiqueItem> items;
   final int userEtoiles;
   final Set<String> wishlist;
   final Set<String> redeemed;
@@ -495,12 +519,9 @@ class _PicksSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
 
-    final main   = items[0];
-    final mainId = '${main.brand}_${main.title}';
-    final sub1   = items.length > 1 ? items[1] : null;
-    final sub1Id = sub1 != null ? '${sub1.brand}_${sub1.title}' : '';
-    final sub2   = items.length > 2 ? items[2] : null;
-    final sub2Id = sub2 != null ? '${sub2.brand}_${sub2.title}' : '';
+    final main = items[0];
+    final sub1 = items.length > 1 ? items[1] : null;
+    final sub2 = items.length > 2 ? items[2] : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,9 +544,9 @@ class _PicksSection extends StatelessWidget {
                 child: _BentoCard(
                   item: main,
                   userEtoiles: userEtoiles,
-                  isWishlisted: wishlist.contains(mainId),
-                  isRedeemed: redeemed.contains(main.id as String),
-                  onWish: () => onWish(mainId),
+                  isWishlisted: wishlist.contains(main.id),
+                  isRedeemed: redeemed.contains(main.id),
+                  onWish: () => onWish(main.id),
                   onTap: () => Navigator.push(context,
                       CupertinoPageRoute(builder: (_) => BoutiqueDetailScreen(item: main))),
                   compact: false,
@@ -541,9 +562,9 @@ class _PicksSection extends StatelessWidget {
                         child: _BentoCard(
                           item: sub1,
                           userEtoiles: userEtoiles,
-                          isWishlisted: wishlist.contains(sub1Id),
-                          isRedeemed: redeemed.contains(sub1.id as String),
-                          onWish: () => onWish(sub1Id),
+                          isWishlisted: wishlist.contains(sub1.id),
+                          isRedeemed: redeemed.contains(sub1.id),
+                          onWish: () => onWish(sub1.id),
                           onTap: () => Navigator.push(context,
                               CupertinoPageRoute(builder: (_) => BoutiqueDetailScreen(item: sub1))),
                           compact: true,
@@ -555,9 +576,9 @@ class _PicksSection extends StatelessWidget {
                         child: _BentoCard(
                           item: sub2,
                           userEtoiles: userEtoiles,
-                          isWishlisted: wishlist.contains(sub2Id),
-                          isRedeemed: redeemed.contains(sub2.id as String),
-                          onWish: () => onWish(sub2Id),
+                          isWishlisted: wishlist.contains(sub2.id),
+                          isRedeemed: redeemed.contains(sub2.id),
+                          onWish: () => onWish(sub2.id),
                           onTap: () => Navigator.push(context,
                               CupertinoPageRoute(builder: (_) => BoutiqueDetailScreen(item: sub2))),
                           compact: true,

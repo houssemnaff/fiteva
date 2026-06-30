@@ -7,8 +7,10 @@ class EventParticipant {
 
 class PostModel {
   final String id;
+  final String userId;
   final String username;
   final String userAvatarUrl;
+  final String title;
   final String content;
   final String imageUrl;
   final int likes;
@@ -18,8 +20,10 @@ class PostModel {
 
   const PostModel({
     required this.id,
+    this.userId = '',
     required this.username,
     required this.userAvatarUrl,
+    this.title = '',
     required this.content,
     required this.imageUrl,
     required this.likes,
@@ -30,8 +34,10 @@ class PostModel {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'userId': userId,
     'username': username,
     'userAvatarUrl': userAvatarUrl,
+    'title': title,
     'content': content,
     'imageUrl': imageUrl,
     'likes': likes,
@@ -42,8 +48,10 @@ class PostModel {
 
   factory PostModel.fromJson(Map<String, dynamic> j) => PostModel(
     id: j['id'] as String,
+    userId: j['userId'] as String? ?? '',
     username: j['username'] as String,
     userAvatarUrl: j['userAvatarUrl'] as String,
+    title: j['title'] as String? ?? '',
     content: j['content'] as String,
     imageUrl: j['imageUrl'] as String? ?? '',
     likes: j['likes'] as int? ?? 0,
@@ -54,8 +62,10 @@ class PostModel {
 
   PostModel copyWith({
     String? id,
+    String? userId,
     String? username,
     String? userAvatarUrl,
+    String? title,
     String? content,
     String? imageUrl,
     int? likes,
@@ -65,8 +75,10 @@ class PostModel {
   }) =>
       PostModel(
         id: id ?? this.id,
+        userId: userId ?? this.userId,
         username: username ?? this.username,
         userAvatarUrl: userAvatarUrl ?? this.userAvatarUrl,
+        title: title ?? this.title,
         content: content ?? this.content,
         imageUrl: imageUrl ?? this.imageUrl,
         likes: likes ?? this.likes,

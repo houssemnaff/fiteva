@@ -1,6 +1,5 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/models/post_model.dart';
-import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +11,9 @@ import '../../../../l10n/app_localizations.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 class FeedComposerSheet extends ConsumerStatefulWidget {
-  const FeedComposerSheet({super.key});
+  /// Si [post] est fourni, la sheet s'ouvre en mode édition.
+  final PostModel? post;
+  const FeedComposerSheet({super.key, this.post});
 
   @override
   ConsumerState<FeedComposerSheet> createState() => _FeedComposerSheetState();
@@ -21,18 +22,29 @@ class FeedComposerSheet extends ConsumerStatefulWidget {
 class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
     with SingleTickerProviderStateMixin {
 
-  final _titleCtrl   = TextEditingController();
-  final _contentCtrl = TextEditingController();
-  final _titleFocus  = FocusNode();
+  final _titleCtrl    = TextEditingController();
+  final _contentCtrl  = TextEditingController();
+  final _titleFocus   = FocusNode();
   final _contentFocus = FocusNode();
 
   String _type       = 'Texte';
+  String _category   = '';        // catégorie fitness, indépendante du type format
   bool   _publishing = false;
 
   late final AnimationController _anim;
   late final Animation<double>   _slide;
 
+  bool get _isEditing => widget.post != null;
+
   static const _types = ['Texte', 'Photo', 'Avant/Après'];
+
+  static const _categories = [
+    (value: 'Workout',   label: 'Workout',   icon: LucideIcons.dumbbell),
+    (value: 'Challenge', label: 'Challenge', icon: LucideIcons.trophy),
+    (value: 'Nutrition', label: 'Nutrition', icon: LucideIcons.apple),
+    (value: 'Lifestyle', label: 'Lifestyle', icon: LucideIcons.heart),
+    (value: 'Other',     label: 'Autre',     icon: LucideIcons.sparkles),
+  ];
 
   @override
   void initState() {
@@ -40,6 +52,13 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
     _anim  = AnimationController(vsync: this, duration: const Duration(milliseconds: 360));
     _slide = CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic);
     _anim.forward();
+
+    // Pré-remplissage en mode édition.
+    if (_isEditing) {
+      _titleCtrl.text   = widget.post!.title;
+      _contentCtrl.text = widget.post!.content;
+      _category         = widget.post!.category;
+    }
   }
 
   @override
@@ -54,8 +73,8 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
 
   String _resolvedName(WidgetRef ref) {
     final profile = ref.read(userProfileProvider);
-    final user    = ref.read(userProvider);
-    return profile.username.isNotEmpty ? profile.username : user.name;
+    final user    = ref.read(userProfileProvider);
+    return profile.username.isNotEmpty ? profile.username : user.username;
   }
 
   Future<void> _publish() async {
@@ -64,23 +83,58 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
     if (title.isEmpty && content.isEmpty) return;
     HapticFeedback.mediumImpact();
     setState(() => _publishing = true);
-    final displayName = _resolvedName(ref);
-    final post = PostModel(
-      id: 'p_${DateTime.now().millisecondsSinceEpoch}',
-      username: displayName,
-      userAvatarUrl: '',
-      content: [title, content].where((s) => s.isNotEmpty).join('\n'),
-      imageUrl: '',
-      likes: 0,
-      comments: 0,
-      timeAgo: 'À l\'instant',
-      category: _type == 'Texte' ? '' : _type,
-    );
-    await ref.read(postsNotifierProvider.notifier).addPost(post);
+
+    bool ok;
+
+    if (_isEditing) {
+      final updated = widget.post!.copyWith(
+        title:    title,
+        content:  content,
+        category: _category,
+      );
+      ok = await ref.read(postsNotifierProvider.notifier).updatePost(updated);
+    } else {
+      final displayName = _resolvedName(ref);
+      final post = PostModel(
+        id:           '',
+        username:     displayName,
+        userAvatarUrl:'',
+        title:        title,
+        content:      content,
+        imageUrl:     '',
+        likes:        0,
+        comments:     0,
+        timeAgo:      'À l\'instant',
+        category:     _category,
+      );
+      ok = await ref.read(postsNotifierProvider.notifier).addPost(post);
+    }
+
     if (!mounted) return;
     setState(() => _publishing = false);
-    Navigator.of(context).pop();
     final cs = Theme.of(context).colorScheme;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: cs.error,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        duration: const Duration(seconds: 4),
+        content: Row(children: [
+          Icon(LucideIcons.circleAlert, color: cs.onError, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _isEditing
+                  ? 'Erreur lors de la modification. Vérifiez votre connexion.'
+                  : 'Erreur lors de la publication. Vérifiez votre connexion.',
+              style: GoogleFonts.inter(color: cs.onError, fontWeight: FontWeight.w600)),
+          ),
+        ]),
+      ));
+      return;
+    }
+    Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       behavior: SnackBarBehavior.floating,
       backgroundColor: cs.primary,
@@ -90,8 +144,11 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
       content: Row(children: [
         Icon(LucideIcons.checkCircle, color: cs.onPrimary, size: 18),
         const SizedBox(width: 10),
-        Text(ref.read(l10nProvider).communityPublished,
+        Expanded(
+          child: Text(
+            _isEditing ? 'Post modifié avec succès !' : ref.read(l10nProvider).communityPublished,
             style: GoogleFonts.inter(color: cs.onPrimary, fontWeight: FontWeight.w600)),
+        ),
       ]),
     ));
   }
@@ -117,7 +174,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
           mainAxisSize: MainAxisSize.min,
           children: [
             _Handle(cs: cs),
-            _TopBar(cs: cs, onClose: () => Navigator.of(context).pop()),
+            _TopBar(cs: cs, isEditing: _isEditing, onClose: () => Navigator.of(context).pop()),
 
             // ── Posting as ──────────────────────────────────────────────────
             Padding(
@@ -153,6 +210,16 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                       onSelect: (t) {
                         HapticFeedback.selectionClick();
                         setState(() => _type = t);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _CategoryPicker(
+                      categories: _categories,
+                      selected: _category,
+                      cs: cs,
+                      onSelect: (v) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _category = _category == v ? '' : v);
                       },
                     ),
                     const SizedBox(height: 24),
@@ -205,7 +272,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                 ),
               ),
             ),
-            _BottomBar(cs: cs, publishing: _publishing, onPublish: _publish),
+            _BottomBar(cs: cs, publishing: _publishing, isEditing: _isEditing, onPublish: _publish),
           ],
         ),
       ),
@@ -247,37 +314,43 @@ class _Handle extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _TopBar extends ConsumerWidget {
   final ColorScheme cs;
+  final bool isEditing;
   final VoidCallback onClose;
-  const _TopBar({required this.cs, required this.onClose});
+  const _TopBar({required this.cs, required this.isEditing, required this.onClose});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(l10nProvider);
     return Padding(
-    padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
-    child: Row(children: [
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l10n.communityNewPost, style: GoogleFonts.inter(
-          fontSize: 9, fontWeight: FontWeight.w700,
-          color: cs.primary, letterSpacing: 2.5)),
-        const SizedBox(height: 2),
-        Text(l10n.communityShareWith, style: GoogleFonts.outfit(
-          fontSize: 19, fontWeight: FontWeight.w700,
-          color: cs.onSurface, letterSpacing: -0.3)),
-      ])),
-      GestureDetector(
-        onTap: onClose,
-        child: Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12)),
-          child: Icon(LucideIcons.x, size: 16,
-              color: cs.onSurface.withValues(alpha: 0.6)),
+      padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
+      child: Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(
+            isEditing ? 'MODIFIER' : l10n.communityNewPost,
+            style: GoogleFonts.inter(
+              fontSize: 9, fontWeight: FontWeight.w700,
+              color: cs.primary, letterSpacing: 2.5)),
+          const SizedBox(height: 2),
+          Text(
+            isEditing ? 'Modifier votre post' : l10n.communityShareWith,
+            style: GoogleFonts.outfit(
+              fontSize: 19, fontWeight: FontWeight.w700,
+              color: cs.onSurface, letterSpacing: -0.3)),
+        ])),
+        GestureDetector(
+          onTap: onClose,
+          child: Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12)),
+            child: Icon(LucideIcons.x, size: 16,
+                color: cs.onSurface.withValues(alpha: 0.6)),
+          ),
         ),
-      ),
-    ]),
-  );
+      ]),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -412,8 +485,9 @@ class _PhotoSlot extends StatelessWidget {
 class _BottomBar extends ConsumerWidget {
   final ColorScheme cs;
   final bool publishing;
+  final bool isEditing;
   final VoidCallback onPublish;
-  const _BottomBar({required this.cs, required this.publishing, required this.onPublish});
+  const _BottomBar({required this.cs, required this.publishing, required this.isEditing, required this.onPublish});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -443,7 +517,7 @@ class _BottomBar extends ConsumerWidget {
                     width: 20, height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: cs.onPrimary))
-                : Text(l10n.communityPublish,
+                : Text(isEditing ? 'Modifier' : l10n.communityPublish,
                     style: GoogleFonts.outfit(
                       color: cs.onPrimary,
                       fontSize: 16,
@@ -452,6 +526,75 @@ class _BottomBar extends ConsumerWidget {
                     )),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CATEGORY PICKER  (pills horizontaux avec icônes)
+// ─────────────────────────────────────────────────────────────────────────────
+class _CategoryPicker extends StatelessWidget {
+  final List<({String value, String label, IconData icon})> categories;
+  final String selected;
+  final ColorScheme cs;
+  final void Function(String) onSelect;
+
+  const _CategoryPicker({
+    required this.categories,
+    required this.selected,
+    required this.cs,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final cat = categories[i];
+          final sel = selected == cat.value;
+          return GestureDetector(
+            onTap: () => onSelect(cat.value),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: sel
+                    ? cs.primary
+                    : cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(50),
+                border: Border.all(
+                  color: sel ? cs.primary : cs.outline,
+                ),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(
+                  cat.icon,
+                  size: 13,
+                  color: sel
+                      ? cs.onPrimary
+                      : cs.onSurface.withValues(alpha: 0.55),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  cat.label,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                    color: sel
+                        ? cs.onPrimary
+                        : cs.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ]),
+            ),
+          );
+        },
       ),
     );
   }

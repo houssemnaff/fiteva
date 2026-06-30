@@ -6,7 +6,10 @@ import '../../providers/onboarding_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../providers/mascot_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../core/communiter_provider.dart';
 import '../../services/storage_service.dart';
+import '../../services/auth_service.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'steps/onboarding_steps.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -173,11 +176,105 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _finish() async {
     await StorageService.saveOnboardingData(_data.toMap());
-    ref.read(onboardingProvider.notifier).completeOnboarding();
+
+    // ── Authentification Supabase ──────────────────────────────────────────
+    if (_data.email.isNotEmpty && _data.password.isNotEmpty) {
+      final result = await AuthService.signUpOrSignIn(
+        email:    _data.email,
+        password: _data.password,
+        username: _data.username,
+      );
+      if (!result.isSuccess && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(result.error ?? 'Erreur d\'authentification'),
+          backgroundColor: const Color(0xFFB00020),
+          behavior: SnackBarBehavior.floating,
+        ));
+        // On continue quand même en mode local si le réseau est indisponible
+      }
+    }
+
+    await ref.read(onboardingProvider.notifier).completeOnboarding();
     ref.read(userProfileProvider.notifier).reload();
     ref.read(mascotProvider.notifier).reload();
     if (!mounted) return;
     context.go('/');
+  }
+
+  /// Connexion via Google (inscription ou connexion automatique).
+  Future<void> _googleSignIn() async {
+    final result = await AuthService.signInWithGoogle();
+    if (!mounted) return;
+    if (result.isSuccess) {
+      StorageService.setOnboardingCompleted(true);
+      ref.read(userProfileProvider.notifier).reload();
+      ref.invalidate(postsNotifierProvider);
+      ref.invalidate(eventsNotifierProvider);
+      ref.invalidate(partnersNotifierProvider);
+      context.go('/');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(result.error ?? 'Erreur Google'),
+        backgroundColor: const Color(0xFFB00020),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
+  /// Connexion via Apple — iOS/macOS uniquement.
+  Future<void> _appleSignIn() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS &&
+        defaultTargetPlatform != TargetPlatform.macOS) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Sign in with Apple disponible uniquement sur iPhone/Mac'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    final result = await AuthService.signInWithApple();
+    if (!mounted) return;
+    if (result.isSuccess) {
+      StorageService.setOnboardingCompleted(true);
+      ref.read(userProfileProvider.notifier).reload();
+      ref.invalidate(postsNotifierProvider);
+      ref.invalidate(eventsNotifierProvider);
+      ref.invalidate(partnersNotifierProvider);
+      context.go('/');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(result.error ?? 'Erreur Apple'),
+        backgroundColor: const Color(0xFFB00020),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
+  /// Connexion d'un utilisateur existant par email — bypass l'onboarding complet.
+  Future<void> _login() async {
+    _syncDataFromControllers();
+    if (_data.email.isEmpty || _data.password.isEmpty) return;
+
+    final result = await AuthService.signIn(
+      email:    _data.email,
+      password: _data.password,
+    );
+
+    if (!mounted) return;
+
+    if (result.isSuccess) {
+      StorageService.setOnboardingCompleted(true);
+      ref.read(userProfileProvider.notifier).reload();
+      ref.invalidate(postsNotifierProvider);
+      ref.invalidate(eventsNotifierProvider);
+      ref.invalidate(partnersNotifierProvider);
+      context.go('/');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(result.error ?? 'Connexion échouée'),
+        backgroundColor: const Color(0xFFB00020),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
   }
 
   void _syncDataFromControllers() {
@@ -205,11 +302,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _data.equipment         = List<String>.from(saved['equipment'] ?? []);
       _data.trainingLocation  = saved['training_location'];
       _data.frequency         = saved['frequency'];
-      _data.heightCm       = (saved['height_cm'] as int?) ?? 165;
-      _data.weightKg       = (saved['weight_kg'] is int)
-          ? (saved['weight_kg'] as int).toDouble()
-          : (saved['weight_kg'] as double?) ?? 60.0;
-      _data.age            = (saved['age'] as int?) ?? 25;
+      _data.heightCm       = (saved['height_cm'] is int)
+          ? saved['height_cm'] as int
+          : (saved['height_cm'] as num?)?.toInt() ?? 165;
+      _data.weightKg       = (saved['weight_kg'] as num?)?.toDouble() ?? 60.0;
+      _data.age            = (saved['age'] is int)
+          ? saved['age'] as int
+          : (saved['age'] as num?)?.toInt() ?? 25;
     });
   }
 
@@ -250,10 +349,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // 0 — Intro
     StepIntro(onNext: _goNext),
 
-    // 1 — Welcome (login)
+    // 1 — Welcome (inscription + connexion)
     StepWelcome(
       onNext:             _goNext,
       onBack:             _goBack,
+      onLogin:            _login,
       nameController:     _nameCtrl,
       emailController:    _emailCtrl,
       passwordController: _passCtrl,

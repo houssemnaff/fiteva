@@ -1,36 +1,111 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'supabase_config.dart';
 
+/// Gestion des étoiles (points boutique) — stocké dans user_points + points_history
 class PointsService {
-  static const String pointsKey    = 'user_points';
-  static const String _key         = pointsKey;
-  static const int    pointsPerVideo = 10;
+  static const int pointsPerVideo = 10;
+
+  // ── Lecture ────────────────────────────────────────────────────────────────
 
   static Future<int> getPoints() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_key) ?? 0;
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return 0;
+
+    try {
+      final row = await SupabaseConfig.table('user_points')
+          .select('etoiles')
+          .eq('user_id', uid)
+          .maybeSingle();
+      return row?['etoiles'] as int? ?? 0;
+    } catch (_) {
+      return 0;
+    }
   }
 
-  static Future<int> addPoints(int amount) async {
-    final prefs = await SharedPreferences.getInstance();
+  // ── Ajout ─────────────────────────────────────────────────────────────────
 
-    final current = prefs.getInt(_key) ?? 0;
-    final updated = current + amount;
+  static Future<int> addPoints(int amount, {String reason = 'reward'}) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return 0;
 
-    await prefs.setInt(_key, updated);
+    try {
+      final current = await getPoints();
+      final updated = current + amount;
 
-    return updated;
+      await SupabaseConfig.table('user_points').upsert({
+        'user_id':    uid,
+        'etoiles':    updated,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
+      await SupabaseConfig.table('points_history').insert({
+        'user_id':   uid,
+        'amount':    amount,
+        'reason':    reason,
+        'earned_at': DateTime.now().toIso8601String(),
+      });
+
+      return updated;
+    } catch (_) {
+      return 0;
+    }
   }
 
-  static Future<int> spendPoints(int amount) async {
-    final prefs   = await SharedPreferences.getInstance();
-    final current = prefs.getInt(_key) ?? 0;
-    final updated = (current - amount).clamp(0, 999999);
-    await prefs.setInt(_key, updated);
-    return updated;
+  // ── Dépense ───────────────────────────────────────────────────────────────
+
+  static Future<int> spendPoints(int amount, {String reason = 'shop_redemption'}) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return 0;
+
+    try {
+      final current = await getPoints();
+      final updated = (current - amount).clamp(0, 999999);
+
+      await SupabaseConfig.table('user_points').upsert({
+        'user_id':    uid,
+        'etoiles':    updated,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
+      await SupabaseConfig.table('points_history').insert({
+        'user_id':   uid,
+        'amount':    -amount,
+        'reason':    reason,
+        'earned_at': DateTime.now().toIso8601String(),
+      });
+
+      return updated;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  // ── Historique ────────────────────────────────────────────────────────────
+
+  static Future<List<Map<String, dynamic>>> getHistory({int limit = 20}) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return [];
+
+    try {
+      final rows = await SupabaseConfig.table('points_history')
+          .select()
+          .eq('user_id', uid)
+          .order('earned_at', ascending: false)
+          .limit(limit);
+      return List<Map<String, dynamic>>.from(rows as List);
+    } catch (_) {
+      return [];
+    }
   }
 
   static Future<void> resetPoints() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_key, 0);
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      await SupabaseConfig.table('user_points').upsert({
+        'user_id':    uid,
+        'etoiles':    0,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
   }
 }

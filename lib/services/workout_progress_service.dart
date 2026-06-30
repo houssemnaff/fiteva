@@ -1,6 +1,6 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/workout_model.dart';
 import '../models/home_program_model.dart';
+import 'supabase_config.dart';
 
 class ProgramProgressStatus {
   final String programId;
@@ -20,66 +20,160 @@ class ProgramProgressStatus {
   bool get isStarted => completedWorkouts > 0 && !isCompleted;
 }
 
+/// Progression workouts, vidéos, programmes et favoris — stocké dans Supabase
 class WorkoutProgressService {
-  static const _completedVideosKey = 'completed_videos';
-  static const _completedWorkoutsKey = 'completed_workouts';
-  static const _completedProgramsKey = 'completed_programs';
-  static const _videoProgressKey = 'video_progress_';
-  static const _favoritesKey = 'favorites';
+  static String? get _uid => SupabaseConfig.userId;
 
-  // Video Completion (80% watched)
+  // ── Vidéos ────────────────────────────────────────────────────────────────
+
   static Future<Set<String>> getCompletedVideos() async {
-    final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_completedVideosKey) ?? []).toSet();
+    if (_uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('user_video_completions')
+          .select('video_id')
+          .eq('user_id', _uid!)
+          .eq('completed', true);
+      return {for (final r in rows as List) r['video_id'] as String};
+    } catch (_) {
+      return {};
+    }
   }
 
   static Future<void> markVideoComplete(String videoId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final completed = prefs.getStringList(_completedVideosKey) ?? [];
-    if (!completed.contains(videoId)) {
-      completed.add(videoId);
-      await prefs.setStringList(_completedVideosKey, completed);
-    }
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_video_completions').upsert({
+        'user_id':      _uid,
+        'video_id':     videoId,
+        'progress':     1.0,
+        'completed':    true,
+        'completed_at': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
   }
 
   static Future<bool> isVideoCompleted(String videoId) async {
-    final completed = await getCompletedVideos();
-    return completed.contains(videoId);
-  }
-
-  // Workout Completion
-  static Future<Set<String>> getCompletedWorkouts() async {
-    final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_completedWorkoutsKey) ?? []).toSet();
-  }
-
-  static Future<void> markWorkoutComplete(String workoutId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final completed = prefs.getStringList(_completedWorkoutsKey) ?? [];
-    if (!completed.contains(workoutId)) {
-      completed.add(workoutId);
-      await prefs.setStringList(_completedWorkoutsKey, completed);
+    if (_uid == null) return false;
+    try {
+      final row = await SupabaseConfig.table('user_video_completions')
+          .select('completed')
+          .eq('user_id', _uid!)
+          .eq('video_id', videoId)
+          .maybeSingle();
+      return row?['completed'] as bool? ?? false;
+    } catch (_) {
+      return false;
     }
   }
 
+  static Future<double> getVideoProgress(String videoId) async {
+    if (_uid == null) return 0.0;
+    try {
+      final row = await SupabaseConfig.table('user_video_completions')
+          .select('progress')
+          .eq('user_id', _uid!)
+          .eq('video_id', videoId)
+          .maybeSingle();
+      return (row?['progress'] as num?)?.toDouble() ?? 0.0;
+    } catch (_) {
+      return 0.0;
+    }
+  }
+
+  static Future<void> updateVideoProgress(String videoId, double progress) async {
+    if (_uid == null) return;
+    try {
+      final completed = progress >= 0.8;
+      await SupabaseConfig.table('user_video_completions').upsert({
+        'user_id':      _uid,
+        'video_id':     videoId,
+        'progress':     progress.clamp(0.0, 1.0),
+        'completed':    completed,
+        'completed_at': completed ? DateTime.now().toIso8601String() : null,
+      });
+    } catch (_) {}
+  }
+
+  // ── Workouts ──────────────────────────────────────────────────────────────
+
+  static Future<Set<String>> getCompletedWorkouts() async {
+    if (_uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('user_workout_completions')
+          .select('workout_id')
+          .eq('user_id', _uid!);
+      return {for (final r in rows as List) r['workout_id'] as String};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  static Future<void> markWorkoutComplete(String workoutId) async {
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_workout_completions').upsert({
+        'user_id':      _uid,
+        'workout_id':   workoutId,
+        'completed_at': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
+  }
+
   static Future<bool> isWorkoutCompleted(String workoutId) async {
+    if (_uid == null) return false;
     final completed = await getCompletedWorkouts();
     return completed.contains(workoutId);
   }
 
-  // Program Completion
+  static Future<bool> checkAndMarkWorkoutComplete(WorkoutModel workout) async {
+    final completedVideos = await getCompletedVideos();
+    bool allDone = true;
+    for (int i = 0; i < workout.exercises.length; i++) {
+      if (!completedVideos.contains('${workout.title}_exercise_$i')) {
+        allDone = false;
+        break;
+      }
+    }
+    if (allDone && workout.exercises.isNotEmpty) {
+      await markWorkoutComplete(workout.id);
+      return true;
+    }
+    return false;
+  }
+
+  static Future<double> getWorkoutCompletionPercentage(WorkoutModel workout) async {
+    if (workout.exercises.isEmpty) return 0.0;
+    final completedVideos = await getCompletedVideos();
+    int done = 0;
+    for (int i = 0; i < workout.exercises.length; i++) {
+      if (completedVideos.contains('${workout.title}_exercise_$i')) done++;
+    }
+    return done / workout.exercises.length;
+  }
+
+  // ── Programmes ────────────────────────────────────────────────────────────
+
   static Future<Set<String>> getCompletedPrograms() async {
-    final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_completedProgramsKey) ?? []).toSet();
+    if (_uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('user_program_completions')
+          .select('program_id')
+          .eq('user_id', _uid!);
+      return {for (final r in rows as List) r['program_id'] as String};
+    } catch (_) {
+      return {};
+    }
   }
 
   static Future<void> markProgramComplete(String programId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final completed = prefs.getStringList(_completedProgramsKey) ?? [];
-    if (!completed.contains(programId)) {
-      completed.add(programId);
-      await prefs.setStringList(_completedProgramsKey, completed);
-    }
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_program_completions').upsert({
+        'user_id':      _uid,
+        'program_id':   programId,
+        'completed_at': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
   }
 
   static Future<bool> isProgramCompleted(String programId) async {
@@ -87,162 +181,142 @@ class WorkoutProgressService {
     return completed.contains(programId);
   }
 
-  // Video Progress Tracking
-  static Future<double> getVideoProgress(String videoId) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble('$_videoProgressKey$videoId') ?? 0.0;
-  }
-
-  static Future<void> updateVideoProgress(String videoId, double progress) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('$_videoProgressKey$videoId', progress);
-
-    // Auto-complete at 80%
-    if (progress >= 0.8) {
-      await markVideoComplete(videoId);
-    }
-  }
-
-  // Check and mark workout as completed if all videos are completed
-  static Future<bool> checkAndMarkWorkoutComplete(WorkoutModel workout) async {
-    final completedVideos = await getCompletedVideos();
-
-    // Check if all exercises (videos) of this workout are completed
-    bool allExercisesCompleted = true;
-    for (int i = 0; i < workout.exercises.length; i++) {
-      final videoId = '${workout.title}_exercise_$i';
-      if (!completedVideos.contains(videoId)) {
-        allExercisesCompleted = false;
-        break;
-      }
-    }
-
-    if (allExercisesCompleted && workout.exercises.isNotEmpty) {
-      await markWorkoutComplete(workout.id);
-      return true;
-    }
-    return false;
-  }
-
-  // Check all programs and mark as completed if all their workouts are completed
-  static Future<void> checkAndMarkAllProgramsComplete(List<HomeProgramModel> programs) async {
-    for (final program in programs) {
-      await checkAndMarkProgramComplete(program);
-    }
-  }
-
-  // Check and mark program as completed if all workouts are completed
   static Future<bool> checkAndMarkProgramComplete(HomeProgramModel program) async {
     final completedWorkouts = await getCompletedWorkouts();
-
-    // Check if all workouts of this program are completed
-    bool allWorkoutsCompleted = true;
-    for (final workout in program.workouts) {
-      if (!completedWorkouts.contains(workout.id)) {
-        allWorkoutsCompleted = false;
-        break;
-      }
-    }
-
-    if (allWorkoutsCompleted && program.workouts.isNotEmpty) {
+    bool allDone = program.workouts.isNotEmpty &&
+        program.workouts.every((w) => completedWorkouts.contains(w.id));
+    if (allDone) {
       await markProgramComplete(program.id);
       return true;
     }
     return false;
   }
 
-  // Get completion percentage of a workout (0.0 to 1.0)
-  static Future<double> getWorkoutCompletionPercentage(WorkoutModel workout) async {
-    if (workout.exercises.isEmpty) return 0.0;
-
-    final completedVideos = await getCompletedVideos();
-    int completedCount = 0;
-
-    for (int i = 0; i < workout.exercises.length; i++) {
-      final videoId = '${workout.title}_exercise_$i';
-      if (completedVideos.contains(videoId)) {
-        completedCount++;
-      }
+  static Future<void> checkAndMarkAllProgramsComplete(List<HomeProgramModel> programs) async {
+    for (final p in programs) {
+      await checkAndMarkProgramComplete(p);
     }
-
-    return completedCount / workout.exercises.length;
   }
 
-  // Get completion percentage of a program (0.0 to 1.0)
   static Future<double> getProgramCompletionPercentage(HomeProgramModel program) async {
     if (program.workouts.isEmpty) return 0.0;
-
     final completedWorkouts = await getCompletedWorkouts();
-    int completedCount = 0;
-
-    for (final workout in program.workouts) {
-      if (completedWorkouts.contains(workout.id)) {
-        completedCount++;
-      }
-    }
-
-    return completedCount / program.workouts.length;
+    final done = program.workouts.where((w) => completedWorkouts.contains(w.id)).length;
+    return done / program.workouts.length;
   }
 
-  // Get complete program status
   static Future<ProgramProgressStatus> getProgramStatus(HomeProgramModel program) async {
-    final percentage = await getProgramCompletionPercentage(program);
-    final isCompleted = await isProgramCompleted(program.id);
+    final percentage       = await getProgramCompletionPercentage(program);
+    final isCompleted      = await isProgramCompleted(program.id);
     final completedWorkouts = await getCompletedWorkouts();
-
-    int completedCount = 0;
-    for (final workout in program.workouts) {
-      if (completedWorkouts.contains(workout.id)) {
-        completedCount++;
-      }
-    }
-
+    final done = program.workouts.where((w) => completedWorkouts.contains(w.id)).length;
     return ProgramProgressStatus(
-      programId: program.id,
-      completionPercentage: percentage,
-      isCompleted: isCompleted,
-      completedWorkouts: completedCount,
-      totalWorkouts: program.workouts.length,
+      programId:             program.id,
+      completionPercentage:  percentage,
+      isCompleted:           isCompleted,
+      completedWorkouts:     done,
+      totalWorkouts:         program.workouts.length,
     );
   }
 
-  // Get list of programs that are started (not completed, but have progress)
-  static Future<List<HomeProgramModel>> getStartedPrograms(List<HomeProgramModel> allPrograms) async {
+  static Future<List<HomeProgramModel>> getStartedPrograms(List<HomeProgramModel> all) async {
     final started = <HomeProgramModel>[];
-    for (final program in allPrograms) {
-      final status = await getProgramStatus(program);
-      if (status.isStarted) {
-        started.add(program);
-      }
+    for (final p in all) {
+      final status = await getProgramStatus(p);
+      if (status.isStarted) started.add(p);
     }
     return started;
   }
 
-  // Favorites Management
-  static Future<Set<String>> getFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_favoritesKey) ?? []).toSet();
+  // ── Favoris workouts ──────────────────────────────────────────────────────
+
+  static Future<Set<String>> getWorkoutFavorites() async {
+    if (_uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('user_workout_favorites')
+          .select('workout_id')
+          .eq('user_id', _uid!);
+      return {for (final r in rows as List) r['workout_id'] as String};
+    } catch (_) {
+      return {};
+    }
   }
 
+  static Future<Set<String>> getProgramFavorites() async {
+    if (_uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('user_program_favorites')
+          .select('program_id')
+          .eq('user_id', _uid!);
+      return {for (final r in rows as List) r['program_id'] as String};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Retourne l'union des favoris workouts + programmes
+  static Future<Set<String>> getFavorites() async {
+    final wf = await getWorkoutFavorites();
+    final pf = await getProgramFavorites();
+    return {...wf, ...pf};
+  }
+
+  static Future<void> addWorkoutFavorite(String workoutId) async {
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_workout_favorites')
+          .upsert({'user_id': _uid, 'workout_id': workoutId});
+    } catch (_) {}
+  }
+
+  static Future<void> removeWorkoutFavorite(String workoutId) async {
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_workout_favorites')
+          .delete()
+          .eq('user_id', _uid!)
+          .eq('workout_id', workoutId);
+    } catch (_) {}
+  }
+
+  static Future<void> addProgramFavorite(String programId) async {
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_program_favorites')
+          .upsert({'user_id': _uid, 'program_id': programId});
+    } catch (_) {}
+  }
+
+  static Future<void> removeProgramFavorite(String programId) async {
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_program_favorites')
+          .delete()
+          .eq('user_id', _uid!)
+          .eq('program_id', programId);
+    } catch (_) {}
+  }
+
+  /// Compatibilité : detecte le type par le préfixe "prog_"
   static Future<void> addFavorite(String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    final favorites = prefs.getStringList(_favoritesKey) ?? [];
-    if (!favorites.contains(id)) {
-      favorites.add(id);
-      await prefs.setStringList(_favoritesKey, favorites);
+    if (id.startsWith('prog_')) {
+      await addProgramFavorite(id);
+    } else {
+      await addWorkoutFavorite(id);
     }
   }
 
   static Future<void> removeFavorite(String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    final favorites = prefs.getStringList(_favoritesKey) ?? [];
-    favorites.remove(id);
-    await prefs.setStringList(_favoritesKey, favorites);
+    if (id.startsWith('prog_')) {
+      await removeProgramFavorite(id);
+    } else {
+      await removeWorkoutFavorite(id);
+    }
   }
 
   static Future<void> toggleFavorite(String id) async {
-    final favorites = await getFavorites();
-    if (favorites.contains(id)) {
+    final favs = await getFavorites();
+    if (favs.contains(id)) {
       await removeFavorite(id);
     } else {
       await addFavorite(id);
@@ -250,21 +324,24 @@ class WorkoutProgressService {
   }
 
   static Future<bool> isFavorite(String id) async {
-    final favorites = await getFavorites();
-    return favorites.contains(id);
+    final favs = await getFavorites();
+    return favs.contains(id);
   }
 
   static Future<void> clearFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_favoritesKey);
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_workout_favorites').delete().eq('user_id', _uid!);
+      await SupabaseConfig.table('user_program_favorites').delete().eq('user_id', _uid!);
+    } catch (_) {}
   }
 
-  // Clear all progress (for testing)
   static Future<void> clearAllProgress() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_completedVideosKey);
-    await prefs.remove(_completedWorkoutsKey);
-    await prefs.remove(_completedProgramsKey);
-    await prefs.remove(_favoritesKey);
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_video_completions').delete().eq('user_id', _uid!);
+      await SupabaseConfig.table('user_workout_completions').delete().eq('user_id', _uid!);
+      await SupabaseConfig.table('user_program_completions').delete().eq('user_id', _uid!);
+    } catch (_) {}
   }
 }

@@ -3,7 +3,7 @@ import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/mock_data.dart';
+import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -82,8 +82,6 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
   String _cat      = 'all';
   bool   _elevated = false;
 
-  static const int _kUserEtoiles = 60;
-
   @override
   void initState() {
     super.initState();
@@ -102,7 +100,7 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
     super.dispose();
   }
 
-  List get _filtered => mockItems.where((e) {
+  List<BoutiqueItem> _getFiltered(List<BoutiqueItem> items) => items.where((e) {
     final q = _search.toLowerCase();
     final matchSearch = q.isEmpty ||
         e.brand.toLowerCase().contains(q) ||
@@ -116,7 +114,8 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
   @override
   Widget build(BuildContext context) {
     final p        = _P.of(context);
-    final filtered = _filtered;
+    final allItems = ref.watch(shopItemsProvider).asData?.value ?? <BoutiqueItem>[];
+    final filtered = _getFiltered(allItems);
     final wishlist = ref.watch(shopWishlistProvider);
 
     final l10n = ref.watch(l10nProvider);
@@ -163,12 +162,11 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (ctx, i) {
                       final item = filtered[i];
-                      final id   = '${item.brand}_${item.title}';
                       return _PartnerCard(
                         p: p,
                         item: item,
-                        isWishlisted: wishlist.contains(id),
-                        onWish: () => _toggleWish(id),
+                        isWishlisted: wishlist.contains(item.id),
+                        onWish: () => _toggleWish(item.id),
                         onTap: () => Navigator.push(
                             ctx,
                             CupertinoPageRoute(

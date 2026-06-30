@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/providers/xp_provider.dart';
 
 import 'package:fiteva/screens/home/library_widget.dart';
@@ -126,7 +127,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(userProvider);
+    final user = ref.watch(userProfileProvider);
     final homePrograms = ref.watch(homeProgramsProvider);
     final sallePrograms = ref.watch(salleProgramsProvider);
     final dancePrograms = ref.watch(danceProgramsProvider);

@@ -1,27 +1,61 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'supabase_config.dart';
 
+/// Gestion XP / streak / badges — stocké dans user_xp + xp_history (Supabase)
 class XpService {
-  static const _kXp          = 'xp_total';
-  static const _kStreak       = 'xp_streak';
-  static const _kLastDate     = 'xp_last_date';
-  static const _kBadges       = 'xp_badges';
-  static const _kChallengeP   = 'xp_challenge_progress';
-  static const _kChallengeC   = 'xp_challenge_completed';
-  static const _kLoginRewarded = 'xp_login_today';
+  static String _today() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  static bool _isToday(String? dateStr) => dateStr != null && dateStr == _today();
+
+  // ── Lecture ────────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> load() async {
-    final p = await SharedPreferences.getInstance();
-    return {
-      'totalXp':            p.getInt(_kXp) ?? 0,
-      'streak':             p.getInt(_kStreak) ?? 0,
-      'lastActiveDate':     p.getString(_kLastDate),
-      'badges':             p.getStringList(_kBadges) ?? [],
-      'challengeProgress':  _decodeIntMap(p.getString(_kChallengeP)),
-      'completedChallenges': p.getStringList(_kChallengeC) ?? [],
-      'loginRewardedToday': _isToday(p.getString(_kLoginRewarded)),
-    };
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return _empty();
+
+    try {
+      final row = await SupabaseConfig.table('user_xp')
+          .select()
+          .eq('user_id', uid)
+          .maybeSingle();
+
+      if (row == null) return _empty();
+
+      final progressRows = await SupabaseConfig.table('user_challenge_progress')
+          .select('challenge_key, progress')
+          .eq('user_id', uid);
+
+      final Map<String, int> challengeProgress = {
+        for (final r in progressRows as List)
+          r['challenge_key'] as String: r['progress'] as int,
+      };
+
+      final completedRows = await SupabaseConfig.table('user_challenge_progress')
+          .select('challenge_key')
+          .eq('user_id', uid)
+          .eq('completed', true);
+
+      final completedChallenges = (completedRows as List)
+          .map((r) => r['challenge_key'] as String)
+          .toList();
+
+      return {
+        'totalXp':             row['total_xp'] as int? ?? 0,
+        'streak':              row['streak'] as int? ?? 0,
+        'lastActiveDate':      row['last_active_date'] as String?,
+        'badges':              List<String>.from(row['badges'] as List? ?? []),
+        'challengeProgress':   challengeProgress,
+        'completedChallenges': completedChallenges,
+        'loginRewardedToday':  _isToday(row['last_active_date'] as String?),
+      };
+    } catch (_) {
+      return _empty();
+    }
   }
+
+  // ── Sauvegarde ─────────────────────────────────────────────────────────────
 
   static Future<void> save({
     required int totalXp,
@@ -31,37 +65,69 @@ class XpService {
     required Map<String, int> challengeProgress,
     required List<String> completedChallenges,
   }) async {
-    final p = await SharedPreferences.getInstance();
-    await p.setInt(_kXp, totalXp);
-    await p.setInt(_kStreak, streak);
-    if (lastActiveDate != null) await p.setString(_kLastDate, lastActiveDate);
-    await p.setStringList(_kBadges, badges);
-    await p.setString(_kChallengeP, json.encode(challengeProgress));
-    await p.setStringList(_kChallengeC, completedChallenges);
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+
+    try {
+      await SupabaseConfig.table('user_xp').upsert({
+        'user_id':          uid,
+        'total_xp':         totalXp,
+        'streak':           streak,
+        'last_active_date': lastActiveDate,
+        'badges':           badges,
+        'updated_at':       DateTime.now().toIso8601String(),
+      });
+
+      // Synchronise la progression par challenge
+      for (final entry in challengeProgress.entries) {
+        await SupabaseConfig.table('user_challenge_progress').upsert({
+          'user_id':       uid,
+          'challenge_key': entry.key,
+          'progress':      entry.value,
+          'completed':     completedChallenges.contains(entry.key),
+          'completed_at':  completedChallenges.contains(entry.key)
+              ? DateTime.now().toIso8601String()
+              : null,
+        });
+      }
+    } catch (_) {}
+  }
+
+  // ── Ajouter des XP avec historique ────────────────────────────────────────
+
+  static Future<void> addXpHistory(int amount, String reason) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      await SupabaseConfig.table('xp_history').insert({
+        'user_id':   uid,
+        'amount':    amount,
+        'reason':    reason,
+        'earned_at': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
   }
 
   static Future<void> markLoginRewarded() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setString(_kLoginRewarded, _todayString());
-  }
-
-  static String _todayString() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
-
-  static bool _isToday(String? dateStr) {
-    if (dateStr == null) return false;
-    return dateStr == _todayString();
-  }
-
-  static Map<String, int> _decodeIntMap(String? raw) {
-    if (raw == null) return {};
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
     try {
-      final decoded = json.decode(raw) as Map<String, dynamic>;
-      return decoded.map((k, v) => MapEntry(k, v as int));
-    } catch (_) {
-      return {};
-    }
+      await SupabaseConfig.table('user_xp').upsert({
+        'user_id':              uid,
+        'login_rewarded_today': true,
+        'last_active_date':     _today(),
+        'updated_at':           DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
   }
+
+  static Map<String, dynamic> _empty() => {
+    'totalXp':             0,
+    'streak':              0,
+    'lastActiveDate':      null,
+    'badges':              <String>[],
+    'challengeProgress':   <String, int>{},
+    'completedChallenges': <String>[],
+    'loginRewardedToday':  false,
+  };
 }

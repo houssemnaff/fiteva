@@ -3,12 +3,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:fiteva/models/home_program_model.dart';
-import 'package:fiteva/providers/workout_progress_provider.dart';
+
 import 'package:fiteva/providers/points_provider.dart';
-import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/providers/user_profile_provider.dart'
     hide UserProfile;
+import 'package:fiteva/services/comuniter_service.dart';
+import 'package:fiteva/services/supabase_config.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
 
@@ -22,7 +22,9 @@ class UserProfile {
   final String niveau;
   final int niveauXp;
   final int niveauMaxXp;
-  final WorkoutReach reach;
+  final String? fitnessLevel;
+  final String? frequency;
+  final bool isCurrentUser;
   final List<UserPost> posts;
   final List<UserEvent> events;
 
@@ -35,29 +37,14 @@ class UserProfile {
     required this.niveau,
     required this.niveauXp,
     required this.niveauMaxXp,
-    required this.reach,
+    this.fitnessLevel,
+    this.frequency,
+    this.isCurrentUser = false,
     required this.posts,
     required this.events,
   });
 }
 
-class WorkoutReach {
-  final int totalWorkouts;
-  final int totalMinutes;
-  final int currentStreak;
-  final int longestStreak;
-  final double totalKcal;
-  final Map<String, int> workoutsByType;
-
-  const WorkoutReach({
-    required this.totalWorkouts,
-    required this.totalMinutes,
-    required this.currentStreak,
-    required this.longestStreak,
-    required this.totalKcal,
-    required this.workoutsByType,
-  });
-}
 
 class UserPost {
   final String id;
@@ -98,42 +85,99 @@ class UserEvent {
 // ─── Provider ─────────────────────────────────────────────────
 final communityUserProfileProvider =
     FutureProvider.family<UserProfile, String>((ref, userId) async {
-  final completedWorkouts = await ref.watch(completedWorkoutsProvider.future);
-  final completedPrograms = await ref.watch(completedProgramsProvider.future);
-  final points = ref.watch(pointsProvider);
-  final user = ref.watch(userProvider);
+  final currentUid = SupabaseConfig.userId;
+  final isSelf     = userId == currentUid;
 
-  final totalWorkouts = completedWorkouts.length;
-  final totalPrograms = 12;
-  final totalMinutes = totalWorkouts * 45;
-  final totalKcal = totalWorkouts * 350;
-  final currentStreak = user.streak;
-  final longestStreak = user.streak * 2;
+  // Fetch posts + events in parallel regardless of who the user is.
+  final rawResults = await Future.wait([
+    CommunityService.getUserPosts(userId),
+    CommunityService.getUserEvents(userId),
+  ]);
+
+  final userPosts = rawResults[0].map((r) {
+    final imgUrl = r['image_url'] as String? ?? '';
+    return UserPost(
+      id:        r['id'] as String,
+      content:   r['content'] as String? ?? '',
+      createdAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
+      likes:     r['likes_count'] as int? ?? 0,
+      comments:  r['comments_count'] as int? ?? 0,
+      imageUrl:  imgUrl.isNotEmpty ? imgUrl : null,
+    );
+  }).toList();
+
+  final userEvents = rawResults[1].map((r) {
+    final dateStr = r['event_date'] as String? ?? '';
+    return UserEvent(
+      id:           r['id'] as String,
+      title:        r['title'] as String? ?? '',
+      date:         DateTime.tryParse(dateStr) ?? DateTime.now(),
+      location:     r['location'] as String? ?? '',
+      participants: r['joined_count'] as int? ?? 0,
+      category:     r['event_type'] as String? ?? '',
+    );
+  }).toList();
+
+  if (isSelf) {
+    // Own profile: bio/XP from local providers (no extra request).
+    final localUser = ref.read(userProfileProvider);
+    final points    = ref.read(pointsProvider);
+    final name      = localUser.username.isNotEmpty ? localUser.username : 'User';
+    return UserProfile(
+      id:            userId,
+      name:          name,
+      username:      '@${name.toLowerCase().replaceAll(' ', '')}',
+      niveau:        localUser.level ?? '1',
+      niveauXp:      points,
+      niveauMaxXp:   5000,
+      fitnessLevel:  localUser.fitnessLevel,
+      frequency:     localUser.frequency != null ? '${localUser.frequency}x/sem' : null,
+      isCurrentUser: true,
+      posts:         userPosts,
+      events:        userEvents,
+    );
+  }
+
+  // Other user: fetch profile data from Supabase.
+  final data = await CommunityService.getUserProfile(userId);
+  if (data == null) {
+    return UserProfile(
+      id: userId, name: 'Utilisateur', username: '@utilisateur',
+      niveau: '1', niveauXp: 0, niveauMaxXp: 5000,
+      posts: userPosts, events: userEvents,
+    );
+  }
+
+  final name      = (data['username'] as String).isNotEmpty ? data['username'] as String : 'User';
+  final freqDays  = data['frequency_days'] as int? ?? 0;
+  final totalXp   = data['total_xp'] as int? ?? 0;
+  final lvl       = _xpToLevel(totalXp);
 
   return UserProfile(
-    id: userId,
-    name: user.name,
-    username: '@${user.name.toLowerCase().replaceAll(' ', '')}',
-    bio: 'Passionnée de fitness · $totalWorkouts séances complétées',
-    niveau: user.level.toString(),
-    niveauXp: points,
-    niveauMaxXp: 5000,
-    reach: WorkoutReach(
-      totalWorkouts: totalWorkouts,
-      totalMinutes: totalMinutes,
-      currentStreak: currentStreak,
-      longestStreak: longestStreak,
-      totalKcal: totalKcal.toDouble(),
-      workoutsByType: {
-        'Complétés': completedWorkouts.length,
-        'Programmes': completedPrograms.length,
-        'En cours': totalPrograms - completedPrograms.length,
-      },
-    ),
-    posts: [],
-    events: [],
+    id:            data['id'] as String,
+    name:          name,
+    username:      '@${name.toLowerCase().replaceAll(' ', '')}',
+    niveau:        '$lvl',
+    niveauXp:      totalXp,
+    niveauMaxXp:   5000,
+    fitnessLevel:  (data['fitness_level'] as String?)?.isNotEmpty == true
+        ? data['fitness_level'] as String : null,
+    frequency:     freqDays > 0 ? '${freqDays}x/sem' : null,
+    isCurrentUser: false,
+    posts:         userPosts,
+    events:        userEvents,
   );
 });
+
+int _xpToLevel(int xp) {
+  if (xp < 500)  return 1;
+  if (xp < 1500) return 2;
+  if (xp < 3000) return 3;
+  if (xp < 5000) return 4;
+  if (xp < 8000) return 5;
+  if (xp < 12000) return 6;
+  return 7;
+}
 
 // ─── Main Screen ──────────────────────────────────────────────
 class UserProfileScreen extends ConsumerStatefulWidget {
@@ -331,20 +375,19 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
   bool _following = false;
 
   String get _initials {
-    final parts = widget.profile.name.trim().split(' ');
-    if (parts.length >= 2) {
+    final name = widget.profile.name.trim();
+    if (name.isEmpty) return '?';
+    final parts = name.split(' ');
+    if (parts.length >= 2 && parts[1].isNotEmpty) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    final n = widget.profile.name;
-    return n.substring(0, n.length >= 2 ? 2 : 1).toUpperCase();
+    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final profile = widget.profile;
-    final points = ref.watch(pointsProvider);
-    final userProfile = ref.watch(userProfileProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -483,19 +526,19 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Wrap(spacing: 8, runSpacing: 6, children: [
-            if (userProfile.fitnessLevel != null)
+            if (profile.fitnessLevel != null && profile.fitnessLevel!.isNotEmpty)
               _MetaPill(
                 icon: LucideIcons.target,
-                label: userProfile.fitnessLevel!,
+                label: profile.fitnessLevel!,
                 cs: cs),
-            if (userProfile.frequency != null)
+            if (profile.frequency != null && profile.frequency!.isNotEmpty)
               _MetaPill(
                 icon: LucideIcons.dumbbell,
-                label: userProfile.frequency!,
+                label: profile.frequency!,
                 cs: cs),
             _MetaPill(
               icon: LucideIcons.star,
-              label: '$points XP',
+              label: '${profile.niveauXp} XP',
               cs: cs,
               highlight: true),
           ]),
@@ -504,29 +547,7 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
         const SizedBox(height: 20),
 
         // ── Stats strip ───────────────────────────────────────
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: cs.outline),
-          ),
-          child: Row(children: [
-            Expanded(child: _StripStat(
-              value: '${profile.reach.totalWorkouts}',
-              label: widget.l10n.profileSeances, cs: cs)),
-            _VertDivider(cs: cs),
-            Expanded(child: _StripStat(
-              value: '${profile.reach.currentStreak}',
-              label: widget.l10n.profileSerie, cs: cs)),
-            _VertDivider(cs: cs),
-            Expanded(child: _StripStat(
-              value: _formatKcal(profile.reach.totalKcal),
-              label: widget.l10n.profileCalories, cs: cs)),
-          ]),
-        ),
-
+       
         const SizedBox(height: 16),
 
         // ── Level progress ────────────────────────────────────
@@ -730,14 +751,7 @@ class _OverviewTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    final reach = profile.reach;
-    final allPrograms = <HomeProgramModel>[
-      ...ref.watch(homeProgramsProvider),
-      ...ref.watch(salleProgramsProvider),
-      ...ref.watch(danceProgramsProvider),
-      ...ref.watch(recuperationProgramsProvider),
-      ...ref.watch(grossesseProgramsProvider),
-    ];
+   
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -747,88 +761,20 @@ class _OverviewTab extends ConsumerWidget {
         _SectionTitle(label: l10n.profileStats, cs: cs),
         const SizedBox(height: 12),
 
-        // 2×2 stat grid
-        Row(children: [
-          Expanded(child: _StatCard(
-            icon: LucideIcons.dumbbell,
-            value: '${reach.totalWorkouts}',
-            label: l10n.profileSeances,
-            color: cs.primary, cs: cs)),
-          const SizedBox(width: 12),
-          Expanded(child: _StatCard(
-            icon: LucideIcons.zap,
-            value: '${reach.currentStreak} j',
-            label: l10n.profileSerie,
-            color: const Color(0xFF3B82F6), cs: cs)),
-        ]),
-        const SizedBox(height: 12),
-        Row(children: [
-          Expanded(child: _StatCard(
-            icon: LucideIcons.flame,
-            value: _formatKcal(reach.totalKcal),
-            label: l10n.profileCalories,
-            color: const Color(0xFFEF4444), cs: cs)),
-          const SizedBox(width: 12),
-          Expanded(child: _StatCard(
-            icon: LucideIcons.clock,
-            value: _formatMinutes(reach.totalMinutes),
-            label: l10n.profileTemps,
-            color: const Color(0xFFF59E0B), cs: cs)),
-        ]),
+       
+       
 
         const SizedBox(height: 24),
         _SectionTitle(label: l10n.profileRepartition, cs: cs),
         const SizedBox(height: 12),
 
-        // Distribution
-        Container(
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: cs.outline),
-          ),
-          child: Column(
-            children: () {
-              final entries = reach.workoutsByType.entries.toList();
-              final total = reach.workoutsByType.values
-                  .fold(0, (a, b) => a + b);
-              final colors = [
-                cs.primary, const Color(0xFF3B82F6), const Color(0xFFF59E0B)
-              ];
-              final List<Widget> rows = [];
-              for (int i = 0; i < entries.length; i++) {
-                final e = entries[i];
-                final pct = total == 0 ? 0.0 : e.value / total;
-                rows.add(_DistRow(
-                  label: e.key, count: e.value,
-                  pct: pct.toDouble(),
-                  color: colors[i % colors.length], cs: cs));
-                if (i < entries.length - 1)
-                  rows.add(Divider(height: 1,
-                      color: cs.outline.withValues(alpha: 0.5),
-                      indent: 16, endIndent: 16));
-              }
-              return rows;
-            }(),
-          ),
-        ),
+     
 
-        const SizedBox(height: 24),
-        _StartedProgramsSection(programs: allPrograms),
       ],
     );
   }
 
-  String _formatKcal(double kcal) {
-    if (kcal >= 1000) return '${(kcal / 1000).toStringAsFixed(1)}k';
-    return '${kcal.toInt()}';
-  }
 
-  String _formatMinutes(int minutes) {
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return h > 0 ? '${h}h${m > 0 ? ' ${m}m' : ''}' : '${m}m';
-  }
 }
 
 class _SectionTitle extends StatelessWidget {
@@ -1277,133 +1223,6 @@ class _ShimmerState extends State<_Shimmer> with SingleTickerProviderStateMixin 
 }
 
 // ─── Started Programs Section ─────────────────────────────────
-class _StartedProgramsSection extends ConsumerWidget {
-  final List<HomeProgramModel> programs;
-  const _StartedProgramsSection({required this.programs});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-    final l10n = ref.watch(l10nProvider);
-    if (programs.isEmpty) return const SizedBox.shrink();
-
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _SectionTitle(label: l10n.profileProgEnCours, cs: cs),
-      const SizedBox(height: 12),
-      SizedBox(
-        height: 200,
-        child: _ProgramsWithProgressFilter(programs: programs),
-      ),
-    ]);
-  }
-}
-
-class _ProgramsWithProgressFilter extends ConsumerWidget {
-  final List<HomeProgramModel> programs;
-  const _ProgramsWithProgressFilter({required this.programs});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      itemCount: programs.length,
-      itemBuilder: (context, index) {
-        final program = programs[index];
-        final statusAsync = ref.watch(programStatusProvider(program));
-        return statusAsync.when(
-          data: (status) {
-            if (status.completionPercentage <= 0) return const SizedBox.shrink();
-            return _CommunityProgramCard(program: program);
-          },
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-        );
-      },
-    );
-  }
-}
-
-class _CommunityProgramCard extends ConsumerWidget {
-  final HomeProgramModel program;
-  const _CommunityProgramCard({required this.program});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statusAsync = ref.watch(programStatusProvider(program));
-    final cs = Theme.of(context).colorScheme;
-
-    return statusAsync.when(
-      data: (status) {
-        final isCompleted = status.isCompleted;
-        final percentage = status.completionPercentage;
-        final color = isCompleted ? const Color(0xFF34D399) : cs.primary;
-
-        return Container(
-          width: 160,
-          margin: const EdgeInsets.only(right: 12),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: cs.outline),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Stack(children: [
-              Image.asset(program.imageUrl,
-                height: 80, width: double.infinity, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 80, color: cs.outline.withValues(alpha: 0.1))),
-              Positioned(
-                top: 8, right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Text('${(percentage * 100).toInt()}%',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white, fontSize: 9,
-                      fontWeight: FontWeight.w800)),
-                ),
-              ),
-            ]),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(program.name, style: GoogleFonts.outfit(
-                    fontSize: 12, fontWeight: FontWeight.w700,
-                    color: cs.onSurface),
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Text(program.duration, style: GoogleFonts.inter(
-                    color: cs.onSurface.withValues(alpha: 0.45), fontSize: 9)),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(50),
-                    child: LinearProgressIndicator(
-                      value: percentage.clamp(0.0, 1.0), minHeight: 4,
-                      backgroundColor: color.withValues(alpha: 0.1),
-                      valueColor: AlwaysStoppedAnimation(color)),
-                  ),
-                ],
-              ),
-            ),
-          ]),
-        );
-      },
-      loading: () => Container(
-        width: 160, margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16))),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-}
 
 // ─── Error state ──────────────────────────────────────────────
 class _ProfileError extends StatelessWidget {

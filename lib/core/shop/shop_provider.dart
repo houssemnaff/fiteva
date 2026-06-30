@@ -1,15 +1,16 @@
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/screens/shop/models/boutique_item.dart';
 import 'package:fiteva/services/points_service.dart';
+import 'package:fiteva/services/shop_service.dart';
+import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────────────────────────────────
 class ShopState {
-  final int        points;
-  final Set<String> redeemed; // item IDs already exchanged
+  final int         points;
+  final Set<String> redeemed;
 
   const ShopState({required this.points, required this.redeemed});
 
@@ -26,8 +27,6 @@ class ShopState {
 // NOTIFIER
 // ─────────────────────────────────────────────────────────────────────────────
 class ShopNotifier extends Notifier<ShopState> {
-  static const _redeemedKey = 'shop_redeemed_ids';
-
   @override
   ShopState build() {
     _load();
@@ -35,33 +34,57 @@ class ShopNotifier extends Notifier<ShopState> {
   }
 
   Future<void> _load() async {
-    final prefs   = await SharedPreferences.getInstance();
-    final pts     = prefs.getInt(PointsService.pointsKey) ?? 0;
-    final ids     = prefs.getStringList(_redeemedKey) ?? [];
-    state = ShopState(points: pts, redeemed: Set.from(ids));
+    final pts      = await PointsService.getPoints();
+    final redeemed = await _loadRedeemed();
+    state = ShopState(points: pts, redeemed: redeemed);
   }
 
-  /// Reload points from storage (call after PointsService.addPoints externally).
+  Future<Set<String>> _loadRedeemed() async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('shop_redemptions')
+          .select('shop_item_id')
+          .eq('user_id', uid);
+      return {for (final r in rows as List) r['shop_item_id'] as String};
+    } catch (_) {
+      return {};
+    }
+  }
+
   Future<void> refresh() => _load();
 
-  /// Add points (e.g. after completing a workout/video).
   Future<void> addPoints(int amount) async {
-    final updated = await PointsService.addPoints(amount);
+    final updated = await PointsService.addPoints(amount, reason: 'reward');
     state = state.copyWith(points: updated);
     ref.read(pointsProvider.notifier).loadPoints();
   }
 
-  /// Redeem an offer — deducts points and marks item as redeemed.
-  /// Returns false if not enough points or already redeemed.
+  /// Échange un article : déduit les points et enregistre dans shop_redemptions.
   Future<bool> redeem(BoutiqueItem item) async {
     if (state.isRedeemed(item.id)) return false;
     if (!state.canAfford(item.etoiles)) return false;
 
-    final updated  = await PointsService.spendPoints(item.etoiles);
-    final newIds   = {...state.redeemed, item.id};
-    final prefs    = await SharedPreferences.getInstance();
-    await prefs.setStringList(_redeemedKey, newIds.toList());
+    final uid = SupabaseConfig.userId;
 
+    // Enregistre le rachat dans Supabase
+    if (uid != null) {
+      try {
+        await SupabaseConfig.table('shop_redemptions').insert({
+          'user_id':      uid,
+          'shop_item_id': item.id,
+          'points_spent': item.etoiles,
+          'promo_code':   item.promoCode,
+          'redeemed_at':  DateTime.now().toIso8601String(),
+        });
+      } catch (_) {}
+    }
+
+    final updated = await PointsService.spendPoints(
+      item.etoiles,
+      reason: 'shop_${item.id}',
+    );
+    final newIds = {...state.redeemed, item.id};
     state = state.copyWith(points: updated, redeemed: newIds);
     ref.read(pointsProvider.notifier).loadPoints();
     return true;
@@ -71,11 +94,9 @@ class ShopNotifier extends Notifier<ShopState> {
 final shopProvider = NotifierProvider<ShopNotifier, ShopState>(ShopNotifier.new);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WISHLIST NOTIFIER
+// WISHLIST — stockée dans shop_wishlist (Supabase)
 // ─────────────────────────────────────────────────────────────────────────────
 class ShopWishlistNotifier extends Notifier<Set<String>> {
-  static const _wishlistKey = 'shop_wishlist';
-
   @override
   Set<String> build() {
     _loadWishlist();
@@ -83,46 +104,60 @@ class ShopWishlistNotifier extends Notifier<Set<String>> {
   }
 
   Future<void> _loadWishlist() async {
-    final prefs = await SharedPreferences.getInstance();
-    final ids = prefs.getStringList(_wishlistKey) ?? [];
-    state = Set.from(ids);
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      final rows = await SupabaseConfig.table('shop_wishlist')
+          .select('shop_item_id')
+          .eq('user_id', uid);
+      state = {for (final r in rows as List) r['shop_item_id'] as String};
+    } catch (_) {}
   }
 
   Future<void> toggleWishlist(String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    final newSet = Set<String>.from(state);
-    if (newSet.contains(id)) {
-      newSet.remove(id);
+    if (state.contains(id)) {
+      await removeFromWishlist(id);
     } else {
-      newSet.add(id);
+      await addToWishlist(id);
     }
-    await prefs.setStringList(_wishlistKey, newSet.toList());
-    state = newSet;
   }
 
   Future<void> addToWishlist(String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    final newSet = Set<String>.from(state);
-    newSet.add(id);
-    await prefs.setStringList(_wishlistKey, newSet.toList());
-    state = newSet;
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      await SupabaseConfig.table('shop_wishlist')
+          .upsert({'user_id': uid, 'shop_item_id': id});
+      state = {...state, id};
+    } catch (_) {}
   }
 
   Future<void> removeFromWishlist(String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    final newSet = Set<String>.from(state);
-    newSet.remove(id);
-    await prefs.setStringList(_wishlistKey, newSet.toList());
-    state = newSet;
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      await SupabaseConfig.table('shop_wishlist')
+          .delete()
+          .eq('user_id', uid)
+          .eq('shop_item_id', id);
+      state = state.difference({id});
+    } catch (_) {}
   }
 
   Future<void> setWishlist(Set<String> wishlist) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_wishlistKey, wishlist.toList());
-    state = Set<String>.from(wishlist);
+    for (final id in wishlist) {
+      await addToWishlist(id);
+    }
   }
 }
 
 final shopWishlistProvider = NotifierProvider<ShopWishlistNotifier, Set<String>>(
   ShopWishlistNotifier.new,
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CATALOGUE — charge shop_items depuis Supabase
+// ─────────────────────────────────────────────────────────────────────────────
+final shopItemsProvider = FutureProvider<List<BoutiqueItem>>(
+  (_) => ShopService.loadItems(),
 );

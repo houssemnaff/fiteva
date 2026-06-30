@@ -3,10 +3,13 @@ import 'package:fiteva/screens/community/UserProfileScreen.dart';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
 import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:fiteva/screens/community/widgets/feed/comment_sheet.dart';
+import 'package:fiteva/screens/community/widgets/feed/feed_composer_sheet.dart';
+import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../l10n/app_localizations.dart';
 
 // Color scheme is obtained from Theme.of(context).colorScheme
@@ -23,13 +26,20 @@ class FeedTab extends ConsumerStatefulWidget {
 class _FeedTabState extends ConsumerState<FeedTab> {
   int _selectedFilter = 0;
 
-  static const _filters = ['For you', 'Workout', 'Nutrition', 'Before/After', 'Challenge'];
+  // index 0 = tous, 1-4 = catégories Supabase ENUM
+  static const _filters = ['Pour toi', 'Workout', 'Nutrition', 'Lifestyle', 'Challenge'];
+  static const _filterCategories = ['', 'Workout', 'Nutrition', 'Lifestyle', 'Challenge'];
 
   @override
   Widget build(BuildContext context) {
-    final posts = ref.watch(postsNotifierProvider);
-    final cs = Theme.of(context).colorScheme;
-    final l10n = ref.watch(l10nProvider);
+    final allPosts = ref.watch(postsNotifierProvider);
+    final cs    = Theme.of(context).colorScheme;
+    final l10n  = ref.watch(l10nProvider);
+
+    final category = _filterCategories[_selectedFilter];
+    final posts = category.isEmpty
+        ? allPosts
+        : allPosts.where((p) => p.category == category).toList();
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
@@ -85,14 +95,35 @@ class _FeedTabState extends ConsumerState<FeedTab> {
         ),
 
         // ── Post list ─────────────────────────────────────────
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-          sliver: SliverList.separated(
-            itemCount: posts.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (_, i) => _PostCard(post: posts[i], colorScheme: cs),
+        if (posts.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(LucideIcons.fileText,
+                    size: 40,
+                    color: cs.onSurface.withValues(alpha: 0.2)),
+                const SizedBox(height: 12),
+                Text(
+                  'Aucun post dans cette catégorie',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: cs.onSurface.withValues(alpha: 0.4),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+            sliver: SliverList.separated(
+              itemCount: posts.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (_, i) => _PostCard(post: posts[i], colorScheme: cs),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -168,6 +199,53 @@ class _PostCardState extends ConsumerState<_PostCard>
     if (!wasLiked) _heartCtrl.forward(from: 0);
   }
 
+  void _confirmDelete(String postId) {
+    final cs = Theme.of(context).colorScheme;
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Supprimer le post ?',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w800)),
+        content: Text(
+            'Cette action est irréversible.',
+            style: GoogleFonts.inter(fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Annuler',
+                style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.6))),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final ok = await ref
+                  .read(postsNotifierProvider.notifier)
+                  .deletePost(postId);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: ok ? cs.primary : cs.error,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                content: Text(
+                  ok ? 'Post supprimé.' : 'Erreur lors de la suppression.',
+                  style: GoogleFonts.inter(
+                      color: ok ? cs.onPrimary : cs.onError,
+                      fontWeight: FontWeight.w600),
+                ),
+              ));
+            },
+            child: Text('Supprimer',
+                style: GoogleFonts.inter(
+                    color: cs.error, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _openComments() {
     showModalBottomSheet<void>(
       context: context,
@@ -181,10 +259,13 @@ class _PostCardState extends ConsumerState<_PostCard>
   }
 
   void _openProfile() {
+    final uid = widget.post.userId.isNotEmpty
+        ? widget.post.userId
+        : widget.post.username;
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => UserProfileScreen(
-        userId: widget.post.username,
-        heroTag: 'avatar_${widget.post.username}',
+        userId: uid,
+        heroTag: 'avatar_$uid',
       ),
     ));
   }
@@ -226,7 +307,7 @@ class _PostCardState extends ConsumerState<_PostCard>
               GestureDetector(
                 onTap: _openProfile,
                 child: Hero(
-                  tag: 'avatar_${post.username}',
+                  tag: 'avatar_${post.userId.isNotEmpty ? post.userId : post.username}',
                   child: CommunityAvatar(
                     avatarUrl: post.userAvatarUrl,
                     name: post.username,
@@ -274,23 +355,68 @@ class _PostCardState extends ConsumerState<_PostCard>
                   ),
                 ),
               ),
-              CupertinoButton(
-                padding: const EdgeInsets.all(6),
-                minimumSize: Size.zero,
-                onPressed: () {},
-                child: Icon(CupertinoIcons.ellipsis,
-                    color: cs.onSurface.withValues(alpha: 0.6), size: 18),
-              ),
+              if (post.userId.isNotEmpty &&
+                  post.userId == SupabaseConfig.userId)
+                PopupMenuButton<String>(
+                  icon: Icon(CupertinoIcons.ellipsis,
+                      color: cs.onSurface.withValues(alpha: 0.6), size: 18),
+                  padding: const EdgeInsets.all(6),
+                  color: cs.surface,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      height: 44,
+                      child: Icon(LucideIcons.pencil,
+                          size: 20, color: cs.primary),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      height: 44,
+                      child: Icon(LucideIcons.trash2,
+                          size: 20, color: cs.error),
+                    ),
+                  ],
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => FeedComposerSheet(post: post),
+                      );
+                    } else {
+                      _confirmDelete(post.id);
+                    }
+                  },
+                )
+              else
+                const SizedBox(width: 36),
             ]),
           ),
 
-          // ── Post text ────────────────────────────────────────
+          // ── Post title + content ─────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-            child: Text(post.content, style: GoogleFonts.inter(
-              fontSize: 14, color: cs.onSurface,
-              height: 1.5, letterSpacing: -0.1,
-            )),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (post.title.isNotEmpty) ...[
+                  Text(post.title, style: GoogleFonts.outfit(
+                    fontSize: 16, fontWeight: FontWeight.w800,
+                    color: cs.onSurface, letterSpacing: -0.3, height: 1.3,
+                  )),
+                  if (post.content.isNotEmpty) const SizedBox(height: 4),
+                ],
+                if (post.content.isNotEmpty)
+                  Text(post.content, style: GoogleFonts.inter(
+                    fontSize: 14, color: cs.onSurface,
+                    height: 1.5, letterSpacing: -0.1,
+                  )),
+              ],
+            ),
           ),
 
           // ── Image ────────────────────────────────────────────

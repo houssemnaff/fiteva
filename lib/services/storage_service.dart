@@ -1,98 +1,123 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'supabase_config.dart';
 
+/// StorageService — données locales uniquement (onboarding, chat, cache)
+/// Les données utilisateur persistantes (profil, XP, points…) sont dans Supabase.
 class StorageService {
   static late SharedPreferences _prefs;
 
-  /// MUST CALL AT APP START
+  /// MUST CALL AT APP START (avant runApp)
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  // --------------------
-  // BOOL
-  // --------------------
-  static Future<void> setBool(String key, bool value) async {
-    await _prefs.setBool(key, value);
-  }
+  // ── Booléens ─────────────────────────────────────────────────────────────
 
-  static bool getBool(String key) {
-    return _prefs.getBool(key) ?? false;
-  }
+  static Future<void> setBool(String key, bool value) async =>
+      _prefs.setBool(key, value);
 
-  // --------------------
-  // JSON GENERIC
-  // --------------------
-  static Future<void> saveJson(String key, Map<String, dynamic> data) async {
-    await _prefs.setString(key, jsonEncode(data));
-  }
+  static bool getBool(String key) => _prefs.getBool(key) ?? false;
+
+  // ── JSON générique ────────────────────────────────────────────────────────
+
+  static Future<void> saveJson(String key, Map<String, dynamic> data) async =>
+      _prefs.setString(key, jsonEncode(data));
 
   static Map<String, dynamic>? getJson(String key) {
     final str = _prefs.getString(key);
-    if (str == null) return null;
-    return jsonDecode(str) as Map<String, dynamic>;
+    return str == null ? null : jsonDecode(str) as Map<String, dynamic>;
   }
 
-  // --------------------
-  // ONBOARDING
-  // --------------------
-  static Future<void> setOnboardingCompleted(bool completed) async {
-    await _prefs.setBool('onboarding_completed', completed);
-  }
+  // ── Onboarding (local uniquement) ────────────────────────────────────────
 
-  static bool isOnboardingCompleted() {
-    return _prefs.getBool('onboarding_completed') ?? false;
-  }
+  static Future<void> setOnboardingCompleted(bool completed) =>
+      _prefs.setBool('onboarding_completed', completed);
 
-  static Future<void> saveOnboardingData(Map<String, dynamic> data) async {
-    await _prefs.setString('onboarding_data', jsonEncode(data));
-  }
+  static bool isOnboardingCompleted() =>
+      _prefs.getBool('onboarding_completed') ?? false;
+
+  static Future<void> saveOnboardingData(Map<String, dynamic> data) =>
+      _prefs.setString('onboarding_data', jsonEncode(data));
 
   static Map<String, dynamic> getOnboardingData() {
     final str = _prefs.getString('onboarding_data');
-    if (str == null) return {};
-    return jsonDecode(str) as Map<String, dynamic>;
+    return str == null ? {} : jsonDecode(str) as Map<String, dynamic>;
   }
 
-  // --------------------
-  // POINTS
-  // --------------------
-  static Future<void> setTotalPoints(int points) async {
-    await _prefs.setInt('total_points', points);
+  /// Synchronise les données d'onboarding vers Supabase après inscription.
+  /// Appeler une fois après que l'utilisateur est authentifié.
+  static Future<void> syncOnboardingToSupabase() async {
+    final uid  = SupabaseConfig.userId;
+    final data = getOnboardingData();
+    if (uid == null || data.isEmpty) return;
+
+    try {
+      // Profil principal
+      await SupabaseConfig.table('user_profiles').upsert({
+        'id':              uid,
+        'username':        data['username'] ?? '',
+        'language':        data['language'] ?? 'fr',
+        'onboarding_done': true,
+        'updated_at':      DateTime.now().toIso8601String(),
+      });
+
+      // Biométrie & objectifs
+      final bio = <String, dynamic>{
+        'user_id': uid,
+        if (data['height']         != null) 'height_cm':        data['height'],
+        if (data['weight']         != null) 'weight_kg':        data['weight'],
+        if (data['age']            != null) 'age':              data['age'],
+        if (data['isFemale']       != null) 'is_female':        data['isFemale'],
+        if (data['fitnessLevel']   != null) 'fitness_level':    data['fitnessLevel'],
+        if (data['activityLevel']  != null) 'activity_level':   data['activityLevel'],
+        if (data['nutritionGoal']  != null) 'nutrition_goal':   data['nutritionGoal'],
+        if (data['trainingLocation'] != null) 'training_location': data['trainingLocation'],
+        if (data['frequencyDays']  != null) 'frequency_days':   data['frequencyDays'],
+        if (data['goals']          != null) 'goals':            data['goals'],
+        if (data['equipment']      != null) 'equipment':        data['equipment'],
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      await SupabaseConfig.table('user_biometrics').upsert(bio);
+
+      // Statut santé (cycle / grossesse / post-partum)
+      if (data['healthStatus'] != null) {
+        await SupabaseConfig.table('user_cycle_settings').upsert({
+          'user_id':          uid,
+          'health_status':    data['healthStatus'],
+          'cycle_duration':   data['cycleDuration'] ?? 28,
+          'last_period_date': data['lastPeriodDate'],
+          'updated_at':       DateTime.now().toIso8601String(),
+        });
+      }
+    } catch (_) {}
   }
 
-  static int getTotalPoints() {
-    return _prefs.getInt('total_points') ?? 0;
-  }
+  // ── Points (délégués à Supabase, gardés pour compatibilité) ──────────────
 
-  // --------------------
-  // CHAT
-  // --------------------
-  static Future<void> saveChatHistory(List<dynamic> history) async {
-    await _prefs.setString('chat_history', jsonEncode(history));
-  }
+  static Future<void> setTotalPoints(int points) =>
+      _prefs.setInt('total_points', points);
+
+  static int getTotalPoints() => _prefs.getInt('total_points') ?? 0;
+
+  // ── Historique de chat (local) ────────────────────────────────────────────
+
+  static Future<void> saveChatHistory(List<dynamic> history) =>
+      _prefs.setString('chat_history', jsonEncode(history));
 
   static List<dynamic> getChatHistory() {
     final str = _prefs.getString('chat_history');
-    if (str == null) return [];
-    return jsonDecode(str) as List<dynamic>;
+    return str == null ? [] : jsonDecode(str) as List<dynamic>;
   }
 
-  // --------------------
-  // STRING
-  // --------------------
-  static Future<void> setString(String key, String value) async {
-    await _prefs.setString(key, value);
-  }
+  // ── String générique ──────────────────────────────────────────────────────
 
-  static String? getString(String key) {
-    return _prefs.getString(key);
-  }
+  static Future<void> setString(String key, String value) =>
+      _prefs.setString(key, value);
 
-  // --------------------
-  // CLEAR ALL
-  // --------------------
-  static Future<void> clearAll() async {
-    await _prefs.clear();
-  }
+  static String? getString(String key) => _prefs.getString(key);
+
+  // ── Reset local ───────────────────────────────────────────────────────────
+
+  static Future<void> clearAll() => _prefs.clear();
 }

@@ -332,16 +332,17 @@ class _PartnerCardState extends State<PartnerCard> {
               children: [
                 GestureDetector(
                   onTap: () {
+                    final uid = p.userId.isNotEmpty ? p.userId : p.id;
                     HapticFeedback.selectionClick();
                     Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => UserProfileScreen(
-                        userId: p.name,
-                        heroTag: 'partner_avatar_${p.name}',
+                        userId: uid,
+                        heroTag: 'partner_avatar_$uid',
                       ),
                     ));
                   },
                   child: Hero(
-                    tag: 'partner_avatar_${p.name}',
+                    tag: 'partner_avatar_${p.userId.isNotEmpty ? p.userId : p.id}',
                     child: CommunityAvatar(
                       avatarUrl: widget.partner.avatar,
                       name: p.name,
@@ -353,10 +354,11 @@ class _PartnerCardState extends State<PartnerCard> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
+                      final uid = p.userId.isNotEmpty ? p.userId : p.id;
                       Navigator.of(context).push(MaterialPageRoute(
                         builder: (_) => UserProfileScreen(
-                          userId: p.name,
-                          heroTag: 'partner_avatar_${p.name}',
+                          userId: uid,
+                          heroTag: 'partner_avatar_$uid',
                         ),
                       ));
                     },

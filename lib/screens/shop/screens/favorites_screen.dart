@@ -2,7 +2,6 @@ import 'package:fiteva/core/shop/shop_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/mock_data.dart';
 import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 
@@ -42,10 +41,9 @@ class FavoritesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final brightness = Theme.of(context).brightness;
-    final wishlist = ref.watch(shopWishlistProvider);
-    final favorites = mockItems
-        .where((e) => wishlist.contains('${e.brand}_${e.title}'))
-        .toList();
+    final wishlist  = ref.watch(shopWishlistProvider);
+    final allItems  = ref.watch(shopItemsProvider).asData?.value ?? <BoutiqueItem>[];
+    final favorites = allItems.where((e) => wishlist.contains(e.id)).toList();
 
     void removeFromWishlist(BoutiqueItem item) {
       final key = '${item.brand}_${item.title}';

@@ -1,5 +1,4 @@
 // ignore_for_file: deprecated_member_use
-import 'package:fiteva/providers/mock_data_provider.dart';
 import '../../../../../l10n/app_localizations.dart';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
@@ -81,31 +80,46 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
 
   String _resolvedName() {
     final profile = ref.read(userProfileProvider);
-    final user    = ref.read(userProvider);
-    return profile.username.isNotEmpty ? profile.username : user.name;
+    final user    = ref.read(userProfileProvider);
+    return profile.username.isNotEmpty ? profile.username : user.username;
   }
 
   Future<void> _publish() async {
     HapticFeedback.mediumImpact();
     setState(() => _isPublishing = true);
     final partner = PartnerModel(
-      id: 'pt_${DateTime.now().millisecondsSinceEpoch}',
-      name: _resolvedName(),
-      avatar: '',
-      goal: _selectedGoal,
-      level: _selectedLevel,
-      region: _selectedRegion,
-      frequency: _selectedFreq,
+      id:          '',
+      name:        _resolvedName(),
+      avatar:      '',
+      goal:        _selectedGoal,
+      level:       _selectedLevel,
+      region:      _selectedRegion,
+      frequency:   _selectedFreq,
       description: _descCtrl.text.trim().isNotEmpty
           ? _descCtrl.text.trim()
           : 'Passionné de fitness, cherche partenaire motivé.',
       tags: [_selectedGoal.split(' ').first, _selectedLevel],
     );
-    await ref.read(partnersNotifierProvider.notifier).addPartner(partner);
+    final ok = await ref.read(partnersNotifierProvider.notifier).addPartner(partner);
     if (!mounted) return;
     setState(() => _isPublishing = false);
-    Navigator.of(context).pop();
     final cs = Theme.of(context).colorScheme;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: cs.error,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        content: Row(children: [
+          Icon(LucideIcons.circleAlert, color: cs.onError, size: 18),
+          const SizedBox(width: 10),
+          Expanded(child: Text('Erreur lors de la publication. Vérifiez votre connexion.',
+              style: GoogleFonts.inter(color: cs.onError, fontWeight: FontWeight.w600))),
+        ]),
+      ));
+      return;
+    }
+    Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       behavior: SnackBarBehavior.floating,
       backgroundColor: cs.primary,

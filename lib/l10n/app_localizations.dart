@@ -592,6 +592,9 @@ class AppL10n {
   String get progCoach          => _fr ? 'Ton coach'        : 'Your coach';
   String get progObjectives     => _fr ? 'Objectifs'        : 'Objectives';
   String get progPhases         => _fr ? 'Les phases'       : 'Phases';
+  String get progCoachName      => _fr ? 'Sarah M.'         : 'Sarah M.';
+  String get progCoachTitle     => _fr ? 'Coach certifiée'  : 'Certified coach';
+  String get progCoachRating    => _fr ? '4.9 · Expert'     : '4.9 · Expert';
   String get progFollow         => _fr ? 'Suivre'           : 'Follow';
   String get progNextSession    => _fr ? 'Prochaine séance' : 'Next session';
   String get progSession        => _fr ? 'Séance'           : 'Session';
@@ -605,6 +608,7 @@ class AppL10n {
   String get progPtsUnit        => 'pts';
 
   // ── Santé screen ── (UI labels only, content data stays hardcoded) ─────────
+  String get santeSanteEyebrow     => _fr ? 'SANTÉ & BIEN-ÊTRE'            : 'HEALTH & WELLNESS';
   String get santeMySpace          => _fr ? 'Mon Espace Santé'              : 'My Health Space';
   String get santeWatch            => _fr ? 'Regarder'                      : 'Watch';
   String get santeCall             => _fr ? 'Appeler'                       : 'Call';

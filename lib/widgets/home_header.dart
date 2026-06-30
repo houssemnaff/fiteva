@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../providers/mock_data_provider.dart';
 import '../providers/mascot_provider.dart';
+import '../providers/user_profile_provider.dart';
 import '../widgets/mascot_widget.dart';
 
 class HomeHeader extends ConsumerWidget {
@@ -21,9 +21,9 @@ class HomeHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user    = ref.watch(userProvider);
-    final mascot  = ref.watch(mascotProvider);
-    final firstName = user.name.split(' ').first;
+    final profile  = ref.watch(userProfileProvider);
+    final mascot   = ref.watch(mascotProvider);
+    final firstName = (profile.username.isNotEmpty ? profile.username : 'Toi').split(' ').first;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,

@@ -1,4 +1,5 @@
 import 'package:fiteva/l10n/app_localizations.dart';
+import 'package:fiteva/services/shop_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,9 +51,21 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
     if (!_agreed)     { _err(ref.read(l10nProvider).formAcceptCond); return; }
 
     setState(() => _loading = true);
-    await Future.delayed(const Duration(seconds: 2));
+    final ok = await ShopService.submitPartnerRequest(
+      name:     _nameCtrl.text.trim(),
+      email:    _emailCtrl.text.trim(),
+      phone:    _phoneCtrl.text.trim(),
+      brand:    _brandCtrl.text.trim(),
+      website:  _websiteCtrl.text.trim(),
+      message:  _messageCtrl.text.trim(),
+      category: _cat,
+    );
     if (!mounted) return;
     setState(() => _loading = false);
+    if (!ok) {
+      _err('Une erreur est survenue, veuillez réessayer.');
+      return;
+    }
     _showSuccess();
   }
 

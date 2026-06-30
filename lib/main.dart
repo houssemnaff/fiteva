@@ -1,4 +1,5 @@
 import 'package:fiteva/services/storage_service.dart';
+import 'package:fiteva/services/supabase_config.dart';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -12,7 +13,18 @@ import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await StorageService.init(); // Initialize local persistence immediately
+  await StorageService.init();
+  await SupabaseConfig.initialize();
+
+  // ── TEST CONNEXION — supprime après vérification ──────────────────────────
+  try {
+    final res = await SupabaseConfig.table('user_profiles').select('id').limit(1);
+    print('[Supabase] ✅ Connexion OK — réponse: $res');
+  } catch (e) {
+    print('[Supabase] ❌ Erreur connexion: $e');
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   runApp(const ProviderScope(child: FitevaApp()));
 }
 

@@ -14,6 +14,7 @@ class HomeProgramModel {
   final int totalPoints;
   final String? level;
   final List<String> equipment;
+  final String category; // 'home' | 'salle' | 'dance' | 'recuperation' | 'grossesse'
 
   HomeProgramModel({
     required this.id,
@@ -28,5 +29,6 @@ class HomeProgramModel {
     this.totalPoints = 100,
     this.level,
     this.equipment = const [],
+    this.category = 'home',
   });
 }

@@ -4,6 +4,7 @@ import 'package:fiteva/providers/onboarding_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/services/storage_service.dart';
+import 'package:fiteva/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -11,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:dice_bear/dice_bear.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../core/communiter_provider.dart';
 import '../../providers/mock_data_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -47,7 +49,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user       = ref.watch(userProvider);
+    final user       = ref.watch(userProfileProvider);
     final profile    = ref.watch(userProfileProvider);
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
     final theme      = Theme.of(context);
@@ -62,8 +64,8 @@ class ProfileScreen extends ConsumerWidget {
     final points = ref.watch(pointsProvider);
     final xp     = ref.watch(xpProvider);
 
-    final displayName = profile.username.isNotEmpty ? profile.username : user.name;
-    final displayEmail = profile.email.isNotEmpty ? profile.email : 'sarah.martin@icloud.com';
+    final displayName = profile.username.isNotEmpty ? profile.username : user.username;
+    final displayEmail = profile.email.isNotEmpty ? profile.email : '';
 
     final screenWidth = MediaQuery.of(context).size.width;
     final horizontalPadding = screenWidth < 400 ? 12.0 : 16.0;
@@ -931,8 +933,13 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               );
               if (confirm != true || !context.mounted) return;
+              await AuthService.signOut();
               await StorageService.clearAll();
               ref.read(onboardingProvider.notifier).reset();
+              ref.invalidate(postsNotifierProvider);
+              ref.invalidate(eventsNotifierProvider);
+              ref.invalidate(partnersNotifierProvider);
+              if (context.mounted) context.go('/onboarding');
             },
             icon: const Icon(LucideIcons.logOut, size: 18),
             label: Text(

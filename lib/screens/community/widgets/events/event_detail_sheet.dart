@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/screens/community/model/event_model.dart';
+import 'package:fiteva/services/comuniter_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/community_providers.dart';
 import '../../../../l10n/app_localizations.dart';
+import 'participants_sheet.dart';
 
 void showEventDetail(BuildContext context, EventModel event) {
   showModalBottomSheet<void>(
@@ -26,10 +28,9 @@ class EventDetailSheet extends ConsumerWidget {
     'running':  LucideIcons.footprints,
     'yoga':     LucideIcons.sparkles,
     'gym':      LucideIcons.dumbbell,
-    'natation': LucideIcons.waves,
-    'vélo':     LucideIcons.bike,
-    'muscu':    LucideIcons.dumbbell,
-    'autre':    LucideIcons.calendarDays,
+    'cycling':  LucideIcons.bike,
+    'swimming': LucideIcons.waves,
+    'other':    LucideIcons.calendarDays,
   };
 
   @override
@@ -200,8 +201,17 @@ class EventDetailSheet extends ConsumerWidget {
                         Row(children: [
                           CircleAvatar(
                             radius: 22,
-                            backgroundImage:
-                                NetworkImage(ev.organizerAvatar),
+                            backgroundImage: ev.organizerAvatar.isNotEmpty
+                                ? NetworkImage(ev.organizerAvatar)
+                                : null,
+                            child: ev.organizerAvatar.isEmpty
+                                ? Text(
+                                    ev.organizer.isNotEmpty
+                                        ? ev.organizer[0].toUpperCase()
+                                        : '?',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold))
+                                : null,
                           ),
                           const SizedBox(width: 12),
                           Column(
@@ -242,7 +252,7 @@ class EventDetailSheet extends ConsumerWidget {
                             letterSpacing: 2)),
                           const SizedBox(height: 10),
                           _ParticipantStrip(
-                              avatars: ev.participantAvatars,
+                              event: ev,
                               count: ev.joinedCount,
                               cs: cs),
                           const SizedBox(height: 20),
@@ -407,52 +417,147 @@ class _InfoCard extends StatelessWidget {
 }
 
 // ─── Participant strip ────────────────────────────────────────
-class _ParticipantStrip extends ConsumerWidget {
-  final List<String> avatars;
+class _ParticipantStrip extends StatefulWidget {
+  final EventModel event;
   final int count;
   final ColorScheme cs;
   const _ParticipantStrip({
-    required this.avatars, required this.count, required this.cs});
+    required this.event, required this.count, required this.cs});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = ref.watch(l10nProvider);
-    const size   = 36.0;
-    const offset = 26.0;
-    final shown  = avatars.take(6).toList();
-    return Row(children: [
-      SizedBox(
-        width: shown.isEmpty
-            ? 0
-            : shown.length * offset + (size - offset),
-        height: size,
-        child: Stack(
-          children: List.generate(shown.length, (i) => Positioned(
-            left: i * offset,
-            child: Container(
-              width: size, height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: cs.surface, width: 2),
-              ),
-              child: ClipOval(child: Image.network(
-                shown[i], fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(color: cs.secondary.withValues(alpha: 0.3)),
-              )),
-            ),
-          )),
-        ),
+  State<_ParticipantStrip> createState() => _ParticipantStripState();
+}
+
+class _ParticipantStripState extends State<_ParticipantStrip> {
+  late final Future<List<Map<String, dynamic>>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = CommunityService.getEventParticipants(widget.event.id);
+  }
+
+  static const _palette = [
+    Color(0xFF6C63FF), Color(0xFF00B894), Color(0xFFE17055),
+    Color(0xFF0984E3), Color(0xFFD63031), Color(0xFF6AB04C),
+    Color(0xFFEB4D4B), Color(0xFF22A6B3),
+  ];
+
+  Color _colorFor(String name) {
+    final index = name.codeUnits.fold(0, (a, b) => a + b) % _palette.length;
+    return _palette[index];
+  }
+
+  void _openSheet(List<Map<String, dynamic>> participants) {
+    HapticFeedback.selectionClick();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ParticipantsSheet(
+        event: widget.event,
+        colorScheme: widget.cs,
       ),
-      const SizedBox(width: 10),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l10n.communityParticipantsCount(count),
-            style: GoogleFonts.outfit(
-              fontSize: 14, fontWeight: FontWeight.w700,
-              color: cs.onSurface, letterSpacing: -0.2)),
-        Text(l10n.communityHaveJoined(count), style: GoogleFonts.inter(
-          fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5))),
-      ]),
-    ]);
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = widget.cs;
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _future,
+      builder: (context, snap) {
+        final participants = snap.data ?? [];
+        const size   = 36.0;
+        const offset = 26.0;
+        final shown  = participants.take(6).toList();
+        final extraCount = widget.count - shown.length;
+
+        return GestureDetector(
+          onTap: snap.hasData ? () => _openSheet(participants) : null,
+          child: Row(children: [
+            if (shown.isNotEmpty)
+              SizedBox(
+                width: shown.length * offset + (size - offset) +
+                    (extraCount > 0 ? offset : 0),
+                height: size,
+                child: Stack(
+                  children: [
+                    ...List.generate(shown.length, (i) {
+                      final name = ((shown[i]['username'] as String?) ?? '').trim();
+                      final displayName = name.isNotEmpty ? name : '?';
+                      final color = _colorFor(displayName);
+                      return Positioned(
+                        left: i * offset,
+                        child: Container(
+                          width: size, height: size,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: cs.surface, width: 2),
+                            color: color.withValues(alpha: 0.18),
+                          ),
+                          child: Center(
+                            child: Text(
+                              displayName[0].toUpperCase(),
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: color,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    if (extraCount > 0)
+                      Positioned(
+                        left: shown.length * offset,
+                        child: Container(
+                          width: size, height: size,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: cs.surface, width: 2),
+                            color: cs.outline.withValues(alpha: 0.2),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '+$extraCount',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: cs.onSurface.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              )
+            else if (snap.connectionState == ConnectionState.waiting)
+              SizedBox(
+                width: size, height: size,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: cs.primary),
+              ),
+            const SizedBox(width: 10),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                '${widget.count} participant${widget.count != 1 ? 's' : ''}',
+                style: GoogleFonts.outfit(
+                  fontSize: 14, fontWeight: FontWeight.w700,
+                  color: cs.onSurface, letterSpacing: -0.2)),
+              Text(
+                snap.hasData ? 'Appuyer pour voir' : 'ont rejoint',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: snap.hasData
+                      ? cs.primary
+                      : cs.onSurface.withValues(alpha: 0.5))),
+            ]),
+          ]),
+        );
+      },
+    );
   }
 }

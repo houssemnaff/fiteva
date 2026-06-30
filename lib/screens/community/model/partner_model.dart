@@ -1,5 +1,6 @@
 class PartnerModel {
   final String id;
+  final String userId; // UUID Supabase de l'auteur
   final String name;
   final String avatar;
   final String goal;
@@ -11,6 +12,7 @@ class PartnerModel {
 
   const PartnerModel({
     required this.id,
+    this.userId = '',
     required this.name,
     required this.avatar,
     required this.goal,
@@ -23,6 +25,7 @@ class PartnerModel {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'userId': userId,
     'name': name,
     'avatar': avatar,
     'goal': goal,
@@ -35,6 +38,7 @@ class PartnerModel {
 
   factory PartnerModel.fromJson(Map<String, dynamic> j) => PartnerModel(
     id: j['id'] as String,
+    userId: j['userId'] as String? ?? '',
     name: j['name'] as String,
     avatar: j['avatar'] as String? ?? '',
     goal: j['goal'] as String? ?? '',

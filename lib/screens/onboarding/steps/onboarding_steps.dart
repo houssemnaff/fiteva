@@ -977,6 +977,9 @@ const _slides = [
 class StepWelcome extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
+  final VoidCallback? onLogin;
+  final VoidCallback? onGoogleSignIn;
+  final VoidCallback? onAppleSignIn;
   final TextEditingController nameController;
   final TextEditingController emailController;
   final TextEditingController passwordController;
@@ -985,6 +988,9 @@ class StepWelcome extends StatefulWidget {
     super.key,
     required this.onNext,
     this.onBack,
+    this.onLogin,
+    this.onGoogleSignIn,
+    this.onAppleSignIn,
     required this.nameController,
     required this.emailController,
     required this.passwordController,
@@ -1001,14 +1007,19 @@ class _StepWelcomeState extends State<StepWelcome>
   int _currentPage = 0;
   Timer? _autoSlideTimer;
 
-  bool _emailMode  = false;
-  bool _obscure    = true;
+  bool _emailMode   = false;
+  bool _isLoginMode = false; // true = formulaire de connexion, false = inscription
+  bool _obscure     = true;
 
   late final AnimationController _fadeCtrl;
   late final Animation<double>   _fadeAnim;
 
   bool get _canContinue {
     if (_emailMode) {
+      if (_isLoginMode) {
+        return widget.emailController.text.trim().isNotEmpty &&
+               widget.passwordController.text.trim().isNotEmpty;
+      }
       return widget.nameController.text.trim().isNotEmpty &&
              widget.emailController.text.trim().isNotEmpty &&
              widget.passwordController.text.trim().isNotEmpty;
@@ -1218,24 +1229,6 @@ class _StepWelcomeState extends State<StepWelcome>
     return Column(
       children: [
         _authBtn(
-          label: AppL10n(Lang.code).welcomeSignUpGoogle,
-          bgColor: _kWhite,
-          textColor: _kDark,
-          borderColor: _kBorder,
-          leading: _googleIcon(),
-          onTap: () {},
-        ),
-        const SizedBox(height: 12),
-        _authBtn(
-          label: AppL10n(Lang.code).welcomeSignUpApple,
-          bgColor: _kDark,
-          textColor: _kWhite,
-          borderColor: Colors.transparent,
-          leading: Icon(Icons.apple_rounded, color: _kWhite, size: 22),
-          onTap: () {},
-        ),
-        const SizedBox(height: 12),
-        _authBtn(
           label: AppL10n(Lang.code).welcomeSignUpEmail,
           bgColor: const Color.fromARGB(255, 21, 80, 44),
           textColor: _kWhite,
@@ -1291,7 +1284,7 @@ class _StepWelcomeState extends State<StepWelcome>
       children: [
         // Back row
         GestureDetector(
-          onTap: () => setState(() => _emailMode = false),
+          onTap: () => setState(() { _emailMode = false; _isLoginMode = false; }),
           child: Row(
             children: [
               Container(
@@ -1300,25 +1293,32 @@ class _StepWelcomeState extends State<StepWelcome>
                   color: _kWhite.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.arrow_back_ios_new,
-                    color: _kWhite, size: 14),
+                child: Icon(Icons.arrow_back_ios_new, color: _kWhite, size: 14),
               ),
               const SizedBox(width: 10),
-              Text(AppL10n(Lang.code).welcomeCreateAccount,
-                  style: const TextStyle(color: _kWhite,
-                      fontWeight: FontWeight.w700, fontSize: 16)),
+              Text(
+                _isLoginMode
+                    ? AppL10n(Lang.code).welcomeLogIn
+                    : AppL10n(Lang.code).welcomeCreateAccount,
+                style: const TextStyle(
+                    color: _kWhite, fontWeight: FontWeight.w700, fontSize: 16),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 20),
 
-        _formField(
-          controller: widget.nameController,
-          hint: AppL10n(Lang.code).welcomeUsername,
-          icon: Icons.badge_outlined,
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 12),
+        // Champ nom — uniquement pour la création de compte
+        if (!_isLoginMode) ...[
+          _formField(
+            controller: widget.nameController,
+            hint: AppL10n(Lang.code).welcomeUsername,
+            icon: Icons.badge_outlined,
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+        ],
+
         _formField(
           controller: widget.emailController,
           hint: 'your@email.com',
@@ -1335,8 +1335,7 @@ class _StepWelcomeState extends State<StepWelcome>
           suffix: GestureDetector(
             onTap: () => setState(() => _obscure = !_obscure),
             child: Icon(
-              _obscure ? Icons.visibility_off_outlined
-                       : Icons.visibility_outlined,
+              _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
               color: _kGrey, size: 18,
             ),
           ),
@@ -1344,9 +1343,11 @@ class _StepWelcomeState extends State<StepWelcome>
         ),
         const SizedBox(height: 20),
 
-        // CTA
+        // CTA — login direct (sans steps) ou inscription (avec steps)
         GestureDetector(
-          onTap: _canContinue ? widget.onNext : null,
+          onTap: _canContinue
+              ? (_isLoginMode ? (widget.onLogin ?? widget.onNext) : widget.onNext)
+              : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             height: 54,
@@ -1356,7 +1357,9 @@ class _StepWelcomeState extends State<StepWelcome>
             ),
             child: Center(
               child: Text(
-                AppL10n(Lang.code).welcomeContinue,
+                _isLoginMode
+                    ? AppL10n(Lang.code).welcomeLogIn
+                    : AppL10n(Lang.code).welcomeContinue,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -1483,7 +1486,7 @@ class _StepWelcomeState extends State<StepWelcome>
                 textColor: _kDark,
                 borderColor: _kBorder,
                 leading: _googleIcon(),
-                onTap: () {},
+                onTap: widget.onGoogleSignIn ?? () {},
               ),
               const SizedBox(height: 12),
               _authBtn(
@@ -1492,7 +1495,7 @@ class _StepWelcomeState extends State<StepWelcome>
                 textColor: _kWhite,
                 borderColor: Colors.white24,
                 leading: Icon(Icons.apple_rounded, color: _kWhite, size: 22),
-                onTap: () {},
+                onTap: widget.onAppleSignIn ?? () {},
               ),
               const SizedBox(height: 12),
               _authBtn(
@@ -1503,7 +1506,10 @@ class _StepWelcomeState extends State<StepWelcome>
                 leading: Icon(Icons.mail_outline_rounded, color: _kWhite, size: 20),
                 onTap: () {
                   Navigator.pop(ctx);
-                  setState(() => _emailMode = true);
+                  setState(() {
+                    _emailMode   = true;
+                    _isLoginMode = true;
+                  });
                 },
               ),
             ],
