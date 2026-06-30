@@ -121,6 +121,62 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
             children: [
+              // ── Hero section ────────────────────────────────────────────────────────────
+              Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2E7D32).withValues(alpha: 0.25),
+                      blurRadius: 20, offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text('PARTENAIRE FITEVA',
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800,
+                                color: Colors.white, letterSpacing: 1.5)),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text('Rejoins notre réseau', style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w800,
+                            color: Colors.white, letterSpacing: -0.5, height: 1.1)),
+                          const SizedBox(height: 6),
+                          Text('Touche des milliers de femmes actives',
+                            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.75), height: 1.4)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Container(
+                      width: 60, height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.handshake_rounded, color: Colors.white, size: 30),
+                    ),
+                  ],
+                ),
+              ),
               // ── Intro ──────────────────────────────────────────────────
               Container(
                 padding: const EdgeInsets.all(16),

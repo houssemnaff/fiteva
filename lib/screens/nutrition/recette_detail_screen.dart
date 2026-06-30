@@ -2,6 +2,7 @@ import 'package:fiteva/core/nutrition/favorites_provider.dart';
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -130,6 +131,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
 
     return Scaffold(
       backgroundColor: colorScheme.background,
@@ -157,6 +159,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                 child: _PortionKcalSection(
                   portions: _portions,
                   onPortionChanged: (v) => setState(() => _portions = v),
+                  l10n: l10n,
                 ),
               ),
 
@@ -448,8 +451,9 @@ class _ActionBtn extends StatelessWidget {
 class _PortionKcalSection extends StatelessWidget {
   final int portions;
   final ValueChanged<int> onPortionChanged;
+  final AppL10n l10n;
   const _PortionKcalSection({
-    required this.portions, required this.onPortionChanged,
+    required this.portions, required this.onPortionChanged, required this.l10n,
   });
 
   @override
@@ -503,7 +507,7 @@ class _PortionKcalSection extends StatelessWidget {
 
         const SizedBox(height: 10),
 
-        // Kcal card
+        // Kcal card — uses l10n for labels
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -529,7 +533,7 @@ class _PortionKcalSection extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Calories par portion',
+              Text(l10n.detailCaloriesPortion,
                 style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
               const SizedBox(height: 2),
               Row(crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -795,13 +799,13 @@ class _StepsTabState extends State<_StepsTab> {
 // ─────────────────────────────────────────────────────────────────────────────
 // NUTRITION TAB
 // ─────────────────────────────────────────────────────────────────────────────
-class _NutritionTab extends StatefulWidget {
+class _NutritionTab extends ConsumerStatefulWidget {
   const _NutritionTab();
   @override
-  State<_NutritionTab> createState() => _NutritionTabState();
+  ConsumerState<_NutritionTab> createState() => _NutritionTabState();
 }
 
-class _NutritionTabState extends State<_NutritionTab>
+class _NutritionTabState extends ConsumerState<_NutritionTab>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _anim;
@@ -822,10 +826,11 @@ class _NutritionTabState extends State<_NutritionTab>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     return AnimatedBuilder(
       animation: _anim,
       builder: (_, __) => Column(children: [
-        _KcalCard(progress: _anim.value),
+        _KcalCard(progress: _anim.value, l10n: l10n),
         const SizedBox(height: 12),
         _MacrosCard(progress: _anim.value),
       ]),
@@ -835,7 +840,8 @@ class _NutritionTabState extends State<_NutritionTab>
 
 class _KcalCard extends StatelessWidget {
   final double progress;
-  const _KcalCard({required this.progress});
+  final AppL10n l10n;
+  const _KcalCard({required this.progress, required this.l10n});
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -878,7 +884,7 @@ class _KcalCard extends StatelessWidget {
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Objectif journalier',
+            Text(l10n.detailObjectif,
               style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
             const SizedBox(height: 8),
             ClipRRect(

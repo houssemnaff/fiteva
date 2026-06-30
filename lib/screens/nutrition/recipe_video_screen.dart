@@ -5,6 +5,7 @@ import 'package:fiteva/screens/cycle/widgets-cycle/Phasecolors.dart';
 import 'package:fiteva/screens/nutrition/recipes_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -106,6 +107,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
     final top = MediaQuery.of(context).padding.top;
     final pc  = PhaseColors.forPhase(widget.recipe.phase);
     final nc  = NutritionColors.of(context);
+    final l10n = ref.watch(l10nProvider);
     final videoH = top + 260.0;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -126,8 +128,8 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
             ),
 
             // ── Content ───────────────────────────────────────────────────
-            SliverToBoxAdapter(child: _buildMeta(pc, nc)),
-            SliverToBoxAdapter(child: _buildIngredients(pc, nc)),
+            SliverToBoxAdapter(child: _buildMeta(pc, nc, l10n)),
+            SliverToBoxAdapter(child: _buildIngredients(pc, nc, l10n)),
             SliverToBoxAdapter(child: _buildSteps(pc, nc)),
             const SliverToBoxAdapter(child: SizedBox(height: 60)),
           ],
@@ -296,7 +298,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
   }
 
   // ── META ──────────────────────────────────────────────────────────────────
-  Widget _buildMeta(PhaseColorSet pc, NutritionColors nc) {
+  Widget _buildMeta(PhaseColorSet pc, NutritionColors nc, AppL10n l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -314,13 +316,13 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
           _MetaChip(icon: LucideIcons.barChart2, label: widget.recipe.difficulty),
         ]),
         const SizedBox(height: 20),
-        _WhyPhaseCard(pc: pc),
+        _WhyPhaseCard(pc: pc, l10n: l10n),
       ]),
     );
   }
 
   // ── INGREDIENTS ───────────────────────────────────────────────────────────
-  Widget _buildIngredients(PhaseColorSet pc, NutritionColors nc) {
+  Widget _buildIngredients(PhaseColorSet pc, NutritionColors nc, AppL10n l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -366,7 +368,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
           child: Row(children: [
             const Icon(LucideIcons.zap, size: 15, color: _kGreen),
             const SizedBox(width: 8),
-            Text('Total estimé', style: GoogleFonts.inter(
+            Text(l10n.videoTotalEstime, style: GoogleFonts.inter(
               fontSize: 13, fontWeight: FontWeight.w600, color: _kGreen)),
             const Spacer(),
             Text('${widget.recipe.kcal} kcal  ·  ${widget.recipe.proteins}g protéines',
@@ -505,7 +507,8 @@ class _DarkBadge extends StatelessWidget {
 
 class _WhyPhaseCard extends StatelessWidget {
   final PhaseColorSet pc;
-  const _WhyPhaseCard({required this.pc});
+  final AppL10n l10n;
+  const _WhyPhaseCard({required this.pc, required this.l10n});
 
   static const _text = {
     CyclePhase.menstrual:
@@ -530,7 +533,7 @@ class _WhyPhaseCard extends StatelessWidget {
         Text(pc.emoji, style: const TextStyle(fontSize: 18)),
         const SizedBox(width: 10),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Pourquoi en phase ${pc.name} ?', style: GoogleFonts.inter(
+          Text(l10n.videoPourquoiPhase(pc.name), style: GoogleFonts.inter(
             fontSize: 12.5, fontWeight: FontWeight.w700, color: pc.text)),
           const SizedBox(height: 4),
           Text(_text[pc.phase] ?? '', style: GoogleFonts.inter(

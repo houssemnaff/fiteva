@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../providers/chat_provider.dart';
+import '../providers/mock_data_provider.dart';
+import '../l10n/app_localizations.dart';
+import '../screens/workout/programme_detail_screen.dart';
 
 // ── Adaptive theme ────────────────────────────────────────────────────────────
 
@@ -118,6 +121,7 @@ class _State extends ConsumerState<ChatbotSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n     = ref.watch(l10nProvider);
     final t        = _T.of(context);
     final messages = ref.watch(chatProvider);
     final kbBottom = MediaQuery.of(context).viewInsets.bottom;
@@ -164,7 +168,7 @@ class _State extends ConsumerState<ChatbotSheet> {
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('FitEva AI', style: GoogleFonts.outfit(
+                Text(l10n.chatFitEvaAI, style: GoogleFonts.outfit(
                   fontSize: 17, fontWeight: FontWeight.w800,
                   color: t.text1, letterSpacing: -0.4)),
                 Row(children: [
@@ -172,15 +176,21 @@ class _State extends ConsumerState<ChatbotSheet> {
                     decoration: const BoxDecoration(
                       color: Color(0xFF4ADE80), shape: BoxShape.circle)),
                   const SizedBox(width: 5),
-                  Text('Assistante personnelle', style: GoogleFonts.inter(
+                  Text(l10n.chatAssistante, style: GoogleFonts.inter(
                     fontSize: 11, color: t.text2)),
                 ]),
               ],
             )),
             // Back to categories
-            if (_activeCat != null && isEmpty)
+            if (_activeCat != null)
               GestureDetector(
-                onTap: () => setState(() => _activeCat = null),
+                onTap: () {
+                  if (!isEmpty) {
+                    ref.read(chatProvider.notifier).clearChat();
+                    setState(() { _typing = false; });
+                  }
+                  setState(() => _activeCat = null);
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   margin: const EdgeInsets.only(right: 8),
@@ -310,13 +320,22 @@ class _State extends ConsumerState<ChatbotSheet> {
   }
 
   void _navToProgram(ChatProgramCard card) {
+    final allPrograms = [
+      ...ref.read(salleProgramsProvider),
+      ...ref.read(homeProgramsProvider),
+      ...ref.read(danceProgramsProvider),
+      ...ref.read(recuperationProgramsProvider),
+      ...ref.read(grossesseProgramsProvider),
+    ];
+    final program = allPrograms.cast<dynamic>().firstWhere(
+      (p) => p.name.toString().toLowerCase() == card.name.toLowerCase(),
+      orElse: () => null,
+    );
     Navigator.pop(context);
-    Navigator.pushNamed(context, '/program-detail', arguments: {
-      'programId': card.id, 'programName': card.name,
-      'category': card.category, 'imageUrl': card.imageUrl,
-      'duration': card.duration, 'sessions': card.sessions,
-      'phases': card.phases, 'color': card.color,
-    });
+    if (program != null) {
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => WorkoutDetailScreen(program: program)));
+    }
   }
 }
 
@@ -332,12 +351,17 @@ class _CategoryGrid extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Comment puis-je t\'aider ?', style: GoogleFonts.outfit(
-          fontSize: 20, fontWeight: FontWeight.w800,
-          color: t.text1, letterSpacing: -0.5)),
-        const SizedBox(height: 4),
-        Text('Choisis une catégorie pour commencer',
-          style: GoogleFonts.inter(fontSize: 13, color: t.text2)),
+        Consumer(builder: (context, ref, _) {
+          final l10n = ref.watch(l10nProvider);
+          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(l10n.chatComment, style: GoogleFonts.outfit(
+              fontSize: 20, fontWeight: FontWeight.w800,
+              color: t.text1, letterSpacing: -0.5)),
+            const SizedBox(height: 4),
+            Text(l10n.chatChoisir,
+              style: GoogleFonts.inter(fontSize: 13, color: t.text2)),
+          ]);
+        }),
         const SizedBox(height: 20),
         LayoutBuilder(builder: (context, constraints) {
           final w = constraints.maxWidth;
@@ -423,8 +447,9 @@ class _QuestionList extends StatelessWidget {
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(category.label, style: GoogleFonts.outfit(
               fontSize: 18, fontWeight: FontWeight.w800, color: t.text1)),
-            Text('Sélectionne une question', style: GoogleFonts.inter(
-              fontSize: 11, color: t.text2)),
+            Consumer(builder: (ctx, ref, _) => Text(
+              ref.watch(l10nProvider).chatSelectionner,
+              style: GoogleFonts.inter(fontSize: 11, color: t.text2))),
           ]),
         ]),
         const SizedBox(height: 20),

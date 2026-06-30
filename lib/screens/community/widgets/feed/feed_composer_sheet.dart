@@ -352,6 +352,7 @@ class _TopBar extends ConsumerWidget {
     );
   }
 }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  TYPE SELECTOR  (segmented)

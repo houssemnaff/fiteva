@@ -2,6 +2,7 @@
 import 'package:fiteva/core/nutrition/nutrition_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -237,6 +238,7 @@ class VitalityScoreCard extends ConsumerWidget {
     final totals  = ref.watch(todayTotalsProvider);
     final profile = ref.watch(userProfileProvider);
     final water   = ref.watch(waterProvider);
+    final l10n    = ref.watch(l10nProvider);
 
     final calPct   = profile.dailyKcal > 0
         ? (totals.calories / profile.dailyKcal).clamp(0.0, 1.0) : 0.0;
@@ -270,7 +272,7 @@ class VitalityScoreCard extends ConsumerWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
         Row(children: [
-          Text('BILAN DU JOUR', style: GoogleFonts.inter(
+          Text(l10n.healthBilanJour, style: GoogleFonts.inter(
             color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
             letterSpacing: 2.5)),
           const Spacer(),
@@ -282,7 +284,7 @@ class VitalityScoreCard extends ConsumerWidget {
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               const Icon(LucideIcons.calendarDays, size: 10, color: Colors.white54),
               const SizedBox(width: 5),
-              Text('Aujourd\'hui', style: GoogleFonts.inter(
+              Text(l10n.healthAujourdhui, style: GoogleFonts.inter(
                 fontSize: 10, color: Colors.white60)),
             ])),
         ]),
@@ -485,20 +487,21 @@ class _NutrientTileWidget extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 //  W3 — SIGNAL DU MOMENT (Body Signals)
 // ══════════════════════════════════════════════════════════════════════════════
-class BodySignalCard extends StatefulWidget {
+class BodySignalCard extends ConsumerStatefulWidget {
   const BodySignalCard({super.key});
 
   @override
-  State<BodySignalCard> createState() => _BodySignalCardState();
+  ConsumerState<BodySignalCard> createState() => _BodySignalCardState();
 }
 
-class _BodySignalCardState extends State<BodySignalCard> {
+class _BodySignalCardState extends ConsumerState<BodySignalCard> {
   int _energy = -1, _digestion = -1, _humeur = -1;
   bool _saved = false;
 
   @override
   Widget build(BuildContext context) {
     final allSet = _energy >= 0 && _digestion >= 0 && _humeur >= 0;
+    final l10n = ref.watch(l10nProvider);
     return _Card(
       eyebrow: 'SIGNAL DU MOMENT',
       title: 'Comment tu te sens ?',
@@ -537,7 +540,7 @@ class _BodySignalCardState extends State<BodySignalCard> {
                 boxShadow: [BoxShadow(
                   color: _kGreen.withOpacity(0.2),
                   blurRadius: 12, offset: const Offset(0, 4))]),
-              child: Center(child: Text('Enregistrer mon signal',
+              child: Center(child: Text(l10n.healthEnregistrer,
                 style: GoogleFonts.inter(
                   fontSize: 13, fontWeight: FontWeight.w700,
                   color: Colors.white)))),
@@ -555,7 +558,7 @@ class _BodySignalCardState extends State<BodySignalCard> {
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(LucideIcons.checkCircle, size: 14, color: _kGreen),
               const SizedBox(width: 7),
-              Text('Signal enregistré !', style: GoogleFonts.inter(
+              Text(l10n.healthSignalEnreg, style: GoogleFonts.inter(
                 fontSize: 13, fontWeight: FontWeight.w600, color: _kGreen)),
             ])),
         ],
@@ -622,6 +625,7 @@ class WaterTrackerCard extends ConsumerWidget {
     final currentMl = ref.watch(waterProvider);
     final goalMl    = ref.watch(userProfileProvider).waterGoalMl;
     final notifier  = ref.read(nutritionProvider.notifier);
+    final l10n      = ref.watch(l10nProvider);
 
     final pct        = goalMl > 0 ? (currentMl / goalMl).clamp(0.0, 1.0) : 0.0;
     final glasses    = (currentMl / _step).floor();
@@ -664,7 +668,7 @@ class WaterTrackerCard extends ConsumerWidget {
               style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w600,
                 color: remaining > 0 ? _kText2 : _kGreen)),
-            Text('$glasses / $goalGlasses verres',
+            Text('$glasses / $goalGlasses ${l10n.healthVerres}',
               style: GoogleFonts.inter(fontSize: 10, color: _kText2)),
           ]),
         ]),
@@ -749,15 +753,15 @@ class _WaterBtn extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 //  W5 — CYCLE NUTRITION
 // ══════════════════════════════════════════════════════════════════════════════
-class CycleNutritionSection extends StatefulWidget {
+class CycleNutritionSection extends ConsumerStatefulWidget {
   final CyclePhase initialPhase;
   const CycleNutritionSection({super.key, this.initialPhase = CyclePhase.luteale});
 
   @override
-  State<CycleNutritionSection> createState() => _CycleNutritionSectionState();
+  ConsumerState<CycleNutritionSection> createState() => _CycleNutritionSectionState();
 }
 
-class _CycleNutritionSectionState extends State<CycleNutritionSection> {
+class _CycleNutritionSectionState extends ConsumerState<CycleNutritionSection> {
   late CyclePhase _active;
 
   @override
@@ -768,6 +772,7 @@ class _CycleNutritionSectionState extends State<CycleNutritionSection> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     return _Card(
       eyebrow: 'CYCLE MENSTRUEL',
       title: 'Nutrition & cycle',
@@ -807,7 +812,7 @@ class _CycleNutritionSectionState extends State<CycleNutritionSection> {
         // Phase detail
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
-          child: _PhaseDetailCard(phase: _active, key: ValueKey(_active))),
+          child: _PhaseDetailCard(phase: _active, l10n: l10n, key: ValueKey(_active))),
       ]),
     );
   }
@@ -815,7 +820,8 @@ class _CycleNutritionSectionState extends State<CycleNutritionSection> {
 
 class _PhaseDetailCard extends StatelessWidget {
   final CyclePhase phase;
-  const _PhaseDetailCard({required this.phase, super.key});
+  final AppL10n l10n;
+  const _PhaseDetailCard({required this.phase, required this.l10n, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -862,7 +868,7 @@ class _PhaseDetailCard extends StatelessWidget {
             Row(children: [
               const Icon(LucideIcons.checkCircle, size: 12, color: Color(0xFF3B6D11)),
               const SizedBox(width: 4),
-              Text('À privilégier', style: GoogleFonts.inter(
+              Text(l10n.healthAPrivilegier, style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w700,
                 color: const Color(0xFF3B6D11))),
             ]),
@@ -879,7 +885,7 @@ class _PhaseDetailCard extends StatelessWidget {
             Row(children: [
               const Icon(LucideIcons.xCircle, size: 12, color: Color(0xFFA32D2D)),
               const SizedBox(width: 4),
-              Text('À éviter', style: GoogleFonts.inter(
+              Text(l10n.healthAEviter, style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w700,
                 color: const Color(0xFFA32D2D))),
             ]),
@@ -911,28 +917,31 @@ class _FoodLine extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 //  W6 — CONSEILS D'EXPERTS
 // ══════════════════════════════════════════════════════════════════════════════
-class ExpertAdviceSection extends StatelessWidget {
+class ExpertAdviceSection extends ConsumerWidget {
   final List<ExpertAdvice> experts;
   const ExpertAdviceSection({super.key, required this.experts});
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(children: [
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('EXPERTS', style: GoogleFonts.inter(
-            color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
-            letterSpacing: 2.5)),
-          Text('Conseils personnalisés', style: GoogleFonts.outfit(
-            color: _kText1, fontSize: 20, fontWeight: FontWeight.w800,
-            letterSpacing: -0.3)),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(children: [
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(l10n.healthExperts, style: GoogleFonts.inter(
+              color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+              letterSpacing: 2.5)),
+            Text(l10n.healthConseils, style: GoogleFonts.outfit(
+              color: _kText1, fontSize: 20, fontWeight: FontWeight.w800,
+              letterSpacing: -0.3)),
+          ])),
         ])),
-      ])),
-    ...experts.map((e) => _ExpertCard(expert: e)),
-  ]);
+      ...experts.map((e) => _ExpertCard(expert: e)),
+    ]);
+  }
 }
 
 class _ExpertCard extends StatelessWidget {

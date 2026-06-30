@@ -1680,7 +1680,7 @@ class _StepGoalsState extends State<StepGoals>
               ]),
             ),
 
-            const Spacer(),
+            SizedBox(height: context.rv(24)),
 
             // ── Circle cluster ────────────────────────────────────
             Padding(
@@ -1734,7 +1734,7 @@ class _StepGoalsState extends State<StepGoals>
               ),
             ),
 
-            const Spacer(),
+            const Spacer(flex: 1),
           ],
         ),
       ),
@@ -1908,26 +1908,28 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
           children: [
             // ── Top bar ──────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+              padding: EdgeInsets.symmetric(
+                horizontal: context.rs(24), vertical: context.rv(14)),
               child: Row(
                 children: [
                   GestureDetector(
                     onTap: widget.onBack ?? () => Navigator.maybePop(context),
                     child: Container(
-                      width: 36, height: 36,
+                      width: context.rs(36), height: context.rs(36),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
+                      child: Icon(Icons.arrow_back,
+                        size: context.rs(18), color: _kGreenDark),
                     ),
                   ),
                   Expanded(
                     child: Center(
                       child: Text(
                         AppL10n(Lang.code).fitnessTopBarTitle,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: context.rs(11),
                           letterSpacing: 3.5,
                           fontWeight: FontWeight.w700,
                           color: _kGreenDark,
@@ -1935,61 +1937,63 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 36),
+                  SizedBox(width: context.rs(36)),
                 ],
               ),
             ),
 
-            const SizedBox(height: 12),
+            SizedBox(height: context.rv(12)),
 
             // ── Icon + title block ───────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
               child: Column(children: [
                 Container(
-                  width: 60, height: 60,
+                  width: context.rs(56), height: context.rs(56),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
                       begin: Alignment.topLeft, end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3),
+                      blurRadius: 12, offset: const Offset(0, 4))],
                   ),
-                  child: const Icon(Icons.show_chart_rounded, size: 28, color: Colors.white),
+                  child: Icon(Icons.show_chart_rounded,
+                    size: context.rs(26), color: Colors.white),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: context.rv(12)),
                 Text(
                   AppL10n(Lang.code).fitnessTitle,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 22,
+                  style: TextStyle(
+                    fontSize: context.rs(20),
                     fontWeight: FontWeight.w800,
                     color: _kTextDark,
                     height: 1.25,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: context.rv(5)),
                 Text(
                   AppL10n(Lang.code).fitnessHint,
-                  style: const TextStyle(fontSize: 12.5, color: _kTextMuted),
+                  style: TextStyle(fontSize: context.rs(12.5), color: _kTextMuted),
                 ),
               ]),
             ),
 
-            const Spacer(),
+            SizedBox(height: context.rv(24)),
 
             // ── Triangle circle layout ────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: context.rs(20)),
               child: LayoutBuilder(
                 builder: (_, constraints) {
-                  const double d     = 148.0;
-                  const double vStep = 120.0;
+                  final double d     = context.rs(138);
+                  final double vStep = context.rv(110);
                   final double w     = constraints.maxWidth;
-                  final double lx    = d / 2 + 10;
-                  final double rx    = w - d / 2 - 10;
+                  final double lx    = d / 2 + context.rs(10);
+                  final double rx    = w - d / 2 - context.rs(10);
                   final double cx    = w / 2;
 
                   final offsets = [
@@ -2032,7 +2036,7 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
               ),
             ),
 
-            const Spacer(),
+            const Spacer(flex: 1),
           ],
         ),
       ),
@@ -2202,26 +2206,28 @@ class _StepEquipmentState extends State<StepEquipment>
           children: [
               // ── Top bar ──────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.rs(24), vertical: context.rv(14)),
                 child: Row(
                   children: [
                     GestureDetector(
                       onTap: widget.onBack ?? () => Navigator.maybePop(context),
                       child: Container(
-                        width: 36, height: 36,
+                        width: context.rs(36), height: context.rs(36),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.5),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
+                        child: Icon(Icons.arrow_back,
+                          size: context.rs(18), color: _kGreenDark),
                       ),
                     ),
                     Expanded(
                       child: Center(
                         child: Text(
                           AppL10n(Lang.code).equipmentTopBarTitle,
-                          style: const TextStyle(
-                            fontSize: 11,
+                          style: TextStyle(
+                            fontSize: context.rs(11),
                             letterSpacing: 3.5,
                             fontWeight: FontWeight.w700,
                             color: _kGreenDark,
@@ -2229,44 +2235,46 @@ class _StepEquipmentState extends State<StepEquipment>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 36),
+                    SizedBox(width: context.rs(36)),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 12),
+              SizedBox(height: context.rv(10)),
 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
                 child: Column(children: [
                   Container(
-                    width: 60, height: 60,
+                    width: context.rs(56), height: context.rs(56),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
                         begin: Alignment.topLeft, end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3),
+                        blurRadius: 12, offset: const Offset(0, 4))],
                     ),
-                    child: const Icon(Icons.sports_gymnastics, size: 28, color: Colors.white),
+                    child: Icon(Icons.sports_gymnastics,
+                      size: context.rs(26), color: Colors.white),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: context.rv(12)),
                   Text(
                     AppL10n(Lang.code).equipmentTitle,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 22,
+                    style: TextStyle(
+                      fontSize: context.rs(20),
                       fontWeight: FontWeight.w800,
                       color: _kTextDark,
                       height: 1.25,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: context.rv(5)),
                   Text(
                     AppL10n(Lang.code).equipmentHint,
-                    style: const TextStyle(fontSize: 12.5, color: _kTextMuted),
+                    style: TextStyle(fontSize: context.rs(12.5), color: _kTextMuted),
                   ),
                 ]),
               ),
@@ -2274,15 +2282,15 @@ class _StepEquipmentState extends State<StepEquipment>
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.symmetric(horizontal: context.rs(20)),
                   child: LayoutBuilder(
                     builder: (_, constraints) {
-                      const double d = 136.0;
-                      const double vStep = 106.0;
+                      final double d    = context.rs(126);
+                      final double vStep = context.rv(98);
 
                       final w = constraints.maxWidth;
-                      final lx = d / 2 + 8;
-                      final rx = w - d / 2 - 8;
+                      final lx = d / 2 + context.rs(8);
+                      final rx = w - d / 2 - context.rs(8);
                       final cx = w / 2;
 
                       final offsets = [
@@ -2425,26 +2433,28 @@ class _StepFrequencyState extends State<StepFrequency> {
           children: [
             // ── Top bar ──────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+              padding: EdgeInsets.symmetric(
+                horizontal: context.rs(24), vertical: context.rv(14)),
               child: Row(
                 children: [
                   GestureDetector(
                     onTap: widget.onBack ?? () => Navigator.maybePop(context),
                     child: Container(
-                      width: 36, height: 36,
+                      width: context.rs(36), height: context.rs(36),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
+                      child: Icon(Icons.arrow_back,
+                        size: context.rs(18), color: _kGreenDark),
                     ),
                   ),
                   Expanded(
                     child: Center(
                       child: Text(
                         AppL10n(Lang.code).frequencyTopBarTitle,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: context.rs(11),
                           letterSpacing: 3.5,
                           fontWeight: FontWeight.w700,
                           color: _kGreenDark,
@@ -2452,50 +2462,52 @@ class _StepFrequencyState extends State<StepFrequency> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 36),
+                  SizedBox(width: context.rs(36)),
                 ],
               ),
             ),
 
-            const SizedBox(height: 12),
+            SizedBox(height: context.rv(10)),
 
             // ── Header card ─────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
               child: Column(children: [
                 Container(
-                  width: 60, height: 60,
+                  width: context.rs(56), height: context.rs(56),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
                       begin: Alignment.topLeft, end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3),
+                      blurRadius: 12, offset: const Offset(0, 4))],
                   ),
-                  child: const Icon(Icons.timer_outlined, size: 28, color: Colors.white),
+                  child: Icon(Icons.timer_outlined,
+                    size: context.rs(26), color: Colors.white),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: context.rv(12)),
                 Text(
                   AppL10n(Lang.code).frequencyTitle,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 22,
+                  style: TextStyle(
+                    fontSize: context.rs(20),
                     fontWeight: FontWeight.w800,
                     color: _kTextDark,
                     height: 1.25,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: context.rv(5)),
                 Text(
                   AppL10n(Lang.code).frequencyHint,
-                  style: const TextStyle(fontSize: 12.5, color: _kTextMuted),
+                  style: TextStyle(fontSize: context.rs(12.5), color: _kTextMuted),
                 ),
               ]),
             ),
 
-            const Spacer(),
+            const Spacer(flex: 1),
             Center(
               child: _FreqDial(
                 count: _labels.length,
@@ -2504,7 +2516,7 @@ class _StepFrequencyState extends State<StepFrequency> {
                 label: AppL10n(Lang.code).freqLabel(_index),
               ),
             ),
-            const Spacer(),
+            const Spacer(flex: 1),
             _CtaButton(
               label: AppL10n(Lang.code).frequencyNext,
               onPressed: _hasInteracted ? widget.onNext : null,
@@ -4422,26 +4434,28 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
           children: [
               // ── Top bar ──────────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.rs(24), vertical: context.rv(14)),
                 child: Row(
                   children: [
                     GestureDetector(
                       onTap: widget.onBack ?? () => Navigator.maybePop(context),
                       child: Container(
-                        width: 36, height: 36,
+                        width: context.rs(36), height: context.rs(36),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.5),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
+                        child: Icon(Icons.arrow_back,
+                          size: context.rs(18), color: _kGreenDark),
                       ),
                     ),
                     Expanded(
                       child: Center(
                         child: Text(
                           AppL10n(Lang.code).locationTopBarTitle,
-                          style: const TextStyle(
-                            fontSize: 11,
+                          style: TextStyle(
+                            fontSize: context.rs(11),
                             letterSpacing: 3.0,
                             fontWeight: FontWeight.w700,
                             color: _kGreenDark,
@@ -4449,55 +4463,57 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 36),
+                    SizedBox(width: context.rs(36)),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 12),
+              SizedBox(height: context.rv(10)),
 
               // ── Header card ─────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
                 child: Column(children: [
                   Container(
-                    width: 60, height: 60,
+                    width: context.rs(56), height: context.rs(56),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
                         begin: Alignment.topLeft, end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3),
+                        blurRadius: 12, offset: const Offset(0, 4))],
                     ),
-                    child: const Icon(Icons.location_on_outlined, size: 28, color: Colors.white),
+                    child: Icon(Icons.location_on_outlined,
+                      size: context.rs(26), color: Colors.white),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: context.rv(12)),
                   Text(
                     AppL10n(Lang.code).locationTitle,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 22,
+                    style: TextStyle(
+                      fontSize: context.rs(20),
                       fontWeight: FontWeight.w800,
                       color: _kTextDark,
                       height: 1.25,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: context.rv(5)),
                   Text(
                     AppL10n(Lang.code).locationSubtitle,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12.5, color: _kTextMuted),
+                    style: TextStyle(fontSize: context.rs(12.5), color: _kTextMuted),
                   ),
                 ]),
               ),
 
-              const Spacer(),
+              const Spacer(flex: 1),
 
               // ── Cards ─────────────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
                 child: Column(
                   children: List.generate(_optionValues.length, (i) {
                     final l10n = AppL10n(Lang.code);
@@ -4515,8 +4531,10 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 220),
                           curve: Curves.easeOut,
-                          margin: const EdgeInsets.only(bottom: 14),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                          margin: EdgeInsets.only(bottom: context.rv(12)),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: context.rs(18),
+                            vertical: context.rv(14)),
                           decoration: BoxDecoration(
                             gradient: sel
                                 ? const LinearGradient(
@@ -4525,7 +4543,7 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                                   )
                                 : null,
                             color: sel ? null : Colors.white.withOpacity(0.75),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(18),
                             border: Border.all(
                               color: sel ? Colors.transparent : const Color(0xFFB8D4C0),
                               width: 1.8,
@@ -4537,16 +4555,17 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                           child: Row(
                             children: [
                               Container(
-                                width: 52, height: 52,
+                                width: context.rs(48), height: context.rs(48),
                                 decoration: BoxDecoration(
                                   color: sel ? Colors.white.withOpacity(0.2) : const Color(0xFFD6EBE0),
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Center(
-                                  child: Text(emoji, style: const TextStyle(fontSize: 26)),
+                                  child: Text(emoji,
+                                    style: TextStyle(fontSize: context.rs(24))),
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              SizedBox(width: context.rs(14)),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -4554,16 +4573,16 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                                     Text(
                                       label,
                                       style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: context.rs(15),
                                         fontWeight: FontWeight.w700,
                                         color: sel ? Colors.white : _kTextDark,
                                       ),
                                     ),
-                                    const SizedBox(height: 3),
+                                    SizedBox(height: context.rv(3)),
                                     Text(
                                       sub,
                                       style: TextStyle(
-                                        fontSize: 12.5,
+                                        fontSize: context.rs(12),
                                         height: 1.4,
                                         color: sel ? Colors.white.withOpacity(0.75) : _kTextMuted,
                                       ),

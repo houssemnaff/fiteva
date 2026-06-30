@@ -246,29 +246,14 @@ class _StepWelcomeState extends State<StepWelcome>
     Widget? suffix,
     required ValueChanged<String> onChanged,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7FAF8),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2EDE7), width: 1.2),
-      ),
-      child: TextField(
-        controller: controller, obscureText: obscure,
-        keyboardType: keyboardType, onChanged: onChanged,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500,
-            color: Color(0xFF0F1A14)),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey.shade400,
-              fontWeight: FontWeight.w400, fontSize: 14.5),
-          prefixIcon: Icon(icon, color: _kGreenLight, size: 19),
-          suffixIcon: suffix != null
-              ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix)
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
-        ),
-      ),
+    return _GradientBorderInput(
+      controller: controller,
+      hint: hint,
+      icon: icon,
+      obscure: obscure,
+      keyboardType: keyboardType,
+      suffix: suffix,
+      onChanged: onChanged,
     );
   }
 
@@ -353,6 +338,102 @@ class _StepWelcomeState extends State<StepWelcome>
             color: enabled ? Colors.white : Colors.grey.shade400,
             letterSpacing: 0.2,
           )),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Gradient border input (style D) ──────────────────────────────────────────
+class _GradientBorderInput extends StatefulWidget {
+  final TextEditingController controller;
+  final String hint;
+  final IconData icon;
+  final bool obscure;
+  final TextInputType? keyboardType;
+  final Widget? suffix;
+  final ValueChanged<String> onChanged;
+
+  const _GradientBorderInput({
+    required this.controller,
+    required this.hint,
+    required this.icon,
+    this.obscure = false,
+    this.keyboardType,
+    this.suffix,
+    required this.onChanged,
+  });
+
+  @override
+  State<_GradientBorderInput> createState() => _GradientBorderInputState();
+}
+
+class _GradientBorderInputState extends State<_GradientBorderInput> {
+  final FocusNode _focus = FocusNode();
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() => setState(() => _focused = _focus.hasFocus));
+  }
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.all(1.5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: _focused
+            ? const LinearGradient(
+                colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: _focused ? null : const Color(0xFFE8EDE9),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAFAF9),
+          borderRadius: BorderRadius.circular(12.5),
+        ),
+        child: TextField(
+          controller: widget.controller,
+          focusNode: _focus,
+          obscureText: widget.obscure,
+          keyboardType: widget.keyboardType,
+          onChanged: widget.onChanged,
+          style: const TextStyle(
+              fontSize: 15, fontWeight: FontWeight.w500,
+              color: Color(0xFF111111)),
+          decoration: InputDecoration(
+            hintText: widget.hint,
+            hintStyle: TextStyle(
+                color: Colors.grey.shade400,
+                fontWeight: FontWeight.w400,
+                fontSize: 14.5),
+            prefixIcon: Icon(
+              widget.icon,
+              size: 19,
+              color: _focused ? const Color(0xFF22C55E) : Colors.grey.shade400,
+            ),
+            suffixIcon: widget.suffix != null
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: widget.suffix)
+                : null,
+            border: InputBorder.none,
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+          ),
         ),
       ),
     );

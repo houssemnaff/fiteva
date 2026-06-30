@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 // ── Hero Meta chip ────────────────────────────────────────────────────────────
 class HeroMeta extends StatelessWidget {
@@ -54,7 +56,7 @@ class RecipeAction extends StatelessWidget {
 }
 
 // ── Ingredients Tab ───────────────────────────────────────────────────────────
-class IngredientsTab extends StatelessWidget {
+class IngredientsTab extends ConsumerWidget {
   const IngredientsTab({super.key});
 
   static const _items = [
@@ -66,9 +68,10 @@ class IngredientsTab extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) =>
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Ingrédients',
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(l10n.recipeIngredients,
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kTextDark)),
         const SizedBox(height: 8),
         ..._items.map((i) => Padding(
@@ -87,6 +90,7 @@ class IngredientsTab extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: kTextGrey, height: 1.5)),
         ),
       ]);
+  }
 }
 
 // ── Steps Tab ─────────────────────────────────────────────────────────────────

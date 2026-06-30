@@ -346,13 +346,7 @@ class MealsContainer extends StatelessWidget {
             letterSpacing: -0.4)),
         ]),
         const Spacer(),
-        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text('$totalConsumed / $totalBudget kcal', style: GoogleFonts.inter(
-            fontSize: 12, fontWeight: FontWeight.w700, color: _kGreen)),
-          const SizedBox(height: 1),
-          Text(l10n.nutritionDailyTotal, style: GoogleFonts.inter(
-            fontSize: 10, color: nc.text2)),
-        ]),
+       
       ]),
 
       const SizedBox(height: 12),

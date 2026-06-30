@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../l10n/app_localizations.dart';
 
 import '../models/models.dart';
 import 'shared/shared_widgets.dart';
@@ -220,7 +222,7 @@ class ObjectifCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Objectif du jour : ~1920 kcal',
+            'Objectif du jour',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -374,7 +376,7 @@ class EnAttenteCard extends StatelessWidget {
   }
 }
 
-class PendingMealItem extends StatelessWidget {
+class PendingMealItem extends ConsumerWidget {
   final String emoji, name, category;
   final int calories;
   const PendingMealItem({
@@ -386,7 +388,8 @@ class PendingMealItem extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -431,7 +434,7 @@ class PendingMealItem extends StatelessWidget {
                 color: colorScheme.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text('Mangé 😊',
+              child: Text(l10n.mealMange,
                 style: TextStyle(color: colorScheme.onPrimary,
                     fontSize: 10, fontWeight: FontWeight.w600)),
             ),

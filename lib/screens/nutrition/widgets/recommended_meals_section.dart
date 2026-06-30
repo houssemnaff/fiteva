@@ -2,7 +2,9 @@
 import 'package:fiteva/screens/nutrition/models/models.dart';
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:fiteva/screens/nutrition/recette_detail_screen.dart';
+import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -246,17 +248,17 @@ const _meals = {
 // ─────────────────────────────────────────────────────────────────────────────
 //  PUBLIC WIDGET
 // ─────────────────────────────────────────────────────────────────────────────
-class RecommendedMealsSection extends StatefulWidget {
+class RecommendedMealsSection extends ConsumerStatefulWidget {
   /// Objectif initial (id parmi loss / maintain / muscle / pregnancy / postpartum)
   final String initialGoalId;
   const RecommendedMealsSection({super.key, this.initialGoalId = 'loss'});
 
   @override
-  State<RecommendedMealsSection> createState() =>
+  ConsumerState<RecommendedMealsSection> createState() =>
       _RecommendedMealsSectionState();
 }
 
-class _RecommendedMealsSectionState extends State<RecommendedMealsSection> {
+class _RecommendedMealsSectionState extends ConsumerState<RecommendedMealsSection> {
   late String _selectedId;
 
   @override
@@ -272,6 +274,7 @@ class _RecommendedMealsSectionState extends State<RecommendedMealsSection> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     final goal = _goal;
     final nc   = NutritionColors.of(context);
 
@@ -290,10 +293,10 @@ class _RecommendedMealsSectionState extends State<RecommendedMealsSection> {
               borderRadius: BorderRadius.circular(3))),
           const SizedBox(width: 14),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('RECOMMANDATIONS', style: GoogleFonts.inter(
+            Text(l10n.mealsRecommandations, style: GoogleFonts.inter(
               color: goal.primary, fontSize: 9,
               fontWeight: FontWeight.w700, letterSpacing: 3)),
-            Text('Repas du jour', style: GoogleFonts.outfit(
+            Text(l10n.mealsRepasJour, style: GoogleFonts.outfit(
               color: nc.text1, fontSize: 22,
               fontWeight: FontWeight.w800, letterSpacing: -0.4)),
           ]),

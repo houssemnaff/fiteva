@@ -1,7 +1,9 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../l10n/app_localizations.dart';
 
 /// Shows the custom bottom-sheet date picker.
 /// Returns the selected [DateTime] or null if dismissed.
@@ -32,7 +34,7 @@ Future<DateTime?> showCustomDatePicker({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-class _CustomDatePicker extends StatefulWidget {
+class _CustomDatePicker extends ConsumerStatefulWidget {
   final DateTime initialDate;
   final DateTime firstDate;
   final DateTime lastDate;
@@ -52,10 +54,10 @@ class _CustomDatePicker extends StatefulWidget {
   });
 
   @override
-  State<_CustomDatePicker> createState() => _CustomDatePickerState();
+  ConsumerState<_CustomDatePicker> createState() => _CustomDatePickerState();
 }
 
-class _CustomDatePickerState extends State<_CustomDatePicker> {
+class _CustomDatePickerState extends ConsumerState<_CustomDatePicker> {
   late DateTime  _focused;
   late DateTime? _selected;
 
@@ -89,6 +91,7 @@ class _CustomDatePickerState extends State<_CustomDatePicker> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(l10nProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bg       = isDark ? const Color(0xFF0E1117) : Colors.white;
@@ -283,7 +286,7 @@ class _CustomDatePickerState extends State<_CustomDatePicker> {
             onPressed: _selected != null
                 ? () => Navigator.pop(context, _selected)
                 : null,
-            child: Text('Confirmer',
+            child: Text(l10n.datePickerConfirmer,
               style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700)),
           ),
         ),

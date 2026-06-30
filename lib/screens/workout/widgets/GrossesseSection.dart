@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../l10n/app_localizations.dart';
 
 class GrossesseSection extends StatelessWidget {
   final List<HomeProgramModel> grossessePrograms;
@@ -61,12 +62,13 @@ class GrossesseSection extends StatelessWidget {
 }
 
 // ── Section header ────────────────────────────────────────────────────────────
-class _GrossesseHeader extends StatelessWidget {
+class _GrossesseHeader extends ConsumerWidget {
   final VoidCallback onSeeAll;
   const _GrossesseHeader({required this.onSeeAll});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     const color = WorkoutColors.grossesse;
 
     return Padding(
@@ -140,7 +142,7 @@ class _GrossesseHeader extends StatelessWidget {
                 ],
               ),
               child: Text(
-                'Voir tout',
+                l10n.sectionVoirTout,
                 style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 12,
@@ -170,6 +172,7 @@ class _GrossesseProgramCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     const color = WorkoutColors.grossesse;
 
     return GestureDetector(
@@ -331,7 +334,7 @@ class _GrossesseProgramCard extends ConsumerWidget {
                               color: Colors.white, size: 13),
                           const SizedBox(width: 8),
                           Text(
-                            'Commencer',
+                            l10n.progcardCommencer,
                             style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 13,

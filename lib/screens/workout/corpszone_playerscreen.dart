@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/workout_model.dart';
 import '../../services/points_service.dart';
 import '../../theme/app_theme.dart';
@@ -211,7 +212,7 @@ class _CorpsZonePlayerScreenState extends ConsumerState<CorpsZonePlayerScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('+${PointsService.pointsPerVideo} pts ! Total : $total pts'),
+              content: Text(ref.read(l10nProvider).corpszonePoints(PointsService.pointsPerVideo, total)),
               duration: const Duration(seconds: 2),
               backgroundColor: const Color(0xFF1C4D30),
             ),

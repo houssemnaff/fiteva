@@ -10,6 +10,7 @@ import 'package:pedometer/pedometer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/points_provider.dart';
 import '../services/step_service.dart';
+import '../l10n/app_localizations.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const _kGreen     = Color(0xFF1C4D30);
@@ -165,13 +166,13 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Objectif atteint !',
+                Text(ref.read(l10nProvider).stepObjectifAtteint,
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     )),
-                Text('+50 points ajoutés',
+                Text(ref.read(l10nProvider).stepPtsAjoutes,
                     style: GoogleFonts.inter(
                       color: _kGoldLight,
                       fontSize: 12,
@@ -375,28 +376,33 @@ class _GoalDoneCenter extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            'Objectif atteint !',
-            style: GoogleFonts.inter(
-              color: _kGoldLight,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _kGold.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(50),
-            ),
-            child: Text('+50 pts',
-                style: GoogleFonts.outfit(
-                  color: _kGold,
+          Consumer(builder: (context, ref, _) {
+            final l10n = ref.watch(l10nProvider);
+            return Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(
+                l10n.stepObjectifAtteint,
+                style: GoogleFonts.inter(
+                  color: _kGoldLight,
                   fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                )),
-          ),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _kGold.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Text(l10n.stepPts,
+                    style: GoogleFonts.outfit(
+                      color: _kGold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    )),
+              ),
+            ]);
+          }),
         ],
       );
 }

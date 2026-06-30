@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
 import 'active_workout_screen.dart';
@@ -353,7 +354,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                 borderRadius: BorderRadius.circular(2)),
             )),
             const SizedBox(height: 16),
-            Text('Déplacer vers…', style: GoogleFonts.outfit(
+            Text(ref.read(l10nProvider).weeklyDeplacer, style: GoogleFonts.outfit(
               fontSize: 17, fontWeight: FontWeight.w800, color: cs.onSurface)),
             const SizedBox(height: 12),
             ...List.generate(7, (i) {
@@ -393,7 +394,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                           color: d.category!.color)),
                       )
                     else
-                      Text('Vide', style: GoogleFonts.inter(
+                      Text(ref.read(l10nProvider).weeklyVide, style: GoogleFonts.inter(
                         fontSize: 12,
                         color: cs.onSurface.withValues(alpha: 0.35))),
                     const SizedBox(width: 8),
@@ -412,6 +413,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
     final plans = ref.watch(weeklyPlanProvider);
     final selectedPlan = _selected >= 0 ? plans[_selected] : null;
 
@@ -448,10 +450,10 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('PLANNING', style: GoogleFonts.inter(
+                Text(l10n.weeklyPlanTitle, style: GoogleFonts.inter(
                   fontSize: 9, fontWeight: FontWeight.w700,
                   color: cs.primary, letterSpacing: 3.5)),
-                Text('Ma semaine', style: GoogleFonts.outfit(
+                Text(l10n.weeklyMaSemaine, style: GoogleFonts.outfit(
                   fontSize: 20, fontWeight: FontWeight.w800,
                   color: cs.onSurface, letterSpacing: -0.5, height: 1.1)),
               ],
@@ -498,7 +500,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                 // ── Day strip ──────────────────────────────
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 0, 12),
-                  child: Text('Cette semaine', style: GoogleFonts.inter(
+                  child: Text(l10n.weeklyCetteSemaine, style: GoogleFonts.inter(
                     fontSize: 9, fontWeight: FontWeight.w700,
                     color: cs.onSurface.withValues(alpha: 0.4),
                     letterSpacing: 2)),
@@ -606,7 +608,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                 // ── Weekly list ───────────────────────────
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: Text('PROGRAMME SEMAINE', style: GoogleFonts.inter(
+                  child: Text(l10n.weeklyProgSemaine, style: GoogleFonts.inter(
                     fontSize: 9, fontWeight: FontWeight.w700,
                     color: cs.onSurface.withValues(alpha: 0.4),
                     letterSpacing: 2)),
@@ -777,13 +779,14 @@ class _DayDetailCard extends StatelessWidget {
 }
 
 // Empty body
-class _EmptyDayBody extends StatelessWidget {
+class _EmptyDayBody extends ConsumerWidget {
   final VoidCallback onAdd;
   final ColorScheme cs;
   const _EmptyDayBody({required this.onAdd, required this.cs});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
     return Column(children: [
       Container(
         width: double.infinity,
@@ -796,7 +799,7 @@ class _EmptyDayBody extends StatelessWidget {
           Icon(LucideIcons.calendarPlus, size: 36,
               color: cs.onSurface.withValues(alpha: 0.15)),
           const SizedBox(height: 8),
-          Text('Aucune séance prévue', style: GoogleFonts.inter(
+          Text(l10n.weeklyAucuneSeance, style: GoogleFonts.inter(
             fontSize: 14, color: cs.onSurface.withValues(alpha: 0.35))),
         ]),
       ),
