@@ -13,5 +13,17 @@
       "runtimeArgs": ["--prefix", "D:\\fit-evaclone\\jack-portfolio", "run", "dev"],
       "port": 5175
     }
+    ,{
+      "name": "alliance-bio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "D:\\fit-evaclone\\alliance-biomedical", "run", "dev"],
+      "port": 3001
+    }
+    ,{
+      "name": "alliance-bio-v2",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "D:\\fit-evaclone\\alliance-biomedical", "run", "dev", "--", "-p", "3002"],
+      "port": 3002
+    }
   ]
 }

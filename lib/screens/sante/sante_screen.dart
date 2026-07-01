@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/sante_service.dart';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 
@@ -225,6 +226,87 @@ const _rappels = [
   (title: 'Dermatologue', icon: LucideIcons.sun, due: 'Non planifié', done: false),
 ];
 
+// ─── Supabase Providers ───────────────────────────────────────────────────────
+
+final _santeDoctorsProvider = FutureProvider<List<_Doctor>>((ref) async {
+  try {
+    final rows = await SanteService.fetchDoctors();
+    if (rows.isEmpty) return _doctors;
+    return rows.map(_doctorFromRow).toList();
+  } catch (_) {
+    return _doctors;
+  }
+});
+
+final _santeArticlesProvider = FutureProvider<List<_Article>>((ref) async {
+  try {
+    final rows = await SanteService.fetchArticles();
+    if (rows.isEmpty) return _articles;
+    return rows.map(_articleFromRow).toList();
+  } catch (_) {
+    return _articles;
+  }
+});
+
+final _santeQuestionsProvider = FutureProvider<List<_Question>>((ref) async {
+  try {
+    final rows = await SanteService.fetchQuestions();
+    if (rows.isEmpty) return _questions;
+    return rows.map(_questionFromRow).toList();
+  } catch (_) {
+    return _questions;
+  }
+});
+
+_Doctor _doctorFromRow(Map<String, dynamic> r) {
+  final hex = (r['color_hex'] as String? ?? '#1C4D30').replaceFirst('#', '');
+  final colorVal = int.tryParse('0xFF$hex') ?? 0xFF1C4D30;
+  return _Doctor(
+    name: r['name'] as String? ?? '',
+    specialty: r['specialty'] as String? ?? '',
+    location: r['location'] as String? ?? '',
+    hospital: r['hospital'] as String? ?? '',
+    phone: r['phone'] as String? ?? '',
+    email: r['email'] as String? ?? '',
+    initials: r['initials'] as String? ?? '?',
+    color: Color(colorVal),
+    rating: (r['rating'] as num? ?? 4.8).toDouble(),
+    consultations: (r['consultations'] as num? ?? 0).toInt(),
+    photoAsset: r['photo_asset'] as String?,
+  );
+}
+
+_Article _articleFromRow(Map<String, dynamic> r) {
+  final cat = r['category'] as String? ?? '';
+  final color = _catColor(cat);
+  return _Article(
+    title: r['title'] as String? ?? '',
+    author: r['author'] as String? ?? '',
+    excerpt: r['excerpt'] as String? ?? '',
+    category: cat,
+    readMin: (r['read_min'] as num? ?? 5).toInt(),
+    color: color,
+    photoAsset: r['photo_asset'] as String?,
+  );
+}
+
+_Question _questionFromRow(Map<String, dynamic> r) => _Question(
+  question: r['question'] as String? ?? '',
+  postedAgo: r['posted_ago'] as String? ?? '',
+  votes: (r['votes'] as num? ?? 0).toInt(),
+  doctorAnswer: r['doctor_answer'] as String?,
+  answerDoctor: r['answer_doctor'] as String?,
+);
+
+Color _catColor(String c) => switch (c) {
+  'Sport'    => const Color(0xFF2563EB),
+  'Nutrition'=> const Color(0xFFD97706),
+  'Sommeil'  => const Color(0xFF7C3AED),
+  'Mental'   => const Color(0xFF0D9488),
+  'Hormones' => const Color(0xFFDB2777),
+  _          => const Color(0xFF1C4D30),
+};
+
 final _videoSeries = [
   _VideoSeries(doctor: _doctors[3], title: 'Nutrition Féminine',
     color: const Color(0xFFB45309), coverAsset: 'assets/images/cover_nutrition.jpg', episodes: const [
@@ -293,6 +375,10 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
     final dark = Theme.of(context).brightness == Brightness.dark;
     final l10n = ref.watch(l10nProvider);
 
+    final doctors   = ref.watch(_santeDoctorsProvider).asData?.value   ?? _doctors;
+    final articles  = ref.watch(_santeArticlesProvider).asData?.value  ?? _articles;
+    final questions = ref.watch(_santeQuestionsProvider).asData?.value ?? _questions;
+
     return Scaffold(
       backgroundColor: _T.bg(dark),
       body: NestedScrollView(
@@ -303,7 +389,7 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
             accentColor: const Color(0xFF0D9488),
             bgColor: Colors.white,
           ),
-       
+
           SliverToBoxAdapter(
             child: Container(
               color: _T.card(dark),
@@ -326,7 +412,6 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
                   Tab(icon: Icon(LucideIcons.video, size: 14), text: 'Ressources'),
                   Tab(icon: Icon(LucideIcons.messageCircleQuestion, size: 14), text: 'Q & R'),
                   Tab(icon: Icon(LucideIcons.userRound, size: 14), text: 'Médecins'),
-                 
                 ],
               ),
             ),
@@ -339,15 +424,15 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
               onCat: (c) => setState(() => _cat = c),
               onLike: (i) => setState(() { if (_liked.contains(i)) _liked.remove(i); else _liked.add(i); }),
               onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark, l10n: l10n))),
-            _RessourcesTab(dark: dark, lex: _lex, l10n: l10n, onLex: (s) => setState(() => _lex = s)),
-            _QRTab(dark: dark, l10n: l10n),
+            _RessourcesTab(dark: dark, lex: _lex, l10n: l10n, articles: articles,
+              onLex: (s) => setState(() => _lex = s)),
+            _QRTab(dark: dark, l10n: l10n, questions: questions),
             _DoctorsTab(
               dark: dark, spec: _spec, marker: _marker, l10n: l10n,
+              doctors: doctors,
               onSpec: (s) => setState(() => _spec = s),
               onMarker: (i) => setState(() => _marker = _marker == i ? null : i),
               onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark, l10n: l10n))),
-            
-            
           ],
         ),
       ),
@@ -633,8 +718,10 @@ class _RessourcesTab extends StatelessWidget {
   final bool dark;
   final String lex;
   final AppL10n l10n;
+  final List<_Article> articles;
   final ValueChanged<String> onLex;
-  const _RessourcesTab({required this.dark, required this.lex, required this.l10n, required this.onLex});
+  const _RessourcesTab({required this.dark, required this.lex, required this.l10n,
+    required this.articles, required this.onLex});
 
   List<_LexiqueEntry> get _lexFiltered {
     if (lex.isEmpty) return _lexique;
@@ -678,14 +765,14 @@ class _RessourcesTab extends StatelessWidget {
         // ── Section header: Articles ──
         const SizedBox(height: 32),
         _SectionHeader(title: l10n.santeArticlesSection, icon: LucideIcons.bookOpen,
-          subtitle: l10n.santeArticlesCount(_articles.length), dark: dark),
+          subtitle: l10n.santeArticlesCount(articles.length), dark: dark),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
-            children: _articles.asMap().entries.map((e) =>
+            children: articles.asMap().entries.map((e) =>
               Padding(
-                padding: EdgeInsets.only(bottom: e.key < _articles.length - 1 ? 10 : 0),
+                padding: EdgeInsets.only(bottom: e.key < articles.length - 1 ? 10 : 0),
                 child: _ArticleCard(article: e.value, dark: dark),
               )
             ).toList(),
@@ -1024,7 +1111,8 @@ class _LexCardState extends State<_LexCard> {
 class _QRTab extends ConsumerStatefulWidget {
   final bool dark;
   final AppL10n l10n;
-  const _QRTab({required this.dark, required this.l10n});
+  final List<_Question> questions;
+  const _QRTab({required this.dark, required this.l10n, required this.questions});
   @override
   ConsumerState<_QRTab> createState() => _QRTabState();
 }
@@ -1088,7 +1176,7 @@ class _QRTabState extends ConsumerState<_QRTab> {
           ),
         ),
         const SizedBox(height: 28),
-        ..._questions.asMap().entries.map((e) {
+        ...widget.questions.asMap().entries.map((e) {
           final i = e.key; final q = e.value; final voted = _voted.contains(i);
           return Padding(
             padding: const EdgeInsets.only(bottom: 24),
@@ -1170,16 +1258,18 @@ class _DoctorsTab extends StatelessWidget {
   final String spec;
   final int? marker;
   final AppL10n l10n;
+  final List<_Doctor> doctors;
   final ValueChanged<String> onSpec;
   final ValueChanged<int> onMarker;
   final ValueChanged<_Doctor> onDoctor;
   const _DoctorsTab({required this.dark, required this.spec, required this.marker,
-    required this.l10n, required this.onSpec, required this.onMarker, required this.onDoctor});
+    required this.l10n, required this.doctors, required this.onSpec,
+    required this.onMarker, required this.onDoctor});
 
   List<int> get _indexes {
-    if (spec == 'Toutes') return List.generate(_doctors.length, (i) => i);
-    return List.generate(_doctors.length, (i) => i).where((i) =>
-      _doctors[i].specialty.toLowerCase().contains(
+    if (spec == 'Toutes') return List.generate(doctors.length, (i) => i);
+    return List.generate(doctors.length, (i) => i).where((i) =>
+      doctors[i].specialty.toLowerCase().contains(
         spec.toLowerCase().replaceAll('é','e').replaceAll('ologie',''))).toList();
   }
 
@@ -1200,8 +1290,8 @@ class _DoctorsTab extends StatelessWidget {
                 if (box == null) return;
                 final mw = box.size.width - 48;
                 final lp = d.localPosition;
-                for (int i = 0; i < _doctors.length; i++) {
-                  final p = _doctorPositions[i];
+                for (int i = 0; i < doctors.length; i++) {
+                  final p = _doctorPositions[i < _doctorPositions.length ? i : 0];
                   final cx = p.x * mw; final cy = p.y * 240 + (i == 4 ? 18 : 0);
                   if ((lp.dx - cx).abs() < 22 && (lp.dy - cy).abs() < 22) {
                     onMarker(i); return;
@@ -1210,7 +1300,7 @@ class _DoctorsTab extends StatelessWidget {
                 onMarker(-1);
               },
               child: CustomPaint(
-                painter: _MapPainter(dark: dark, marker: marker, indexes: idx),
+                painter: _MapPainter(dark: dark, marker: marker, indexes: idx, doctors: doctors),
                 child: Stack(children: [
                   Positioned(top: 12, left: 12,
                     child: Container(
@@ -1219,12 +1309,13 @@ class _DoctorsTab extends StatelessWidget {
                         color: (dark ? const Color(0xFF1A1A1A) : Colors.white).withOpacity(0.92),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: _T.border(dark))),
-                      child: Text(l10n.santeSpecialistsCount(_doctors.length),
+                      child: Text(l10n.santeSpecialistsCount(doctors.length),
                         style: GoogleFonts.inter(fontSize: 11, color: _T.t2(dark))))),
-                  if (marker != null && marker! >= 0 && marker! < _doctors.length)
-                    _MapPopup(doctor: _doctors[marker!], pos: _doctorPositions[marker!],
+                  if (marker != null && marker! >= 0 && marker! < doctors.length)
+                    _MapPopup(doctor: doctors[marker!],
+                      pos: _doctorPositions[marker! < _doctorPositions.length ? marker! : 0],
                       idx: marker!, dark: dark,
-                      onTap: () => onDoctor(_doctors[marker!])),
+                      onTap: () => onDoctor(doctors[marker!])),
                 ]),
               ),
             ),
@@ -1259,7 +1350,7 @@ class _DoctorsTab extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         ...idx.map((i) {
-          final doc = _doctors[i]; final sel = marker == i;
+          final doc = doctors[i]; final sel = marker == i;
           return Padding(
             padding: const EdgeInsets.only(bottom: 1),
             child: GestureDetector(
@@ -1303,8 +1394,8 @@ class _DoctorsTab extends StatelessWidget {
 }
 
 class _MapPainter extends CustomPainter {
-  final bool dark; final int? marker; final List<int> indexes;
-  _MapPainter({required this.dark, required this.marker, required this.indexes});
+  final bool dark; final int? marker; final List<int> indexes; final List<_Doctor> doctors;
+  _MapPainter({required this.dark, required this.marker, required this.indexes, required this.doctors});
 
   @override
   void paint(Canvas c, Size s) {
@@ -1324,11 +1415,11 @@ class _MapPainter extends CustomPainter {
     for (final p in pts.skip(1)) path.lineTo(p.$1*w, p.$2*h);
     path.close();
     c.drawPath(path, land); c.drawPath(path, border);
-    for (int i = 0; i < _doctors.length; i++) {
+    for (int i = 0; i < doctors.length && i < _doctorPositions.length; i++) {
       final p = _doctorPositions[i];
       final cx = p.x*w; final cy = p.y*h+(i==4?20:i==3?-18:0);
       final sel = marker==i; final filt = indexes.contains(i);
-      final col = _doctors[i].color;
+      final col = doctors[i].color;
       if (sel) c.drawCircle(Offset(cx,cy), 20, Paint()..color=col.withOpacity(0.15));
       c.drawCircle(Offset(cx,cy), sel?15:10, Paint()..color=col.withOpacity(filt?1:.2));
       c.drawCircle(Offset(cx,cy), sel?15:10, Paint()
@@ -1340,7 +1431,8 @@ class _MapPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_MapPainter old) =>
-    old.marker != marker || old.dark != dark || old.indexes.length != indexes.length;
+    old.marker != marker || old.dark != dark || old.indexes.length != indexes.length
+    || old.doctors.length != doctors.length;
 }
 
 class _MapPopup extends StatelessWidget {

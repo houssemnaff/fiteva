@@ -1,38 +1,38 @@
-workflows:
-  ios-unsigned:
-    name: Build iOS IPA (unsigned)
-    max_build_duration: 60
-    environment:
-      flutter: stable
-      xcode: latest
-    scripts:
-      - name: Flutter pub get
-        script: flutter pub get
+  workflows:
+    ios-unsigned:
+      name: Build iOS IPA (unsigned)
+      max_build_duration: 60
+      environment:
+        flutter: stable
+        xcode: latest
+      scripts:
+        - name: Flutter pub get
+          script: flutter pub get
 
-      - name: Build Flutter iOS (no codesign)
-        script: |
-          flutter build ios --release --no-codesign
+        - name: Build Flutter iOS (no codesign)
+          script: |
+            flutter build ios --release --no-codesign
 
-      - name: Create IPA from Flutter output
-        script: |
-          APP_PATH="build/ios/iphoneos/Runner.app"
+        - name: Create IPA from Flutter output
+          script: |
+            APP_PATH="build/ios/iphoneos/Runner.app"
 
-          echo "=== Checking Runner.app exists ==="
-          ls -la "$APP_PATH"
+            echo "=== Checking Runner.app exists ==="
+            ls -la "$APP_PATH"
 
-          echo "=== Validating Info.plist ==="
-          plutil -p "$APP_PATH/Info.plist"
+            echo "=== Validating Info.plist ==="
+            plutil -p "$APP_PATH/Info.plist"
 
-          echo "=== Converting Info.plist to binary ==="
-          plutil -convert binary1 "$APP_PATH/Info.plist"
+            echo "=== Converting Info.plist to binary ==="
+            plutil -convert binary1 "$APP_PATH/Info.plist"
 
-          echo "=== Creating IPA ==="
-          mkdir -p Payload
-          cp -r "$APP_PATH" Payload/Runner.app
-          zip -r app.ipa Payload
+            echo "=== Creating IPA ==="
+            mkdir -p Payload
+            cp -r "$APP_PATH" Payload/Runner.app
+            zip -r app.ipa Payload
 
-          echo "=== Done — IPA size ==="
-          ls -lh app.ipa
+            echo "=== Done — IPA size ==="
+            ls -lh app.ipa
 
-    artifacts:
-      - app.ipa
+      artifacts:
+        - app.ipa

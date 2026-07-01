@@ -8,6 +8,7 @@ import '../models/post_model.dart';
 import '../services/program_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgresChangeEvent;
 import '../services/supabase_config.dart';
+import 'user_profile_provider.dart';
 
 class AvatarNotifier extends Notifier<int> {
   @override
@@ -161,7 +162,7 @@ final postsProvider = Provider<List<PostModel>>((ref) {
   ];
 });
 
-// ─── Cycle (mock statique) ────────────────────────────────────────────────────
+// ─── Cycle (calculé depuis le profil Supabase) ────────────────────────────────
 class CycleStatus {
   final String name;
   final int dayOfCycle;
@@ -170,9 +171,36 @@ class CycleStatus {
 }
 
 final cycleProvider = Provider<CycleStatus>((ref) {
-  return CycleStatus(
-    name: 'Follicular',
-    dayOfCycle: 8,
-    advice: 'High energy phase! Great time for HIIT and challenging workouts.',
-  );
+  final profile = ref.watch(userProfileProvider);
+  final today = DateTime.now();
+
+  // Calcule le jour du cycle depuis lastPeriod (déjà en Supabase)
+  final last = profile.lastPeriod;
+  final totalDays = profile.cycleDays;
+  final int currentDay;
+  if (last == null) {
+    currentDay = 1;
+  } else {
+    final raw = today.difference(last).inDays % totalDays + 1;
+    currentDay = raw.clamp(1, totalDays);
+  }
+
+  // Phase + conseil selon le jour
+  final String name;
+  final String advice;
+  if (currentDay <= 5) {
+    name = 'Règles';
+    advice = 'Corps au repos · Privilégie la récupération et les mouvements doux.';
+  } else if (currentDay <= 13) {
+    name = 'Folliculaire';
+    advice = 'Énergie en hausse · Idéal pour les entraînements intensifs et nouveaux défis.';
+  } else if (currentDay <= 16) {
+    name = 'Ovulation';
+    advice = 'Pic d\'énergie · Excellente période pour le HIIT et les performances maximales.';
+  } else {
+    name = 'Lutéale';
+    advice = 'Corps se prépare · Écoute tes besoins, privilégie le yoga et la mobilité.';
+  }
+
+  return CycleStatus(name: name, dayOfCycle: currentDay, advice: advice);
 });
