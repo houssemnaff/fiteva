@@ -521,7 +521,7 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
 
   // Lit les programmes réels depuis Supabase, fallback statique si vide
   List<ChatProgramCard> get _allPrograms {
-    final all = ref.read(_allProgramsFutureProvider).valueOrNull ?? [];
+    final all = ref.read(allProgramsProvider);
     if (all.isEmpty) return _fallbackPrograms;
     return all.map(_programFromModel).toList();
   }

@@ -4,6 +4,7 @@ import 'package:fiteva/core/nutrition/models.dart';
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/lang.dart';
@@ -132,15 +133,15 @@ class _BasketItem {
 // ════════════════════════════════════════════════════════════════════════════
 //  SCREEN
 // ════════════════════════════════════════════════════════════════════════════
-class AjoutRapideScreen extends StatefulWidget {
+class AjoutRapideScreen extends ConsumerStatefulWidget {
   final String? initialTypeId;
   const AjoutRapideScreen({super.key, this.initialTypeId});
 
   @override
-  State<AjoutRapideScreen> createState() => _AjoutRapideScreenState();
+  ConsumerState<AjoutRapideScreen> createState() => _AjoutRapideScreenState();
 }
 
-class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
+class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   // 0 = Recherche, 1 = Manuel, 2 = Scanner
   int _mode = 0;
 
@@ -353,9 +354,6 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
     final nc     = NutritionColors.of(context);
-    final allFoods = ref.watch(foodItemsProvider).asData?.value ?? FoodDatabase.all;
-    final results  = _searchResults(allFoods);
-
     final l10n = AppL10n(Lang.code);
     return Scaffold(
       backgroundColor: nc.bg,
@@ -541,6 +539,8 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
   Widget _buildSearch() {
     if (_selectedFood != null) return _buildFoodDetail(_selectedFood!);
     final nc = NutritionColors.of(context);
+    final allFoods = ref.watch(foodItemsProvider).asData?.value ?? FoodDatabase.all;
+    final results  = _searchResults(allFoods);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 

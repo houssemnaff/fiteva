@@ -51,6 +51,15 @@ final _allProgramsFutureProvider = StreamProvider.autoDispose<List<HomeProgramMo
   return controller.stream;
 });
 
+// ─── Tous les programmes (accès public pour d'autres providers) ──────────────
+
+final allProgramsProvider = Provider.autoDispose<List<HomeProgramModel>>((ref) {
+  return ref.watch(_allProgramsFutureProvider).maybeWhen(
+    data: (all) => all,
+    orElse: () => [],
+  );
+});
+
 // ─── Providers par catégorie (autoDispose suit le parent) ────────────────────
 
 final homeProgramsProvider = Provider.autoDispose<List<HomeProgramModel>>((ref) {

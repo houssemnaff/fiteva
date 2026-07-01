@@ -7,6 +7,22 @@ import 'supabase_config.dart';
 /// Service communauté — posts, likes, commentaires, événements, partenaires
 /// Source de vérité : Supabase (tables posts, post_likes, post_comments,
 ///   community_events, event_participants, training_partners)
+class CommunityComment {
+  final String id;
+  final String text;
+  final String author;
+  final DateTime createdAt;
+  final String userId;
+
+  const CommunityComment({
+    required this.id,
+    required this.text,
+    required this.author,
+    required this.createdAt,
+    required this.userId,
+  });
+}
+
 class CommunityService {
   static String? get _uid => SupabaseConfig.userId;
 
@@ -171,28 +187,85 @@ class CommunityService {
 
   // ── Commentaires ──────────────────────────────────────────────────────────
 
-  static Future<List<String>> loadComments(String postId) async {
+  static Future<List<CommunityComment>> loadComments(String postId) async {
     try {
       final rows = await SupabaseConfig.table('post_comments')
-          .select('content')
+          .select('id, content, user_id, created_at')
           .eq('post_id', postId)
-          .order('created_at');
-      return (rows as List).map((r) => r['content'] as String).toList();
+          .order('created_at', ascending: true) as List;
+
+      if (rows.isEmpty) return [];
+
+      final userIds = rows
+          .map((r) => (r['user_id'] as String? ?? '').trim())
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList();
+
+      final profileRows = userIds.isEmpty
+          ? <Map<String, dynamic>>[]
+          : await SupabaseConfig.table('user_profiles')
+              .select('id, username')
+              .inFilter('id', userIds) as List;
+
+      final usernameMap = <String, String>{
+        for (final p in profileRows)
+          p['id'] as String: (p['username'] as String? ?? '').trim(),
+      };
+
+      return rows.map((r) {
+        final userId = (r['user_id'] as String? ?? '').trim();
+        final createdAt = DateTime.tryParse((r['created_at'] as String? ?? '')) ?? DateTime.now();
+        final username = usernameMap[userId] ?? (userId == _uid ? 'Vous' : 'User');
+        return CommunityComment(
+          id: r['id'] as String? ?? '',
+          text: r['content'] as String? ?? '',
+          author: username.isNotEmpty ? username : 'User',
+          createdAt: createdAt,
+          userId: userId,
+        );
+      }).toList();
     } catch (_) {
       return [];
     }
   }
 
-  static Future<void> addComment(String postId, String text) async {
-    if (_uid == null) return;
+  static Future<CommunityComment?> addComment(String postId, String text) async {
+    if (_uid == null) return null;
     try {
-      await SupabaseConfig.table('post_comments').insert({
+      final createdAt = DateTime.now();
+      final row = await SupabaseConfig.table('post_comments').insert({
         'post_id':    postId,
         'user_id':    _uid,
         'content':    text,
-        'created_at': DateTime.now().toIso8601String(),
-      });
-    } catch (_) {}
+        'created_at': createdAt.toIso8601String(),
+      }).select('id, content, user_id, created_at').single();
+
+      final username = await _currentUsername();
+      return CommunityComment(
+        id: row['id'] as String? ?? '',
+        text: row['content'] as String? ?? text,
+        author: username.isNotEmpty ? username : 'Vous',
+        createdAt: DateTime.tryParse((row['created_at'] as String? ?? '')) ?? createdAt,
+        userId: _uid!,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<String> _currentUsername() async {
+    if (_uid == null) return 'Vous';
+    try {
+      final rows = await SupabaseConfig.table('user_profiles')
+          .select('username')
+          .eq('id', _uid!)
+          .limit(1) as List;
+      final username = rows.isNotEmpty ? (rows.first['username'] as String? ?? '').trim() : '';
+      return username.isNotEmpty ? username : 'Vous';
+    } catch (_) {
+      return 'Vous';
+    }
   }
 
   // ────────────────────────────────────────────────────────────────────────────

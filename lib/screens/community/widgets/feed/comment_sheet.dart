@@ -18,7 +18,7 @@ class CommentSheet extends ConsumerStatefulWidget {
   ConsumerState<CommentSheet> createState() => _CommentSheetState();
 }
 
-typedef _Comment = ({String text, String author});
+typedef _Comment = ({String text, String author, DateTime createdAt});
 
 class _CommentSheetState extends ConsumerState<CommentSheet> {
   final _ctrl  = TextEditingController();
@@ -44,7 +44,11 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
     setState(() => _loading = true);
     final list = await CommunityService.loadComments(widget.postId);
     if (mounted) setState(() {
-      _comments = list.map<_Comment>((t) => (text: t, author: widget.postAuthor)).toList();
+      _comments = list.map<_Comment>((comment) => (
+        text: comment.text,
+        author: comment.author,
+        createdAt: comment.createdAt,
+      )).toList();
       _loading = false;
     });
   }
@@ -54,12 +58,19 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
     if (text.isEmpty) return;
     HapticFeedback.lightImpact();
     setState(() => _sending = true);
-    await CommunityService.addComment(widget.postId, text);
+    final createdComment = await CommunityService.addComment(widget.postId, text);
     await ref.read(postsNotifierProvider.notifier).incrementComments(widget.postId);
     _ctrl.clear();
     if (mounted) {
       setState(() {
-        _comments = [..._comments, (text: text, author: 'Moi')];
+        _comments = [
+          ..._comments,
+          (
+            text: createdComment?.text ?? text,
+            author: createdComment?.author ?? 'Vous',
+            createdAt: createdComment?.createdAt ?? DateTime.now(),
+          ),
+        ];
         _sending = false;
       });
     }
@@ -132,6 +143,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                         itemBuilder: (_, i) => _CommentRow(
                           text: _comments[i].text,
                           author: _comments[i].author,
+                          createdAt: _comments[i].createdAt,
                           colorScheme: cs,
                         ),
                       ),
@@ -198,8 +210,18 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
 class _CommentRow extends StatelessWidget {
   final String text;
   final String author;
+  final DateTime createdAt;
   final ColorScheme colorScheme;
-  const _CommentRow({required this.text, required this.author, required this.colorScheme});
+  const _CommentRow({required this.text, required this.author, required this.createdAt, required this.colorScheme});
+
+  String _timeAgo(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inMinutes < 1) return 'à l\'instant';
+    if (diff.inHours < 1) return 'il y a ${diff.inMinutes} min';
+    if (diff.inDays < 1) return 'il y a ${diff.inHours}h';
+    if (diff.inDays < 7) return 'il y a ${diff.inDays}j';
+    return '${date.day}/${date.month}/${date.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -218,9 +240,20 @@ class _CommentRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(author,
-                style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w700, color: colorScheme.onSurface)),
+              Row(
+                children: [
+                  Text(author,
+                    style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w700, color: colorScheme.onSurface)),
+                  const SizedBox(width: 6),
+                  Text('•', style: GoogleFonts.inter(
+                    fontSize: 11, color: colorScheme.onSurface.withValues(alpha: 0.55))),
+                  const SizedBox(width: 6),
+                  Text(_timeAgo(createdAt),
+                    style: GoogleFonts.inter(
+                      fontSize: 11, color: colorScheme.onSurface.withValues(alpha: 0.65))),
+                ],
+              ),
               const SizedBox(height: 3),
               Text(text,
                 style: GoogleFonts.inter(
