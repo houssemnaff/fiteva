@@ -80,7 +80,6 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
   @override
   Widget build(BuildContext context) {
     final p = widget.program;
-    final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final l10n = ref.watch(l10nProvider);
     final isFav = ref.watch(favoritesProvider).contains(p.name);
@@ -98,6 +97,9 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
                 anim: _enterAnim,
                 l10n: l10n,
                 onBack: () => Navigator.pop(context),
+                onShare: () => _share(context, p),
+                onBookmark: () => _toggleBookmark(context, p),
+                isFav: isFav,
               ),
               _TabBarSliver(
                   current: _tab, l10n: l10n, onTab: (i) => setState(() => _tab = i)),
@@ -154,6 +156,9 @@ class _HeroSliver extends StatelessWidget {
   final AnimationController anim;
   final AppL10n l10n;
   final VoidCallback onBack;
+  final VoidCallback onShare;
+  final VoidCallback onBookmark;
+  final bool isFav;
 
   const _HeroSliver({
     required this.program,
@@ -161,6 +166,9 @@ class _HeroSliver extends StatelessWidget {
     required this.anim,
     required this.l10n,
     required this.onBack,
+    required this.onShare,
+    required this.onBookmark,
+    required this.isFav,
   });
 
   @override
@@ -175,7 +183,8 @@ class _HeroSliver extends StatelessWidget {
       flexibleSpace: FlexibleSpaceBar(
         stretchModes: const [StretchMode.zoomBackground],
         background: _HeroBg(
-            program: program, isCompleted: isCompleted, l10n: l10n, onBack: onBack),
+            program: program, isCompleted: isCompleted, l10n: l10n, onBack: onBack,
+            onShare: onShare, onBookmark: onBookmark, isFav: isFav),
       ),
       // collapsed top bar
       title: FadeTransition(
@@ -199,11 +208,17 @@ class _HeroBg extends StatelessWidget {
   final bool isCompleted;
   final AppL10n l10n;
   final VoidCallback onBack;
+  final VoidCallback onShare;
+  final VoidCallback onBookmark;
+  final bool isFav;
   const _HeroBg(
       {required this.program,
       required this.isCompleted,
       required this.l10n,
-      required this.onBack});
+      required this.onBack,
+      required this.onShare,
+      required this.onBookmark,
+      required this.isFav});
 
   @override
   Widget build(BuildContext context) {
@@ -248,11 +263,11 @@ class _HeroBg extends StatelessWidget {
               child: Row(children: [
               //  _CircleBtn(icon: LucideIcons.arrowLeft, onTap: onBack),
                 const Spacer(),
-                _CircleBtn(icon: LucideIcons.share2, onTap: () => _share(context, p)),
+                _CircleBtn(icon: LucideIcons.share2, onTap: onShare),
                 const SizedBox(width: 10),
                 _CircleBtn(
                   icon: isFav ? LucideIcons.bookmarkCheck : LucideIcons.bookmark,
-                  onTap: () => _toggleBookmark(context, p),
+                  onTap: onBookmark,
                 ),
               ]),
             ),

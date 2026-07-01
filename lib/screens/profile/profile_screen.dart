@@ -1,5 +1,6 @@
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/xp_provider.dart';
+import 'package:fiteva/services/auth_service.dart';
 import 'package:fiteva/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -353,8 +354,84 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
 
+          // ── Déconnexion ──────────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: GestureDetector(
+                onTap: () => _confirmSignOut(context, ref),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? const Color(0xFF1E0A0A)
+                        : const Color(0xFFFFF0F0),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFE53935).withValues(alpha: 0.30),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(LucideIcons.logOut,
+                          color: Color(0xFFE53935), size: 18),
+                      SizedBox(width: 10),
+                      Text(
+                        'Se déconnecter',
+                        style: TextStyle(
+                          color: Color(0xFFE53935),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
           // ── Bottom padding ───────────────────────────────────────────────
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        ],
+      ),
+    );
+  }
+
+  void _confirmSignOut(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: cs.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Se déconnecter ?',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        ),
+        content: Text(
+          'Tu devras te reconnecter pour accéder à ton compte.',
+          style: TextStyle(fontSize: 14, color: cs.onSurface.withValues(alpha: 0.7)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Annuler',
+                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await AuthService.signOut();
+              if (context.mounted) context.go('/onboarding');
+            },
+            child: const Text('Déconnecter',
+                style: TextStyle(
+                    color: Color(0xFFE53935), fontWeight: FontWeight.w700)),
+          ),
         ],
       ),
     );
