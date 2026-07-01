@@ -1066,11 +1066,6 @@ class AppL10n {
   String get stepPts             => _fr ? '+50 pts'            : '+50 pts';
   String get stepObjectifAtteint => _fr ? 'Objectif atteint !' : 'Goal reached!';
 
-  // ── Missing keys (added retroactively) ────────────────────────────────────
-  String get santeSanteEyebrow => _fr ? 'SANTÉ'                         : 'HEALTH';
-  String get progCoachName     => _fr ? 'Coach Sarah'                   : 'Coach Sarah';
-  String get progCoachTitle    => _fr ? 'Expert Fitness & Nutrition'    : 'Fitness & Nutrition Expert';
-  String get progCoachRating   => '4.9  ·  1 200 élèves';
 
   // ── Profile screen ──────────────────────────────────────────────────────────
   String get profileTitle          => _fr ? 'Profil'                      : 'Profile';

@@ -18,10 +18,12 @@ class CommentSheet extends ConsumerStatefulWidget {
   ConsumerState<CommentSheet> createState() => _CommentSheetState();
 }
 
+typedef _Comment = ({String text, String author});
+
 class _CommentSheetState extends ConsumerState<CommentSheet> {
   final _ctrl  = TextEditingController();
   final _focus = FocusNode();
-  List<String> _comments = [];
+  List<_Comment> _comments = [];
   bool _loading = false;
   bool _sending = false;
 
@@ -41,7 +43,10 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
   Future<void> _loadComments() async {
     setState(() => _loading = true);
     final list = await CommunityService.loadComments(widget.postId);
-    if (mounted) setState(() { _comments = list; _loading = false; });
+    if (mounted) setState(() {
+      _comments = list.map<_Comment>((t) => (text: t, author: widget.postAuthor)).toList();
+      _loading = false;
+    });
   }
 
   Future<void> _send() async {
@@ -54,7 +59,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
     _ctrl.clear();
     if (mounted) {
       setState(() {
-        _comments = [..._comments, text];
+        _comments = [..._comments, (text: text, author: 'Moi')];
         _sending = false;
       });
     }
@@ -125,8 +130,8 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                         separatorBuilder: (_, __) =>
                             const SizedBox(height: 14),
                         itemBuilder: (_, i) => _CommentRow(
-                          text: _comments[i],
-                          author: i == 0 ? widget.postAuthor : 'Moi',
+                          text: _comments[i].text,
+                          author: _comments[i].author,
                           colorScheme: cs,
                         ),
                       ),
