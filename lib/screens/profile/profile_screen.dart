@@ -15,7 +15,9 @@ import '../../widgets/mascot_widget.dart';
 const _days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 final expandBadgesProvider  = StateProvider<bool>((ref) => false);
-final chatbotVisibilityProvider = StateProvider<bool>((ref) => true);
+final chatbotVisibilityProvider = StateProvider<bool>(
+  (ref) => StorageService.getChatbotVisible(),
+);
 
 // ─── ProfileScreen ──────────────────────────────────────────────────────────
 class ProfileScreen extends ConsumerWidget {
@@ -320,7 +322,11 @@ class ProfileScreen extends ConsumerWidget {
                 trailing: Consumer(builder: (_, ref2, __) {
                   final visible = ref2.watch(chatbotVisibilityProvider);
                   return GestureDetector(
-                    onTap: () => ref2.read(chatbotVisibilityProvider.notifier).state = !visible,
+                    onTap: () {
+                      final next = !visible;
+                      ref2.read(chatbotVisibilityProvider.notifier).state = next;
+                      StorageService.setChatbotVisible(next);
+                    },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       width: 42, height: 24,
@@ -528,13 +534,40 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
   Future<void> _save() async {
     if (_saving) return;
+    final name   = _nameCtrl.text.trim();
+    final height = int.tryParse(_heightCtrl.text);
+    final weight = double.tryParse(_weightCtrl.text);
+    final age    = int.tryParse(_ageCtrl.text);
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Le nom ne peut pas être vide.')));
+      return;
+    }
+    if (height != null && (height < 100 || height > 250)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La taille doit être entre 100 et 250 cm.')));
+      return;
+    }
+    if (weight != null && (weight < 30 || weight > 300)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Le poids doit être entre 30 et 300 kg.')));
+      return;
+    }
+    if (age != null && (age < 13 || age > 100)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('L\'âge doit être entre 13 et 100 ans.')));
+      return;
+    }
+
     setState(() => _saving = true);
     final notifier = widget.ref.read(userProfileProvider.notifier);
-    await notifier.updateField('username', _nameCtrl.text.trim());
+    await notifier.updateField('username', name);
     await notifier.updateField('email', _emailCtrl.text.trim());
-    await notifier.updateField('height_cm', int.tryParse(_heightCtrl.text) ?? widget.profile.heightCm);
-    await notifier.updateField('weight_kg', double.tryParse(_weightCtrl.text) ?? widget.profile.weightKg);
-    await notifier.updateField('age', int.tryParse(_ageCtrl.text) ?? widget.profile.age);
+    await notifier.updateField('height_cm', height ?? widget.profile.heightCm);
+    await notifier.updateField('weight_kg', weight ?? widget.profile.weightKg);
+    await notifier.updateField('age', age ?? widget.profile.age);
+    widget.ref.read(xpProvider.notifier).rewardProfileCompleted();
     if (mounted) Navigator.pop(context);
   }
 

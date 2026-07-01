@@ -42,10 +42,6 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
   late AnimationController _ctrl;
   late Animation<double>   _anim;
 
-  // Fix #4 — sync with allRecipes (take first 4)
-  static List<RecipeItem> get _recipes => allRecipes.take(4).map((r) =>
-    RecipeItem(r.imageUrl, r.name, r.name, r.accent,
-      duration: r.duration, difficulty: r.difficulty)).toList();
 
   @override
   void initState() {
@@ -122,7 +118,10 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
     }).toList();
 
     final hasAnyMeal = totals.calories > 0;
-    final recipes    = _recipes;
+    final dbRecipes  = ref.watch(imageRecipesProvider).asData?.value ?? allRecipes;
+    final recipes    = dbRecipes.take(4).map((r) => RecipeItem(
+      r.imageUrl, r.name, r.name, r.accent,
+      duration: r.duration, difficulty: r.difficulty)).toList();
     final nc         = NutritionColors.of(context);
 
     return Scaffold(

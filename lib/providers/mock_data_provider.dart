@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/home_program_model.dart';
 import '../models/user_model.dart';
 import '../models/workout_model.dart';
-import '../models/nutrition_model.dart';
-import '../models/post_model.dart';
+
 import '../services/program_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgresChangeEvent;
 import '../services/supabase_config.dart';
@@ -102,65 +101,46 @@ final workoutsProvider = Provider.autoDispose<List<WorkoutModel>>((ref) {
   );
 });
 
-// ─── Body Zones (mock statique) ───────────────────────────────────────────────
-final bodyZonesProvider = Provider<List<Map<String, dynamic>>>((ref) {
-  return [
-    {
-      'title': 'Abdos Express',
-      'imageUrl': 'assets/images/strength.jpg',
-      'exercises': ['Crunch basique', 'Planche dynamique', 'Russian Twists', 'Levé de jambes'],
-    },
-    {
-      'title': 'Bas du corps',
-      'imageUrl': 'assets/images/legs.jpg',
-      'exercises': ['Squats', 'Fentes arrières', 'Glute Bridges', 'Soulevé de terre roumain'],
-    },
-    {
-      'title': 'Full body HIIT',
-      'imageUrl': 'assets/images/fullbody.jpg',
-      'exercises': ['Burpees', 'Jumping Jacks', 'Mountain Climbers', 'High Knees'],
-    },
-    {
-      'title': 'Haut du corps',
-      'imageUrl': 'assets/images/upperbody.jpg',
-      'exercises': ['Pompes', 'Dips triceps', 'Planche commando', 'Superman'],
-    },
-  ];
+// ─── Body Zones ───────────────────────────────────────────────────────────────
+const _mockBodyZones = <Map<String, dynamic>>[
+  {
+    'title': 'Abdos Express',
+    'imageUrl': 'assets/images/strength.jpg',
+    'exercises': ['Crunch basique', 'Planche dynamique', 'Russian Twists', 'Levé de jambes'],
+  },
+  {
+    'title': 'Bas du corps',
+    'imageUrl': 'assets/images/legs.jpg',
+    'exercises': ['Squats', 'Fentes arrières', 'Glute Bridges', 'Soulevé de terre roumain'],
+  },
+  {
+    'title': 'Full body HIIT',
+    'imageUrl': 'assets/images/fullbody.jpg',
+    'exercises': ['Burpees', 'Jumping Jacks', 'Mountain Climbers', 'High Knees'],
+  },
+  {
+    'title': 'Haut du corps',
+    'imageUrl': 'assets/images/upperbody.jpg',
+    'exercises': ['Pompes', 'Dips triceps', 'Planche commando', 'Superman'],
+  },
+];
+
+final bodyZonesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  try {
+    final rows = await SupabaseConfig.table('body_zones')
+        .select()
+        .order('sort_order', ascending: true) as List;
+    if (rows.isEmpty) return _mockBodyZones;
+    return rows.cast<Map<String, dynamic>>().map((r) => <String, dynamic>{
+      'title':     r['title'] as String? ?? '',
+      'imageUrl':  r['image_url'] as String? ?? '',
+      'exercises': List<String>.from(r['exercises'] as List? ?? []),
+    }).toList();
+  } catch (_) {
+    return _mockBodyZones;
+  }
 });
 
-// ─── Nutrition (mock statique) ────────────────────────────────────────────────
-final nutritionProvider = Provider<NutritionSummary>((ref) {
-  return NutritionSummary(
-    currentCalories: 1450,
-    targetCalories: 2000,
-    carbs: 180,
-    protein: 120,
-    fat: 45,
-    meals: [
-      MealModel(id: 'm1', name: 'Oatmeal & Berries', calories: 350, type: 'breakfast', time: '08:00 AM'),
-      MealModel(id: 'm2', name: 'Chicken Salad', calories: 450, type: 'lunch', time: '01:00 PM'),
-      MealModel(id: 'm3', name: 'Protein Shake', calories: 200, type: 'snack', time: '04:00 PM'),
-      MealModel(id: 'm4', name: 'Salmon & Quinoa', calories: 450, type: 'dinner', time: '07:30 PM'),
-    ],
-  );
-});
-
-// ─── Community Posts (mock statique — remplacé progressivement par Supabase) ─
-final postsProvider = Provider<List<PostModel>>((ref) {
-  return [
-    PostModel(
-      id: 'p_text_1',
-      username: 'Nora Fit',
-      userAvatarUrl: 'https://i.pravatar.cc/150?img=33',
-      content: 'Small win today: I finished my workout even with low motivation.',
-      imageUrl: '',
-      likes: 63,
-      comments: 11,
-      timeAgo: '1h ago',
-      category: 'Workout',
-    ),
-  ];
-});
 
 // ─── Cycle (calculé depuis le profil Supabase) ────────────────────────────────
 class CycleStatus {

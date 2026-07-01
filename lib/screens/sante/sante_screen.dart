@@ -10,6 +10,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/sante_service.dart';
+import '../../providers/xp_provider.dart';
+import '../../widgets/xp_toast.dart';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 
@@ -425,7 +427,11 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
               onLike: (i) => setState(() { if (_liked.contains(i)) _liked.remove(i); else _liked.add(i); }),
               onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark, l10n: l10n))),
             _RessourcesTab(dark: dark, lex: _lex, l10n: l10n, articles: articles,
-              onLex: (s) => setState(() => _lex = s)),
+              onLex: (s) => setState(() => _lex = s),
+              onArticleTap: () {
+                ref.read(xpProvider.notifier).rewardHealthTipRead();
+                XpToast.show(context, XpAmounts.healthTipRead, label: 'Article lu !');
+              }),
             _QRTab(dark: dark, l10n: l10n, questions: questions),
             _DoctorsTab(
               dark: dark, spec: _spec, marker: _marker, l10n: l10n,
@@ -720,8 +726,9 @@ class _RessourcesTab extends StatelessWidget {
   final AppL10n l10n;
   final List<_Article> articles;
   final ValueChanged<String> onLex;
+  final VoidCallback? onArticleTap;
   const _RessourcesTab({required this.dark, required this.lex, required this.l10n,
-    required this.articles, required this.onLex});
+    required this.articles, required this.onLex, this.onArticleTap});
 
   List<_LexiqueEntry> get _lexFiltered {
     if (lex.isEmpty) return _lexique;
@@ -773,7 +780,10 @@ class _RessourcesTab extends StatelessWidget {
             children: articles.asMap().entries.map((e) =>
               Padding(
                 padding: EdgeInsets.only(bottom: e.key < articles.length - 1 ? 10 : 0),
-                child: _ArticleCard(article: e.value, dark: dark),
+                child: GestureDetector(
+                  onTap: onArticleTap,
+                  child: _ArticleCard(article: e.value, dark: dark),
+                ),
               )
             ).toList(),
           ),
@@ -1158,13 +1168,29 @@ class _QRTabState extends ConsumerState<_QRTab> {
                       Text(l10n.santeAnonPost, style: GoogleFonts.inter(
                         fontSize: 12, color: _T.t3(dark))),
                       const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                        decoration: BoxDecoration(
-                          color: _T.t1(dark), borderRadius: BorderRadius.circular(10)),
-                        child: Text(l10n.santeSendBtn, style: GoogleFonts.inter(
-                          fontSize: 13, fontWeight: FontWeight.w600,
-                          color: _T.card(dark)))),
+                      GestureDetector(
+                        onTap: () async {
+                          final text = _ctrl.text.trim();
+                          if (text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Veuillez écrire votre question.')));
+                            return;
+                          }
+                          await SanteService.submitQuestion(text);
+                          _ctrl.clear();
+                          setState(() => _open = false);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Question envoyée !')));
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: _T.t1(dark), borderRadius: BorderRadius.circular(10)),
+                          child: Text(l10n.santeSendBtn, style: GoogleFonts.inter(
+                            fontSize: 13, fontWeight: FontWeight.w600,
+                            color: _T.card(dark))))),
                     ]),
                   ])
                 : Row(children: [

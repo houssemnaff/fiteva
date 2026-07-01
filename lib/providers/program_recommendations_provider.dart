@@ -1,49 +1,33 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fiteva/providers/mock_data_provider.dart';
+import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/services/storage_service.dart';
 
 final programRecommendationsProvider = Provider<List<dynamic>>((ref) {
-  // Get onboarding data
-  final onboardingData = StorageService.getOnboardingData();
-
-  debugPrint('=== ONBOARDING DATA ===');
-  debugPrint(onboardingData.toString());
-
+  final onboardingData   = StorageService.getOnboardingData();
   final trainingLocation = onboardingData['training_location'] as String? ?? 'salle';
-  final fitnessLevel = onboardingData['fitness_level'] as String?;
-  final equipment = List<String>.from(onboardingData['equipment'] ?? []);
+  final profile          = ref.watch(userProfileProvider);
+  final healthStatus     = profile.healthStatus;
 
-  debugPrint('trainingLocation: $trainingLocation');
-  debugPrint('fitnessLevel: $fitnessLevel');
-  debugPrint('equipment: $equipment');
+  // Grossesse → programmes grossesse + récupération uniquement
+  if (healthStatus == 'pregnant') {
+    return ref.watch(grossesseProgramsProvider).take(6).toList();
+  }
 
-  // Get programs based on training location
-  List<dynamic> programs = [];
+  // Postpartum → récupération + maison
+  if (healthStatus == 'postpartum') {
+    final recup = ref.watch(recuperationProgramsProvider);
+    final home  = ref.watch(homeProgramsProvider);
+    return [...recup, ...home].take(6).toList();
+  }
 
-  // Check for 'maison', 'gym', 'salle', or any home-related location
+  // Cycle normal → filtre par lieu d'entraînement
   final isHome = trainingLocation.toLowerCase().contains('maison') ||
                  trainingLocation.toLowerCase().contains('home') ||
                  trainingLocation.toLowerCase().contains('house');
 
   if (isHome) {
-    final homePrograms = ref.watch(homeProgramsProvider);
-    debugPrint('Home programs count: ${homePrograms.length}');
-    programs.addAll(homePrograms);
-  } else {
-    final sallePrograms = ref.watch(salleProgramsProvider);
-    debugPrint('Salle programs count: ${sallePrograms.length}');
-    programs.addAll(sallePrograms);
+    return ref.watch(homeProgramsProvider).take(6).toList();
   }
-
-  // Limit to top 6 recommendations
-  final recommendations = programs.take(6).toList();
-
-  debugPrint('=== RECOMMENDATIONS ===');
-  debugPrint('Recommendations length: ${recommendations.length}');
-  for (final program in recommendations) {
-    debugPrint('Program: ${program.name}');
-  }
-
-  return recommendations;
+  return ref.watch(salleProgramsProvider).take(6).toList();
 });

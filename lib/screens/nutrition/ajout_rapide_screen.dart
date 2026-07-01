@@ -162,11 +162,11 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
   final _amountCtrl = TextEditingController(text: '100');
   FoodCategory? _activeCategory;
 
-  List<FoodItem> get _searchResults {
+  List<FoodItem> _searchResults(List<FoodItem> allFoods) {
     if (_selectedFood != null) return [];
-    if (_searchQuery.isNotEmpty) return FoodDatabase.search(_searchQuery);
-    if (_activeCategory != null) return FoodDatabase.byCategory(_activeCategory!);
-    return FoodDatabase.popular;
+    if (_searchQuery.isNotEmpty) return FoodDatabase.searchIn(allFoods, _searchQuery);
+    if (_activeCategory != null) return FoodDatabase.byCategoryIn(allFoods, _activeCategory!);
+    return FoodDatabase.popularIn(allFoods);
   }
 
   // ── Scanner mode ─────────────────────────────────────────────────────────
@@ -271,14 +271,30 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
     if ((_mode == 0 || _mode == 2) && _selectedFood != null) {
       food  = _selectedFood!;
       grams = _selectedGrams;
+      if (grams <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('La quantité doit être supérieure à 0.')));
+        return;
+      }
     } else {
+      final name    = _nameCtrl.text.trim();
       final kcal    = double.tryParse(_calCtrl.text) ?? 0;
       final protein = double.tryParse(_protCtrl.text) ?? 0;
       final carbs   = double.tryParse(_glucCtrl.text) ?? 0;
       final fat     = double.tryParse(_lipCtrl.text) ?? 0;
+      if (name.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Le nom de l\'aliment est requis.')));
+        return;
+      }
+      if (kcal < 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Les calories ne peuvent pas être négatives.')));
+        return;
+      }
       food = FoodItem(
         id:       'manual_${DateTime.now().millisecondsSinceEpoch}',
-        name:     _nameCtrl.text.trim(),
+        name:     name,
         category: FoodCategory.platCompose,
         kcal: kcal, protein: protein, carbs: carbs, fat: fat,
         defaultGrams: 100,
@@ -337,6 +353,8 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
     final nc     = NutritionColors.of(context);
+    final allFoods = ref.watch(foodItemsProvider).asData?.value ?? FoodDatabase.all;
+    final results  = _searchResults(allFoods);
 
     final l10n = AppL10n(Lang.code);
     return Scaffold(
@@ -633,7 +651,7 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
       // ── Section label ───────────────────────────────────────────────────────
       Text(
         _searchQuery.isNotEmpty
-            ? AppL10n(Lang.code).addMealResults(_searchResults.length)
+            ? AppL10n(Lang.code).addMealResults(results.length)
             : _activeCategory != null
                 ? _activeCategory!.label.toUpperCase()
                 : AppL10n(Lang.code).addMealPopular,
@@ -643,10 +661,10 @@ class _AjoutRapideScreenState extends State<AjoutRapideScreen> {
       const SizedBox(height: 8),
 
       // ── Food list (multi-select) ─────────────────────────────────────────────
-      if (_searchResults.isEmpty && _searchQuery.isNotEmpty)
+      if (results.isEmpty && _searchQuery.isNotEmpty)
         _EmptySearch(query: _searchQuery)
       else
-        Column(children: _searchResults.map((food) {
+        Column(children: results.map((food) {
           final basketIdx = _basket.indexWhere((b) => b.food.id == food.id);
           final isSelected = basketIdx != -1;
           final item = isSelected ? _basket[basketIdx] : null;

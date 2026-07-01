@@ -32,10 +32,10 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
   String _search = '';
   final _ctrl = TextEditingController();
 
-  List<RealRecipe> get _filtered {
-    if (_search.isEmpty) return allRecipes;
+  List<RealRecipe> _filtered(List<RealRecipe> recipes) {
+    if (_search.isEmpty) return recipes;
     final q = _search.toLowerCase();
-    return allRecipes.where((r) =>
+    return recipes.where((r) =>
       r.name.toLowerCase().contains(q) ||
       r.subtitle.toLowerCase().contains(q) ||
       r.tags.any((t) => t.toLowerCase().contains(q))).toList();
@@ -47,10 +47,11 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
   @override
   Widget build(BuildContext context) {
     final top       = MediaQuery.of(context).padding.top;
-    final filtered  = _filtered;
     final favorites = ref.watch(favoritesProvider);
     final nc        = NutritionColors.of(context);
     final l10n      = ref.watch(l10nProvider);
+    final recipes   = ref.watch(imageRecipesProvider).asData?.value ?? allRecipes;
+    final filtered  = _filtered(recipes);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: (nc.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
@@ -86,7 +87,7 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: _kMintBg, borderRadius: BorderRadius.circular(20)),
-                    child: Text(l10n.recettesCount(allRecipes.length), style: GoogleFonts.inter(
+                    child: Text(l10n.recettesCount(recipes.length), style: GoogleFonts.inter(
                       fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
                 ]),
               ),

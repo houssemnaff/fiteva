@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../pregnancy_colors.dart';
 import 'pregnancy_checklist_repository.dart';
+import 'package:fiteva/services/pregnancy_content_service.dart';
+import 'package:fiteva/services/cycle_log_service.dart';
+import 'package:fiteva/services/supabase_config.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
 
 extension _Pg on BuildContext {
@@ -41,22 +44,27 @@ class PregnancyChecklistScreen extends ConsumerStatefulWidget {
 
 class _PregnancyChecklistScreenState
     extends ConsumerState<PregnancyChecklistScreen> {
-  late final List<ChecklistTask> _tasks;
   final Set<String> _done = {};
-
-  int get _doneCount  => _done.length;
-  int get _total      => _tasks.length;
-  double get _progress => _total == 0 ? 0 : _doneCount / _total;
 
   @override
   void initState() {
     super.initState();
-    _tasks = PregnancyChecklistRepository.forWeek(widget.currentWeek);
+    _loadDone();
+  }
+
+  Future<void> _loadDone() async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    final saved = await CycleLogService.loadChecklistDone(uid);
+    if (!mounted) return;
+    setState(() => _done.addAll(saved));
   }
 
   void _toggle(String id) {
     HapticFeedback.lightImpact();
-    setState(() => _done.contains(id) ? _done.remove(id) : _done.add(id));
+    final nowDone = !_done.contains(id);
+    setState(() => nowDone ? _done.add(id) : _done.remove(id));
+    CycleLogService.setChecklistTask(id, nowDone);
   }
 
   @override
@@ -64,11 +72,16 @@ class _PregnancyChecklistScreenState
     final l10n   = ref.watch(l10nProvider);
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
+    final tasks  = ref.watch(pregnancyChecklistProvider(widget.currentWeek)).asData?.value
+        ?? PregnancyChecklistRepository.forWeek(widget.currentWeek);
+    final doneCount = _done.length;
+    final total     = tasks.length;
+    final progress  = total == 0 ? 0.0 : doneCount / total;
 
     // groupe par catégorie
-    final medical  = _tasks.where((t) => t.category == 'medical').toList();
-    final bienetre = _tasks.where((t) => t.category == 'bienetre').toList();
-    final pratique = _tasks.where((t) => t.category == 'pratique').toList();
+    final medical  = tasks.where((t) => t.category == 'medical').toList();
+    final bienetre = tasks.where((t) => t.category == 'bienetre').toList();
+    final pratique = tasks.where((t) => t.category == 'pratique').toList();
 
     return Scaffold(
       backgroundColor: context._p.bg,
@@ -80,9 +93,9 @@ class _PregnancyChecklistScreenState
           _Header(
             top: top,
             week: widget.currentWeek,
-            done: _doneCount,
-            total: _total,
-            progress: _progress,
+            done: doneCount,
+            total: total,
+            progress: progress,
             onBack: () => Navigator.maybePop(context),
             l10n: l10n,
           ),
@@ -121,7 +134,7 @@ class _PregnancyChecklistScreenState
             const SizedBox(height: 12),
           ],
 
-          if (_tasks.isEmpty) _EmptyState(week: widget.currentWeek, l10n: l10n),
+          if (tasks.isEmpty) _EmptyState(week: widget.currentWeek, l10n: l10n),
 
           // ── À VENIR ─────────────────────────────────────────────────
           _UpcomingSection(currentWeek: widget.currentWeek, l10n: l10n),

@@ -13,6 +13,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fiteva/screens/cycle/pregnancy/PregnancyHubScreen.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/calendar_screen.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart' hide CycleColors;
+import 'package:fiteva/services/cycle_log_service.dart';
+import 'package:fiteva/screens/cycle/widgets-cycle/mood_section.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  TYPOGRAPHY HELPERS (pass colors explicitly — theme-unaware by design)
@@ -136,6 +138,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
     with SingleTickerProviderStateMixin {
   late int _currentDay;
   final Set<FloSymptom> _logged = {};
+  int _moodIndex = -1; // -1 = non sélectionné
   final DateTime _today = DateTime.now();
   bool _switching = false;
 
@@ -159,6 +162,20 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
   void initState() {
     super.initState();
     _currentDay = _computeCurrentDay(ref.read(userProfileProvider));
+    _loadSymptoms();
+  }
+
+  Future<void> _loadSymptoms() async {
+    final saved = await CycleLogService.loadSymptoms(_today);
+    final mood  = await CycleLogService.loadMood(_today);
+    if (!mounted) return;
+    ref.read(xpProvider.notifier).rewardDailyCheckin();
+    ref.read(xpProvider.notifier).rewardCycleTracking();
+    setState(() {
+      _logged.addAll(saved.map((s) => FloSymptom.values.firstWhere(
+        (e) => e.name == s, orElse: () => FloSymptom.flow)));
+      if (mood != null) _moodIndex = mood;
+    });
   }
 
   @override
@@ -294,6 +311,18 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           _buildSectionLabel(l10n.cycleHowDoYouFeel, theme.primary),
           const SizedBox(height: 14),
           _buildChips(cc, theme, l10n),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: MoodSection(
+              selectedMood: _moodIndex,
+              phaseColor: theme.primary,
+              onSelect: (i) {
+                setState(() => _moodIndex = i);
+                CycleLogService.saveMood(_today, i);
+              },
+            ),
+          ),
 
           const SizedBox(height: 28),
           _PhaseCard(phase: phase, theme: theme, cc: cc, l10n: l10n),
@@ -482,9 +511,16 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
             setState(() {
               wasLogged ? _logged.remove(s) : _logged.add(s);
             });
+            CycleLogService.saveSymptoms(
+              _today,
+              _logged.map((e) => e.name).toSet(),
+            );
             if (!wasLogged) {
               ref.read(xpProvider.notifier).rewardSymptomAdded();
               XpToast.show(context, XpAmounts.symptomAdded, label: 'Symptôme noté !');
+              if (s == FloSymptom.cramps) {
+                ref.read(xpProvider.notifier).rewardPainSymptom();
+              }
             }
           },
         )).toList(),

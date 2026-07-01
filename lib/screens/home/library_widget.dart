@@ -7,6 +7,7 @@ import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/core/nutrition/favorites_provider.dart' as nutrition;
 import 'package:fiteva/core/shop/shop_provider.dart' as shop_provider;
 import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
+import 'package:fiteva/screens/workout/programme_detail_screen.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
 
 class LibrarySection extends ConsumerStatefulWidget {
@@ -157,7 +158,6 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
   }
 
   Widget _buildWorkoutList(Set<String> favorites, List<dynamic> allWorkouts, List<dynamic> allPrograms, ColorScheme cs) {
-    // Filter workouts by ID
     final filteredWorkouts = allWorkouts
         .where((w) => favorites.contains(w.id))
         .map((w) => {
@@ -165,10 +165,10 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
           'title': w.title,
           'subtitle': '${w.duration} · ${w.level}',
           'image': w.imageUrl,
+          'kind': 'workout',
         })
         .toList();
 
-    // Filter programs by name
     final filteredPrograms = allPrograms
         .where((p) => favorites.contains(p.name))
         .map((p) => {
@@ -176,15 +176,31 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
           'title': p.name,
           'subtitle': '${p.duration} · ${p.sessions}',
           'image': p.imageUrl,
+          'kind': 'program',
         })
         .toList();
 
-    // Combine both
     final allItems = [...filteredWorkouts, ...filteredPrograms];
 
-    return _buildHorizontalList(allItems, type: _FavType.workout, cs: cs, onRemove: (id) async {
-      await ref.read(favoritesProvider.notifier).toggleFavorite(id);
-    });
+    return _buildHorizontalList(
+      allItems,
+      type: _FavType.workout,
+      cs: cs,
+      onRemove: (id) async => ref.read(favoritesProvider.notifier).toggleFavorite(id),
+      onItemTap: (item) {
+        if (item['kind'] == 'program') {
+          final prog = allPrograms.firstWhere(
+            (p) => p.name == item['id'],
+            orElse: () => null,
+          );
+          if (prog != null) {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => WorkoutDetailScreen(program: prog),
+            ));
+          }
+        }
+      },
+    );
   }
 
   Widget _buildRecipeList(Set<String> favorites, ColorScheme cs, AppL10n l10n) {
@@ -202,9 +218,13 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
         })
         .toList();
 
-    return _buildHorizontalList(filteredItems, type: _FavType.recipe, cs: cs, onRemove: (id) async {
-      ref.read(nutrition.favoritesProvider.notifier).toggle(id);
-    });
+    return _buildHorizontalList(
+      filteredItems,
+      type: _FavType.recipe,
+      cs: cs,
+      onRemove: (id) async => ref.read(nutrition.favoritesProvider.notifier).toggle(id),
+      onItemTap: (_) => Navigator.of(context).pushNamed('/nutrition'),
+    );
   }
 
   Widget _buildProductList(Set<String> wishlist, ColorScheme cs) {
@@ -221,9 +241,13 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
         })
         .toList();
 
-    return _buildHorizontalList(filteredItems, type: _FavType.product, cs: cs, onRemove: (id) async {
-      await ref.read(shop_provider.shopWishlistProvider.notifier).removeFromWishlist(id);
-    });
+    return _buildHorizontalList(
+      filteredItems,
+      type: _FavType.product,
+      cs: cs,
+      onRemove: (id) async => ref.read(shop_provider.shopWishlistProvider.notifier).removeFromWishlist(id),
+      onItemTap: (_) => Navigator.of(context).pushNamed('/boutique'),
+    );
   }
 
   Widget _buildEmptyState(ColorScheme cs) {
@@ -247,7 +271,7 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
     );
   }
 
-  Widget _buildHorizontalList(List<Map<String, dynamic>> items, {required _FavType type, required ColorScheme cs, required Function(String) onRemove}) {
+  Widget _buildHorizontalList(List<Map<String, dynamic>> items, {required _FavType type, required ColorScheme cs, required Function(String) onRemove, Function(Map<String, dynamic>)? onItemTap}) {
     if (items.isEmpty) {
       return _buildEmptyState(cs);
     }
@@ -267,7 +291,7 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
             subtitle: item['subtitle']! as String,
             imageAsset: item['image']! as String,
             type: type,
-            onTap: () {},
+            onTap: () => onItemTap?.call(item),
             onUnfav: () async => await onRemove(item['id']! as String),
             colorScheme: cs,
           );

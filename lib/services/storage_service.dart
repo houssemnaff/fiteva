@@ -117,6 +117,13 @@ class StorageService {
 
   static String? getString(String key) => _prefs.getString(key);
 
+  // ── Chatbot visibility ────────────────────────────────────────────────────
+
+  static bool getChatbotVisible() => _prefs.getBool('chatbot_visible') ?? true;
+
+  static Future<void> setChatbotVisible(bool v) =>
+      _prefs.setBool('chatbot_visible', v);
+
   // ── Reset local ───────────────────────────────────────────────────────────
 
   static Future<void> clearAll() => _prefs.clear();

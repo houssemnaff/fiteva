@@ -151,7 +151,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     final l10n      = ref.watch(l10nProvider);
     final workouts  = ref.watch(workoutsProvider);
     final cycle     = ref.watch(cycleProvider);
-    final bodyZones = ref.watch(bodyZonesProvider);
+    final bodyZones = ref.watch(bodyZonesProvider).asData?.value ?? const [];
     final sallePrograms       = ref.watch(salleProgramsProvider);
     final homePrograms        = ref.watch(homeProgramsProvider);
     final dancePrograms       = ref.watch(danceProgramsProvider);

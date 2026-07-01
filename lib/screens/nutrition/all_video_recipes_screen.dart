@@ -28,6 +28,7 @@ class AllVideoRecipesScreen extends ConsumerWidget {
     final top = MediaQuery.of(context).padding.top;
     final nc  = NutritionColors.of(context);
     final l10n = ref.watch(l10nProvider);
+    final dbVideos = ref.watch(videoRecipesProvider).asData?.value ?? videoRecipes;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: (nc.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
@@ -63,7 +64,7 @@ class AllVideoRecipesScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: nc.mintBg, borderRadius: BorderRadius.circular(20)),
-                    child: Text(l10n.recettesCount(videoRecipes.length), style: GoogleFonts.inter(
+                    child: Text(l10n.recettesCount(dbVideos.length), style: GoogleFonts.inter(
                       fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
                 ]),
               ),
@@ -75,17 +76,17 @@ class AllVideoRecipesScreen extends ConsumerWidget {
               sliver: SliverGrid(
                 delegate: SliverChildBuilderDelegate(
                   (ctx, i) => _VideoGridCard(
-                    recipe: videoRecipes[i],
-                    isFavorite: favorites.contains(videoRecipes[i].name),
+                    recipe: dbVideos[i],
+                    isFavorite: favorites.contains(dbVideos[i].name),
                     onToggleFavorite: () {
                       HapticFeedback.lightImpact();
-                      ref.read(favoritesProvider.notifier).toggle(videoRecipes[i].name);
+                      ref.read(favoritesProvider.notifier).toggle(dbVideos[i].name);
                     },
                     onTap: () => Navigator.push(ctx, MaterialPageRoute(
-                      builder: (_) => RecipeVideoPlayerScreen(recipe: videoRecipes[i]))),
+                      builder: (_) => RecipeVideoPlayerScreen(recipe: dbVideos[i]))),
                     l10n: l10n,
                   ),
-                  childCount: videoRecipes.length,
+                  childCount: dbVideos.length,
                 ),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,

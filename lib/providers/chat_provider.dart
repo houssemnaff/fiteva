@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'mock_data_provider.dart';
+import '../models/home_program_model.dart';
 
 // ── Program Card ──────────────────────────────────────────────────────────────
 
@@ -130,7 +132,8 @@ class ChatMessage {
 
 // ── Programs ──────────────────────────────────────────────────────────────────
 
-const _allPrograms = <ChatProgramCard>[
+// Fallback statique utilisé si Supabase n'a pas encore chargé
+const _fallbackPrograms = <ChatProgramCard>[
   ChatProgramCard(id: 'home_glow', name: 'Home Glow',
     duration: '4 semaines', sessions: '3 séances / sem.', phases: 'Foll. + Ovul.',
     category: 'MAISON', color: Color(0xFF3B7DD8), imageUrl: 'assets/images/fullbody.jpg',
@@ -157,6 +160,28 @@ const _allPrograms = <ChatProgramCard>[
     compatibleCycles: ['Règles', 'Folliculaire', 'Lutéale']),
 ];
 
+ChatProgramCard _programFromModel(HomeProgramModel p) {
+  final catLabel = switch (p.category) {
+    'home'         => 'MAISON',
+    'salle'        => 'SALLE',
+    'dance'        => 'DANSE',
+    'recuperation' => 'RÉCUP.',
+    'grossesse'    => 'GROSSESSE',
+    _              => p.category.toUpperCase(),
+  };
+  return ChatProgramCard(
+    id:               p.id,
+    name:             p.name,
+    duration:         p.duration,
+    sessions:         p.sessions,
+    phases:           p.phases,
+    category:         catLabel,
+    color:            p.color,
+    imageUrl:         p.imageUrl,
+    compatibleCycles: p.compatibleCycles,
+  );
+}
+
 // ── Workout Q&A ───────────────────────────────────────────────────────────────
 
 enum _WStep { type, duration, level, equipment, done }
@@ -173,8 +198,8 @@ class _ProgramData {
   String? goal, location, level, days, duration;
 }
 
-List<ChatProgramCard> _matchPrograms(_ProgramData d) {
-  return _allPrograms.where((p) {
+List<ChatProgramCard> _matchPrograms(_ProgramData d, List<ChatProgramCard> programs) {
+  return programs.where((p) {
     final locMatch = d.location == null ||
         (d.location == 'Maison' && (p.category == 'MAISON' || p.category == 'Pilates')) ||
         (d.location == 'Salle'  && p.category == 'SALLE') ||
@@ -266,7 +291,7 @@ class _Resp {
   const _Resp(this.text, {this.cards = const [], this.quickReplies = const [], this.workout});
 }
 
-_Resp _generateResponse(String msg, String? categoryId) {
+_Resp _generateResponse(String msg, String? categoryId, List<ChatProgramCard> programs) {
   final m   = msg.toLowerCase();
   final cat = categoryId ?? _guessCategory(m);
 
@@ -280,16 +305,16 @@ _Resp _generateResponse(String msg, String? categoryId) {
         );
       }
       if (m.contains('maison') || m.contains('sans équipement')) {
-        final cards = _allPrograms.where((p) =>
+        final cards = programs.where((p) =>
             p.category == 'MAISON' || p.category == 'Pilates').toList();
         return _Resp('🏠 **Programmes Maison**\n\nTu peux faire ces programmes chez toi, sans équipement :', cards: cards);
       }
       if (m.contains('salle') || m.contains('gym')) {
-        final cards = _allPrograms.where((p) => p.category == 'SALLE').toList();
+        final cards = programs.where((p) => p.category == 'SALLE').toList();
         return _Resp('🏋️ **Programmes Salle**\n\nVoici les programmes disponibles pour la salle :', cards: cards);
       }
       if (m.contains('cycle') || m.contains('phase')) {
-        final cards = _allPrograms.where((p) =>
+        final cards = programs.where((p) =>
             p.compatibleCycles.any((c) => c.contains('Follic') || c.contains('Ovul'))).toList();
         return _Resp(
           '🔄 **Programmes adaptés au cycle**\n\nEn ce moment (phase folliculaire), ces programmes sont idéaux pour toi :',
@@ -297,7 +322,7 @@ _Resp _generateResponse(String msg, String? categoryId) {
           quickReplies: ['Phase lutéale', 'Phase des règles'],
         );
       }
-      return _Resp('📋 Voici tous les programmes disponibles dans l\'app :', cards: List.from(_allPrograms),
+      return _Resp('📋 Voici tous les programmes disponibles dans l\'app :', cards: List.from(programs),
         quickReplies: ['Générer une séance', 'Programmes maison', 'Programmes salle']);
 
     // ── NUTRITION ─────────────────────────────────────────────────────────────
@@ -494,6 +519,13 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
   @override
   List<ChatMessage> build() => [];
 
+  // Lit les programmes réels depuis Supabase, fallback statique si vide
+  List<ChatProgramCard> get _allPrograms {
+    final all = ref.read(_allProgramsFutureProvider).valueOrNull ?? [];
+    if (all.isEmpty) return _fallbackPrograms;
+    return all.map(_programFromModel).toList();
+  }
+
   _WStep?  _wStep;
   _PStep?  _pStep;
   final _wData = _WorkoutData();
@@ -539,7 +571,7 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
       return;
     }
 
-    final r = _generateResponse(text, effectiveCat);
+    final r = _generateResponse(text, effectiveCat, _allPrograms);
     state = [...state, ChatMessage(
       text: r.text, isUser: false,
       programCards: r.cards,
@@ -586,7 +618,7 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
         _pData.duration = text;
         _pStep = null;
         final advice = _buildProgramAdvice(_pData);
-        final cards  = _matchPrograms(_pData);
+        final cards  = _matchPrograms(_pData, _allPrograms);
         state = [...state, ChatMessage(
           text: advice,
           isUser: false,

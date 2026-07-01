@@ -1,4 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'models.dart';
+import '../../services/supabase_config.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  FOOD DATABASE  — ~140 aliments avec valeurs réelles (pour 100 g)
@@ -391,4 +393,58 @@ class FoodDatabase {
       .replaceAll(RegExp('[ùûü]'), 'u')
       .replaceAll(RegExp('[ç]'), 'c')
       .replaceAll('\'', ' ');
+
+  // ── Search helpers that work on an arbitrary list ─────────────────────────
+  static List<FoodItem> searchIn(List<FoodItem> items, String query, {int limit = 20}) {
+    if (query.isEmpty) return items.take(limit).toList();
+    final q = _normalize(query);
+    final results = items.where((f) => _normalize(f.name).contains(q)).toList();
+    results.sort((a, b) {
+      final aStart = _normalize(a.name).startsWith(q) ? 0 : 1;
+      final bStart = _normalize(b.name).startsWith(q) ? 0 : 1;
+      return aStart.compareTo(bStart);
+    });
+    return results.take(limit).toList();
+  }
+
+  static List<FoodItem> byCategoryIn(List<FoodItem> items, FoodCategory cat) =>
+      items.where((f) => f.category == cat).toList();
+
+  static List<FoodItem> popularIn(List<FoodItem> items) {
+    const ids = [
+      'chicken_breast', 'oats', 'egg_whole', 'greek_yogurt',
+      'banana', 'rice_white', 'salmon', 'avocado',
+    ];
+    return ids
+        .map((id) => items.where((f) => f.id == id).firstOrNull)
+        .whereType<FoodItem>()
+        .toList();
+  }
 }
+
+// ── Supabase provider with offline fallback ───────────────────────────────────
+final foodItemsProvider = FutureProvider<List<FoodItem>>((ref) async {
+  try {
+    final rows = await SupabaseConfig.table('foods')
+        .select()
+        .order('name') as List;
+    if (rows.isEmpty) return FoodDatabase.all;
+    return rows.cast<Map<String, dynamic>>().map((r) => FoodItem(
+      id:           r['id'] as String,
+      name:         r['name'] as String,
+      category:     FoodCategory.values.firstWhere(
+        (c) => c.name == (r['category'] as String? ?? ''),
+        orElse: () => FoodCategory.platCompose,
+      ),
+      kcal:         (r['kcal'] as num).toDouble(),
+      protein:      (r['protein'] as num).toDouble(),
+      carbs:        (r['carbs'] as num).toDouble(),
+      fat:          (r['fat'] as num).toDouble(),
+      fiber:        (r['fiber'] as num? ?? 0).toDouble(),
+      defaultGrams: (r['default_grams'] as num? ?? 100).toDouble(),
+      portionLabel: r['portion_label'] as String? ?? '100 g',
+    )).toList();
+  } catch (_) {
+    return FoodDatabase.all;
+  }
+});
