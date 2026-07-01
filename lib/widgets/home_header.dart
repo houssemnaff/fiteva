@@ -61,7 +61,12 @@ class HomeHeader extends ConsumerWidget {
 
         // Bell
         GestureDetector(
-          onTap: () {},
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Notifications bientôt disponibles'),
+              duration: Duration(seconds: 2),
+            ),
+          ),
           child: Container(
             width: 38, height: 38,
             decoration: BoxDecoration(

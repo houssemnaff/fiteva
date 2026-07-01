@@ -117,6 +117,16 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
 
   Future<void> _publish() async {
     if (_titleCtrl.text.trim().isEmpty || _locationCtrl.text.trim().isEmpty) return;
+    final eventDateTime = DateTime(
+      _selectedDate.year, _selectedDate.month, _selectedDate.day,
+      _selectedTime.hour, _selectedTime.minute,
+    );
+    if (eventDateTime.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('La date et l\'heure de l\'événement doivent être dans le futur.'),
+      ));
+      return;
+    }
     HapticFeedback.mediumImpact();
     setState(() => _publishing = true);
     final event = EventModel(

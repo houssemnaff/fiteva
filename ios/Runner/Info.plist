@@ -69,5 +69,17 @@
 	<!-- Pedometer & Motion Permission -->
 	<key>NSMotionUsageDescription</key>
 	<string>FitEva needs access to your motion data to count your steps accurately.</string>
+	<!-- Supabase deep link callback (Apple Sign-In + auth redirects) -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.fiteva.fiteva</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

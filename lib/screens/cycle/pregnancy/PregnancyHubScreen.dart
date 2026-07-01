@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/PregnancyInsightRepository.dart';
+import 'package:fiteva/services/pregnancy_content_service.dart';
+import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/baby-story/baby_story_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/checklist/pregnancy_checklist_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/body/pregnancy_body_screen.dart';
@@ -79,6 +81,13 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
           CurvedAnimation(parent: _switchAnim, curve: Curves.easeInCubic));
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() =>
+      ref.read(xpProvider.notifier).rewardPregnancyWeek());
+  }
+
+  @override
   void dispose() {
     _switchAnim.dispose();
     super.dispose();
@@ -153,7 +162,8 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
     final cs      = Theme.of(context).colorScheme;
     final profile = ref.watch(userProfileProvider);
     final week    = (profile.pregnancyWeekSA ?? 1).clamp(1, 42);
-    final insight = PregnancyInsightRepository.forWeek(week);
+    final insight = ref.watch(pregnancyInsightProvider(week)).asData?.value
+        ?? PregnancyInsightRepository.forWeek(week);
     final due     = DateTime.now().add(Duration(days: (42 - week) * 7));
     final left    = due.difference(DateTime.now()).inDays.clamp(0, 300);
     final fmtDue  = '${due.day} ${_months[due.month - 1]} ${due.year}';

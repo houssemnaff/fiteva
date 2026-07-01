@@ -481,9 +481,10 @@ class _MotivationStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = ref.watch(l10nProvider);
-    const int streak = 12;
-    const int daysCompleted = 4; // today = index 4
+    final l10n   = ref.watch(l10nProvider);
+    final xp     = ref.watch(xpProvider);
+    final streak = xp.streak;
+    final daysCompleted = streak % 7;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),

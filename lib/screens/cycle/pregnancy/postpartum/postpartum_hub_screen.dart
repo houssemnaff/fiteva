@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/providers/user_profile_provider.dart';
+import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_insight_repository.dart';
+import 'package:fiteva/services/pregnancy_content_service.dart';
 import 'package:fiteva/screens/cycle/pregnancy/pregnancy_colors.dart';
 import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
@@ -52,6 +54,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
   void initState() {
     super.initState();
     _birthDate = widget.birthDate;
+    Future.microtask(() => ref.read(xpProvider.notifier).rewardPostpartumTask());
   }
 
   @override
@@ -179,7 +182,8 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
   Widget build(BuildContext context) {
     final l10n    = ref.watch(l10nProvider);
     final p       = context.p;
-    final insight = PostpartumInsightRepository.forWeek(_weeks.clamp(1, 12));
+    final insight = ref.watch(postpartumInsightProvider(_weeks.clamp(1, 12))).asData?.value
+        ?? PostpartumInsightRepository.forWeek(_weeks.clamp(1, 12));
     final d       = _birthDate;
     final months  = ['janv.','fevr.','mars','avr.','mai','juin',
                      'juil.','aout','sept.','oct.','nov.','dec.'];

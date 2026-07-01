@@ -83,6 +83,7 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
       for (final entry in entries) {
         ref.read(nutritionProvider.notifier).addMeal(entry);
       }
+      ref.read(xpProvider.notifier).rewardMealLogged();
 
       // Calories AFTER
       final calAfter = ref.read(dailyTotalsProvider(todayKey)).calories;

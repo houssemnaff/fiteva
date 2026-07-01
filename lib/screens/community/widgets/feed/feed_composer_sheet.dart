@@ -80,7 +80,11 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
   Future<void> _publish() async {
     final title   = _titleCtrl.text.trim();
     final content = _contentCtrl.text.trim();
-    if (title.isEmpty && content.isEmpty) return;
+    if (title.isEmpty && content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ajoutez un titre ou un contenu avant de publier.')));
+      return;
+    }
     HapticFeedback.mediumImpact();
     setState(() => _publishing = true);
 

@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/home_program_model.dart';
 import '../../models/workout_model.dart';
+import '../../providers/workout_progress_provider.dart';
 import '../../services/workout_progress_service.dart';
 import 'active_workout_screen.dart';
 
@@ -59,12 +60,30 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
     return 0;
   }
 
+  void _share(BuildContext context, HomeProgramModel p) {
+    Clipboard.setData(ClipboardData(text: '${p.name} — ${p.duration}'));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Lien copié dans le presse-papiers !'), duration: Duration(seconds: 2)),
+    );
+  }
+
+  void _toggleBookmark(BuildContext context, HomeProgramModel p) {
+    final favorites = ref.read(favoritesProvider);
+    final isFav = favorites.contains(p.name);
+    ref.read(favoritesProvider.notifier).toggleFavorite(p.name);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(isFav ? 'Retiré des favoris' : 'Ajouté aux favoris'),
+      duration: const Duration(seconds: 2),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = widget.program;
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final l10n = ref.watch(l10nProvider);
+    final isFav = ref.watch(favoritesProvider).contains(p.name);
 
     return Scaffold(
       backgroundColor: dark ? const Color(0xFF0D0D0D) : const Color.fromARGB(255, 255, 255, 255),
@@ -229,9 +248,12 @@ class _HeroBg extends StatelessWidget {
               child: Row(children: [
               //  _CircleBtn(icon: LucideIcons.arrowLeft, onTap: onBack),
                 const Spacer(),
-                _CircleBtn(icon: LucideIcons.share2, onTap: () {}),
+                _CircleBtn(icon: LucideIcons.share2, onTap: () => _share(context, p)),
                 const SizedBox(width: 10),
-                _CircleBtn(icon: LucideIcons.bookmark, onTap: () {}),
+                _CircleBtn(
+                  icon: isFav ? LucideIcons.bookmarkCheck : LucideIcons.bookmark,
+                  onTap: () => _toggleBookmark(context, p),
+                ),
               ]),
             ),
           ),
@@ -715,7 +737,9 @@ class _CoachCard extends StatelessWidget {
           ]),
         ])),
         GestureDetector(
-          onTap: () {},
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Suivi coach bientôt disponible'), duration: Duration(seconds: 2)),
+          ),
           child: Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

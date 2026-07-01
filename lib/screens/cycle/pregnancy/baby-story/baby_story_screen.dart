@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../pregnancy_colors.dart';
 import 'baby_story_repository.dart';
+import 'package:fiteva/services/pregnancy_content_service.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
 
 extension _Pg on BuildContext {
@@ -83,7 +84,8 @@ class _BabyStoryScreenState extends ConsumerState<BabyStoryScreen>
     final l10n   = ref.watch(l10nProvider);
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
-    final story  = BabyStoryRepository.forWeek(_week);
+    final story  = ref.watch(babyStoryProvider(_week)).asData?.value
+        ?? BabyStoryRepository.forWeek(_week);
     final progress = _week / 40;
 
     return Scaffold(

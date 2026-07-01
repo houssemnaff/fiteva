@@ -46,11 +46,24 @@ class _StepWelcomeState extends State<StepWelcome>
   bool _obscure    = true;
   bool _emailMode  = false;
 
+  void _showComingSoon() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Connexion sociale bientôt disponible'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  static final _emailRegex = RegExp(r'^[\w.+\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+
   bool get canContinue {
     if (_emailMode) {
+      final email = widget.emailController.text.trim();
+      final password = widget.passwordController.text;
       return widget.nameController.text.trim().isNotEmpty &&
-             widget.emailController.text.trim().isNotEmpty &&
-             widget.passwordController.text.trim().isNotEmpty;
+             _emailRegex.hasMatch(email) &&
+             password.length >= 8;
     }
     return widget.nameController.text.trim().isNotEmpty;
   }
@@ -276,11 +289,11 @@ class _StepWelcomeState extends State<StepWelcome>
     const SizedBox(height: 12),
     _socialBtn(label: "Continuer avec Google", customIcon: _googleIcon(),
         bgColor: Colors.white, textColor: const Color(0xFF1A1A1A),
-        borderColor: const Color(0xFFE0E0E0), onTap: () {}),
+        borderColor: const Color(0xFFE0E0E0), onTap: _showComingSoon),
     const SizedBox(height: 12),
     _socialBtn(label: "Continuer avec Apple", icon: Icons.apple_rounded,
         iconColor: Colors.white, bgColor: const Color(0xFF1A1A1A),
-        textColor: Colors.white, borderColor: Colors.transparent, onTap: () {}),
+        textColor: Colors.white, borderColor: Colors.transparent, onTap: _showComingSoon),
   ]);
 
   Widget _socialBtn({

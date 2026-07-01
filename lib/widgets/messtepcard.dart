@@ -36,7 +36,7 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
   StreamSubscription<StepCount>? _stepSubscription;
 
   int _stepsToday   = 0;
-  static const int _goalSteps = 100;
+  static const int _goalSteps = 10000;
   bool _isSyncing   = false;
   bool _isLoading   = true;
   String? _errorMessage;

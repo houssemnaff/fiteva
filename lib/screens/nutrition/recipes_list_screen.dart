@@ -13,6 +13,7 @@ import 'recette_detail_screen.dart';
 import 'recipe_video_screen.dart';
 import 'all_video_recipes_screen.dart';
 import 'all_image_recipes_screen.dart';
+import '../../services/recipe_service.dart';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const _kGreen  = Color(0xFF1C4D30);
@@ -96,6 +97,81 @@ const allRecipes = [
     accent: Color(0xFF6B2D8B), phase: CyclePhase.menstrual,
   ),
 ];
+
+// ── Supabase providers ─────────────────────────────────────────────────────────
+
+final imageRecipesProvider = FutureProvider<List<RealRecipe>>((ref) async {
+  try {
+    final rows = await RecipeService.fetchImageRecipes();
+    if (rows.isEmpty) return allRecipes;
+    return rows.map(_realRecipeFromRow).toList();
+  } catch (_) {
+    return allRecipes;
+  }
+});
+
+final videoRecipesProvider = FutureProvider<List<VideoRecipe>>((ref) async {
+  try {
+    final rows = await RecipeService.fetchVideoRecipes();
+    if (rows.isEmpty) return videoRecipes;
+    return rows.map(_videoRecipeFromRow).toList();
+  } catch (_) {
+    return videoRecipes;
+  }
+});
+
+RealRecipe _realRecipeFromRow(Map<String, dynamic> r) {
+  final hex = (r['accent_hex'] as String? ?? '#4A8B6F').replaceFirst('#', '');
+  final color = Color(int.tryParse('0xFF$hex') ?? 0xFF4A8B6F);
+  final phaseStr = r['phase'] as String? ?? 'follicular';
+  final phase = CyclePhase.values.firstWhere(
+    (p) => p.name == phaseStr, orElse: () => CyclePhase.follicular);
+  final rawTags = r['tags'];
+  final tags = rawTags is List
+      ? rawTags.cast<String>()
+      : (rawTags as String? ?? '').split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  return RealRecipe(
+    name:       r['name']       as String? ?? '',
+    subtitle:   r['subtitle']   as String? ?? '',
+    imageUrl:   r['image_url']  as String? ?? '',
+    duration:   r['duration']   as String? ?? '',
+    difficulty: r['difficulty'] as String? ?? 'Facile',
+    kcal:       (r['kcal']     as num? ?? 0).toInt(),
+    proteins:   (r['proteins'] as num? ?? 0).toInt(),
+    tags:       tags,
+    accent:     color,
+    phase:      phase,
+  );
+}
+
+VideoRecipe _videoRecipeFromRow(Map<String, dynamic> r) {
+  final phaseStr = r['phase'] as String? ?? 'follicular';
+  final phase = CyclePhase.values.firstWhere(
+    (p) => p.name == phaseStr, orElse: () => CyclePhase.follicular);
+  final rawIngredients = r['ingredients'] as List? ?? [];
+  final rawSteps       = r['steps']       as List? ?? [];
+  return VideoRecipe(
+    name:        r['name']        as String? ?? '',
+    subtitle:    r['subtitle']    as String? ?? '',
+    imageUrl:    r['image_url']   as String? ?? '',
+    duration:    r['duration']    as String? ?? '',
+    difficulty:  r['difficulty']  as String? ?? 'Facile',
+    kcal:        (r['kcal']      as num? ?? 0).toInt(),
+    proteins:    (r['proteins']  as num? ?? 0).toInt(),
+    phase:       phase,
+    videoAsset:  r['video_asset'] as String?,
+    ingredients: rawIngredients.map((i) => VideoIngredient(
+      name: i['name'] as String? ?? '',
+      qty:  i['qty']  as String? ?? '',
+      kcal: (i['kcal'] as num? ?? 0).toInt(),
+    )).toList(),
+    steps: rawSteps.map((s) => VideoStep(
+      number:      (s['number']      as num? ?? 0).toInt(),
+      title:       s['title']        as String? ?? '',
+      description: s['description']  as String? ?? '',
+    )).toList(),
+  );
+}
 
 const _filterCategories = [
   (label: 'Tout',          icon: LucideIcons.layoutGrid),
@@ -262,8 +338,8 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
     ref.read(favoritesProvider.notifier).toggle(name);
   }
 
-  List<RealRecipe> _filtered(Set<String> favorites) {
-    var list = allRecipes.toList();
+  List<RealRecipe> _filtered(Set<String> favorites, List<RealRecipe> recipes) {
+    var list = recipes.toList();
 
     if (_activeCategory == 'Favoris') {
       list = list.where((r) => favorites.contains(r.name)).toList();
@@ -285,12 +361,14 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
   Widget build(BuildContext context) {
     final top       = MediaQuery.of(context).padding.top;
     final favorites = ref.watch(favoritesProvider);
-    final filtered  = _filtered(favorites);
+    final recipes   = ref.watch(imageRecipesProvider).asData?.value ?? allRecipes;
+    final dbVideos  = ref.watch(videoRecipesProvider).asData?.value ?? videoRecipes;
+    final filtered  = _filtered(favorites, recipes);
     final nc        = NutritionColors.of(context);
     final l10n      = ref.watch(l10nProvider);
     final isFavMode = _activeCategory == 'Favoris';
     final videoFavs = isFavMode
-        ? videoRecipes.where((r) => favorites.contains(r.name)).toList()
+        ? dbVideos.where((r) => favorites.contains(r.name)).toList()
         : <VideoRecipe>[];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -366,10 +444,10 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                   child: _HeroCard(
-                    recipe: allRecipes.first,
-                    isFavorite: favorites.contains(allRecipes.first.name),
-                    onToggleFavorite: () => _toggleFavorite(allRecipes.first.name),
-                    onTap: () => _openRecipe(context, allRecipes.first),
+                    recipe: recipes.first,
+                    isFavorite: favorites.contains(recipes.first.name),
+                    onToggleFavorite: () => _toggleFavorite(recipes.first.name),
+                    onTap: () => _openRecipe(context, recipes.first),
                     l10n: l10n,
                   ),
                 ),
@@ -391,13 +469,13 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     physics: const BouncingScrollPhysics(),
                     separatorBuilder: (_, __) => const SizedBox(width: 10),
-                    itemCount: videoRecipes.length,
+                    itemCount: dbVideos.length,
                     itemBuilder: (_, i) => _VideoCard(
-                      recipe: videoRecipes[i],
-                      isFavorite: favorites.contains(videoRecipes[i].name),
-                      onToggleFavorite: () => _toggleFavorite(videoRecipes[i].name),
+                      recipe: dbVideos[i],
+                      isFavorite: favorites.contains(dbVideos[i].name),
+                      onToggleFavorite: () => _toggleFavorite(dbVideos[i].name),
                       onTap: () => Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => RecipeVideoPlayerScreen(recipe: videoRecipes[i]))),
+                        builder: (_) => RecipeVideoPlayerScreen(recipe: dbVideos[i]))),
                     ),
                   ),
                 ),
