@@ -42,8 +42,8 @@ class MaisonSection extends StatelessWidget {
               final program = homePrograms[i];
               return _MaisonProgramCard(
                 program: program,
-                isFav: favorites.contains(program.id),
-                onToggleFav: () => onToggleFav(program.id),
+                isFav: favorites.contains('prog:${program.id}'),
+                onToggleFav: () => onToggleFav('prog:${program.id}'),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(

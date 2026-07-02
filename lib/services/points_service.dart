@@ -32,10 +32,9 @@ class PointsService {
       final updated = current + amount;
 
       await SupabaseConfig.table('user_points').upsert({
-        'user_id':    uid,
-        'etoiles':    updated,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+        'user_id': uid,
+        'etoiles': updated,
+      }, onConflict: 'user_id');
 
       await SupabaseConfig.table('points_history').insert({
         'user_id':   uid,
@@ -61,10 +60,9 @@ class PointsService {
       final updated = (current - amount).clamp(0, 999999);
 
       await SupabaseConfig.table('user_points').upsert({
-        'user_id':    uid,
-        'etoiles':    updated,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+        'user_id': uid,
+        'etoiles': updated,
+      }, onConflict: 'user_id');
 
       await SupabaseConfig.table('points_history').insert({
         'user_id':   uid,
@@ -102,10 +100,9 @@ class PointsService {
     if (uid == null) return;
     try {
       await SupabaseConfig.table('user_points').upsert({
-        'user_id':    uid,
-        'etoiles':    0,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+        'user_id': uid,
+        'etoiles': 0,
+      }, onConflict: 'user_id');
     } catch (_) {}
   }
 }

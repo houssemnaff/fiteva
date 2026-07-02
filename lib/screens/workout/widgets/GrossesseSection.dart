@@ -42,8 +42,8 @@ class GrossesseSection extends StatelessWidget {
               final program = grossessePrograms[i];
               return _GrossesseProgramCard(
                 program: program,
-                isFav: favorites.contains(program.id),
-                onToggleFav: () => onToggleFav(program.id),
+                isFav: favorites.contains('prog:${program.id}'),
+                onToggleFav: () => onToggleFav('prog:${program.id}'),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(

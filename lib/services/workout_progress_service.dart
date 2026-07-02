@@ -40,7 +40,7 @@ class WorkoutProgressService {
   }
 
   static Future<void> markVideoComplete(String videoId) async {
-    if (_uid == null) return;
+    if (_uid == null || videoId.isEmpty) return;
     try {
       await SupabaseConfig.table('user_video_completions').upsert({
         'user_id':      _uid,
@@ -48,7 +48,7 @@ class WorkoutProgressService {
         'progress':     1.0,
         'completed':    true,
         'completed_at': DateTime.now().toIso8601String(),
-      });
+      }, onConflict: 'user_id,video_id');
     } catch (_) {}
   }
 
@@ -81,7 +81,7 @@ class WorkoutProgressService {
   }
 
   static Future<void> updateVideoProgress(String videoId, double progress) async {
-    if (_uid == null) return;
+    if (_uid == null || videoId.isEmpty) return;
     try {
       final completed = progress >= 0.8;
       await SupabaseConfig.table('user_video_completions').upsert({
@@ -90,7 +90,7 @@ class WorkoutProgressService {
         'progress':     progress.clamp(0.0, 1.0),
         'completed':    completed,
         'completed_at': completed ? DateTime.now().toIso8601String() : null,
-      });
+      }, onConflict: 'user_id,video_id');
     } catch (_) {}
   }
 
@@ -115,7 +115,7 @@ class WorkoutProgressService {
         'user_id':      _uid,
         'workout_id':   workoutId,
         'completed_at': DateTime.now().toIso8601String(),
-      });
+      }, onConflict: 'user_id,workout_id');
     } catch (_) {}
   }
 
@@ -129,7 +129,8 @@ class WorkoutProgressService {
     final completedVideos = await getCompletedVideos();
     bool allDone = true;
     for (int i = 0; i < workout.exercises.length; i++) {
-      if (!completedVideos.contains('${workout.title}_exercise_$i')) {
+      final videoId = workout.videoIdAt(i);
+      if (videoId == null || !completedVideos.contains(videoId)) {
         allDone = false;
         break;
       }
@@ -146,7 +147,8 @@ class WorkoutProgressService {
     final completedVideos = await getCompletedVideos();
     int done = 0;
     for (int i = 0; i < workout.exercises.length; i++) {
-      if (completedVideos.contains('${workout.title}_exercise_$i')) done++;
+      final videoId = workout.videoIdAt(i);
+      if (videoId != null && completedVideos.contains(videoId)) done++;
     }
     return done / workout.exercises.length;
   }
@@ -172,7 +174,7 @@ class WorkoutProgressService {
         'user_id':      _uid,
         'program_id':   programId,
         'completed_at': DateTime.now().toIso8601String(),
-      });
+      }, onConflict: 'user_id,program_id');
     } catch (_) {}
   }
 
@@ -228,6 +230,42 @@ class WorkoutProgressService {
     return started;
   }
 
+  // ── Programmes rejoints ───────────────────────────────────────────────────
+
+  static Future<Set<String>> getJoinedPrograms() async {
+    if (_uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('user_joined_programs')
+          .select('program_id')
+          .eq('user_id', _uid!);
+      return {for (final r in rows as List) r['program_id'] as String};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  static Future<void> joinProgram(String programId) async {
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_joined_programs').upsert({
+        'user_id':    _uid,
+        'program_id': programId,
+        'joined_at':  DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id,program_id');
+    } catch (_) {}
+  }
+
+  static Future<bool> isProgramJoined(String programId) async {
+    final joined = await getJoinedPrograms();
+    return joined.contains(programId);
+  }
+
+  /// Filtre [all] pour ne garder que les programmes que l'utilisateur a rejoints.
+  static Future<List<HomeProgramModel>> getJoinedProgramsList(List<HomeProgramModel> all) async {
+    final joined = await getJoinedPrograms();
+    return all.where((p) => joined.contains(p.id)).toList();
+  }
+
   // ── Favoris workouts ──────────────────────────────────────────────────────
 
   static Future<Set<String>> getWorkoutFavorites() async {
@@ -254,18 +292,19 @@ class WorkoutProgressService {
     }
   }
 
-  /// Retourne l'union des favoris workouts + programmes
+  /// Retourne l'union des favoris — programmes préfixés "prog:" pour les distinguer
   static Future<Set<String>> getFavorites() async {
     final wf = await getWorkoutFavorites();
     final pf = await getProgramFavorites();
-    return {...wf, ...pf};
+    return {...wf, ...pf.map((id) => 'prog:$id')};
   }
 
   static Future<void> addWorkoutFavorite(String workoutId) async {
     if (_uid == null) return;
     try {
       await SupabaseConfig.table('user_workout_favorites')
-          .upsert({'user_id': _uid, 'workout_id': workoutId});
+          .upsert({'user_id': _uid, 'workout_id': workoutId},
+              onConflict: 'user_id,workout_id');
     } catch (_) {}
   }
 
@@ -283,7 +322,8 @@ class WorkoutProgressService {
     if (_uid == null) return;
     try {
       await SupabaseConfig.table('user_program_favorites')
-          .upsert({'user_id': _uid, 'program_id': programId});
+          .upsert({'user_id': _uid, 'program_id': programId},
+              onConflict: 'user_id,program_id');
     } catch (_) {}
   }
 
@@ -297,31 +337,18 @@ class WorkoutProgressService {
     } catch (_) {}
   }
 
-  static Future<bool> _isProgramId(String id) async {
-    try {
-      final row = await SupabaseConfig.table('programs')
-          .select('id')
-          .eq('id', id)
-          .maybeSingle();
-      return row != null;
-    } catch (_) {
-      return false;
-    }
-  }
-
+  /// Détecte le type par le préfixe "prog:" (programmes) ou non (workouts)
   static Future<void> addFavorite(String id) async {
-    final isProgram = await _isProgramId(id);
-    if (isProgram) {
-      await addProgramFavorite(id);
+    if (id.startsWith('prog:')) {
+      await addProgramFavorite(id.substring(5));
     } else {
       await addWorkoutFavorite(id);
     }
   }
 
   static Future<void> removeFavorite(String id) async {
-    final isProgram = await _isProgramId(id);
-    if (isProgram) {
-      await removeProgramFavorite(id);
+    if (id.startsWith('prog:')) {
+      await removeProgramFavorite(id.substring(5));
     } else {
       await removeWorkoutFavorite(id);
     }

@@ -1,9 +1,21 @@
+import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'models.dart';
 import 'food_database.dart';
 import '../../services/storage_service.dart';
 import '../../services/supabase_config.dart';
 import '../../providers/user_profile_provider.dart' as ap;
+
+// Génère un UUID v4 sans package externe (partagé)
+String generateMealId() {
+  final rng = Random.secure();
+  final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  final h = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  return '${h.substring(0,8)}-${h.substring(8,12)}-${h.substring(12,16)}-${h.substring(16,20)}-${h.substring(20)}';
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  NUTRITION STATE
@@ -96,6 +108,26 @@ class NutritionNotifier extends Notifier<NutritionState> {
 
   // ── Chargement Supabase ───────────────────────────────────────────────────
 
+  Future<void> loadForDate(String key) async {
+    if (state.mealsByDate.containsKey(key)) return; // already cached
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      final rows = await SupabaseConfig.table('user_meal_entries')
+          .select()
+          .eq('user_id', uid)
+          .eq('date', key)
+          .order('created_at') as List;
+      final entries = rows
+          .map((r) => _entryFromRow(r as Map<String, dynamic>))
+          .whereType<MealEntry>()
+          .toList();
+      final updated = Map<String, List<MealEntry>>.from(state.mealsByDate);
+      updated[key] = entries;
+      state = state.copyWith(mealsByDate: updated);
+    } catch (_) {}
+  }
+
   Future<void> _loadFromSupabase() async {
     final uid = SupabaseConfig.userId;
     if (uid == null) return;
@@ -187,45 +219,56 @@ class NutritionNotifier extends Notifier<NutritionState> {
 
   // ── Supabase writes ───────────────────────────────────────────────────────
 
-  void _persistMeal(MealEntry e) {
+  Future<void> _persistMeal(MealEntry e) async {
     final uid = SupabaseConfig.userId;
     if (uid == null) return;
-    SupabaseConfig.table('user_meal_entries').insert({
-      'id':             e.id,
-      'user_id':        uid,
-      'date':           e.dateKey,
-      'meal_type':      e.mealType.id,
-      'food_id':        e.food.id,
-      'food_name':      e.food.name,
-      'food_category':  e.food.category.name,
-      'grams':          e.grams,
-      'kcal_per100':    e.food.kcal,
-      'protein_per100': e.food.protein,
-      'carbs_per100':   e.food.carbs,
-      'fat_per100':     e.food.fat,
-      'fiber_per100':   e.food.fiber,
-    }).catchError((_) {});
+    try {
+      await SupabaseConfig.table('user_meal_entries').insert({
+        'id':             e.id,
+        'user_id':        uid,
+        'date':           e.dateKey,
+        'meal_type':      e.mealType.id,
+        'food_id':        e.food.id,
+        'food_name':      e.food.name,
+        'grams':          e.grams,
+        'kcal_per100':    e.food.kcal,
+        'protein_per100': e.food.protein,
+        'carbs_per100':   e.food.carbs,
+        'fat_per100':     e.food.fat,
+        'fiber_per100':   e.food.fiber,
+        'created_at':     DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('meal insert error: $e');
+    }
   }
 
-  void _deleteMealFromSupabase(String entryId) {
+  Future<void> _deleteMealFromSupabase(String entryId) async {
     final uid = SupabaseConfig.userId;
     if (uid == null) return;
-    SupabaseConfig.table('user_meal_entries')
-        .delete()
-        .eq('id', entryId)
-        .eq('user_id', uid)
-        .catchError((_) {});
+    try {
+      await SupabaseConfig.table('user_meal_entries')
+          .delete()
+          .eq('id', entryId)
+          .eq('user_id', uid);
+    } catch (e) {
+      debugPrint('meal delete error: $e');
+    }
   }
 
-  void _persistWater(int ml) {
+  Future<void> _persistWater(int ml) async {
     final uid = SupabaseConfig.userId;
     if (uid == null) return;
-    SupabaseConfig.table('user_water_logs').upsert({
-      'user_id':    uid,
-      'date':       todayKey,
-      'water_ml':   ml,
-      'updated_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'user_id,date').catchError((_) {});
+    try {
+      await SupabaseConfig.table('user_water_logs').upsert({
+        'user_id':    uid,
+        'date':       todayKey,
+        'water_ml':   ml,
+        'updated_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id,date');
+    } catch (e) {
+      debugPrint('water upsert error: $e');
+    }
   }
 
   // ── Queries ───────────────────────────────────────────────────────────────

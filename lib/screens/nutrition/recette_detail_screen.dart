@@ -103,8 +103,25 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
   int _tab      = 0;
   int _portions = 1;
 
-  String get _recipeName =>
-      widget.recipe?.name as String? ?? 'Oeufs brouillés';
+  String get _recipeName {
+    try {
+      final n = widget.recipe?.name;
+      if (n is String && n.isNotEmpty) return n;
+      final t = widget.recipe?.title;
+      if (t is String && t.isNotEmpty) return t;
+    } catch (_) {}
+    return 'Recette';
+  }
+
+  String get _imageUrl {
+    try {
+      final e = widget.recipe?.emoji;
+      if (e is String && e.startsWith('http')) return e;
+      final img = widget.recipe?.imageUrl;
+      if (img is String && img.startsWith('http')) return img;
+    } catch (_) {}
+    return _heroUrl;
+  }
 
   late final ScrollController _scroll;
 
@@ -144,7 +161,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
               SliverToBoxAdapter(
                 child: _HeroSection(
                   recipeName: _recipeName,
-                  imageUrl: widget.recipe?.emoji as String? ?? _heroUrl,
+                  imageUrl: _imageUrl,
                   saved: ref.watch(favoritesProvider).contains(_recipeName),
                   onSave: () => ref.read(favoritesProvider.notifier).toggle(_recipeName),
                   onBack: () => Navigator.maybePop(context),
@@ -539,11 +556,9 @@ class _PortionKcalSection extends StatelessWidget {
               Row(crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Flexible(child: FittedBox(fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text('${198 * portions}',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurface)))),
+                  Text('${198 * portions}',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface)),
                   const SizedBox(width: 4),
                   Text('kcal',
                     style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),

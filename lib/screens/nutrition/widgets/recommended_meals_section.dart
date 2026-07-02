@@ -376,7 +376,7 @@ class _RecommendedMealsSectionState extends ConsumerState<RecommendedMealsSectio
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: GestureDetector(
-              onTap: () => Navigator.push(ctx, MaterialPageRoute(
+              onTap: () => Navigator.of(ctx, rootNavigator: true).push(MaterialPageRoute(
                 builder: (_) => RecipeDetailScreen(
                   recipe: RecipeItem(meal.imageUrl, meal.name, meal.name,
                     goal.primary)))),
@@ -403,7 +403,7 @@ class _RecommendedMealsSectionState extends ConsumerState<RecommendedMealsSectio
               itemBuilder: (ctx, i) {
                 final meal = _currentMeals[i + 1];
                 return GestureDetector(
-                  onTap: () => Navigator.push(ctx, MaterialPageRoute(
+                  onTap: () => Navigator.of(ctx, rootNavigator: true).push(MaterialPageRoute(
                     builder: (_) => RecipeDetailScreen(
                       recipe: RecipeItem(meal.imageUrl, meal.name, meal.name,
                         goal.primary)))),

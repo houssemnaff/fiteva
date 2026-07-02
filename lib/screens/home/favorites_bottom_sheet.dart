@@ -6,13 +6,62 @@ import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/core/nutrition/favorites_provider.dart' as nutrition;
 import 'package:fiteva/core/shop/shop_provider.dart' as shop_provider;
-import 'package:fiteva/services/program_service.dart';
+import 'package:fiteva/screens/shop/models/boutique_item.dart';
 import 'package:fiteva/services/recipe_service.dart';
 
 enum FavoriteType { workout, recipe, product }
 
 class FavoritesBottomSheet extends ConsumerStatefulWidget {
   const FavoritesBottomSheet({super.key});
+
+  static const List<Map<String, dynamic>> tabs = [
+    {'label': 'Programmes', 'icon': LucideIcons.dumbbell, 'type': FavoriteType.workout},
+    {'label': 'Recettes', 'icon': LucideIcons.utensils, 'type': FavoriteType.recipe},
+    {'label': 'Boutique', 'icon': LucideIcons.shoppingBag, 'type': FavoriteType.product},
+  ];
+
+  static List<Map<String, dynamic>> getFavoriteItems(
+    int tab,
+    Set<String> programFavorites,
+    Set<String> recipeFavorites,
+    Set<String> shopWishlist,
+    List<dynamic> allPrograms,
+    List<BoutiqueItem> shopItems,
+  ) {
+    if (tab == 0) {
+      // Programmes — favoris stockés avec préfixe 'prog:id'
+      return allPrograms
+          .where((p) => programFavorites.contains('prog:${p.id}'))
+          .map((p) => {
+            'id': 'prog:${p.id}',
+            'title': p.name,
+            'subtitle': '${p.duration} · ${p.sessions}',
+            'image': p.imageUrl,
+          })
+          .toList();
+    } else if (tab == 1) {
+      // Recettes — afficher l'ID (nom de la recette)
+      return recipeFavorites
+          .map((id) => {
+            'id': id,
+            'title': id,
+            'subtitle': 'Recette',
+            'image': '',
+          })
+          .toList();
+    } else {
+      // Boutique — jointure avec shopItems pour avoir le vrai nom
+      return shopWishlist.map((id) {
+        final item = shopItems.where((i) => i.id == id).firstOrNull;
+        return {
+          'id':       id,
+          'title':    item?.title    ?? id,
+          'subtitle': item?.brand    ?? 'Boutique',
+          'image':    item?.imageUrl ?? '',
+        };
+      }).toList();
+    }
+  }
 
   @override
   ConsumerState<FavoritesBottomSheet> createState() => _FavoritesBottomSheetState();
@@ -21,17 +70,19 @@ class FavoritesBottomSheet extends ConsumerStatefulWidget {
 class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
   int _selectedTab = 0;
 
-  final List<Map<String, dynamic>> _tabs = [
-    {'label': 'Programmes', 'icon': LucideIcons.dumbbell, 'type': FavoriteType.workout},
-    {'label': 'Recettes', 'icon': LucideIcons.utensils, 'type': FavoriteType.recipe},
-    {'label': 'Boutique', 'icon': LucideIcons.shoppingBag, 'type': FavoriteType.product},
-  ];
+  List<Map<String, dynamic>> get _tabs => FavoritesBottomSheet.tabs;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final programFavorites = ref.watch(favoritesProvider);
+    final recipeFavorites = ref.watch(nutrition.favoritesProvider);
     final shopWishlist = ref.watch(shop_provider.shopWishlistProvider);
+    final shopItemsAsync = ref.watch(shop_provider.shopItemsProvider);
+    final shopItems = shopItemsAsync.maybeWhen(
+      data: (d) => d,
+      orElse: () => <BoutiqueItem>[],
+    );
 
     // Watch all program providers
     final sallePrograms = ref.watch(salleProgramsProvider);
@@ -158,7 +209,7 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildContent(_selectedTab, programFavorites, shopWishlist, allPrograms, cs),
+              child: _buildContent(_selectedTab, programFavorites, recipeFavorites, shopWishlist, allPrograms, shopItems, cs),
             ),
           ),
         ],
@@ -166,82 +217,9 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
     );
   }
 
-  Future<List<Map<String, dynamic>>> _getItems(int tab, Set<String> programFavorites, Set<String> shopWishlist, List<dynamic> allPrograms) async {
-    if (tab == 0) {
-      final resolvedPrograms = await Future.wait(
-        programFavorites.map((programId) => ProgramService.fetchProgramById(programId)),
-      );
+  Widget _buildContent(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, List<BoutiqueItem> shopItems, ColorScheme cs) {
+    final items = FavoritesBottomSheet.getFavoriteItems(tab, programFavorites, recipeFavorites, shopWishlist, allPrograms, shopItems);
 
-      return resolvedPrograms.whereType<dynamic>().map((program) => {
-        'id': program.id,
-        'title': program.name,
-        'subtitle': '${program.duration} · ${program.sessions}',
-        'image': program.imageUrl,
-      }).toList();
-    } else if (tab == 1) {
-      final favoriteRows = await RecipeService.fetchFavoriteRecipes();
-      final favoriteIdentifiers = favoriteRows
-          .map(RecipeService.resolveFavoriteIdentifier)
-          .where((value) => value.isNotEmpty)
-          .toList();
-      final recipeRows = await RecipeService.fetchFavoriteRecipeDetails(favoriteIdentifiers);
-
-      return recipeRows.map((recipe) {
-        final identifier = RecipeService.resolveFavoriteIdentifier(recipe);
-        return {
-          'id': identifier,
-          'title': recipe['name'] as String? ?? identifier,
-          'subtitle': recipe['subtitle'] as String? ?? 'Recette',
-          'image': recipe['image_url'] as String? ?? 'assets/images/recipe.jpg',
-        };
-      }).toList();
-    } else {
-      return shopWishlist
-          .map((id) => {
-            'id': id,
-            'title': id,
-            'subtitle': 'Produit',
-            'image': 'assets/images/product.jpg',
-          })
-          .toList();
-    }
-  }
-
-  Widget _buildContent(int tab, Set<String> programFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, ColorScheme cs) {
-    if (tab == 1) {
-      return FutureBuilder<List<Map<String, dynamic>>>(
-        future: _getItems(tab, programFavorites, shopWishlist, allPrograms),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildGrid(
-              List.generate(4, (index) => {
-                'id': 'loading-$index',
-                'title': '...',
-                'subtitle': 'Chargement...',
-                'image': '',
-              }),
-              tab,
-              cs,
-              isPlaceholder: true,
-            );
-          }
-
-          final items = snapshot.data ?? [];
-          return _buildGrid(items, tab, cs);
-        },
-      );
-    }
-
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _getItems(tab, programFavorites, shopWishlist, allPrograms),
-      builder: (context, snapshot) {
-        final items = snapshot.data ?? [];
-        return _buildGrid(items, tab, cs);
-      },
-    );
-  }
-
-  Widget _buildGrid(List<Map<String, dynamic>> items, int tab, ColorScheme cs, {bool isPlaceholder = false}) {
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
@@ -262,7 +240,7 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
           type: _tabs[tab]['type'] as FavoriteType,
           onRemove: () async => await _removeItem(item['id']! as String, tab),
           colorScheme: cs,
-          isPlaceholder: isPlaceholder || tab != 0,
+          isPlaceholder: tab == 1,
         );
       },
     );

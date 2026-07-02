@@ -1,7 +1,9 @@
 import 'package:fiteva/services/storage_service.dart';
 import 'package:fiteva/services/supabase_config.dart';
+import 'package:fiteva/services/push_notification_service.dart';
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'theme/app_theme.dart';
 import 'router/app_router.dart';
 import 'providers/theme_provider.dart';
+import 'firebase_options.dart';
 // locale_provider is used via l10nProvider in individual screens
 
 void main() async {
@@ -16,12 +19,16 @@ void main() async {
   await StorageService.init();
   await SupabaseConfig.initialize();
 
-  // ── TEST CONNEXION — supprime après vérification ──────────────────────────
-  try {
-    final res = await SupabaseConfig.table('user_profiles').select('id').limit(1);
-    print('[Supabase] ✅ Connexion OK — réponse: $res');
-  } catch (e) {
-    print('[Supabase] ❌ Erreur connexion: $e');
+  // ── Firebase push notifications (Android / iOS uniquement) ────────────────
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      await PushNotificationService.init();
+    } catch (e) {
+      debugPrint('[Firebase] init error: $e');
+    }
   }
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -41,6 +48,11 @@ class _FitevaAppState extends ConsumerState<FitevaApp> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestMotionPermission();
+      // Push : demande la permission au premier lancement (une seule fois)
+      if (!kIsWeb) {
+        Future.delayed(const Duration(seconds: 3),
+            PushNotificationService.requestPermissionIfNeeded);
+      }
     });
   }
 

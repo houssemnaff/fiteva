@@ -154,8 +154,22 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
   int _computeCurrentDay(UserProfile profile) {
     final last = profile.lastPeriod;
     if (last == null) return 1;
-    final elapsed = _today.difference(last).inDays % profile.cycleDays;
-    return (elapsed + 1).clamp(1, profile.cycleDays);
+    final todayNorm = DateTime(_today.year, _today.month, _today.day);
+    final elapsed = todayNorm.difference(last).inDays % profile.cycleDays;
+    final day = (elapsed + 1).clamp(1, profile.cycleDays);
+
+    // Si le calcul dit "jour 1" mais l'utilisatrice n'a pas encore confirmé ses règles,
+    // on reste au dernier jour du cycle précédent pour ne pas afficher "Règles" de force.
+    if (day == 1 && !_logged.contains(FloSymptom.flow)) {
+      final pending = profile.pendingPeriodDate;
+      if (pending != null) {
+        final pendingNorm = DateTime(pending.year, pending.month, pending.day);
+        if (!pendingNorm.isAfter(todayNorm)) {
+          return profile.cycleDays;
+        }
+      }
+    }
+    return day;
   }
 
   @override
@@ -175,6 +189,8 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
       _logged.addAll(saved.map((s) => FloSymptom.values.firstWhere(
         (e) => e.name == s, orElse: () => FloSymptom.flow)));
       if (mood != null) _moodIndex = mood;
+      // Recalcul après chargement des symptômes (flow confirmé ou pas change le jour affiché)
+      _currentDay = _computeCurrentDay(ref.read(userProfileProvider));
     });
   }
 
@@ -182,6 +198,18 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
   void dispose() {
     _switchAnim.dispose();
     super.dispose();
+  }
+
+  Future<void> _logPeriodStart() async {
+    setState(() {
+      _logged.add(FloSymptom.flow);
+      _currentDay = 1; // règles confirmées → jour 1
+    });
+    await CycleLogService.saveSymptoms(_today, _logged.map((s) => s.name).toSet());
+    // Mettre à jour lastPeriod → le cycle repart d'aujourd'hui
+    final todayStr =
+        '${_today.year}-${_today.month.toString().padLeft(2, '0')}-${_today.day.toString().padLeft(2, '0')}';
+    await ref.read(userProfileProvider.notifier).updateField('last_period', todayStr);
   }
 
   Future<void> _switchToPregnancy() async {
@@ -296,13 +324,17 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             child: Row(children: [
-              Expanded(child: _PeriodCard(nextDate: profile.nextPeriodDate, cc: cc, l10n: l10n)),
+              Expanded(child: _PeriodCard(
+                nextDate: profile.pendingPeriodDate,
+                cc: cc, l10n: l10n,
+                periodLoggedToday: _logged.contains(FloSymptom.flow),
+                onLogPeriodStart: _logPeriodStart,
+              )),
               const SizedBox(width: 12),
               Expanded(child: _OvulationCard(
-                lastPeriod: profile.lastPeriod,
-                cycleDays:  profile.cycleDays,
-                cc:         cc,
-                l10n:       l10n,
+                ovulationDate: profile.ovulationDate,
+                cc:            cc,
+                l10n:          l10n,
               )),
             ]),
           ),
@@ -695,28 +727,109 @@ class _PeriodCard extends StatelessWidget {
   final DateTime? nextDate;
   final CycleColors cc;
   final AppL10n l10n;
+  final bool periodLoggedToday;
+  final VoidCallback onLogPeriodStart;
 
   static const _months = [
     'jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'
   ];
 
-  const _PeriodCard({required this.nextDate, required this.cc, required this.l10n});
+  const _PeriodCard({
+    required this.nextDate,
+    required this.cc,
+    required this.l10n,
+    required this.periodLoggedToday,
+    required this.onLogPeriodStart,
+  });
+
+  static const _pink = Color(0xFFE58F8A);
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
+    final todayDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     String value = '—', sub = '';
+    bool showConfirmBtn = false;
+    Color valueColor = cc.text;
+
     if (nextDate != null) {
-      final daysLeft = nextDate!
-          .difference(DateTime(today.year, today.month, today.day)).inDays;
-      value = daysLeft <= 0 ? l10n.cycleToday : l10n.cycleDaysLeft(daysLeft);
-      sub   = '${nextDate!.day} ${_months[nextDate!.month - 1]}';
+      final daysLeft = nextDate!.difference(todayDate).inDays;
+      final dateLabel = '${nextDate!.day} ${_months[nextDate!.month - 1]}';
+
+      if (periodLoggedToday) {
+        value      = 'Règles ✓';
+        sub        = dateLabel;
+        valueColor = _pink;
+      } else if (daysLeft == 0) {
+        value          = 'Peut-être auj.';
+        sub            = dateLabel;
+        valueColor     = _pink;
+        showConfirmBtn = true;
+      } else if (daysLeft < 0) {
+        final delay = -daysLeft;
+        value          = 'Retard $delay j';
+        sub            = dateLabel;
+        valueColor     = const Color(0xFFE57373); // rouge retard
+        showConfirmBtn = true;
+      } else {
+        value = l10n.cycleDaysLeft(daysLeft);
+        sub   = dateLabel;
+      }
     }
-    return _InfoCard(
-      icon: Icons.water_drop_outlined,
-      color: const Color(0xFFE58F8A),
-      title: l10n.cycleNextPeriod,
-      value: value, subtitle: sub, cc: cc,
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cc.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _pink.withOpacity(0.22), width: 1),
+        boxShadow: [BoxShadow(
+          color: _pink.withOpacity(cc.isDark ? 0.12 : 0.08),
+          blurRadius: 14, offset: const Offset(0, 4),
+        )],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: _pink.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(12)),
+            child: Icon(Icons.water_drop_outlined, size: 17, color: _pink),
+          ),
+          const SizedBox(height: 12),
+          Text(l10n.cycleNextPeriod,
+              style: GoogleFonts.inter(fontSize: 11, color: cc.muted)),
+          const SizedBox(height: 3),
+          Text(value,
+              style: GoogleFonts.inter(
+                  fontSize: 16, fontWeight: FontWeight.w800, color: valueColor)),
+          if (sub.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(sub,
+                style: GoogleFonts.inter(
+                    fontSize: 11, fontWeight: FontWeight.w500, color: _pink)),
+          ],
+          if (showConfirmBtn) ...[
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: onLogPeriodStart,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _pink.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('Oui, c\'est arrivé',
+                    style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _pink)),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -726,8 +839,7 @@ class _PeriodCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _OvulationCard extends StatelessWidget {
-  final DateTime? lastPeriod;
-  final int cycleDays;
+  final DateTime? ovulationDate;
   final CycleColors cc;
   final AppL10n l10n;
 
@@ -736,20 +848,18 @@ class _OvulationCard extends StatelessWidget {
   ];
 
   const _OvulationCard({
-    required this.lastPeriod, required this.cycleDays, required this.cc, required this.l10n,
+    required this.ovulationDate, required this.cc, required this.l10n,
   });
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     String value = '—', sub = '';
-    if (lastPeriod != null) {
-      final ovDate   = lastPeriod!.add(Duration(days: cycleDays ~/ 2));
-      final daysLeft = ovDate
-          .difference(DateTime(today.year, today.month, today.day)).inDays;
+    if (ovulationDate != null) {
+      final daysLeft = ovulationDate!.difference(today).inDays;
       value = daysLeft < 0 ? l10n.cyclePast
           : daysLeft == 0 ? l10n.cycleToday : l10n.cycleDaysLeft(daysLeft);
-      sub = '${ovDate.day} ${_months[ovDate.month - 1]}';
+      sub = '${ovulationDate!.day} ${_months[ovulationDate!.month - 1]}';
     }
     return _InfoCard(
       icon: Icons.spa_outlined,

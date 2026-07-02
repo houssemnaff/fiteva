@@ -867,23 +867,26 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
               ),
             ),
             const SizedBox(width: 11),
-            RichText(
-              text: TextSpan(
-                style: const TextStyle(fontSize: 13),
-                children: [
-                  const TextSpan(
-                    text: "★ 4.8  ",
-                    style: TextStyle(
-                        color: Color(0xFFFFD700),
-                        fontWeight: FontWeight.w700),
-                  ),
-                  TextSpan(
-                    text: "50K+ femmes actives",
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontWeight: FontWeight.w500),
-                  ),
-                ],
+            Flexible(
+              child: RichText(
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  style: const TextStyle(fontSize: 13),
+                  children: [
+                    const TextSpan(
+                      text: "★ 4.8  ",
+                      style: TextStyle(
+                          color: Color(0xFFFFD700),
+                          fontWeight: FontWeight.w700),
+                    ),
+                    TextSpan(
+                      text: "50K+ femmes actives",
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
