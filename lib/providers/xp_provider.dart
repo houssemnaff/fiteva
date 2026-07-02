@@ -40,6 +40,8 @@ class XpNotifier extends StateNotifier<XpModel> {
     );
   }
 
+  Future<void> reload() => _load();
+
   Future<void> _save() async {
     await XpService.save(
       totalXp:            state.totalXp,

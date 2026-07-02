@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
+import '../../providers/weekly_plan_provider.dart';
 import 'active_workout_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════
@@ -77,144 +78,20 @@ const _categories = [
   ),
 ];
 
-WorkoutCategory? _catById(String? id) =>
-    id == null ? null : _categories.firstWhere((c) => c.id == id,
-        orElse: () => _categories.last);
+WorkoutCategory? _catById(String? id) {
+  if (id == null) return null;
+  try { return _categories.firstWhere((c) => c.id == id); }
+  catch (_) { return null; }
+}
 
 // ═══════════════════════════════════════════════════════════════
-// MODEL
+// MODEL EXTENSION (category helper only)
 // ═══════════════════════════════════════════════════════════════
 
-enum DayStatus { empty, rest, planned, done }
-
-class DayPlan {
-  final int weekdayIndex; // 0 = Monday
-  final String dayShort;  // 'LUN'
-  final String dayFull;   // 'Lundi'
-  final DateTime date;
-  final DayStatus status;
-  final String? categoryId;
-  final WorkoutModel? workout;
-
-  const DayPlan({
-    required this.weekdayIndex,
-    required this.dayShort,
-    required this.dayFull,
-    required this.date,
-    this.status = DayStatus.empty,
-    this.categoryId,
-    this.workout,
-  });
-
-  DayPlan copyWith({
-    DayStatus? status,
-    String? categoryId,
-    WorkoutModel? workout,
-    bool clearWorkout = false,
-    bool clearCategory = false,
-  }) => DayPlan(
-    weekdayIndex: weekdayIndex,
-    dayShort: dayShort,
-    dayFull: dayFull,
-    date: date,
-    status: status ?? this.status,
-    categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
-    workout: clearWorkout ? null : (workout ?? this.workout),
-  );
-
-  bool get isToday {
-    final now = DateTime.now();
-    return date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
-  }
-
+extension DayPlanCategory on DayPlan {
   WorkoutCategory? get category => _catById(categoryId);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PROVIDER
-// ═══════════════════════════════════════════════════════════════
-
-class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
-  static const _shorts = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
-  static const _fulls = [
-    'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'
-  ];
-
-  @override
-  List<DayPlan> build() {
-    final now = DateTime.now();
-    final monday = now.subtract(Duration(days: now.weekday - 1));
-    return List.generate(7, (i) => DayPlan(
-      weekdayIndex: i,
-      dayShort: _shorts[i],
-      dayFull: _fulls[i],
-      date: monday.add(Duration(days: i)),
-    ));
-  }
-
-  void assign(int index, String categoryId, [WorkoutModel? workout]) {
-    final updated = List<DayPlan>.from(state);
-    final isRest = categoryId == 'rest';
-    updated[index] = updated[index].copyWith(
-      status: isRest ? DayStatus.rest : DayStatus.planned,
-      categoryId: categoryId,
-      workout: workout,
-      clearWorkout: workout == null && !isRest,
-    );
-    state = updated;
-  }
-
-  void remove(int index) {
-    final updated = List<DayPlan>.from(state);
-    updated[index] = updated[index].copyWith(
-      status: DayStatus.empty,
-      clearCategory: true,
-      clearWorkout: true,
-    );
-    state = updated;
-  }
-
-  void markDone(int index) {
-    final updated = List<DayPlan>.from(state);
-    updated[index] = updated[index].copyWith(status: DayStatus.done);
-    state = updated;
-  }
-
-  void swap(int a, int b) {
-    final updated = List<DayPlan>.from(state);
-    final catA = updated[a].categoryId;
-    final wA   = updated[a].workout;
-    final sA   = updated[a].status;
-    final catB = updated[b].categoryId;
-    final wB   = updated[b].workout;
-    final sB   = updated[b].status;
-
-    updated[a] = DayPlan(
-      weekdayIndex: updated[a].weekdayIndex,
-      dayShort: updated[a].dayShort,
-      dayFull: updated[a].dayFull,
-      date: updated[a].date,
-      status: sB,
-      categoryId: catB,
-      workout: wB,
-    );
-    updated[b] = DayPlan(
-      weekdayIndex: updated[b].weekdayIndex,
-      dayShort: updated[b].dayShort,
-      dayFull: updated[b].dayFull,
-      date: updated[b].date,
-      status: sA,
-      categoryId: catA,
-      workout: wA,
-    );
-    state = updated;
-  }
-}
-
-final weeklyPlanProvider =
-    NotifierProvider<WeeklyPlanNotifier, List<DayPlan>>(WeeklyPlanNotifier.new);
 
 // ═══════════════════════════════════════════════════════════════
 // SCREEN
@@ -596,8 +473,8 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                         key: ValueKey(_selected),
                         plan: selectedPlan,
                         index: _selected,
-                        onAdd: () => _openPicker(_selected),
-                        onOptions: () => _showDayOptions(
+                        onAdd: selectedPlan.isPast ? null : () => _openPicker(_selected),
+                        onOptions: selectedPlan.isPast ? null : () => _showDayOptions(
                             context, _selected, selectedPlan),
                       ),
                     ),
@@ -648,8 +525,8 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
 class _DayDetailCard extends StatelessWidget {
   final DayPlan plan;
   final int index;
-  final VoidCallback onAdd;
-  final VoidCallback onOptions;
+  final VoidCallback? onAdd;
+  final VoidCallback? onOptions;
 
   const _DayDetailCard({
     super.key,
@@ -727,30 +604,38 @@ class _DayDetailCard extends StatelessWidget {
                   color: _statusColor(plan.status, cat))),
               ),
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: onOptions,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: cs.surface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: cs.outline),
+            if (onOptions != null)
+              GestureDetector(
+                onTap: onOptions,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: cs.outline),
+                  ),
+                  child: Icon(LucideIcons.ellipsis,
+                      size: 14, color: cs.onSurface.withValues(alpha: 0.6)),
                 ),
-                child: Icon(LucideIcons.ellipsis,
-                    size: 14, color: cs.onSurface.withValues(alpha: 0.6)),
-              ),
-            ),
+              )
+            else
+              Icon(LucideIcons.lock,
+                  size: 16, color: cs.onSurface.withValues(alpha: 0.25)),
           ]),
         ),
 
         Padding(
           padding: const EdgeInsets.all(16),
-          child: cat == null
-              ? _EmptyDayBody(onAdd: onAdd, cs: cs)
-              : cat.isRest
-                  ? _RestDayBody(cat: cat, cs: cs, onEdit: onAdd)
-                  : _PlannedDayBody(
-                      plan: plan, cat: cat, cs: cs, onEdit: onAdd),
+          child: plan.isPast && plan.status == DayStatus.empty
+              ? _PastDayBody(cs: cs, dayFull: plan.dayFull)
+              : plan.status == DayStatus.empty
+                  ? _EmptyDayBody(onAdd: onAdd!, cs: cs)
+                  : plan.status == DayStatus.rest
+                      ? _RestDayBody(
+                          cat: cat ?? _categories.firstWhere((c) => c.id == 'rest'),
+                          cs: cs, onEdit: onAdd)
+                      : _PlannedDayBody(
+                          plan: plan, cat: cat, cs: cs, onEdit: onAdd),
         ),
       ]),
     );
@@ -779,6 +664,32 @@ class _DayDetailCard extends StatelessWidget {
 }
 
 // Empty body
+// Past day — locked
+class _PastDayBody extends StatelessWidget {
+  final ColorScheme cs;
+  final String dayFull;
+  const _PastDayBody({required this.cs, required this.dayFull});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 28),
+      decoration: BoxDecoration(
+        color: cs.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(children: [
+        Icon(LucideIcons.lock, size: 28,
+            color: cs.onSurface.withValues(alpha: 0.18)),
+        const SizedBox(height: 8),
+        Text('Jour passé', style: GoogleFonts.inter(
+          fontSize: 13, color: cs.onSurface.withValues(alpha: 0.3))),
+      ]),
+    );
+  }
+}
+
 class _EmptyDayBody extends ConsumerWidget {
   final VoidCallback onAdd;
   final ColorScheme cs;
@@ -833,7 +744,7 @@ class _EmptyDayBody extends ConsumerWidget {
 class _RestDayBody extends StatelessWidget {
   final WorkoutCategory cat;
   final ColorScheme cs;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit;
   const _RestDayBody({
     required this.cat, required this.cs, required this.onEdit});
 
@@ -877,17 +788,22 @@ class _RestDayBody extends StatelessWidget {
 // Planned body (with category + optional specific workout)
 class _PlannedDayBody extends ConsumerWidget {
   final DayPlan plan;
-  final WorkoutCategory cat;
+  final WorkoutCategory? cat;
   final ColorScheme cs;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit;
   const _PlannedDayBody({
     required this.plan, required this.cat,
     required this.cs, required this.onEdit});
+
+  static const _fallbackCat = WorkoutCategory(
+    id: 'planned', label: 'Séance planifiée', subtitle: '',
+    icon: LucideIcons.dumbbell, color: Color(0xFF1C4D30));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final w = plan.workout;
     final isDone = plan.status == DayStatus.done;
+    final c = cat ?? _fallbackCat;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       // Category banner
@@ -895,29 +811,30 @@ class _PlannedDayBody extends ConsumerWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: cat.color.withValues(alpha: 0.08),
+          color: c.color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cat.color.withValues(alpha: 0.2)),
+          border: Border.all(color: c.color.withValues(alpha: 0.2)),
         ),
         child: Row(children: [
           Container(
             width: 44, height: 44,
             decoration: BoxDecoration(
-              color: cat.color.withValues(alpha: 0.15),
+              color: c.color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(cat.icon, color: cat.color, size: 20),
+            child: Icon(c.icon, color: c.color, size: 20),
           ),
           const SizedBox(width: 14),
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(cat.label, style: GoogleFonts.outfit(
+              Text(w?.title ?? c.label, style: GoogleFonts.outfit(
                 fontSize: 16, fontWeight: FontWeight.w800,
                 color: cs.onSurface, letterSpacing: -0.3)),
-              Text(cat.subtitle, style: GoogleFonts.inter(
-                fontSize: 12,
-                color: cs.onSurface.withValues(alpha: 0.45))),
+              if (c.subtitle.isNotEmpty)
+                Text(c.subtitle, style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: cs.onSurface.withValues(alpha: 0.45))),
             ],
           )),
           if (isDone)
@@ -935,8 +852,8 @@ class _PlannedDayBody extends ConsumerWidget {
             Image.asset(w.imageUrl,
               width: double.infinity, height: 130, fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
-                height: 130, color: cat.color.withValues(alpha: 0.1),
-                child: Icon(cat.icon, size: 40, color: cat.color))),
+                height: 130, color: c.color.withValues(alpha: 0.1),
+                child: Icon(c.icon, size: 40, color: c.color))),
             Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Colors.transparent,
@@ -968,7 +885,7 @@ class _PlannedDayBody extends ConsumerWidget {
         const SizedBox(height: 10),
         Row(children: [
           _MiniPill(icon: LucideIcons.timer,
-              label: w.duration, color: cat.color),
+              label: w.duration, color: c.color),
           const SizedBox(width: 8),
           _MiniPill(icon: LucideIcons.flame,
               label: '${w.calories} kcal',
@@ -992,7 +909,7 @@ class _PlannedDayBody extends ConsumerWidget {
                       builder: (_) => ActiveWorkoutScreen(workout: w)),
                 );
               } else {
-                onEdit();
+                onEdit?.call();
               }
             },
             child: Container(
@@ -1000,7 +917,7 @@ class _PlannedDayBody extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: isDone
                     ? cs.surfaceContainerHighest
-                    : cat.color,
+                    : c.color,
                 borderRadius: BorderRadius.circular(50),
                 border: isDone ? Border.all(color: cs.outline) : null,
               ),
@@ -1029,7 +946,7 @@ class _PlannedDayBody extends ConsumerWidget {
         GestureDetector(
           onTap: () {
             HapticFeedback.selectionClick();
-            onEdit();
+            onEdit?.call();
           },
           child: Container(
             width: 46, height: 46,
@@ -1070,14 +987,17 @@ class _WeekRow extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final cat = plan.category;
     final isDone = plan.status == DayStatus.done;
+    final isPast = plan.isPast;
 
     return GestureDetector(
       onTap: onTap,
-      onLongPress: () {
+      onLongPress: isPast ? null : () {
         HapticFeedback.mediumImpact();
         onLongPress();
       },
-      child: AnimatedContainer(
+      child: Opacity(
+        opacity: isPast && plan.status == DayStatus.empty ? 0.45 : 1.0,
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -1176,6 +1096,7 @@ class _WeekRow extends StatelessWidget {
                   color: cs.onSurface.withValues(alpha: 0.35)))),
           ]),
         ]),
+      ),
       ),
     );
   }

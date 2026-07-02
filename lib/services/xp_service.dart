@@ -75,8 +75,7 @@ class XpService {
         'streak':           streak,
         'last_active_date': lastActiveDate,
         'badges':           badges,
-        'updated_at':       DateTime.now().toIso8601String(),
-      });
+      }, onConflict: 'user_id');
 
       // Synchronise la progression par challenge
       for (final entry in challengeProgress.entries) {
@@ -116,8 +115,7 @@ class XpService {
         'user_id':              uid,
         'login_rewarded_today': true,
         'last_active_date':     _today(),
-        'updated_at':           DateTime.now().toIso8601String(),
-      });
+      }, onConflict: 'user_id');
     } catch (_) {}
   }
 

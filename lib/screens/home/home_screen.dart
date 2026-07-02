@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/providers/xp_provider.dart';
+import 'package:fiteva/providers/weekly_plan_provider.dart';
 
 import 'package:fiteva/screens/home/library_widget.dart';
 import 'package:fiteva/screens/home/referral_card.dart';
@@ -26,96 +27,6 @@ import '../../l10n/app_localizations.dart';
 
 
 
-// ═══════════════════════════════════════════════════════════
-// WEEKLY PLAN — Models & Provider
-// ═══════════════════════════════════════════════════════════
-
-enum DayStatus { rest, planned, done, today }
-
-class DayPlan {
-  final String dayLabel;
-  final String fullDay;
-  final DateTime date;
-  final DayStatus status;
-  final WorkoutModel? workout;
-
-  DayPlan({
-    required this.dayLabel,
-    required this.fullDay,
-    required this.date,
-    this.status = DayStatus.rest,
-    this.workout,
-  });
-
-  DayPlan copyWith(
-      {DayStatus? status, WorkoutModel? workout, bool clearWorkout = false}) {
-    return DayPlan(
-      dayLabel: dayLabel,
-      fullDay: fullDay,
-      date: date,
-      status: status ?? this.status,
-      workout: clearWorkout ? null : (workout ?? this.workout),
-    );
-  }
-}
-
-class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
-  @override
-  List<DayPlan> build() => _generateWeek();
-
-  List<DayPlan> _generateWeek() {
-    final now = DateTime.now();
-    final monday = now.subtract(Duration(days: now.weekday - 1));
-    const labels = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
-    const full = [
-      'Lundi',
-      'Mardi',
-      'Mercredi',
-      'Jeudi',
-      'Vendredi',
-      'Samedi',
-      'Dimanche'
-    ];
-    return List.generate(7, (i) {
-      final date = monday.add(Duration(days: i));
-      final isToday = _isSameDay(date, now);
-      return DayPlan(
-        dayLabel: labels[i],
-        fullDay: full[i],
-        date: date,
-        status: isToday ? DayStatus.today : DayStatus.rest,
-      );
-    });
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
-  void assignWorkout(int i, WorkoutModel w) {
-    final list = List<DayPlan>.from(state);
-    list[i] = list[i].copyWith(status: DayStatus.planned, workout: w);
-    state = list;
-  }
-
-  void markAsDone(int i) {
-    final list = List<DayPlan>.from(state);
-    list[i] = list[i].copyWith(status: DayStatus.done);
-    state = list;
-  }
-
-  void removeWorkout(int i) {
-    final list = List<DayPlan>.from(state);
-    final now = DateTime.now();
-    list[i] = list[i].copyWith(
-      status: _isSameDay(list[i].date, now) ? DayStatus.today : DayStatus.rest,
-      clearWorkout: true,
-    );
-    state = list;
-  }
-}
-
-final weeklyPlanProvider =
-    NotifierProvider<WeeklyPlanNotifier, List<DayPlan>>(WeeklyPlanNotifier.new);
 
 // ═══════════════════════════════════════════════════════════
 // HOME SCREEN
@@ -653,30 +564,25 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
   void initState() {
     super.initState();
     final plans = ref.read(weeklyPlanProvider);
-    _selectedDay = plans.indexWhere((d) => d.status == DayStatus.today);
+    _selectedDay = plans.indexWhere((d) => d.isToday);
     if (_selectedDay == -1) _selectedDay = 0;
   }
 
-  Color _statusColor(DayStatus s, ColorScheme cs) {
-    switch (s) {
-      case DayStatus.done:
-        return const Color(0xFF52B788);
-      case DayStatus.planned:
-        return cs.primary;
-      case DayStatus.today:
-        return cs.secondary;
-      case DayStatus.rest:
-        return const Color(0xFFE8EDE8);
+  Color _statusColor(DayPlan plan, ColorScheme cs) {
+    if (plan.isToday && plan.status == DayStatus.empty) return cs.secondary;
+    switch (plan.status) {
+      case DayStatus.done:    return const Color(0xFF52B788);
+      case DayStatus.planned: return cs.primary;
+      case DayStatus.rest:    return const Color(0xFF9CA3AF);
+      case DayStatus.empty:   return const Color(0xFFE8EDE8);
     }
   }
 
-  Color _statusTextColor(DayStatus s) {
-    switch (s) {
-      case DayStatus.rest:
-        return const Color(0xFF8E8E93);
-      default:
-        return Colors.white;
+  Color _statusTextColor(DayPlan plan) {
+    if (plan.status == DayStatus.empty || plan.status == DayStatus.rest) {
+      return const Color(0xFF8E8E93);
     }
+    return Colors.white;
   }
 
   void _showPicker(int dayIndex) {
@@ -771,7 +677,10 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
               children: List.generate(plans.length, (i) {
                 final plan = plans[i];
                 final isSel = _selectedDay == i;
-                final sc = _statusColor(plan.status, cs);
+                final isPast = plan.isPast;
+                final sc = isPast
+                    ? cs.onSurface.withValues(alpha: 0.06)
+                    : _statusColor(plan, cs);
                 final hasWorkout = plan.workout != null;
 
                 return Expanded(
@@ -797,13 +706,11 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                       child: Column(
                         children: [
                           Text(
-                            plan.dayLabel,
+                            plan.dayShort,
                             style: GoogleFonts.inter(
                               color: isSel
                                   ? cs.secondary
-                                  : plan.status == DayStatus.rest
-                                      ? const Color(0xFF8E8E93)
-                                      : Colors.white,
+                                  : _statusTextColor(plan),
                               fontSize: 8,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.5,
@@ -813,11 +720,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                           Text(
                             '${plan.date.day}',
                             style: GoogleFonts.outfit(
-                              color: isSel
-                                  ? Colors.white
-                                  : plan.status == DayStatus.rest
-                                      ? Colors.black
-                                      : Colors.black,
+                              color: Colors.black,
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                             ),
@@ -856,11 +759,11 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
       onAddWorkout: () => _showPicker(_selectedDay),
       onMarkDone: () {
         ref.read(weeklyPlanProvider.notifier)
-            .markAsDone(_selectedDay);
+            .markDone(_selectedDay);
       },
       onRemove: () {
         ref.read(weeklyPlanProvider.notifier)
-            .removeWorkout(_selectedDay);
+            .remove(_selectedDay);
       },
       onViewDetail: () {
         final w = sel.workout;
@@ -917,42 +820,58 @@ class _DayDetailCard extends ConsumerWidget {
     final l10n = ref.watch(l10nProvider);
     final w = plan.workout;
     final isDone = plan.status == DayStatus.done;
+    final isPast = plan.isPast;
+    final cs = Theme.of(context).colorScheme;
 
     if (w == null) {
-      // Empty state
+      // Past day with no workout — show locked state
+      if (isPast) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          decoration: BoxDecoration(
+            color: cs.onSurface.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.onSurface.withValues(alpha: 0.08)),
+          ),
+          child: Column(children: [
+            Icon(LucideIcons.lock, color: cs.onSurface.withValues(alpha: 0.2), size: 22),
+            const SizedBox(height: 8),
+            Text('Jour passé — ${plan.dayFull}',
+              style: GoogleFonts.inter(
+                color: cs.onSurface.withValues(alpha: 0.3),
+                fontSize: 13, fontWeight: FontWeight.w500)),
+          ]),
+        );
+      }
+      // Future/today empty — show add button
       return GestureDetector(
         onTap: onAddWorkout,
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 24),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                color: cs.primary.withValues(alpha: 0.15),
                 width: 1.5,
                 style: BorderStyle.solid),
           ),
           child: Column(children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 44, height: 44,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                color: cs.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: Icon(LucideIcons.plus,
-                  color: Theme.of(context).colorScheme.primary, size: 20),
+              child: Icon(LucideIcons.plus, color: cs.primary, size: 20),
             ),
             const SizedBox(height: 10),
-            Text(
-              'Add a workout for ${plan.fullDay}',
+            Text('Planifier ${plan.dayFull}',
               style: GoogleFonts.inter(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+                color: cs.onSurfaceVariant,
+                fontSize: 13, fontWeight: FontWeight.w500)),
           ]),
         ),
       );

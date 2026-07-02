@@ -39,6 +39,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
   CyclePhase? _selectedPhase;
   final _scrollController = ScrollController();
 
+  @override
+  void initState() {
+    super.initState();
+    // Recharge les favoris depuis Supabase (le build initial peut précéder l'auth)
+    Future.microtask(() => ref.read(favoritesProvider.notifier).reload());
+  }
+
   final _keySalle     = GlobalKey();
   final _keyMaison    = GlobalKey();
   final _keyDance     = GlobalKey();
@@ -782,8 +789,8 @@ class _ProgramsFilterSheetState
                         subtitle: '${p.duration} · ${p.sessions}',
                         phases: p.phases,
                         color: widget.color,
-                        isFav: widget.favorites.contains(p.name),
-                        onToggleFav: () => widget.onToggleFav(p.name),
+                        isFav: widget.favorites.contains('prog:${p.id}'),
+                        onToggleFav: () => widget.onToggleFav('prog:${p.id}'),
                         onTap: () => widget.onSelectProgram(p),
                       );
                     },

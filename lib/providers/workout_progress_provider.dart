@@ -116,6 +116,9 @@ class FavoritesNotifier extends Notifier<Set<String>> {
     state = favorites;
   }
 
+  /// Recharge depuis Supabase — utile si le build initial a eu lieu avant l'auth
+  Future<void> reload() => _loadFavorites();
+
   Future<void> toggleFavorite(String id) async {
     await WorkoutProgressService.toggleFavorite(id);
     final newSet = Set<String>.from(state);

@@ -34,5 +34,9 @@ class SupabaseConfig {
   }
 
   /// Raccourci vers la table [table]
-  static SupabaseQueryBuilder table(String table) => client.from(table);
+  static SupabaseQueryBuilder table(String table) {
+    assert(anonKey.isNotEmpty && anonKey != 'YOUR_ANON_KEY',
+        'SupabaseConfig.anonKey est vide — remplis-le dans supabase_config.dart');
+    return client.from(table);
+  }
 }

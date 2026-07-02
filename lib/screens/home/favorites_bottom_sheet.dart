@@ -6,6 +6,7 @@ import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/core/nutrition/favorites_provider.dart' as nutrition;
 import 'package:fiteva/core/shop/shop_provider.dart' as shop_provider;
+import 'package:fiteva/screens/shop/models/boutique_item.dart';
 
 enum FavoriteType { workout, recipe, product }
 
@@ -31,6 +32,11 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
     final programFavorites = ref.watch(favoritesProvider);
     final recipeFavorites = ref.watch(nutrition.favoritesProvider);
     final shopWishlist = ref.watch(shop_provider.shopWishlistProvider);
+    final shopItemsAsync = ref.watch(shop_provider.shopItemsProvider);
+    final shopItems = shopItemsAsync.maybeWhen(
+      data: (d) => d,
+      orElse: () => <BoutiqueItem>[],
+    );
 
     // Watch all program providers
     final sallePrograms = ref.watch(salleProgramsProvider);
@@ -157,7 +163,7 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildContent(_selectedTab, programFavorites, recipeFavorites, shopWishlist, allPrograms, cs),
+              child: _buildContent(_selectedTab, programFavorites, recipeFavorites, shopWishlist, allPrograms, shopItems, cs),
             ),
           ),
         ],
@@ -165,43 +171,44 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
     );
   }
 
-  List<Map<String, dynamic>> _getItems(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms) {
+  List<Map<String, dynamic>> _getItems(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, List<BoutiqueItem> shopItems) {
     if (tab == 0) {
-      // Programs - filter by name
+      // Programmes — favoris stockés avec préfixe 'prog:id'
       return allPrograms
-          .where((p) => programFavorites.contains(p.name))
+          .where((p) => programFavorites.contains('prog:${p.id}'))
           .map((p) => {
-            'id': p.name,
+            'id': 'prog:${p.id}',
             'title': p.name,
             'subtitle': '${p.duration} · ${p.sessions}',
             'image': p.imageUrl,
           })
           .toList();
     } else if (tab == 1) {
-      // Recipes - show only favorited recipe IDs
+      // Recettes — afficher l'ID (nom de la recette)
       return recipeFavorites
           .map((id) => {
             'id': id,
             'title': id,
-            'subtitle': 'Recipe',
+            'subtitle': 'Recette',
             'image': 'assets/images/recipe.jpg',
           })
           .toList();
     } else {
-      // Products - show shop wishlist items
-      return shopWishlist
-          .map((id) => {
-            'id': id,
-            'title': id,
-            'subtitle': 'Produit',
-            'image': 'assets/images/product.jpg',
-          })
-          .toList();
+      // Boutique — jointure avec shopItems pour avoir le vrai nom
+      return shopWishlist.map((id) {
+        final item = shopItems.where((i) => i.id == id).firstOrNull;
+        return {
+          'id':       id,
+          'title':    item?.title    ?? id,
+          'subtitle': item?.brand    ?? 'Boutique',
+          'image':    item?.imageUrl ?? '',
+        };
+      }).toList();
     }
   }
 
-  Widget _buildContent(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, ColorScheme cs) {
-    final items = _getItems(tab, programFavorites, recipeFavorites, shopWishlist, allPrograms);
+  Widget _buildContent(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, List<BoutiqueItem> shopItems, ColorScheme cs) {
+    final items = _getItems(tab, programFavorites, recipeFavorites, shopWishlist, allPrograms, shopItems);
 
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),

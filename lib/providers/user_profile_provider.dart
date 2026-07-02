@@ -200,7 +200,40 @@ class UserProfile {
 
   DateTime? get nextPeriodDate {
     if (lastPeriod == null) return null;
-    return lastPeriod!.add(Duration(days: cycleDays));
+    final today = DateTime.now();
+    var next = lastPeriod!.add(Duration(days: cycleDays));
+    // Avancer jusqu'à la prochaine occurrence future
+    while (next.isBefore(DateTime(today.year, today.month, today.day))) {
+      next = next.add(Duration(days: cycleDays));
+    }
+    return next;
+  }
+
+  /// Date de règles prévue la plus récente — peut être aujourd'hui ou dans le passé
+  /// (pour détecter un retard). Différent de nextPeriodDate qui avance toujours au futur.
+  DateTime? get pendingPeriodDate {
+    if (lastPeriod == null) return null;
+    final now   = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    var next = lastPeriod!.add(Duration(days: cycleDays));
+    // Avancer uniquement si la prochaine occurrence est elle aussi passée
+    while (!next.add(Duration(days: cycleDays)).isAfter(today)) {
+      next = next.add(Duration(days: cycleDays));
+    }
+    return next; // peut être <= today (retard) ou >= today (à venir)
+  }
+
+  DateTime? get ovulationDate {
+    final next = nextPeriodDate;
+    if (next == null) return null;
+    final now   = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    var ovulation = next.subtract(const Duration(days: 14));
+    // Si l'ovulation de ce cycle est déjà passée, passer au cycle suivant
+    if (ovulation.isBefore(today)) {
+      ovulation = next.add(Duration(days: cycleDays)).subtract(const Duration(days: 14));
+    }
+    return ovulation;
   }
 
   int get cycleDays {

@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/core/nutrition/food_database.dart';
 import 'package:fiteva/core/nutrition/models.dart';
+import 'package:fiteva/core/nutrition/nutrition_provider.dart' show generateMealId;
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -294,7 +295,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
         return;
       }
       food = FoodItem(
-        id:       'manual_${DateTime.now().millisecondsSinceEpoch}',
+        id:       generateMealId(),
         name:     name,
         category: FoodCategory.platCompose,
         kcal: kcal, protein: protein, carbs: carbs, fat: fat,
@@ -339,7 +340,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
 
     final now = DateTime.now();
     final entries = _basket.asMap().entries.map((e) => MealEntry(
-      id:       '${now.millisecondsSinceEpoch}_${e.key}',
+      id:       generateMealId(),
       food:     e.value.food,
       grams:    e.value.grams,
       mealType: type!,

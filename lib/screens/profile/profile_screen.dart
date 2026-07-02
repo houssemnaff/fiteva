@@ -1,5 +1,6 @@
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/xp_provider.dart';
+import 'package:fiteva/providers/locale_provider.dart';
 import 'package:fiteva/services/auth_service.dart';
 import 'package:fiteva/services/storage_service.dart';
 import 'package:flutter/material.dart';
@@ -21,11 +22,25 @@ final chatbotVisibilityProvider = StateProvider<bool>(
 );
 
 // ─── ProfileScreen ──────────────────────────────────────────────────────────
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(xpProvider.notifier).reload();
+      ref.read(pointsProvider.notifier).loadPoints();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user       = ref.watch(userProfileProvider);
     final profile    = ref.watch(userProfileProvider);
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
@@ -308,6 +323,78 @@ class ProfileScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+            ),
+          ),
+
+          // ── Dark mode toggle ────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: _SettingsTile(
+                icon: LucideIcons.moon,
+                label: l10n.darkMode,
+                color: const Color(0xFF6366F1),
+                surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
+                trailing: GestureDetector(
+                  onTap: () => ref.read(themeModeProvider.notifier).toggleThemeMode(),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 42, height: 24,
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? const Color(0xFF22C55E)
+                          : const Color(0xFFD0D0CE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: AnimatedAlign(
+                      duration: const Duration(milliseconds: 200),
+                      alignment: isDarkMode ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Container(
+                          width: 20, height: 20,
+                          decoration: const BoxDecoration(
+                            color: Colors.white, shape: BoxShape.circle),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Language toggle ─────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Consumer(builder: (_, ref2, __) {
+                final isFr = ref2.watch(localeProvider).languageCode == 'fr';
+                return _SettingsTile(
+                  icon: LucideIcons.globe,
+                  label: isFr ? 'Langue : Français' : 'Language: English',
+                  color: const Color(0xFF0EA5E9),
+                  surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
+                  trailing: GestureDetector(
+                    onTap: () => ref2.read(localeProvider.notifier)
+                        .setLocale(isFr ? const Locale('en') : const Locale('fr')),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0EA5E9).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF0EA5E9).withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        isFr ? 'FR → EN' : 'EN → FR',
+                        style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w700,
+                          color: const Color(0xFF0EA5E9)),
+                      ),
+                    ),
+                  ),
+                );
+              }),
             ),
           ),
 

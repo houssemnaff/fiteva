@@ -41,7 +41,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
 
   late AnimationController _ctrl;
   late Animation<double>   _anim;
-
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -54,6 +54,25 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
 
   @override
   void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  bool get _isToday {
+    final now = DateTime.now();
+    return _selectedDate.year == now.year &&
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day;
+  }
+
+  void _goToPrevDay() {
+    final prev = _selectedDate.subtract(const Duration(days: 1));
+    setState(() => _selectedDate = prev);
+    final key = dateKey(prev);
+    ref.read(nutritionProvider.notifier).loadForDate(key);
+  }
+
+  void _goToNextDay() {
+    if (_isToday) return;
+    setState(() => _selectedDate = _selectedDate.add(const Duration(days: 1)));
+  }
 
   void _goToSuivi(String id) => Navigator.push(context,
       MaterialPageRoute(builder: (_) => SuiviNutritionScreen(initialMealId: id)));
@@ -93,6 +112,12 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
     }
   }
 
+  static String _formatDateLabel(DateTime d) {
+    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun',
+                    'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
   // Fix #3 — map NutritionGoal → goalId string
   String _goalId(core.NutritionGoal g) => switch (g) {
     core.NutritionGoal.loss     => 'loss',
@@ -102,9 +127,9 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final totals  = ref.watch(todayTotalsProvider);
+    final key     = dateKey(_selectedDate);
+    final totals  = ref.watch(dailyTotalsProvider(key));
     final profile = ref.watch(userProfileProvider);
-    final key     = todayKey;
 
     final categories = core.MealType.values.map((type) {
       final entries    = ref.watch(mealsForTypeProvider((dateKey: key, type: type)));
@@ -222,9 +247,62 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
               ),
             ),
 
+          // Date navigation bar
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: _goToPrevDay,
+                    child: Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F4F4),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.chevron_left_rounded, size: 20, color: Color(0xFF6B7280)),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _isToday ? null : () => setState(() => _selectedDate = DateTime.now()),
+                    child: Column(
+                      children: [
+                        Text(
+                          _isToday ? "Aujourd'hui" : _formatDateLabel(_selectedDate),
+                          style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w700,
+                            color: Color(0xFF1C4D30)),
+                        ),
+                        if (!_isToday)
+                          const Text('Retour à aujourd\'hui',
+                            style: TextStyle(fontSize: 10, color: Color(0xFF7ABB98))),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _isToday ? null : _goToNextDay,
+                    child: Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: _isToday
+                            ? const Color(0xFFF4F4F4).withValues(alpha: 0.4)
+                            : const Color(0xFFF4F4F4),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.chevron_right_rounded, size: 20,
+                        color: _isToday ? const Color(0xFFD0D0CE) : const Color(0xFF6B7280)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
               child: MealsContainer(categories: categories, onMealTap: _goToSuivi),
             ),
           ),
@@ -255,11 +333,21 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   separatorBuilder: (_, __) => const SizedBox(width: 12),
                   itemCount: recipes.length,
-                  itemBuilder: (_, i) => RecipeCard(
-                    recipe: recipes[i],
-                    onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) =>
-                        RecipeDetailScreen(recipe: recipes[i])))),
+                  itemBuilder: (_, i) {
+                    final r = recipes[i];
+                    return RecipeCard(
+                      recipe: r,
+                      onTap: () {
+                        try {
+                          Navigator.of(context, rootNavigator: true).push(
+                            MaterialPageRoute(builder: (_) =>
+                              RecipeDetailScreen(recipe: r)));
+                        } catch (e) {
+                          debugPrint('RecipeDetail nav error: $e');
+                        }
+                      },
+                    );
+                  },
                 ),
               ),
             ),

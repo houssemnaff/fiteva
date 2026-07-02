@@ -69,8 +69,8 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
 
   void _toggleBookmark(BuildContext context, HomeProgramModel p) {
     final favorites = ref.read(favoritesProvider);
-    final isFav = favorites.contains(p.name);
-    ref.read(favoritesProvider.notifier).toggleFavorite(p.name);
+    final isFav = favorites.contains('prog:${p.id}');
+    ref.read(favoritesProvider.notifier).toggleFavorite('prog:${p.id}');
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(isFav ? 'Retiré des favoris' : 'Ajouté aux favoris'),
       duration: const Duration(seconds: 2),

@@ -620,7 +620,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
   }
 
   void _openRecipe(BuildContext ctx, RealRecipe r) {
-    Navigator.push(ctx, MaterialPageRoute(
+    Navigator.of(ctx, rootNavigator: true).push(MaterialPageRoute(
       builder: (_) => RecipeDetailScreen(
         recipe: RecipeItem(r.imageUrl, r.name, r.name, r.accent))));
   }

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "174817071442",
+    "project_id": "emploi-a9291",
+    "storage_bucket": "emploi-a9291.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:174817071442:android:28f04b242c22d43cb5ea8b",
+        "android_client_info": {
+          "package_name": "com.fiteva.fiteva"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "174817071442-1gkj9sr02pbvtmas46dvlujvo7ql4c3u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGULP0mVq1m357Y6Gncno62Ng9eA6VL5Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "174817071442-1gkj9sr02pbvtmas46dvlujvo7ql4c3u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
