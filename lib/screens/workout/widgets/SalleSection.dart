@@ -44,8 +44,8 @@ class SalleSection extends StatelessWidget {
               final program = sallePrograms[i];
               return _SalleProgramCard(
                 program: program,
-                isFav: favorites.contains(program.name),
-                onToggleFav: () => onToggleFav(program.name),
+                isFav: favorites.contains(program.id),
+                onToggleFav: () => onToggleFav(program.id),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(

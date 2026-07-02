@@ -69,8 +69,8 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
 
   void _toggleBookmark(BuildContext context, HomeProgramModel p) {
     final favorites = ref.read(favoritesProvider);
-    final isFav = favorites.contains(p.name);
-    ref.read(favoritesProvider.notifier).toggleFavorite(p.name);
+    final isFav = favorites.contains(p.id);
+    ref.read(favoritesProvider.notifier).toggleFavorite(p.id);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(isFav ? 'Retiré des favoris' : 'Ajouté aux favoris'),
       duration: const Duration(seconds: 2),
@@ -82,7 +82,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
     final p = widget.program;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final l10n = ref.watch(l10nProvider);
-    final isFav = ref.watch(favoritesProvider).contains(p.name);
+    final isFav = ref.watch(favoritesProvider).contains(p.id);
 
     return Scaffold(
       backgroundColor: dark ? const Color(0xFF0D0D0D) : const Color.fromARGB(255, 255, 255, 255),

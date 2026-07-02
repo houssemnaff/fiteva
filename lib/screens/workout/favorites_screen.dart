@@ -31,8 +31,8 @@ class FavoritesScreen extends ConsumerWidget {
     final workouts       = ref.watch(workoutsProvider);
     final favorites      = ref.watch(favoritesProvider);
 
-    final favSalle  = sallePrograms.where((p) => favorites.contains(p.name)).toList();
-    final favMaison = homePrograms.where((p) => favorites.contains(p.name)).toList();
+    final favSalle  = sallePrograms.where((p) => favorites.contains(p.id)).toList();
+    final favMaison = homePrograms.where((p) => favorites.contains(p.id)).toList();
     final favWorkouts = workouts.where((w) => favorites.contains(w.id)).toList();
     final totalCount = favSalle.length + favMaison.length + favWorkouts.length;
 
@@ -113,7 +113,7 @@ class FavoritesScreen extends ConsumerWidget {
                     sectionColor: WorkoutColors.salle,
                     sectionLabel: 'SALLE',
                     isFav: true,
-                    onToggleFav: () => ref.read(favoritesProvider.notifier).toggleFavorite(favSalle[i].name),
+                    onToggleFav: () => ref.read(favoritesProvider.notifier).toggleFavorite(favSalle[i].id),
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -145,7 +145,7 @@ class FavoritesScreen extends ConsumerWidget {
                     sectionColor: WorkoutColors.maison,
                     sectionLabel: 'MAISON',
                     isFav: true,
-                    onToggleFav: () => ref.read(favoritesProvider.notifier).toggleFavorite(favMaison[i].name),
+                    onToggleFav: () => ref.read(favoritesProvider.notifier).toggleFavorite(favMaison[i].id),
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(

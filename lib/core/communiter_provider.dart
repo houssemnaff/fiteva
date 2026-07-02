@@ -2,6 +2,7 @@ import 'package:fiteva/models/post_model.dart';
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:fiteva/services/comuniter_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 // ─── Tab index ───────────────────────────────────────────────────────────────
@@ -9,24 +10,32 @@ final communityTabProvider = StateProvider<int>((ref) => 0);
 
 // ─── Posts Notifier ──────────────────────────────────────────────────────────
 
+final postsLoadingProvider = StateProvider<bool>((ref) => true);
+
 class PostsNotifier extends StateNotifier<List<PostModel>> {
-  PostsNotifier() : super([]) {
+  PostsNotifier(this._ref) : super([]) {
     _init();
   }
+
+  final Ref _ref;
 
   final Set<String> _liked = {};
 
   Future<void> _init() async {
+    _ref.read(postsLoadingProvider.notifier).state = true;
     final posts = await CommunityService.loadPosts();
     _liked.addAll(await CommunityService.loadLikedPosts());
     state = posts;
+    _ref.read(postsLoadingProvider.notifier).state = false;
   }
 
   /// Recharge les posts depuis Supabase
   Future<void> refresh() async {
+    _ref.read(postsLoadingProvider.notifier).state = true;
     final posts = await CommunityService.loadPosts();
     _liked.addAll(await CommunityService.loadLikedPosts());
     state = posts;
+    _ref.read(postsLoadingProvider.notifier).state = false;
   }
 
   bool isLiked(String id) => _liked.contains(id);
@@ -91,7 +100,7 @@ class PostsNotifier extends StateNotifier<List<PostModel>> {
 
 final postsNotifierProvider =
     StateNotifierProvider<PostsNotifier, List<PostModel>>(
-        (_) => PostsNotifier());
+        (ref) => PostsNotifier(ref));
 
 // ─── Events Notifier ─────────────────────────────────────────────────────────
 

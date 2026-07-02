@@ -782,8 +782,8 @@ class _ProgramsFilterSheetState
                         subtitle: '${p.duration} · ${p.sessions}',
                         phases: p.phases,
                         color: widget.color,
-                        isFav: widget.favorites.contains(p.name),
-                        onToggleFav: () => widget.onToggleFav(p.name),
+                        isFav: widget.favorites.contains(p.id),
+                        onToggleFav: () => widget.onToggleFav(p.id),
                         onTap: () => widget.onSelectProgram(p),
                       );
                     },

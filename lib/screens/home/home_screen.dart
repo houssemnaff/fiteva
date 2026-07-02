@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../models/workout_model.dart';
 import '../../models/home_program_model.dart';
 import '../../providers/mock_data_provider.dart';
@@ -229,50 +230,53 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
   @override
   Widget build(BuildContext context) {
     final recommendations = ref.watch(programRecommendationsProvider);
+    final h = MediaQuery.of(context).size.height * 0.62;
+    final cs = Theme.of(context).colorScheme;
+    final loading = recommendations.isEmpty;
 
     debugPrint('Building HeroSection with ${recommendations.length} recommendations');
-    if (recommendations.isEmpty) return const SizedBox.shrink();
 
-    // Initialize current index on first load
     if (_currentIndex == 0 && recommendations.isNotEmpty) {
       _currentIndex = Random().nextInt(recommendations.length);
     }
 
-    // Ensure index stays within bounds
     final safeIndex = recommendations.isEmpty ? 0 : _currentIndex % recommendations.length;
-    final program = recommendations[safeIndex];
-    final h = MediaQuery.of(context).size.height * 0.62;
-    final cs = Theme.of(context).colorScheme;
+    final program = recommendations.isEmpty ? null : recommendations[safeIndex];
 
     return SizedBox(
       height: h,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background image — crossfade on change
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 800),
-            child: SizedBox.expand(
-              key: ValueKey(_currentIndex),
-              child: Image.asset(
-                program.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Image.asset(
-                  'assets/images/workout.jpeg',
+          if (loading)
+            Shimmer.fromColors(
+              baseColor: cs.surfaceContainerHighest.withValues(alpha: 0.55),
+              highlightColor: cs.surfaceContainerHighest.withValues(alpha: 0.85),
+              child: Container(color: Colors.white),
+            )
+          else
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 800),
+              child: SizedBox.expand(
+                key: ValueKey(_currentIndex),
+                child: Image.asset(
+                  program!.imageUrl,
                   fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Image.asset(
+                    'assets/images/workout.jpeg',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // Deep gradient — bottom heavy
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 stops: [0.0, 0.35, 0.75, 1.0],
-                 colors: [
+                colors: [
                   Color(0x00000000),
                   Color(0x33000000),
                   Color(0x990B1A12),
@@ -282,7 +286,6 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
             ),
           ),
 
-          // Deep gradient — top heavy
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -299,7 +302,6 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
             ),
           ),
 
-          // Top bar
           Positioned(
             top: 0,
             left: 0,
@@ -313,7 +315,6 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
             ),
           ),
 
-          // Bottom editorial content
           Positioned(
             bottom: 0,
             left: 0,
@@ -324,74 +325,111 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Category eyebrow
                   Row(children: [
-                    Container(
-                        width: 28, height: 2, color: cs.secondary),
+                    Container(width: 28, height: 2, color: cs.secondary),
                     const SizedBox(width: 10),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 400),
-                      child: Text(
-                        key: ValueKey('cat_$_currentIndex'),
-                        ref.watch(l10nProvider).homeProgramme,
-                        style: GoogleFonts.inter(
-                          color: cs.secondary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 3,
+                    if (loading)
+                      Container(
+                        width: 84,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      )
+                    else
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        child: Text(
+                          key: ValueKey('cat_$_currentIndex'),
+                          ref.watch(l10nProvider).homeProgramme,
+                          style: GoogleFonts.inter(
+                            color: cs.secondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 3,
+                          ),
                         ),
                       ),
-                    ),
                   ]),
 
                   const SizedBox(height: 10),
 
-                  // Program name
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 400),
-                    child: Text(
-                      key: ValueKey('title_$_currentIndex'),
-                      program.name.toUpperCase(),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: (MediaQuery.of(context).size.width * 0.105).clamp(28.0, 42.0),
-                        fontWeight: FontWeight.w900,
-                        height: 1.0,
-                        letterSpacing: -1,
+                  if (loading)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: 220,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      child: Text(
+                        key: ValueKey('title_$_currentIndex'),
+                        program!.name.toUpperCase(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: (MediaQuery.of(context).size.width * 0.105).clamp(28.0, 42.0),
+                          fontWeight: FontWeight.w900,
+                          height: 1.0,
+                          letterSpacing: -1,
+                        ),
                       ),
                     ),
-                  ),
 
                   const SizedBox(height: 14),
 
-                  // Meta info row — program details
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      _MetaPill(label: program.duration, icon: LucideIcons.timer),
-                      _MetaPill(label: program.sessions, icon: LucideIcons.dumbbell),
-                      _MetaPill(label: program.phases, icon: LucideIcons.activity),
-                    ],
-                  ),
+                  if (loading)
+                    Row(children: [
+                      _HeroSkeletonPill(),
+                      const SizedBox(width: 8),
+                      _HeroSkeletonPill(),
+                      const SizedBox(width: 8),
+                      _HeroSkeletonPill(),
+                    ])
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        _MetaPill(label: program!.duration, icon: LucideIcons.timer),
+                        _MetaPill(label: program.sessions, icon: LucideIcons.dumbbell),
+                        _MetaPill(label: program.phases, icon: LucideIcons.activity),
+                      ],
+                    ),
 
                   const SizedBox(height: 20),
 
-                  // CTA
                   Row(children: [
                     Expanded(
                       child: GestureDetector(
-                        onTap: program.workouts.isNotEmpty
-                            ? () => Navigator.push(
+                        onTap: loading || program == null || program.workouts.isEmpty
+                            ? null
+                            : () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => WorkoutDetailScreen(
-                                        program: program),
+                                    builder: (_) => WorkoutDetailScreen(program: program),
                                   ),
-                                )
-                            : null,
+                                ),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
@@ -418,7 +456,7 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                       height: 52,
                       decoration: BoxDecoration(
                         border: Border.all(
-                            color: Colors.white.withOpacity(0.4), width: 1.5),
+                            color: Colors.white.withValues(alpha: 0.4), width: 1.5),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(LucideIcons.bookmark,
@@ -430,6 +468,22 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeroSkeletonPill extends StatelessWidget {
+  const _HeroSkeletonPill({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 70,
+      height: 24,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(999),
       ),
     );
   }

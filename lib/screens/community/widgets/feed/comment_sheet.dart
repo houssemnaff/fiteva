@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../../l10n/app_localizations.dart';
 
 
@@ -125,8 +126,12 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
           // Comment list
           Flexible(
             child: _loading
-                ? Center(child: CircularProgressIndicator(
-                    strokeWidth: 2, color: cs.primary))
+                ? ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    itemCount: 3,
+                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    itemBuilder: (_, __) => _CommentSkeletonRow(colorScheme: cs),
+                  )
                 : _comments.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.all(32),
@@ -200,6 +205,45 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                 ),
               ),
             ]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommentSkeletonRow extends StatelessWidget {
+  final ColorScheme colorScheme;
+  const _CommentSkeletonRow({required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+      highlightColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.75),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(height: 10, width: 90, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(999))),
+                const SizedBox(height: 8),
+                Container(height: 10, width: double.infinity, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(999))),
+                const SizedBox(height: 6),
+                Container(height: 10, width: 180, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(999))),
+              ],
+            ),
           ),
         ],
       ),

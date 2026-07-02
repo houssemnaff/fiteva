@@ -6,6 +6,8 @@ import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/core/nutrition/favorites_provider.dart' as nutrition;
 import 'package:fiteva/core/shop/shop_provider.dart' as shop_provider;
+import 'package:fiteva/services/program_service.dart';
+import 'package:fiteva/services/recipe_service.dart';
 
 enum FavoriteType { workout, recipe, product }
 
@@ -29,7 +31,6 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final programFavorites = ref.watch(favoritesProvider);
-    final recipeFavorites = ref.watch(nutrition.favoritesProvider);
     final shopWishlist = ref.watch(shop_provider.shopWishlistProvider);
 
     // Watch all program providers
@@ -157,7 +158,7 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildContent(_selectedTab, programFavorites, recipeFavorites, shopWishlist, allPrograms, cs),
+              child: _buildContent(_selectedTab, programFavorites, shopWishlist, allPrograms, cs),
             ),
           ),
         ],
@@ -165,30 +166,36 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
     );
   }
 
-  List<Map<String, dynamic>> _getItems(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms) {
+  Future<List<Map<String, dynamic>>> _getItems(int tab, Set<String> programFavorites, Set<String> shopWishlist, List<dynamic> allPrograms) async {
     if (tab == 0) {
-      // Programs - filter by name
-      return allPrograms
-          .where((p) => programFavorites.contains(p.name))
-          .map((p) => {
-            'id': p.name,
-            'title': p.name,
-            'subtitle': '${p.duration} · ${p.sessions}',
-            'image': p.imageUrl,
-          })
-          .toList();
+      final resolvedPrograms = await Future.wait(
+        programFavorites.map((programId) => ProgramService.fetchProgramById(programId)),
+      );
+
+      return resolvedPrograms.whereType<dynamic>().map((program) => {
+        'id': program.id,
+        'title': program.name,
+        'subtitle': '${program.duration} · ${program.sessions}',
+        'image': program.imageUrl,
+      }).toList();
     } else if (tab == 1) {
-      // Recipes - show only favorited recipe IDs
-      return recipeFavorites
-          .map((id) => {
-            'id': id,
-            'title': id,
-            'subtitle': 'Recipe',
-            'image': 'assets/images/recipe.jpg',
-          })
+      final favoriteRows = await RecipeService.fetchFavoriteRecipes();
+      final favoriteIdentifiers = favoriteRows
+          .map(RecipeService.resolveFavoriteIdentifier)
+          .where((value) => value.isNotEmpty)
           .toList();
+      final recipeRows = await RecipeService.fetchFavoriteRecipeDetails(favoriteIdentifiers);
+
+      return recipeRows.map((recipe) {
+        final identifier = RecipeService.resolveFavoriteIdentifier(recipe);
+        return {
+          'id': identifier,
+          'title': recipe['name'] as String? ?? identifier,
+          'subtitle': recipe['subtitle'] as String? ?? 'Recette',
+          'image': recipe['image_url'] as String? ?? 'assets/images/recipe.jpg',
+        };
+      }).toList();
     } else {
-      // Products - show shop wishlist items
       return shopWishlist
           .map((id) => {
             'id': id,
@@ -200,9 +207,41 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
     }
   }
 
-  Widget _buildContent(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, ColorScheme cs) {
-    final items = _getItems(tab, programFavorites, recipeFavorites, shopWishlist, allPrograms);
+  Widget _buildContent(int tab, Set<String> programFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, ColorScheme cs) {
+    if (tab == 1) {
+      return FutureBuilder<List<Map<String, dynamic>>>(
+        future: _getItems(tab, programFavorites, shopWishlist, allPrograms),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return _buildGrid(
+              List.generate(4, (index) => {
+                'id': 'loading-$index',
+                'title': '...',
+                'subtitle': 'Chargement...',
+                'image': '',
+              }),
+              tab,
+              cs,
+              isPlaceholder: true,
+            );
+          }
 
+          final items = snapshot.data ?? [];
+          return _buildGrid(items, tab, cs);
+        },
+      );
+    }
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _getItems(tab, programFavorites, shopWishlist, allPrograms),
+      builder: (context, snapshot) {
+        final items = snapshot.data ?? [];
+        return _buildGrid(items, tab, cs);
+      },
+    );
+  }
+
+  Widget _buildGrid(List<Map<String, dynamic>> items, int tab, ColorScheme cs, {bool isPlaceholder = false}) {
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
@@ -223,7 +262,7 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
           type: _tabs[tab]['type'] as FavoriteType,
           onRemove: () async => await _removeItem(item['id']! as String, tab),
           colorScheme: cs,
-          isPlaceholder: tab != 0,
+          isPlaceholder: isPlaceholder || tab != 0,
         );
       },
     );
@@ -231,14 +270,15 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
 
   Future<void> _removeItem(String id, int tab) async {
     if (tab == 0) {
-      // Remove from programs favorites
       await ref.read(favoritesProvider.notifier).toggleFavorite(id);
     } else if (tab == 1) {
-      // Remove from recipes favorites
-      ref.read(nutrition.favoritesProvider.notifier).toggle(id);
+      await RecipeService.removeFavorite(id);
     } else if (tab == 2) {
-      // Remove from shop wishlist
       await ref.read(shop_provider.shopWishlistProvider.notifier).removeFromWishlist(id);
+    }
+
+    if (mounted) {
+      setState(() {});
     }
   }
 }
@@ -292,7 +332,7 @@ class _FavoriteCard extends StatelessWidget {
                 child: SizedBox(
                   width: double.infinity,
                   height: 120,
-                  child: isPlaceholder
+                  child: isPlaceholder || imageAsset.isEmpty
                       ? Container(
                           color: colorScheme.surfaceContainerHigh,
                           child: Center(
@@ -303,20 +343,35 @@ class _FavoriteCard extends StatelessWidget {
                             ),
                           ),
                         )
-                      : Image.asset(
-                          imageAsset,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: colorScheme.surfaceContainerHigh,
-                            child: Center(
-                              child: Icon(
-                                _typeIcon,
-                                color: colorScheme.onSurface.withValues(alpha: 0.5),
-                                size: 40,
+                      : (imageAsset.startsWith('http://') || imageAsset.startsWith('https://'))
+                          ? Image.network(
+                              imageAsset,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: colorScheme.surfaceContainerHigh,
+                                child: Center(
+                                  child: Icon(
+                                    _typeIcon,
+                                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Image.asset(
+                              imageAsset,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: colorScheme.surfaceContainerHigh,
+                                child: Center(
+                                  child: Icon(
+                                    _typeIcon,
+                                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                    size: 40,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
                 ),
               ),
               Positioned(

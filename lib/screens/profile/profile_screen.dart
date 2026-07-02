@@ -165,32 +165,46 @@ class ProfileScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Row(
-                children: [
-                  _StatChip(
-                    icon: LucideIcons.flame,
-                    value: '${xp.streak}',
-                    label: l10n.profileStreak,
-                    color: const Color(0xFFFF6B35),
-                    bg: surf, ink: ink, muted: muted,
-                  ),
-                  const SizedBox(width: 10),
-                  _StatChip(
-                    icon: LucideIcons.dumbbell,
-                    value: '48',
-                    label: l10n.profileSessions,
-                    color: const Color(0xFF6366F1),
-                    bg: surf, ink: ink, muted: muted,
-                  ),
-                  const SizedBox(width: 10),
-                  _StatChip(
-                    icon: LucideIcons.star,
-                    value: '$points',
-                    label: 'pts',
-                    color: const Color(0xFFF59E0B),
-                    bg: surf, ink: ink, muted: muted,
-                  ),
-                ],
+              child: LayoutBuilder(
+                builder: (_, constraints) {
+                  final itemWidth = (constraints.maxWidth - 20) / 3;
+                  return Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      SizedBox(
+                        width: itemWidth,
+                        child: _StatChip(
+                          icon: LucideIcons.flame,
+                          value: '${xp.streak}',
+                          label: l10n.profileStreak,
+                          color: const Color(0xFFFF6B35),
+                          bg: surf, ink: ink, muted: muted,
+                        ),
+                      ),
+                      SizedBox(
+                        width: itemWidth,
+                        child: _StatChip(
+                          icon: LucideIcons.dumbbell,
+                          value: '48',
+                          label: l10n.profileSessions,
+                          color: const Color(0xFF6366F1),
+                          bg: surf, ink: ink, muted: muted,
+                        ),
+                      ),
+                      SizedBox(
+                        width: itemWidth,
+                        child: _StatChip(
+                          icon: LucideIcons.star,
+                          value: '$points',
+                          label: 'pts',
+                          color: const Color(0xFFF59E0B),
+                          bg: surf, ink: ink, muted: muted,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -260,50 +274,73 @@ class ProfileScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(l10n.profileWeeklyGoal,
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: ink)),
-                        Text(l10n.profileWeeklyDays(5),
-                          style: TextStyle(fontSize: 12, color: muted)),
+                        Expanded(
+                          child: Text(
+                            l10n.profileWeeklyGoal,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: ink),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            l10n.profileWeeklyDays(5),
+                            textAlign: TextAlign.right,
+                            style: TextStyle(fontSize: 12, color: muted),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: List.generate(7, (i) {
-                        final done = i < 5;
-                        final today = i == 4;
-                        return Expanded(child: Column(children: [
-                          LayoutBuilder(builder: (_, c) {
-                            final size = (c.maxWidth * 0.82).clamp(28.0, 38.0);
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              width: size, height: size,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: done
-                                    ? green
-                                    : (isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0EE)),
-                                border: today ? Border.all(color: green, width: 2.5) : null,
-                                boxShadow: done ? [BoxShadow(
-                                  color: green.withValues(alpha: 0.3),
-                                  blurRadius: 6, offset: const Offset(0, 2))] : [],
-                              ),
-                              child: Center(
-                                child: done
-                                    ? Icon(Icons.check_rounded, color: Colors.white,
-                                        size: size * 0.4)
-                                    : null,
+                    LayoutBuilder(
+                      builder: (_, constraints) {
+                        final itemWidth = constraints.maxWidth / 7;
+                        return Row(
+                          children: List.generate(7, (i) {
+                            final done = i < 5;
+                            final today = i == 4;
+                            return SizedBox(
+                              width: itemWidth,
+                              child: Column(
+                                children: [
+                                  LayoutBuilder(builder: (_, c) {
+                                    final size = (c.maxWidth * 0.72).clamp(24.0, 38.0);
+                                    return AnimatedContainer(
+                                      duration: const Duration(milliseconds: 300),
+                                      width: size,
+                                      height: size,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: done
+                                            ? green
+                                            : (isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0EE)),
+                                        border: today ? Border.all(color: green, width: 2.5) : null,
+                                        boxShadow: done ? [BoxShadow(
+                                          color: green.withValues(alpha: 0.3),
+                                          blurRadius: 6, offset: const Offset(0, 2))] : [],
+                                      ),
+                                      child: Center(
+                                        child: done
+                                            ? Icon(Icons.check_rounded, color: Colors.white,
+                                                size: size * 0.4)
+                                            : null,
+                                      ),
+                                    );
+                                  }),
+                                  const SizedBox(height: 5),
+                                  Text(_days[i],
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                                      color: done ? green : muted)),
+                                ],
                               ),
                             );
                           }),
-                          const SizedBox(height: 5),
-                          Text(_days[i],
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                              color: done ? green : muted)),
-                        ]));
-                      }),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -459,7 +496,8 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return Container(
+      width: double.infinity,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(

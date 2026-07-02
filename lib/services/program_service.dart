@@ -31,6 +31,16 @@ class ProgramService {
         .toList();
   }
 
+  static Future<HomeProgramModel?> fetchProgramById(String id) async {
+    final row = await SupabaseConfig.table('programs')
+        .select('*, workouts(*, videos(*))')
+        .eq('id', id)
+        .maybeSingle();
+
+    if (row == null) return null;
+    return _programFromRow(row as Map<String, dynamic>);
+  }
+
   // ── Mappers ────────────────────────────────────────────────────────────────
 
   static HomeProgramModel _programFromRow(Map<String, dynamic> r) {

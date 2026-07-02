@@ -4,6 +4,7 @@ import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
@@ -236,6 +237,7 @@ void initState() {
     final wishlist   = ref.watch(shopWishlistProvider);
     final allItems   = ref.watch(shopItemsProvider).asData?.value ?? <BoutiqueItem>[];
     final filtered   = _getFiltered(allItems);
+    final isLoading  = ref.watch(shopItemsProvider).isLoading;
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -321,16 +323,23 @@ void initState() {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 12),
-                  _PicksSection(
-                    c: c,
-                    l10n: l10n,
-                    items: _picks(allItems),
-                    userEtoiles: userPoints,
-                    wishlist: wishlist,
-                    redeemed: shop.redeemed,
-                    onWish: _toggleWish,
-                  ),
-                  const SizedBox(height: 24),
+                  isLoading
+                      ? _BoutiqueSkeleton(c: c)
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _PicksSection(
+                              c: c,
+                              l10n: l10n,
+                              items: _picks(allItems),
+                              userEtoiles: userPoints,
+                              wishlist: wishlist,
+                              redeemed: shop.redeemed,
+                              onWish: _toggleWish,
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
                 ],
               ),
             ),
@@ -354,14 +363,16 @@ void initState() {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-              child: _SectionHeader(
-                c: c,
-                l10n: l10n,
-                cat: _kCats.firstWhere((cat) => cat.key == _cat),
-                count: filtered.length,
-                onSeeAll: () => Navigator.push(context,
-                    CupertinoPageRoute(builder: (_) => const AllPartenairesScreen())),
-              ),
+              child: isLoading
+                  ? _SkeletonRow(c: c)
+                  : _SectionHeader(
+                      c: c,
+                      l10n: l10n,
+                      cat: _kCats.firstWhere((cat) => cat.key == _cat),
+                      count: filtered.length,
+                      onSeeAll: () => Navigator.push(context,
+                          CupertinoPageRoute(builder: (_) => const AllPartenairesScreen())),
+                    ),
             ),
           ),
 if (filtered.isNotEmpty)
@@ -373,42 +384,182 @@ if (filtered.isNotEmpty)
             ),
 
           // ── Partner list or empty state ──────────────────────────────────
-          filtered.isEmpty
-              ? SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _EmptyState(c: c, l10n: l10n, onReset: _clearFilters),
-                )
-              : SliverPadding(
+          isLoading
+              ? SliverPadding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (ctx, i) {
-                        final item       = filtered[i];
-                        final isRedeemed = shop.isRedeemed(item.id);
-                        return Padding(
-                          padding: EdgeInsets.only(
-                              bottom: i < filtered.length - 1 ? 12 : 0),
-                          child: _PartnerCard(
-                            key: ValueKey(item.id),
-                            item: item,
-                            userEtoiles: userPoints,
-                            isWishlisted: wishlist.contains(item.id),
-                            isRedeemed: isRedeemed,
-                            onWish: () => _toggleWish(item.id),
-                            onTap: () => Navigator.push(
-                                ctx,
-                                CupertinoPageRoute(
-                                    builder: (_) => BoutiqueDetailScreen(item: item))),
-                          ),
-                        );
-                      },
-                      childCount: filtered.length,
-                    ),
+                  sliver: SliverToBoxAdapter(
+                    child: _BoutiqueListSkeleton(c: c),
                   ),
-                ),
+                )
+              : filtered.isEmpty
+                  ? SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _EmptyState(c: c, l10n: l10n, onReset: _clearFilters),
+                    )
+                  : SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (ctx, i) {
+                            final item       = filtered[i];
+                            final isRedeemed = shop.isRedeemed(item.id);
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                  bottom: i < filtered.length - 1 ? 12 : 0),
+                              child: _PartnerCard(
+                                key: ValueKey(item.id),
+                                item: item,
+                                userEtoiles: userPoints,
+                                isWishlisted: wishlist.contains(item.id),
+                                isRedeemed: isRedeemed,
+                                onWish: () => _toggleWish(item.id),
+                                onTap: () => Navigator.push(
+                                    ctx,
+                                    CupertinoPageRoute(
+                                        builder: (_) => BoutiqueDetailScreen(item: item))),
+                              ),
+                            );
+                          },
+                          childCount: filtered.length,
+                        ),
+                      ),
+                    ),
 
         
         ],
+      ),
+    );
+  }
+}
+
+class _BoutiqueSkeleton extends StatelessWidget {
+  final _C c;
+  const _BoutiqueSkeleton({required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: c.surfaceAlt.withValues(alpha: 0.6),
+      highlightColor: c.surfaceAlt.withValues(alpha: 0.95),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SkeletonBox(height: 220, radius: 20, c: c),
+          const SizedBox(height: 16),
+          _SkeletonBox(height: 54, radius: 24, c: c),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(child: _SkeletonBox(height: 90, radius: 18, c: c)),
+              const SizedBox(width: 12),
+              Expanded(child: _SkeletonBox(height: 90, radius: 18, c: c)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BoutiqueListSkeleton extends StatelessWidget {
+  final _C c;
+  const _BoutiqueListSkeleton({required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: c.surfaceAlt.withValues(alpha: 0.6),
+      highlightColor: c.surfaceAlt.withValues(alpha: 0.95),
+      child: Column(
+        children: [
+          _SkeletonCardRow(c: c),
+          const SizedBox(height: 12),
+          _SkeletonCardRow(c: c),
+          const SizedBox(height: 12),
+          _SkeletonCardRow(c: c),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonRow extends StatelessWidget {
+  final _C c;
+  const _SkeletonRow({required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: c.surfaceAlt.withValues(alpha: 0.6),
+      highlightColor: c.surfaceAlt.withValues(alpha: 0.95),
+      child: Row(
+        children: [
+          _SkeletonBox(height: 12, radius: 6, c: c, width: 90),
+          const SizedBox(width: 12),
+          _SkeletonBox(height: 12, radius: 6, c: c, width: 70),
+          const Spacer(),
+          _SkeletonBox(height: 24, radius: 12, c: c, width: 56),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonCardRow extends StatelessWidget {
+  final _C c;
+  const _SkeletonCardRow({required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 114,
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: _SkeletonBox(height: 90, radius: 12, c: c, width: 90),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 14, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SkeletonBox(height: 10, radius: 6, c: c, width: 70),
+                  const SizedBox(height: 8),
+                  _SkeletonBox(height: 14, radius: 6, c: c, width: double.infinity),
+                  const SizedBox(height: 8),
+                  _SkeletonBox(height: 14, radius: 6, c: c, width: 140),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  final double height;
+  final double radius;
+  final _C c;
+  final double? width;
+
+  const _SkeletonBox({required this.height, required this.radius, required this.c, this.width});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(radius),
       ),
     );
   }

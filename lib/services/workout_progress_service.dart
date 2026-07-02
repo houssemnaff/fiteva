@@ -297,9 +297,21 @@ class WorkoutProgressService {
     } catch (_) {}
   }
 
-  /// Compatibilité : detecte le type par le préfixe "prog_"
+  static Future<bool> _isProgramId(String id) async {
+    try {
+      final row = await SupabaseConfig.table('programs')
+          .select('id')
+          .eq('id', id)
+          .maybeSingle();
+      return row != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<void> addFavorite(String id) async {
-    if (id.startsWith('prog_')) {
+    final isProgram = await _isProgramId(id);
+    if (isProgram) {
       await addProgramFavorite(id);
     } else {
       await addWorkoutFavorite(id);
@@ -307,7 +319,8 @@ class WorkoutProgressService {
   }
 
   static Future<void> removeFavorite(String id) async {
-    if (id.startsWith('prog_')) {
+    final isProgram = await _isProgramId(id);
+    if (isProgram) {
       await removeProgramFavorite(id);
     } else {
       await removeWorkoutFavorite(id);
