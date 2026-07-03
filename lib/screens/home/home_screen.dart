@@ -829,14 +829,14 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
               ref: ref,
               workoutTitle: w.title,
               exerciseName: w.exercises[0],
-              videoId: '${w.title}_exercise_0',
+              videoId: w.videoIdAt(0) ?? '',
               videoUrl: w.videos.isNotEmpty ? w.videos[0].url : null,
               exerciseIndex: 0,
               totalExercises: w.exercises.length,
               totalWorkoutPoints: w.points,
               onCompleted: () {},
               workoutId: w.id,
-              totalWorkoutExercises: w.exercises.length,
+              allVideoIds: w.videos.map((v) => v.id).toList(),
             ),
           ),
         );
@@ -1285,11 +1285,11 @@ class _ProgramsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<HomeProgramModel>>(
-      future: WorkoutProgressService.getStartedPrograms(programs),
+      future: WorkoutProgressService.getJoinedProgramsList(programs),
       builder: (context, snapshot) {
-        final startedPrograms = snapshot.data ?? [];
+        final joinedPrograms = snapshot.data ?? [];
 
-        if (startedPrograms.isEmpty) {
+        if (joinedPrograms.isEmpty) {
           return const SizedBox.shrink();
         }
 
@@ -1331,7 +1331,7 @@ class _ProgramsSection extends StatelessWidget {
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (_) => ProgramsBottomSheet(programs: startedPrograms),
+                          builder: (_) => ProgramsBottomSheet(programs: joinedPrograms),
                         );
                       },
                       borderRadius: BorderRadius.circular(12),
@@ -1354,9 +1354,9 @@ class _ProgramsSection extends StatelessWidget {
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: startedPrograms.length,
+                  itemCount: joinedPrograms.length,
                   itemBuilder: (_, i) => _ProgramCard(
-                    program: startedPrograms[i],
+                    program: joinedPrograms[i],
                     progress: 0.0,
                   ),
                 ),
@@ -1472,7 +1472,8 @@ class _ProgramCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 10),
                     // Progress bar
-                    Row(children: [
+                  /*  Row(
+                      children: [
                       Expanded(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(4),
@@ -1493,7 +1494,7 @@ class _ProgramCard extends ConsumerWidget {
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           )),
-                    ]),
+                    ]),*/
                     const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,

@@ -1,12 +1,15 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:io';
 import 'package:fiteva/core/nutrition/food_database.dart';
 import 'package:fiteva/core/nutrition/models.dart';
 import 'package:fiteva/core/nutrition/nutrition_provider.dart' show generateMealId;
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
+import 'package:fiteva/services/nutruition_ia.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/lang.dart';
 import '../../l10n/app_localizations.dart';
@@ -118,7 +121,7 @@ String _catPhoto(FoodCategory c) => switch (c) {
 };
 
 // ── Scan state ────────────────────────────────────────────────────────────────
-enum _ScanState { idle, scanning, result }
+enum _ScanState { idle, preview, scanning, result }
 
 // ── Basket item ───────────────────────────────────────────────────────────────
 class _BasketItem {
@@ -174,53 +177,63 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   // ── Scanner mode ─────────────────────────────────────────────────────────
   _ScanState _scanState = _ScanState.idle;
   FoodItem?  _scannedFood;
+  File?      _pickedImage;
+  final _imagePicker = ImagePicker();
 
-  // Mock foods returned by "image scan"
-  static final _mockScanResults = [
-    FoodItem(id: 'scan_1', name: 'Saumon grillé',
-      category: FoodCategory.poissons,
-      kcal: 208, protein: 20, carbs: 0, fat: 13, defaultGrams: 150, portionLabel: '1 filet'),
-    FoodItem(id: 'scan_2', name: 'Riz basmati cuit',
-      category: FoodCategory.cereales,
-      kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, defaultGrams: 200, portionLabel: '1 bol'),
-    FoodItem(id: 'scan_3', name: 'Poulet rôti',
-      category: FoodCategory.viandes,
-      kcal: 215, protein: 25, carbs: 0, fat: 12, defaultGrams: 150, portionLabel: '1 portion'),
-    FoodItem(id: 'scan_4', name: 'Salade verte',
-      category: FoodCategory.legumes,
-      kcal: 15, protein: 1.4, carbs: 1.8, fat: 0.2, defaultGrams: 80, portionLabel: '1 assiette'),
-    FoodItem(id: 'scan_5', name: 'Pâtes bolognaise',
-      category: FoodCategory.platCompose,
-      kcal: 185, protein: 9, carbs: 24, fat: 5, defaultGrams: 300, portionLabel: '1 assiette'),
-    FoodItem(id: 'scan_6', name: 'Yaourt nature',
-      category: FoodCategory.oeufslaitiers,
-      kcal: 61, protein: 5, carbs: 4.7, fat: 3.2, defaultGrams: 125, portionLabel: '1 pot'),
-    FoodItem(id: 'scan_7', name: 'Omelette 2 œufs',
-      category: FoodCategory.oeufslaitiers,
-      kcal: 154, protein: 11, carbs: 1, fat: 12, defaultGrams: 100, portionLabel: '1 omelette'),
-  ];
+  // Picks a photo (camera or gallery) and shows it in the scan zone —
+  // analysis only starts once the user taps "Analyser".
+  Future<void> _pickImage(ImageSource source) async {
+    XFile? picked;
+    try {
+      picked = await _imagePicker.pickImage(
+        source: source, imageQuality: 85, maxWidth: 1600);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossible d\'ouvrir la caméra/galerie : $e')));
+      return;
+    }
+    if (picked == null) return;
 
-  Future<void> _startImageScan() async {
-    HapticFeedback.mediumImpact();
-    setState(() { _scanState = _ScanState.scanning; _scannedFood = null; });
-    await Future.delayed(const Duration(milliseconds: 2200));
-    if (!mounted) return;
-    final picked = _mockScanResults[
-      DateTime.now().millisecond % _mockScanResults.length];
+    HapticFeedback.selectionClick();
     setState(() {
-      _scanState   = _ScanState.result;
-      _scannedFood = picked;
-      // pre-fill the food detail state so user can adjust
-      _selectedFood  = picked;
-      _selectedGrams = picked.defaultGrams;
-      _selectedUnit  = FoodUnit.g;
-      _amountCtrl.text = picked.defaultGrams.round().toString();
+      _scanState    = _ScanState.preview;
+      _pickedImage  = File(picked!.path);
+      _scannedFood  = null;
     });
+  }
+
+  Future<void> _analyzeImage() async {
+    final image = _pickedImage;
+    if (image == null) return;
+
+    HapticFeedback.mediumImpact();
+    setState(() => _scanState = _ScanState.scanning);
+
+    try {
+      final food = await NutritionIaService.analyzeFoodImage(image);
+      if (!mounted) return;
+      setState(() {
+        _scanState   = _ScanState.result;
+        _scannedFood = food;
+        // pre-fill the food detail state so user can adjust
+        _selectedFood  = food;
+        _selectedGrams = food.defaultGrams;
+        _selectedUnit  = FoodUnit.g;
+        _amountCtrl.text = food.defaultGrams.round().toString();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _scanState = _ScanState.preview);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Analyse impossible : $e')));
+    }
   }
 
   void _resetScan() => setState(() {
     _scanState    = _ScanState.idle;
     _scannedFood  = null;
+    _pickedImage  = null;
     _selectedFood = null;
   });
 
@@ -915,6 +928,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   Widget _buildScanner() {
     return switch (_scanState) {
       _ScanState.idle     => _buildScannerIdle(),
+      _ScanState.preview  => _buildScannerPreview(),
       _ScanState.scanning => _buildScannerScanning(),
       _ScanState.result   => _buildScannerResult(),
     };
@@ -968,7 +982,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     // Buttons
     Row(children: [
       Expanded(child: GestureDetector(
-        onTap: () {},
+        onTap: () => _pickImage(ImageSource.camera),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
@@ -985,7 +999,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           ])))),
       const SizedBox(width: 10),
       Expanded(child: GestureDetector(
-        onTap: _startImageScan,
+        onTap: () => _pickImage(ImageSource.gallery),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
@@ -1000,28 +1014,104 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     ]),
   ]);
 
+  // ── Scanner: preview (picked image, waiting for "Analyser") ──────────────
+  Widget _buildScannerPreview() => Column(children: [
+    Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _kMintBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kMint.withOpacity(0.3))),
+      child: Row(children: [
+        const Icon(LucideIcons.imageUp, size: 14, color: _kGreen),
+        const SizedBox(width: 10),
+        Expanded(child: Text(
+          'Photo prête — appuie sur "Analyser" pour identifier l\'aliment.',
+          style: GoogleFonts.inter(fontSize: 12, color: _kGreen, height: 1.5))),
+      ])),
+    const SizedBox(height: 16),
+
+    // Viewfinder — shows the picked photo
+    ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: double.infinity, height: 220,
+        color: const Color(0xFF0E1E15),
+        child: Stack(fit: StackFit.expand, children: [
+          if (_pickedImage != null)
+            Image.file(_pickedImage!, fit: BoxFit.cover),
+          _Corner(_kMint, top: true,  left: true),
+          _Corner(_kMint, top: true,  left: false),
+          _Corner(_kMint, top: false, left: true),
+          _Corner(_kMint, top: false, left: false),
+        ]),
+      )),
+
+    const SizedBox(height: 12),
+
+    // Buttons
+    Row(children: [
+      Expanded(child: GestureDetector(
+        onTap: _resetScan,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          decoration: BoxDecoration(
+            color: _kMintBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _kMint.withOpacity(0.4))),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(LucideIcons.rotateCcw, size: 16, color: _kGreen),
+            const SizedBox(width: 8),
+            Text('Reprendre', style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen)),
+          ])))),
+      const SizedBox(width: 10),
+      Expanded(child: GestureDetector(
+        onTap: _analyzeImage,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          decoration: BoxDecoration(
+            color: _kGreen,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(
+              color: _kGreen.withOpacity(0.25),
+              blurRadius: 12, offset: const Offset(0, 4))]),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
+            const SizedBox(width: 8),
+            Text('Analyser', style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+          ])))),
+    ]),
+  ]);
+
   // ── Scanner: scanning (animated) ─────────────────────────────────────────
   Widget _buildScannerScanning() => Column(children: [
-    Container(
-      width: double.infinity, height: 220,
-      decoration: BoxDecoration(
+    ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: double.infinity, height: 220,
         color: const Color(0xFF0E1E15),
-        borderRadius: BorderRadius.circular(22)),
-      child: Stack(alignment: Alignment.center, children: [
-        _Corner(_kMint, top: true,  left: true),
-        _Corner(_kMint, top: true,  left: false),
-        _Corner(_kMint, top: false, left: true),
-        _Corner(_kMint, top: false, left: false),
-        Column(mainAxisSize: MainAxisSize.min, children: [
-          const _ScanningDots(),
-          const SizedBox(height: 16),
-          Text(AppL10n(Lang.code).addMealAnalyzing, style: GoogleFonts.inter(
-            fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-          const SizedBox(height: 6),
-          Text(AppL10n(Lang.code).addMealNutrients, style: GoogleFonts.inter(
-            fontSize: 11, color: Colors.white38)),
+        child: Stack(fit: StackFit.expand, alignment: Alignment.center, children: [
+          if (_pickedImage != null)
+            Opacity(
+              opacity: 0.35,
+              child: Image.file(_pickedImage!, fit: BoxFit.cover)),
+          _Corner(_kMint, top: true,  left: true),
+          _Corner(_kMint, top: true,  left: false),
+          _Corner(_kMint, top: false, left: true),
+          _Corner(_kMint, top: false, left: false),
+          Column(mainAxisSize: MainAxisSize.min, children: [
+            const _ScanningDots(),
+            const SizedBox(height: 16),
+            Text(AppL10n(Lang.code).addMealAnalyzing, style: GoogleFonts.inter(
+              fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+            const SizedBox(height: 6),
+            Text(AppL10n(Lang.code).addMealNutrients, style: GoogleFonts.inter(
+              fontSize: 11, color: Colors.white38)),
+          ]),
         ]),
-      ])),
+      )),
     const SizedBox(height: 16),
     Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

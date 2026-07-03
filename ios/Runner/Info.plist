@@ -69,6 +69,11 @@
 	<!-- Pedometer & Motion Permission -->
 	<key>NSMotionUsageDescription</key>
 	<string>FitEva needs access to your motion data to count your steps accurately.</string>
+	<!-- Image picker (nutrition food scanner) -->
+	<key>NSCameraUsageDescription</key>
+	<string>FitEva needs access to your camera to scan and identify food photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>FitEva needs access to your photo library to select food photos to analyze.</string>
 	<!-- Supabase deep link callback (Apple Sign-In + auth redirects) -->
 	<key>CFBundleURLTypes</key>
 	<array>

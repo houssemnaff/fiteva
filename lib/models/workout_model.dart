@@ -26,4 +26,9 @@ class WorkoutModel {
     this.points = 0,
     this.videos = const [],
   });
+
+  /// Real Supabase `videos.id` for the exercise at [index], or null if no
+  /// matching video row exists (exercises and videos are aligned by index).
+  String? videoIdAt(int index) =>
+      index >= 0 && index < videos.length ? videos[index].id : null;
 }
