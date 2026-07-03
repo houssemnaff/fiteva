@@ -2,8 +2,10 @@ import 'package:fiteva/models/post_model.dart';
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:fiteva/services/comuniter_service.dart';
+import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgresChangeEvent, RealtimeChannel;
 
 // ─── Tab index ───────────────────────────────────────────────────────────────
 final communityTabProvider = StateProvider<int>((ref) => 0);
@@ -170,12 +172,27 @@ class PartnersNotifier extends StateNotifier<List<PartnerModel>> {
   }
 
   final Ref _ref;
+  late final RealtimeChannel _channel;
 
   Future<void> _init() async {
     _ref.read(partnersLoadingProvider.notifier).state = true;
     final partners = await CommunityService.loadPartners();
     state = partners;
     _ref.read(partnersLoadingProvider.notifier).state = false;
+
+    // Écoute Realtime — recharge la liste dès qu'un partenaire est
+    // publié/modifié/supprimé par n'importe quel utilisateur.
+    _channel = SupabaseConfig.client
+        .channel('training_partners_realtime')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'training_partners',
+          callback: (_) async {
+            state = await CommunityService.loadPartners();
+          },
+        )
+        .subscribe();
   }
 
   Future<void> refresh() async {
@@ -190,6 +207,12 @@ class PartnersNotifier extends StateNotifier<List<PartnerModel>> {
     if (saved == null) return false;
     state = [saved, ...state];
     return true;
+  }
+
+  @override
+  void dispose() {
+    SupabaseConfig.client.removeChannel(_channel);
+    super.dispose();
   }
 }
 
@@ -226,7 +249,21 @@ class PartnerRequestsState {
 class PartnerRequestsNotifier extends StateNotifier<PartnerRequestsState> {
   PartnerRequestsNotifier() : super(const PartnerRequestsState()) {
     refresh();
+
+    // Écoute Realtime — dès qu'une demande est créée (côté owner) ou que son
+    // statut change (côté requester), on rafraîchit les deux vues.
+    _channel = SupabaseConfig.client
+        .channel('partner_join_requests_realtime')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'partner_join_requests',
+          callback: (_) => refresh(),
+        )
+        .subscribe();
   }
+
+  late final RealtimeChannel _channel;
 
   Future<void> refresh() async {
     final statuses = await CommunityService.loadMyPartnerRequestStatuses();
@@ -256,6 +293,12 @@ class PartnerRequestsNotifier extends StateNotifier<PartnerRequestsState> {
     state = state.copyWith(
       incoming: state.incoming.where((r) => r.id != requestId).toList(),
     );
+  }
+
+  @override
+  void dispose() {
+    SupabaseConfig.client.removeChannel(_channel);
+    super.dispose();
   }
 }
 
