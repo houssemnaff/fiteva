@@ -2,6 +2,7 @@ import 'package:fiteva/models/post_model.dart';
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:fiteva/services/comuniter_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 // ─── Tab index ───────────────────────────────────────────────────────────────
@@ -9,24 +10,32 @@ final communityTabProvider = StateProvider<int>((ref) => 0);
 
 // ─── Posts Notifier ──────────────────────────────────────────────────────────
 
+final postsLoadingProvider = StateProvider<bool>((ref) => true);
+
 class PostsNotifier extends StateNotifier<List<PostModel>> {
-  PostsNotifier() : super([]) {
+  PostsNotifier(this._ref) : super([]) {
     _init();
   }
+
+  final Ref _ref;
 
   final Set<String> _liked = {};
 
   Future<void> _init() async {
+    _ref.read(postsLoadingProvider.notifier).state = true;
     final posts = await CommunityService.loadPosts();
     _liked.addAll(await CommunityService.loadLikedPosts());
     state = posts;
+    _ref.read(postsLoadingProvider.notifier).state = false;
   }
 
   /// Recharge les posts depuis Supabase
   Future<void> refresh() async {
+    _ref.read(postsLoadingProvider.notifier).state = true;
     final posts = await CommunityService.loadPosts();
     _liked.addAll(await CommunityService.loadLikedPosts());
     state = posts;
+    _ref.read(postsLoadingProvider.notifier).state = false;
   }
 
   bool isLiked(String id) => _liked.contains(id);
@@ -91,7 +100,7 @@ class PostsNotifier extends StateNotifier<List<PostModel>> {
 
 final postsNotifierProvider =
     StateNotifierProvider<PostsNotifier, List<PostModel>>(
-        (_) => PostsNotifier());
+        (ref) => PostsNotifier(ref));
 
 // ─── Events Notifier ─────────────────────────────────────────────────────────
 
@@ -177,3 +186,66 @@ final partnersNotifierProvider =
 
 // Alias utilisé dans les widgets existants
 final partnersProvider = partnersNotifierProvider;
+
+// ─── Partner Join Requests Notifier ─────────────────────────────────────────
+
+class PartnerRequestsState {
+  /// Statut ('pending'/'accepted'/'declined') des demandes envoyées par
+  /// l'utilisateur courant, indexé par partner_id.
+  final Map<String, String> myStatusByPartnerId;
+  /// Demandes en attente reçues pour les partenaires publiés par l'utilisateur.
+  final List<PartnerJoinRequest> incoming;
+
+  const PartnerRequestsState({
+    this.myStatusByPartnerId = const {},
+    this.incoming = const [],
+  });
+
+  PartnerRequestsState copyWith({
+    Map<String, String>? myStatusByPartnerId,
+    List<PartnerJoinRequest>? incoming,
+  }) => PartnerRequestsState(
+    myStatusByPartnerId: myStatusByPartnerId ?? this.myStatusByPartnerId,
+    incoming: incoming ?? this.incoming,
+  );
+}
+
+class PartnerRequestsNotifier extends StateNotifier<PartnerRequestsState> {
+  PartnerRequestsNotifier() : super(const PartnerRequestsState()) {
+    refresh();
+  }
+
+  Future<void> refresh() async {
+    final statuses = await CommunityService.loadMyPartnerRequestStatuses();
+    final incoming = await CommunityService.loadIncomingPartnerRequests();
+    state = state.copyWith(myStatusByPartnerId: statuses, incoming: incoming);
+  }
+
+  String statusFor(String partnerId) =>
+      state.myStatusByPartnerId[partnerId] ?? 'none';
+
+  /// Envoie une demande pour rejoindre un partenaire (liste d'attente).
+  Future<void> join({required String partnerId, required String ownerId}) async {
+    final result = await CommunityService.sendPartnerJoinRequest(
+      partnerId: partnerId, ownerId: ownerId);
+    if (result == null) return;
+    state = state.copyWith(myStatusByPartnerId: {
+      ...state.myStatusByPartnerId,
+      partnerId: result,
+    });
+  }
+
+  /// Accepte ou refuse une demande reçue, puis rafraîchit la liste des demandes.
+  Future<void> respond({required String requestId, required bool accept}) async {
+    final ok = await CommunityService.respondToPartnerRequest(
+      requestId: requestId, accept: accept);
+    if (!ok) return;
+    state = state.copyWith(
+      incoming: state.incoming.where((r) => r.id != requestId).toList(),
+    );
+  }
+}
+
+final partnerRequestsProvider =
+    StateNotifierProvider<PartnerRequestsNotifier, PartnerRequestsState>(
+        (_) => PartnerRequestsNotifier());

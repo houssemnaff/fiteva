@@ -40,7 +40,7 @@ class WorkoutProgressService {
   }
 
   static Future<void> markVideoComplete(String videoId) async {
-    if (_uid == null) return;
+    if (_uid == null || videoId.isEmpty) return;
     try {
       await SupabaseConfig.table('user_video_completions').upsert({
         'user_id':      _uid,
@@ -81,7 +81,7 @@ class WorkoutProgressService {
   }
 
   static Future<void> updateVideoProgress(String videoId, double progress) async {
-    if (_uid == null) return;
+    if (_uid == null || videoId.isEmpty) return;
     try {
       final completed = progress >= 0.8;
       await SupabaseConfig.table('user_video_completions').upsert({
@@ -129,7 +129,8 @@ class WorkoutProgressService {
     final completedVideos = await getCompletedVideos();
     bool allDone = true;
     for (int i = 0; i < workout.exercises.length; i++) {
-      if (!completedVideos.contains('${workout.title}_exercise_$i')) {
+      final videoId = workout.videoIdAt(i);
+      if (videoId == null || !completedVideos.contains(videoId)) {
         allDone = false;
         break;
       }
@@ -146,7 +147,8 @@ class WorkoutProgressService {
     final completedVideos = await getCompletedVideos();
     int done = 0;
     for (int i = 0; i < workout.exercises.length; i++) {
-      if (completedVideos.contains('${workout.title}_exercise_$i')) done++;
+      final videoId = workout.videoIdAt(i);
+      if (videoId != null && completedVideos.contains(videoId)) done++;
     }
     return done / workout.exercises.length;
   }
@@ -226,6 +228,42 @@ class WorkoutProgressService {
       if (status.isStarted) started.add(p);
     }
     return started;
+  }
+
+  // ── Programmes rejoints ───────────────────────────────────────────────────
+
+  static Future<Set<String>> getJoinedPrograms() async {
+    if (_uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('user_joined_programs')
+          .select('program_id')
+          .eq('user_id', _uid!);
+      return {for (final r in rows as List) r['program_id'] as String};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  static Future<void> joinProgram(String programId) async {
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_joined_programs').upsert({
+        'user_id':    _uid,
+        'program_id': programId,
+        'joined_at':  DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id,program_id');
+    } catch (_) {}
+  }
+
+  static Future<bool> isProgramJoined(String programId) async {
+    final joined = await getJoinedPrograms();
+    return joined.contains(programId);
+  }
+
+  /// Filtre [all] pour ne garder que les programmes que l'utilisateur a rejoints.
+  static Future<List<HomeProgramModel>> getJoinedProgramsList(List<HomeProgramModel> all) async {
+    final joined = await getJoinedPrograms();
+    return all.where((p) => joined.contains(p.id)).toList();
   }
 
   // ── Favoris workouts ──────────────────────────────────────────────────────

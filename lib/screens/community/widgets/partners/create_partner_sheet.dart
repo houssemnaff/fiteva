@@ -31,7 +31,10 @@ class CreatePartnerSheet extends ConsumerStatefulWidget {
 class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
     with SingleTickerProviderStateMixin {
 
-  final _descCtrl   = TextEditingController();
+  final _descCtrl      = TextEditingController();
+  final _whatsappCtrl  = TextEditingController();
+  final _instagramCtrl = TextEditingController();
+  final _facebookCtrl  = TextEditingController();
   final _scrollCtrl = ScrollController();
 
   String _selectedGoal   = 'Tonifier';
@@ -73,6 +76,9 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
   @override
   void dispose() {
     _descCtrl.dispose();
+    _whatsappCtrl.dispose();
+    _instagramCtrl.dispose();
+    _facebookCtrl.dispose();
     _scrollCtrl.dispose();
     _enterCtrl.dispose();
     super.dispose();
@@ -99,6 +105,9 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
           ? _descCtrl.text.trim()
           : 'Passionné de fitness, cherche partenaire motivé.',
       tags: [_selectedGoal.split(' ').first, _selectedLevel],
+      contactWhatsapp: _whatsappCtrl.text.trim(),
+      contactInstagram: _instagramCtrl.text.trim(),
+      contactFacebook: _facebookCtrl.text.trim(),
     );
     final ok = await ref.read(partnersNotifierProvider.notifier).addPartner(partner);
     if (!mounted) return;
@@ -247,6 +256,34 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
                     _SectionLabel(text: 'À propos de toi  (optionnel)', cs: cs),
                     const SizedBox(height: 8),
                     _DescriptionField(controller: _descCtrl, cs: cs),
+                    const SizedBox(height: 24),
+
+                    // ── Contact (révélé une fois la demande acceptée) ──
+                    _SectionLabel(
+                        text: 'Comment te contacter une fois accepté ? (optionnel)',
+                        cs: cs),
+                    const SizedBox(height: 10),
+                    _ContactField(
+                      icon: LucideIcons.messageCircle,
+                      hint: 'Numéro WhatsApp',
+                      controller: _whatsappCtrl,
+                      cs: cs,
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 10),
+                    _ContactField(
+                      icon: LucideIcons.atSign,
+                      hint: '@ton_instagram',
+                      controller: _instagramCtrl,
+                      cs: cs,
+                    ),
+                    const SizedBox(height: 10),
+                    _ContactField(
+                      icon: LucideIcons.globe,
+                      hint: 'Profil ou page Facebook',
+                      controller: _facebookCtrl,
+                      cs: cs,
+                    ),
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -587,6 +624,66 @@ class _DescriptionFieldState extends State<_DescriptionField> {
             hintStyle: GoogleFonts.inter(
                 color: cs.onSurface.withValues(alpha: 0.35), fontSize: 13, height: 1.5),
             contentPadding: const EdgeInsets.all(14),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONTACT FIELD  (WhatsApp / Instagram / Facebook — révélés après acceptation)
+// ─────────────────────────────────────────────────────────────────────────────
+class _ContactField extends StatefulWidget {
+  final IconData icon;
+  final String hint;
+  final TextEditingController controller;
+  final ColorScheme cs;
+  final TextInputType? keyboardType;
+  const _ContactField({
+    required this.icon,
+    required this.hint,
+    required this.controller,
+    required this.cs,
+    this.keyboardType,
+  });
+
+  @override
+  State<_ContactField> createState() => _ContactFieldState();
+}
+
+class _ContactFieldState extends State<_ContactField> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = widget.cs;
+    return Focus(
+      onFocusChange: (f) => setState(() => _focused = f),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        decoration: BoxDecoration(
+          color: _focused ? cs.surface : cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _focused ? cs.primary : cs.outline,
+            width: _focused ? 1.5 : 1,
+          ),
+        ),
+        child: TextField(
+          controller: widget.controller,
+          keyboardType: widget.keyboardType,
+          style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: widget.hint,
+            hintStyle: GoogleFonts.inter(
+                color: cs.onSurface.withValues(alpha: 0.35), fontSize: 13),
+            prefixIcon: Icon(widget.icon, size: 18,
+                color: cs.onSurface.withValues(alpha: 0.5)),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,

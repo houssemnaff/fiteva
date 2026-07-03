@@ -45,6 +45,9 @@ class StorageService {
     return str == null ? {} : jsonDecode(str) as Map<String, dynamic>;
   }
 
+  static Future<void> clearOnboardingData() =>
+      _prefs.remove('onboarding_data');
+
   /// Synchronise les données d'onboarding vers Supabase après inscription.
   /// Appeler une fois après que l'utilisateur est authentifié.
   static Future<void> syncOnboardingToSupabase() async {

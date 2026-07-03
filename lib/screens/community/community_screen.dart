@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/user_profile_provider.dart';
 
@@ -101,6 +102,54 @@ class CommunityScreen extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => sheet,
+    );
+  }
+}
+
+class _CommunitySkeleton extends StatelessWidget {
+  final ColorScheme colorScheme;
+  const _CommunitySkeleton({required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+      highlightColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        children: [
+          _SkeletonBox(height: 132, radius: 20, colorScheme: colorScheme),
+          const SizedBox(height: 12),
+          _SkeletonBox(height: 86, radius: 18, colorScheme: colorScheme),
+          const SizedBox(height: 12),
+          _SkeletonBox(height: 88, radius: 18, colorScheme: colorScheme),
+          const SizedBox(height: 12),
+          _SkeletonBox(height: 88, radius: 18, colorScheme: colorScheme),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  final double height;
+  final double radius;
+  final ColorScheme colorScheme;
+
+  const _SkeletonBox({
+    required this.height,
+    required this.radius,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(radius),
+      ),
     );
   }
 }

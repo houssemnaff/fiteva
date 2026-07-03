@@ -34,7 +34,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final exercises = widget.workout.exercises;
     int count = 0;
     for (int i = 0; i < exercises.length; i++) {
-      if (done.contains('${widget.workout.title}_exercise_$i')) count++;
+      final videoId = widget.workout.videoIdAt(i);
+      if (videoId != null && done.contains(videoId)) count++;
     }
     if (mounted) setState(() { _completedVideos = done; _completedExercises = count; });
   }
@@ -42,7 +43,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Future<int> _firstIncompleteIndex() async {
     final done = await WorkoutProgressService.getCompletedVideos();
     for (int i = 0; i < widget.workout.exercises.length; i++) {
-      if (!done.contains('${widget.workout.title}_exercise_$i')) return i;
+      final videoId = widget.workout.videoIdAt(i);
+      if (videoId == null || !done.contains(videoId)) return i;
     }
     return 0;
   }
@@ -51,7 +53,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final exercises = widget.workout.exercises;
     final idx = await _firstIncompleteIndex();
     if (!mounted) return;
-    _openExercise(idx, exercises[idx], '${widget.workout.title}_exercise_$idx', false);
+    _openExercise(idx, exercises[idx], widget.workout.videoIdAt(idx) ?? '', false);
   }
 
   void _openExercise(int index, String name, String videoId, bool isDone) {
@@ -77,7 +79,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           }
         },
         workoutId: widget.workout.id,
-        totalWorkoutExercises: widget.workout.exercises.length,
+        allVideoIds: widget.workout.videos.map((v) => v.id).toList(),
       ),
     )).then((_) => _loadStatus());
   }
@@ -258,8 +260,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                   child: Column(
                     children: List.generate(exercises.length, (index) {
                       final name = exercises[index];
-                      final videoId = '${widget.workout.title}_exercise_$index';
-                      final isDone = _completedVideos.contains(videoId);
+                      final videoId = widget.workout.videoIdAt(index) ?? '';
+                      final isDone = videoId.isNotEmpty && _completedVideos.contains(videoId);
                       final isCurrent = !isDone && index == _completedExercises;
 
                       return GestureDetector(

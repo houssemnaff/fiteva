@@ -263,9 +263,13 @@ class MealCategoryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                Text(data.name, style: GoogleFonts.outfit(
-                  fontSize: 14, fontWeight: FontWeight.w700, color: nc.text1)),
-                const Spacer(),
+                Expanded(
+                  child: Text(data.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontSize: 14, fontWeight: FontWeight.w700, color: nc.text1))),
+                const SizedBox(width: 6),
                 Text(data.time, style: GoogleFonts.inter(
                   fontSize: 11, color: nc.text2)),
               ]),
@@ -281,12 +285,15 @@ class MealCategoryCard extends StatelessWidget {
                         : accent))),
               const SizedBox(height: 5),
               Row(children: [
-                Text(
-                  empty ? l10n.nutritionNoMealLogged : '${data.consumed} ${l10n.nutritionKcalConsumed}',
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    color: empty ? nc.border : nc.text2)),
-                const Spacer(),
+                Expanded(
+                  child: Text(
+                    empty ? l10n.nutritionNoMealLogged : '${data.consumed} ${l10n.nutritionKcalConsumed}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: empty ? nc.text1 : nc.text1))),
+                const SizedBox(width: 6),
                 Text('/ ${data.budget} kcal',
                   style: GoogleFonts.inter(fontSize: 10, color: nc.text2)),
               ]),
@@ -455,17 +462,23 @@ class SectionHeader extends StatelessWidget {
     return Row(
     crossAxisAlignment: CrossAxisAlignment.end,
     children: [
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (eyebrow != null)
-          Text(eyebrow!, style: GoogleFonts.inter(
-            color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
-            letterSpacing: 2.5)),
+          Text(eyebrow!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+              letterSpacing: 2.5)),
         if (eyebrow != null) const SizedBox(height: 2),
-        Text(title, style: GoogleFonts.outfit(
-          color: nc.text1, fontSize: 20, fontWeight: FontWeight.w800,
-          letterSpacing: -0.4)),
-      ]),
-      const Spacer(),
+        Text(title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.outfit(
+            color: nc.text1, fontSize: 20, fontWeight: FontWeight.w800,
+            letterSpacing: -0.4)),
+      ])),
+      const SizedBox(width: 10),
       if (onSeeAll != null)
         GestureDetector(
           onTap: onSeeAll,

@@ -7,11 +7,61 @@ import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/core/nutrition/favorites_provider.dart' as nutrition;
 import 'package:fiteva/core/shop/shop_provider.dart' as shop_provider;
 import 'package:fiteva/screens/shop/models/boutique_item.dart';
+import 'package:fiteva/services/recipe_service.dart';
 
 enum FavoriteType { workout, recipe, product }
 
 class FavoritesBottomSheet extends ConsumerStatefulWidget {
   const FavoritesBottomSheet({super.key});
+
+  static const List<Map<String, dynamic>> tabs = [
+    {'label': 'Programmes', 'icon': LucideIcons.dumbbell, 'type': FavoriteType.workout},
+    {'label': 'Recettes', 'icon': LucideIcons.utensils, 'type': FavoriteType.recipe},
+    {'label': 'Boutique', 'icon': LucideIcons.shoppingBag, 'type': FavoriteType.product},
+  ];
+
+  static List<Map<String, dynamic>> getFavoriteItems(
+    int tab,
+    Set<String> programFavorites,
+    Set<String> recipeFavorites,
+    Set<String> shopWishlist,
+    List<dynamic> allPrograms,
+    List<BoutiqueItem> shopItems,
+  ) {
+    if (tab == 0) {
+      // Programmes — favoris stockés avec préfixe 'prog:id'
+      return allPrograms
+          .where((p) => programFavorites.contains('prog:${p.id}'))
+          .map((p) => {
+            'id': 'prog:${p.id}',
+            'title': p.name,
+            'subtitle': '${p.duration} · ${p.sessions}',
+            'image': p.imageUrl,
+          })
+          .toList();
+    } else if (tab == 1) {
+      // Recettes — afficher l'ID (nom de la recette)
+      return recipeFavorites
+          .map((id) => {
+            'id': id,
+            'title': id,
+            'subtitle': 'Recette',
+            'image': '',
+          })
+          .toList();
+    } else {
+      // Boutique — jointure avec shopItems pour avoir le vrai nom
+      return shopWishlist.map((id) {
+        final item = shopItems.where((i) => i.id == id).firstOrNull;
+        return {
+          'id':       id,
+          'title':    item?.title    ?? id,
+          'subtitle': item?.brand    ?? 'Boutique',
+          'image':    item?.imageUrl ?? '',
+        };
+      }).toList();
+    }
+  }
 
   @override
   ConsumerState<FavoritesBottomSheet> createState() => _FavoritesBottomSheetState();
@@ -20,11 +70,7 @@ class FavoritesBottomSheet extends ConsumerStatefulWidget {
 class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
   int _selectedTab = 0;
 
-  final List<Map<String, dynamic>> _tabs = [
-    {'label': 'Programmes', 'icon': LucideIcons.dumbbell, 'type': FavoriteType.workout},
-    {'label': 'Recettes', 'icon': LucideIcons.utensils, 'type': FavoriteType.recipe},
-    {'label': 'Boutique', 'icon': LucideIcons.shoppingBag, 'type': FavoriteType.product},
-  ];
+  List<Map<String, dynamic>> get _tabs => FavoritesBottomSheet.tabs;
 
   @override
   Widget build(BuildContext context) {
@@ -171,44 +217,8 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
     );
   }
 
-  List<Map<String, dynamic>> _getItems(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, List<BoutiqueItem> shopItems) {
-    if (tab == 0) {
-      // Programmes — favoris stockés avec préfixe 'prog:id'
-      return allPrograms
-          .where((p) => programFavorites.contains('prog:${p.id}'))
-          .map((p) => {
-            'id': 'prog:${p.id}',
-            'title': p.name,
-            'subtitle': '${p.duration} · ${p.sessions}',
-            'image': p.imageUrl,
-          })
-          .toList();
-    } else if (tab == 1) {
-      // Recettes — afficher l'ID (nom de la recette)
-      return recipeFavorites
-          .map((id) => {
-            'id': id,
-            'title': id,
-            'subtitle': 'Recette',
-            'image': 'assets/images/recipe.jpg',
-          })
-          .toList();
-    } else {
-      // Boutique — jointure avec shopItems pour avoir le vrai nom
-      return shopWishlist.map((id) {
-        final item = shopItems.where((i) => i.id == id).firstOrNull;
-        return {
-          'id':       id,
-          'title':    item?.title    ?? id,
-          'subtitle': item?.brand    ?? 'Boutique',
-          'image':    item?.imageUrl ?? '',
-        };
-      }).toList();
-    }
-  }
-
   Widget _buildContent(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, List<BoutiqueItem> shopItems, ColorScheme cs) {
-    final items = _getItems(tab, programFavorites, recipeFavorites, shopWishlist, allPrograms, shopItems);
+    final items = FavoritesBottomSheet.getFavoriteItems(tab, programFavorites, recipeFavorites, shopWishlist, allPrograms, shopItems);
 
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
@@ -230,7 +240,7 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
           type: _tabs[tab]['type'] as FavoriteType,
           onRemove: () async => await _removeItem(item['id']! as String, tab),
           colorScheme: cs,
-          isPlaceholder: tab != 0,
+          isPlaceholder: tab == 1,
         );
       },
     );
@@ -238,14 +248,15 @@ class _FavoritesBottomSheetState extends ConsumerState<FavoritesBottomSheet> {
 
   Future<void> _removeItem(String id, int tab) async {
     if (tab == 0) {
-      // Remove from programs favorites
       await ref.read(favoritesProvider.notifier).toggleFavorite(id);
     } else if (tab == 1) {
-      // Remove from recipes favorites
-      ref.read(nutrition.favoritesProvider.notifier).toggle(id);
+      await RecipeService.removeFavorite(id);
     } else if (tab == 2) {
-      // Remove from shop wishlist
       await ref.read(shop_provider.shopWishlistProvider.notifier).removeFromWishlist(id);
+    }
+
+    if (mounted) {
+      setState(() {});
     }
   }
 }
@@ -299,7 +310,7 @@ class _FavoriteCard extends StatelessWidget {
                 child: SizedBox(
                   width: double.infinity,
                   height: 120,
-                  child: isPlaceholder
+                  child: isPlaceholder || imageAsset.isEmpty
                       ? Container(
                           color: colorScheme.surfaceContainerHigh,
                           child: Center(
@@ -310,20 +321,35 @@ class _FavoriteCard extends StatelessWidget {
                             ),
                           ),
                         )
-                      : Image.asset(
-                          imageAsset,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: colorScheme.surfaceContainerHigh,
-                            child: Center(
-                              child: Icon(
-                                _typeIcon,
-                                color: colorScheme.onSurface.withValues(alpha: 0.5),
-                                size: 40,
+                      : (imageAsset.startsWith('http://') || imageAsset.startsWith('https://'))
+                          ? Image.network(
+                              imageAsset,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: colorScheme.surfaceContainerHigh,
+                                child: Center(
+                                  child: Icon(
+                                    _typeIcon,
+                                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Image.asset(
+                              imageAsset,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: colorScheme.surfaceContainerHigh,
+                                child: Center(
+                                  child: Icon(
+                                    _typeIcon,
+                                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                    size: 40,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
                 ),
               ),
               Positioned(

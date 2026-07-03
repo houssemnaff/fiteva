@@ -10,6 +10,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../../l10n/app_localizations.dart';
 
 // Color scheme is obtained from Theme.of(context).colorScheme
@@ -33,6 +34,7 @@ class _FeedTabState extends ConsumerState<FeedTab> {
   @override
   Widget build(BuildContext context) {
     final allPosts = ref.watch(postsNotifierProvider);
+    final isLoading = ref.watch(postsLoadingProvider);
     final cs    = Theme.of(context).colorScheme;
     final l10n  = ref.watch(l10nProvider);
 
@@ -95,7 +97,16 @@ class _FeedTabState extends ConsumerState<FeedTab> {
         ),
 
         // ── Post list ─────────────────────────────────────────
-        if (posts.isEmpty)
+        if (isLoading && posts.isEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+            sliver: SliverList.separated(
+              itemCount: 2,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (_, __) => _FeedSkeletonCard(colorScheme: cs),
+            ),
+          )
+        else if (posts.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
             child: Column(
@@ -157,6 +168,120 @@ class _FilterPill extends StatelessWidget {
           fontWeight: FontWeight.w600,
           color: selected ? colorScheme.onPrimary : colorScheme.onSurface.withValues(alpha: 0.6),
         )),
+      ),
+    );
+  }
+}
+
+// Mirrors _PostCard's exact structure/paddings/dimensions so the layout
+// doesn't jump when the shimmer is swapped for real Supabase post data —
+// only the dynamic (Supabase-sourced) content is shimmered; the surrounding
+// chrome (header/filters above) stays static and untouched.
+class _FeedSkeletonCard extends StatelessWidget {
+  final ColorScheme colorScheme;
+  const _FeedSkeletonCard({required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    // The card frame (background/border/shadow) stays static, exactly like
+    // the real _PostCard — only the placeholder shapes inside shimmer, the
+    // same principle used in comment_sheet.dart's _CommentSkeletonRow.
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outline),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Shimmer.fromColors(
+        baseColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+        highlightColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header — matches _PostCard's header padding exactly ──────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
+              child: Row(
+                children: [
+                  Container(width: 40, height: 40, decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest, shape: BoxShape.circle)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SkeletonBox(height: 12, width: 120, radius: 6, colorScheme: colorScheme),
+                        const SizedBox(height: 6),
+                        _SkeletonBox(height: 10, width: 90, radius: 6, colorScheme: colorScheme),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 36),
+                ],
+              ),
+            ),
+
+            // ── Title + content — matches _PostCard's text padding exactly ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SkeletonBox(height: 14, width: double.infinity, radius: 6, colorScheme: colorScheme),
+                  const SizedBox(height: 8),
+                  _SkeletonBox(height: 14, width: 220, radius: 6, colorScheme: colorScheme),
+                ],
+              ),
+            ),
+
+            // ── Image — full-bleed, same height as the real post image ──
+            _SkeletonBox(height: 200, width: double.infinity, radius: 0, colorScheme: colorScheme),
+
+            // ── Actions — matches _PostCard's 4 actions exactly ─────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 12, 12),
+              child: Row(
+                children: [
+                  _SkeletonBox(height: 30, width: 68, radius: 50, colorScheme: colorScheme),
+                  const SizedBox(width: 8),
+                  _SkeletonBox(height: 30, width: 78, radius: 50, colorScheme: colorScheme),
+                  const Spacer(),
+                  _SkeletonBox(height: 30, width: 30, radius: 15, colorScheme: colorScheme),
+                  const SizedBox(width: 8),
+                  _SkeletonBox(height: 30, width: 30, radius: 15, colorScheme: colorScheme),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  final double height;
+  final double? width;
+  final double radius;
+  final ColorScheme colorScheme;
+
+  const _SkeletonBox({required this.height, this.width, required this.radius, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(radius),
       ),
     );
   }

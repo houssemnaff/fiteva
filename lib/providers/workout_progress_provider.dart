@@ -48,6 +48,16 @@ final programStatusProvider = FutureProvider.family<ProgramProgressStatus, HomeP
   return await WorkoutProgressService.getProgramStatus(program);
 });
 
+// Joined programs provider — programmes que l'utilisateur a rejoints
+final joinedProgramsProvider = FutureProvider<Set<String>>((ref) async {
+  return await WorkoutProgressService.getJoinedPrograms();
+});
+
+// Program joined status provider
+final isProgramJoinedProvider = FutureProvider.family<bool, String>((ref, programId) async {
+  return await WorkoutProgressService.isProgramJoined(programId);
+});
+
 // Notifier for marking videos complete
 class VideoCompletionNotifier extends Notifier<void> {
   @override
@@ -101,6 +111,22 @@ class ProgramCompletionNotifier extends Notifier<void> {
 
 final programCompletionProvider = NotifierProvider<ProgramCompletionNotifier, void>(
   ProgramCompletionNotifier.new,
+);
+
+// Notifier for joining programs
+class ProgramJoinNotifier extends Notifier<void> {
+  @override
+  void build() {}
+
+  Future<void> joinProgram(String programId) async {
+    await WorkoutProgressService.joinProgram(programId);
+    ref.invalidate(joinedProgramsProvider);
+    ref.invalidate(isProgramJoinedProvider);
+  }
+}
+
+final programJoinProvider = NotifierProvider<ProgramJoinNotifier, void>(
+  ProgramJoinNotifier.new,
 );
 
 // Notifier for managing favorite items (programs, workouts)

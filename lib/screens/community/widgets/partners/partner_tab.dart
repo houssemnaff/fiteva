@@ -1,11 +1,14 @@
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:fiteva/screens/community/UserProfileScreen.dart';
 import 'package:fiteva/screens/community/widgets/community_avatar.dart';
+import 'package:fiteva/screens/community/widgets/partners/partner_requests_sheet.dart';
+import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/community_providers.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -28,10 +31,20 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
   static const _regions = ['Tous', 'Sousse', 'Monastir', 'Tunis', 'Sfax'];
 
   @override
+  void initState() {
+    super.initState();
+    // Rafraîchit les statuts de demandes à chaque ouverture de l'onglet —
+    // sinon un statut passé à 'accepted' côté propriétaire (sur un autre
+    // appareil/session) ne serait jamais revu par le demandeur.
+    Future.microtask(() => ref.read(partnerRequestsProvider.notifier).refresh());
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l10n = ref.watch(l10nProvider);
     final partners = ref.watch(partnersProvider);
+    final incomingCount = ref.watch(partnerRequestsProvider).incoming.length;
     final filtered = partners.where((p) {
       final goalOk   = _goal   == 'Tous' || p.goal   == _goal;
       final levelOk  = _level  == 'Tous' || p.level  == _level;
@@ -84,6 +97,44 @@ class _PartnerTabState extends ConsumerState<PartnerTab> {
                     ),
                   ),
                   const SizedBox(width: 12),
+                  // Incoming join requests — always accessible; badge shows the pending count
+                  GestureDetector(
+                    onTap: () => showPartnerRequestsSheet(context),
+                    child: Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                        color: incomingCount > 0
+                            ? cs.primary.withValues(alpha: 0.08)
+                            : cs.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: incomingCount > 0
+                              ? cs.primary.withValues(alpha: 0.3)
+                              : cs.outline,
+                        ),
+                      ),
+                      child: Stack(clipBehavior: Clip.none, children: [
+                        Center(child: Icon(LucideIcons.inbox, size: 16,
+                            color: incomingCount > 0
+                                ? cs.primary
+                                : cs.onSurface.withValues(alpha: 0.6))),
+                        if (incomingCount > 0)
+                          Positioned(
+                            top: -3, right: -3,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                              decoration: BoxDecoration(color: cs.error, shape: BoxShape.circle),
+                              child: Center(
+                                child: Text('$incomingCount', style: GoogleFonts.inter(
+                                  fontSize: 9, fontWeight: FontWeight.w800, color: cs.onError)),
+                              ),
+                            ),
+                          ),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   // Filter toggle
                   GestureDetector(
                     onTap: () => setState(() => _filtersOpen = !_filtersOpen),
@@ -291,23 +342,23 @@ class _FilterRow extends StatelessWidget {
 }
 
 // ─── Partner Card ─────────────────────────────────────────────
-class PartnerCard extends StatefulWidget {
+class PartnerCard extends ConsumerStatefulWidget {
   final PartnerModel partner;
   final int index;
   final ColorScheme colorScheme;
   const PartnerCard({super.key, required this.partner, required this.index, required this.colorScheme});
 
   @override
-  State<PartnerCard> createState() => _PartnerCardState();
+  ConsumerState<PartnerCard> createState() => _PartnerCardState();
 }
 
-class _PartnerCardState extends State<PartnerCard> {
-  bool _messaged = false;
-
+class _PartnerCardState extends ConsumerState<PartnerCard> {
   @override
   Widget build(BuildContext context) {
     final cs = widget.colorScheme;
     final p = widget.partner;
+    final isOwnPost = p.userId.isNotEmpty && p.userId == SupabaseConfig.userId;
+    final status = ref.watch(partnerRequestsProvider).myStatusByPartnerId[p.id] ?? 'none';
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
@@ -440,19 +491,26 @@ class _PartnerCardState extends State<PartnerCard> {
           ),
 
           // ── CTA ──────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 12, 12),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: _messaged
-                  ? _MessagedBtn(key: const ValueKey('done'), colorScheme: cs)
-                  : _MessageBtn(
+          if (!isOwnPost)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 12, 12),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: switch (status) {
+                  'accepted' => _ContactRow(
+                      key: const ValueKey('accepted'),
+                      partner: p, colorScheme: cs),
+                  'pending' => _MessagedBtn(
+                      key: const ValueKey('pending'), colorScheme: cs),
+                  _ => _MessageBtn(
                       key: const ValueKey('idle'),
-                      onTap: () => setState(() => _messaged = true),
+                      onTap: () => ref.read(partnerRequestsProvider.notifier)
+                          .join(partnerId: p.id, ownerId: p.userId),
                       colorScheme: cs,
                     ),
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -508,7 +566,10 @@ class _MessageBtn extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(l10nProvider);
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
@@ -516,9 +577,9 @@ class _MessageBtn extends ConsumerWidget {
           borderRadius: BorderRadius.circular(50),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(LucideIcons.messageSquare, size: 15, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+          Icon(LucideIcons.userPlus, size: 15, color: colorScheme.onSurface.withValues(alpha: 0.6)),
           const SizedBox(width: 5),
-          Text(l10n.communityMessageBtn, style: GoogleFonts.inter(
+          Text(l10n.communityJoinBtn, style: GoogleFonts.inter(
             fontSize: 12, fontWeight: FontWeight.w700,
             color: colorScheme.onSurface.withValues(alpha: 0.6),
           )),
@@ -543,12 +604,90 @@ class _MessagedBtn extends ConsumerWidget {
         border: Border.all(color: colorScheme.secondary.withValues(alpha: 0.3)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(LucideIcons.checkCircle, size: 15, color: colorScheme.primary),
+        Icon(LucideIcons.clock, size: 15, color: colorScheme.primary),
         const SizedBox(width: 5),
-        Text(l10n.communityMessageSent, style: GoogleFonts.inter(
+        Text(l10n.communityJoinPending, style: GoogleFonts.inter(
           fontSize: 12, fontWeight: FontWeight.w700, color: colorScheme.primary,
         )),
       ]),
+    );
+  }
+}
+
+// ─── Contact Row (shown once the join request is accepted) ────
+Uri? _contactUri(String platform, String raw) {
+  final v = raw.trim();
+  if (v.isEmpty) return null;
+  switch (platform) {
+    case 'whatsapp':
+      final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+      return digits.isEmpty ? null : Uri.parse('https://wa.me/$digits');
+    case 'instagram':
+      if (v.startsWith('http')) return Uri.tryParse(v);
+      final handle = v.startsWith('@') ? v.substring(1) : v;
+      return Uri.parse('https://instagram.com/$handle');
+    case 'facebook':
+      if (v.startsWith('http')) return Uri.tryParse(v);
+      return Uri.parse('https://facebook.com/${Uri.encodeComponent(v)}');
+    default:
+      return null;
+  }
+}
+
+class _ContactRow extends ConsumerWidget {
+  final PartnerModel partner;
+  final ColorScheme colorScheme;
+  const _ContactRow({super.key, required this.partner, required this.colorScheme});
+
+  Future<void> _open(BuildContext context, Uri? uri) async {
+    if (uri == null) return;
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text('Impossible d\'ouvrir ce lien.'),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
+    final cs = colorScheme;
+    final contacts = [
+      ('whatsapp', partner.contactWhatsapp, LucideIcons.messageCircle),
+      ('instagram', partner.contactInstagram, LucideIcons.atSign),
+      ('facebook', partner.contactFacebook, LucideIcons.globe),
+    ].where((c) => c.$2.trim().isNotEmpty).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(l10n.communityJoinAccepted, style: GoogleFonts.inter(
+          fontSize: 11, fontWeight: FontWeight.w600,
+          color: cs.onSurface.withValues(alpha: 0.5))),
+        const SizedBox(height: 6),
+        if (contacts.isEmpty)
+          Icon(LucideIcons.checkCircle, size: 18, color: cs.primary)
+        else
+          Row(children: [
+            for (final (platform, value, icon) in contacts) ...[
+              GestureDetector(
+                onTap: () => _open(context, _contactUri(platform, value)),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Icon(icon, size: 16, color: cs.primary),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ]),
+      ],
     );
   }
 }

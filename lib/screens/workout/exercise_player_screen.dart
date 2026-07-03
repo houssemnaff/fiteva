@@ -30,7 +30,7 @@ class ExercisePlayerScreen extends StatefulWidget {
   final int totalWorkoutPoints;
   final VoidCallback onCompleted;
   final String? workoutId;
-  final int? totalWorkoutExercises;
+  final List<String>? allVideoIds;
 
   const ExercisePlayerScreen({
     super.key,
@@ -44,7 +44,7 @@ class ExercisePlayerScreen extends StatefulWidget {
     required this.totalWorkoutPoints,
     required this.onCompleted,
     this.workoutId,
-    this.totalWorkoutExercises,
+    this.allVideoIds,
   });
 
   @override
@@ -144,10 +144,12 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
   }
 
   Future<void> _checkAndMarkComplete() async {
-    if (widget.workoutId == null || widget.totalWorkoutExercises == null) return;
+    if (widget.workoutId == null || widget.allVideoIds == null || widget.allVideoIds!.isEmpty) {
+      return;
+    }
     final done = await WorkoutProgressService.getCompletedVideos();
-    for (int i = 0; i < widget.totalWorkoutExercises!; i++) {
-      if (!done.contains('${widget.workoutTitle}_exercise_$i')) return;
+    for (final videoId in widget.allVideoIds!) {
+      if (!done.contains(videoId)) return;
     }
     await WorkoutProgressService.markWorkoutComplete(widget.workoutId!);
   }

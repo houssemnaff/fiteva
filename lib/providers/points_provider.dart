@@ -15,6 +15,15 @@ class PointsNotifier extends StateNotifier<int> {
     state = await PointsService.addPoints(amount);
   }
 
+  /// Récompense l'objectif calorique du jour (une seule fois par jour).
+  /// Retourne true si des points viennent d'être crédités.
+  Future<bool> awardCalorieGoalIfNeeded() async {
+    final updated = await PointsService.awardCalorieGoalReached();
+    if (updated == null) return false;
+    state = updated;
+    return true;
+  }
+
   Future<void> resetPoints() async {
     await PointsService.resetPoints();
     state = 0;

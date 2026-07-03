@@ -1014,8 +1014,20 @@ class _StepWelcomeState extends State<StepWelcome>
   bool _isLoginMode = false; // true = formulaire de connexion, false = inscription
   bool _obscure     = true;
 
+  String? _emailError;
+  String? _passwordError;
+
   late final AnimationController _fadeCtrl;
   late final Animation<double>   _fadeAnim;
+
+  static final RegExp _emailRegex =
+      RegExp(r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$');
+
+  bool _isValidEmail(String email) => _emailRegex.hasMatch(email.trim());
+
+  // Au moins 8 caractères et au moins un chiffre.
+  bool _isValidPassword(String password) =>
+      password.length >= 8 && RegExp(r'\d').hasMatch(password);
 
   bool get _canContinue {
     if (_emailMode) {
@@ -1028,6 +1040,29 @@ class _StepWelcomeState extends State<StepWelcome>
              widget.passwordController.text.trim().isNotEmpty;
     }
     return widget.nameController.text.trim().isNotEmpty;
+  }
+
+  /// Valide le format de l'email (et la force du mot de passe en inscription)
+  /// et met à jour les messages d'erreur affichés sous les champs.
+  bool _validateEmailForm() {
+    final email    = widget.emailController.text.trim();
+    final password = widget.passwordController.text.trim();
+
+    String? emailErr;
+    String? passwordErr;
+
+    if (!_isValidEmail(email)) {
+      emailErr = 'Adresse email invalide.';
+    }
+    if (!_isLoginMode && !_isValidPassword(password)) {
+      passwordErr = 'Le mot de passe doit contenir au moins 8 caractères et un chiffre.';
+    }
+
+    setState(() {
+      _emailError    = emailErr;
+      _passwordError = passwordErr;
+    });
+    return emailErr == null && passwordErr == null;
   }
 
   @override
@@ -1327,7 +1362,8 @@ class _StepWelcomeState extends State<StepWelcome>
           hint: 'your@email.com',
           icon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
-          onChanged: (_) => setState(() {}),
+          errorText: _emailError,
+          onChanged: (_) => setState(() { _emailError = null; }),
         ),
         const SizedBox(height: 12),
         _formField(
@@ -1335,6 +1371,7 @@ class _StepWelcomeState extends State<StepWelcome>
           hint: '••••••••',
           icon: Icons.lock_outline_rounded,
           obscure: _obscure,
+          errorText: _passwordError,
           suffix: GestureDetector(
             onTap: () => setState(() => _obscure = !_obscure),
             child: Icon(
@@ -1342,14 +1379,17 @@ class _StepWelcomeState extends State<StepWelcome>
               color: _kGrey, size: 18,
             ),
           ),
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => setState(() { _passwordError = null; }),
         ),
         const SizedBox(height: 20),
 
         // CTA — login direct (sans steps) ou inscription (avec steps)
         GestureDetector(
           onTap: _canContinue
-              ? (_isLoginMode ? (widget.onLogin ?? widget.onNext) : widget.onNext)
+              ? () {
+                  if (!_validateEmailForm()) return;
+                  (_isLoginMode ? (widget.onLogin ?? widget.onNext) : widget.onNext)();
+                }
               : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
@@ -1384,36 +1424,53 @@ class _StepWelcomeState extends State<StepWelcome>
     bool obscure = false,
     TextInputType? keyboardType,
     Widget? suffix,
+    String? errorText,
     required ValueChanged<String> onChanged,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _kWhite.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(14),
-
-
-        border: Border.all(color: _kBorderLight, width: 1.2),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscure,
-        keyboardType: keyboardType,
-        onChanged: onChanged,
-        autofillHints: const [],
-        style: const TextStyle(fontSize: 15, color: Color.fromARGB(255, 1, 1, 1),
-            fontWeight: FontWeight.w500),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.45), fontSize: 14),
-          prefixIcon: Icon(icon, color: _kWhite.withOpacity(0.7), size: 20),
-          suffixIcon: suffix != null
-              ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix)
-              : null,
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+    final hasError = errorText != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: _kWhite.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: hasError ? const Color(0xFFE53935) : _kBorderLight,
+              width: 1.2,
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: obscure,
+            keyboardType: keyboardType,
+            onChanged: onChanged,
+            autofillHints: const [],
+            style: const TextStyle(fontSize: 15, color: Color.fromARGB(255, 1, 1, 1),
+                fontWeight: FontWeight.w500),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.45), fontSize: 14),
+              prefixIcon: Icon(icon, color: _kWhite.withOpacity(0.7), size: 20),
+              suffixIcon: suffix != null
+                  ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix)
+                  : null,
+              border: InputBorder.none,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+            ),
+          ),
         ),
-      ),
+        if (hasError) ...[
+          const SizedBox(height: 5),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(errorText,
+                style: const TextStyle(
+                    color: Color(0xFFFF6B6B), fontSize: 12, fontWeight: FontWeight.w500)),
+          ),
+        ],
+      ],
     );
   }
 

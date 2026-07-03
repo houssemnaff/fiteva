@@ -7,6 +7,7 @@ import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/core/nutrition/favorites_provider.dart' as nutrition;
 import 'package:fiteva/core/shop/shop_provider.dart' as shop_provider;
 import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
+import 'package:fiteva/screens/shop/models/boutique_item.dart';
 import 'package:fiteva/screens/workout/programme_detail_screen.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
 
@@ -20,20 +21,20 @@ class LibrarySection extends ConsumerStatefulWidget {
 class _LibrarySectionState extends ConsumerState<LibrarySection> {
   int _selectedTab = 0;
 
-  List<Map<String, dynamic>> _tabs(AppL10n l10n) => [
-    {'label': l10n.navWorkout,  'icon': LucideIcons.dumbbell},
-    {'label': l10n.navNutrition,'icon': LucideIcons.utensils},
-    {'label': l10n.navShop,     'icon': LucideIcons.shoppingBag},
-  ];
+  List<Map<String, dynamic>> get _tabs => FavoritesBottomSheet.tabs;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l10n = ref.watch(l10nProvider);
-    final favorites = ref.watch(favoritesProvider);
+    final programFavorites = ref.watch(favoritesProvider);
     final recipeFavorites = ref.watch(nutrition.favoritesProvider);
     final shopWishlist = ref.watch(shop_provider.shopWishlistProvider);
-    final allWorkouts = ref.watch(workoutsProvider);
+    final shopItemsAsync = ref.watch(shop_provider.shopItemsProvider);
+    final shopItems = shopItemsAsync.maybeWhen(
+      data: (d) => d,
+      orElse: () => <BoutiqueItem>[],
+    );
 
     // Watch all program providers
     final sallePrograms = ref.watch(salleProgramsProvider);
@@ -84,14 +85,25 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
                     builder: (_) => const FavoritesBottomSheet(),
                   );
                 },
-                child: Text(
-                  l10n.sectionVoirTout,
-                  style: GoogleFonts.inter(
-                    color: cs.secondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: Container(
+  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+  decoration: BoxDecoration(
+    border: Border.all(
+      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+      width: 1,
+    ),
+    borderRadius: BorderRadius.circular(20),
+  ),
+  child: Text(
+    l10n.sectionVoirTout,
+    style: GoogleFonts.inter(
+      color: Theme.of(context).colorScheme.primary,
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.5,
+    ),
+  ),
+)
               ),
             ],
           ),
@@ -105,7 +117,7 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: _tabs(l10n).length,
+            itemCount: _tabs.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final selected = index == _selectedTab;
@@ -123,13 +135,13 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
                   child: Row(
                     children: [
                       Icon(
-                        _tabs(l10n)[index]['icon'] as IconData,
+                        _tabs[index]['icon'] as IconData,
                         size: 14,
                         color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        _tabs(l10n)[index]['label'] as String,
+                        _tabs[index]['label'] as String,
                         style: GoogleFonts.inter(
                           color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
                           fontSize: 13,
@@ -147,50 +159,33 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
         const SizedBox(height: 16),
 
         // ── Content ─────────────────────────────────────────
-        if (_selectedTab == 0)
-          _buildWorkoutList(favorites, allWorkouts, allPrograms, cs),
-        if (_selectedTab == 1)
-          _buildRecipeList(recipeFavorites, cs, l10n),
-        if (_selectedTab == 2)
-          _buildProductList(shopWishlist, cs),
+        _buildContent(_selectedTab, programFavorites, recipeFavorites, shopWishlist, allPrograms, shopItems, cs),
       ],
     );
   }
 
-  Widget _buildWorkoutList(Set<String> favorites, List<dynamic> allWorkouts, List<dynamic> allPrograms, ColorScheme cs) {
-    final filteredWorkouts = allWorkouts
-        .where((w) => favorites.contains(w.id))
-        .map((w) => {
-          'id': w.id,
-          'title': w.title,
-          'subtitle': '${w.duration} · ${w.level}',
-          'image': w.imageUrl,
-          'kind': 'workout',
-        })
-        .toList();
-
-    final filteredPrograms = allPrograms
-        .where((p) => favorites.contains(p.name))
-        .map((p) => {
-          'id': p.name,
-          'title': p.name,
-          'subtitle': '${p.duration} · ${p.sessions}',
-          'image': p.imageUrl,
-          'kind': 'program',
-        })
-        .toList();
-
-    final allItems = [...filteredWorkouts, ...filteredPrograms];
+  Widget _buildContent(int tab, Set<String> programFavorites, Set<String> recipeFavorites, Set<String> shopWishlist, List<dynamic> allPrograms, List<BoutiqueItem> shopItems, ColorScheme cs) {
+    final items = FavoritesBottomSheet.getFavoriteItems(tab, programFavorites, recipeFavorites, shopWishlist, allPrograms, shopItems);
+    final type = _tabs[tab]['type'] as FavoriteType;
 
     return _buildHorizontalList(
-      allItems,
-      type: _FavType.workout,
+      items,
+      type: type,
       cs: cs,
-      onRemove: (id) async => ref.read(favoritesProvider.notifier).toggleFavorite(id),
+      onRemove: (id) async {
+        if (tab == 0) {
+          await ref.read(favoritesProvider.notifier).toggleFavorite(id);
+        } else if (tab == 1) {
+          await ref.read(nutrition.favoritesProvider.notifier).toggle(id);
+        } else {
+          await ref.read(shop_provider.shopWishlistProvider.notifier).removeFromWishlist(id);
+        }
+      },
       onItemTap: (item) {
-        if (item['kind'] == 'program') {
+        if (tab == 0) {
+          final progId = (item['id'] as String).replaceFirst('prog:', '');
           final prog = allPrograms.firstWhere(
-            (p) => p.name == item['id'],
+            (p) => p.id == progId,
             orElse: () => null,
           );
           if (prog != null) {
@@ -198,55 +193,12 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
               builder: (_) => WorkoutDetailScreen(program: prog),
             ));
           }
+        } else if (tab == 1) {
+          Navigator.of(context).pushNamed('/nutrition');
+        } else {
+          Navigator.of(context).pushNamed('/boutique');
         }
       },
-    );
-  }
-
-  Widget _buildRecipeList(Set<String> favorites, ColorScheme cs, AppL10n l10n) {
-    // Show only favorited recipe IDs - the actual recipe data should come from a real provider
-    if (favorites.isEmpty) {
-      return _buildEmptyState(cs);
-    }
-
-    final filteredItems = favorites
-        .map((id) => {
-          'id': id,
-          'title': id,
-          'subtitle': l10n.navNutrition,
-          'image': 'assets/images/recipe.jpg',
-        })
-        .toList();
-
-    return _buildHorizontalList(
-      filteredItems,
-      type: _FavType.recipe,
-      cs: cs,
-      onRemove: (id) async => ref.read(nutrition.favoritesProvider.notifier).toggle(id),
-      onItemTap: (_) => Navigator.of(context).pushNamed('/nutrition'),
-    );
-  }
-
-  Widget _buildProductList(Set<String> wishlist, ColorScheme cs) {
-    if (wishlist.isEmpty) {
-      return _buildEmptyState(cs);
-    }
-
-    final filteredItems = wishlist
-        .map((id) => {
-          'id': id,
-          'title': id,
-          'subtitle': 'Produit',
-          'image': 'assets/images/product.jpg',
-        })
-        .toList();
-
-    return _buildHorizontalList(
-      filteredItems,
-      type: _FavType.product,
-      cs: cs,
-      onRemove: (id) async => ref.read(shop_provider.shopWishlistProvider.notifier).removeFromWishlist(id),
-      onItemTap: (_) => Navigator.of(context).pushNamed('/boutique'),
     );
   }
 
@@ -271,7 +223,7 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
     );
   }
 
-  Widget _buildHorizontalList(List<Map<String, dynamic>> items, {required _FavType type, required ColorScheme cs, required Function(String) onRemove, Function(Map<String, dynamic>)? onItemTap}) {
+  Widget _buildHorizontalList(List<Map<String, dynamic>> items, {required FavoriteType type, required ColorScheme cs, required Function(String) onRemove, Function(Map<String, dynamic>)? onItemTap}) {
     if (items.isEmpty) {
       return _buildEmptyState(cs);
     }
@@ -301,15 +253,13 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
   }
 }
 
-enum _FavType { workout, recipe, product }
-
 // ── Carte verticale pour scroll horizontal ───────────────────
 class _FavoriteCardVertical extends StatelessWidget {
   final String id;
   final String title;
   final String subtitle;
   final String imageAsset;
-  final _FavType type;
+  final FavoriteType type;
   final VoidCallback onTap;
   final VoidCallback onUnfav;
   final ColorScheme colorScheme;
@@ -327,10 +277,20 @@ class _FavoriteCardVertical extends StatelessWidget {
 
   IconData get _typeIcon {
     switch (type) {
-      case _FavType.workout: return LucideIcons.dumbbell;
-      case _FavType.recipe: return LucideIcons.utensils;
-      case _FavType.product: return LucideIcons.shoppingBag;
+      case FavoriteType.workout: return LucideIcons.dumbbell;
+      case FavoriteType.recipe: return LucideIcons.utensils;
+      case FavoriteType.product: return LucideIcons.shoppingBag;
     }
+  }
+
+  Widget _placeholder() {
+    return Container(
+      color: colorScheme.outline.withValues(alpha: 0.3),
+      child: Center(
+        child: Icon(_typeIcon,
+            color: colorScheme.onSurface.withValues(alpha: 0.5), size: 28),
+      ),
+    );
   }
 
   @override
@@ -354,17 +314,19 @@ class _FavoriteCardVertical extends StatelessWidget {
                   child: SizedBox(
                     width: 140,
                     height: 110,
-                    child: Image.asset(
-                      imageAsset,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: colorScheme.outline.withValues(alpha: 0.3),
-                        child: Center(
-                          child: Icon(_typeIcon,
-                              color: colorScheme.onSurface.withValues(alpha: 0.5), size: 28),
-                        ),
-                      ),
-                    ),
+                    child: imageAsset.isEmpty
+                        ? _placeholder()
+                        : (imageAsset.startsWith('http://') || imageAsset.startsWith('https://'))
+                            ? Image.network(
+                                imageAsset,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _placeholder(),
+                              )
+                            : Image.asset(
+                                imageAsset,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _placeholder(),
+                              ),
                   ),
                 ),
                 Positioned(

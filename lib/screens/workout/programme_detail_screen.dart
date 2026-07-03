@@ -82,7 +82,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
     final p = widget.program;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final l10n = ref.watch(l10nProvider);
-    final isFav = ref.watch(favoritesProvider).contains(p.name);
+    final isFav = ref.watch(favoritesProvider).contains(p.id);
 
     return Scaffold(
       backgroundColor: dark ? const Color(0xFF0D0D0D) : const Color.fromARGB(255, 255, 255, 255),
@@ -128,6 +128,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
             l10n: l10n,
             onTap: () async {
               final nav = Navigator.of(context);
+              await ref.read(programJoinProvider.notifier).joinProgram(p.id);
               final idx = await _getFirstIncompleteWorkoutIndex();
               if (!mounted) return;
               await nav.push(

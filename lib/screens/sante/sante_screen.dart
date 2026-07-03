@@ -368,7 +368,7 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
   final List<Map<String, String>> _history = [];
 
   @override
-  void initState() { super.initState(); _tab = TabController(length: 5, vsync: this); }
+  void initState() { super.initState(); _tab = TabController(length: 4, vsync: this); }
   @override
   void dispose() { _tab.dispose(); _wCtrl.dispose(); _bCtrl.dispose(); super.dispose(); }
 

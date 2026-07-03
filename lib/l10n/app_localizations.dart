@@ -720,6 +720,11 @@ class AppL10n {
   String get communityProfilePublished  => _fr ? 'Profil publié !'            : 'Profile published!';
   String get communityMessageSent       => _fr ? 'Message envoyé'             : 'Message sent';
   String get communitySendMessage       => _fr ? 'Envoyer un message'         : 'Send a message';
+  String get communityJoinBtn           => _fr ? 'Rejoindre'                  : 'Join';
+  String get communityJoinPending       => _fr ? 'En attente'                 : 'Pending';
+  String get communityJoinAccepted      => _fr ? 'Accepté ! Contacte-le/la :' : 'Accepted! Contact them:';
+  String get communityRequestsReceived  => _fr ? 'Demandes reçues'            : 'Requests received';
+  String get communityNoRequests        => _fr ? 'Aucune demande en attente.' : 'No pending requests.';
   String get communityReport            => _fr ? 'Signaler ce profil'         : 'Report this profile';
   String get communityHidePosts         => _fr ? 'Masquer les publications'   : 'Hide posts';
   String get communityCannotLoad        => _fr ? 'Impossible de charger ce profil' : 'Cannot load this profile';

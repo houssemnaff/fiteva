@@ -15,6 +15,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/lang.dart';
 
 import '../../providers/xp_provider.dart';
+import '../../providers/points_provider.dart';
 import 'suivi_nutrition_screen.dart';
 import 'recipes_list_screen.dart';
 import 'ajout_rapide_screen.dart';
@@ -299,7 +300,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
               ),
             ),
           ),
-
+///// hadhi haya  petit
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
@@ -495,13 +496,41 @@ class _MiniMacroBar extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 //  EMPTY DAY BANNER  (Fix #5)
 // ══════════════════════════════════════════════════════════════════════════════
-class _NutritionXpBanner extends StatelessWidget {
+class _NutritionXpBanner extends ConsumerStatefulWidget {
   final int consumed;
   final int goal;
   const _NutritionXpBanner({required this.consumed, required this.goal});
 
   @override
+  ConsumerState<_NutritionXpBanner> createState() => _NutritionXpBannerState();
+}
+
+class _NutritionXpBannerState extends ConsumerState<_NutritionXpBanner> {
+  bool _checkedToday = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAwardPoints());
+  }
+
+  @override
+  void didUpdateWidget(covariant _NutritionXpBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _maybeAwardPoints();
+  }
+
+  void _maybeAwardPoints() {
+    final reached = widget.goal > 0 && widget.consumed >= widget.goal;
+    if (!reached || _checkedToday) return;
+    _checkedToday = true;
+    ref.read(pointsProvider.notifier).awardCalorieGoalIfNeeded();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final consumed = widget.consumed;
+    final goal     = widget.goal;
     final reached = goal > 0 && consumed >= goal;
     final pct     = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
 
@@ -529,8 +558,8 @@ class _NutritionXpBanner extends StatelessWidget {
             Expanded(
               child: Text(
                 reached
-                    ? 'Objectif atteint ! Tu as gagné +20 XP 🎉'
-                    : 'Log tes repas du jour pour gagner +20 XP',
+                    ? 'Objectif atteint ! Tu as gagné +20 points 🎉'
+                    : 'Log tes repas du jour pour gagner +20 points',
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -548,7 +577,7 @@ class _NutritionXpBanner extends StatelessWidget {
                     : const Color(0xFF4CAF50).withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Text('+20 XP',
+              child: Text('+20 pts',
                 style: GoogleFonts.outfit(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,

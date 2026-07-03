@@ -56,7 +56,7 @@ class NutritionColors {
     surface2: const Color(0xFFF4F4F2),
     border:   const Color(0xFFECECEC),
     text1:    const Color(0xFF111110),
-    text2:    const Color(0xFF6B7280),
+    text2:    const Color.fromARGB(255, 37, 49, 36),
     chipBg:   const Color(0xFFF2F2F0),
     mintBg:   const Color(0xFFEAF3EC),
     greenFg:  const Color(0xFF1C4D30),
