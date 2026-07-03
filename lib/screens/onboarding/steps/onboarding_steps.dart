@@ -939,7 +939,6 @@ const _kPrimary     = Color(0xFFFF2D6B);   // SWEAT pink-red
 const _kDark        = Color(0xFF0A0A0A);
 const _kGrey        = Color(0xFF8A8A8A);
 const _kSurface     = Color(0xFFF2F2F2);
-const _kBorder      = Color(0xFFE0E0E0);
 
 // ─── Slide data ───────────────────────────────────────────────────────────────
 class _SlideData {
@@ -1010,7 +1009,6 @@ class _StepWelcomeState extends State<StepWelcome>
   int _currentPage = 0;
   Timer? _autoSlideTimer;
 
-  bool _emailMode   = false;
   bool _isLoginMode = false; // true = formulaire de connexion, false = inscription
   bool _obscure     = true;
 
@@ -1030,16 +1028,13 @@ class _StepWelcomeState extends State<StepWelcome>
       password.length >= 8 && RegExp(r'\d').hasMatch(password);
 
   bool get _canContinue {
-    if (_emailMode) {
-      if (_isLoginMode) {
-        return widget.emailController.text.trim().isNotEmpty &&
-               widget.passwordController.text.trim().isNotEmpty;
-      }
-      return widget.nameController.text.trim().isNotEmpty &&
-             widget.emailController.text.trim().isNotEmpty &&
+    if (_isLoginMode) {
+      return widget.emailController.text.trim().isNotEmpty &&
              widget.passwordController.text.trim().isNotEmpty;
     }
-    return widget.nameController.text.trim().isNotEmpty;
+    return widget.nameController.text.trim().isNotEmpty &&
+           widget.emailController.text.trim().isNotEmpty &&
+           widget.passwordController.text.trim().isNotEmpty;
   }
 
   /// Valide le format de l'email (et la force du mot de passe en inscription)
@@ -1078,7 +1073,7 @@ class _StepWelcomeState extends State<StepWelcome>
   void _startAutoSlide() {
     _autoSlideTimer?.cancel();
     _autoSlideTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || _emailMode) return;
+      if (!mounted) return;
       final next = (_currentPage + 1) % _slides.length;
       _pageCtrl.animateToPage(
         next,
@@ -1157,10 +1152,9 @@ class _StepWelcomeState extends State<StepWelcome>
                           opacity: _fadeAnim,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: _emailMode ? _buildEmailForm() : _buildAuthButtons(),
+                            child: _buildAuthSection(),
                           ),
                         ),
-                        if (!_emailMode) _buildLoginRow(),
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -1262,57 +1256,78 @@ class _StepWelcomeState extends State<StepWelcome>
     );
   }
 
-  // ─── Auth buttons ──────────────────────────────────────────────────────────
-  Widget _buildAuthButtons() {
+  // ─── Auth section — social icons (always visible) + email path ────────────
+  Widget _buildAuthSection() {
     return Column(
       children: [
-        _authBtn(
-          label: AppL10n(Lang.code).welcomeSignUpEmail,
-          bgColor: const Color.fromARGB(255, 21, 80, 44),
-          textColor: _kWhite,
-          borderColor: Colors.transparent,
-          leading: Icon(Icons.mail_outline_rounded, color: _kWhite, size: 20),
-          onTap: () => setState(() => _emailMode = true),
+        _buildSocialIcons(),
+        const SizedBox(height: 18),
+        _buildOrDivider(),
+        const SizedBox(height: 18),
+        _buildEmailForm(),
+        _buildLoginRow(),
+      ],
+    );
+  }
+
+  // ─── Social icon buttons — Google + Apple, icon-only, always visible ──────
+  Widget _buildSocialIcons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _socialIconBtn(
+          semanticLabel: AppL10n(Lang.code).welcomeSignUpGoogle,
+          onTap: widget.onGoogleSignIn ?? () {},
+          child: _googleIcon(),
+        ),
+        const SizedBox(width: 18),
+        _socialIconBtn(
+          semanticLabel: AppL10n(Lang.code).welcomeSignUpApple,
+          onTap: widget.onAppleSignIn ?? () {},
+          child: Icon(Icons.apple_rounded, color: _kWhite, size: 26),
         ),
       ],
     );
   }
 
-  Widget _authBtn({
-    required String label,
-    required Color bgColor,
-    required Color textColor,
-    required Color borderColor,
-    required Widget leading,
+  Widget _socialIconBtn({
+    required Widget child,
     required VoidCallback onTap,
+    required String semanticLabel,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 54,
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: borderColor, width: 1.2),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            leading,
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: textColor,
-                letterSpacing: 0.1,
-              ),
-            ),
-          ],
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 56, height: 56,
+          decoration: BoxDecoration(
+            color: _kWhite.withOpacity(0.10),
+            shape: BoxShape.circle,
+            border: Border.all(color: _kWhite.withOpacity(0.18)),
+          ),
+          child: Center(child: child),
         ),
       ),
     );
+  }
+
+  Widget _buildOrDivider() {
+    return Row(children: [
+      Expanded(child: Divider(color: _kWhite.withOpacity(0.15))),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          AppL10n(Lang.code).welcomeOrContinueWith.toUpperCase(),
+          style: TextStyle(
+            color: _kWhite.withOpacity(0.4),
+            fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1,
+          ),
+        ),
+      ),
+      Expanded(child: Divider(color: _kWhite.withOpacity(0.15))),
+    ]);
   }
 
   // ─── Email form ────────────────────────────────────────────────────────────
@@ -1320,29 +1335,13 @@ class _StepWelcomeState extends State<StepWelcome>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Back row
-        GestureDetector(
-          onTap: () => setState(() { _emailMode = false; _isLoginMode = false; }),
-          child: Row(
-            children: [
-              Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  color: _kWhite.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.arrow_back_ios_new, color: _kWhite, size: 14),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                _isLoginMode
-                    ? AppL10n(Lang.code).welcomeLogIn
-                    : AppL10n(Lang.code).welcomeCreateAccount,
-                style: const TextStyle(
-                    color: _kWhite, fontWeight: FontWeight.w700, fontSize: 16),
-              ),
-            ],
-          ),
+        // Titre (pas de flèche retour — le formulaire est toujours affiché)
+        Text(
+          _isLoginMode
+              ? AppL10n(Lang.code).welcomeLogIn
+              : AppL10n(Lang.code).welcomeCreateAccount,
+          style: const TextStyle(
+              color: _kWhite, fontWeight: FontWeight.w700, fontSize: 16),
         ),
         const SizedBox(height: 20),
 
@@ -1474,106 +1473,41 @@ class _StepWelcomeState extends State<StepWelcome>
     );
   }
 
-  // ─── Already have account ──────────────────────────────────────────────────
+  // ─── Toggle between sign up and log in — swaps the whole section in place ──
   Widget _buildLoginRow() {
     return Padding(
       padding: const EdgeInsets.only(top: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(AppL10n(Lang.code).welcomeAlreadyAccount,
-              style: TextStyle(color: _kWhite.withOpacity(0.6), fontSize: 13)),
-          GestureDetector(
-            onTap: _showLoginSheet,
-            child: Text(
-              AppL10n(Lang.code).welcomeLogIn,
-              style: const TextStyle(
-                color: _kWhite,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                decoration: TextDecoration.underline,
-                decorationColor: _kWhite,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─── Login bottom sheet ────────────────────────────────────────────────────
-  void _showLoginSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-          decoration: const BoxDecoration(
-            color: _kDark,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle
-              Container(
-                width: 40, height: 4,
-                margin: const EdgeInsets.only(bottom: 24),
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
+      child: Center(
+        child: GestureDetector(
+          onTap: () => setState(() => _isLoginMode = !_isLoginMode),
+          child: _isLoginMode
+              ? Text(
+                  AppL10n(Lang.code).welcomeNoAccount,
+                  style: const TextStyle(
+                    color: _kWhite,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                    decorationColor: _kWhite,
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(AppL10n(Lang.code).welcomeAlreadyAccount,
+                        style: TextStyle(color: _kWhite.withOpacity(0.6), fontSize: 13)),
+                    Text(
+                      AppL10n(Lang.code).welcomeLogIn,
+                      style: const TextStyle(
+                        color: _kWhite,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        decoration: TextDecoration.underline,
+                        decorationColor: _kWhite,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              Text(
-                AppL10n(Lang.code).welcomeBack,
-                style: const TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.w800,
-                  color: _kWhite, letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                AppL10n(Lang.code).welcomeLogInToContinue,
-                style: const TextStyle(fontSize: 14, color: _kGrey),
-              ),
-              const SizedBox(height: 28),
-              _authBtn(
-                label: AppL10n(Lang.code).welcomeLogInGoogle,
-                bgColor: _kWhite,
-                textColor: _kDark,
-                borderColor: _kBorder,
-                leading: _googleIcon(),
-                onTap: widget.onGoogleSignIn ?? () {},
-              ),
-              const SizedBox(height: 12),
-              _authBtn(
-                label: AppL10n(Lang.code).welcomeLogInApple,
-                bgColor: _kDark,
-                textColor: _kWhite,
-                borderColor: Colors.white24,
-                leading: Icon(Icons.apple_rounded, color: _kWhite, size: 22),
-                onTap: widget.onAppleSignIn ?? () {},
-              ),
-              const SizedBox(height: 12),
-              _authBtn(
-                label: AppL10n(Lang.code).welcomeLogInEmail,
-                bgColor:  const Color.fromARGB(255, 21, 80, 44),
-                textColor: _kWhite,
-                borderColor: Colors.transparent,
-                leading: Icon(Icons.mail_outline_rounded, color: _kWhite, size: 20),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  setState(() {
-                    _emailMode   = true;
-                    _isLoginMode = true;
-                  });
-                },
-              ),
-            ],
-          ),
         ),
       ),
     );

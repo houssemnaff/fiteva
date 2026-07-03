@@ -385,6 +385,8 @@ class AppL10n {
   String get welcomeLogInGoogle     => _fr ? 'Se connecter avec Google' : 'Log In with Google';
   String get welcomeLogInApple      => _fr ? 'Se connecter avec Apple'  : 'Log In with Apple';
   String get welcomeLogInEmail      => _fr ? 'Se connecter par e-mail'  : 'Log In with Email';
+  String get welcomeNoAccount       => _fr ? "Nouveau ici ? S'inscrire" : 'New here? Sign up';
+  String get welcomeOrContinueWith  => _fr ? 'ou continuer avec'        : 'or continue with';
 
   // StepGoals
   String get goalsTopBarTitle       => _fr ? 'OBJECTIFS'               : 'GOALS';
