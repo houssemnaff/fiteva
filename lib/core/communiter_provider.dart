@@ -162,14 +162,27 @@ final eventsProvider = eventsNotifierProvider;
 
 // ─── Partners Notifier ───────────────────────────────────────────────────────
 
+final partnersLoadingProvider = StateProvider<bool>((ref) => true);
+
 class PartnersNotifier extends StateNotifier<List<PartnerModel>> {
-  PartnersNotifier() : super([]) {
+  PartnersNotifier(this._ref) : super([]) {
     _init();
   }
 
+  final Ref _ref;
+
   Future<void> _init() async {
+    _ref.read(partnersLoadingProvider.notifier).state = true;
     final partners = await CommunityService.loadPartners();
     state = partners;
+    _ref.read(partnersLoadingProvider.notifier).state = false;
+  }
+
+  Future<void> refresh() async {
+    _ref.read(partnersLoadingProvider.notifier).state = true;
+    final partners = await CommunityService.loadPartners();
+    state = partners;
+    _ref.read(partnersLoadingProvider.notifier).state = false;
   }
 
   Future<bool> addPartner(PartnerModel partner) async {
@@ -182,7 +195,7 @@ class PartnersNotifier extends StateNotifier<List<PartnerModel>> {
 
 final partnersNotifierProvider =
     StateNotifierProvider<PartnersNotifier, List<PartnerModel>>(
-        (_) => PartnersNotifier());
+        (ref) => PartnersNotifier(ref));
 
 // Alias utilisé dans les widgets existants
 final partnersProvider = partnersNotifierProvider;

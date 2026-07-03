@@ -1,5 +1,6 @@
 import 'package:fiteva/core/communiter_provider.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
+import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,15 @@ void showPartnerRequestsSheet(BuildContext context) {
     backgroundColor: Colors.transparent,
     builder: (_) => const PartnerRequestsSheet(),
   );
+}
+
+String _timeAgo(DateTime date, bool fr) {
+  final diff = DateTime.now().difference(date);
+  if (diff.inMinutes < 1)  return fr ? 'À l\'instant' : 'Just now';
+  if (diff.inMinutes < 60) return fr ? 'Il y a ${diff.inMinutes} min' : '${diff.inMinutes}m ago';
+  if (diff.inHours < 24)   return fr ? 'Il y a ${diff.inHours} h'   : '${diff.inHours}h ago';
+  if (diff.inDays < 7)     return fr ? 'Il y a ${diff.inDays} j'    : '${diff.inDays}d ago';
+  return '${date.day}/${date.month}';
 }
 
 /// Feuille listant les demandes de mise en relation reçues par l'utilisateur
@@ -49,8 +59,22 @@ class PartnerRequestsSheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
             child: Row(children: [
               Expanded(
-                child: Text(l10n.communityRequestsReceived, style: GoogleFonts.outfit(
-                  fontSize: 18, fontWeight: FontWeight.w800, color: cs.onSurface)),
+                child: Row(children: [
+                  Text(l10n.communityRequestsReceived, style: GoogleFonts.outfit(
+                    fontSize: 18, fontWeight: FontWeight.w800, color: cs.onSurface)),
+                  if (incoming.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Text('${incoming.length}', style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w800, color: cs.primary)),
+                    ),
+                  ],
+                ]),
               ),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -68,16 +92,24 @@ class PartnerRequestsSheet extends ConsumerWidget {
           Flexible(
             child: incoming.isEmpty
                 ? Padding(
-                    padding: const EdgeInsets.all(32),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(LucideIcons.inbox, size: 32,
-                            color: cs.onSurface.withValues(alpha: 0.3)),
-                        const SizedBox(height: 12),
+                        Container(
+                          width: 64, height: 64,
+                          decoration: BoxDecoration(
+                            color: cs.primary.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(LucideIcons.inbox, size: 26,
+                              color: cs.primary.withValues(alpha: 0.6)),
+                        ),
+                        const SizedBox(height: 16),
                         Text(l10n.communityNoRequests,
+                          textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
-                              color: cs.onSurface.withValues(alpha: 0.6), fontSize: 13)),
+                              color: cs.onSurface.withValues(alpha: 0.6), fontSize: 13, height: 1.5)),
                       ],
                     ),
                   )
@@ -85,7 +117,8 @@ class PartnerRequestsSheet extends ConsumerWidget {
                     padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottom),
                     itemCount: incoming.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) => _RequestRow(request: incoming[i], colorScheme: cs),
+                    itemBuilder: (_, i) => _RequestRow(
+                      request: incoming[i], colorScheme: cs, isFrench: l10n.isFrench, l10n: l10n),
                   ),
           ),
         ],
@@ -94,77 +127,105 @@ class PartnerRequestsSheet extends ConsumerWidget {
   }
 }
 
-class _RequestRow extends ConsumerWidget {
+class _RequestRow extends ConsumerStatefulWidget {
   final PartnerJoinRequest request;
   final ColorScheme colorScheme;
-  const _RequestRow({required this.request, required this.colorScheme});
+  final bool isFrench;
+  final AppL10n l10n;
+  const _RequestRow({
+    required this.request, required this.colorScheme,
+    required this.isFrench, required this.l10n,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cs = colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: cs.primary.withValues(alpha: 0.15),
-          child: Text(request.requesterName.isNotEmpty
-              ? request.requesterName[0].toUpperCase() : '?',
-            style: GoogleFonts.outfit(
-              color: cs.primary, fontWeight: FontWeight.w700, fontSize: 14)),
+  ConsumerState<_RequestRow> createState() => _RequestRowState();
+}
+
+class _RequestRowState extends ConsumerState<_RequestRow> {
+  bool _responding = false;
+
+  Future<void> _respond(bool accept) async {
+    HapticFeedback.mediumImpact();
+    setState(() => _responding = true);
+    await ref.read(partnerRequestsProvider.notifier)
+        .respond(requestId: widget.request.id, accept: accept);
+    // Le widget est retiré de la liste dès que le state se met à jour —
+    // pas besoin de remettre _responding à false.
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = widget.colorScheme;
+    final request = widget.request;
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: _responding ? 0.5 : 1,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: cs.outline.withValues(alpha: 0.5)),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(request.requesterName, style: GoogleFonts.inter(
-                fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface)),
-              if (request.partnerGoal.isNotEmpty || request.partnerRegion.isNotEmpty) ...[
+        child: Row(children: [
+          CommunityAvatar(avatarUrl: '', name: request.requesterName, radius: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(request.requesterName, style: GoogleFonts.outfit(
+                  fontSize: 13.5, fontWeight: FontWeight.w700, color: cs.onSurface)),
                 const SizedBox(height: 2),
-                Text(
-                  'Pour : ${[request.partnerGoal, request.partnerRegion]
-                      .where((s) => s.isNotEmpty).join(' · ')}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 11, color: cs.onSurface.withValues(alpha: 0.55)),
-                ),
+                if (request.partnerGoal.isNotEmpty || request.partnerRegion.isNotEmpty)
+                  Text(
+                    [
+                      if (request.partnerGoal.isNotEmpty) widget.l10n.communityPartnerGoalOption(request.partnerGoal),
+                      request.partnerRegion,
+                    ].where((s) => s.isNotEmpty).join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 11, color: cs.onSurface.withValues(alpha: 0.55)),
+                  ),
+                const SizedBox(height: 2),
+                Text(_timeAgo(request.createdAt, widget.isFrench), style: GoogleFonts.inter(
+                  fontSize: 10, color: cs.onSurface.withValues(alpha: 0.4))),
               ],
-            ],
+            ),
           ),
-        ),
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            ref.read(partnerRequestsProvider.notifier)
-                .respond(requestId: request.id, accept: false);
-          },
-          child: Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(
-              color: cs.error.withValues(alpha: 0.10), shape: BoxShape.circle),
-            child: Icon(LucideIcons.x, size: 15, color: cs.error),
+          const SizedBox(width: 6),
+          IgnorePointer(
+            ignoring: _responding,
+            child: Row(children: [
+              Tooltip(
+                message: widget.l10n.communityPartnerDecline,
+                child: GestureDetector(
+                  onTap: () => _respond(false),
+                  child: Container(
+                    width: 34, height: 34,
+                    decoration: BoxDecoration(
+                      color: cs.error.withValues(alpha: 0.10), shape: BoxShape.circle),
+                    child: Icon(LucideIcons.x, size: 15, color: cs.error),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: widget.l10n.communityPartnerAccept,
+                child: GestureDetector(
+                  onTap: () => _respond(true),
+                  child: Container(
+                    width: 34, height: 34,
+                    decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle),
+                    child: Icon(LucideIcons.check, size: 16, color: cs.onPrimary),
+                  ),
+                ),
+              ),
+            ]),
           ),
-        ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            ref.read(partnerRequestsProvider.notifier)
-                .respond(requestId: request.id, accept: true);
-          },
-          child: Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle),
-            child: Icon(LucideIcons.check, size: 16, color: cs.onPrimary),
-          ),
-        ),
-      ]),
+        ]),
+      ),
     );
   }
 }

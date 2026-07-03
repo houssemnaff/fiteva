@@ -3,6 +3,7 @@ import '../../../../../l10n/app_localizations.dart';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
+import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,21 @@ void showCreatePartnerSheet(BuildContext context) {
     builder: (_) => const CreatePartnerSheet(),
   );
 }
+
+// Palette dédiée au formulaire — un accent distinct par objectif / niveau / fréquence
+const Color _cGoalLose   = Color(0xFFE0684A); // orange corail
+const Color _cGoalTone   = Color(0xFF3FA796); // sarcelle
+const Color _cGoalMass   = Color(0xFF5B8DEF); // bleu
+const Color _cGoalWell   = Color(0xFFD65C8A); // rose
+
+const Color _cLevelBeg = Color(0xFF3FA796);
+const Color _cLevelInt = Color(0xFFD69A2C);
+const Color _cLevelAdv = Color(0xFFB4483E);
+
+const Color _cFreqSun   = Color(0xFFD69A2C);
+const Color _cFreqBlue  = Color(0xFF5B8DEF);
+const Color _cFreqGreen = Color(0xFF3FA796);
+const Color _cFreqFlame = Color(0xFFB4483E);
 
 // ─────────────────────────────────────────────────────────────────────────────
 class CreatePartnerSheet extends ConsumerStatefulWidget {
@@ -47,22 +63,29 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
   late final Animation<double>   _enterAnim;
 
   static const _goals = [
-    (label: 'Perdre du poids', icon: LucideIcons.flame),
-    (label: 'Tonifier',        icon: LucideIcons.zap),
-    (label: 'Prise de masse',  icon: LucideIcons.dumbbell),
-    (label: 'Bien-être',       icon: LucideIcons.heart),
+    (value: 'Perdre du poids', icon: LucideIcons.flame,    color: _cGoalLose),
+    (value: 'Tonifier',        icon: LucideIcons.zap,      color: _cGoalTone),
+    (value: 'Prise de masse',  icon: LucideIcons.dumbbell, color: _cGoalMass),
+    (value: 'Bien-être',       icon: LucideIcons.heart,    color: _cGoalWell),
   ];
 
-  static const _levels = ['Débutant', 'Intermédiaire', 'Avancé'];
+  static const _levels = [
+    (value: 'Débutant',      color: _cLevelBeg),
+    (value: 'Intermédiaire', color: _cLevelInt),
+    (value: 'Avancé',        color: _cLevelAdv),
+  ];
 
   static const _regions = ['Sousse', 'Monastir', 'Tunis', 'Sfax', 'Autre'];
 
   static const _freqs = [
-    (label: '1x / sem', icon: LucideIcons.sun),
-    (label: '2x / sem', icon: LucideIcons.repeat),
-    (label: '3x / sem', icon: LucideIcons.zap),
-    (label: '5x / sem', icon: LucideIcons.flame),
+    (value: '1x / sem', icon: LucideIcons.sun,    color: _cFreqSun),
+    (value: '2x / sem', icon: LucideIcons.repeat, color: _cFreqBlue),
+    (value: '3x / sem', icon: LucideIcons.zap,    color: _cFreqGreen),
+    (value: '5x / sem', icon: LucideIcons.flame,  color: _cFreqFlame),
   ];
+
+  Color get _selectedGoalColor =>
+      _goals.firstWhere((g) => g.value == _selectedGoal).color;
 
   @override
   void initState() {
@@ -84,15 +107,12 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
     super.dispose();
   }
 
-  String _resolvedName() {
-    final profile = ref.read(userProfileProvider);
-    final user    = ref.read(userProfileProvider);
-    return profile.username.isNotEmpty ? profile.username : user.username;
-  }
+  String _resolvedName() => ref.read(userProfileProvider).username;
 
   Future<void> _publish() async {
     HapticFeedback.mediumImpact();
     setState(() => _isPublishing = true);
+    final l10n = ref.read(l10nProvider);
     final partner = PartnerModel(
       id:          '',
       name:        _resolvedName(),
@@ -103,7 +123,7 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
       frequency:   _selectedFreq,
       description: _descCtrl.text.trim().isNotEmpty
           ? _descCtrl.text.trim()
-          : 'Passionné de fitness, cherche partenaire motivé.',
+          : l10n.communityPartnerDescHint,
       tags: [_selectedGoal.split(' ').first, _selectedLevel],
       contactWhatsapp: _whatsappCtrl.text.trim(),
       contactInstagram: _instagramCtrl.text.trim(),
@@ -122,7 +142,7 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
         content: Row(children: [
           Icon(LucideIcons.circleAlert, color: cs.onError, size: 18),
           const SizedBox(width: 10),
-          Expanded(child: Text('Erreur lors de la publication. Vérifiez votre connexion.',
+          Expanded(child: Text(l10n.communityPartnerPublishError,
               style: GoogleFonts.inter(color: cs.onError, fontWeight: FontWeight.w600))),
         ]),
       ));
@@ -138,7 +158,7 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
       content: Row(children: [
         Icon(LucideIcons.checkCircle, color: cs.onPrimary, size: 18),
         const SizedBox(width: 10),
-        Text(ref.read(l10nProvider).communityProfilePublished,
+        Text(l10n.communityProfilePublished,
             style: GoogleFonts.inter(color: cs.onPrimary, fontWeight: FontWeight.w600)),
       ]),
     ));
@@ -151,42 +171,58 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
     final bottom  = MediaQuery.of(context).viewInsets.bottom;
     final screenH = MediaQuery.of(context).size.height;
     final displayName = _resolvedName();
-    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
+    final accent = _selectedGoalColor;
 
     return SlideTransition(
       position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
           .animate(_enterAnim),
       child: Container(
-        constraints: BoxConstraints(maxHeight: screenH * 0.92),
+        constraints: BoxConstraints(maxHeight: screenH * 0.94),
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _Handle(cs: cs),
-            _TopBar(cs: cs, onClose: () => Navigator.of(context).pop()),
+
+            // ── Header — dégradé teinté selon l'objectif sélectionné ────
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOut,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [accent.withValues(alpha: cs.brightness == Brightness.dark ? 0.16 : 0.10), Colors.transparent],
+                ),
+              ),
+              child: _TopBar(cs: cs, accent: accent, onClose: () => Navigator.of(context).pop()),
+            ),
 
             // ── Publier en tant que ─────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              child: Row(children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: cs.primary.withValues(alpha: 0.15),
-                  child: Text(initial, style: TextStyle(
-                    color: cs.primary, fontWeight: FontWeight.w700, fontSize: 14)),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(width: 10),
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(displayName, style: GoogleFonts.outfit(
-                    fontSize: 14, fontWeight: FontWeight.w700,
-                    color: cs.onSurface, letterSpacing: -0.2)),
-                  Text(l10n.communityPublishProfileFull, style: GoogleFonts.inter(
-                    fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5))),
+                child: Row(children: [
+                  CommunityAvatar(avatarUrl: '', name: displayName, radius: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(displayName, style: GoogleFonts.outfit(
+                        fontSize: 14, fontWeight: FontWeight.w700,
+                        color: cs.onSurface, letterSpacing: -0.2)),
+                      Text(l10n.communityPublishProfileFull, style: GoogleFonts.inter(
+                        fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5))),
+                    ]),
+                  ),
                 ]),
-              ]),
+              ),
             ),
 
             Flexible(
@@ -197,49 +233,49 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Objectif ─────────────────────────────────
-                    _SectionLabel(text: 'Objectif', cs: cs),
+                    _SectionLabel(text: l10n.communityPartnerGoalLabel, step: 1, color: accent, cs: cs),
                     const SizedBox(height: 10),
                     _GoalGrid(
                       goals: _goals,
                       selected: _selectedGoal,
-                      cs: cs,
+                      cs: cs, l10n: l10n,
                       onSelect: (v) {
                         HapticFeedback.selectionClick();
                         setState(() => _selectedGoal = v);
                       },
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 26),
 
                     // ── Niveau ───────────────────────────────────
-                    _SectionLabel(text: 'Niveau', cs: cs),
+                    _SectionLabel(text: l10n.communityLevelLabel, step: 2, color: _cLevelInt, cs: cs),
                     const SizedBox(height: 10),
                     _PillRow(
                       items: _levels,
                       selected: _selectedLevel,
-                      cs: cs,
+                      cs: cs, l10n: l10n,
                       onSelect: (v) {
                         HapticFeedback.selectionClick();
                         setState(() => _selectedLevel = v);
                       },
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 26),
 
                     // ── Fréquence ────────────────────────────────
-                    _SectionLabel(text: 'Fréquence', cs: cs),
+                    _SectionLabel(text: l10n.communityPartnerFrequencyLabel, step: 3, color: _cFreqBlue, cs: cs),
                     const SizedBox(height: 10),
                     _FreqRow(
                       freqs: _freqs,
                       selected: _selectedFreq,
-                      cs: cs,
+                      cs: cs, l10n: l10n,
                       onSelect: (v) {
                         HapticFeedback.selectionClick();
                         setState(() => _selectedFreq = v);
                       },
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 26),
 
                     // ── Région ───────────────────────────────────
-                    _SectionLabel(text: 'Région', cs: cs),
+                    _SectionLabel(text: l10n.communityPartnerRegionLabel, step: 4, color: cs.primary, cs: cs),
                     const SizedBox(height: 10),
                     _RegionWrap(
                       regions: _regions,
@@ -250,46 +286,51 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
                         setState(() => _selectedRegion = v);
                       },
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 26),
 
                     // ── À propos ─────────────────────────────────
-                    _SectionLabel(text: 'À propos de toi  (optionnel)', cs: cs),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Expanded(child: _SectionLabel(
+                        text: l10n.communityPartnerAboutOptional, step: 5, color: const Color(0xFF8B6FD6), cs: cs)),
+                      AnimatedBuilder(
+                        animation: _descCtrl,
+                        builder: (_, __) => Text(l10n.communityPartnerCharCount(_descCtrl.text.length),
+                          style: GoogleFonts.inter(
+                            fontSize: 10.5, color: cs.onSurface.withValues(alpha: 0.35))),
+                      ),
+                    ]),
                     const SizedBox(height: 8),
-                    _DescriptionField(controller: _descCtrl, cs: cs),
-                    const SizedBox(height: 24),
+                    _DescriptionField(controller: _descCtrl, cs: cs, hint: l10n.communityPartnerDescHint),
+                    const SizedBox(height: 26),
 
                     // ── Contact (révélé une fois la demande acceptée) ──
                     _SectionLabel(
-                        text: 'Comment te contacter une fois accepté ? (optionnel)',
-                        cs: cs),
+                        text: l10n.communityPartnerContactPrompt,
+                        step: 6, color: const Color(0xFF25D366), cs: cs),
                     const SizedBox(height: 10),
-                    _ContactField(
-                      icon: LucideIcons.messageCircle,
-                      hint: 'Numéro WhatsApp',
-                      controller: _whatsappCtrl,
-                      cs: cs,
-                      keyboardType: TextInputType.phone,
-                    ),
-                    const SizedBox(height: 10),
-                    _ContactField(
-                      icon: LucideIcons.atSign,
-                      hint: '@ton_instagram',
-                      controller: _instagramCtrl,
-                      cs: cs,
-                    ),
-                    const SizedBox(height: 10),
-                    _ContactField(
-                      icon: LucideIcons.globe,
-                      hint: 'Profil ou page Facebook',
-                      controller: _facebookCtrl,
-                      cs: cs,
-                    ),
+                    _ContactGroup(cs: cs, rows: [
+                      (
+                        icon: LucideIcons.messageCircle, color: const Color(0xFF25D366),
+                        label: 'WhatsApp', hint: l10n.communityPartnerWhatsappHint,
+                        controller: _whatsappCtrl, keyboardType: TextInputType.phone,
+                      ),
+                      (
+                        icon: LucideIcons.atSign, color: const Color(0xFFD62A7A),
+                        label: 'Instagram', hint: l10n.communityPartnerInstagramHint,
+                        controller: _instagramCtrl, keyboardType: null,
+                      ),
+                      (
+                        icon: LucideIcons.globe, color: const Color(0xFF3B6FE0),
+                        label: 'Facebook', hint: l10n.communityPartnerFacebookHint,
+                        controller: _facebookCtrl, keyboardType: null,
+                      ),
+                    ]),
                     const SizedBox(height: 8),
                   ],
                 ),
               ),
             ),
-            _BottomBar(cs: cs, publishing: _isPublishing, onPublish: _publish),
+            _BottomBar(cs: cs, accent: accent, publishing: _isPublishing, onPublish: _publish),
           ],
         ),
       ),
@@ -323,8 +364,9 @@ class _Handle extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _TopBar extends ConsumerWidget {
   final ColorScheme cs;
+  final Color accent;
   final VoidCallback onClose;
-  const _TopBar({required this.cs, required this.onClose});
+  const _TopBar({required this.cs, required this.accent, required this.onClose});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -332,10 +374,19 @@ class _TopBar extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
       child: Row(children: [
+        Container(
+          width: 44, height: 44,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.14),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(LucideIcons.userPlus, size: 19, color: accent),
+        ),
+        const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l10n.communityPartnerLabel, style: GoogleFonts.inter(
             fontSize: 9, fontWeight: FontWeight.w700,
-            color: cs.primary, letterSpacing: 2.5)),
+            color: accent, letterSpacing: 2.5)),
           const SizedBox(height: 2),
           Text(l10n.communityDescribeProfile, style: GoogleFonts.outfit(
             fontSize: 19, fontWeight: FontWeight.w700,
@@ -362,30 +413,46 @@ class _TopBar extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
   final String text;
+  final int step;
+  final Color color;
   final ColorScheme cs;
-  const _SectionLabel({required this.text, required this.cs});
+  const _SectionLabel({required this.text, required this.step, required this.color, required this.cs});
 
   @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: GoogleFonts.inter(
-      color: cs.onSurface.withValues(alpha: 0.5),
-      fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5,
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
+    Container(
+      width: 18, height: 18,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+      ),
+      child: Text('$step', style: GoogleFonts.inter(
+        fontSize: 9.5, fontWeight: FontWeight.w800, color: color)),
     ),
-  );
+    const SizedBox(width: 8),
+    Flexible(child: Text(
+      text,
+      style: GoogleFonts.inter(
+        color: cs.onSurface.withValues(alpha: 0.6),
+        fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.3,
+      ),
+    )),
+  ]);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  GOAL GRID
 // ─────────────────────────────────────────────────────────────────────────────
 class _GoalGrid extends StatelessWidget {
-  final List<({String label, IconData icon})> goals;
+  final List<({String value, IconData icon, Color color})> goals;
   final String selected;
   final ColorScheme cs;
+  final AppL10n l10n;
   final ValueChanged<String> onSelect;
   const _GoalGrid({
     required this.goals, required this.selected,
-    required this.cs, required this.onSelect,
+    required this.cs, required this.l10n, required this.onSelect,
   });
 
   @override
@@ -394,31 +461,38 @@ class _GoalGrid extends StatelessWidget {
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      childAspectRatio: 2.8,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 2.6,
       children: goals.map((g) {
-        final sel = selected == g.label;
+        final sel = selected == g.value;
         return GestureDetector(
-          onTap: () => onSelect(g.label),
+          onTap: () => onSelect(g.value),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
-              color: sel ? cs.primary : cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(14),
+              color: sel ? g.color.withValues(alpha: 0.14) : cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: sel ? cs.primary : cs.outline,
+                color: sel ? g.color : cs.outline, width: sel ? 1.6 : 1,
               ),
             ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(g.icon, size: 14,
-                  color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.5)),
-              const SizedBox(width: 7),
-              Text(g.label, style: GoogleFonts.inter(
-                color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
-                fontSize: 12,
-                fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
-              )),
+              Container(
+                width: 26, height: 26,
+                decoration: BoxDecoration(
+                  color: sel ? g.color : cs.onSurface.withValues(alpha: 0.06),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(g.icon, size: 13,
+                    color: sel ? Colors.white : cs.onSurface.withValues(alpha: 0.5)),
+              ),
+              const SizedBox(width: 8),
+              Flexible(child: Text(l10n.communityPartnerGoalOption(g.value), style: GoogleFonts.inter(
+                color: sel ? g.color : cs.onSurface.withValues(alpha: 0.65),
+                fontSize: 12.5,
+                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+              ), overflow: TextOverflow.ellipsis)),
             ]),
           ),
         );
@@ -431,43 +505,50 @@ class _GoalGrid extends StatelessWidget {
 //  PILL ROW  (level)
 // ─────────────────────────────────────────────────────────────────────────────
 class _PillRow extends StatelessWidget {
-  final List<String> items;
+  final List<({String value, Color color})> items;
   final String selected;
   final ColorScheme cs;
+  final AppL10n l10n;
   final ValueChanged<String> onSelect;
   const _PillRow({
     required this.items, required this.selected,
-    required this.cs, required this.onSelect,
+    required this.cs, required this.l10n, required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: items.asMap().entries.map((e) {
-        final sel = selected == e.value;
+        final item = e.value;
+        final sel = selected == item.value;
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(right: e.key < items.length - 1 ? 8 : 0),
             child: GestureDetector(
-              onTap: () => onSelect(e.value),
+              onTap: () => onSelect(item.value),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 decoration: BoxDecoration(
-                  color: sel ? cs.primary : cs.surfaceContainerHighest,
+                  color: sel ? item.color.withValues(alpha: 0.14) : cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: sel ? cs.primary : cs.outline,
+                    color: sel ? item.color : cs.outline, width: sel ? 1.6 : 1,
                   ),
                 ),
-                child: Center(
-                  child: Text(e.value, textAlign: TextAlign.center,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Container(width: 7, height: 7,
+                    decoration: BoxDecoration(
+                      color: sel ? item.color : cs.onSurface.withValues(alpha: 0.2),
+                      shape: BoxShape.circle)),
+                  const SizedBox(height: 6),
+                  Text(l10n.communityPartnerLevelOption(item.value), textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
+                        color: sel ? item.color : cs.onSurface.withValues(alpha: 0.6),
                         fontSize: 12,
-                        fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
+                        fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
                       )),
-                ),
+                ]),
               ),
             ),
           ),
@@ -481,13 +562,14 @@ class _PillRow extends StatelessWidget {
 //  FREQ ROW
 // ─────────────────────────────────────────────────────────────────────────────
 class _FreqRow extends StatelessWidget {
-  final List<({String label, IconData icon})> freqs;
+  final List<({String value, IconData icon, Color color})> freqs;
   final String selected;
   final ColorScheme cs;
+  final AppL10n l10n;
   final ValueChanged<String> onSelect;
   const _FreqRow({
     required this.freqs, required this.selected,
-    required this.cs, required this.onSelect,
+    required this.cs, required this.l10n, required this.onSelect,
   });
 
   @override
@@ -495,31 +577,31 @@ class _FreqRow extends StatelessWidget {
     return Row(
       children: freqs.asMap().entries.map((e) {
         final f = e.value;
-        final sel = selected == f.label;
+        final sel = selected == f.value;
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(right: e.key < freqs.length - 1 ? 8 : 0),
             child: GestureDetector(
-              onTap: () => onSelect(f.label),
+              onTap: () => onSelect(f.value),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 decoration: BoxDecoration(
-                  color: sel ? cs.primary : cs.surfaceContainerHighest,
+                  color: sel ? f.color.withValues(alpha: 0.14) : cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: sel ? cs.primary : cs.outline,
+                    color: sel ? f.color : cs.outline, width: sel ? 1.6 : 1,
                   ),
                 ),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Icon(f.icon, size: 14,
-                      color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.5)),
+                      color: sel ? f.color : cs.onSurface.withValues(alpha: 0.45)),
                   const SizedBox(height: 5),
-                  Text(f.label, textAlign: TextAlign.center,
+                  Text(l10n.communityPartnerFreqOption(f.value), textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
+                        color: sel ? f.color : cs.onSurface.withValues(alpha: 0.6),
                         fontSize: 10,
-                        fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
+                        fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
                       )),
                 ]),
               ),
@@ -586,7 +668,8 @@ class _RegionWrap extends StatelessWidget {
 class _DescriptionField extends StatefulWidget {
   final TextEditingController controller;
   final ColorScheme cs;
-  const _DescriptionField({required this.controller, required this.cs});
+  final String hint;
+  const _DescriptionField({required this.controller, required this.cs, required this.hint});
 
   @override
   State<_DescriptionField> createState() => _DescriptionFieldState();
@@ -594,39 +677,42 @@ class _DescriptionField extends StatefulWidget {
 
 class _DescriptionFieldState extends State<_DescriptionField> {
   bool _focused = false;
+  static const _accent = Color(0xFF8B6FD6);
 
   @override
   Widget build(BuildContext context) {
     final cs = widget.cs;
-    return Focus(
-      onFocusChange: (f) => setState(() => _focused = f),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: _focused ? cs.surface : cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: _focused ? cs.primary : cs.outline,
-            width: _focused ? 1.5 : 1,
-          ),
-          boxShadow: _focused
-              ? [BoxShadow(
-                  color: cs.primary.withValues(alpha: 0.08),
-                  blurRadius: 8, offset: const Offset(0, 2))]
-              : [],
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        color: _accent.withValues(alpha: _focused ? 0.06 : 0.035),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: _focused ? _accent : _accent.withValues(alpha: 0.22),
+          width: _focused ? 1.6 : 1,
         ),
+        boxShadow: _focused
+            ? [BoxShadow(
+                color: _accent.withValues(alpha: 0.14),
+                blurRadius: 14, offset: const Offset(0, 4))]
+            : [],
+      ),
+      child: Focus(
+        onFocusChange: (f) => setState(() => _focused = f),
         child: TextField(
           controller: widget.controller,
           maxLines: 4,
-          style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14, height: 1.55),
+          maxLength: 240,
+          style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14.5, height: 1.6),
           decoration: InputDecoration(
-            hintText: 'Je cherche une partenaire pour salle 3x/semaine à Sousse…',
+            hintText: widget.hint,
             hintStyle: GoogleFonts.inter(
-                color: cs.onSurface.withValues(alpha: 0.35), fontSize: 13, height: 1.5),
-            contentPadding: const EdgeInsets.all(14),
+                color: cs.onSurface.withValues(alpha: 0.32), fontSize: 13.5, height: 1.5),
+            contentPadding: const EdgeInsets.all(16),
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
+            counterText: '',
           ),
         ),
       ),
@@ -635,60 +721,88 @@ class _DescriptionFieldState extends State<_DescriptionField> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  CONTACT FIELD  (WhatsApp / Instagram / Facebook — révélés après acceptation)
+//  CONTACT GROUP  (WhatsApp / Instagram / Facebook — révélés après acceptation)
+//  Une seule carte groupée, avec libellé au-dessus de chaque champ.
 // ─────────────────────────────────────────────────────────────────────────────
-class _ContactField extends StatefulWidget {
-  final IconData icon;
-  final String hint;
-  final TextEditingController controller;
+class _ContactGroup extends StatelessWidget {
   final ColorScheme cs;
-  final TextInputType? keyboardType;
-  const _ContactField({
-    required this.icon,
-    required this.hint,
-    required this.controller,
-    required this.cs,
-    this.keyboardType,
-  });
+  final List<({IconData icon, Color color, String label, String hint,
+      TextEditingController controller, TextInputType? keyboardType})> rows;
+  const _ContactGroup({required this.cs, required this.rows});
 
   @override
-  State<_ContactField> createState() => _ContactFieldState();
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outline),
+      ),
+      child: Column(children: [
+        for (int i = 0; i < rows.length; i++) ...[
+          if (i > 0) Divider(height: 1, indent: 16, endIndent: 16, color: cs.outline.withValues(alpha: 0.6)),
+          _ContactRow(row: rows[i], cs: cs),
+        ],
+      ]),
+    );
+  }
 }
 
-class _ContactFieldState extends State<_ContactField> {
+class _ContactRow extends StatefulWidget {
+  final ({IconData icon, Color color, String label, String hint,
+      TextEditingController controller, TextInputType? keyboardType}) row;
+  final ColorScheme cs;
+  const _ContactRow({required this.row, required this.cs});
+
+  @override
+  State<_ContactRow> createState() => _ContactRowState();
+}
+
+class _ContactRowState extends State<_ContactRow> {
   bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
     final cs = widget.cs;
+    final r = widget.row;
     return Focus(
       onFocusChange: (f) => setState(() => _focused = f),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: _focused ? cs.surface : cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: _focused ? cs.primary : cs.outline,
-            width: _focused ? 1.5 : 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Container(
+            width: 34, height: 34,
+            decoration: BoxDecoration(
+              color: r.color.withValues(alpha: _focused ? 0.22 : 0.14), shape: BoxShape.circle),
+            child: Icon(r.icon, size: 15, color: r.color),
           ),
-        ),
-        child: TextField(
-          controller: widget.controller,
-          keyboardType: widget.keyboardType,
-          style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14),
-          decoration: InputDecoration(
-            hintText: widget.hint,
-            hintStyle: GoogleFonts.inter(
-                color: cs.onSurface.withValues(alpha: 0.35), fontSize: 13),
-            prefixIcon: Icon(widget.icon, size: 18,
-                color: cs.onSurface.withValues(alpha: 0.5)),
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(r.label, style: GoogleFonts.inter(
+                  fontSize: 10.5, fontWeight: FontWeight.w700,
+                  color: _focused ? r.color : cs.onSurface.withValues(alpha: 0.45))),
+                TextField(
+                  controller: r.controller,
+                  keyboardType: r.keyboardType,
+                  style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: r.hint,
+                    hintStyle: GoogleFonts.inter(
+                        color: cs.onSurface.withValues(alpha: 0.32), fontSize: 13.5),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.only(top: 3),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ]),
       ),
     );
   }
@@ -699,9 +813,10 @@ class _ContactFieldState extends State<_ContactField> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _BottomBar extends ConsumerWidget {
   final ColorScheme cs;
+  final Color accent;
   final bool publishing;
   final VoidCallback onPublish;
-  const _BottomBar({required this.cs, required this.publishing, required this.onPublish});
+  const _BottomBar({required this.cs, required this.accent, required this.publishing, required this.onPublish});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -720,18 +835,20 @@ class _BottomBar extends ConsumerWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 17),
           decoration: BoxDecoration(
-            color: publishing ? cs.primary.withValues(alpha: 0.5) : cs.primary,
+            color: publishing ? accent.withValues(alpha: 0.5) : accent,
             borderRadius: BorderRadius.circular(16),
+            boxShadow: publishing ? [] : [BoxShadow(
+              color: accent.withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 6))],
           ),
           child: Center(
             child: publishing
-                ? SizedBox(
+                ? const SizedBox(
                     width: 20, height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: cs.onPrimary))
+                        strokeWidth: 2, color: Colors.white))
                 : Text(l10n.communityPublishProfile,
                     style: GoogleFonts.outfit(
-                      color: cs.onPrimary,
+                      color: Colors.white,
                       fontSize: 16, fontWeight: FontWeight.w800,
                       letterSpacing: 0.2,
                     )),

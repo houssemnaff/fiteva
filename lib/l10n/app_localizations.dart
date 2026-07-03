@@ -724,9 +724,92 @@ class AppL10n {
   String get communitySendMessage       => _fr ? 'Envoyer un message'         : 'Send a message';
   String get communityJoinBtn           => _fr ? 'Rejoindre'                  : 'Join';
   String get communityJoinPending       => _fr ? 'En attente'                 : 'Pending';
-  String get communityJoinAccepted      => _fr ? 'Accepté ! Contacte-le/la :' : 'Accepted! Contact them:';
+  String get communityJoinAccepted      => _fr ? 'Accepté ! ' : 'Accepted! ';
   String get communityRequestsReceived  => _fr ? 'Demandes reçues'            : 'Requests received';
   String get communityNoRequests        => _fr ? 'Aucune demande en attente.' : 'No pending requests.';
+  // ── Partner tab / formulaire / demandes ─────────────────────────────────────
+  String get communityPartnerTitle        => _fr ? 'Partenaires'                  : 'Partners';
+  String get communityPartnerSearching    => _fr ? 'Recherche…'                   : 'Searching…';
+  String communityPartnerProfilesCount(int n) =>
+      _fr ? '$n profil${n > 1 ? 's' : ''}' : '$n profile${n > 1 ? 's' : ''}';
+  String get communityPartnerSearch       => _fr ? 'Rechercher'                   : 'Search';
+  String get communityPartnerSearchHint   => _fr ? 'Nom, objectif, région…'       : 'Name, goal, region…';
+  String get communityCancel              => _fr ? 'Annuler'                      : 'Cancel';
+  String get communityClose               => _fr ? 'Fermer'                       : 'Close';
+  String communityPartnerFiltersCount(int n) =>
+      n > 0 ? '${_fr ? "Filtres" : "Filters"} ($n)' : (_fr ? 'Filtres' : 'Filters');
+  String get communityPartnerEmptyTitle    => _fr ? 'Aucun partenaire pour l\'instant' : 'No partners yet';
+  String get communityPartnerEmptySubtitle => _fr
+      ? 'Sois la première à publier ton profil et\ntrouve ta partenaire d\'entraînement idéale.'
+      : 'Be the first to publish your profile and\nfind your ideal workout partner.';
+  String get communityPartnerNoResultsTitle    => _fr ? 'Aucun résultat' : 'No results';
+  String get communityPartnerNoResultsSubtitle => _fr
+      ? 'Essaie d\'élargir tes critères de\nrecherche ou de filtres.'
+      : 'Try widening your search\nor filter criteria.';
+  String get communityPartnerReset         => _fr ? 'Réinitialiser'               : 'Reset';
+  String get communityPartnerApply         => _fr ? 'Appliquer'                   : 'Apply';
+  String get communityPartnerYouSuffix     => _fr ? '· toi'                       : '· you';
+  String get communityPartnerPublicListing => _fr ? 'Ton annonce publique'        : 'Your public listing';
+  String get communityPartnerFilterTitle   => _fr ? 'Filtrer'                     : 'Filter';
+  String get communityPartnerGoalLabel     => _fr ? 'Objectif'                    : 'Goal';
+  String get communityPartnerRegionLabel   => _fr ? 'Région'                      : 'Region';
+  String get communityPartnerFrequencyLabel => _fr ? 'Fréquence'                  : 'Frequency';
+  String get communityPartnerInterestsSection => _fr ? 'CENTRES D\'INTÉRÊT'       : 'INTERESTS';
+  String get communityPartnerContactSection   => _fr ? 'CONTACT'                  : 'CONTACT';
+  String get communityPartnerNoContact     => _fr ? 'Aucune coordonnée renseignée.' : 'No contact info provided.';
+  String get communityPartnerLinkError     => _fr ? 'Impossible d\'ouvrir ce lien.' : 'Could not open this link.';
+  String get communityPartnerAboutOptional => _fr ? 'À propos de toi  (optionnel)' : 'About you  (optional)';
+  String get communityPartnerContactPrompt => _fr
+      ? 'Comment te contacter une fois accepté ? (optionnel)'
+      : 'How to contact you once accepted? (optional)';
+  String get communityPartnerDescHint      => _fr
+      ? 'Je cherche une partenaire pour salle 3x/semaine à Sousse…'
+      : 'Looking for a gym partner 3x/week in Sousse…';
+  String get communityPartnerWhatsappHint  => _fr ? 'Numéro WhatsApp'             : 'WhatsApp number';
+  String get communityPartnerInstagramHint => _fr ? '@ton_instagram'              : '@your_instagram';
+  String get communityPartnerFacebookHint  => _fr ? 'Profil ou page Facebook'     : 'Facebook profile or page';
+  String get communityPartnerPublishError  => _fr
+      ? 'Erreur lors de la publication. Vérifiez votre connexion.'
+      : 'Error publishing. Please check your connection.';
+  String get communityPartnerAsWho         => _fr ? 'Publier en tant que'         : 'Publish as';
+  String communityPartnerCharCount(int n)  => '$n/240';
+  String get communityPartnerYouLabel      => _fr ? 'Toi'                         : 'You';
+
+  // Options (identifiants stockés en français — seul l'affichage est traduit)
+  String communityPartnerGoalOption(String v) {
+    switch (v) {
+      case 'Tous':           return _fr ? 'Tous'            : 'All';
+      case 'Perdre du poids': return _fr ? 'Perdre du poids' : 'Lose weight';
+      case 'Tonifier':       return _fr ? 'Tonifier'         : 'Tone up';
+      case 'Prise de masse':
+      case 'Masse':          return _fr ? 'Prise de masse'   : 'Build muscle';
+      case 'Bien-être':      return _fr ? 'Bien-être'        : 'Wellbeing';
+      default:                return v;
+    }
+  }
+
+  String communityPartnerLevelOption(String v) {
+    switch (v) {
+      case 'Tous':           return _fr ? 'Tous'            : 'All';
+      case 'Débutant':       return _fr ? 'Débutant'         : 'Beginner';
+      case 'Intermédiaire':  return _fr ? 'Intermédiaire'    : 'Intermediate';
+      case 'Avancé':         return _fr ? 'Avancé'           : 'Advanced';
+      default:                return v;
+    }
+  }
+
+  String communityPartnerFreqOption(String v) {
+    if (!_fr) {
+      final n = v.split('x').first;
+      return '${n}x / week';
+    }
+    return v;
+  }
+
+  String get communityPartnerRegionAll => _fr ? 'Tous' : 'All';
+  String get communityPartnerDecline => _fr ? 'Refuser'  : 'Decline';
+  String get communityPartnerAccept  => _fr ? 'Accepter' : 'Accept';
+
   String get communityReport            => _fr ? 'Signaler ce profil'         : 'Report this profile';
   String get communityHidePosts         => _fr ? 'Masquer les publications'   : 'Hide posts';
   String get communityCannotLoad        => _fr ? 'Impossible de charger ce profil' : 'Cannot load this profile';
