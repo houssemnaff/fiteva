@@ -15,6 +15,7 @@ import 'package:fiteva/screens/cycle/widgets-cycle/calendar_screen.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart' hide CycleColors;
 import 'package:fiteva/services/cycle_log_service.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/mood_section.dart';
+import 'package:fiteva/screens/cycle/cycle_insights_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  TYPOGRAPHY HELPERS (pass colors explicitly — theme-unaware by design)
@@ -141,6 +142,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
   int _moodIndex = -1; // -1 = non sélectionné
   final DateTime _today = DateTime.now();
   bool _switching = false;
+  bool _lateSnoozed = false; // "Me rappeler demain" — masque l'écran retard pour la session
 
   late final AnimationController _switchAnim = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 550));
@@ -198,6 +200,19 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
   void dispose() {
     _switchAnim.dispose();
     super.dispose();
+  }
+
+  /// Retard = date prévue dépassée et règles non encore loggées aujourd'hui
+  ({bool isLate, int delayDays}) _lateStatus(UserProfile profile) {
+    final pending = profile.pendingPeriodDate;
+    if (pending == null || _logged.contains(FloSymptom.flow)) {
+      return (isLate: false, delayDays: 0);
+    }
+    final todayNorm = DateTime(_today.year, _today.month, _today.day);
+    final pendingNorm = DateTime(pending.year, pending.month, pending.day);
+    final diff = pendingNorm.difference(todayNorm).inDays;
+    if (diff < 0) return (isLate: true, delayDays: -diff);
+    return (isLate: false, delayDays: 0);
   }
 
   Future<void> _logPeriodStart() async {
@@ -313,6 +328,11 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
     final profile      = ref.watch(userProfileProvider);
     final showPregnancy = profile.showPregnancyContent;
 
+    final late = _lateStatus(profile);
+    if (late.isLate && !_lateSnoozed) {
+      return _buildLateScreen(cc, profile, l10n, late.delayDays);
+    }
+
     return SingleChildScrollView(
       key: const ValueKey('home'),
       physics: const BouncingScrollPhysics(),
@@ -344,17 +364,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           const SizedBox(height: 14),
           _buildChips(cc, theme, l10n),
           const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: MoodSection(
-              selectedMood: _moodIndex,
-              phaseColor: theme.primary,
-              onSelect: (i) {
-                setState(() => _moodIndex = i);
-                CycleLogService.saveMood(_today, i);
-              },
-            ),
-          ),
+        
 
           const SizedBox(height: 28),
           _PhaseCard(phase: phase, theme: theme, cc: cc, l10n: l10n),
@@ -366,6 +376,246 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           _CycleStatsCard(profile: profile, currentDay: _currentDay, theme: theme, cc: cc, l10n: l10n),
           const SizedBox(height: 48),
         ],
+      ),
+    );
+  }
+
+  // ── Écran dédié "Règles en retard" ───────────────────────────────────────────
+  // Remplace tout l'écran d'accueil (pas seulement le cercle) tant que les
+  // règles prévues ne sont ni loggées ni reportées à demain.
+
+  // Vert signature de l'app — le même que Profil / Ovulation / boutons primaires
+  static const _green    = Color(0xFF1C4D30);
+  static const _greenBg  = Color(0xFFE8F5E9);
+
+  static String _fmtDate(DateTime d, AppL10n l10n) {
+    final monthsFr = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'];
+    final monthsEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    final months = l10n.isFrench ? monthsFr : monthsEn;
+    return l10n.isFrench ? '${d.day} ${months[d.month - 1]}' : '${months[d.month - 1]} ${d.day}';
+  }
+
+  Widget _buildLateScreen(CycleColors cc, UserProfile profile, AppL10n l10n, int delayDays) {
+    final pending      = profile.pendingPeriodDate;
+    final lastPeriod    = profile.lastPeriod;
+    final ovulation     = profile.ovulationDate;
+    final todayNorm     = DateTime(_today.year, _today.month, _today.day);
+    final cycleActuel   = lastPeriod != null
+        ? todayNorm.difference(DateTime(lastPeriod.year, lastPeriod.month, lastPeriod.day)).inDays + 1
+        : null;
+
+    return SingleChildScrollView(
+      key: const ValueKey('late'),
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Header ──────────────────────────────────────────────────────
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                colors: [_greenBg.withOpacity(cc.isDark ? 0.14 : 0.6), Colors.transparent],
+              ),
+            ),
+            child: Column(children: [
+              SharedAppHeader(
+                eyebrow:    l10n.navCycle.toUpperCase(),
+                title:      l10n.lateTitle,
+                accentColor: _green,
+                bgColor:    Colors.transparent,
+                onBack: Navigator.canPop(context)
+                    ? () => Navigator.of(context).pop()
+                    : null,
+              ),
+              const SizedBox(height: 22),
+              Container(
+                width: 72, height: 72,
+                decoration: BoxDecoration(
+                  color: cc.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _green.withOpacity(0.22), width: 1.3),
+                  boxShadow: [BoxShadow(
+                    color: _green.withOpacity(cc.isDark ? 0.18 : 0.10),
+                    blurRadius: 24, spreadRadius: 2)],
+                ),
+                child: Icon(Icons.hourglass_top_rounded, size: 28, color: _green),
+              ),
+              const SizedBox(height: 18),
+              Text(l10n.lateTitle,
+                style: GoogleFonts.outfit(fontSize: 19, fontWeight: FontWeight.w700,
+                    color: cc.text, letterSpacing: -0.3)),
+              const SizedBox(height: 6),
+              Text(l10n.lateDelayDays(delayDays),
+                style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w500,
+                    color: cc.muted, letterSpacing: 0.2)),
+              const SizedBox(height: 26),
+            ]),
+          ),
+
+          // ── Stats clés ──────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Wrap(
+              spacing: 10, runSpacing: 10,
+              children: [
+                if (pending != null)
+                  _LateStatChip(label: l10n.lateStatDueDate, value: _fmtDate(pending, l10n), cc: cc),
+                _LateStatChip(label: l10n.lateStatDelay, value: '$delayDays j', cc: cc, highlight: true),
+                _LateStatChip(label: l10n.lateStatUsualCycle, value: '${profile.cycleDays} j', cc: cc),
+                if (cycleActuel != null)
+                  _LateStatChip(label: l10n.lateStatCurrentCycle, value: '$cycleActuel j', cc: cc),
+                if (lastPeriod != null)
+                  _LateStatChip(label: l10n.lateStatLastPeriod, value: _fmtDate(lastPeriod, l10n), cc: cc),
+                if (ovulation != null)
+                  _LateStatChip(label: l10n.lateStatOvulation, value: _fmtDate(ovulation, l10n), cc: cc),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 22),
+
+          // ── Message rassurant ───────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _LateInfoTile(
+              icon: Icons.info_outline_rounded,
+              iconColor: _green,
+              cc: cc,
+              text: l10n.lateReassurance,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Quand consulter ─────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _LateInfoTile(
+              icon: Icons.health_and_safety_outlined,
+              iconColor: cc.muted,
+              cc: cc,
+              title: l10n.lateConsultTitle,
+              text: l10n.lateConsultText,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Test de grossesse ───────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _LateInfoTile(
+              icon: Icons.science_outlined,
+              iconColor: cc.muted,
+              cc: cc,
+              text: l10n.latePregnancyTest,
+            ),
+          ),
+
+          const SizedBox(height: 26),
+
+          // ── Boutons ──────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(children: [
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  _logPeriodStart();
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  decoration: BoxDecoration(
+                    color: _green,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [BoxShadow(
+                      color: _green.withOpacity(0.24),
+                      blurRadius: 14, offset: const Offset(0, 5))],
+                  ),
+                  child: Center(child: Text(l10n.lateBtnLog,
+                    style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600,
+                        color: Colors.white, letterSpacing: 0.1))),
+                ),
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _lateSnoozed = true);
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: cc.border, width: 1.2),
+                  ),
+                  child: Center(child: Text(l10n.lateBtnRemindTomorrow,
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600,
+                        color: cc.text))),
+                ),
+              ),
+              const SizedBox(height: 18),
+              GestureDetector(
+                onTap: () => _showLateInfoSheet(context, cc, l10n),
+                child: Text(l10n.lateBtnMore,
+                  style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600,
+                      color: cc.muted)),
+              ),
+            ]),
+          ),
+
+          const SizedBox(height: 48),
+        ],
+      ),
+    );
+  }
+
+  void _showLateInfoSheet(BuildContext context, CycleColors cc, AppL10n l10n) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        decoration: BoxDecoration(
+          color: cc.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: cc.muted.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2)),
+            )),
+            const SizedBox(height: 18),
+            Text(l10n.lateCausesTitle, style: GoogleFonts.outfit(
+              fontSize: 16, fontWeight: FontWeight.w700, color: cc.text, letterSpacing: -0.2)),
+            const SizedBox(height: 14),
+            for (final cause in [
+              l10n.lateCauseStress,
+              l10n.lateCauseFatigue,
+              l10n.lateCauseRoutine,
+              l10n.lateCauseTravel,
+              l10n.lateCauseHormonal,
+              l10n.lateCauseMeds,
+            ])
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(children: [
+                  Container(width: 5, height: 5, margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(color: cc.muted, shape: BoxShape.circle)),
+                  Text(cause, style: GoogleFonts.inter(fontSize: 13.5, color: cc.body)),
+                ]),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -411,6 +661,10 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
               enabled: !_switching,
               onSelected: (v) {
                 if (v == 'pregnancy') _switchToPregnancy();
+                if (v == 'insights') {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const CycleInsightsScreen()));
+                }
               },
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
@@ -418,6 +672,16 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
               color: Colors.white,
               offset: const Offset(0, 44),
               itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'insights',
+                  child: Row(children: [
+                    const Icon(Icons.insights_rounded, size: 17, color: Color(0xFF1C4D30)),
+                    const SizedBox(width: 10),
+                    Text(l10n.insightsMenuLabel, style: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1A2E20))),
+                  ]),
+                ),
                 PopupMenuItem(
                   value: 'pregnancy',
                   child: Row(children: [
@@ -571,44 +835,86 @@ class _CircularRing extends StatelessWidget {
   final CyclePhase phase;
   final CycleColors cc;
   final AppL10n l10n;
+  final bool isLate;
+  final int delayDays;
+  final VoidCallback? onConfirmPeriod;
+
+  static const lateYellow = Color(0xFFE8B93A);
+  static const _yellow = lateYellow;
 
   const _CircularRing({
     required this.day, required this.total,
     required this.theme, required this.phase, required this.cc,
     required this.l10n,
+    this.isLate = false,
+    this.delayDays = 0,
+    this.onConfirmPeriod,
   });
 
   @override
   Widget build(BuildContext context) {
     final ringSize = (MediaQuery.of(context).size.width * 0.54).clamp(180.0, 230.0);
+    final ringColors = isLate
+        ? const [_yellow, Color(0xFFF2CB6E), _yellow]
+        : theme.gradient;
+    final ringPrimary = isLate ? _yellow : theme.primary;
+
     return SizedBox(
       width: ringSize, height: ringSize,
       child: CustomPaint(
         painter: _RingPainter(
           day: day, total: total,
-          colors: theme.gradient, primary: theme.primary,
+          colors: ringColors, primary: ringPrimary,
         ),
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(l10n.cycleJour, style: GoogleFonts.inter(
-                fontSize: 13, color: cc.muted)),
-              const SizedBox(height: 2),
-              Text('$day', style: GoogleFonts.outfit(
-                fontSize: 52, fontWeight: FontWeight.w700, color: theme.primary)),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                decoration: BoxDecoration(
-                  color: theme.primary.withOpacity(0.13),
-                  borderRadius: BorderRadius.circular(14),
+          child: isLate
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Retard', style: GoogleFonts.inter(
+                      fontSize: 13, color: _yellow, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text('$delayDays j', style: GoogleFonts.outfit(
+                      fontSize: 44, fontWeight: FontWeight.w700, color: _yellow)),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        onConfirmPeriod?.call();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: _yellow.withOpacity(0.16),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: _yellow.withOpacity(0.4)),
+                        ),
+                        child: Text('Oui, c\'est arrivé', style: GoogleFonts.inter(
+                          fontSize: 11, fontWeight: FontWeight.w700, color: _yellow)),
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(l10n.cycleJour, style: GoogleFonts.inter(
+                      fontSize: 13, color: cc.muted)),
+                    const SizedBox(height: 2),
+                    Text('$day', style: GoogleFonts.outfit(
+                      fontSize: 52, fontWeight: FontWeight.w700, color: theme.primary)),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: theme.primary.withOpacity(0.13),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(phase.name, style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w600, color: theme.primary)),
+                    ),
+                  ],
                 ),
-                child: Text(phase.name, style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w600, color: theme.primary)),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -661,6 +967,86 @@ class _RingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _RingPainter old) =>
       old.day != day || old.total != total;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  LATE-STATE STAT CHIP
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _LateStatChip extends StatelessWidget {
+  final String label, value;
+  final CycleColors cc;
+  final bool highlight;
+
+  static const _amber = Color(0xFF1C4D30);
+
+  const _LateStatChip({
+    required this.label, required this.value, required this.cc,
+    this.highlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = highlight ? _amber : cc.text;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: cc.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+            color: highlight ? _amber.withOpacity(0.3) : cc.border),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label.toUpperCase(), style: GoogleFonts.inter(
+          fontSize: 9.5, fontWeight: FontWeight.w600, color: cc.muted, letterSpacing: 0.4)),
+        const SizedBox(height: 3),
+        Text(value, style: GoogleFonts.outfit(
+          fontSize: 15, fontWeight: FontWeight.w700, color: color, letterSpacing: -0.2)),
+      ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  LATE-STATE INFO TILE
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _LateInfoTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final CycleColors cc;
+  final String? title;
+  final String text;
+
+  const _LateInfoTile({
+    required this.icon, required this.iconColor, required this.cc,
+    this.title, required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cc.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cc.border),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, size: 18, color: iconColor),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (title != null) ...[
+            Text(title!, style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w600, color: cc.text)),
+            const SizedBox(height: 4),
+          ],
+          Text(text, style: GoogleFonts.inter(
+            fontSize: 12.5, color: cc.body, height: 1.55)),
+        ])),
+      ]),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

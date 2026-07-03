@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/legacy.dart';
 import 'dart:math';
 
@@ -363,13 +364,17 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
         'user_id':    uid,
         _toBioKey(key): value,
         'updated_at': DateTime.now().toIso8601String(),
-      }).catchError((_) {});
+      }, onConflict: 'user_id').catchError((e) {
+        debugPrint('[UserProfile] bio sync error ($key): $e');
+      });
     } else if (_cycleKeys.contains(key)) {
       SupabaseConfig.table('user_cycle_settings').upsert({
         'user_id':    uid,
         _toCycleKey(key): value,
         'updated_at': DateTime.now().toIso8601String(),
-      }).catchError((_) {});
+      }, onConflict: 'user_id').catchError((e) {
+        debugPrint('[UserProfile] cycle sync error ($key): $e');
+      });
     }
   }
 
@@ -395,7 +400,9 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
     if (data['equipment']    != null) bio['equipment']         = data['equipment'];
     if (data['frequency']    != null) bio['frequency_days']    = _freqToDays(data['frequency']);
     if (bio.length > 2) {
-      SupabaseConfig.table('user_biometrics').upsert(bio).catchError((_) {});
+      SupabaseConfig.table('user_biometrics')
+          .upsert(bio, onConflict: 'user_id')
+          .catchError((_) {});
     }
 
     // user_cycle_settings
@@ -407,7 +414,9 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
           (data['cycle_duration'] as String).replaceAll(RegExp(r'[^0-9]'), '')) ?? 28,
         if (data['last_period'] != null) 'last_period_date': data['last_period'],
         'updated_at': DateTime.now().toIso8601String(),
-      }).catchError((_) {});
+      }, onConflict: 'user_id').catchError((e) {
+        debugPrint('[UserProfile] cycle sync (batch) error: $e');
+      });
     }
 
     // user_nutrition_targets

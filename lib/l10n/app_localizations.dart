@@ -580,6 +580,64 @@ class AppL10n {
     }
   }
 
+  // ── Cycle Insights (dashboard avancé) ──────────────────────────────────────
+  String get insightsMenuLabel      => _fr ? 'Insights'                       : 'Insights';
+  String get insightsTitle          => _fr ? 'Tableau de bord'                : 'Dashboard';
+  String get insightsSubtitle       => _fr ? 'Analyse de tes 3 derniers mois' : 'Analysis of your last 3 months';
+  String get insightsSymptomsChart  => _fr ? 'Graphique des symptômes'        : 'Symptoms chart';
+  String get insightsSymptomsSub    => _fr ? 'Fréquence sur la période'       : 'Frequency over the period';
+  String get insightsMoodCorrelation => _fr ? 'Corrélation humeur / cycle'    : 'Mood / cycle correlation';
+  String get insightsMoodSub        => _fr ? 'Humeur moyenne par phase'       : 'Average mood by phase';
+  String get insightsMonthlyTrends  => _fr ? 'Tendances mensuelles'           : 'Monthly trends';
+  String get insightsMonthlySub     => _fr ? 'Jours suivis par mois'          : 'Days tracked per month';
+  String get insightsEmpty          => _fr
+      ? 'Pas encore assez de données. Continue à suivre ton cycle pour voir tes tendances ici.'
+      : 'Not enough data yet. Keep tracking your cycle to see your trends here.';
+  String get insightsNoMoodData     => _fr ? 'Pas assez de données d\'humeur' : 'Not enough mood data';
+  String get insightsDaysLogged     => _fr ? 'jours suivis'                   : 'days tracked';
+  List<String> get insightsMoodLabels => _fr
+      ? ['Super', 'Bien', 'Ok', 'Faible', 'Calme']
+      : ['Great', 'Good', 'Okay', 'Low', 'Calm'];
+
+  // ── Écran "règles en retard" ───────────────────────────────────────────────
+  String get lateTitle           => _fr ? 'Règles en retard'                    : 'Period is late';
+  String lateDelayDays(int d)    => _fr ? (d > 1 ? '$d jours de retard' : '$d jour de retard')
+                                        : (d > 1 ? '$d days late' : '$d day late');
+  String get lateStatDueDate     => _fr ? 'Date prévue'                         : 'Due date';
+  String get lateStatDelay       => _fr ? 'Retard'                              : 'Delay';
+  String get lateStatUsualCycle  => _fr ? 'Cycle habituel'                      : 'Usual cycle';
+  String get lateStatCurrentCycle => _fr ? 'Cycle actuel'                       : 'Current cycle';
+  String get lateStatLastPeriod  => _fr ? 'Dernières règles'                    : 'Last period';
+  String get lateStatOvulation   => _fr ? 'Ovulation estimée'                   : 'Estimated ovulation';
+  String get lateReassurance     => _fr
+      ? 'Un léger retard est fréquent et souvent sans gravité. Le stress, la fatigue, '
+        'un changement de routine, un voyage, des variations hormonales ou certains '
+        'médicaments peuvent en être la cause.'
+      : 'A slight delay is common and usually not a cause for concern. Stress, fatigue, '
+        'a change in routine, travel, hormonal shifts or certain medications can all play a role.';
+  String get lateConsultTitle    => _fr ? 'Quand consulter'                     : 'When to see a doctor';
+  String get lateConsultText     => _fr
+      ? 'Si le retard devient inhabituel pour vous, dure plusieurs semaines, ou '
+        's\'accompagne de douleurs importantes ou de saignements anormaux, consultez '
+        'un professionnel de santé.'
+      : 'If the delay is unusual for you, lasts several weeks, or comes with significant '
+        'pain or abnormal bleeding, please consult a healthcare professional.';
+  String get latePregnancyTest   => _fr
+      ? 'Si vous avez eu un rapport non protégé et que vos règles sont en retard, '
+        'un test de grossesse peut être envisagé.'
+      : 'If you\'ve had unprotected intercourse and your period is late, taking a '
+        'pregnancy test may be worth considering.';
+  String get lateBtnLog          => _fr ? 'Enregistrer mes règles'              : 'Log my period';
+  String get lateBtnRemindTomorrow => _fr ? 'Me rappeler demain'                : 'Remind me tomorrow';
+  String get lateBtnMore         => _fr ? 'En savoir plus'                     : 'Learn more';
+  String get lateCausesTitle     => _fr ? 'Causes possibles d\'un retard'       : 'Possible causes of a delay';
+  String get lateCauseStress     => _fr ? 'Stress'                              : 'Stress';
+  String get lateCauseFatigue    => _fr ? 'Fatigue'                             : 'Fatigue';
+  String get lateCauseRoutine    => _fr ? 'Changement de routine'               : 'Change in routine';
+  String get lateCauseTravel     => _fr ? 'Voyage'                              : 'Travel';
+  String get lateCauseHormonal   => _fr ? 'Variations hormonales'               : 'Hormonal changes';
+  String get lateCauseMeds       => _fr ? 'Certains médicaments'                : 'Certain medications';
+
   // Date picker titles
   String get datePickerLastPeriodTitle   => _fr ? 'Dernieres regles'     : 'Last period';
   String get datePickerLastPeriodSub     => _fr ? 'Date du premier jour' : 'First day date';
