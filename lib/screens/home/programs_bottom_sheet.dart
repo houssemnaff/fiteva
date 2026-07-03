@@ -265,7 +265,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                       const SizedBox(height: 12),
 
                       // Progress bar
-                      Column(
+                    /*  Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
@@ -302,7 +302,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                             ),
                           ),
                         ],
-                      ),
+                      ),*/
 
                       const SizedBox(height: 12),
 
@@ -332,7 +332,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    'CONTINUER',
+                                    'RESUME',
                                     style: GoogleFonts.inter(
                                       color: cs.onPrimary,
                                       fontSize: 11,
@@ -345,32 +345,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.pop(context);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: cs.surface,
-                                  border: Border.all(color: cs.outline),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'FAVORIS',
-                                    style: GoogleFonts.inter(
-                                      color: cs.onSurface,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
+                      
                         ],
                       ),
                     ],

@@ -519,6 +519,25 @@ CREATE TABLE shop_wishlist (
   PRIMARY KEY (user_id, shop_item_id)
 );
 
+
+create table partner_join_requests (
+  id            uuid primary key default gen_random_uuid(),
+  partner_id    uuid not null references training_partners(id) on delete cascade,
+  requester_id  uuid not null references auth.users(id),
+  owner_id      uuid not null,              -- denormalized training_partners.user_id, for RLS
+  status        text not null default 'pending' check (status in ('pending','accepted','declined')),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  unique (partner_id, requester_id)          -- can't send two requests to the same partner post
+);
+
+
+alter table training_partners
+  add column contact_whatsapp  text,
+  add column contact_instagram text,
+  add column contact_facebook  text;
+
+
 -- ── 10.3  Échanges/Redemptions ────────────────────────────────────────────────
 CREATE TABLE shop_redemptions (
   id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -627,6 +646,7 @@ CREATE TRIGGER trg_pregnancy_upd         BEFORE UPDATE ON user_pregnancy       F
 CREATE TRIGGER trg_postpartum_upd        BEFORE UPDATE ON user_postpartum      FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_user_points_upd       BEFORE UPDATE ON user_points          FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_cycle_settings_upd    BEFORE UPDATE ON user_cycle_settings  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER trg_join_requests_upd     BEFORE UPDATE ON partner_join_requests FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- Auto-incrémenter likes_count sur posts
 CREATE OR REPLACE FUNCTION fn_sync_post_likes_count()
@@ -801,6 +821,20 @@ CREATE POLICY "participants_delete" ON event_participants FOR DELETE USING (auth
 CREATE POLICY "partners_select" ON training_partners FOR SELECT USING (true);
 CREATE POLICY "partners_insert" ON training_partners FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "partners_delete" ON training_partners FOR DELETE USING (auth.uid() = user_id);
+
+ALTER TABLE partner_join_requests ENABLE ROW LEVEL SECURITY;
+
+-- Le demandeur voit ses propres demandes, le propriétaire voit celles reçues
+CREATE POLICY "join_requests_select" ON partner_join_requests FOR SELECT
+  USING (auth.uid() = requester_id OR auth.uid() = owner_id);
+CREATE POLICY "join_requests_insert" ON partner_join_requests FOR INSERT
+  WITH CHECK (auth.uid() = requester_id);
+-- Le propriétaire peut accepter/refuser (update du status)
+CREATE POLICY "join_requests_update" ON partner_join_requests FOR UPDATE
+  USING (auth.uid() = owner_id);
+-- Le demandeur peut réinitialiser sa propre demande (upsert après un refus)
+CREATE POLICY "join_requests_requester_reset" ON partner_join_requests FOR UPDATE
+  USING (auth.uid() = requester_id) WITH CHECK (auth.uid() = requester_id);
 
 -- Tables de référence : lecture publique uniquement
 ALTER TABLE programs                  ENABLE ROW LEVEL SECURITY;

@@ -97,6 +97,8 @@ class AuthService {
   }
 
   /// Inscription → si email déjà utilisé, tente la connexion automatiquement.
+  /// Si le mot de passe saisi ne correspond pas au compte existant, on renvoie
+  /// un message explicite plutôt que la simple erreur de connexion générique.
   static Future<AuthResult> signUpOrSignIn({
     required String email,
     required String password,
@@ -105,10 +107,15 @@ class AuthService {
     final result = await signUp(email: email, password: password, username: username);
     if (result.isSuccess) return result;
 
-    final alreadyExists = result.error?.toLowerCase().contains('already') == true ||
+    final alreadyExists = result.error == 'already_registered' ||
+        result.error?.toLowerCase().contains('already') == true ||
         result.error?.toLowerCase().contains('registered') == true;
-    if (alreadyExists) return signIn(email: email, password: password);
-    return result;
+    if (!alreadyExists) return result;
+
+    final signInResult = await signIn(email: email, password: password);
+    if (signInResult.isSuccess) return signInResult;
+    return AuthResult.fail(
+        'Cet email est déjà associé à un compte. Connecte-toi avec ton mot de passe existant.');
   }
 
   static Future<AuthResult> resetPassword(String email) async {

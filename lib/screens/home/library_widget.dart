@@ -85,14 +85,25 @@ class _LibrarySectionState extends ConsumerState<LibrarySection> {
                     builder: (_) => const FavoritesBottomSheet(),
                   );
                 },
-                child: Text(
-                  l10n.sectionVoirTout,
-                  style: GoogleFonts.inter(
-                    color: cs.secondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: Container(
+  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+  decoration: BoxDecoration(
+    border: Border.all(
+      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+      width: 1,
+    ),
+    borderRadius: BorderRadius.circular(20),
+  ),
+  child: Text(
+    l10n.sectionVoirTout,
+    style: GoogleFonts.inter(
+      color: Theme.of(context).colorScheme.primary,
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.5,
+    ),
+  ),
+)
               ),
             ],
           ),

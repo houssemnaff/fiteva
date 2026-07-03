@@ -425,11 +425,14 @@ class CommunityService {
   // PARTENAIRES
   // ────────────────────────────────────────────────────────────────────────────
 
+  static const _partnerColumns =
+      'id, user_id, name, avatar_url, goal, level, region, frequency, '
+      'description, tags, contact_whatsapp, contact_instagram, contact_facebook';
+
   static Future<List<PartnerModel>> loadPartners() async {
     try {
       final rows = await SupabaseConfig.table('training_partners')
-          .select('id, user_id, name, avatar_url, goal, level, region, '
-              'frequency, description, tags')
+          .select(_partnerColumns)
           .order('created_at', ascending: false)
           .limit(50);
       return (rows as List).map((r) => _partnerFromRow(r as Map<String, dynamic>)).toList();
@@ -453,18 +456,19 @@ class CommunityService {
       }, onConflict: 'id');
 
       final row = await SupabaseConfig.table('training_partners').insert({
-        'user_id':     _uid,
-        'name':        partner.name,
-        'avatar_url':  '',
-        'goal':        partner.goal,
-        'level':       partner.level,
-        'region':      partner.region,
-        'frequency':   partner.frequency,
-        'description': partner.description,
-        'tags':        partner.tags,
-      }).select('id, user_id, name, avatar_url, goal, level, region, '
-                'frequency, description, tags')
-          .single();
+        'user_id':           _uid,
+        'name':              partner.name,
+        'avatar_url':        '',
+        'goal':              partner.goal,
+        'level':             partner.level,
+        'region':            partner.region,
+        'frequency':         partner.frequency,
+        'description':       partner.description,
+        'tags':              partner.tags,
+        'contact_whatsapp':  partner.contactWhatsapp,
+        'contact_instagram': partner.contactInstagram,
+        'contact_facebook':  partner.contactFacebook,
+      }).select(_partnerColumns).single();
 
       return _partnerFromRow(row);
     } catch (e) {
@@ -474,6 +478,125 @@ class CommunityService {
   }
 
   static Future<void> savePartners(List<PartnerModel> partners) async {}
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // DEMANDES DE MISE EN RELATION (training_partners → partner_join_requests)
+  // ────────────────────────────────────────────────────────────────────────────
+
+  /// Envoie une demande pour rejoindre un partenaire (liste d'attente).
+  /// Utilise upsert car (partner_id, requester_id) est unique : si une demande
+  /// refusée existait déjà, elle repasse simplement à 'pending'.
+  /// Retourne le statut résultant ('pending' si succès, null en cas d'erreur).
+  static Future<String?> sendPartnerJoinRequest({
+    required String partnerId,
+    required String ownerId,
+  }) async {
+    if (_uid == null) return null;
+    try {
+      await SupabaseConfig.table('partner_join_requests').upsert({
+        'partner_id':   partnerId,
+        'requester_id': _uid,
+        'owner_id':     ownerId,
+        'status':       'pending',
+      }, onConflict: 'partner_id,requester_id');
+      return 'pending';
+    } catch (e) {
+      debugPrint('[CommunityService] sendPartnerJoinRequest error: $e');
+      return null;
+    }
+  }
+
+  /// Statut ('pending'/'accepted'/'declined') des demandes envoyées par
+  /// l'utilisateur courant, indexé par partner_id.
+  static Future<Map<String, String>> loadMyPartnerRequestStatuses() async {
+    final uid = _uid;
+    if (uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('partner_join_requests')
+          .select('partner_id, status')
+          .eq('requester_id', uid) as List;
+      return {
+        for (final r in rows.cast<Map<String, dynamic>>())
+          r['partner_id'] as String: r['status'] as String,
+      };
+    } catch (e) {
+      debugPrint('[CommunityService] loadMyPartnerRequestStatuses error: $e');
+      return {};
+    }
+  }
+
+  /// Demandes en attente reçues pour les partenaires publiés par l'utilisateur.
+  ///
+  /// Fait plusieurs requêtes (pas d'embed PostgREST) car `requester_id`
+  /// référence auth.users, pas user_profiles — il n'y a donc pas de FK directe
+  /// utilisable pour un embed entre les deux tables. On récupère aussi le post
+  /// partenaire concerné (goal/région) car un même owner peut en publier
+  /// plusieurs, il faut donc pouvoir distinguer à quel post chaque demande
+  /// se rapporte.
+  static Future<List<PartnerJoinRequest>> loadIncomingPartnerRequests() async {
+    final uid = _uid;
+    if (uid == null) return [];
+    try {
+      final rows = await SupabaseConfig.table('partner_join_requests')
+          .select('id, partner_id, requester_id, status, created_at')
+          .eq('owner_id', uid)
+          .eq('status', 'pending')
+          .order('created_at', ascending: false) as List;
+      final requests = rows.cast<Map<String, dynamic>>();
+      if (requests.isEmpty) return [];
+
+      final requesterIds = requests.map((r) => r['requester_id'] as String).toSet().toList();
+      final profiles = await SupabaseConfig.table('user_profiles')
+          .select('id, username')
+          .inFilter('id', requesterIds) as List;
+      final namesById = {
+        for (final p in profiles.cast<Map<String, dynamic>>())
+          p['id'] as String: p['username'] as String? ?? 'User',
+      };
+
+      final partnerIds = requests.map((r) => r['partner_id'] as String).toSet().toList();
+      final partnerRows = await SupabaseConfig.table('training_partners')
+          .select('id, goal, region')
+          .inFilter('id', partnerIds) as List;
+      final partnerInfoById = {
+        for (final p in partnerRows.cast<Map<String, dynamic>>())
+          p['id'] as String: (p['goal'] as String? ?? '', p['region'] as String? ?? ''),
+      };
+
+      return requests.map((r) {
+        final partnerInfo = partnerInfoById[r['partner_id']];
+        return PartnerJoinRequest(
+          id: r['id'] as String,
+          partnerId: r['partner_id'] as String,
+          requesterId: r['requester_id'] as String,
+          requesterName: namesById[r['requester_id']] ?? 'User',
+          status: r['status'] as String,
+          createdAt: DateTime.parse(r['created_at'] as String),
+          partnerGoal: partnerInfo?.$1 ?? '',
+          partnerRegion: partnerInfo?.$2 ?? '',
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('[CommunityService] loadIncomingPartnerRequests error: $e');
+      return [];
+    }
+  }
+
+  /// Accepte ou refuse une demande reçue (réservé au propriétaire du partenaire).
+  static Future<bool> respondToPartnerRequest({
+    required String requestId,
+    required bool accept,
+  }) async {
+    try {
+      await SupabaseConfig.table('partner_join_requests').update({
+        'status': accept ? 'accepted' : 'declined',
+      }).eq('id', requestId);
+      return true;
+    } catch (e) {
+      debugPrint('[CommunityService] respondToPartnerRequest error: $e');
+      return false;
+    }
+  }
 
   // ────────────────────────────────────────────────────────────────────────────
   // PROFIL UTILISATEUR (pour la vue profil communauté)
@@ -579,6 +702,9 @@ class CommunityService {
     frequency:   r['frequency'] as String? ?? '',
     description: r['description'] as String? ?? '',
     tags:        List<String>.from(r['tags'] as List? ?? []),
+    contactWhatsapp:  r['contact_whatsapp'] as String? ?? '',
+    contactInstagram: r['contact_instagram'] as String? ?? '',
+    contactFacebook:  r['contact_facebook'] as String? ?? '',
   );
 
   static String _timeAgo(String createdAt) {

@@ -1335,13 +1335,25 @@ class _ProgramsSection extends StatelessWidget {
                         );
                       },
                       borderRadius: BorderRadius.circular(12),
-                      child: Text(l10n.homeVoirTout,
-                          style: GoogleFonts.inter(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
-                          )),
+                      child: Container(
+  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+  decoration: BoxDecoration(
+    border: Border.all(
+      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+      width: 1,
+    ),
+    borderRadius: BorderRadius.circular(20),
+  ),
+  child: Text(
+    l10n.homeVoirTout,
+    style: GoogleFonts.inter(
+      color: Theme.of(context).colorScheme.primary,
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.5,
+    ),
+  ),
+)
                     ),
                   ],
                 ),

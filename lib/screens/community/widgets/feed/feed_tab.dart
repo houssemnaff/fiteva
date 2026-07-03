@@ -173,63 +173,91 @@ class _FilterPill extends StatelessWidget {
   }
 }
 
+// Mirrors _PostCard's exact structure/paddings/dimensions so the layout
+// doesn't jump when the shimmer is swapped for real Supabase post data —
+// only the dynamic (Supabase-sourced) content is shimmered; the surrounding
+// chrome (header/filters above) stays static and untouched.
 class _FeedSkeletonCard extends StatelessWidget {
   final ColorScheme colorScheme;
   const _FeedSkeletonCard({required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
-      highlightColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withValues(alpha: 0.04),
-              blurRadius: 14,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
+    // The card frame (background/border/shadow) stays static, exactly like
+    // the real _PostCard — only the placeholder shapes inside shimmer, the
+    // same principle used in comment_sheet.dart's _CommentSkeletonRow.
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outline),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Shimmer.fromColors(
+        baseColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+        highlightColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(width: 40, height: 40, decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest, shape: BoxShape.circle)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _SkeletonBox(height: 12, width: 120, radius: 6, colorScheme: colorScheme),
-                      const SizedBox(height: 6),
-                      _SkeletonBox(height: 10, width: 90, radius: 6, colorScheme: colorScheme),
-                    ],
+            // ── Header — matches _PostCard's header padding exactly ──────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
+              child: Row(
+                children: [
+                  Container(width: 40, height: 40, decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest, shape: BoxShape.circle)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SkeletonBox(height: 12, width: 120, radius: 6, colorScheme: colorScheme),
+                        const SizedBox(height: 6),
+                        _SkeletonBox(height: 10, width: 90, radius: 6, colorScheme: colorScheme),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 36),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
-            _SkeletonBox(height: 14, width: double.infinity, radius: 6, colorScheme: colorScheme),
-            const SizedBox(height: 8),
-            _SkeletonBox(height: 14, width: 220, radius: 6, colorScheme: colorScheme),
-            const SizedBox(height: 12),
-            _SkeletonBox(height: 150, width: double.infinity, radius: 16, colorScheme: colorScheme),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _SkeletonBox(height: 30, width: 68, radius: 16, colorScheme: colorScheme),
-                const SizedBox(width: 8),
-                _SkeletonBox(height: 30, width: 78, radius: 16, colorScheme: colorScheme),
-                const Spacer(),
-                _SkeletonBox(height: 30, width: 30, radius: 15, colorScheme: colorScheme),
-              ],
+
+            // ── Title + content — matches _PostCard's text padding exactly ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SkeletonBox(height: 14, width: double.infinity, radius: 6, colorScheme: colorScheme),
+                  const SizedBox(height: 8),
+                  _SkeletonBox(height: 14, width: 220, radius: 6, colorScheme: colorScheme),
+                ],
+              ),
+            ),
+
+            // ── Image — full-bleed, same height as the real post image ──
+            _SkeletonBox(height: 200, width: double.infinity, radius: 0, colorScheme: colorScheme),
+
+            // ── Actions — matches _PostCard's 4 actions exactly ─────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 12, 12),
+              child: Row(
+                children: [
+                  _SkeletonBox(height: 30, width: 68, radius: 50, colorScheme: colorScheme),
+                  const SizedBox(width: 8),
+                  _SkeletonBox(height: 30, width: 78, radius: 50, colorScheme: colorScheme),
+                  const Spacer(),
+                  _SkeletonBox(height: 30, width: 30, radius: 15, colorScheme: colorScheme),
+                  const SizedBox(width: 8),
+                  _SkeletonBox(height: 30, width: 30, radius: 15, colorScheme: colorScheme),
+                ],
+              ),
             ),
           ],
         ),

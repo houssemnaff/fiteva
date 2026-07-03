@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -c \"static const IconData globe;\" \"C:\\\\Users\\\\houssem\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\lucide_icons_flutter-3.1.14+2\\\\lib\\\\lucide_icons.dart\")",
+      "Read(//c/Users/houssem/AppData/Local/Pub/Cache/hosted/pub.dev/lucide_icons_flutter-3.1.14+2/lib/**)",
+      "Bash(grep -io \"IconData [a-zA-Z0-9]*globe[a-zA-Z0-9]*\" \"C:\\\\Users\\\\houssem\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\lucide_icons_flutter-3.1.14+2\\\\lib\\\\lucide_icons.dart\" | sort -u | head -10)",
+      "Bash(flutter analyze *)",
+      "Bash(grep -c \"static const IconData inbox;\" \"C:\\\\Users\\\\houssem\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\lucide_icons_flutter-3.1.14+2\\\\lib\\\\lucide_icons.dart\")"
+    ]
+  }
+}
