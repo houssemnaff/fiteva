@@ -1,6 +1,19 @@
 import 'supabase_config.dart';
 
 // ignore_for_file: avoid_catches_without_on_clauses
+
+class CycleDailyLog {
+  final DateTime date;
+  final Set<String> symptoms;
+  final int? moodIndex;
+
+  const CycleDailyLog({
+    required this.date,
+    required this.symptoms,
+    required this.moodIndex,
+  });
+}
+
 class CycleLogService {
   static String _dateKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -32,6 +45,44 @@ class CycleLogService {
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id,log_date');
     } catch (_) {}
+  }
+
+  /// Récupère tous les logs entre [from] et [to] (inclus) pour les Insights.
+  /// Résilient à l'absence de la colonne `mood_index` (ajoutée après coup) :
+  /// si le select complet échoue, on retente sans cette colonne.
+  static Future<List<CycleDailyLog>> loadLogsRange(DateTime from, DateTime to) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return [];
+
+    List<dynamic>? rows;
+    try {
+      rows = await SupabaseConfig.table('cycle_daily_logs')
+          .select('log_date, symptoms, mood_index')
+          .eq('user_id', uid)
+          .gte('log_date', _dateKey(from))
+          .lte('log_date', _dateKey(to))
+          .order('log_date') as List;
+    } catch (_) {
+      try {
+        rows = await SupabaseConfig.table('cycle_daily_logs')
+            .select('log_date, symptoms')
+            .eq('user_id', uid)
+            .gte('log_date', _dateKey(from))
+            .lte('log_date', _dateKey(to))
+            .order('log_date') as List;
+      } catch (_) {
+        return [];
+      }
+    }
+
+    return rows.map((r) {
+      final map = r as Map<String, dynamic>;
+      return CycleDailyLog(
+        date:      DateTime.parse(map['log_date'] as String),
+        symptoms:  Set<String>.from((map['symptoms'] as List? ?? [])),
+        moodIndex: map['mood_index'] as int?,
+      );
+    }).toList();
   }
 
   static Future<int?> loadMood(DateTime date) async {
