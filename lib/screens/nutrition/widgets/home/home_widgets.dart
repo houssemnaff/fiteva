@@ -292,7 +292,7 @@ class MealCategoryCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 10,
-                      color: empty ? nc.border : nc.text2))),
+                      color: empty ? nc.text1 : nc.text1))),
                 const SizedBox(width: 6),
                 Text('/ ${data.budget} kcal',
                   style: GoogleFonts.inter(fontSize: 10, color: nc.text2)),

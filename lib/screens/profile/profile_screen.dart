@@ -11,6 +11,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/mascot_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/mascot_widget.dart';
 
@@ -550,6 +551,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onPressed: () async {
               Navigator.of(ctx).pop();
               await AuthService.signOut();
+              ref.read(onboardingProvider.notifier).reset();
               if (context.mounted) context.go('/onboarding');
             },
             child: const Text('Déconnecter',

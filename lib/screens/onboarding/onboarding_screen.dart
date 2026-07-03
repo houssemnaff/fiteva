@@ -197,6 +197,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
 
     await ref.read(onboardingProvider.notifier).completeOnboarding();
+    await StorageService.clearOnboardingData();
     ref.read(userProfileProvider.notifier).reload();
     ref.read(mascotProvider.notifier).reload();
     if (!mounted) return;
@@ -286,33 +287,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   // ── Init / Dispose ────────────────────────────────────────────────────────
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSaved();
-  }
-
-  Future<void> _loadSaved() async {
-    final saved = StorageService.getOnboardingData();
-    if (saved.isEmpty) return;
-    setState(() {
-      _nameCtrl.text       = saved['username']  ?? '';
-      _emailCtrl.text      = saved['email']     ?? '';
-      _data.goals             = List<String>.from(saved['goals']     ?? []);
-      _data.fitnessLevel      = saved['fitness_level'];
-      _data.equipment         = List<String>.from(saved['equipment'] ?? []);
-      _data.trainingLocation  = saved['training_location'];
-      _data.frequency         = saved['frequency'];
-      _data.heightCm       = (saved['height_cm'] is int)
-          ? saved['height_cm'] as int
-          : (saved['height_cm'] as num?)?.toInt() ?? 165;
-      _data.weightKg       = (saved['weight_kg'] as num?)?.toDouble() ?? 60.0;
-      _data.age            = (saved['age'] is int)
-          ? saved['age'] as int
-          : (saved['age'] as num?)?.toInt() ?? 25;
-    });
-  }
 
   @override
   void dispose() {
