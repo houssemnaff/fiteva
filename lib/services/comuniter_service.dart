@@ -40,15 +40,23 @@ class CommunityService {
 
       if (rows.isEmpty) return [];
 
-      // Batch-fetch usernames for all unique authors.
+      // Batch-fetch usernames + mascotte pour tous les auteurs concernés.
       final userIds = rows.map((r) => r['user_id'] as String).toSet().toList();
       final profileRows = await SupabaseConfig.table('user_profiles')
-          .select('id, username')
+          .select('id, username, mascot_type, mascot_mood')
           .inFilter('id', userIds) as List;
 
       final usernameMap = <String, String>{
         for (final p in profileRows)
           p['id'] as String: (p['username'] as String? ?? '').trim(),
+      };
+      final mascotTypeMap = <String, String>{
+        for (final p in profileRows)
+          p['id'] as String: (p['mascot_type'] as String? ?? 'blob'),
+      };
+      final mascotMoodMap = <String, String>{
+        for (final p in profileRows)
+          p['id'] as String: (p['mascot_mood'] as String? ?? 'happy'),
       };
 
       return rows.map((r) {
@@ -59,6 +67,8 @@ class CommunityService {
           userId:        userId,
           username:      name.isNotEmpty ? name : 'User',
           userAvatarUrl: '',
+          mascotType:    mascotTypeMap[userId] ?? 'blob',
+          mascotMood:    mascotMoodMap[userId] ?? 'happy',
           title:         r['title'] as String? ?? '',
           content:       r['content'] as String? ?? '',
           imageUrl:      r['image_url'] as String? ?? '',
@@ -281,15 +291,23 @@ class CommunityService {
 
       if (rows.isEmpty) return [];
 
-      // Batch-fetch organizer usernames.
+      // Batch-fetch usernames + mascotte des organisateurs.
       final orgIds = rows.map((r) => r['organizer_id'] as String).toSet().toList();
       final profileRows = await SupabaseConfig.table('user_profiles')
-          .select('id, username')
+          .select('id, username, mascot_type, mascot_mood')
           .inFilter('id', orgIds) as List;
 
       final usernameMap = <String, String>{
         for (final p in profileRows)
           p['id'] as String: (p['username'] as String? ?? '').trim(),
+      };
+      final mascotTypeMap = <String, String>{
+        for (final p in profileRows)
+          p['id'] as String: (p['mascot_type'] as String? ?? 'blob'),
+      };
+      final mascotMoodMap = <String, String>{
+        for (final p in profileRows)
+          p['id'] as String: (p['mascot_mood'] as String? ?? 'happy'),
       };
 
       return rows.map((r) {
@@ -300,6 +318,8 @@ class CommunityService {
           title:              r['title'] as String? ?? '',
           organizer:          name.isNotEmpty ? name : 'User',
           organizerAvatar:    '',
+          organizerMascotType: mascotTypeMap[orgId] ?? 'blob',
+          organizerMascotMood: mascotMoodMap[orgId] ?? 'happy',
           type:               r['event_type'] as String? ?? 'other',
           date:               _formatDate(r['event_date'] as String? ?? ''),
           time:               r['event_time'] as String? ?? '',
@@ -431,11 +451,41 @@ class CommunityService {
 
   static Future<List<PartnerModel>> loadPartners() async {
     try {
-      final rows = await SupabaseConfig.table('training_partners')
+      final rows = (await SupabaseConfig.table('training_partners')
           .select(_partnerColumns)
           .order('created_at', ascending: false)
-          .limit(50);
-      return (rows as List).map((r) => _partnerFromRow(r as Map<String, dynamic>)).toList();
+          .limit(50) as List)
+          .cast<Map<String, dynamic>>();
+      if (rows.isEmpty) return [];
+
+      // Batch-fetch la mascotte des auteurs (pas stockée sur training_partners).
+      final userIds = rows
+          .map((r) => r['user_id'] as String? ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList();
+      final profileRows = userIds.isEmpty
+          ? <Map<String, dynamic>>[]
+          : (await SupabaseConfig.table('user_profiles')
+              .select('id, mascot_type, mascot_mood')
+              .inFilter('id', userIds) as List)
+              .cast<Map<String, dynamic>>();
+
+      final mascotTypeMap = <String, String>{
+        for (final p in profileRows)
+          p['id'] as String: (p['mascot_type'] as String? ?? 'blob'),
+      };
+      final mascotMoodMap = <String, String>{
+        for (final p in profileRows)
+          p['id'] as String: (p['mascot_mood'] as String? ?? 'happy'),
+      };
+
+      return rows.map((r) {
+        final userId = r['user_id'] as String? ?? '';
+        return _partnerFromRow(r,
+            mascotType: mascotTypeMap[userId] ?? 'blob',
+            mascotMood: mascotMoodMap[userId] ?? 'happy');
+      }).toList();
     } catch (e) {
       debugPrint('[CommunityService] loadPartners error: $e');
       return [];
@@ -547,11 +597,19 @@ class CommunityService {
 
       final requesterIds = requests.map((r) => r['requester_id'] as String).toSet().toList();
       final profiles = await SupabaseConfig.table('user_profiles')
-          .select('id, username')
+          .select('id, username, mascot_type, mascot_mood')
           .inFilter('id', requesterIds) as List;
       final namesById = {
         for (final p in profiles.cast<Map<String, dynamic>>())
           p['id'] as String: p['username'] as String? ?? 'User',
+      };
+      final mascotTypeById = {
+        for (final p in profiles.cast<Map<String, dynamic>>())
+          p['id'] as String: p['mascot_type'] as String? ?? 'blob',
+      };
+      final mascotMoodById = {
+        for (final p in profiles.cast<Map<String, dynamic>>())
+          p['id'] as String: p['mascot_mood'] as String? ?? 'happy',
       };
 
       final partnerIds = requests.map((r) => r['partner_id'] as String).toSet().toList();
@@ -570,6 +628,8 @@ class CommunityService {
           partnerId: r['partner_id'] as String,
           requesterId: r['requester_id'] as String,
           requesterName: namesById[r['requester_id']] ?? 'User',
+          requesterMascotType: mascotTypeById[r['requester_id']] ?? 'blob',
+          requesterMascotMood: mascotMoodById[r['requester_id']] ?? 'happy',
           status: r['status'] as String,
           createdAt: DateTime.parse(r['created_at'] as String),
           partnerGoal: partnerInfo?.$1 ?? '',
@@ -691,11 +751,14 @@ class CommunityService {
     }
   }
 
-  static PartnerModel _partnerFromRow(Map<String, dynamic> r) => PartnerModel(
+  static PartnerModel _partnerFromRow(Map<String, dynamic> r,
+      {String mascotType = 'blob', String mascotMood = 'happy'}) => PartnerModel(
     id:          r['id'] as String,
     userId:      r['user_id'] as String? ?? '',
     name:        r['name'] as String? ?? '',
     avatar:      r['avatar_url'] as String? ?? '',
+    mascotType:  mascotType,
+    mascotMood:  mascotMood,
     goal:        r['goal'] as String? ?? '',
     level:       r['level'] as String? ?? '',
     region:      r['region'] as String? ?? '',

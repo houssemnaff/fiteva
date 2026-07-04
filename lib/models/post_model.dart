@@ -10,6 +10,8 @@ class PostModel {
   final String userId;
   final String username;
   final String userAvatarUrl;
+  final String mascotType;
+  final String mascotMood;
   final String title;
   final String content;
   final String imageUrl;
@@ -23,6 +25,8 @@ class PostModel {
     this.userId = '',
     required this.username,
     required this.userAvatarUrl,
+    this.mascotType = 'blob',
+    this.mascotMood = 'happy',
     this.title = '',
     required this.content,
     required this.imageUrl,
@@ -37,6 +41,8 @@ class PostModel {
     'userId': userId,
     'username': username,
     'userAvatarUrl': userAvatarUrl,
+    'mascotType': mascotType,
+    'mascotMood': mascotMood,
     'title': title,
     'content': content,
     'imageUrl': imageUrl,
@@ -51,6 +57,8 @@ class PostModel {
     userId: j['userId'] as String? ?? '',
     username: j['username'] as String,
     userAvatarUrl: j['userAvatarUrl'] as String,
+    mascotType: j['mascotType'] as String? ?? 'blob',
+    mascotMood: j['mascotMood'] as String? ?? 'happy',
     title: j['title'] as String? ?? '',
     content: j['content'] as String,
     imageUrl: j['imageUrl'] as String? ?? '',
@@ -65,6 +73,8 @@ class PostModel {
     String? userId,
     String? username,
     String? userAvatarUrl,
+    String? mascotType,
+    String? mascotMood,
     String? title,
     String? content,
     String? imageUrl,
@@ -78,6 +88,8 @@ class PostModel {
         userId: userId ?? this.userId,
         username: username ?? this.username,
         userAvatarUrl: userAvatarUrl ?? this.userAvatarUrl,
+        mascotType: mascotType ?? this.mascotType,
+        mascotMood: mascotMood ?? this.mascotMood,
         title: title ?? this.title,
         content: content ?? this.content,
         imageUrl: imageUrl ?? this.imageUrl,

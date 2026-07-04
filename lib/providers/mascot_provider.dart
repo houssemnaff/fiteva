@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/mascot_widget.dart';
 import '../services/storage_service.dart';
+import '../services/supabase_config.dart';
 
 class MascotState {
   final MascotType type;
@@ -17,7 +19,41 @@ class MascotState {
 
 class MascotNotifier extends Notifier<MascotState> {
   @override
-  MascotState build() => _fromStorage();
+  MascotState build() {
+    final initial = _fromStorage();
+    _refreshFromSupabase();
+    return initial;
+  }
+
+  Future<void> _refreshFromSupabase() async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+
+    try {
+      final row = await SupabaseConfig.table('user_profiles')
+          .select('mascot_type, mascot_mood')
+          .eq('id', uid)
+          .maybeSingle();
+      if (row == null) return;
+
+      final typeName = row['mascot_type'] as String? ?? state.type.name;
+      final moodName = row['mascot_mood'] as String? ?? state.mood.name;
+      final type = MascotType.values.firstWhere(
+        (t) => t.name == typeName,
+        orElse: () => state.type,
+      );
+      final mood = MascotMood.values.firstWhere(
+        (m) => m.name == moodName,
+        orElse: () => state.mood,
+      );
+
+      state = MascotState(type: type, mood: mood);
+      final data = StorageService.getOnboardingData();
+      data['mascot_type'] = type.name;
+      data['mascot_mood'] = mood.name;
+      await StorageService.saveOnboardingData(data);
+    } catch (_) {}
+  }
 
   MascotState _fromStorage() {
     final data = StorageService.getOnboardingData();
@@ -41,6 +77,21 @@ class MascotNotifier extends Notifier<MascotState> {
     data['mascot_type'] = state.type.name;
     data['mascot_mood'] = state.mood.name;
     await StorageService.saveOnboardingData(data);
+    _syncToSupabase(state);
+  }
+
+  void _syncToSupabase(MascotState mascot) {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+
+    SupabaseConfig.table('user_profiles').upsert({
+      'id':          uid,
+      'mascot_type': mascot.type.name,
+      'mascot_mood': mascot.mood.name,
+      'updated_at':  DateTime.now().toIso8601String(),
+    }).catchError((e) {
+      debugPrint('[Mascot] Supabase sync error: $e');
+    });
   }
 
   void reload() {

@@ -1116,20 +1116,41 @@ class _StepWelcomeState extends State<StepWelcome>
           // ── Contenu : logo + accroche sur la photo, carte en bas ───────────
           SafeArea(
             bottom: false,
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                _buildLogo(),
-                const Spacer(),
-                _buildSlideText(),
-                const SizedBox(height: 14),
-                _buildDots(),
-                const SizedBox(height: 22),
-                FadeTransition(
-                  opacity: _fadeAnim,
-                  child: _buildAuthCard(),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 20),
+                            _buildLogo(),
+                          ],
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildSlideText(),
+                            const SizedBox(height: 14),
+                            _buildDots(),
+                            const SizedBox(height: 22),
+                            FadeTransition(
+                              opacity: _fadeAnim,
+                              child: _buildAuthCard(),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],

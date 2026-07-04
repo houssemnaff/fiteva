@@ -183,6 +183,8 @@ class EventCard extends StatelessWidget {
                 avatarUrl: event.organizerAvatar,
                 name: event.organizer,
                 radius: 20,
+                mascotType: event.organizerMascotType,
+                mascotMood: event.organizerMascotMood,
               ),
               const SizedBox(width: 10),
               Expanded(

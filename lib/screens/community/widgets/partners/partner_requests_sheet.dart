@@ -168,7 +168,11 @@ class _RequestRowState extends ConsumerState<_RequestRow> {
           border: Border.all(color: cs.outline.withValues(alpha: 0.5)),
         ),
         child: Row(children: [
-          CommunityAvatar(avatarUrl: '', name: request.requesterName, radius: 20),
+          CommunityAvatar(
+            avatarUrl: '', name: request.requesterName, radius: 20,
+            mascotType: request.requesterMascotType,
+            mascotMood: request.requesterMascotMood,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(

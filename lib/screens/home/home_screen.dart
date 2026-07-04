@@ -10,7 +10,6 @@ import 'package:fiteva/screens/home/programs_bottom_sheet.dart';
 import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
 import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
 import 'package:fiteva/screens/workout/programme_detail_screen.dart';
-import 'package:fiteva/screens/workout/exercise_player_screen.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
 import 'package:fiteva/providers/workout_progress_provider.dart';
@@ -21,7 +20,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../models/workout_model.dart';
 import '../../models/home_program_model.dart';
 import '../../providers/mock_data_provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -640,15 +638,15 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
   }
 
   void _showPicker(int dayIndex) {
-    final workouts = ref.read(workoutsProvider);
+    final programs = ref.read(allProgramsProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _WorkoutPickerSheet(
-        workouts: workouts,
-        onPick: (w) {
-          ref.read(weeklyPlanProvider.notifier).assignWorkout(dayIndex, w);
+      builder: (_) => _ProgramPickerSheet(
+        programs: programs,
+        onPick: (p) {
+          ref.read(weeklyPlanProvider.notifier).assignProgram(dayIndex, p);
           Navigator.pop(context);
         },
       ),
@@ -735,7 +733,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                 final sc = isPast
                     ? cs.onSurface.withValues(alpha: 0.06)
                     : _statusColor(plan, cs);
-                final hasWorkout = plan.workout != null;
+                final hasProgram = plan.program != null;
 
                 return Expanded(
                   child: GestureDetector(
@@ -785,7 +783,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                             height: 5,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: hasWorkout
+                              color: hasProgram
                                   ? (isSel
                                       ? Theme.of(context).colorScheme.secondary
                                       : Colors.white.withOpacity(0.7))
@@ -820,24 +818,12 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
             .remove(_selectedDay);
       },
       onViewDetail: () {
-        final w = sel.workout;
-        if (w == null || w.exercises.isEmpty) return;
+        final p = sel.program;
+        if (p == null) return;
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ExercisePlayerScreen(
-              ref: ref,
-              workoutTitle: w.title,
-              exerciseName: w.exercises[0],
-              videoId: w.videoIdAt(0) ?? '',
-              videoUrl: w.videos.isNotEmpty ? w.videos[0].url : null,
-              exerciseIndex: 0,
-              totalExercises: w.exercises.length,
-              totalWorkoutPoints: w.points,
-              onCompleted: () {},
-              workoutId: w.id,
-              allVideoIds: w.videos.map((v) => v.id).toList(),
-            ),
+            builder: (_) => WorkoutDetailScreen(program: p),
           ),
         );
       },
@@ -872,13 +858,13 @@ class _DayDetailCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(l10nProvider);
-    final w = plan.workout;
+    final p = plan.program;
     final isDone = plan.status == DayStatus.done;
     final isPast = plan.isPast;
     final cs = Theme.of(context).colorScheme;
 
-    if (w == null) {
-      // Past day with no workout — show locked state
+    if (p == null) {
+      // Past day with no program — show locked state
       if (isPast) {
         return Container(
           width: double.infinity,
@@ -954,7 +940,7 @@ class _DayDetailCard extends ConsumerWidget {
                   const BorderRadius.vertical(top: Radius.circular(20)),
               child: Stack(children: [
                 Image.asset(
-                  w.imageUrl,
+                  p.imageUrl,
                   width: double.infinity,
                   height: 130,
                   fit: BoxFit.cover,
@@ -1009,7 +995,7 @@ class _DayDetailCard extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          w.title.toUpperCase(),
+                          p.name.toUpperCase(),
                           style: GoogleFonts.outfit(
                             color: Colors.white,
                             fontSize: 16,
@@ -1027,7 +1013,7 @@ class _DayDetailCard extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          w.duration,
+                          p.duration,
                           style: GoogleFonts.inter(
                             color: Theme.of(context).colorScheme.primary,
                             fontSize: 10,
@@ -1049,18 +1035,18 @@ class _DayDetailCard extends ConsumerWidget {
               // Stats row
               Row(children: [
                 _StatBadge(
-                    icon: LucideIcons.flame,
-                    label: '${w.calories} kcal',
+                    icon: LucideIcons.star,
+                    label: '${p.totalPoints} pts',
                     color: const Color(0xFFFF7043)),
                 const SizedBox(width: 8),
                 _StatBadge(
                     icon: LucideIcons.barChart2,
-                    label: w.level,
+                    label: p.level ?? '—',
                     color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 _StatBadge(
                     icon: LucideIcons.tag,
-                    label: w.category,
+                    label: p.category,
                     color: Theme.of(context).colorScheme.secondary),
               ]),
 
@@ -1564,29 +1550,29 @@ class _ProgramCard extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// WORKOUT PICKER BOTTOM SHEET
+// PROGRAM PICKER BOTTOM SHEET
 // ═══════════════════════════════════════════════════════════
 
-class _WorkoutPickerSheet extends ConsumerStatefulWidget {
-  final List<WorkoutModel> workouts;
-  final void Function(WorkoutModel) onPick;
-  const _WorkoutPickerSheet({required this.workouts, required this.onPick});
+class _ProgramPickerSheet extends ConsumerStatefulWidget {
+  final List<HomeProgramModel> programs;
+  final void Function(HomeProgramModel) onPick;
+  const _ProgramPickerSheet({required this.programs, required this.onPick});
 
   @override
-  ConsumerState<_WorkoutPickerSheet> createState() => _WorkoutPickerSheetState();
+  ConsumerState<_ProgramPickerSheet> createState() => _ProgramPickerSheetState();
 }
 
-class _WorkoutPickerSheetState extends ConsumerState<_WorkoutPickerSheet> {
+class _ProgramPickerSheetState extends ConsumerState<_ProgramPickerSheet> {
   String _cat = 'Tout';
 
   List<String> get _cats {
-    final cats = widget.workouts.map((w) => w.category).toSet().toList();
+    final cats = widget.programs.map((p) => p.category).toSet().toList();
     return ['Tout', ...cats];
   }
 
-  List<WorkoutModel> get _filtered => _cat == 'Tout'
-      ? widget.workouts
-      : widget.workouts.where((w) => w.category == _cat).toList();
+  List<HomeProgramModel> get _filtered => _cat == 'Tout'
+      ? widget.programs
+      : widget.programs.where((p) => p.category == _cat).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -1679,9 +1665,9 @@ class _WorkoutPickerSheetState extends ConsumerState<_WorkoutPickerSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             itemCount: _filtered.length,
             itemBuilder: (_, i) {
-              final w = _filtered[i];
+              final p = _filtered[i];
               return GestureDetector(
-                onTap: () => widget.onPick(w),
+                onTap: () => widget.onPick(p),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
@@ -1694,7 +1680,7 @@ class _WorkoutPickerSheetState extends ConsumerState<_WorkoutPickerSheet> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.asset(
-                        w.imageUrl,
+                        p.imageUrl,
                         width: 54,
                         height: 54,
                         fit: BoxFit.cover,
@@ -1712,14 +1698,14 @@ class _WorkoutPickerSheetState extends ConsumerState<_WorkoutPickerSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(w.title,
+                          Text(p.name,
                               style: GoogleFonts.outfit(
                                 color: Theme.of(context).colorScheme.onSurface,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
                               )),
                           const SizedBox(height: 3),
-                          Text('${w.duration}  •  ${w.calories} kcal',
+                          Text('${p.duration}  •  ${p.sessions}',
                               style: GoogleFonts.inter(
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontSize: 11,
@@ -1734,7 +1720,7 @@ class _WorkoutPickerSheetState extends ConsumerState<_WorkoutPickerSheet> {
                         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(w.level,
+                      child: Text('${p.totalPoints} pts',
                           style: GoogleFonts.inter(
                             color: Theme.of(context).colorScheme.primary,
                             fontSize: 9,
