@@ -433,7 +433,10 @@ class _PartnerCard extends ConsumerWidget {
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Hero(
               tag: 'partner_avatar_${p.userId.isNotEmpty ? p.userId : p.id}',
-              child: CommunityAvatar(avatarUrl: p.avatar, name: p.name, radius: 30),
+              child: CommunityAvatar(
+                avatarUrl: p.avatar, name: p.name, radius: 30,
+                mascotType: p.mascotType, mascotMood: p.mascotMood,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -825,7 +828,10 @@ class PartnerDetailSheet extends ConsumerWidget {
                             ),
                             child: Hero(
                               tag: 'partner_avatar_${p.userId.isNotEmpty ? p.userId : p.id}',
-                              child: CommunityAvatar(avatarUrl: p.avatar, name: p.name, radius: 44),
+                              child: CommunityAvatar(
+                                avatarUrl: p.avatar, name: p.name, radius: 44,
+                                mascotType: p.mascotType, mascotMood: p.mascotMood,
+                              ),
                             ),
                           ),
                         ),

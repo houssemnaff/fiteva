@@ -11,18 +11,25 @@ class CommunityAvatar extends ConsumerWidget {
   final String name;
   final double radius;
 
+  /// Mascotte du propriétaire de cet avatar (auteur du post/événement/partenaire).
+  /// Si non fournie, on retombe sur la mascotte de l'utilisateur courant
+  /// (cas des aperçus "c'est moi" : création de post/événement, etc.).
+  final String? mascotType;
+  final String? mascotMood;
+
   const CommunityAvatar({
     super.key,
     required this.avatarUrl,
     required this.name,
     required this.radius,
+    this.mascotType,
+    this.mascotMood,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs     = Theme.of(context).colorScheme;
-    final mascot = ref.watch(mascotProvider);
-    final size   = radius * 2;
+    final cs   = Theme.of(context).colorScheme;
+    final size = radius * 2;
 
     if (avatarUrl.isNotEmpty) {
       return CircleAvatar(
@@ -32,6 +39,23 @@ class CommunityAvatar extends ConsumerWidget {
         onBackgroundImageError: (_, __) {},
         child: null,
       );
+    }
+
+    final MascotType type;
+    final MascotMood mood;
+    if (mascotType != null || mascotMood != null) {
+      type = MascotType.values.firstWhere(
+        (t) => t.name == mascotType,
+        orElse: () => MascotType.blob,
+      );
+      mood = MascotMood.values.firstWhere(
+        (m) => m.name == mascotMood,
+        orElse: () => MascotMood.happy,
+      );
+    } else {
+      final mascot = ref.watch(mascotProvider);
+      type = mascot.type;
+      mood = mascot.mood;
     }
 
     return Container(
@@ -47,8 +71,8 @@ class CommunityAvatar extends ConsumerWidget {
       ),
       child: ClipOval(
         child: MascotWidget(
-          type: mascot.type,
-          mood: mascot.mood,
+          type: type,
+          mood: mood,
           size: size,
         ),
       ),

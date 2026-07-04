@@ -42,6 +42,7 @@ CREATE TABLE user_profiles (
   avatar_style     TEXT         NOT NULL DEFAULT 'lorelei',
   avatar_bg_color  TEXT         NOT NULL DEFAULT '#E0F2F1',
   mascot_type      TEXT         NOT NULL DEFAULT 'default',
+  mascot_mood      TEXT         NOT NULL DEFAULT 'happy',
   language         TEXT         NOT NULL DEFAULT 'fr',
   theme_mode       TEXT         NOT NULL DEFAULT 'system',      -- 'light' | 'dark' | 'system'
   onboarding_done  BOOLEAN      NOT NULL DEFAULT false,
@@ -227,6 +228,19 @@ CREATE TABLE weekly_plan (
   status       day_status   NOT NULL DEFAULT 'planned',
   updated_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, plan_date)
+);
+
+-- ── 4.7b Plan hebdomadaire éditable (accueil + écran "Ma semaine") ──────────
+-- Table réellement utilisée par WeeklyPlanNotifier (lib/providers/weekly_plan_provider.dart) :
+-- une ligne par jour de la semaine en cours, indexée par weekday_index (0=lundi..6=dimanche).
+CREATE TABLE user_weekly_plans (
+  user_id        UUID     NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  week_start     DATE     NOT NULL,
+  weekday_index  INTEGER  NOT NULL CHECK (weekday_index BETWEEN 0 AND 6),
+  category_id    TEXT,
+  status         TEXT     NOT NULL DEFAULT 'empty', -- 'empty' | 'rest' | 'planned' | 'done'
+  workout_id     TEXT,
+  PRIMARY KEY (user_id, week_start, weekday_index)
 );
 
 -- ══════════════════════════════════════════════════════════════════════════════
@@ -730,6 +744,7 @@ ALTER TABLE user_joined_programs       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_workout_favorites     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_program_favorites     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weekly_plan                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_weekly_plans          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meal_entries               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE water_tracking             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meal_budgets               ENABLE ROW LEVEL SECURITY;
@@ -751,16 +766,23 @@ ALTER TABLE user_read_articles         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE partner_requests           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_follows               ENABLE ROW LEVEL SECURITY;
 
+-- user_profiles utilise 'id' (pas 'user_id') comme clé référençant auth.users.
+-- Lecture publique (username/mascotte affichés dans le feed communautaire pour
+-- des utilisateurs autres que soi-même) ; écriture réservée au propriétaire.
+CREATE POLICY "user_profiles_select" ON user_profiles FOR SELECT USING (true);
+CREATE POLICY "own_user_profiles" ON user_profiles FOR ALL
+  USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
 -- Policies génériques (user_id = auth.uid())
 DO $$
 DECLARE tbl TEXT;
 BEGIN
   FOR tbl IN SELECT unnest(ARRAY[
-    'user_profiles','user_biometrics','user_nutrition_targets','user_xp',
+    'user_biometrics','user_nutrition_targets','user_xp',
     'user_challenge_progress','xp_history',
     'user_video_completions','user_workout_completions','user_program_completions',
     'user_joined_programs','user_workout_favorites','user_program_favorites',
-    'weekly_plan','meal_entries','water_tracking','meal_budgets',
+    'weekly_plan','user_weekly_plans','meal_entries','water_tracking','meal_budgets',
     'nutrition_recipe_favorites','user_cycle_settings','period_history',
     'daily_symptoms','daily_moods','user_pregnancy','pregnancy_moods',
     'pregnancy_symptoms','user_pregnancy_checklist','user_postpartum',

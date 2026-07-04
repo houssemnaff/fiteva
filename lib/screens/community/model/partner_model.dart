@@ -3,6 +3,8 @@ class PartnerModel {
   final String userId; // UUID Supabase de l'auteur
   final String name;
   final String avatar;
+  final String mascotType;
+  final String mascotMood;
   final String goal;
   final String level;
   final String region;
@@ -18,6 +20,8 @@ class PartnerModel {
     this.userId = '',
     required this.name,
     required this.avatar,
+    this.mascotType = 'blob',
+    this.mascotMood = 'happy',
     required this.goal,
     required this.level,
     required this.region,
@@ -34,6 +38,8 @@ class PartnerModel {
     'userId': userId,
     'name': name,
     'avatar': avatar,
+    'mascotType': mascotType,
+    'mascotMood': mascotMood,
     'goal': goal,
     'level': level,
     'region': region,
@@ -50,6 +56,8 @@ class PartnerModel {
     userId: j['userId'] as String? ?? '',
     name: j['name'] as String,
     avatar: j['avatar'] as String? ?? '',
+    mascotType: j['mascotType'] as String? ?? 'blob',
+    mascotMood: j['mascotMood'] as String? ?? 'happy',
     goal: j['goal'] as String? ?? '',
     level: j['level'] as String? ?? '',
     region: j['region'] as String? ?? '',
@@ -68,6 +76,8 @@ class PartnerJoinRequest {
   final String partnerId;
   final String requesterId;
   final String requesterName;
+  final String requesterMascotType;
+  final String requesterMascotMood;
   final String status; // 'pending' | 'accepted' | 'declined'
   final DateTime createdAt;
   // À quel post partenaire (le propriétaire peut en avoir plusieurs) la
@@ -80,6 +90,8 @@ class PartnerJoinRequest {
     required this.partnerId,
     required this.requesterId,
     required this.requesterName,
+    this.requesterMascotType = 'blob',
+    this.requesterMascotMood = 'happy',
     required this.status,
     required this.createdAt,
     this.partnerGoal = '',

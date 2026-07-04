@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/screens/community/model/partner_model.dart';
+import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,13 +29,6 @@ class PartnerDetailSheet extends ConsumerStatefulWidget {
 
 class _PartnerDetailSheetState extends ConsumerState<PartnerDetailSheet> {
   bool _messaged = false;
-
-  String get _initials {
-    final p = widget.partner.name.trim().split(' ');
-    if (p.length >= 2) return '${p[0][0]}${p[1][0]}'.toUpperCase();
-    return widget.partner.name.substring(0,
-        widget.partner.name.length >= 2 ? 2 : 1).toUpperCase();
-  }
 
   Color get _levelColor {
     switch (widget.partner.level) {
@@ -91,10 +85,22 @@ class _PartnerDetailSheetState extends ConsumerState<PartnerDetailSheet> {
                       width: double.infinity,
                       color: c,
                       child: Center(
-                        child: Text(_initials, style: GoogleFonts.outfit(
-                          fontSize: 72, fontWeight: FontWeight.w800,
-                          color: Colors.white.withValues(alpha: 0.85),
-                          letterSpacing: -2)),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.15),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.6), width: 2),
+                          ),
+                          child: CommunityAvatar(
+                            avatarUrl: p.avatar,
+                            name: p.name,
+                            radius: 44,
+                            mascotType: p.mascotType,
+                            mascotMood: p.mascotMood,
+                          ),
+                        ),
                       ),
                     ),
                     // Gradient fade to surface

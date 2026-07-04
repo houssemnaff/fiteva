@@ -437,6 +437,8 @@ class _PostCardState extends ConsumerState<_PostCard>
                     avatarUrl: post.userAvatarUrl,
                     name: post.username,
                     radius: 20,
+                    mascotType: post.mascotType,
+                    mascotMood: post.mascotMood,
                   ),
                 ),
               ),

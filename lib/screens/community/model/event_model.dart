@@ -3,6 +3,8 @@ class EventModel {
   final String title;
   final String organizer;
   final String organizerAvatar;
+  final String organizerMascotType;
+  final String organizerMascotMood;
   final String type;
   final String date;
   final String time;
@@ -18,6 +20,8 @@ class EventModel {
     required this.title,
     required this.organizer,
     required this.organizerAvatar,
+    this.organizerMascotType = 'blob',
+    this.organizerMascotMood = 'happy',
     required this.type,
     required this.date,
     required this.time,
@@ -34,6 +38,8 @@ class EventModel {
     'title': title,
     'organizer': organizer,
     'organizerAvatar': organizerAvatar,
+    'organizerMascotType': organizerMascotType,
+    'organizerMascotMood': organizerMascotMood,
     'type': type,
     'date': date,
     'time': time,
@@ -49,6 +55,8 @@ class EventModel {
     title: j['title'] as String,
     organizer: j['organizer'] as String,
     organizerAvatar: j['organizerAvatar'] as String? ?? '',
+    organizerMascotType: j['organizerMascotType'] as String? ?? 'blob',
+    organizerMascotMood: j['organizerMascotMood'] as String? ?? 'happy',
     type: j['type'] as String,
     date: j['date'] as String,
     time: j['time'] as String,
@@ -67,6 +75,8 @@ class EventModel {
     String? title,
     String? organizer,
     String? organizerAvatar,
+    String? organizerMascotType,
+    String? organizerMascotMood,
     String? type,
     String? date,
     String? time,
@@ -82,6 +92,8 @@ class EventModel {
         title: title ?? this.title,
         organizer: organizer ?? this.organizer,
         organizerAvatar: organizerAvatar ?? this.organizerAvatar,
+        organizerMascotType: organizerMascotType ?? this.organizerMascotType,
+        organizerMascotMood: organizerMascotMood ?? this.organizerMascotMood,
         type: type ?? this.type,
         date: date ?? this.date,
         time: time ?? this.time,

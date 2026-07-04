@@ -5,27 +5,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/app_localizations.dart';
-import '../../models/workout_model.dart';
+import '../../models/home_program_model.dart';
 import '../../providers/mock_data_provider.dart';
 import '../../providers/weekly_plan_provider.dart';
-import 'active_workout_screen.dart';
+import 'programme_detail_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════
-// WORKOUT CATEGORY
+// PROGRAM CATEGORY (catégories de programmes du catalogue + "Repos")
 // ═══════════════════════════════════════════════════════════════
 
-class WorkoutCategory {
+class ProgramCategory {
   final String id;
   final String label;
-  final String subtitle;
   final IconData icon;
   final Color color;
   final bool isRest;
 
-  const WorkoutCategory({
+  const ProgramCategory({
     required this.id,
     required this.label,
-    required this.subtitle,
     required this.icon,
     required this.color,
     this.isRest = false,
@@ -33,52 +31,46 @@ class WorkoutCategory {
 }
 
 const _categories = [
-  WorkoutCategory(
-    id: 'yoga',
-    label: 'Yoga',
-    subtitle: 'Équilibre & sérénité',
-    icon: LucideIcons.sprout,
-    color: Color(0xFF8B5CF6),
-  ),
-  WorkoutCategory(
-    id: 'cardio',
-    label: 'Cardio',
-    subtitle: 'Endurance & bruler',
-    icon: LucideIcons.heartPulse,
-    color: Color(0xFFEF4444),
-  ),
-  WorkoutCategory(
-    id: 'full_body',
-    label: 'Full Body',
-    subtitle: 'Corps complet',
-    icon: LucideIcons.dumbbell,
+  ProgramCategory(
+    id: 'home',
+    label: 'Maison',
+    icon: LucideIcons.house,
     color: Color(0xFF1C4D30),
   ),
-  WorkoutCategory(
-    id: 'zones',
-    label: 'Abdos / Jambes',
-    subtitle: 'Zones ciblées',
-    icon: LucideIcons.target,
-    color: Color(0xFFF59E0B),
+  ProgramCategory(
+    id: 'salle',
+    label: 'Salle',
+    icon: LucideIcons.dumbbell,
+    color: Color(0xFFEF4444),
   ),
-  WorkoutCategory(
-    id: 'stretching',
-    label: 'Stretching',
-    subtitle: 'Souplesse & récup',
-    icon: LucideIcons.wind,
+  ProgramCategory(
+    id: 'dance',
+    label: 'Danse',
+    icon: LucideIcons.music,
+    color: Color(0xFF8B5CF6),
+  ),
+  ProgramCategory(
+    id: 'recuperation',
+    label: 'Récupération',
+    icon: LucideIcons.heartPulse,
     color: Color(0xFF06B6D4),
   ),
-  WorkoutCategory(
+  ProgramCategory(
+    id: 'grossesse',
+    label: 'Grossesse',
+    icon: LucideIcons.baby,
+    color: Color(0xFFF59E0B),
+  ),
+  ProgramCategory(
     id: 'rest',
     label: 'Repos',
-    subtitle: 'Récupération',
     icon: LucideIcons.moon,
     color: Color(0xFF6B7280),
     isRest: true,
   ),
 ];
 
-WorkoutCategory? _catById(String? id) {
+ProgramCategory? _catById(String? id) {
   if (id == null) return null;
   try { return _categories.firstWhere((c) => c.id == id); }
   catch (_) { return null; }
@@ -89,7 +81,7 @@ WorkoutCategory? _catById(String? id) {
 // ═══════════════════════════════════════════════════════════════
 
 extension DayPlanCategory on DayPlan {
-  WorkoutCategory? get category => _catById(categoryId);
+  ProgramCategory? get category => _catById(categoryId);
 }
 
 
@@ -123,10 +115,14 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (_) => _WorkoutPickerSheet(
+      builder: (_) => _ProgramPickerSheet(
         dayFull: ref.read(weeklyPlanProvider)[index].dayFull,
-        onPick: (catId, workout) {
-          ref.read(weeklyPlanProvider.notifier).assign(index, catId, workout);
+        onPick: (program) {
+          ref.read(weeklyPlanProvider.notifier).assignProgram(index, program);
+          Navigator.pop(context);
+        },
+        onPickRest: () {
+          ref.read(weeklyPlanProvider.notifier).assign(index, 'rest');
           Navigator.pop(context);
         },
       ),
@@ -166,8 +162,8 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
             _OptionTile(
               icon: LucideIcons.refreshCw,
               label: plan.categoryId == null
-                  ? 'Ajouter un workout'
-                  : 'Changer le workout',
+                  ? 'Choisir un programme'
+                  : 'Changer le programme',
               color: cs.primary,
               onTap: () { Navigator.pop(ctx); _openPicker(index); },
             ),
@@ -297,9 +293,9 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     final doneCount = plans.where((d) => d.status == DayStatus.done).length;
     final plannedCount = plans.where(
         (d) => d.status == DayStatus.planned || d.status == DayStatus.rest).length;
-    final totalCal = plans
-        .where((d) => d.workout != null && d.status == DayStatus.done)
-        .fold(0, (s, d) => s + int.tryParse(d.workout!.calories)!);
+    final totalPts = plans
+        .where((d) => d.program != null && d.status == DayStatus.done)
+        .fold(0, (s, d) => s + d.program!.totalPoints);
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -365,8 +361,8 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                       Container(width: 1, height: 34,
                           color: Colors.white.withValues(alpha: 0.15)),
                       Expanded(child: _StatBox(
-                        value: '${totalCal}k', label: 'kcal',
-                        icon: LucideIcons.flame,
+                        value: '$totalPts', label: 'pts',
+                        icon: LucideIcons.star,
                         color: const Color(0xFFFBBF24))),
                     ]),
                   ),
@@ -641,7 +637,7 @@ class _DayDetailCard extends StatelessWidget {
     );
   }
 
-  Color _statusColor(DayStatus s, WorkoutCategory? cat) {
+  Color _statusColor(DayStatus s, ProgramCategory? cat) {
     switch (s) {
       case DayStatus.done:    return const Color(0xFF34D399);
       case DayStatus.planned: return cat?.color ?? const Color(0xFF1C4D30);
@@ -730,7 +726,7 @@ class _EmptyDayBody extends ConsumerWidget {
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             const Icon(LucideIcons.plus, color: Colors.white, size: 16),
             const SizedBox(width: 8),
-            Text('Planifier une séance', style: GoogleFonts.outfit(
+            Text('Choisir un programme', style: GoogleFonts.outfit(
               fontSize: 14, fontWeight: FontWeight.w800,
               color: Colors.white)),
           ]),
@@ -742,7 +738,7 @@ class _EmptyDayBody extends ConsumerWidget {
 
 // Rest body
 class _RestDayBody extends StatelessWidget {
-  final WorkoutCategory cat;
+  final ProgramCategory cat;
   final ColorScheme cs;
   final VoidCallback? onEdit;
   const _RestDayBody({
@@ -785,23 +781,23 @@ class _RestDayBody extends StatelessWidget {
   }
 }
 
-// Planned body (with category + optional specific workout)
+// Planned body (with category + programme choisi)
 class _PlannedDayBody extends ConsumerWidget {
   final DayPlan plan;
-  final WorkoutCategory? cat;
+  final ProgramCategory? cat;
   final ColorScheme cs;
   final VoidCallback? onEdit;
   const _PlannedDayBody({
     required this.plan, required this.cat,
     required this.cs, required this.onEdit});
 
-  static const _fallbackCat = WorkoutCategory(
-    id: 'planned', label: 'Séance planifiée', subtitle: '',
+  static const _fallbackCat = ProgramCategory(
+    id: 'planned', label: 'Programme planifié',
     icon: LucideIcons.dumbbell, color: Color(0xFF1C4D30));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final w = plan.workout;
+    final p = plan.program;
     final isDone = plan.status == DayStatus.done;
     final c = cat ?? _fallbackCat;
 
@@ -828,11 +824,11 @@ class _PlannedDayBody extends ConsumerWidget {
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(w?.title ?? c.label, style: GoogleFonts.outfit(
+              Text(p?.name ?? c.label, style: GoogleFonts.outfit(
                 fontSize: 16, fontWeight: FontWeight.w800,
                 color: cs.onSurface, letterSpacing: -0.3)),
-              if (c.subtitle.isNotEmpty)
-                Text(c.subtitle, style: GoogleFonts.inter(
+              if (p != null)
+                Text('${p.duration} · ${p.sessions}', style: GoogleFonts.inter(
                   fontSize: 12,
                   color: cs.onSurface.withValues(alpha: 0.45))),
             ],
@@ -843,13 +839,13 @@ class _PlannedDayBody extends ConsumerWidget {
         ]),
       ),
 
-      // Specific workout (if any)
-      if (w != null) ...[
+      // Programme choisi (si présent)
+      if (p != null) ...[
         const SizedBox(height: 12),
         ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: Stack(children: [
-            Image.asset(w.imageUrl,
+            Image.asset(p.imageUrl,
               width: double.infinity, height: 130, fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
                 height: 130, color: c.color.withValues(alpha: 0.1),
@@ -867,29 +863,30 @@ class _PlannedDayBody extends ConsumerWidget {
                     color: Color(0xFF34D399), size: 44)))),
             Positioned(bottom: 12, left: 12, right: 12,
               child: Row(children: [
-                Expanded(child: Text(w.title, style: GoogleFonts.outfit(
+                Expanded(child: Text(p.name, style: GoogleFonts.outfit(
                   color: Colors.white, fontSize: 14,
                   fontWeight: FontWeight.w800))),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8)),
-                  child: Text(w.level, style: GoogleFonts.inter(
-                    color: Colors.white, fontSize: 10,
-                    fontWeight: FontWeight.w700))),
+                if (p.level != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8)),
+                    child: Text(p.level!, style: GoogleFonts.inter(
+                      color: Colors.white, fontSize: 10,
+                      fontWeight: FontWeight.w700))),
               ])),
           ]),
         ),
         const SizedBox(height: 10),
         Row(children: [
           _MiniPill(icon: LucideIcons.timer,
-              label: w.duration, color: c.color),
+              label: p.duration, color: c.color),
           const SizedBox(width: 8),
-          _MiniPill(icon: LucideIcons.flame,
-              label: '${w.calories} kcal',
-              color: const Color(0xFFEF4444)),
+          _MiniPill(icon: LucideIcons.star,
+              label: '${p.totalPoints} pts',
+              color: const Color(0xFFFBBF24)),
         ]),
       ],
 
@@ -902,11 +899,11 @@ class _PlannedDayBody extends ConsumerWidget {
           child: GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
-              if (w != null && !isDone) {
+              if (p != null && !isDone) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => ActiveWorkoutScreen(workout: w)),
+                      builder: (_) => WorkoutDetailScreen(program: p)),
                 );
               } else {
                 onEdit?.call();
@@ -931,7 +928,7 @@ class _PlannedDayBody extends ConsumerWidget {
                   size: 14),
                 const SizedBox(width: 8),
                 Text(
-                  isDone ? 'Terminé' : (w != null ? 'Commencer' : 'Planifier'),
+                  isDone ? 'Terminé' : (p != null ? 'Commencer' : 'Planifier'),
                   style: GoogleFonts.outfit(
                     fontSize: 13, fontWeight: FontWeight.w800,
                     color: isDone
@@ -1062,10 +1059,10 @@ class _WeekRow extends StatelessWidget {
                       fontSize: 13, fontWeight: FontWeight.w700,
                       color: cs.onSurface)),
                   ]),
-                  if (plan.workout != null)
+                  if (plan.program != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(plan.workout!.title, style: GoogleFonts.inter(
+                      child: Text(plan.program!.name, style: GoogleFonts.inter(
                         fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5)),
                         maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ])),
@@ -1088,10 +1085,10 @@ class _WeekRow extends StatelessWidget {
                 child: Text('Planifié', style: GoogleFonts.inter(
                   fontSize: 9, fontWeight: FontWeight.w700,
                   color: cat.color))),
-            if (plan.workout != null)
+            if (plan.program != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(plan.workout!.duration, style: GoogleFonts.inter(
+                child: Text(plan.program!.duration, style: GoogleFonts.inter(
                   fontSize: 10,
                   color: cs.onSurface.withValues(alpha: 0.35)))),
           ]),
@@ -1103,52 +1100,35 @@ class _WeekRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// WORKOUT PICKER BOTTOM SHEET
+// PROGRAM PICKER BOTTOM SHEET
 // ═══════════════════════════════════════════════════════════════
 
-class _WorkoutPickerSheet extends ConsumerStatefulWidget {
+class _ProgramPickerSheet extends ConsumerStatefulWidget {
   final String dayFull;
-  final void Function(String categoryId, WorkoutModel? workout) onPick;
+  final void Function(HomeProgramModel program) onPick;
+  final VoidCallback onPickRest;
 
-  const _WorkoutPickerSheet({
+  const _ProgramPickerSheet({
     required this.dayFull,
     required this.onPick,
+    required this.onPickRest,
   });
 
   @override
-  ConsumerState<_WorkoutPickerSheet> createState() =>
-      _WorkoutPickerSheetState();
+  ConsumerState<_ProgramPickerSheet> createState() =>
+      _ProgramPickerSheetState();
 }
 
-class _WorkoutPickerSheetState extends ConsumerState<_WorkoutPickerSheet> {
-  String? _selectedCatId;
+class _ProgramPickerSheetState extends ConsumerState<_ProgramPickerSheet> {
+  String _catId = 'home';
   String _search = '';
 
-  List<WorkoutModel> get _workoutsForCat {
-    final all = ref.read(workoutsProvider);
-    final cat = _categories.firstWhere((c) => c.id == _selectedCatId!,
-        orElse: () => _categories.first);
-    if (cat.isRest) return [];
-    final keyword = cat.id == 'full_body'
-        ? 'full'
-        : cat.id == 'zones'
-            ? ''
-            : cat.label.toLowerCase();
-    return all
-        .where((w) =>
-            w.category.toLowerCase().contains(keyword) ||
-            w.title.toLowerCase().contains(keyword))
-        .toList();
-  }
-
-  List<WorkoutModel> get _filtered {
-    if (_search.isEmpty) return _workoutsForCat;
+  List<HomeProgramModel> get _filtered {
+    final all = ref.watch(allProgramsProvider);
+    final byCat = all.where((p) => p.category == _catId).toList();
+    if (_search.isEmpty) return byCat;
     final q = _search.toLowerCase();
-    return _workoutsForCat
-        .where((w) =>
-            w.title.toLowerCase().contains(q) ||
-            w.category.toLowerCase().contains(q))
-        .toList();
+    return byCat.where((p) => p.name.toLowerCase().contains(q)).toList();
   }
 
   @override
@@ -1156,6 +1136,9 @@ class _WorkoutPickerSheetState extends ConsumerState<_WorkoutPickerSheet> {
     final cs = Theme.of(context).colorScheme;
     final h = MediaQuery.of(context).size.height;
     final bottom = MediaQuery.of(context).padding.bottom;
+    final programCats = _categories.where((c) => !c.isRest).toList();
+    final restCat = _categories.firstWhere((c) => c.isRest);
+    final filtered = _filtered;
 
     return Container(
       constraints: BoxConstraints(maxHeight: h * 0.88),
@@ -1180,34 +1163,13 @@ class _WorkoutPickerSheetState extends ConsumerState<_WorkoutPickerSheet> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
           child: Row(children: [
-            if (_selectedCatId != null)
-              GestureDetector(
-                onTap: () => setState(() {
-                  _selectedCatId = null;
-                  _search = '';
-                }),
-                child: Container(
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(LucideIcons.arrowLeft,
-                      size: 14, color: cs.onSurface),
-                ),
-              ),
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_selectedCatId == null
-                    ? widget.dayFull
-                    : _catById(_selectedCatId)!.label,
+                Text(widget.dayFull,
                   style: GoogleFonts.outfit(fontSize: 20,
                     fontWeight: FontWeight.w800, color: cs.onSurface)),
-                Text(_selectedCatId == null
-                    ? 'Choisir un type de séance'
-                    : 'Sélectionner un workout',
+                Text('Choisir un programme',
                   style: GoogleFonts.inter(fontSize: 12,
                     color: cs.onSurface.withValues(alpha: 0.45))),
               ],
@@ -1226,260 +1188,186 @@ class _WorkoutPickerSheetState extends ConsumerState<_WorkoutPickerSheet> {
           ]),
         ),
 
+        const SizedBox(height: 10),
+
+        // "Jour de repos" quick action
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: GestureDetector(
+            onTap: widget.onPickRest,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: restCat.color.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: restCat.color.withValues(alpha: 0.2)),
+              ),
+              child: Row(children: [
+                Icon(restCat.icon, size: 16, color: restCat.color),
+                const SizedBox(width: 10),
+                Expanded(child: Text('Jour de repos',
+                  style: GoogleFonts.inter(fontSize: 13,
+                    color: cs.onSurface, fontWeight: FontWeight.w500))),
+                Icon(LucideIcons.chevronRight, size: 14,
+                    color: cs.onSurface.withValues(alpha: 0.3)),
+              ]),
+            ),
+          ),
+        ),
+
+        // Category chips
+        SizedBox(
+          height: 36,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: programCats.length,
+            itemBuilder: (_, i) {
+              final cat = programCats[i];
+              final sel = _catId == cat.id;
+              return GestureDetector(
+                onTap: () => setState(() => _catId = cat.id),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: sel ? cat.color : cs.surface,
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(
+                      color: sel ? cat.color : cs.outline,
+                    ),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(cat.icon, size: 13,
+                        color: sel ? Colors.white : cat.color),
+                    const SizedBox(width: 6),
+                    Text(cat.label,
+                        style: GoogleFonts.inter(
+                          color: sel ? Colors.white : cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11.5,
+                        )),
+                  ]),
+                ),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: Container(
+            height: 42,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(50),
+              border: Border.all(color: cs.outline),
+            ),
+            child: Row(children: [
+              const SizedBox(width: 14),
+              Icon(LucideIcons.search, size: 14,
+                  color: cs.onSurface.withValues(alpha: 0.35)),
+              const SizedBox(width: 10),
+              Expanded(child: TextField(
+                onChanged: (v) => setState(() => _search = v),
+                style: GoogleFonts.inter(fontSize: 13, color: cs.onSurface),
+                decoration: InputDecoration(
+                  hintText: 'Rechercher…',
+                  hintStyle: GoogleFonts.inter(
+                    fontSize: 13, color: cs.onSurface.withValues(alpha: 0.3)),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              )),
+            ]),
+          ),
+        ),
+
         Flexible(
-          child: _selectedCatId == null
-              ? _CategoryGrid(
-                  onSelect: (catId) {
-                    if (catId == 'rest') {
-                      widget.onPick('rest', null);
-                      return;
-                    }
-                    setState(() => _selectedCatId = catId);
-                  },
+          child: filtered.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: Text('Aucun programme disponible',
+                      style: GoogleFonts.inter(
+                        color: cs.onSurface.withValues(alpha: 0.35), fontSize: 14))),
                 )
-              : _WorkoutList(
-                  filtered: _filtered,
-                  search: _search,
-                  onSearch: (q) => setState(() => _search = q),
-                  selectedCatId: _selectedCatId!,
-                  cs: cs,
-                  onPick: (w) => widget.onPick(_selectedCatId!, w),
-                  onPickCatOnly: () =>
-                      widget.onPick(_selectedCatId!, null),
-                  bottom: bottom,
+              : ListView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + bottom),
+                  itemCount: filtered.length,
+                  itemBuilder: (_, i) {
+                    final p = filtered[i];
+                    return GestureDetector(
+                      onTap: () => widget.onPick(p),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: cs.outline),
+                        ),
+                        child: Row(children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.asset(p.imageUrl,
+                              width: 58, height: 58, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 58, height: 58,
+                                color: p.color.withValues(alpha: 0.1),
+                                child: Icon(LucideIcons.dumbbell, color: p.color, size: 24))),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(p.name, style: GoogleFonts.outfit(
+                                fontSize: 14, fontWeight: FontWeight.w700,
+                                color: cs.onSurface)),
+                              const SizedBox(height: 4),
+                              Row(children: [
+                                Icon(LucideIcons.timer, size: 11,
+                                    color: cs.onSurface.withValues(alpha: 0.4)),
+                                const SizedBox(width: 3),
+                                Text(p.duration, style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: cs.onSurface.withValues(alpha: 0.45))),
+                                const SizedBox(width: 8),
+                                Icon(LucideIcons.layers, size: 11,
+                                    color: cs.onSurface.withValues(alpha: 0.4)),
+                                const SizedBox(width: 3),
+                                Text(p.sessions, style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: cs.onSurface.withValues(alpha: 0.45))),
+                              ]),
+                            ],
+                          )),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 9, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: p.color.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            child: Text('${p.totalPoints} pts', style: GoogleFonts.inter(
+                              fontSize: 9, fontWeight: FontWeight.w700,
+                              color: p.color)),
+                          ),
+                        ]),
+                      ),
+                    );
+                  },
                 ),
         ),
       ]),
     );
-  }
-}
-
-// ── Category grid ──────────────────────────────────────────────
-
-class _CategoryGrid extends StatelessWidget {
-  final void Function(String catId) onSelect;
-  const _CategoryGrid({required this.onSelect});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      child: GridView.builder(
-        shrinkWrap: true,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.3,
-        ),
-        itemCount: _categories.length,
-        itemBuilder: (_, i) {
-          final cat = _categories[i];
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onSelect(cat.id);
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: cat.color.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                    color: cat.color.withValues(alpha: 0.25)),
-              ),
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 34, height: 34,
-                    decoration: BoxDecoration(
-                      color: cat.color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(cat.icon, size: 16, color: cat.color),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(cat.label, style: GoogleFonts.outfit(
-                        fontSize: 13, fontWeight: FontWeight.w800,
-                        color: cs.onSurface, letterSpacing: -0.2)),
-                      Text(cat.subtitle, style: GoogleFonts.inter(
-                        fontSize: 10,
-                        color: cs.onSurface.withValues(alpha: 0.45)),
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ── Workout list inside picker ─────────────────────────────────
-
-class _WorkoutList extends StatelessWidget {
-  final List<WorkoutModel> filtered;
-  final String search;
-  final ValueChanged<String> onSearch;
-  final String selectedCatId;
-  final ColorScheme cs;
-  final void Function(WorkoutModel) onPick;
-  final VoidCallback onPickCatOnly;
-  final double bottom;
-
-  const _WorkoutList({
-    required this.filtered,
-    required this.search,
-    required this.onSearch,
-    required this.selectedCatId,
-    required this.cs,
-    required this.onPick,
-    required this.onPickCatOnly,
-    required this.bottom,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cat = _catById(selectedCatId)!;
-    return Column(children: [
-      // Search bar
-      Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-        child: Container(
-          height: 42,
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(50),
-            border: Border.all(color: cs.outline),
-          ),
-          child: Row(children: [
-            const SizedBox(width: 14),
-            Icon(LucideIcons.search, size: 14,
-                color: cs.onSurface.withValues(alpha: 0.35)),
-            const SizedBox(width: 10),
-            Expanded(child: TextField(
-              onChanged: onSearch,
-              style: GoogleFonts.inter(fontSize: 13, color: cs.onSurface),
-              decoration: InputDecoration(
-                hintText: 'Rechercher…',
-                hintStyle: GoogleFonts.inter(
-                  fontSize: 13, color: cs.onSurface.withValues(alpha: 0.3)),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-            )),
-          ]),
-        ),
-      ),
-
-      // "Without specific workout" shortcut
-      Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-        child: GestureDetector(
-          onTap: onPickCatOnly,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: cat.color.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: cat.color.withValues(alpha: 0.2)),
-            ),
-            child: Row(children: [
-              Icon(cat.icon, size: 16, color: cat.color),
-              const SizedBox(width: 10),
-              Expanded(child: Text('${cat.label} — sans workout précis',
-                style: GoogleFonts.inter(fontSize: 13,
-                  color: cs.onSurface, fontWeight: FontWeight.w500))),
-              Icon(LucideIcons.chevronRight, size: 14,
-                  color: cs.onSurface.withValues(alpha: 0.3)),
-            ]),
-          ),
-        ),
-      ),
-
-      Expanded(
-        child: filtered.isEmpty
-            ? Center(child: Text('Aucun workout disponible',
-                style: GoogleFonts.inter(
-                  color: cs.onSurface.withValues(alpha: 0.35), fontSize: 14)))
-            : ListView.builder(
-                padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + bottom),
-                itemCount: filtered.length,
-                itemBuilder: (_, i) {
-                  final w = filtered[i];
-                  return GestureDetector(
-                    onTap: () => onPick(w),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: cs.outline),
-                      ),
-                      child: Row(children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.asset(w.imageUrl,
-                            width: 58, height: 58, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: 58, height: 58,
-                              color: cat.color.withValues(alpha: 0.1),
-                              child: Icon(cat.icon, color: cat.color, size: 24))),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(w.title, style: GoogleFonts.outfit(
-                              fontSize: 14, fontWeight: FontWeight.w700,
-                              color: cs.onSurface)),
-                            const SizedBox(height: 4),
-                            Row(children: [
-                              Icon(LucideIcons.timer, size: 11,
-                                  color: cs.onSurface.withValues(alpha: 0.4)),
-                              const SizedBox(width: 3),
-                              Text(w.duration, style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: cs.onSurface.withValues(alpha: 0.45))),
-                              const SizedBox(width: 8),
-                              Icon(LucideIcons.flame, size: 11,
-                                  color: const Color(0xFFEF4444)),
-                              const SizedBox(width: 3),
-                              Text('${w.calories} kcal', style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: cs.onSurface.withValues(alpha: 0.45))),
-                            ]),
-                          ],
-                        )),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 9, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: cat.color.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          child: Text(w.level, style: GoogleFonts.inter(
-                            fontSize: 9, fontWeight: FontWeight.w700,
-                            color: cat.color)),
-                        ),
-                      ]),
-                    ),
-                  );
-                },
-              ),
-      ),
-    ]);
   }
 }
 

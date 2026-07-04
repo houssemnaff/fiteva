@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/workout_model.dart';
+import '../models/home_program_model.dart';
 import '../services/supabase_config.dart';
+import 'mock_data_provider.dart';
 
 // ── Status ────────────────────────────────────────────────────────────────────
 
@@ -16,7 +18,7 @@ class DayPlan {
   final DateTime date;
   final DayStatus status;
   final String? categoryId;
-  final WorkoutModel? workout;
+  final HomeProgramModel? program;
 
   const DayPlan({
     required this.weekdayIndex,
@@ -25,14 +27,14 @@ class DayPlan {
     required this.date,
     this.status = DayStatus.empty,
     this.categoryId,
-    this.workout,
+    this.program,
   });
 
   DayPlan copyWith({
     DayStatus? status,
     String? categoryId,
-    WorkoutModel? workout,
-    bool clearWorkout = false,
+    HomeProgramModel? program,
+    bool clearProgram = false,
     bool clearCategory = false,
   }) =>
       DayPlan(
@@ -42,7 +44,7 @@ class DayPlan {
         date: date,
         status: status ?? this.status,
         categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
-        workout: clearWorkout ? null : (workout ?? this.workout),
+        program: clearProgram ? null : (program ?? this.program),
       );
 
   bool get isToday {
@@ -61,7 +63,10 @@ class DayPlan {
 }
 
 // ── Notifier ──────────────────────────────────────────────────────────────────
-
+//
+// Persiste uniquement dans Supabase (table user_weekly_plans) — aucun cache
+// local (SharedPreferences) : l'état en mémoire est reconstruit à chaque
+// démarrage depuis Supabase.
 class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
   static const _shorts = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
   static const _fulls = [
@@ -70,22 +75,75 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
 
   late String _weekStart;
 
+  // weekdayIndex → id de programme en attente de résolution (le catalogue de
+  // programmes charge en arrière-plan et peut ne pas encore être prêt quand
+  // le plan Supabase arrive).
+  final Map<int, String> _pendingProgramIds = {};
+
+  // Uid pour lequel l'état en mémoire a été chargé — sert à détecter un
+  // changement de compte (connexion/déconnexion/switch) et réinitialiser
+  // le plan au lieu de garder celui de l'utilisateur précédent en mémoire.
+  String? _loadedUid;
+  StreamSubscription? _authSub;
+
   static String _weekStartKey(DateTime now) {
     final monday = now.subtract(Duration(days: now.weekday - 1));
     return '${monday.year}-${monday.month.toString().padLeft(2, '0')}-${monday.day.toString().padLeft(2, '0')}';
   }
 
-  @override
-  List<DayPlan> build() {
+  static HomeProgramModel? _findProgram(List<HomeProgramModel> programs, String id) {
+    for (final p in programs) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+
+  List<DayPlan> _freshWeek() {
     final now = DateTime.now();
     final monday = now.subtract(Duration(days: now.weekday - 1));
     _weekStart = _weekStartKey(now);
-    final initial = List.generate(7, (i) => DayPlan(
+    return List.generate(7, (i) => DayPlan(
       weekdayIndex: i,
       dayShort: _shorts[i],
       dayFull: _fulls[i],
       date: monday.add(Duration(days: i)),
     ));
+  }
+
+  @override
+  List<DayPlan> build() {
+    final initial = _freshWeek();
+    _loadedUid = SupabaseConfig.userId;
+
+    // Le catalogue de programmes (Supabase, temps réel) peut finir de charger
+    // après ce plan — dès qu'il a des données, on résout les ids restés en attente.
+    ref.listen(allProgramsProvider, (previous, next) {
+      if (next.isEmpty || _pendingProgramIds.isEmpty) return;
+      final updated = List<DayPlan>.from(state);
+      var changed = false;
+      _pendingProgramIds.removeWhere((idx, programId) {
+        final program = _findProgram(next, programId);
+        if (program == null) return false;
+        updated[idx] = updated[idx].copyWith(program: program);
+        changed = true;
+        return true;
+      });
+      if (changed) state = updated;
+    });
+
+    // Chaque compte doit voir SON plan — si l'utilisateur change (connexion,
+    // déconnexion, switch de compte) sans redémarrage complet de l'app, on
+    // repart d'une semaine vierge et on recharge pour le nouvel uid.
+    _authSub = SupabaseConfig.client.auth.onAuthStateChange.listen((authState) {
+      final newUid = authState.session?.user.id;
+      if (newUid == _loadedUid) return;
+      _loadedUid = newUid;
+      _pendingProgramIds.clear();
+      state = _freshWeek();
+      if (newUid != null) Future.microtask(_loadFromSupabase);
+    });
+    ref.onDispose(() => _authSub?.cancel());
+
     Future.microtask(_loadFromSupabase);
     return initial;
   }
@@ -98,10 +156,14 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
           .select()
           .eq('user_id', uid)
           .eq('week_start', _weekStart) as List;
+      // Une requête lente peut résoudre après un changement de compte —
+      // dans ce cas on jette le résultat pour ne pas écraser le nouveau
+      // plan (déjà vierge/rechargé pour le nouvel uid) avec des données
+      // de l'utilisateur précédent.
+      if (uid != _loadedUid) return;
       if (rows.isEmpty) return;
 
-      // Need workouts to resolve workout_id → WorkoutModel.
-      // We use ref.read here — providers that expose workouts must already be loaded.
+      final programs = ref.read(allProgramsProvider);
       final updated = List<DayPlan>.from(state);
       for (final r in rows) {
         final idx = r['weekday_index'] as int;
@@ -111,9 +173,22 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
           (s) => s.name == statusStr,
           orElse: () => DayStatus.empty,
         );
+        // La colonne s'appelle workout_id côté base (schéma existant) mais
+        // stocke désormais l'id du programme choisi, pas d'un workout isolé.
+        final programId = r['workout_id'] as String?;
+        HomeProgramModel? program;
+        if (programId != null) {
+          program = _findProgram(programs, programId);
+          if (program == null) {
+            // Pas encore chargé — sera résolu par le listener dès que
+            // allProgramsProvider aura des données.
+            _pendingProgramIds[idx] = programId;
+          }
+        }
         updated[idx] = updated[idx].copyWith(
           status: status,
           categoryId: r['category_id'] as String?,
+          program: program,
         );
       }
       state = updated;
@@ -136,9 +211,9 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
           'user_id':       uid,
           'week_start':    _weekStart,
           'weekday_index': index,
-          'category_id':   day.categoryId ?? day.workout?.category,
+          'category_id':   day.categoryId ?? day.program?.category,
           'status':        day.status.name,
-          'workout_id':    day.workout?.id,
+          'workout_id':    day.program?.id,
         }, onConflict: 'user_id,week_start,weekday_index');
       }
     } catch (e) {
@@ -146,30 +221,30 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
     }
   }
 
-  // Assigner une catégorie (+ workout optionnel) à un jour
-  void assign(int index, String categoryId, [WorkoutModel? workout]) {
+  // Assigner une catégorie (+ programme optionnel) à un jour
+  void assign(int index, String categoryId, [HomeProgramModel? program]) {
     final updated = List<DayPlan>.from(state);
     final isRest = categoryId == 'rest';
     updated[index] = updated[index].copyWith(
       status: isRest ? DayStatus.rest : DayStatus.planned,
       categoryId: categoryId,
-      workout: workout,
-      clearWorkout: workout == null && !isRest,
+      program: program,
+      clearProgram: program == null && !isRest,
     );
     state = updated;
     _save(index);
   }
 
-  // Raccourci utilisé par l'écran d'accueil
-  void assignWorkout(int index, WorkoutModel w) =>
-      assign(index, w.category, w);
+  // Raccourci : assigner directement un programme (catégorie déduite du programme)
+  void assignProgram(int index, HomeProgramModel program) =>
+      assign(index, program.category, program);
 
   void remove(int index) {
     final updated = List<DayPlan>.from(state);
     updated[index] = updated[index].copyWith(
       status: DayStatus.empty,
       clearCategory: true,
-      clearWorkout: true,
+      clearProgram: true,
     );
     state = updated;
     _save(index);
@@ -192,7 +267,7 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
       date: updated[a].date,
       status: updated[b].status,
       categoryId: updated[b].categoryId,
-      workout: updated[b].workout,
+      program: updated[b].program,
     );
     updated[b] = DayPlan(
       weekdayIndex: updated[b].weekdayIndex,
@@ -201,7 +276,7 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
       date: updated[b].date,
       status: tmp.status,
       categoryId: tmp.categoryId,
-      workout: tmp.workout,
+      program: tmp.program,
     );
     state = updated;
     _save(a);
