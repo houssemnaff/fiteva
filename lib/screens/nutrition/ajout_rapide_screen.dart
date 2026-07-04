@@ -8,9 +8,11 @@ import 'package:fiteva/services/nutruition_ia.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../l10n/lang.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -182,6 +184,12 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
 
   // Picks a photo (camera or gallery) and shows it in the scan zone —
   // analysis only starts once the user taps "Analyser".
+  //
+  // Sur iPhone, une photo choisie depuis la galerie peut être encodée en
+  // HEIC (format par défaut de l'appareil photo iOS) — un format que le
+  // modèle vision ne sait pas décoder, ce qui faisait échouer le scan
+  // silencieusement sur iOS. On force donc systématiquement une conversion
+  // en JPEG juste après la sélection, quelle que soit la source/plateforme.
   Future<void> _pickImage(ImageSource source) async {
     XFile? picked;
     try {
@@ -196,11 +204,33 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     if (picked == null) return;
 
     HapticFeedback.selectionClick();
+    final jpegFile = await _ensureJpeg(File(picked.path));
+    if (!mounted) return;
     setState(() {
       _scanState    = _ScanState.preview;
-      _pickedImage  = File(picked!.path);
+      _pickedImage  = jpegFile;
       _scannedFood  = null;
     });
+  }
+
+  /// Réencode n'importe quel fichier image (HEIC, PNG, WebP…) en JPEG dans
+  /// le dossier temporaire, pour garantir un format toujours supporté par
+  /// l'API vision — peu importe la plateforme ou le format d'origine.
+  Future<File> _ensureJpeg(File source) async {
+    try {
+      final tmpDir = await getTemporaryDirectory();
+      final outPath =
+          '${tmpDir.path}/scan_${DateTime.now().microsecondsSinceEpoch}.jpg';
+      final result = await FlutterImageCompress.compressAndGetFile(
+        source.path, outPath,
+        quality: 88, format: CompressFormat.jpeg,
+      );
+      if (result != null) return File(result.path);
+    } catch (_) {
+      // Si la conversion échoue pour une raison quelconque, on retombe sur
+      // le fichier original plutôt que de bloquer l'utilisatrice.
+    }
+    return source;
   }
 
   Future<void> _analyzeImage() async {
@@ -936,50 +966,45 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
 
   // ── Scanner: idle ────────────────────────────────────────────────────────
   Widget _buildScannerIdle() => Column(children: [
+    // Grande carte dégradée avec icône flottante — remplace l'ancien
+    // "viewfinder" plat et sombre par un visuel plus doux et engageant.
     Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       decoration: BoxDecoration(
-        color: _kMintBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kMint.withOpacity(0.3))),
-      child: Row(children: [
-        const Icon(LucideIcons.scanLine, size: 14, color: _kGreen),
-        const SizedBox(width: 10),
-        Expanded(child: Text(
-          AppL10n(Lang.code).addMealScanHint,
-          style: GoogleFonts.inter(fontSize: 12, color: _kGreen, height: 1.5))),
-      ])),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [_kGreen, Color(0xFF0F2E1C)]),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [BoxShadow(
+          color: _kGreen.withOpacity(0.28),
+          blurRadius: 24, offset: const Offset(0, 10))],
+      ),
+      child: Column(children: [
+        Container(
+          width: 72, height: 72,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.14),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.4)),
+          child: const Icon(LucideIcons.camera, size: 30, color: Colors.white)),
+        const SizedBox(height: 18),
+        Text(AppL10n(Lang.code).addMealScanner, style: GoogleFonts.outfit(
+          fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white)),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            AppL10n(Lang.code).addMealScanHint,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 12.5, color: Colors.white70, height: 1.5))),
+      ]),
+    ),
+
     const SizedBox(height: 16),
 
-    // Viewfinder
-    Container(
-      width: double.infinity, height: 200,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0E1E15),
-        borderRadius: BorderRadius.circular(22)),
-      child: Stack(children: [
-        Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: 160, height: 2,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.transparent, _kMint, Colors.transparent]),
-              borderRadius: BorderRadius.circular(2))),
-          const SizedBox(height: 12),
-          const Icon(LucideIcons.scanLine, size: 38, color: Colors.white24),
-          const SizedBox(height: 10),
-          Text(AppL10n(Lang.code).addMealScanPress, style: GoogleFonts.inter(
-            fontSize: 12, color: Colors.white54)),
-        ])),
-        _Corner(_kMint, top: true,  left: true),
-        _Corner(_kMint, top: true,  left: false),
-        _Corner(_kMint, top: false, left: true),
-        _Corner(_kMint, top: false, left: false),
-      ])),
-
-    const SizedBox(height: 12),
-
-    // Buttons
+    // Buttons — même famille de couleur (vert plein / vert-menthe contouré)
+    // au lieu du bleu marine incohérent de l'ancienne version.
     Row(children: [
       Expanded(child: GestureDetector(
         onTap: () => _pickImage(ImageSource.camera),
@@ -992,9 +1017,9 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
               color: _kGreen.withOpacity(0.25),
               blurRadius: 12, offset: const Offset(0, 4))]),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(LucideIcons.scanLine, size: 17, color: Colors.white),
+            const Icon(LucideIcons.camera, size: 17, color: Colors.white),
             const SizedBox(width: 8),
-            Text(AppL10n(Lang.code).addMealScanner, style: GoogleFonts.inter(
+            Text(AppL10n(Lang.code).nutritionScanner, style: GoogleFonts.inter(
               fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
           ])))),
       const SizedBox(width: 10),
@@ -1003,131 +1028,134 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A3A50),
-            borderRadius: BorderRadius.circular(16)),
+            color: _kMintBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _kMint.withOpacity(0.5))),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(LucideIcons.image, size: 17, color: Colors.white),
+            const Icon(LucideIcons.image, size: 17, color: _kGreen),
             const SizedBox(width: 8),
             Text(AppL10n(Lang.code).nutritionPhoto, style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+              fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen)),
           ])))),
     ]),
   ]);
 
   // ── Scanner: preview (picked image, waiting for "Analyser") ──────────────
-  Widget _buildScannerPreview() => Column(children: [
-    Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: _kMintBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kMint.withOpacity(0.3))),
-      child: Row(children: [
-        const Icon(LucideIcons.imageUp, size: 14, color: _kGreen),
-        const SizedBox(width: 10),
-        Expanded(child: Text(
-          'Photo prête — appuie sur "Analyser" pour identifier l\'aliment.',
-          style: GoogleFonts.inter(fontSize: 12, color: _kGreen, height: 1.5))),
-      ])),
-    const SizedBox(height: 16),
+  // Boutons flottants directement sur la photo (dégradé bas) plutôt qu'une
+  // rangée de boutons séparée sous un cadre sombre.
+  Widget _buildScannerPreview() => ClipRRect(
+    borderRadius: BorderRadius.circular(28),
+    child: AspectRatio(
+      aspectRatio: 4 / 5,
+      child: Stack(fit: StackFit.expand, children: [
+        if (_pickedImage != null)
+          Image.file(_pickedImage!, fit: BoxFit.cover),
 
-    // Viewfinder — shows the picked photo
-    ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        width: double.infinity, height: 220,
-        color: const Color(0xFF0E1E15),
-        child: Stack(fit: StackFit.expand, children: [
-          if (_pickedImage != null)
-            Image.file(_pickedImage!, fit: BoxFit.cover),
-          _Corner(_kMint, top: true,  left: true),
-          _Corner(_kMint, top: true,  left: false),
-          _Corner(_kMint, top: false, left: true),
-          _Corner(_kMint, top: false, left: false),
-        ]),
-      )),
+        // Voile dégradé haut (bouton retour) + bas (actions)
+        const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+          stops: [0.0, 0.18], colors: [Color(0x99000000), Colors.transparent]))),
+        Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.bottomCenter, end: Alignment.topCenter,
+          stops: const [0.0, 0.4], colors: [Colors.black.withOpacity(0.75), Colors.transparent])))),
 
-    const SizedBox(height: 12),
+        Positioned(top: 14, left: 14, child: GestureDetector(
+          onTap: _resetScan,
+          child: Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.35), shape: BoxShape.circle),
+            child: const Icon(LucideIcons.x, size: 17, color: Colors.white)))),
 
-    // Buttons
-    Row(children: [
-      Expanded(child: GestureDetector(
-        onTap: _resetScan,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 15),
+        Positioned(top: 14, right: 14, child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: _kMintBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _kMint.withOpacity(0.4))),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(LucideIcons.rotateCcw, size: 16, color: _kGreen),
-            const SizedBox(width: 8),
-            Text('Reprendre', style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen)),
-          ])))),
-      const SizedBox(width: 10),
-      Expanded(child: GestureDetector(
-        onTap: _analyzeImage,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          decoration: BoxDecoration(
-            color: _kGreen,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(
-              color: _kGreen.withOpacity(0.25),
-              blurRadius: 12, offset: const Offset(0, 4))]),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
-            const SizedBox(width: 8),
-            Text('Analyser', style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
-          ])))),
-    ]),
-  ]);
+            color: Colors.black.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(50)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(LucideIcons.check, size: 12, color: _kMint),
+            const SizedBox(width: 5),
+            Text('Photo prête', style: GoogleFonts.inter(
+              fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+          ]))),
 
-  // ── Scanner: scanning (animated) ─────────────────────────────────────────
-  Widget _buildScannerScanning() => Column(children: [
-    ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        width: double.infinity, height: 220,
-        color: const Color(0xFF0E1E15),
-        child: Stack(fit: StackFit.expand, alignment: Alignment.center, children: [
-          if (_pickedImage != null)
-            Opacity(
-              opacity: 0.35,
-              child: Image.file(_pickedImage!, fit: BoxFit.cover)),
-          _Corner(_kMint, top: true,  left: true),
-          _Corner(_kMint, top: true,  left: false),
-          _Corner(_kMint, top: false, left: true),
-          _Corner(_kMint, top: false, left: false),
-          Column(mainAxisSize: MainAxisSize.min, children: [
-            const _ScanningDots(),
-            const SizedBox(height: 16),
-            Text(AppL10n(Lang.code).addMealAnalyzing, style: GoogleFonts.inter(
-              fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-            const SizedBox(height: 6),
-            Text(AppL10n(Lang.code).addMealNutrients, style: GoogleFonts.inter(
-              fontSize: 11, color: Colors.white38)),
-          ]),
+        Positioned(left: 16, right: 16, bottom: 16, child: Row(children: [
+          Expanded(child: GestureDetector(
+            onTap: _resetScan,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.16),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.3))),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Icon(LucideIcons.rotateCcw, size: 15, color: Colors.white),
+                const SizedBox(width: 7),
+                Text('Reprendre', style: GoogleFonts.inter(
+                  fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+              ])))),
+          const SizedBox(width: 10),
+          Expanded(flex: 2, child: GestureDetector(
+            onTap: _analyzeImage,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: _kGreen,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 12, offset: const Offset(0, 4))]),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
+                const SizedBox(width: 7),
+                Text('Analyser', style: GoogleFonts.inter(
+                  fontSize: 13.5, fontWeight: FontWeight.w800, color: Colors.white)),
+              ])))),
+        ])),
+      ]),
+    ),
+  );
+
+  // ── Scanner: scanning (animated scan-line sweep) ─────────────────────────
+  Widget _buildScannerScanning() => ClipRRect(
+    borderRadius: BorderRadius.circular(28),
+    child: AspectRatio(
+      aspectRatio: 4 / 5,
+      child: Stack(fit: StackFit.expand, alignment: Alignment.center, children: [
+        if (_pickedImage != null)
+          Image.file(_pickedImage!, fit: BoxFit.cover),
+        Container(color: Colors.black.withOpacity(0.45)),
+        const _ScanSweepLine(),
+        Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.12),
+              shape: BoxShape.circle,
+              border: Border.all(color: _kMint.withOpacity(0.5), width: 1.5)),
+            child: const _ScanningDots()),
+          const SizedBox(height: 18),
+          Text(AppL10n(Lang.code).addMealAnalyzing, style: GoogleFonts.inter(
+            fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+          const SizedBox(height: 6),
+          Text(AppL10n(Lang.code).addMealNutrients, style: GoogleFonts.inter(
+            fontSize: 11.5, color: Colors.white60)),
         ]),
-      )),
-    const SizedBox(height: 16),
-    Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: _kMintBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kMint.withOpacity(0.3))),
-      child: Row(children: [
-        SizedBox(width: 14, height: 14,
-          child: CircularProgressIndicator(
-            strokeWidth: 2, color: _kGreen)),
-        const SizedBox(width: 10),
-        Text(AppL10n(Lang.code).addMealAiAnalysis,
-          style: GoogleFonts.inter(fontSize: 12, color: _kGreen)),
-      ])),
-  ]);
+        Positioned(bottom: 16, left: 16, right: 16, child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(14)),
+          child: Row(children: [
+            SizedBox(width: 13, height: 13,
+              child: CircularProgressIndicator(strokeWidth: 2, color: _kMint)),
+            const SizedBox(width: 10),
+            Expanded(child: Text(AppL10n(Lang.code).addMealAiAnalysis,
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.white))),
+          ]))),
+      ]),
+    ),
+  );
 
   // ── Scanner: result (editable card) ──────────────────────────────────────
   Widget _buildScannerResult() {
@@ -1175,11 +1203,14 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
 
           // Food name + category chip
           Row(children: [
-            Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
-              child: const Icon(LucideIcons.utensils, size: 20, color: _kGreen)),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: _pickedImage != null
+                ? Image.file(_pickedImage!, width: 52, height: 52, fit: BoxFit.cover)
+                : Container(
+                    width: 52, height: 52,
+                    color: nc.mintBg,
+                    child: const Icon(LucideIcons.utensils, size: 20, color: _kGreen))),
             const SizedBox(width: 12),
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1917,23 +1948,49 @@ class _MacroBar extends StatelessWidget {
   }
 }
 
-class _Corner extends StatelessWidget {
-  final Color color;
-  final bool top, left;
-  const _Corner(this.color, {required this.top, required this.left});
+// ── Scan-line sweep (up/down glow bar over the analyzing photo) ────────────
+class _ScanSweepLine extends StatefulWidget {
+  const _ScanSweepLine();
+  @override
+  State<_ScanSweepLine> createState() => _ScanSweepLineState();
+}
+
+class _ScanSweepLineState extends State<_ScanSweepLine>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
 
   @override
-  Widget build(BuildContext context) => Positioned(
-    top: top ? 16 : null, bottom: !top ? 16 : null,
-    left: left ? 16 : null, right: !left ? 16 : null,
-    child: Container(
-      width: 24, height: 24,
-      decoration: BoxDecoration(
-        border: Border(
-          top:    top  ? BorderSide(color: color, width: 2.5) : BorderSide.none,
-          bottom: !top ? BorderSide(color: color, width: 2.5) : BorderSide.none,
-          left:   left ? BorderSide(color: color, width: 2.5) : BorderSide.none,
-          right:  !left ? BorderSide(color: color, width: 2.5) : BorderSide.none))));
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800))
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(child: AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) => Align(
+        alignment: Alignment(0, _ctrl.value * 2 - 1),
+        child: Container(
+          height: 3,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                _kMint.withOpacity(0),
+                _kMint.withOpacity(0.9),
+                _kMint.withOpacity(0),
+              ]),
+            boxShadow: [BoxShadow(
+              color: _kMint.withOpacity(0.6),
+              blurRadius: 10)])))));
+  }
 }
 
 // ── Scanning animated dots ─────────────────────────────────────────────────

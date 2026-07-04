@@ -12,10 +12,17 @@ class AuthResult {
   final bool success;
   final String? error;
   final User? user;
+  /// true si ce résultat vient d'une création de compte (signUp) plutôt
+  /// que d'une connexion à un compte existant — utile pour décider si
+  /// l'utilisatrice doit continuer l'onboarding ou passer directement à l'app.
+  final bool isNewAccount;
 
-  const AuthResult._({required this.success, this.error, this.user});
+  const AuthResult._({
+    required this.success, this.error, this.user, this.isNewAccount = false,
+  });
 
-  factory AuthResult.ok(User user) => AuthResult._(success: true, user: user);
+  factory AuthResult.ok(User user, {bool isNewAccount = false}) =>
+      AuthResult._(success: true, user: user, isNewAccount: isNewAccount);
   factory AuthResult.fail(String message) => AuthResult._(success: false, error: message);
 
   bool get isSuccess => success;
@@ -66,7 +73,7 @@ class AuthService {
 
       await _saveLocally(uid: user.id, email: email.trim(), username: username.trim());
       await _upsertProfile(uid: user.id, email: email.trim(), username: username.trim());
-      return AuthResult.ok(user);
+      return AuthResult.ok(user, isNewAccount: true);
     } on AuthException catch (e) {
       return AuthResult.fail(_translateAuthError(e.message));
     } catch (e) {
@@ -116,6 +123,35 @@ class AuthService {
     if (signInResult.isSuccess) return signInResult;
     return AuthResult.fail(
         'Cet email est déjà associé à un compte. Connecte-toi avec ton mot de passe existant.');
+  }
+
+  /// Flux "intelligent" unifié connexion/inscription — un seul écran, un seul
+  /// email+mot de passe, l'app détermine elle-même s'il s'agit d'un compte
+  /// existant ou d'une création.
+  ///
+  /// 1. Tente la connexion en premier (rapide pour les comptes existants et
+  ///    évite qu'une utilisatrice existante refasse tout l'onboarding).
+  /// 2. Si ça échoue, tente la création de compte (nouvel utilisateur).
+  /// 3. Si la création échoue aussi avec "already_registered", c'est qu'un
+  ///    compte existe déjà mais que le mot de passe saisi est incorrect.
+  static Future<AuthResult> smartAuth({
+    required String email,
+    required String password,
+    required String username,
+  }) async {
+    final signInResult = await signIn(email: email, password: password);
+    if (signInResult.isSuccess) return signInResult;
+
+    final signUpResult = await signUp(email: email, password: password, username: username);
+    if (signUpResult.isSuccess) return signUpResult;
+
+    final alreadyExists = signUpResult.error == 'already_registered' ||
+        signUpResult.error?.toLowerCase().contains('already') == true ||
+        signUpResult.error?.toLowerCase().contains('registered') == true;
+    if (alreadyExists) {
+      return AuthResult.fail('Email ou mot de passe incorrect.');
+    }
+    return signUpResult;
   }
 
   static Future<AuthResult> resetPassword(String email) async {

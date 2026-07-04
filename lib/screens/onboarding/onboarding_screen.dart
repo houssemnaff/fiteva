@@ -106,7 +106,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passCtrl  = TextEditingController();
 
-  // Ordre linéaire pour la progress bar
+  // Ordre réel des pages dans le PageView — utilisé pour animateToPage.
+  static const List<OStep> _pageOrder = [
+    OStep.intro,
+    OStep.welcome,
+    OStep.languageChoice,
+    OStep.goals,
+    OStep.fitnessLevel,
+    OStep.equipment,
+    OStep.trainingLocation,
+    OStep.frequency,
+    OStep.healthProfile,
+    OStep.cycleAndPregnancy,
+    OStep.avatar,
+  ];
+
+  // Sous-ensemble linéaire utilisé pour calculer la fraction de la progress bar.
   static const List<OStep> _progressSteps = [
     OStep.intro,
     OStep.welcome,
@@ -159,7 +174,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     await Future.delayed(const Duration(milliseconds: 50));
     _pageCtrl.animateToPage(
-      _progressSteps.indexOf(next),
+      _pageOrder.indexOf(next),
       duration: const Duration(milliseconds: 350),
       curve: Curves.easeInOut,
     );
@@ -170,7 +185,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() => _history.removeLast());
 
     _pageCtrl.animateToPage(
-      _progressSteps.indexOf(_current),
+      _pageOrder.indexOf(_current),
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeOut,
     );
@@ -252,32 +267,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
-  /// Connexion d'un utilisateur existant par email — bypass l'onboarding complet.
-  Future<void> _login() async {
-    _syncDataFromControllers();
-    if (_data.email.isEmpty || _data.password.isEmpty) return;
-
-    final result = await AuthService.signIn(
-      email:    _data.email,
-      password: _data.password,
+  /// Création de compte depuis l'écran Welcome (onglet "Créer mon compte").
+  /// Le prénom par défaut est le préfixe de l'email ; poursuit ensuite
+  /// l'onboarding normal pour collecter le reste du profil.
+  Future<String?> _handleSignUp(String email, String password) async {
+    _nameCtrl.text = email.split('@').first;
+    final result = await AuthService.signUp(
+      email: email, password: password, username: _nameCtrl.text,
     );
+    if (!mounted) return null;
+    if (!result.isSuccess) return result.error ?? 'Erreur d\'inscription';
+    await _goNext();
+    return null;
+  }
 
-    if (!mounted) return;
+  /// Connexion depuis l'écran Welcome (onglet "Se connecter") — bypass
+  /// l'onboarding complet, saute directement dans l'app.
+  Future<String?> _handleLogin(String email, String password) async {
+    final result = await AuthService.signIn(email: email, password: password);
+    if (!mounted) return null;
+    if (!result.isSuccess) return result.error ?? 'Connexion échouée';
 
-    if (result.isSuccess) {
-      StorageService.setOnboardingCompleted(true);
-      ref.read(userProfileProvider.notifier).reload();
-      ref.invalidate(postsNotifierProvider);
-      ref.invalidate(eventsNotifierProvider);
-      ref.invalidate(partnersNotifierProvider);
-      context.go('/');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(result.error ?? 'Connexion échouée'),
-        backgroundColor: const Color(0xFFB00020),
-        behavior: SnackBarBehavior.floating,
-      ));
-    }
+    StorageService.setOnboardingCompleted(true);
+    ref.read(userProfileProvider.notifier).reload();
+    ref.invalidate(postsNotifierProvider);
+    ref.invalidate(eventsNotifierProvider);
+    ref.invalidate(partnersNotifierProvider);
+    context.go('/');
+    return null;
   }
 
   void _syncDataFromControllers() {
@@ -325,12 +342,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // 0 — Intro
     StepIntro(onNext: _goNext),
 
-    // 1 — Welcome (inscription + connexion)
+    // 1 — Welcome (toggle Inscription/Connexion, Google/Apple, champs à la demande)
     StepWelcome(
-      onNext:             _goNext,
-      onBack:             _goBack,
-      onLogin:            _login,
-      nameController:     _nameCtrl,
+      onSignUp:           _handleSignUp,
+      onLogin:            _handleLogin,
+      onGoogleSignIn:     _googleSignIn,
+      onAppleSignIn:      _appleSignIn,
       emailController:    _emailCtrl,
       passwordController: _passCtrl,
     ),

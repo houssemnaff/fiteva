@@ -375,6 +375,7 @@ class AppL10n {
   String get welcomeEmail           => _fr ? 'Email'                   : 'Email';
   String get welcomePassword        => _fr ? 'Mot de passe'            : 'Password';
   String get welcomeContinue        => _fr ? 'Continuer →'             : 'Continue →';
+  String get welcomeGetStarted      => _fr ? 'Commencer'               : 'Get Started';
   String get welcomeSignUpGoogle    => _fr ? "S'inscrire avec Google"  : 'Sign Up with Google';
   String get welcomeSignUpApple     => _fr ? "S'inscrire avec Apple"   : 'Sign Up with Apple';
   String get welcomeSignUpEmail     => _fr ? "S'inscrire par e-mail"   : 'Sign Up with Email';

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:fiteva/screens/onboarding/widgets/shared_onboarding_widgets.dart';
 import 'package:fiteva/widgets/custom_date_picker.dart';
@@ -977,23 +978,23 @@ const _slides = [
 
 // ─── Widget ───────────────────────────────────────────────────────────────────
 class StepWelcome extends StatefulWidget {
-  final VoidCallback onNext;
-  final VoidCallback? onBack;
-  final VoidCallback? onLogin;
+  /// Crée un nouveau compte. Retourne un message d'erreur, ou null si ok
+  /// (l'appelant enchaîne alors sur la suite de l'onboarding).
+  final Future<String?> Function(String email, String password) onSignUp;
+  /// Connecte un compte existant. Retourne un message d'erreur, ou null si ok
+  /// (l'appelant saute alors directement dans l'app).
+  final Future<String?> Function(String email, String password) onLogin;
   final VoidCallback? onGoogleSignIn;
   final VoidCallback? onAppleSignIn;
-  final TextEditingController nameController;
   final TextEditingController emailController;
   final TextEditingController passwordController;
 
   const StepWelcome({
     super.key,
-    required this.onNext,
-    this.onBack,
-    this.onLogin,
+    required this.onSignUp,
+    required this.onLogin,
     this.onGoogleSignIn,
     this.onAppleSignIn,
-    required this.nameController,
     required this.emailController,
     required this.passwordController,
   });
@@ -1009,56 +1010,36 @@ class _StepWelcomeState extends State<StepWelcome>
   int _currentPage = 0;
   Timer? _autoSlideTimer;
 
-  bool _isLoginMode = false; // true = formulaire de connexion, false = inscription
-  bool _obscure     = true;
-
-  String? _emailError;
-  String? _passwordError;
-
-  late final AnimationController _fadeCtrl;
-  late final Animation<double>   _fadeAnim;
+  bool _isLoginMode  = false; // false = inscription, true = connexion
+  bool _emailFieldsOpen = false; // les 2 champs n'apparaissent qu'à la demande
+  bool _obscure      = true;
+  String? _error;
+  bool _submitting   = false;
 
   static final RegExp _emailRegex =
       RegExp(r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$');
 
-  bool _isValidEmail(String email) => _emailRegex.hasMatch(email.trim());
+  bool get _canSubmit =>
+      widget.emailController.text.trim().isNotEmpty &&
+      widget.passwordController.text.trim().isNotEmpty;
 
-  // Au moins 8 caractères et au moins un chiffre.
-  bool _isValidPassword(String password) =>
-      password.length >= 8 && RegExp(r'\d').hasMatch(password);
-
-  bool get _canContinue {
-    if (_isLoginMode) {
-      return widget.emailController.text.trim().isNotEmpty &&
-             widget.passwordController.text.trim().isNotEmpty;
+  Future<void> _submit() async {
+    final email = widget.emailController.text.trim();
+    if (!_emailRegex.hasMatch(email)) {
+      setState(() => _error = 'Adresse email invalide.');
+      return;
     }
-    return widget.nameController.text.trim().isNotEmpty &&
-           widget.emailController.text.trim().isNotEmpty &&
-           widget.passwordController.text.trim().isNotEmpty;
-  }
-
-  /// Valide le format de l'email (et la force du mot de passe en inscription)
-  /// et met à jour les messages d'erreur affichés sous les champs.
-  bool _validateEmailForm() {
-    final email    = widget.emailController.text.trim();
+    setState(() { _error = null; _submitting = true; });
     final password = widget.passwordController.text.trim();
-
-    String? emailErr;
-    String? passwordErr;
-
-    if (!_isValidEmail(email)) {
-      emailErr = 'Adresse email invalide.';
-    }
-    if (!_isLoginMode && !_isValidPassword(password)) {
-      passwordErr = 'Le mot de passe doit contenir au moins 8 caractères et un chiffre.';
-    }
-
-    setState(() {
-      _emailError    = emailErr;
-      _passwordError = passwordErr;
-    });
-    return emailErr == null && passwordErr == null;
+    final error = _isLoginMode
+        ? await widget.onLogin(email, password)
+        : await widget.onSignUp(email, password);
+    if (!mounted) return;
+    setState(() { _error = error; _submitting = false; });
   }
+
+  late final AnimationController _fadeCtrl;
+  late final Animation<double>   _fadeAnim;
 
   @override
   void initState() {
@@ -1092,6 +1073,8 @@ class _StepWelcomeState extends State<StepWelcome>
   }
 
   // ─── Build ─────────────────────────────────────────────────────────────────
+  // Écran scindé en deux : visuel plein cadre en haut (photo + accroche
+  // marketing), carte blanche arrondie en bas pour Google/Apple + liens.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1112,58 +1095,190 @@ class _StepWelcomeState extends State<StepWelcome>
             ),
           ),
 
-          // ── Dark gradient overlay ──────────────────────────────────────────
+          // ── Dark gradient overlay — pour la lisibilité du logo/accroche ────
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.35, 0.60, 1.0],
+                  stops: const [0.0, 0.45, 1.0],
                   colors: [
-                    Colors.transparent,
-                    Colors.transparent,
                     _kDark.withOpacity(0.55),
-                    _kDark.withOpacity(0.98),
+                    _kDark.withOpacity(0.15),
+                    Colors.transparent,
                   ],
                 ),
               ),
             ),
           ),
 
-          // ── Content ────────────────────────────────────────────────────────
+          // ── Contenu : logo + accroche sur la photo, carte en bas ───────────
           SafeArea(
+            bottom: false,
             child: Column(
               children: [
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 _buildLogo(),
-                Expanded(
-                  child: SingleChildScrollView(
-                    reverse: true,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 24),
-                        _buildSlideText(),
-                        const SizedBox(height: 16),
-                        _buildDots(),
-                        const SizedBox(height: 28),
-                        FadeTransition(
-                          opacity: _fadeAnim,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: _buildAuthSection(),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
+                const Spacer(),
+                _buildSlideText(),
+                const SizedBox(height: 14),
+                _buildDots(),
+                const SizedBox(height: 22),
+                FadeTransition(
+                  opacity: _fadeAnim,
+                  child: _buildAuthCard(),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ─── Carte "verre dépoli" — toggle Inscription/Connexion, Google/Apple,
+  // et les 2 champs email/mot de passe qui n'apparaissent qu'à la demande. ──
+  Widget _buildAuthCard() {
+    final l10n = AppL10n(Lang.code);
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: _kDark.withOpacity(0.32),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border(top: BorderSide(color: _kWhite.withOpacity(0.22), width: 1)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+                24, 22, 24, 20 + MediaQuery.of(context).padding.bottom),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Toggle Inscription / Connexion ──────────────────────
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: _kWhite.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Row(children: [
+                    Expanded(child: _ModeTab(
+                      label: l10n.welcomeCreateAccount, active: !_isLoginMode,
+                      onTap: () => setState(() { _isLoginMode = false; _error = null; }),
+                    )),
+                    Expanded(child: _ModeTab(
+                      label: l10n.welcomeLogIn, active: _isLoginMode,
+                      onTap: () => setState(() { _isLoginMode = true; _error = null; }),
+                    )),
+                  ]),
+                ),
+                const SizedBox(height: 18),
+
+                // ── Google / Apple ───────────────────────────────────────
+                Row(children: [
+                  Expanded(
+                    child: _GlassSocialBtn(
+                      onTap: widget.onGoogleSignIn ?? () {},
+                      child: SvgPicture.asset('assets/images/google-color.svg', width: 20, height: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _GlassSocialBtn(
+                      onTap: widget.onAppleSignIn ?? () {},
+                      child: Icon(Icons.apple_rounded, color: _kWhite, size: 22),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 16),
+
+                Row(children: [
+                  Expanded(child: Divider(color: _kWhite.withOpacity(0.2))),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(l10n.welcomeOrContinueWith.toUpperCase(),
+                      style: GoogleFonts.inter(
+                        color: _kWhite.withOpacity(0.5),
+                        fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 1)),
+                  ),
+                  Expanded(child: Divider(color: _kWhite.withOpacity(0.2))),
+                ]),
+                const SizedBox(height: 14),
+
+                // ── Email/mot de passe — n'apparaissent qu'à la demande ──
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  child: _emailFieldsOpen
+                      ? Column(children: [
+                          _GlassField(
+                            controller: widget.emailController,
+                            hint: l10n.welcomeEmail,
+                            icon: Icons.mail_outline_rounded,
+                            keyboardType: TextInputType.emailAddress,
+                            onChanged: (_) => setState(() { _error = null; }),
+                          ),
+                          const SizedBox(height: 10),
+                          _GlassField(
+                            controller: widget.passwordController,
+                            hint: l10n.welcomePassword,
+                            icon: Icons.lock_outline_rounded,
+                            obscure: _obscure,
+                            suffix: GestureDetector(
+                              onTap: () => setState(() => _obscure = !_obscure),
+                              child: Icon(
+                                _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                color: _kWhite.withOpacity(0.6), size: 18,
+                              ),
+                            ),
+                            onChanged: (_) => setState(() { _error = null; }),
+                          ),
+                          if (_error != null) ...[
+                            const SizedBox(height: 6),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(_error!,
+                                style: GoogleFonts.inter(
+                                  color: const Color(0xFFFF8A80), fontSize: 12, fontWeight: FontWeight.w500)),
+                            ),
+                          ],
+                          const SizedBox(height: 14),
+                          _AuthCtaButton(
+                            label: _isLoginMode ? l10n.welcomeLogIn : l10n.welcomeContinue,
+                            enabled: _canSubmit && !_submitting,
+                            loading: _submitting,
+                            onTap: _submit,
+                          ),
+                        ])
+                      : GestureDetector(
+                          onTap: () => setState(() => _emailFieldsOpen = true),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: _kWhite.withOpacity(0.28)),
+                            ),
+                            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                              Icon(Icons.mail_outline_rounded, size: 16, color: _kWhite.withOpacity(0.85)),
+                              const SizedBox(width: 8),
+                              Text(
+                                l10n.isFrench ? 'Continuer par email' : 'Continue with email',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13.5, fontWeight: FontWeight.w700, color: _kWhite),
+                              ),
+                            ]),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1185,17 +1300,25 @@ class _StepWelcomeState extends State<StepWelcome>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        Container(
+          width: 30, height: 30,
+          decoration: BoxDecoration(
+            color: _kWhite.withOpacity(0.15),
+            shape: BoxShape.circle,
+            border: Border.all(color: _kWhite.withOpacity(0.4)),
+          ),
+          child: Icon(Icons.water_drop_rounded, color: _kWhite, size: 15),
+        ),
+        const SizedBox(width: 9),
         Text(
           'FitEva',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w900,
+          style: GoogleFonts.outfit(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
             color: _kWhite,
-            letterSpacing: 2,
+            letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(width: 6),
-        Icon(Icons.water_drop, color: _kWhite, size: 26),
       ],
     );
   }
@@ -1207,27 +1330,34 @@ class _StepWelcomeState extends State<StepWelcome>
       duration: const Duration(milliseconds: 400),
       child: Padding(
         key: ValueKey(_currentPage),
-        padding: const EdgeInsets.symmetric(horizontal: 28),
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           children: [
             Text(
               slide.title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 26,
+              style: GoogleFonts.outfit(
+                fontSize: 30,
                 fontWeight: FontWeight.w800,
                 color: _kWhite,
-                height: 1.2,
+                height: 1.15,
+                letterSpacing: -0.5,
+                shadows: [
+                  Shadow(color: Colors.black.withOpacity(0.3), blurRadius: 12),
+                ],
               ),
             ),
             const SizedBox(height: 10),
             Text(
               slide.subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: _kWhite,
+              style: GoogleFonts.inter(
+                fontSize: 13.5,
+                color: _kWhite.withOpacity(0.88),
                 height: 1.5,
+                shadows: [
+                  Shadow(color: Colors.black.withOpacity(0.3), blurRadius: 8),
+                ],
               ),
             ),
           ],
@@ -1244,281 +1374,183 @@ class _StepWelcomeState extends State<StepWelcome>
         final active = i == _currentPage;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: active ? 20 : 8,
-          height: 8,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: active ? 18 : 6,
+          height: 6,
           decoration: BoxDecoration(
-            color: active ? _kWhite : _kWhite.withOpacity(0.35),
-            borderRadius: BorderRadius.circular(4),
+            color: active ? _kWhite : _kWhite.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(3),
           ),
         );
       }),
     );
   }
 
-  // ─── Auth section — social icons (always visible) + email path ────────────
-  Widget _buildAuthSection() {
-    return Column(
-      children: [
-        _buildSocialIcons(),
-        const SizedBox(height: 18),
-        _buildOrDivider(),
-        const SizedBox(height: 18),
-        _buildEmailForm(),
-        _buildLoginRow(),
-      ],
-    );
-  }
+}
 
-  // ─── Social icon buttons — Google + Apple, icon-only, always visible ──────
-  Widget _buildSocialIcons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _socialIconBtn(
-          semanticLabel: AppL10n(Lang.code).welcomeSignUpGoogle,
-          onTap: widget.onGoogleSignIn ?? () {},
-          child: _googleIcon(),
-        ),
-        const SizedBox(width: 18),
-        _socialIconBtn(
-          semanticLabel: AppL10n(Lang.code).welcomeSignUpApple,
-          onTap: widget.onAppleSignIn ?? () {},
-          child: Icon(Icons.apple_rounded, color: _kWhite, size: 26),
-        ),
-      ],
-    );
-  }
 
-  Widget _socialIconBtn({
-    required Widget child,
-    required VoidCallback onTap,
-    required String semanticLabel,
-  }) {
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 56, height: 56,
-          decoration: BoxDecoration(
-            color: _kWhite.withOpacity(0.10),
-            shape: BoxShape.circle,
-            border: Border.all(color: _kWhite.withOpacity(0.18)),
-          ),
-          child: Center(child: child),
+// ─── Onglet de bascule Inscription/Connexion ────────────────────────────────
+class _ModeTab extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _ModeTab({required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: active ? _kWhite.withOpacity(0.9) : Colors.transparent,
+          borderRadius: BorderRadius.circular(50),
+        ),
+        child: Center(
+          child: Text(label, style: GoogleFonts.inter(
+            fontSize: 13, fontWeight: FontWeight.w700,
+            color: active ? _kTextDark : _kWhite.withOpacity(0.75))),
         ),
       ),
     );
   }
+}
 
-  Widget _buildOrDivider() {
-    return Row(children: [
-      Expanded(child: Divider(color: _kWhite.withOpacity(0.15))),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Text(
-          AppL10n(Lang.code).welcomeOrContinueWith.toUpperCase(),
-          style: TextStyle(
-            color: _kWhite.withOpacity(0.4),
-            fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1,
-          ),
+// ─── Bouton social translucide (verre) ──────────────────────────────────────
+class _GlassSocialBtn extends StatelessWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  const _GlassSocialBtn({required this.child, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          color: _kWhite.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _kWhite.withOpacity(0.28)),
         ),
+        child: Center(child: child),
       ),
-      Expanded(child: Divider(color: _kWhite.withOpacity(0.15))),
-    ]);
+    );
   }
+}
 
-  // ─── Email form ────────────────────────────────────────────────────────────
-  Widget _buildEmailForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Titre (pas de flèche retour — le formulaire est toujours affiché)
-        Text(
-          _isLoginMode
-              ? AppL10n(Lang.code).welcomeLogIn
-              : AppL10n(Lang.code).welcomeCreateAccount,
-          style: const TextStyle(
-              color: _kWhite, fontWeight: FontWeight.w700, fontSize: 16),
-        ),
-        const SizedBox(height: 20),
+// ─── Champ de formulaire style "verre" (fond translucide, texte clair) ──────
+class _GlassField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final IconData icon;
+  final bool obscure;
+  final TextInputType? keyboardType;
+  final Widget? suffix;
+  final ValueChanged<String> onChanged;
 
-        // Champ nom — uniquement pour la création de compte
-        if (!_isLoginMode) ...[
-          _formField(
-            controller: widget.nameController,
-            hint: AppL10n(Lang.code).welcomeUsername,
-            icon: Icons.badge_outlined,
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 12),
-        ],
+  const _GlassField({
+    required this.controller,
+    required this.hint,
+    required this.icon,
+    this.obscure = false,
+    this.keyboardType,
+    this.suffix,
+    required this.onChanged,
+  });
 
-        _formField(
-          controller: widget.emailController,
-          hint: 'your@email.com',
-          icon: Icons.mail_outline_rounded,
-          keyboardType: TextInputType.emailAddress,
-          errorText: _emailError,
-          onChanged: (_) => setState(() { _emailError = null; }),
-        ),
-        const SizedBox(height: 12),
-        _formField(
-          controller: widget.passwordController,
-          hint: '••••••••',
-          icon: Icons.lock_outline_rounded,
-          obscure: _obscure,
-          errorText: _passwordError,
-          suffix: GestureDetector(
-            onTap: () => setState(() => _obscure = !_obscure),
-            child: Icon(
-              _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-              color: _kGrey, size: 18,
-            ),
-          ),
-          onChanged: (_) => setState(() { _passwordError = null; }),
-        ),
-        const SizedBox(height: 20),
-
-        // CTA — login direct (sans steps) ou inscription (avec steps)
-        GestureDetector(
-          onTap: _canContinue
-              ? () {
-                  if (!_validateEmailForm()) return;
-                  (_isLoginMode ? (widget.onLogin ?? widget.onNext) : widget.onNext)();
-                }
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        // Fond nettement plus sombre que la carte pour garantir le contraste
+        // du texte blanc (un simple voile blanc translucide le rendait
+        // quasi invisible sur des zones claires de la photo).
+        color: Colors.black.withOpacity(0.28),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kWhite.withOpacity(0.25), width: 1.1),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: keyboardType,
+        onChanged: onChanged,
+        autofillHints: const [],
+        style: GoogleFonts.inter(fontSize: 15, color: _kWhite, fontWeight: FontWeight.w600),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.inter(color: _kWhite.withOpacity(0.55), fontSize: 14),
+          prefixIcon: Icon(icon, color: _kWhite.withOpacity(0.8), size: 19),
+          suffixIcon: suffix != null
+              ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix)
               : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            height: 54,
-            decoration: BoxDecoration(
-              color: _canContinue ? _kPrimary : _kGrey.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(32),
-            ),
-            child: Center(
-              child: Text(
-                _isLoginMode
-                    ? AppL10n(Lang.code).welcomeLogIn
-                    : AppL10n(Lang.code).welcomeContinue,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _canContinue ? _kWhite : _kGrey,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ),
-          ),
+          // Le thème global de l'app force `filled: true` + un fond clair sur
+          // tous les champs — on neutralise explicitement chaque propriété
+          // pour empêcher ce style d'écraser le fond "verre" du champ.
+          filled: false,
+          fillColor: Colors.transparent,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 4),
         ),
-      ],
+      ),
     );
   }
+}
 
-  Widget _formField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool obscure = false,
-    TextInputType? keyboardType,
-    Widget? suffix,
-    String? errorText,
-    required ValueChanged<String> onChanged,
-  }) {
-    final hasError = errorText != null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: _kWhite.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: hasError ? const Color(0xFFE53935) : _kBorderLight,
-              width: 1.2,
-            ),
-          ),
-          child: TextField(
-            controller: controller,
-            obscureText: obscure,
-            keyboardType: keyboardType,
-            onChanged: onChanged,
-            autofillHints: const [],
-            style: const TextStyle(fontSize: 15, color: Color.fromARGB(255, 1, 1, 1),
-                fontWeight: FontWeight.w500),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.45), fontSize: 14),
-              prefixIcon: Icon(icon, color: _kWhite.withOpacity(0.7), size: 20),
-              suffixIcon: suffix != null
-                  ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix)
-                  : null,
-              border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
-            ),
-          ),
+// ─── Bouton CTA partagé (login/signup) ──────────────────────────────────────
+class _AuthCtaButton extends StatelessWidget {
+  final String label;
+  final bool enabled;
+  final bool loading;
+  final VoidCallback onTap;
+
+  const _AuthCtaButton({
+    required this.label,
+    required this.enabled,
+    this.loading = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        height: 54,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: enabled ? _kPrimary : const Color(0xFFF0F0F0),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: enabled
+              ? [BoxShadow(
+                  color: _kPrimary.withOpacity(0.35),
+                  blurRadius: 16, offset: const Offset(0, 6))]
+              : [],
         ),
-        if (hasError) ...[
-          const SizedBox(height: 5),
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(errorText,
-                style: const TextStyle(
-                    color: Color(0xFFFF6B6B), fontSize: 12, fontWeight: FontWeight.w500)),
-          ),
-        ],
-      ],
-    );
-  }
-
-  // ─── Toggle between sign up and log in — swaps the whole section in place ──
-  Widget _buildLoginRow() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Center(
-        child: GestureDetector(
-          onTap: () => setState(() => _isLoginMode = !_isLoginMode),
-          child: _isLoginMode
-              ? Text(
-                  AppL10n(Lang.code).welcomeNoAccount,
-                  style: const TextStyle(
-                    color: _kWhite,
-                    fontSize: 13,
+        child: Center(
+          child: loading
+              ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(
+                  strokeWidth: 2, color: enabled ? _kWhite : _kGrey))
+              : Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 15.5,
                     fontWeight: FontWeight.w700,
-                    decoration: TextDecoration.underline,
-                    decorationColor: _kWhite,
+                    color: enabled ? _kWhite : _kGrey,
+                    letterSpacing: 0.1,
                   ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(AppL10n(Lang.code).welcomeAlreadyAccount,
-                        style: TextStyle(color: _kWhite.withOpacity(0.6), fontSize: 13)),
-                    Text(
-                      AppL10n(Lang.code).welcomeLogIn,
-                      style: const TextStyle(
-                        color: _kWhite,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        decoration: TextDecoration.underline,
-                        decorationColor: _kWhite,
-                      ),
-                    ),
-                  ],
                 ),
         ),
       ),
     );
   }
-
-  // ─── Google icon ───────────────────────────────────────────────────────────
-  Widget _googleIcon() => SvgPicture.asset(
-    'assets/images/google-color.svg',
-    width: 22,
-    height: 22,
-  );
 }
 
 
