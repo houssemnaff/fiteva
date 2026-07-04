@@ -970,28 +970,28 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     // "viewfinder" plat et sombre par un visuel plus doux et engageant.
     Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft, end: Alignment.bottomRight,
           colors: [_kGreen, Color(0xFF0F2E1C)]),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [BoxShadow(
-          color: _kGreen.withOpacity(0.28),
-          blurRadius: 24, offset: const Offset(0, 10))],
+          color: _kGreen.withOpacity(0.24),
+          blurRadius: 16, offset: const Offset(0, 6))],
       ),
       child: Column(children: [
         Container(
-          width: 72, height: 72,
+          width: 48, height: 48,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.14),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.4)),
-          child: const Icon(LucideIcons.camera, size: 30, color: Colors.white)),
-        const SizedBox(height: 18),
+            border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.2)),
+          child: const Icon(LucideIcons.camera, size: 21, color: Colors.white)),
+        const SizedBox(height: 12),
         Text(AppL10n(Lang.code).addMealScanner, style: GoogleFonts.outfit(
-          fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white)),
-        const SizedBox(height: 6),
+          fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+        const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
