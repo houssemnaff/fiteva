@@ -208,7 +208,16 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     if (picked == null) return;
 
     HapticFeedback.selectionClick();
-    final jpegBytes = await _ensureJpegBytes(picked);
+    Uint8List jpegBytes;
+    try {
+      jpegBytes = await _ensureJpegBytes(picked);
+    } catch (e) {
+      debugPrint('[Scan] _ensureJpegBytes FAILED: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossible de lire cette photo : $e')));
+      return;
+    }
     if (!mounted) return;
     setState(() {
       _scanState         = _ScanState.preview;
