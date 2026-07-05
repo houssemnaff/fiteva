@@ -8,7 +8,6 @@ import 'package:fiteva/screens/cycle/homecyle.dart';
 import 'package:fiteva/screens/cycle/pregnancy/PregnancyHubScreen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_hub_screen.dart';
 
-import 'package:fiteva/screens/home/library_widget.dart';
 import 'package:fiteva/screens/home/referral_card.dart';
 import 'package:fiteva/screens/workout/programme_detail_screen.dart';
 import 'package:fiteva/screens/workout/workout_screen.dart';
@@ -65,19 +64,19 @@ class HomeScreen extends ConsumerWidget {
           // ── 1. Hero — featured pick ────────────────────
           SliverToBoxAdapter(child: _HeroSection(user: user)),
 
-          // ── Current cycle status ──────────────────────
+          // ── 2. Current cycle status ────────────────────
           const SliverToBoxAdapter(child: _CycleStatusBanner()),
 
-          // ── 2. Today at a glance — cycle / calories / workout ─
+          // ── 3. Today at a glance — cycle / calories / workout ─
           const SliverToBoxAdapter(child: _StatBar()),
 
-          // ── 3. This week's plan ────────────────────────
+          // ── 4. This week's plan ─────────────────────────
           SliverToBoxAdapter(child: _WeeklyPlanSection()),
 
-          // ── 4. Continue where you left off ────────────
+          // ── 5. Continue where you left off ─────────────
           SliverToBoxAdapter(child: _ContinueWorkoutsSection(programs: allPrograms)),
 
-          // ── 5. Steps ────────────────────────────────────
+          // ── 6. Steps ────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -85,12 +84,7 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
 
-          // ── 6. Discover — library ──────────────────────
-          SliverToBoxAdapter(
-            child: LibrarySection(),
-          ),
-
-          // ── Referral / Invite ─────────────────────────
+          // ── 7. Invite a friend ──────────────────────────
           const SliverToBoxAdapter(
             child: ReferralCard(),
           ),

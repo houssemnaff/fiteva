@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:fiteva/core/nutrition/food_database.dart';
 import 'package:fiteva/core/nutrition/models.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../l10n/lang.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -220,16 +222,42 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   /// importe la plateforme ou le format d'origine.
   Future<Uint8List> _ensureJpegBytes(XFile picked) async {
     final rawBytes = await picked.readAsBytes();
+
+    // compressWithList (variante "bytes") ne décode pas toujours le HEIC
+    // correctement sur iOS et peut renvoyer un résultat vide/invalide sans
+    // lever d'exception — ce qui produisait un data-URL cassé envoyé à
+    // l'API vision ("Invalid image data-url", 400). On détecte ce cas et on
+    // retombe sur la variante fichier (compressAndGetFile), qui décode le
+    // HEIC de façon fiable côté natif ; le fichier temporaire est lu en
+    // mémoire immédiatement puis jeté, donc le bug précédent (fichier
+    // disparu entre l'aperçu et "Analyser") ne peut pas se reproduire ici.
     try {
       final result = await FlutterImageCompress.compressWithList(
         rawBytes, quality: 88, format: CompressFormat.jpeg,
       );
-      return result;
-    } catch (_) {
-      // Si la conversion échoue pour une raison quelconque, on retombe sur
-      // les bytes originaux plutôt que de bloquer l'utilisatrice.
-      return rawBytes;
-    }
+      if (result.isNotEmpty) return result;
+    } catch (_) {}
+
+    try {
+      final tmpDir = await getTemporaryDirectory();
+      final tmpIn  = File('${tmpDir.path}/scan_src_${DateTime.now().microsecondsSinceEpoch}');
+      await tmpIn.writeAsBytes(rawBytes);
+      final outPath = '${tmpDir.path}/scan_out_${DateTime.now().microsecondsSinceEpoch}.jpg';
+      final xFile = await FlutterImageCompress.compressAndGetFile(
+        tmpIn.path, outPath, quality: 88, format: CompressFormat.jpeg,
+      );
+      await tmpIn.delete().catchError((_) => tmpIn);
+      if (xFile != null) {
+        final bytes = await File(xFile.path).readAsBytes();
+        await File(xFile.path).delete().catchError((_) => File(xFile.path));
+        if (bytes.isNotEmpty) return bytes;
+      }
+    } catch (_) {}
+
+    // Dernier recours : les bytes originaux plutôt que de bloquer
+    // l'utilisatrice — peuvent échouer côté API si le format n'est pas
+    // supporté, mais au moins l'aperçu s'affiche.
+    return rawBytes;
   }
 
   Future<void> _analyzeImage() async {

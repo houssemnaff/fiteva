@@ -12,11 +12,12 @@ import '../providers/points_provider.dart';
 import '../services/step_service.dart';
 import '../l10n/app_localizations.dart';
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const _kGreen     = Color(0xFF1C4D30);
-const _kGreenDark = Color(0xFF0E2B1A);
-const _kGold      = Color(0xFFB8966E);
-const _kGoldLight = Color(0xFFFFD89B);
+// ── Design tokens — alignés sur le reste de l'accueil (cartes claires,
+// badges d'icône colorés) plutôt que la carte dégradée sombre précédente.
+const _kGreen   = Color(0xFF1C4D30);
+const _kGreenBg = Color(0xFFEAF3EC);
+const _kGold    = Color(0xFFB8860B);
+const _kGoldBg  = Color(0xFFFFF8E7);
 
 class MesPasCard extends ConsumerStatefulWidget {
   const MesPasCard({super.key});
@@ -174,7 +175,7 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
                     )),
                 Text(ref.read(l10nProvider).stepPtsAjoutes,
                     style: GoogleFonts.inter(
-                      color: _kGoldLight,
+                      color: const Color(0xFFFFD89B),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     )),
@@ -206,306 +207,151 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_kGreen, _kGreenDark],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: _kGreen.withValues(alpha: 0.45),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 10, offset: const Offset(0, 3))],
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Top row ──────────────────────────────────────────────────
-            Row(
-              children: [
-                Column(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Top row ──────────────────────────────────────────────────
+          Row(
+            children: [
+              Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(color: _kGreenBg, borderRadius: BorderRadius.circular(11)),
+                child: const Icon(LucideIcons.footprints, size: 16, color: _kGreen),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'MES PAS',
                       style: GoogleFonts.inter(
-                        color: _kGold,
-                        fontSize: 10,
+                        color: cs.onSurfaceVariant,
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 2.5,
+                        letterSpacing: 2,
                       ),
                     ),
-                    const SizedBox(height: 2),
                     Text(
                       "Aujourd'hui",
                       style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: 18,
+                        color: cs.onSurface,
+                        fontSize: 15,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.3,
                       ),
                     ),
                   ],
                 ),
-                const Spacer(),
-                // Sync button
-                GestureDetector(
-                  onTap: _isSyncing ? null : _handleSync,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.20)),
-                    ),
-                    child: _isSyncing
-                        ? const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: CircularProgressIndicator(
-                                color: _kGold, strokeWidth: 2))
-                        : const Icon(LucideIcons.refreshCw,
-                            color: Colors.white, size: 16),
+              ),
+              // Sync button
+              GestureDetector(
+                onTap: _isSyncing ? null : _handleSync,
+                child: Container(
+                  width: 34, height: 34,
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest,
+                    shape: BoxShape.circle,
                   ),
+                  child: _isSyncing
+                      ? Padding(
+                          padding: const EdgeInsets.all(9),
+                          child: CircularProgressIndicator(
+                              color: _kGreen, strokeWidth: 2))
+                      : Icon(LucideIcons.refreshCw,
+                          color: cs.onSurfaceVariant, size: 15),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
 
-            const SizedBox(height: 24),
+          const SizedBox(height: 18),
 
-            // ── Arc + step count ──────────────────────────────────────────
-            Center(
-              child: SizedBox(
-                width: 200,
-                height: 200,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Arc painter
-                    AnimatedBuilder(
-                      animation: _arcAnim,
-                      builder: (_, __) => CustomPaint(
-                        size: const Size(200, 200),
-                        painter: _ArcPainter(
-                          progress: _isLoading || _errorMessage != null
-                              ? 0
-                              : _arcAnim.value,
-                          goalDone: _isGoalDone,
-                        ),
+          // ── Anneau + infos ──────────────────────────────────────────────
+          Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            SizedBox(
+              width: 96, height: 96,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AnimatedBuilder(
+                    animation: _arcAnim,
+                    builder: (_, __) => CustomPaint(
+                      size: const Size(96, 96),
+                      painter: _ArcPainter(
+                        progress: _isLoading || _errorMessage != null
+                            ? 0
+                            : _arcAnim.value,
+                        goalDone: _isGoalDone,
+                        track: cs.surfaceContainerHighest,
                       ),
                     ),
-
-                    // Inner content
-                    if (_isLoading)
-                      _LoadingCenter()
-                    else if (_errorMessage != null)
-                      _ErrorCenter()
-                    else if (_isGoalDone)
-                      _GoalDoneCenter(steps: _stepsToday)
-                    else
-                      _StepCenter(
-                          steps: _stepsToday,
-                          progress: _progress,
-                          pulseAnim: _pulseAnim),
-                  ],
-                ),
+                  ),
+                  if (_isLoading)
+                    SizedBox(width: 22, height: 22,
+                      child: CircularProgressIndicator(color: _kGreen, strokeWidth: 2.5))
+                  else if (_errorMessage != null)
+                    Icon(LucideIcons.wifiOff, color: cs.onSurfaceVariant.withValues(alpha: 0.5), size: 24)
+                  else if (_isGoalDone)
+                    ScaleTransition(scale: _pulseAnim, child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(color: _kGoldBg, shape: BoxShape.circle),
+                      child: const Icon(LucideIcons.trophy, size: 18, color: _kGold)))
+                  else
+                    ScaleTransition(scale: _pulseAnim, child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(color: _kGreenBg, shape: BoxShape.circle),
+                      child: const Icon(LucideIcons.footprints, size: 17, color: _kGreen))),
+                ],
               ),
             ),
+            const SizedBox(width: 16),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (_isLoading)
+                Text('Chargement…', style: GoogleFonts.inter(fontSize: 12.5, color: cs.onSurfaceVariant))
+              else if (_errorMessage != null)
+                Text(_errorMessage!, style: GoogleFonts.inter(fontSize: 12.5, color: cs.onSurfaceVariant))
+              else ...[
+                Text(StepService.formatNumber(_stepsToday), style: GoogleFonts.outfit(
+                  color: cs.onSurface, fontSize: 30, fontWeight: FontWeight.w900,
+                  height: 1, letterSpacing: -1)),
+                const SizedBox(height: 3),
+                Text('/ 10 000 pas', style: GoogleFonts.inter(
+                  fontSize: 12, fontWeight: FontWeight.w500, color: cs.onSurfaceVariant)),
+                const SizedBox(height: 8),
+                if (_isGoalDone)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: _kGoldBg, borderRadius: BorderRadius.circular(50)),
+                    child: Text(ref.watch(l10nProvider).stepObjectifAtteint, style: GoogleFonts.outfit(
+                      fontSize: 11, fontWeight: FontWeight.w800, color: _kGold)))
+                else
+                  Text('${(_progress * 100).toStringAsFixed(0)}% de l\'objectif', style: GoogleFonts.outfit(
+                    fontSize: 12.5, fontWeight: FontWeight.w700, color: _kGreen)),
+              ],
+            ])),
+          ]),
 
-            const SizedBox(height: 24),
-
-            // ── Stat tiles ────────────────────────────────────────────────
-            if (!_isLoading && _errorMessage == null)
-              _StatRow(steps: _stepsToday),
-
-            if (_isLoading || _errorMessage != null)
-              Center(
-                child: Text(
-                  _errorMessage ?? '',
-                  style: GoogleFonts.inter(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: 6),
+          if (!_isLoading && _errorMessage == null) ...[
+            const SizedBox(height: 18),
+            _StatRow(steps: _stepsToday),
           ],
-        ),
+        ],
       ),
     );
   }
-}
-
-// ── Goal done center ──────────────────────────────────────────────────────────
-class _GoalDoneCenter extends StatelessWidget {
-  final int steps;
-  const _GoalDoneCenter({required this.steps});
-
-  @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: _kGold.withValues(alpha: 0.20),
-              shape: BoxShape.circle,
-              border: Border.all(color: _kGold.withValues(alpha: 0.50), width: 2),
-            ),
-            child: const Icon(LucideIcons.trophy, size: 24, color: _kGold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            StepService.formatNumber(steps),
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 38,
-              fontWeight: FontWeight.w900,
-              height: 1,
-              letterSpacing: -1.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Consumer(builder: (context, ref, _) {
-            final l10n = ref.watch(l10nProvider);
-            return Column(mainAxisSize: MainAxisSize.min, children: [
-              Text(
-                l10n.stepObjectifAtteint,
-                style: GoogleFonts.inter(
-                  color: _kGoldLight,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _kGold.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: Text(l10n.stepPts,
-                    style: GoogleFonts.outfit(
-                      color: _kGold,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    )),
-              ),
-            ]);
-          }),
-        ],
-      );
-}
-
-// ── Step center ───────────────────────────────────────────────────────────────
-class _StepCenter extends StatelessWidget {
-  final int steps;
-  final double progress;
-  final Animation<double> pulseAnim;
-  const _StepCenter(
-      {required this.steps,
-      required this.progress,
-      required this.pulseAnim});
-
-  @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ScaleTransition(
-            scale: pulseAnim,
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: _kGold.withValues(alpha: 0.18),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(LucideIcons.footprints,
-                  size: 18, color: _kGold),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            StepService.formatNumber(steps),
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 42,
-              fontWeight: FontWeight.w900,
-              height: 1,
-              letterSpacing: -1.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '/ 10 000 pas',
-            style: GoogleFonts.inter(
-              color: Colors.white.withValues(alpha: 0.55),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${(progress * 100).toStringAsFixed(0)}%',
-            style: GoogleFonts.outfit(
-              color: _kGold,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      );
-}
-
-class _LoadingCenter extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(
-            width: 28,
-            height: 28,
-            child: CircularProgressIndicator(
-                color: _kGold, strokeWidth: 2.5),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Chargement…',
-            style: GoogleFonts.inter(
-                color: Colors.white.withValues(alpha: 0.55),
-                fontSize: 12),
-          ),
-        ],
-      );
-}
-
-class _ErrorCenter extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(LucideIcons.wifiOff,
-              color: Colors.white.withValues(alpha: 0.40), size: 28),
-          const SizedBox(height: 10),
-          Text(
-            'Non disponible',
-            style: GoogleFonts.inter(
-                color: Colors.white.withValues(alpha: 0.55),
-                fontSize: 12,
-                fontWeight: FontWeight.w500),
-          ),
-        ],
-      );
 }
 
 // ── Stat row ──────────────────────────────────────────────────────────────────
@@ -524,19 +370,22 @@ class _StatRow extends StatelessWidget {
         _StatTile(
             icon: LucideIcons.mapPin,
             value: '${distanceKm.toStringAsFixed(1)} km',
-            label: 'Distance'),
+            label: 'Distance',
+            color: const Color(0xFF3B82F6), bg: const Color(0xFFEAF1FB)),
         const SizedBox(width: 10),
         _StatTile(
             icon: LucideIcons.flame,
             value: '$calories kcal',
-            label: 'Brûlées'),
+            label: 'Brûlées',
+            color: const Color(0xFFE0703C), bg: const Color(0xFFFCEEE7)),
         const SizedBox(width: 10),
         _StatTile(
             icon: LucideIcons.clock,
             value: minutes < 60
                 ? '${minutes}m'
                 : '${minutes ~/ 60}h ${minutes % 60}m',
-            label: 'Durée'),
+            label: 'Durée',
+            color: _kGreen, bg: _kGreenBg),
       ],
     );
   }
@@ -546,54 +395,59 @@ class _StatTile extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
-  const _StatTile(
-      {required this.icon, required this.value, required this.label});
+  final Color color;
+  final Color bg;
+  const _StatTile({
+    required this.icon, required this.value, required this.label,
+    required this.color, required this.bg,
+  });
 
   @override
-  Widget build(BuildContext context) => Expanded(
-        child: Container(
-          padding:
-              const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: Colors.white.withValues(alpha: 0.14)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, size: 14, color: _kGold),
-              const SizedBox(height: 6),
-              Text(
-                value,
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  color: Colors.white.withValues(alpha: 0.50),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(14),
         ),
-      );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: GoogleFonts.outfit(
+                color: cs.onSurface,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: cs.onSurfaceVariant,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Arc painter ───────────────────────────────────────────────────────────────
 class _ArcPainter extends CustomPainter {
   final double progress;
   final bool goalDone;
-  const _ArcPainter({required this.progress, this.goalDone = false});
+  final Color track;
+  const _ArcPainter({required this.progress, this.goalDone = false, required this.track});
 
   static const double _startAngle = math.pi * 0.65;
   static const double _sweepFull  = math.pi * 1.70;
@@ -602,7 +456,7 @@ class _ArcPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width * 0.43;
-    const strokeWidth = 11.0;
+    const strokeWidth = 8.0;
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     // Track
@@ -612,7 +466,7 @@ class _ArcPainter extends CustomPainter {
       _sweepFull,
       false,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.10)
+        ..color = track
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round,
@@ -620,7 +474,6 @@ class _ArcPainter extends CustomPainter {
 
     if (progress <= 0) return;
 
-    // Gold gradient progress arc
     canvas.drawArc(
       rect,
       _startAngle,
@@ -631,36 +484,17 @@ class _ArcPainter extends CustomPainter {
           startAngle: _startAngle,
           endAngle: _startAngle + _sweepFull,
           colors: goalDone
-              ? const [_kGoldLight, _kGold, _kGoldLight]
-              : const [_kGold, _kGoldLight, _kGold],
+              ? const [_kGold, Color(0xFFFFD89B), _kGold]
+              : const [_kGreen, Color(0xFF52B788), _kGreen],
           stops: const [0.0, 0.5, 1.0],
         ).createShader(rect)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = goalDone ? 13.0 : strokeWidth
+        ..strokeWidth = goalDone ? 9.5 : strokeWidth
         ..strokeCap = StrokeCap.round,
     );
-
-    if (!goalDone) {
-      // Tip glow dot (only when not complete)
-      final tipAngle = _startAngle + _sweepFull * progress;
-      final tipX = center.dx + radius * math.cos(tipAngle);
-      final tipY = center.dy + radius * math.sin(tipAngle);
-      canvas.drawCircle(
-        Offset(tipX, tipY),
-        7,
-        Paint()
-          ..color = _kGoldLight
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-      );
-      canvas.drawCircle(
-        Offset(tipX, tipY),
-        4,
-        Paint()..color = _kGoldLight,
-      );
-    }
   }
 
   @override
   bool shouldRepaint(_ArcPainter old) =>
-      old.progress != progress || old.goalDone != goalDone;
+      old.progress != progress || old.goalDone != goalDone || old.track != track;
 }
