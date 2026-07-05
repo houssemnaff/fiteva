@@ -244,8 +244,11 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
       final result = await FlutterImageCompress.compressWithList(
         rawBytes, quality: 88, format: CompressFormat.jpeg,
       );
-      if (result.isNotEmpty) return result;
-    } catch (_) {}
+      if (_isJpeg(result)) return result;
+      debugPrint('[Scan] compressWithList produced non-JPEG output (${result.length} bytes)');
+    } catch (e) {
+      debugPrint('[Scan] compressWithList FAILED: $e');
+    }
 
     try {
       final tmpDir = await getTemporaryDirectory();
@@ -259,15 +262,25 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
       if (xFile != null) {
         final bytes = await File(xFile.path).readAsBytes();
         await File(xFile.path).delete().catchError((_) => File(xFile.path));
-        if (bytes.isNotEmpty) return bytes;
+        if (_isJpeg(bytes)) return bytes;
+        debugPrint('[Scan] compressAndGetFile produced non-JPEG output (${bytes.length} bytes)');
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[Scan] compressAndGetFile FAILED: $e');
+    }
 
-    // Dernier recours : les bytes originaux plutôt que de bloquer
-    // l'utilisatrice — peuvent échouer côté API si le format n'est pas
-    // supporté, mais au moins l'aperçu s'affiche.
-    return rawBytes;
+    // Les deux méthodes de conversion ont échoué à produire un vrai JPEG —
+    // renvoyer les bytes bruts (potentiellement HEIC) donnerait un aperçu
+    // correct (Flutter/iOS sait décoder le HEIC nativement) mais ferait
+    // échouer l'analyse IA sans qu'on comprenne pourquoi (le mimetype
+    // déclaré "image/jpeg" ne correspondrait pas au contenu réel). On lève
+    // donc une erreur explicite plutôt que de laisser ce mensonge silencieux
+    // se propager jusqu'à l'appel API.
+    throw Exception('Conversion en JPEG impossible pour cette photo (format non pris en charge)');
   }
+
+  static bool _isJpeg(Uint8List bytes) =>
+      bytes.length > 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF;
 
   Future<void> _analyzeImage() async {
     final bytes = _pickedImageBytes;

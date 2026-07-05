@@ -14,12 +14,15 @@ extension CyclePhaseX on CyclePhase {
     }
   }
 
+  // Palette harmonisée (moins saturée, même famille tonale) — les 4 couleurs
+  // précédentes (rouge/orange/vert vif/violet) créaient un effet "arc-en-ciel"
+  // trop criard sur les cartes de programme.
   Color get color {
     switch (this) {
-      case CyclePhase.menstruation: return const Color(0xFFE57373);
-      case CyclePhase.follicular:   return const Color(0xFFFFB74D);
-      case CyclePhase.ovulation:    return const Color(0xFF66BB6A);
-      case CyclePhase.luteal:       return const Color(0xFFB39DDB);
+      case CyclePhase.menstruation: return const Color(0xFFC97B84);
+      case CyclePhase.follicular:   return const Color(0xFFB8860B);
+      case CyclePhase.ovulation:    return const Color(0xFF5A8A6E);
+      case CyclePhase.luteal:       return const Color(0xFF8E7BA6);
     }
   }
 }

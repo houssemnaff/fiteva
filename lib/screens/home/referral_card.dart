@@ -40,31 +40,54 @@ class _CountNotifier extends AsyncNotifier<int> {
   }
 }
 
+/// Paliers de récompense déjà révélés (grattés) — persistés pour que la
+/// carte reste révélée après un redémarrage de l'app.
+final revealedRewardsProvider =
+    AsyncNotifierProvider<_RevealedNotifier, Set<int>>(_RevealedNotifier.new);
+
+class _RevealedNotifier extends AsyncNotifier<Set<int>> {
+  static const _key = 'referral_revealed_rewards';
+  @override
+  Future<Set<int>> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_key) ?? const [];
+    return list.map(int.parse).toSet();
+  }
+
+  Future<void> reveal(int need) async {
+    final current = state.asData?.value ?? <int>{};
+    if (current.contains(need)) return;
+    final updated = {...current, need};
+    state = AsyncData(updated);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_key, updated.map((e) => e.toString()).toList());
+  }
+}
+
 // ── Reward model ───────────────────────────────────────────────────────────────
 class _Reward {
   final int     need;
   final IconData icon;
   final String  title;
-  final String  sub;
   final Color   color;
+  final Color   bg;
   const _Reward({required this.need, required this.icon,
-    required this.title, required this.sub, required this.color});
+    required this.title, required this.color, required this.bg});
 }
 
 const _rewards = [
-  _Reward(need: 1, icon: LucideIcons.star,   title: '+50 Points',    sub: 'Bonus immédiat sur ton compte', color: Color(0xFF22C55E)),
-  _Reward(need: 3, icon: LucideIcons.flame,  title: 'Premium 24h',   sub: 'Accès illimité pendant 24h',    color: Color(0xFFFF6B35)),
-  _Reward(need: 5, icon: LucideIcons.trophy, title: 'Badge Exclusif', sub: 'Visible sur ton profil',         color: Color(0xFFF59E0B)),
-];
-
-const _mockFriends = [
-  (name: 'Sara B.',  initial: 'S', joined: true),
-  (name: 'Ahmed K.', initial: 'A', joined: true),
-  (name: 'Nour M.',  initial: 'N', joined: false),
+  _Reward(need: 1, icon: LucideIcons.star,   title: '+50 Points',
+    color: Color(0xFF1C4D30), bg: Color(0xFFEAF3EC)),
+  _Reward(need: 3, icon: LucideIcons.flame,  title: 'Premium 24h',
+    color: Color(0xFFE0703C), bg: Color(0xFFFCEEE7)),
+  _Reward(need: 5, icon: LucideIcons.trophy, title: 'Badge exclusif',
+    color: Color(0xFFB8860B), bg: Color(0xFFFFF8E7)),
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
-// MAIN WIDGET
+// MAIN WIDGET — carte "ticket" (code + partage) + un palier de récompense à
+// gratter dès qu'un ami installe l'app avec ton code et fait franchir un
+// seuil — version simplifiée (pas de confettis/texture, juste le geste).
 // ══════════════════════════════════════════════════════════════════════════════
 class ReferralCard extends ConsumerStatefulWidget {
   const ReferralCard({super.key});
@@ -72,76 +95,11 @@ class ReferralCard extends ConsumerStatefulWidget {
   ConsumerState<ReferralCard> createState() => _ReferralCardState();
 }
 
-class _ReferralCardState extends ConsumerState<ReferralCard>
-    with TickerProviderStateMixin {
+class _ReferralCardState extends ConsumerState<ReferralCard> {
+  final List<Offset> _strokes = [];
+  Size _scratchSize = Size.zero;
+  int? _revealingNeed;
 
-  int              _selected  = 0;
-  // Per-reward scratch strokes + completion
-  final List<List<Offset>> _strokes = [[], [], []];
-  final List<bool>         _done    = [false, false, false];
-  Size                     _cardSize = Size.zero;
-
-  // Confetti
-  late AnimationController _confCtrl;
-  List<_Confetti>          _confetti = [];
-  bool                     _showConf = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _confCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2200));
-    _confCtrl.addStatusListener((s) {
-      if (s == AnimationStatus.completed && mounted)
-        setState(() => _showConf = false);
-    });
-  }
-
-  @override
-  void dispose() {
-    _confCtrl.dispose();
-    super.dispose();
-  }
-
-  // ── Scratch logic ─────────────────────────────────────────────────────────
-  void _onPanUpdate(DragUpdateDetails d, int count) {
-    final i = _selected;
-    if (_done[i] || count < _rewards[i].need) return;
-    final pos = d.localPosition;
-    if (pos.dx < 0 || pos.dy < 0 ||
-        pos.dx > _cardSize.width || pos.dy > _cardSize.height) return;
-
-    setState(() => _strokes[i].add(pos));
-    HapticFeedback.selectionClick();
-
-    // Complete when ~65% covered (approx by stroke count + spread)
-    if (_strokes[i].length > 100 && !_done[i]) {
-      setState(() => _done[i] = true);
-      _launchConfetti();
-    }
-  }
-
-  void _launchConfetti() {
-    final rng = Random();
-    setState(() {
-      _showConf = true;
-      _confetti = List.generate(55, (_) => _Confetti(
-        x:     0.05 + rng.nextDouble() * 0.9,
-        y:     0.0  + rng.nextDouble() * 0.3,
-        color: [
-          const Color(0xFF22C55E), const Color(0xFFF59E0B),
-          const Color(0xFFFF6B35), Colors.white,
-          const Color(0xFF818CF8), const Color(0xFFF472B6),
-        ][rng.nextInt(6)],
-        size:  4 + rng.nextDouble() * 6,
-        angle: rng.nextDouble() * 2 * pi,
-        speed: 0.4 + rng.nextDouble() * 0.6,
-      ));
-    });
-    _confCtrl..reset()..forward();
-  }
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
   void _copyCode(BuildContext ctx, String code, AppL10n l10n) {
     Clipboard.setData(ClipboardData(text: code));
     HapticFeedback.lightImpact();
@@ -161,18 +119,40 @@ class _ReferralCardState extends ConsumerState<ReferralCard>
     showModalBottomSheet(
       context: ctx,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ShareSheet(
-        message: msg, l10n: l10n,
-        surf: Theme.of(ctx).brightness == Brightness.dark
-            ? const Color(0xFF1A1A1A) : Colors.white,
-        ink: Theme.of(ctx).brightness == Brightness.dark
-            ? const Color(0xFFF0F0EE) : const Color(0xFF111110),
-        muted: Theme.of(ctx).brightness == Brightness.dark
-            ? const Color(0xFF888886) : const Color(0xFF6B6B68),
-        div: Theme.of(ctx).brightness == Brightness.dark
-            ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0EE),
-      ),
+      builder: (_) => _ShareSheet(message: msg, l10n: l10n),
     );
+  }
+
+  // Palier en cours d'animation de révélation — garde la carte affichée le
+  // temps de l'animation au lieu de la faire disparaître instantanément dès
+  // que le palier passe dans "revealed".
+  int? _revealAnimatingNeed;
+
+  void _onScratchPan(DragUpdateDetails d, int need) {
+    if (_revealingNeed != need) {
+      // Un palier différent a été débloqué depuis — réinitialise les traits.
+      _revealingNeed = need;
+      _strokes.clear();
+    }
+    final pos = d.localPosition;
+    if (pos.dx < 0 || pos.dy < 0 ||
+        pos.dx > _scratchSize.width || pos.dy > _scratchSize.height) return;
+
+    setState(() => _strokes.add(pos));
+    HapticFeedback.selectionClick();
+
+    if (_strokes.length > 45 && _revealAnimatingNeed != need) {
+      HapticFeedback.mediumImpact();
+      setState(() => _revealAnimatingNeed = need);
+      Future.delayed(const Duration(milliseconds: 550), () {
+        if (!mounted) return;
+        ref.read(revealedRewardsProvider.notifier).reveal(need);
+        setState(() {
+          _strokes.clear();
+          _revealAnimatingNeed = null;
+        });
+      });
+    }
   }
 
   @override
@@ -181,407 +161,273 @@ class _ReferralCardState extends ConsumerState<ReferralCard>
     final codeAsync  = ref.watch(referralCodeProvider);
     final countAsync = ref.watch(referralCountProvider);
     final count      = countAsync.asData?.value ?? 0;
-    final dark       = Theme.of(context).brightness == Brightness.dark;
+    final revealed   = ref.watch(revealedRewardsProvider).asData?.value ?? <int>{};
+    final cs         = Theme.of(context).colorScheme;
 
-    final surf  = dark ? const Color(0xFF1A1A1A) : Colors.white;
-    final ink   = dark ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
-    final muted = dark ? const Color(0xFF888886) : const Color(0xFF6B6B68);
-    final div   = dark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0EE);
-    final green = const Color(0xFF22C55E);
+    _Reward? nextToReveal;
+    for (final r in _rewards) {
+      final stillAnimating = _revealAnimatingNeed == r.need;
+      if (count >= r.need && (!revealed.contains(r.need) || stillAnimating)) {
+        nextToReveal = r;
+        break;
+      }
+    }
 
+    // Carte "ticket d'invitation" — dégradé vert plein, volontairement plus
+    // visible que les autres cartes claires de l'accueil (c'est un CTA, pas
+    // une donnée du jour) avec le code affiché comme un talon de billet.
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Stack(clipBehavior: Clip.none, children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [Color(0xFF1C4D30), Color(0xFF0E2B1A)]),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(
+            color: const Color(0xFF1C4D30).withValues(alpha: 0.30),
+            blurRadius: 20, offset: const Offset(0, 8))],
+        ),
+        child: Column(children: [
           // ── Header ───────────────────────────────────────────────────────
-          Row(children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.referralHeadline,
-                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800,
-                    color: ink, letterSpacing: -0.4)),
-                const SizedBox(height: 2),
-                Text(l10n.referralHint,
-                  style: GoogleFonts.inter(fontSize: 12, color: muted)),
-              ])),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: green.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(20)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(LucideIcons.users, size: 12, color: green),
-                const SizedBox(width: 5),
-                Text('$count invitée${count != 1 ? 's' : ''}',
-                  style: GoogleFonts.inter(fontSize: 12,
-                    fontWeight: FontWeight.w700, color: green)),
-              ]),
-            ),
-          ]),
-
-          const SizedBox(height: 18),
-
-          // ── Reward selector tabs ─────────────────────────────────────────
-          Row(children: List.generate(3, (i) {
-            final r        = _rewards[i];
-            final unlocked = count >= r.need;
-            final active   = _selected == i;
-            return Expanded(child: Padding(
-              padding: EdgeInsets.only(right: i < 2 ? 8 : 0),
-              child: GestureDetector(
-                onTap: () => setState(() => _selected = i),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: active && unlocked
-                        ? r.color.withValues(alpha: 0.12)
-                        : active
-                            ? (dark ? const Color(0xFF222222) : const Color(0xFFF6F7F5))
-                            : (dark ? const Color(0xFF1A1A1A) : const Color(0xFFF0F0EE)),
-                    borderRadius: BorderRadius.circular(12),
-                    border: active
-                        ? Border.all(
-                            color: unlocked
-                                ? r.color.withValues(alpha: 0.35)
-                                : (dark ? const Color(0xFF3A3A3A) : const Color(0xFFDDDDDB)),
-                            width: 1.2)
-                        : null,
-                  ),
-                  child: Column(children: [
-                    Icon(
-                      _done[i] ? LucideIcons.checkCircle2 : (unlocked ? r.icon : LucideIcons.lock),
-                      size: 16,
-                      color: active && unlocked ? r.color : muted),
-                    const SizedBox(height: 4),
-                    Text('${r.need} ami${r.need > 1 ? 'es' : 'e'}',
-                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700,
-                        color: active && unlocked ? r.color : muted)),
-                  ]),
-                ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+            child: Row(children: [
+              Container(
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  shape: BoxShape.circle),
+                child: const Icon(LucideIcons.gift, size: 19, color: Colors.white)),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.referralHeadline,
+                    style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800,
+                      color: Colors.white, letterSpacing: -0.3)),
+                  const SizedBox(height: 2),
+                  Text(l10n.referralHint,
+                    style: GoogleFonts.inter(fontSize: 11.5, color: Colors.white.withValues(alpha: 0.65))),
+                ])),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(20)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(LucideIcons.users, size: 11, color: Colors.white),
+                  const SizedBox(width: 4),
+                  Text('$count', style: GoogleFonts.outfit(
+                    fontSize: 11.5, fontWeight: FontWeight.w800, color: Colors.white)),
+                ]),
               ),
-            ));
-          })),
+            ]),
+          ),
 
-          const SizedBox(height: 12),
-
-          // ── Scratch card ──────────────────────────────────────────────────
-          _buildScratchCard(count, dark, muted),
-
-          const SizedBox(height: 16),
-
-          // ── Code ─────────────────────────────────────────────────────────
-          codeAsync.when(
-            loading: () => const SizedBox(height: 60),
-            error:   (_, __) => const SizedBox(),
-            data: (code) => Container(
-              padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
-              decoration: BoxDecoration(
-                color: surf,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? 0.15 : 0.04),
-                  blurRadius: 8, offset: const Offset(0, 2))]),
-              child: Row(children: [
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                 
-                    const SizedBox(height: 4),
-                    Text(code,
-                      style: GoogleFonts.outfit(fontSize: 19, fontWeight: FontWeight.w900,
-                        color: ink, letterSpacing: 1.5)),
-                  ])),
-            
-                const SizedBox(width: 6),
+          // ── Talon de billet — code + partage ────────────────────────────
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: codeAsync.when(
+              loading: () => const SizedBox(height: 40),
+              error:   (_, __) => const SizedBox(),
+              data: (code) => Row(children: [
+                Expanded(child: GestureDetector(
+                  onTap: () => _copyCode(context, code, l10n),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('TON CODE', style: GoogleFonts.inter(
+                      fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 1.5,
+                      color: cs.onSurfaceVariant)),
+                    const SizedBox(height: 3),
+                    Row(children: [
+                      Flexible(child: Text(code, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                          fontSize: 17, fontWeight: FontWeight.w900,
+                          color: cs.onSurface, letterSpacing: 1))),
+                      const SizedBox(width: 6),
+                      Icon(LucideIcons.copy, size: 13, color: cs.onSurfaceVariant),
+                    ]),
+                  ]),
+                )),
                 GestureDetector(
                   onTap: () => _share(context, code, l10n),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                     decoration: BoxDecoration(
-                      color: green,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [BoxShadow(
-                        color: green.withValues(alpha: 0.25),
-                        blurRadius: 8, offset: const Offset(0, 3))]),
+                      color: const Color(0xFF1C4D30),
+                      borderRadius: BorderRadius.circular(50)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(LucideIcons.share2, color: Colors.white, size: 13),
                       const SizedBox(width: 6),
-                      Text(l10n.referralShare,
-                        style: GoogleFonts.inter(color: Colors.white,
-                          fontSize: 13, fontWeight: FontWeight.w700)),
-                    ]))),
+                      Text(l10n.referralShare, style: GoogleFonts.inter(
+                        color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                ),
               ]),
             ),
           ),
 
-          const SizedBox(height: 14),
-
-          // ── Friends ───────────────────────────────────────────────────────
-         
-        ]),
-
-        // ── Confetti layer ─────────────────────────────────────────────────
-        if (_showConf)
-          Positioned.fill(child: IgnorePointer(
-            child: AnimatedBuilder(
-              animation: _confCtrl,
-              builder: (_, __) => CustomPaint(
-                painter: _ConfettiPainter(
-                  particles: _confetti,
-                  progress: _confCtrl.value)),
+          // ── Palier à gratter — dès qu'un ami installe et fait franchir
+          // un nouveau seuil, cette zone apparaît pour révéler la récompense.
+          if (nextToReveal != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 16, 10, 0),
+              child: _ScratchReveal(
+                reward: nextToReveal,
+                strokes: _strokes,
+                revealing: _revealAnimatingNeed == nextToReveal.need,
+                onPanUpdate: (d) => _onScratchPan(d, nextToReveal!.need),
+                onSizeKnown: (s) => _scratchSize = s,
+              ),
             ),
-          )),
-      ]),
-    );
-  }
 
-  // ── Scratch card widget ───────────────────────────────────────────────────
-  Widget _buildScratchCard(int count, bool dark, Color muted) {
-    final i        = _selected;
-    final r        = _rewards[i];
-    final unlocked = count >= r.need;
-
-    return AspectRatio(
-      aspectRatio: 2.2,
-      child: LayoutBuilder(builder: (_, c) {
-        _cardSize = Size(c.maxWidth, c.maxHeight);
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Stack(children: [
-
-            // ── LAYER 1 — Reward revealed (always underneath) ────────────
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: double.infinity,
-              height: double.infinity,
-              color: dark
-                  ? r.color.withValues(alpha: 0.15)
-                  : r.color.withValues(alpha: 0.08),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+          // ── Paliers de récompense ────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Row(children: List.generate(_rewards.length, (i) {
+              final r        = _rewards[i];
+              final unlocked = count >= r.need;
+              final done     = revealed.contains(r.need);
+              return Expanded(child: Padding(
+                padding: EdgeInsets.only(right: i < _rewards.length - 1 ? 10 : 0),
                 child: Row(children: [
                   Container(
-                    width: 60, height: 60,
+                    width: 28, height: 28,
                     decoration: BoxDecoration(
-                      color: r.color.withValues(alpha: 0.18),
+                      color: unlocked ? Colors.white.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.08),
                       shape: BoxShape.circle),
-                    child: Icon(r.icon, size: 26, color: r.color)),
-                  const SizedBox(width: 18),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Récompense',
-                        style: GoogleFonts.inter(fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: r.color, letterSpacing: 1.2)),
-                      const SizedBox(height: 6),
-                      Text(r.title,
-                        style: GoogleFonts.outfit(fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: dark ? Colors.white : const Color(0xFF111110),
-                          letterSpacing: -0.4)),
-                      const SizedBox(height: 3),
-                      Text(r.sub,
-                        style: GoogleFonts.inter(fontSize: 11,
-                          color: muted)),
-                    ])),
+                    child: Icon(
+                      done ? Icons.check_rounded : (unlocked ? r.icon : LucideIcons.lock),
+                      size: 13, color: Colors.white.withValues(alpha: unlocked ? 0.95 : 0.4))),
+                  const SizedBox(width: 8),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(r.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: unlocked ? 0.95 : 0.45))),
+                    Text('${r.need} ami${r.need > 1 ? 's' : ''}',
+                      style: GoogleFonts.inter(fontSize: 9, color: Colors.white.withValues(alpha: 0.5))),
+                  ])),
                 ]),
-              ),
-            ),
-
-            // ── LAYER 2 — Silver foil (scratched away) ───────────────────
-            if (!_done[i])
-              GestureDetector(
-                onPanUpdate: unlocked ? (d) => _onPanUpdate(d, count) : null,
-                child: RepaintBoundary(
-                  child: CustomPaint(
-                    size: _cardSize,
-                    painter: _FoilPainter(
-                      strokes: List.from(_strokes[i]),
-                      locked: !unlocked,
-                    ),
-                  ),
-                ),
-              ),
-
-            // ── LAYER 3 — "Scratch here" hint ───────────────────────────
-            if (unlocked && !_done[i] && _strokes[i].isEmpty)
-              Positioned(bottom: 14, left: 0, right: 0,
-                child: IgnorePointer(child: Column(children: [
-                  Icon(LucideIcons.fingerprint,
-                    color: Colors.white.withValues(alpha: 0.45), size: 20),
-                  const SizedBox(height: 3),
-                  Text('Gratte pour révéler',
-                    style: GoogleFonts.inter(fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.45))),
-                ]))),
-
-            // ── LAYER 4 — Lock label when not unlocked ───────────────────
-            if (!unlocked && !_done[i])
-              Positioned(bottom: 14, left: 0, right: 0,
-                child: IgnorePointer(child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(LucideIcons.lock,
-                      size: 11, color: Colors.white.withValues(alpha: 0.45)),
-                    const SizedBox(width: 5),
-                    Text(
-                      '${r.need} amie${r.need > 1 ? 's' : ''} pour débloquer',
-                      style: GoogleFonts.inter(fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.45))),
-                  ]))),
-
-            // ── LAYER 5 — "Reward revealed" badge after scratch ──────────
-            if (_done[i])
-              Positioned(top: 10, right: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: r.color,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(
-                      color: r.color.withValues(alpha: 0.35),
-                      blurRadius: 8, offset: const Offset(0, 3))]),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.check_rounded, size: 11, color: Colors.white),
-                    const SizedBox(width: 4),
-                    Text('Débloqué !',
-                      style: GoogleFonts.inter(fontSize: 10,
-                        fontWeight: FontWeight.w800, color: Colors.white)),
-                  ]))),
-          ]),
-        );
-      }),
+              ));
+            })),
+          ),
+        ]),
+      ),
     );
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SILVER FOIL PAINTER
-// ══════════════════════════════════════════════════════════════════════════════
-class _FoilPainter extends CustomPainter {
+// ── Zone de grattage — simplifiée (pas de texture/confettis) ────────────────
+class _ScratchReveal extends StatelessWidget {
+  final _Reward reward;
   final List<Offset> strokes;
-  final bool         locked;
-  const _FoilPainter({required this.strokes, required this.locked});
+  final bool revealing;
+  final ValueChanged<DragUpdateDetails> onPanUpdate;
+  final ValueChanged<Size> onSizeKnown;
+  const _ScratchReveal({
+    required this.reward, required this.strokes, required this.revealing,
+    required this.onPanUpdate, required this.onSizeKnown,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: SizedBox(
+        height: 64,
+        child: LayoutBuilder(builder: (_, c) {
+          onSizeKnown(Size(c.maxWidth, c.maxHeight));
+          return Stack(children: [
+            // Récompense en dessous — pop léger (scale + fade) une fois révélée
+            Container(
+              color: reward.bg,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(children: [
+                AnimatedScale(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.elasticOut,
+                  scale: revealing ? 1.15 : 1.0,
+                  child: Icon(reward.icon, size: 20, color: reward.color)),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text('Récompense débloquée', style: GoogleFonts.inter(
+                    fontSize: 9.5, fontWeight: FontWeight.w700, color: reward.color)),
+                  Text(reward.title, style: GoogleFonts.outfit(
+                    fontSize: 15, fontWeight: FontWeight.w800, color: reward.color)),
+                ])),
+              ]),
+            ),
+            // Voile à gratter — s'estompe pour laisser voir la récompense
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 450),
+              curve: Curves.easeOut,
+              opacity: revealing ? 0.0 : 1.0,
+              child: IgnorePointer(
+                ignoring: revealing,
+                child: GestureDetector(
+                  onPanUpdate: onPanUpdate,
+                  child: RepaintBoundary(child: CustomPaint(
+                    size: Size.infinite,
+                    painter: _ScratchPainter(strokes: List.from(strokes)),
+                  )),
+                ),
+              ),
+            ),
+            if (!revealing)
+              IgnorePointer(child: Center(child: Row(
+                mainAxisSize: MainAxisSize.min, children: [
+                const Icon(LucideIcons.fingerprint, size: 15, color: Colors.white70),
+                const SizedBox(width: 6),
+                Text('Gratte pour révéler ta récompense', style: GoogleFonts.inter(
+                  fontSize: 11.5, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.85))),
+              ]))),
+          ]);
+        }),
+      ),
+    );
+  }
+}
+
+class _ScratchPainter extends CustomPainter {
+  final List<Offset> strokes;
+  const _ScratchPainter({required this.strokes});
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
-
-    // Silver gradient
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
       Paint()..shader = ui.Gradient.linear(
         Offset.zero, Offset(size.width, size.height),
-        const [
-          Color(0xFFBBBBBB), Color(0xFFD4D4D4),
-          Color(0xFFA8A8A8), Color(0xFFCCCCCC),
-          Color(0xFFB8B8B8),
-        ], [0.0, 0.25, 0.5, 0.75, 1.0],
+        const [Color(0xFFB8B8B8), Color(0xFFD8D8D8), Color(0xFFA8A8A8)],
+        const [0.0, 0.5, 1.0],
       ),
     );
 
-    // Diagonal hatch (lottery texture)
-    final hatch = Paint()
-      ..color = Colors.white.withValues(alpha: 0.07)
-      ..strokeWidth = 1.2;
-    for (double x = -size.height; x < size.width + size.height; x += 14) {
-      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), hatch);
-    }
-
-    // Subtle "FitEva" watermark
-    final tp = TextPainter(
-      text: TextSpan(
-        text: 'FitEva',
-        style: GoogleFonts.outfit(
-          color: Colors.white.withValues(alpha: 0.14),
-          fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    for (double y = 12; y < size.height; y += 30) {
-      for (double x = 4; x < size.width; x += 58) {
-        tp.paint(canvas, Offset(x, y));
-      }
-    }
-
-    // Scratch erasure with BlendMode.clear
-    if (!locked && strokes.length > 1) {
+    if (strokes.length > 1) {
       final clear = Paint()
         ..blendMode = BlendMode.clear
-        ..style     = PaintingStyle.stroke
-        ..strokeWidth = 38
-        ..strokeCap  = StrokeCap.round
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 34
+        ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
-
       final path = Path()..moveTo(strokes[0].dx, strokes[0].dy);
-      for (int i = 1; i < strokes.length; i++) {
-        if (i < strokes.length - 1) {
-          final mx = (strokes[i].dx + strokes[i + 1].dx) / 2;
-          final my = (strokes[i].dy + strokes[i + 1].dy) / 2;
-          path.quadraticBezierTo(strokes[i].dx, strokes[i].dy, mx, my);
-        } else {
-          path.lineTo(strokes[i].dx, strokes[i].dy);
-        }
+      for (var i = 1; i < strokes.length; i++) {
+        path.lineTo(strokes[i].dx, strokes[i].dy);
       }
       canvas.drawPath(path, clear);
-
-      for (final p in strokes) {
-        canvas.drawCircle(p, 19, Paint()..blendMode = BlendMode.clear);
-      }
     }
-
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(_FoilPainter old) =>
-      old.strokes.length != strokes.length;
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// CONFETTI
-// ══════════════════════════════════════════════════════════════════════════════
-class _Confetti {
-  final double x, y, size, angle, speed;
-  final Color  color;
-  const _Confetti({required this.x, required this.y, required this.size,
-    required this.angle, required this.speed, required this.color});
-}
-
-class _ConfettiPainter extends CustomPainter {
-  final List<_Confetti> particles;
-  final double          progress;
-  const _ConfettiPainter({required this.particles, required this.progress});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (final p in particles) {
-      final opacity = (1.0 - progress * 0.85).clamp(0.0, 1.0);
-      final dx = p.x * size.width +
-          cos(p.angle) * p.speed * progress * size.width * 0.45;
-      final dy = p.y * size.height +
-          sin(p.angle) * p.speed * progress * size.height * 0.35 +
-          progress * progress * size.height * 0.45;
-      canvas.save();
-      canvas.translate(dx, dy);
-      canvas.rotate(p.angle + progress * 7);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size * 0.5),
-          const Radius.circular(1.5)),
-        Paint()..color = p.color.withValues(alpha: opacity));
-      canvas.restore();
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ConfettiPainter old) => old.progress != progress;
+  bool shouldRepaint(_ScratchPainter old) => old.strokes.length != strokes.length;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -590,36 +436,33 @@ class _ConfettiPainter extends CustomPainter {
 class _ShareSheet extends StatelessWidget {
   final String message;
   final AppL10n l10n;
-  final Color surf, ink, muted, div;
-  const _ShareSheet({required this.message, required this.l10n,
-    required this.surf, required this.ink,
-    required this.muted, required this.div});
+  const _ShareSheet({required this.message, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
-    final green = const Color(0xFF22C55E);
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: EdgeInsets.fromLTRB(
         24, 20, 24, MediaQuery.of(context).padding.bottom + 24),
       decoration: BoxDecoration(
-        color: surf,
+        color: cs.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 36, height: 4,
-          decoration: BoxDecoration(color: div,
+          decoration: BoxDecoration(color: cs.outlineVariant,
             borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 20),
         Text(l10n.referralShareTitle,
           style: GoogleFonts.outfit(fontSize: 17,
-            fontWeight: FontWeight.w800, color: ink)),
+            fontWeight: FontWeight.w800, color: cs.onSurface)),
         const SizedBox(height: 14),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: div,
+          decoration: BoxDecoration(color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12)),
           child: Text(message,
-            style: GoogleFonts.inter(fontSize: 13, color: muted, height: 1.6))),
+            style: GoogleFonts.inter(fontSize: 13, color: cs.onSurfaceVariant, height: 1.6))),
         const SizedBox(height: 14),
         GestureDetector(
           onTap: () {
@@ -641,10 +484,10 @@ class _ShareSheet extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              color: green,
+              color: const Color(0xFF1C4D30),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [BoxShadow(
-                color: green.withValues(alpha: 0.25),
+                color: const Color(0xFF1C4D30).withValues(alpha: 0.25),
                 blurRadius: 10, offset: const Offset(0, 4))]),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(LucideIcons.copy, color: Colors.white, size: 14),

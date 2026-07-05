@@ -211,7 +211,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
           // Fix #2 — ring tappable → SuiviNutritionScreen
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
               child: GestureDetector(
                 onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const SuiviNutritionScreen())),

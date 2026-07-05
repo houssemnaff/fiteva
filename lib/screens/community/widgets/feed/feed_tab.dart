@@ -50,7 +50,7 @@ class _FeedTabState extends ConsumerState<FeedTab> {
         // ── Section header ────────────────────────────────────
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [

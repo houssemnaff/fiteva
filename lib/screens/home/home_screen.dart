@@ -64,25 +64,25 @@ class HomeScreen extends ConsumerWidget {
           // ── 1. Hero — featured pick ────────────────────
           SliverToBoxAdapter(child: _HeroSection(user: user)),
 
-          // ── 2. Current cycle status ────────────────────
-          const SliverToBoxAdapter(child: _CycleStatusBanner()),
+
+        
 
           // ── 3. Today at a glance — cycle / calories / workout ─
           const SliverToBoxAdapter(child: _StatBar()),
 
-          // ── 4. This week's plan ─────────────────────────
-          SliverToBoxAdapter(child: _WeeklyPlanSection()),
-
-          // ── 5. Continue where you left off ─────────────
-          SliverToBoxAdapter(child: _ContinueWorkoutsSection(programs: allPrograms)),
-
-          // ── 6. Steps ────────────────────────────────────
+          // ── 4. Steps ────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: MesPasCard(),
             ),
           ),
+
+          // ── 5. This week's plan ─────────────────────────
+          SliverToBoxAdapter(child: _WeeklyPlanSection()),
+
+          // ── 6. Continue where you left off ─────────────
+          SliverToBoxAdapter(child: _ContinueWorkoutsSection(programs: allPrograms)),
 
           // ── 7. Invite a friend ──────────────────────────
           const SliverToBoxAdapter(
@@ -1499,7 +1499,7 @@ class _CycleStatusBanner extends ConsumerWidget {
 // ═══════════════════════════════════════════════════════════
 
 class _StatBar extends ConsumerWidget {
-  const _StatBar();
+  const   _StatBar();
 
   static const _ppWeeksLabel = {
     '0-2': '0-2 sem.', '2-6': '2-6 sem.', '6-12': '6-12 sem.',

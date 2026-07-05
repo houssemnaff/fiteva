@@ -222,35 +222,7 @@ class _GrossesseProgramCard extends ConsumerWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: color,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                    color: color.withValues(alpha: 0.45),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3))
-                              ],
-                            ),
-                            child: Text(
-                              'PROGRAMME',
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.3,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _ProgramStatusBadge(program: program),
-                        ],
-                      ),
+                      child: _ProgramStatusBadge(program: program),
                     ),
                     GestureDetector(
                       onTap: onToggleFav,
@@ -298,18 +270,14 @@ class _GrossesseProgramCard extends ConsumerWidget {
                         height: 1.15,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        _GlassPill(
-                            icon: LucideIcons.calendarDays,
-                            label: program.duration),
-                        _GlassPill(
-                            icon: LucideIcons.dumbbell,
-                            label: program.sessions),
-                      ],
+                    const SizedBox(height: 4),
+                    Text(
+                      '${program.duration} · ${program.sessions}',
+                      style: GoogleFonts.inter(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     CycleBadgeRow(phases: program.phases),
@@ -404,11 +372,11 @@ class _ProgramStatusBadge extends ConsumerWidget {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.75),
+              color: WorkoutColors.grossesse.withValues(alpha: 0.75),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.orange.withValues(alpha: 0.45),
+                    color: WorkoutColors.grossesse.withValues(alpha: 0.45),
                     blurRadius: 8,
                     offset: const Offset(0, 3))
               ],
@@ -433,34 +401,3 @@ class _ProgramStatusBadge extends ConsumerWidget {
   }
 }
 
-// ── Glassmorphism info pill
-class _GlassPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _GlassPill({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 10, color: Colors.white),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 10,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-}

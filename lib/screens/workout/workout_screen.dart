@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:fiteva/models/home_program_model.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:fiteva/screens/workout/widgets/DanceSection.dart';
@@ -14,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/workout_progress_provider.dart';
 import 'favorites_screen.dart';
@@ -22,6 +22,58 @@ import 'theme/cycle_theme.dart';
 import 'programme_detail_screen.dart';
 import 'active_workout_screen.dart';
 import 'weekly_plan_screen.dart';
+
+// ── Filtre étendu : les 4 phases du cycle + grossesse + post-partum ─────────
+enum _FilterKind { menstruation, follicular, ovulation, luteal, pregnancy, postpartum }
+
+extension _FilterKindX on _FilterKind {
+  String get label {
+    switch (this) {
+      case _FilterKind.menstruation: return 'Règles';
+      case _FilterKind.follicular:   return 'Follic.';
+      case _FilterKind.ovulation:    return 'Ovul.';
+      case _FilterKind.luteal:       return 'Lutéale';
+      case _FilterKind.pregnancy:    return 'Grossesse';
+      case _FilterKind.postpartum:   return 'Post-partum';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case _FilterKind.menstruation: return CyclePhase.menstruation.color;
+      case _FilterKind.follicular:   return CyclePhase.follicular.color;
+      case _FilterKind.ovulation:    return CyclePhase.ovulation.color;
+      case _FilterKind.luteal:       return CyclePhase.luteal.color;
+      case _FilterKind.pregnancy:    return const Color(0xFF9B3E6A);
+      case _FilterKind.postpartum:   return const Color(0xFF1C7A6E);
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case _FilterKind.menstruation: return LucideIcons.droplets;
+      case _FilterKind.follicular:   return LucideIcons.sprout;
+      case _FilterKind.ovulation:    return LucideIcons.sun;
+      case _FilterKind.luteal:       return LucideIcons.moon;
+      case _FilterKind.pregnancy:    return Icons.child_friendly_rounded;
+      case _FilterKind.postpartum:  return Icons.favorite_rounded;
+    }
+  }
+
+  /// null pour grossesse/post-partum — ces filtres agissent sur les
+  /// sections affichées, pas sur le tag "phases" des programmes.
+  CyclePhase? get cyclePhase {
+    switch (this) {
+      case _FilterKind.menstruation: return CyclePhase.menstruation;
+      case _FilterKind.follicular:   return CyclePhase.follicular;
+      case _FilterKind.ovulation:    return CyclePhase.ovulation;
+      case _FilterKind.luteal:       return CyclePhase.luteal;
+      case _FilterKind.pregnancy:
+      case _FilterKind.postpartum:
+        return null;
+    }
+  }
+}
 
 // ═══════════════════════════════════════════════════════════
 // MAIN SCREEN
@@ -36,7 +88,7 @@ class WorkoutScreen extends ConsumerStatefulWidget {
 class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     with SingleTickerProviderStateMixin {
   int _selectedChip = 0;
-  CyclePhase? _selectedPhase;
+  _FilterKind? _selectedPhase;
   final _scrollController = ScrollController();
 
   @override
@@ -165,13 +217,18 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     final recuperationPrograms = ref.watch(recuperationProgramsProvider);
     final grossessePrograms   = ref.watch(grossesseProgramsProvider);
     final favorites = ref.watch(favoritesProvider);
+    final profile   = ref.watch(userProfileProvider);
 
     final screenH  = MediaQuery.of(context).size.height;
     final bottomGap = screenH < 700 ? 80.0 : 110.0;
 
+    // Grossesse/post-partum ne filtrent pas par tag "phases" (pas de sens
+    // pour ces programmes) — ils contrôlent plutôt quelles sections
+    // s'affichent (voir showCycleSections/showGrossesse/showRecuperation).
     bool matchesPhase(String phases) {
-      if (_selectedPhase == null) return true;
-      return parseCyclePhases(phases).contains(_selectedPhase);
+      final cp = _selectedPhase?.cyclePhase;
+      if (cp == null) return true;
+      return parseCyclePhases(phases).contains(cp);
     }
 
     List<HomeProgramModel> fp(List<HomeProgramModel> list) =>
@@ -182,6 +239,31 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     final filteredDance       = fp(dancePrograms);
     final filteredRecuperation = fp(recuperationPrograms);
     final filteredGrossesse   = fp(grossessePrograms);
+
+    final showCycleSections = _selectedPhase == null || _selectedPhase!.cyclePhase != null;
+    final showGrossesse     = _selectedPhase == null || _selectedPhase == _FilterKind.pregnancy;
+    final showRecuperationSection = _selectedPhase == null || _selectedPhase == _FilterKind.postpartum;
+
+    // ── Recommandations selon l'état réel (grossesse / post-partum / phase
+    // du cycle) — indépendant du filtre manuel _selectedPhase ci-dessus.
+    CyclePhase? currentPhase;
+    switch (cycle.name) {
+      case 'Règles':       currentPhase = CyclePhase.menstruation; break;
+      case 'Folliculaire': currentPhase = CyclePhase.follicular;   break;
+      case 'Ovulation':    currentPhase = CyclePhase.ovulation;    break;
+      case 'Lutéale':      currentPhase = CyclePhase.luteal;       break;
+    }
+    final List<HomeProgramModel> recommendedPrograms;
+    if (profile.healthStatus == 'pregnant') {
+      recommendedPrograms = grossessePrograms;
+    } else if (profile.healthStatus == 'postpartum') {
+      recommendedPrograms = recuperationPrograms;
+    } else {
+      final all = [...sallePrograms, ...homePrograms, ...dancePrograms];
+      recommendedPrograms = currentPhase == null
+          ? all
+          : all.where((p) => parseCyclePhases(p.phases).contains(currentPhase)).toList();
+    }
 
     final chips = [
       l10n.workoutChipAll,
@@ -259,7 +341,27 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             ),
 
             // ── Phase Hero Card ───────────────────────────────────────────
-            _PhaseBanner(cycle: cycle, dark: dark, cs: cs),
+            _PhaseBanner(
+              cycle: cycle,
+              healthStatus: profile.healthStatus,
+              dark: dark,
+              cs: cs,
+              onSeeRecommended: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => _RecommendedSheet(
+                  programs: recommendedPrograms,
+                  favorites: favorites,
+                  onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
+                  onSelectProgram: (p) {
+                    Navigator.pop(context);
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => WorkoutDetailScreen(program: p)));
+                  },
+                ),
+              ),
+            ),
 
             const SizedBox(height: 22),
 
@@ -285,7 +387,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             const SizedBox(height: 8),
 
             // ── Sections ──────────────────────────────────────────────────
-            if (filteredSalle.isNotEmpty) ...[
+            if (showCycleSections && filteredSalle.isNotEmpty) ...[
               KeyedSubtree(
                 key: _keySalle,
                 child: SalleSection(
@@ -304,7 +406,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (filteredMaison.isNotEmpty) ...[
+            if (showCycleSections && filteredMaison.isNotEmpty) ...[
               KeyedSubtree(
                 key: _keyMaison,
                 child: MaisonSection(
@@ -323,7 +425,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (filteredDance.isNotEmpty) ...[
+            if (showCycleSections && filteredDance.isNotEmpty) ...[
               KeyedSubtree(
                 key: _keyDance,
                 child: DanceSection(
@@ -342,7 +444,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (filteredRecuperation.isNotEmpty) ...[
+            if (showRecuperationSection && filteredRecuperation.isNotEmpty) ...[
               KeyedSubtree(
                 key: _keyRecup,
                 child: RecuperationSection(
@@ -361,7 +463,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (filteredGrossesse.isNotEmpty) ...[
+            if (showGrossesse && filteredGrossesse.isNotEmpty) ...[
               KeyedSubtree(
                 key: _keyGrossesse,
                 child: GrossesseSection(
@@ -398,111 +500,217 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
 // ══════════════════════════════════════════════════════════════════════════════
 class _PhaseBanner extends StatelessWidget {
   final CycleStatus cycle;
+  final String? healthStatus;
   final bool dark;
   final ColorScheme cs;
-  const _PhaseBanner(
-      {required this.cycle, required this.dark, required this.cs});
+  final VoidCallback onSeeRecommended;
+  const _PhaseBanner({
+    required this.cycle, required this.healthStatus,
+    required this.dark, required this.cs, required this.onSeeRecommended,
+  });
 
   @override
   Widget build(BuildContext context) {
+    String label;
+    IconData icon;
+    Color accent;
+    if (healthStatus == 'pregnant') {
+      label = 'GROSSESSE'; icon = Icons.child_friendly_rounded; accent = const Color(0xFF9B3E6A);
+    } else if (healthStatus == 'postpartum') {
+      label = 'POST-PARTUM'; icon = Icons.favorite_rounded; accent = const Color(0xFF1C7A6E);
+    } else {
+      label = cycle.name.toUpperCase(); icon = LucideIcons.leaf; accent = const Color(0xFFB2447A);
+    }
+    // Bandeau blanc avec liseré coloré à gauche (style "note"), et un bouton
+    // dédié pour les séances recommandées au lieu d'une simple flèche.
+    final surface = dark ? const Color(0xFF1A1A1A) : Colors.white;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              cs.primary.withValues(alpha: 0.95),
-              cs.secondary.withValues(alpha: 0.85),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-                color: cs.primary.withValues(alpha: 0.35),
-                blurRadius: 18,
-                offset: const Offset(0, 6))
-          ],
+          color: surface,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Row(children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Phase pill
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.30)),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                            color: Colors.white, shape: BoxShape.circle)),
-                    const SizedBox(width: 6),
-                    Text('PHASE ${cycle.name.toUpperCase()}',
-                        style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.4)),
-                  ]),
-                ),
-                const SizedBox(height: 10),
-                Text(cycle.advice,
-                    style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        height: 1.55)),
-                const SizedBox(height: 12),
-                // CTA link
-                Row(children: [
-                  Flexible(
-                    child: Text('Voir mes séances recommandées',
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicHeight(
+          child: Row(children: [
+            Container(width: 4, color: accent),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Icon(icon, size: 13, color: accent),
+                      const SizedBox(width: 6),
+                      Text(label,
+                          style: GoogleFonts.inter(
+                              color: accent,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1)),
+                    ]),
+                    const SizedBox(height: 6),
+                    Text(cycle.advice,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                            color: Colors.white.withValues(alpha: 0.80),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600)),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(LucideIcons.arrowRight,
-                      size: 12,
-                      color: Colors.white.withValues(alpha: 0.80)),
-                ]),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Icon bubble
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.25)),
+                            color: cs.onSurface,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            height: 1.35)),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: onSeeRecommended,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Text('Voir mes séances recommandées',
+                              style: GoogleFonts.inter(
+                                  color: accent,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700)),
+                          const SizedBox(width: 4),
+                          Icon(LucideIcons.arrowRight, size: 12, color: accent),
+                        ]),
+                      ),
+                    ),
+                  ],
                 ),
-                child: const Center(
-                    child: Text('🌿', style: TextStyle(fontSize: 28))),
               ),
             ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RECOMMENDED SHEET — séances recommandées selon la phase / grossesse / post-partum
+// ══════════════════════════════════════════════════════════════════════════════
+class _RecommendedSheet extends StatelessWidget {
+  final List<HomeProgramModel> programs;
+  final Set<String> favorites;
+  final void Function(String) onToggleFav;
+  final void Function(HomeProgramModel) onSelectProgram;
+  const _RecommendedSheet({
+    required this.programs, required this.favorites,
+    required this.onToggleFav, required this.onSelectProgram,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
+      builder: (ctx, ctrl) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(children: [
+          _SheetHandle(
+              title: 'Recommandées pour toi',
+              color: const Color(0xFFB2447A),
+              icon: LucideIcons.sparkles,
+              onClose: () => Navigator.pop(context)),
+          Expanded(
+            child: programs.isEmpty
+                ? const _EmptySearch(label: 'Aucune séance recommandée pour le moment')
+                : ListView.separated(
+                    controller: ctrl,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    itemCount: programs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    itemBuilder: (_, i) {
+                      final p = programs[i];
+                      return _RecommendedCard(
+                        program: p,
+                        isFav: favorites.contains('prog:${p.id}'),
+                        onToggleFav: () => onToggleFav('prog:${p.id}'),
+                        onTap: () => onSelectProgram(p),
+                      );
+                    },
+                  ),
           ),
+        ]),
+      ),
+    );
+  }
+}
+
+// Carte photo pleine largeur (au lieu d'une rangée avec petite vignette) —
+// plus proche visuellement des cartes de programme déjà utilisées ailleurs
+// dans l'app, pour donner plus de présence aux recommandations.
+class _RecommendedCard extends StatelessWidget {
+  final HomeProgramModel program;
+  final bool isFav;
+  final VoidCallback onToggleFav;
+  final VoidCallback onTap;
+  const _RecommendedCard({
+    required this.program, required this.isFav,
+    required this.onToggleFav, required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 150,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 14, offset: const Offset(0, 5))],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(fit: StackFit.expand, children: [
+          Image.asset(
+            program.imageUrl, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: const Color(0xFFB2447A).withValues(alpha: 0.15),
+              child: const Icon(LucideIcons.dumbbell, size: 32, color: Color(0xFFB2447A))),
+          ),
+          const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            stops: [0.0, 0.5, 1.0],
+            colors: [Color(0x00000000), Color(0x33000000), Color(0xCC000000)]))),
+
+          Positioned(top: 10, right: 10, child: GestureDetector(
+            onTap: onToggleFav,
+            child: Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: isFav ? Colors.white.withValues(alpha: 0.95) : Colors.black.withValues(alpha: 0.30),
+                shape: BoxShape.circle),
+              child: Icon(LucideIcons.heart, size: 14,
+                color: isFav ? const Color(0xFFE53935) : Colors.white),
+            ),
+          )),
+
+          Positioned(left: 14, right: 14, bottom: 12, child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(program.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white)),
+              const SizedBox(height: 3),
+              Text('${program.duration} · ${program.sessions}',
+                style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withValues(alpha: 0.8))),
+              if (program.phases.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                CycleBadgeRow(phases: program.phases),
+              ],
+            ],
+          )),
         ]),
       ),
     );
@@ -529,62 +737,45 @@ class _CategoryChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
 
-    return SizedBox(
-      height: 46,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: chips.length,
-        itemBuilder: (_, i) {
-          final sel   = selected == i;
-          final color = colors[i];
-          final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
+    // Segmented control minimal — un seul bloc neutre, le libellé actif
+    // se distingue juste par un fond plein, sans bordures ni ombres.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: SizedBox(
+        height: 40,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: chips.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (_, i) {
+            final sel   = selected == i;
+            final color = colors[i];
 
-          return GestureDetector(
-            onTap: () => onTap(i),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: sel ? color : cardBg,
-                borderRadius: BorderRadius.circular(50),
-                border: Border.all(
-                  color: sel ? color : color.withValues(alpha: 0.20),
-                  width: 1.5,
+            return GestureDetector(
+              onTap: () => onTap(i),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: sel ? color : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                boxShadow: sel
-                    ? [
-                        BoxShadow(
-                            color: color.withValues(alpha: 0.35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4))
-                      ]
-                    : [
-                        BoxShadow(
-                            color: Colors.black
-                                .withValues(alpha: dark ? 0.25 : 0.06),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2))
-                      ],
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(icons[i], size: 13, color: sel ? Colors.white : cs.onSurfaceVariant),
+                  const SizedBox(width: 7),
+                  Text(chips[i],
+                      style: GoogleFonts.inter(
+                          color: sel ? Colors.white : cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12.5)),
+                ]),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(icons[i],
-                    size: 14,
-                    color: sel ? Colors.white : color),
-                const SizedBox(width: 8),
-                Text(chips[i],
-                    style: GoogleFonts.inter(
-                        color: sel ? Colors.white : color,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13)),
-              ]),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -594,104 +785,138 @@ class _CategoryChips extends StatelessWidget {
 // PHASE FILTER ROW
 // ══════════════════════════════════════════════════════════════════════════════
 class _PhaseFilterRow extends StatelessWidget {
-  final CyclePhase? selected;
-  final void Function(CyclePhase) onSelect;
+  final _FilterKind? selected;
+  final void Function(_FilterKind) onSelect;
   final AppL10n l10n;
   const _PhaseFilterRow(
       {required this.selected, required this.onSelect, required this.l10n});
 
+  void _openSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PhaseFilterSheet(
+        selected: selected,
+        onSelect: (phase) {
+          Navigator.pop(context);
+          onSelect(phase);
+        },
+        l10n: l10n,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cs   = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
 
+    // Bouton icône circulaire à droite (avec pastille si un filtre est actif)
+    // au lieu du bandeau de chips précédent — ouvre une grille de phases +
+    // grossesse/post-partum.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Label row
-        Row(children: [
-          Text('Filtrer par phase',
+      child: Row(children: [
+        Expanded(
+          child: Text('Filtrer',
               style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: cs.onSurface.withValues(alpha: 0.45),
                   letterSpacing: 0.3)),
-          if (selected != null) ...[
-            const Spacer(),
+        ),
+        GestureDetector(
+          onTap: () => _openSheet(context),
+          child: Stack(clipBehavior: Clip.none, children: [
+            Container(
+              width: 38, height: 38,
+              decoration: BoxDecoration(
+                color: selected != null
+                    ? selected!.color.withValues(alpha: 0.12)
+                    : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+                border: selected != null
+                    ? Border.all(color: selected!.color.withValues(alpha: 0.35))
+                    : null,
+              ),
+              child: Icon(
+                selected?.icon ?? LucideIcons.slidersHorizontal,
+                size: 16, color: selected?.color ?? cs.onSurfaceVariant),
+            ),
+            if (selected != null)
+              Positioned(top: -2, right: -2, child: Container(
+                width: 10, height: 10,
+                decoration: BoxDecoration(
+                  color: selected!.color, shape: BoxShape.circle,
+                  border: Border.all(color: cs.surface, width: 1.5)),
+              )),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Bottom sheet — grille de phases (icône + label) ─────────────────────────
+class _PhaseFilterSheet extends StatelessWidget {
+  final _FilterKind? selected;
+  final void Function(_FilterKind) onSelect;
+  final AppL10n l10n;
+  const _PhaseFilterSheet(
+      {required this.selected, required this.onSelect, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 20),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 36, height: 4,
+          decoration: BoxDecoration(color: cs.outlineVariant, borderRadius: BorderRadius.circular(2))),
+        const SizedBox(height: 18),
+        Row(children: [
+          Expanded(child: Text('Filtrer',
+            style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w800, color: cs.onSurface))),
+          if (selected != null)
             GestureDetector(
               onTap: () => onSelect(selected!),
-              child: Row(children: [
-                Icon(LucideIcons.x, size: 11, color: selected!.color),
-                const SizedBox(width: 4),
-                Text(l10n.workoutShowAll,
-                    style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: selected!.color)),
-              ]),
+              child: Text(l10n.workoutShowAll, style: GoogleFonts.inter(
+                fontSize: 12.5, fontWeight: FontWeight.w600, color: selected!.color)),
             ),
-          ],
         ]),
-        const SizedBox(height: 10),
-        // Phase chips
-        Row(
-          children: CyclePhase.values.map((phase) {
+        const SizedBox(height: 18),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.7,
+          children: _FilterKind.values.map((phase) {
             final isSel = selected == phase;
-            final isLast = phase == CyclePhase.values.last;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => onSelect(phase),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: EdgeInsets.only(right: isLast ? 0 : 8),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isSel
-                        ? phase.color
-                        : dark
-                            ? const Color(0xFF1A1A1A)
-                            : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSel
-                          ? phase.color
-                          : phase.color.withValues(alpha: 0.25),
-                      width: 1.5,
-                    ),
-                    boxShadow: isSel
-                        ? [
-                            BoxShadow(
-                                color: phase.color.withValues(alpha: 0.35),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4))
-                          ]
-                        : [
-                            BoxShadow(
-                                color: Colors.black
-                                    .withValues(alpha: dark ? 0.25 : 0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2))
-                          ],
-                  ),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: isSel ? Colors.white : phase.color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(phase.label,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: isSel ? Colors.white : phase.color,
-                            letterSpacing: 0.1)),
-                  ]),
+            return GestureDetector(
+              onTap: () => onSelect(phase),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isSel ? phase.color : phase.color.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: phase.color.withValues(alpha: isSel ? 0 : 0.25)),
+                  boxShadow: isSel ? [BoxShadow(
+                    color: phase.color.withValues(alpha: 0.35),
+                    blurRadius: 12, offset: const Offset(0, 4))] : [],
                 ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Icon(phase.icon, size: 20,
+                    color: isSel ? Colors.white : phase.color),
+                  const Spacer(),
+                  Text(phase.label, style: GoogleFonts.outfit(
+                    fontSize: 13.5, fontWeight: FontWeight.w800,
+                    color: isSel ? Colors.white : cs.onSurface)),
+                ]),
               ),
             );
           }).toList(),
