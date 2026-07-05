@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../models/workout_model.dart';
 import '../models/home_program_model.dart';
 import 'supabase_config.dart';
@@ -35,6 +36,27 @@ class WorkoutProgressService {
           .eq('completed', true);
       return {for (final r in rows as List) r['video_id'] as String};
     } catch (_) {
+      return {};
+    }
+  }
+
+  /// Progrès brut (0.0-1.0) de toutes les vidéos vues par l'utilisateur,
+  /// y compris celles regardées partiellement (progress < 0.8, donc pas
+  /// encore marquées `completed`) — utile pour détecter "vidéo commencée
+  /// mais pas terminée" plutôt que seulement "vidéo terminée".
+  static Future<Map<String, double>> getAllVideoProgress() async {
+    if (_uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('user_video_completions')
+          .select('video_id, progress')
+          .eq('user_id', _uid!);
+      debugPrint('[WorkoutProgress] getAllVideoProgress: ${rows.length} row(s) for uid=$_uid');
+      return {
+        for (final r in rows as List)
+          r['video_id'] as String: (r['progress'] as num?)?.toDouble() ?? 0.0,
+      };
+    } catch (e) {
+      debugPrint('[WorkoutProgress] getAllVideoProgress FAILED: $e');
       return {};
     }
   }
@@ -81,7 +103,10 @@ class WorkoutProgressService {
   }
 
   static Future<void> updateVideoProgress(String videoId, double progress) async {
-    if (_uid == null || videoId.isEmpty) return;
+    if (_uid == null || videoId.isEmpty) {
+      debugPrint('[WorkoutProgress] updateVideoProgress SKIPPED — uid=$_uid videoId="$videoId"');
+      return;
+    }
     try {
       final completed = progress >= 0.8;
       await SupabaseConfig.table('user_video_completions').upsert({
@@ -91,7 +116,10 @@ class WorkoutProgressService {
         'completed':    completed,
         'completed_at': completed ? DateTime.now().toIso8601String() : null,
       }, onConflict: 'user_id,video_id');
-    } catch (_) {}
+      debugPrint('[WorkoutProgress] updateVideoProgress OK — videoId=$videoId progress=$progress');
+    } catch (e) {
+      debugPrint('[WorkoutProgress] updateVideoProgress FAILED: $e');
+    }
   }
 
   // ── Workouts ──────────────────────────────────────────────────────────────

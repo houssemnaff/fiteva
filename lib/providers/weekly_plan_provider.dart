@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/home_program_model.dart';
 import '../services/supabase_config.dart';
 import 'mock_data_provider.dart';
+import 'workout_progress_provider.dart';
 
 // ── Status ────────────────────────────────────────────────────────────────────
 
@@ -60,6 +61,11 @@ class DayPlan {
     final dateNorm  = DateTime(date.year, date.month, date.day);
     return dateNorm.isBefore(todayNorm);
   }
+
+  /// Jour passé, avec un programme planifié, jamais marqué fait — dérivé à
+  /// la volée (pas de nouveau statut en base) pour distinguer visuellement
+  /// un jour raté d'un jour à venir ou réellement terminé.
+  bool get isMissed => isPast && status == DayStatus.planned;
 }
 
 // ── Notifier ──────────────────────────────────────────────────────────────────
@@ -85,6 +91,7 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
   // le plan au lieu de garder celui de l'utilisateur précédent en mémoire.
   String? _loadedUid;
   StreamSubscription? _authSub;
+  _WeekRolloverObserver? _rolloverObserver;
 
   static String _weekStartKey(DateTime now) {
     final monday = now.subtract(Duration(days: now.weekday - 1));
@@ -144,8 +151,64 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
     });
     ref.onDispose(() => _authSub?.cancel());
 
+    // L'app peut rester ouverte à travers minuit lundi sans qu'aucune action
+    // ne soit faite sur le plan — on vérifie le rollover de semaine à chaque
+    // retour au premier plan, pas seulement au prochain build().
+    _rolloverObserver = _WeekRolloverObserver(_rolloverIfNeeded);
+    WidgetsBinding.instance.addObserver(_rolloverObserver!);
+    ref.onDispose(() {
+      if (_rolloverObserver != null) {
+        WidgetsBinding.instance.removeObserver(_rolloverObserver!);
+      }
+    });
+
+    // Le statut "done" ne doit pas dépendre uniquement du bouton manuel —
+    // dès que toutes les vidéos des séances d'un jour sont réellement
+    // terminées (suivi vidéo par vidéo), on marque ce jour comme fait
+    // automatiquement, pour que le plan reflète le vrai progrès.
+    ref.listen(completedWorkoutsProvider, (previous, next) {
+      next.whenData(_syncDoneFromProgress);
+    });
+    ref.read(completedWorkoutsProvider).whenData(_syncDoneFromProgress);
+
     Future.microtask(_loadFromSupabase);
     return initial;
+  }
+
+  /// Marque automatiquement "done" tout jour "planned" dont le programme
+  /// assigné est entièrement complété (tous ses workouts dans
+  /// [completedWorkouts]) — synchronise le plan avec le vrai suivi de
+  /// progression au lieu de dépendre uniquement du bouton manuel.
+  void _syncDoneFromProgress(Set<String> completedWorkouts) {
+    if (completedWorkouts.isEmpty) return;
+    final updated = List<DayPlan>.from(state);
+    final justCompletedIndexes = <int>[];
+    for (var i = 0; i < updated.length; i++) {
+      final day = updated[i];
+      final program = day.program;
+      if (day.status != DayStatus.planned || program == null) continue;
+      if (program.workouts.isEmpty) continue;
+      final allDone = program.workouts.every((w) => completedWorkouts.contains(w.id));
+      if (!allDone) continue;
+      updated[i] = day.copyWith(status: DayStatus.done);
+      justCompletedIndexes.add(i);
+    }
+    if (justCompletedIndexes.isEmpty) return;
+    state = updated;
+    for (final i in justCompletedIndexes) {
+      _save(i);
+    }
+  }
+
+  /// Si la semaine calendaire en cours a changé depuis le dernier chargement
+  /// (ex: app restée ouverte du dimanche soir au lundi matin), repart d'une
+  /// semaine vierge et recharge depuis Supabase pour la nouvelle semaine.
+  void _rolloverIfNeeded() {
+    final currentWeekStart = _weekStartKey(DateTime.now());
+    if (currentWeekStart == _weekStart) return;
+    _pendingProgramIds.clear();
+    state = _freshWeek();
+    Future.microtask(_loadFromSupabase);
   }
 
   Future<void> _loadFromSupabase() async {
@@ -223,6 +286,7 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
 
   // Assigner une catégorie (+ programme optionnel) à un jour
   void assign(int index, String categoryId, [HomeProgramModel? program]) {
+    _rolloverIfNeeded();
     final updated = List<DayPlan>.from(state);
     final isRest = categoryId == 'rest';
     updated[index] = updated[index].copyWith(
@@ -240,6 +304,7 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
       assign(index, program.category, program);
 
   void remove(int index) {
+    _rolloverIfNeeded();
     final updated = List<DayPlan>.from(state);
     updated[index] = updated[index].copyWith(
       status: DayStatus.empty,
@@ -250,14 +315,8 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
     _save(index);
   }
 
-  void markDone(int index) {
-    final updated = List<DayPlan>.from(state);
-    updated[index] = updated[index].copyWith(status: DayStatus.done);
-    state = updated;
-    _save(index);
-  }
-
   void swap(int a, int b) {
+    _rolloverIfNeeded();
     final updated = List<DayPlan>.from(state);
     final tmp = updated[a];
     updated[a] = DayPlan(
@@ -286,3 +345,16 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
 
 final weeklyPlanProvider =
     NotifierProvider<WeeklyPlanNotifier, List<DayPlan>>(WeeklyPlanNotifier.new);
+
+/// Déclenche [onResume] à chaque retour au premier plan de l'app — utilisé
+/// pour détecter un changement de semaine calendaire si l'app est restée
+/// ouverte (ou en arrière-plan) à travers minuit lundi.
+class _WeekRolloverObserver extends WidgetsBindingObserver {
+  final VoidCallback onResume;
+  _WeekRolloverObserver(this.onResume);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) onResume();
+  }
+}

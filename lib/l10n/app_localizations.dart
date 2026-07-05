@@ -29,6 +29,7 @@ class AppL10n {
   String get navShop        => _fr ? 'Boutique'   : 'Shop';
   String get navCommunity   => _fr ? 'Communauté' : 'Community';
   String get navHealth      => _fr ? 'Santé'      : 'Health';
+  String get homeQuickAccess => _fr ? "Tout l'app en un coup d'œil" : 'Everything at a glance';
 
   // ── Profile ────────────────────────────────────────────────────────────────
   String get profile            => _fr ? 'Profil'            : 'Profile';
@@ -163,7 +164,22 @@ class AppL10n {
   String get homeProgrammeLabel     => _fr ? 'PROGRAMME'             : 'PROGRAM';
   String get homeWeekPlan           => _fr ? 'PLAN SEMAINE'          : 'WEEK PLAN';
   String get homePlanYourWeek       => _fr ? 'Planifie ta\nsemaine'  : 'Plan Your\nWeek';
+  String get homeWeekGoalLabel      => _fr ? 'Objectif'              : 'Goal';
+  String get homeEmptyDayTitle      => _fr ? 'Aucune séance prévue'  : 'No workout planned';
+  String homeEmptyDaySubtitle(String day) => _fr
+      ? 'Profite du repos, ou prévois quelque chose pour $day'
+      : 'Take a rest, or plan something for $day';
+  String get homeChooseWorkout      => _fr ? 'Choisir une séance'    : 'Choose Workout';
+  String get homeAddSuggestion      => _fr ? 'Ajouter'               : 'Add';
+  String get homeChooseAnother      => _fr ? 'Choisir une autre séance' : 'Choose another workout instead';
+  String get phaseMenstrual         => _fr ? 'Règles'                : 'Period';
+  String get phaseFollicular        => _fr ? 'Folliculaire'          : 'Follicular phase';
+  String get phaseOvulation         => _fr ? 'Ovulation'             : 'Ovulation';
+  String get phaseLuteal            => _fr ? 'Lutéale'               : 'Luteal phase';
+  String get phasePregnancy         => _fr ? 'Grossesse'             : 'Pregnancy';
+  String get phasePostpartum        => _fr ? 'Post-partum'           : 'Postpartum';
   String get homeDone               => _fr ? 'TERMINÉ'               : 'DONE';
+  String get homeMissedBadge        => _fr ? 'Manqué'                : 'Missed';
   String get homeInProgress         => _fr ? 'PROGRAMMES EN COURS'   : 'IN PROGRESS';
   String get homeContinueSection    => _fr ? 'Continuer'             : 'Continue';
   String get homeVoirTout           => _fr ? 'voir tout'             : 'see all';

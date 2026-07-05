@@ -1,5 +1,5 @@
 // ignore_for_file: deprecated_member_use
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:fiteva/core/nutrition/food_database.dart';
 import 'package:fiteva/core/nutrition/models.dart';
 import 'package:fiteva/core/nutrition/nutrition_provider.dart' show generateMealId;
@@ -12,7 +12,6 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../l10n/lang.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -177,9 +176,9 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   }
 
   // ── Scanner mode ─────────────────────────────────────────────────────────
-  _ScanState _scanState = _ScanState.idle;
-  FoodItem?  _scannedFood;
-  File?      _pickedImage;
+  _ScanState  _scanState = _ScanState.idle;
+  FoodItem?   _scannedFood;
+  Uint8List?  _pickedImageBytes;
   final _imagePicker = ImagePicker();
 
   // Picks a photo (camera or gallery) and shows it in the scan zone —
@@ -187,9 +186,12 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   //
   // Sur iPhone, une photo choisie depuis la galerie peut être encodée en
   // HEIC (format par défaut de l'appareil photo iOS) — un format que le
-  // modèle vision ne sait pas décoder, ce qui faisait échouer le scan
-  // silencieusement sur iOS. On force donc systématiquement une conversion
-  // en JPEG juste après la sélection, quelle que soit la source/plateforme.
+  // modèle vision ne sait pas décoder. On convertit donc systématiquement
+  // en JPEG juste après la sélection. On garde le résultat en mémoire
+  // (Uint8List) plutôt que d'écrire un fichier temporaire : sur iOS, iOS
+  // peut purger le dossier Caches/tmp entre la sélection de la photo et
+  // le tap sur "Analyser", ce qui faisait échouer l'analyse avec une
+  // PathNotFoundException — garder les bytes en mémoire élimine ce risque.
   Future<void> _pickImage(ImageSource source) async {
     XFile? picked;
     try {
@@ -204,44 +206,42 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     if (picked == null) return;
 
     HapticFeedback.selectionClick();
-    final jpegFile = await _ensureJpeg(File(picked.path));
+    final jpegBytes = await _ensureJpegBytes(picked);
     if (!mounted) return;
     setState(() {
-      _scanState    = _ScanState.preview;
-      _pickedImage  = jpegFile;
-      _scannedFood  = null;
+      _scanState         = _ScanState.preview;
+      _pickedImageBytes  = jpegBytes;
+      _scannedFood       = null;
     });
   }
 
-  /// Réencode n'importe quel fichier image (HEIC, PNG, WebP…) en JPEG dans
-  /// le dossier temporaire, pour garantir un format toujours supporté par
-  /// l'API vision — peu importe la plateforme ou le format d'origine.
-  Future<File> _ensureJpeg(File source) async {
+  /// Réencode n'importe quelle photo (HEIC, PNG, WebP…) en bytes JPEG,
+  /// pour garantir un format toujours supporté par l'API vision — peu
+  /// importe la plateforme ou le format d'origine.
+  Future<Uint8List> _ensureJpegBytes(XFile picked) async {
+    final rawBytes = await picked.readAsBytes();
     try {
-      final tmpDir = await getTemporaryDirectory();
-      final outPath =
-          '${tmpDir.path}/scan_${DateTime.now().microsecondsSinceEpoch}.jpg';
-      final result = await FlutterImageCompress.compressAndGetFile(
-        source.path, outPath,
-        quality: 88, format: CompressFormat.jpeg,
+      final result = await FlutterImageCompress.compressWithList(
+        rawBytes, quality: 88, format: CompressFormat.jpeg,
       );
-      if (result != null) return File(result.path);
+      return result;
     } catch (_) {
       // Si la conversion échoue pour une raison quelconque, on retombe sur
-      // le fichier original plutôt que de bloquer l'utilisatrice.
+      // les bytes originaux plutôt que de bloquer l'utilisatrice.
+      return rawBytes;
     }
-    return source;
   }
 
   Future<void> _analyzeImage() async {
-    final image = _pickedImage;
-    if (image == null) return;
+    final bytes = _pickedImageBytes;
+    if (bytes == null) return;
 
     HapticFeedback.mediumImpact();
     setState(() => _scanState = _ScanState.scanning);
 
     try {
-      final food = await NutritionIaService.analyzeFoodImage(image);
+      final food = await NutritionIaService.analyzeFoodImageBytes(
+        bytes, mimeType: 'image/jpeg');
       if (!mounted) return;
       setState(() {
         _scanState   = _ScanState.result;
@@ -261,10 +261,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   }
 
   void _resetScan() => setState(() {
-    _scanState    = _ScanState.idle;
-    _scannedFood  = null;
-    _pickedImage  = null;
-    _selectedFood = null;
+    _scanState         = _ScanState.idle;
+    _scannedFood       = null;
+    _pickedImageBytes  = null;
+    _selectedFood      = null;
   });
 
   // ── Manual mode ──────────────────────────────────────────────────────────
@@ -989,8 +989,22 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
             border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.2)),
           child: const Icon(LucideIcons.camera, size: 21, color: Colors.white)),
         const SizedBox(height: 12),
-        Text(AppL10n(Lang.code).addMealScanner, style: GoogleFonts.outfit(
-          fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(AppL10n(Lang.code).addMealScanner, style: GoogleFonts.outfit(
+            fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.16),
+              borderRadius: BorderRadius.circular(20)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(LucideIcons.sparkles, size: 10, color: Colors.white),
+              const SizedBox(width: 3),
+              Text('IA', style: GoogleFonts.inter(
+                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+            ])),
+        ]),
         const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1048,8 +1062,8 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     child: AspectRatio(
       aspectRatio: 4 / 5,
       child: Stack(fit: StackFit.expand, children: [
-        if (_pickedImage != null)
-          Image.file(_pickedImage!, fit: BoxFit.cover),
+        if (_pickedImageBytes != null)
+          Image.memory(_pickedImageBytes!, fit: BoxFit.cover),
 
         // Voile dégradé haut (bouton retour) + bas (actions)
         const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
@@ -1122,8 +1136,8 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     child: AspectRatio(
       aspectRatio: 4 / 5,
       child: Stack(fit: StackFit.expand, alignment: Alignment.center, children: [
-        if (_pickedImage != null)
-          Image.file(_pickedImage!, fit: BoxFit.cover),
+        if (_pickedImageBytes != null)
+          Image.memory(_pickedImageBytes!, fit: BoxFit.cover),
         Container(color: Colors.black.withOpacity(0.45)),
         const _ScanSweepLine(),
         Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
@@ -1205,8 +1219,8 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           Row(children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: _pickedImage != null
-                ? Image.file(_pickedImage!, width: 52, height: 52, fit: BoxFit.cover)
+              child: _pickedImageBytes != null
+                ? Image.memory(_pickedImageBytes!, width: 52, height: 52, fit: BoxFit.cover)
                 : Container(
                     width: 52, height: 52,
                     color: nc.mintBg,

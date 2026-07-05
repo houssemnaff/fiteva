@@ -3,17 +3,20 @@ import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/providers/weekly_plan_provider.dart';
+import 'package:fiteva/core/nutrition/nutrition_provider.dart' hide userProfileProvider;
+import 'package:fiteva/screens/cycle/homecyle.dart';
+import 'package:fiteva/screens/cycle/pregnancy/PregnancyHubScreen.dart';
+import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_hub_screen.dart';
 
 import 'package:fiteva/screens/home/library_widget.dart';
 import 'package:fiteva/screens/home/referral_card.dart';
-import 'package:fiteva/screens/home/programs_bottom_sheet.dart';
-import 'package:fiteva/screens/home/favorites_bottom_sheet.dart';
-import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
 import 'package:fiteva/screens/workout/programme_detail_screen.dart';
+import 'package:fiteva/screens/workout/workout_screen.dart';
+import 'package:fiteva/screens/nutrition/nutrition_screen.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
-import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:fiteva/providers/program_recommendations_provider.dart';
+import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:fiteva/services/workout_progress_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,29 +62,30 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: cs.surface,
       body: CustomScrollView(
         slivers: [
-          // ── Hero ──────────────────────────────────────
+          // ── 1. Hero — featured pick ────────────────────
           SliverToBoxAdapter(child: _HeroSection(user: user)),
 
-          // ── "GOOD TO SEE YOU" motivational strip ──────
-         // SliverToBoxAdapter(child: _MotivationStrip()),
+          // ── Current cycle status ──────────────────────
+          const SliverToBoxAdapter(child: _CycleStatusBanner()),
 
-          // ── Weekly Plan ───────────────────────────────
+          // ── 2. Today at a glance — cycle / calories / workout ─
+          const SliverToBoxAdapter(child: _StatBar()),
+
+          // ── 3. This week's plan ────────────────────────
           SliverToBoxAdapter(child: _WeeklyPlanSection()),
 
-          // ── Steps ─────────────────────────────────────
+          // ── 4. Continue where you left off ────────────
+          SliverToBoxAdapter(child: _ContinueWorkoutsSection(programs: allPrograms)),
+
+          // ── 5. Steps ────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: MesPasCard(),
             ),
           ),
 
-          // ── In-Progress Programs ──────────────────────
-          SliverToBoxAdapter(
-            child: _ProgramsSection(programs: allPrograms, l10n: ref.watch(l10nProvider)),
-          ),
-
-          // ── Library ───────────────────────────────────
+          // ── 6. Discover — library ──────────────────────
           SliverToBoxAdapter(
             child: LibrarySection(),
           ),
@@ -433,173 +437,8 @@ class _MetaPill extends StatelessWidget {
 );
   }
 }
-
 // ═══════════════════════════════════════════════════════════
-// MOTIVATION STRIP
-// ═══════════════════════════════════════════════════════════
-
-class _MotivationStrip extends ConsumerWidget {
-  // Variable heights create an organic flame silhouette
-  static const List<double> _barRatios = [0.45, 0.75, 0.55, 0.95, 0.65, 0.38, 0.22];
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n   = ref.watch(l10nProvider);
-    final xp     = ref.watch(xpProvider);
-    final streak = xp.streak;
-    final daysCompleted = streak % 7;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0B1A0E), Color(0xFF180900), Color(0xFF0B1A0E)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFFFF7A00).withValues(alpha: 0.20),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF7A00).withValues(alpha: 0.07),
-            blurRadius: 28,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-      child: Row(
-        children: [
-          // ── Left: streak count ──────────────────────────
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.homeSerieActive,
-                  style: GoogleFonts.inter(
-                    color: const Color(0xFFFF7A00).withValues(alpha: 0.60),
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 2.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '$streak',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: 54,
-                        fontWeight: FontWeight.w900,
-                        height: 0.95,
-                        letterSpacing: -3,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8, bottom: 6),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.homeJours,
-                            style: GoogleFonts.inter(
-                              color: Colors.white38,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF5CD57A).withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: const Color(0xFF5CD57A).withValues(alpha: 0.30),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Text(
-                              l10n.homeEnFeu,
-                              style: GoogleFonts.inter(
-                                color: const Color(0xFF5CD57A),
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // ── Right: flame equalizer bars ─────────────────
-          SizedBox(
-            height: 64,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(7, (i) {
-                final done = i < daysCompleted;
-                final isToday = i == daysCompleted;
-                final barH = (_barRatios[i] * 52).clamp(8.0, 52.0);
-
-                final Color top = done
-                    ? const Color(0xFFFFD000)
-                    : isToday
-                        ? const Color(0xFF5CD57A)
-                        : Colors.white.withValues(alpha: 0.10);
-                final Color bottom = done
-                    ? const Color(0xFFFF4500)
-                    : isToday
-                        ? const Color(0xFF1A5C26)
-                        : Colors.white.withValues(alpha: 0.04);
-
-                return Container(
-                  width: 7,
-                  height: barH,
-                  margin: const EdgeInsets.only(left: 5),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [bottom, top],
-                    ),
-                    borderRadius: BorderRadius.circular(3),
-                    boxShadow: (done || isToday)
-                        ? [
-                            BoxShadow(
-                              color: top.withOpacity(0.5),
-                              blurRadius: 8,
-                              offset: const Offset(0, -3),
-                            )
-                          ]
-                        : [],
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// WEEKLY PLAN SECTION
+// r
 // ═══════════════════════════════════════════════════════════
 
 class _WeeklyPlanSection extends ConsumerStatefulWidget {
@@ -608,6 +447,8 @@ class _WeeklyPlanSection extends ConsumerStatefulWidget {
   @override
   ConsumerState<_WeeklyPlanSection> createState() => _WeeklyPlanSectionState();
 }
+
+const int _kWeeklyGoal = 5;
 
 class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
   int _selectedDay = -1;
@@ -628,13 +469,6 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
       case DayStatus.rest:    return const Color(0xFF9CA3AF);
       case DayStatus.empty:   return const Color(0xFFE8EDE8);
     }
-  }
-
-  Color _statusTextColor(DayPlan plan) {
-    if (plan.status == DayStatus.empty || plan.status == DayStatus.rest) {
-      return const Color(0xFF8E8E93);
-    }
-    return Colors.white;
   }
 
   void _showPicker(int dayIndex) {
@@ -666,11 +500,11 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section header
+          // Section header — title left, clean progress module right
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Column(
@@ -690,7 +524,7 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                         ref.watch(l10nProvider).homePlanYourWeek,
                         style: GoogleFonts.outfit(
                           color: cs.onSurface,
-                          fontSize: 28,
+                          fontSize: 20,
                           fontWeight: FontWeight.w800,
                           height: 1.0,
                           letterSpacing: -0.5,
@@ -699,22 +533,9 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                     ],
                   ),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: cs.primary,
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Text(
-                    ref.watch(l10nProvider).homeDoneCount(done),
-                    style: GoogleFonts.inter(
-                      color: cs.secondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
-                    ),
-                  ),
+                _WeekProgressRing(
+                  done: done, goal: _kWeeklyGoal, total: plans.length,
+                  goalLabel: ref.watch(l10nProvider).homeWeekGoalLabel,
                 ),
               ],
             ),
@@ -722,80 +543,82 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
 
           const SizedBox(height: 20),
 
-          // Day pills — horizontal scroll feel but all visible
+          // Day pills — clean segmented control
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: List.generate(plans.length, (i) {
-                final plan = plans[i];
-                final isSel = _selectedDay == i;
-                final isPast = plan.isPast;
-                final sc = isPast
-                    ? cs.onSurface.withValues(alpha: 0.06)
-                    : _statusColor(plan, cs);
-                final hasProgram = plan.program != null;
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: List.generate(plans.length, (i) {
+                  final plan = plans[i];
+                  final isSel = _selectedDay == i;
+                  final isPast = plan.isPast;
+                  final dotColor = plan.isMissed
+                      ? const Color(0xFFE0703C)
+                      : isPast
+                          ? cs.onSurface.withValues(alpha: 0.15)
+                          : _statusColor(plan, cs);
+                  final hasProgram = plan.program != null;
 
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedDay = i),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSel ? cs.primary : sc,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: isSel
-                            ? [
-                                BoxShadow(
-                                  color: cs.primary.withValues(alpha: 0.3),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                )
-                              ]
-                            : [],
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            plan.dayShort,
-                            style: GoogleFonts.inter(
-                              color: isSel
-                                  ? cs.secondary
-                                  : _statusTextColor(plan),
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedDay = i),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSel ? cs.surface : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: isSel
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : [],
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              plan.dayShort,
+                              style: GoogleFonts.inter(
+                                color: isSel ? cs.primary : cs.onSurfaceVariant,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.4,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            '${plan.date.day}',
-                            style: GoogleFonts.outfit(
-                              color: Colors.black,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
+                            const SizedBox(height: 4),
+                            Text(
+                              '${plan.date.day}',
+                              style: GoogleFonts.outfit(
+                                color: isSel ? cs.onSurface : cs.onSurfaceVariant,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 5),
-                          Container(
-                            width: 5,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: hasProgram
-                                  ? (isSel
-                                      ? Theme.of(context).colorScheme.secondary
-                                      : Colors.white.withOpacity(0.7))
-                                  : Colors.transparent,
+                            const SizedBox(height: 5),
+                            Container(
+                              width: 5, height: 5,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: hasProgram ? dotColor : Colors.transparent,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
+              ),
             ),
           ),
 
@@ -804,34 +627,96 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
 
           if (sel != null)
   Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 24),
-    child: _DayDetailCard(
-      plan: sel,
-      dayIndex: _selectedDay,
-      onAddWorkout: () => _showPicker(_selectedDay),
-      onMarkDone: () {
-        ref.read(weeklyPlanProvider.notifier)
-            .markDone(_selectedDay);
-      },
-      onRemove: () {
-        ref.read(weeklyPlanProvider.notifier)
-            .remove(_selectedDay);
-      },
-      onViewDetail: () {
-        final p = sel.program;
-        if (p == null) return;
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => WorkoutDetailScreen(program: p),
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: AnimatedSwitcher(
+      duration: const Duration(milliseconds: 280),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, animation) {
+        final slide = Tween<Offset>(
+          begin: const Offset(0.08, 0), end: Offset.zero,
+        ).animate(animation);
+        return ClipRect(
+          child: SlideTransition(
+            position: slide,
+            child: FadeTransition(opacity: animation, child: child),
           ),
         );
       },
+      child: _DayDetailCard(
+        key: ValueKey(_selectedDay),
+        plan: sel,
+        dayIndex: _selectedDay,
+        onAddWorkout: () => _showPicker(_selectedDay),
+        onRemove: () {
+          ref.read(weeklyPlanProvider.notifier)
+              .remove(_selectedDay);
+        },
+        onViewDetail: () {
+          final p = sel.program;
+          if (p == null) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => WorkoutDetailScreen(program: p),
+            ),
+          );
+        },
+        onAcceptSuggestion: (program) {
+          ref.read(weeklyPlanProvider.notifier)
+              .assignProgram(_selectedDay, program);
+        },
+      ),
     ),
   ),
         ],
       ),
     );
+  }
+}
+
+// ── Week progress ring — replaces the old two-pill header cluster with a
+// single clean module: a slim ring showing days-completed progress, plus
+// a small weekly-goal readout underneath.
+class _WeekProgressRing extends StatelessWidget {
+  final int done;
+  final int goal;
+  final int total;
+  final String goalLabel;
+  const _WeekProgressRing({
+    required this.done, required this.goal, required this.total, required this.goalLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final progress = total > 0 ? (done / total).clamp(0.0, 1.0) : 0.0;
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+      SizedBox(
+        width: 46, height: 46,
+        child: Stack(alignment: Alignment.center, children: [
+          SizedBox.expand(
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 4,
+              strokeCap: StrokeCap.round,
+              backgroundColor: cs.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation(cs.primary),
+            ),
+          ),
+          Text('$done/$total', style: GoogleFonts.outfit(
+            fontSize: 12, fontWeight: FontWeight.w800, color: cs.onSurface)),
+        ]),
+      ),
+      const SizedBox(height: 6),
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        const Text('🏆', style: TextStyle(fontSize: 10)),
+        const SizedBox(width: 3),
+        Text('$goalLabel $goal', style: GoogleFonts.inter(
+          fontSize: 10.5, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant)),
+      ]),
+    ]);
   }
 }
 
@@ -841,18 +726,18 @@ class _DayDetailCard extends ConsumerWidget {
   final DayPlan plan;
   final int dayIndex;
   final VoidCallback onAddWorkout;
-  final VoidCallback onMarkDone;
   final VoidCallback onRemove;
   final VoidCallback? onViewDetail;
+  final ValueChanged<HomeProgramModel>? onAcceptSuggestion;
 
   const _DayDetailCard({
     super.key,
     required this.plan,
     required this.dayIndex,
     required this.onAddWorkout,
-    required this.onMarkDone,
     required this.onRemove,
     this.onViewDetail,
+    this.onAcceptSuggestion,
   });
 
   @override
@@ -884,40 +769,130 @@ class _DayDetailCard extends ConsumerWidget {
           ]),
         );
       }
-      // Future/today empty — show add button
-      return GestureDetector(
-        onTap: onAddWorkout,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: cs.primary.withValues(alpha: 0.15),
-                width: 1.5,
-                style: BorderStyle.solid),
+      // Future/today empty — friendlier, less "boring" placeholder, with a
+      // phase-aware suggestion (cycle/pregnancy/postpartum) instead of just
+      // a generic "choose workout" prompt.
+      final profile = ref.watch(userProfileProvider);
+      final phase   = _phaseLabel(profile, l10n, plan.date);
+      HomeProgramModel? suggestion;
+      if (phase != null) {
+        final allPrograms = ref.watch(allProgramsProvider);
+        if (phase.tag == 'grossesse' || phase.tag == 'recuperation') {
+          final matches = allPrograms.where((pr) => pr.category == phase.tag).toList();
+          if (matches.isNotEmpty) suggestion = matches[plan.date.day % matches.length];
+        } else {
+          final matches = allPrograms.where((pr) => pr.compatibleCycles.contains(phase.tag)).toList();
+          if (matches.isNotEmpty) suggestion = matches[plan.date.day % matches.length];
+        }
+      }
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+              color: cs.primary.withValues(alpha: 0.15),
+              width: 1.5,
+              style: BorderStyle.solid),
+        ),
+        child: Column(children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(LucideIcons.sparkles, color: cs.primary, size: 19),
           ),
-          child: Column(children: [
+          const SizedBox(height: 10),
+          Text(l10n.homeEmptyDayTitle,
+            style: GoogleFonts.outfit(
+              color: cs.onSurface,
+              fontSize: 15, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text(l10n.homeEmptyDaySubtitle(plan.dayFull),
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: cs.onSurfaceVariant,
+              fontSize: 12.5, fontWeight: FontWeight.w500)),
+
+          if (phase != null && suggestion != null) ...[
+            const SizedBox(height: 16),
             Container(
-              width: 44, height: 44,
+              width: double.infinity,
               decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(LucideIcons.plus, color: cs.primary, size: 20),
+              clipBehavior: Clip.antiAlias,
+              child: IntrinsicHeight(
+                child: Row(children: [
+                  Container(width: 3, color: const Color(0xFFB2447A)),
+                  Expanded(child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.asset(suggestion.imageUrl, width: 40, height: 40, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 40, height: 40, color: cs.surface,
+                            child: Icon(LucideIcons.dumbbell, size: 16, color: cs.primary.withValues(alpha: 0.4)))),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('${phase.emoji} ${phase.label}', style: GoogleFonts.inter(
+                          fontSize: 10.5, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant)),
+                        const SizedBox(height: 2),
+                        Text(suggestion.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.w800, color: cs.onSurface)),
+                      ])),
+                      GestureDetector(
+                        onTap: onAcceptSuggestion != null ? () => onAcceptSuggestion!(suggestion!) : null,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: cs.primary, borderRadius: BorderRadius.circular(50)),
+                          child: Text(l10n.homeAddSuggestion, style: GoogleFonts.inter(
+                            fontSize: 11.5, fontWeight: FontWeight.w800, color: cs.secondary)),
+                        ),
+                      ),
+                    ]),
+                  )),
+                ]),
+              ),
             ),
             const SizedBox(height: 10),
-            Text('Planifier ${plan.dayFull}',
-              style: GoogleFonts.inter(
-                color: cs.onSurfaceVariant,
-                fontSize: 13, fontWeight: FontWeight.w500)),
-          ]),
-        ),
+            GestureDetector(
+              onTap: onAddWorkout,
+              child: Text(l10n.homeChooseAnother, style: GoogleFonts.inter(
+                fontSize: 12, fontWeight: FontWeight.w600, color: cs.primary,
+                decoration: TextDecoration.underline)),
+            ),
+          ] else ...[
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: onAddWorkout,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: cs.primary,
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Text(l10n.homeChooseWorkout,
+                  style: GoogleFonts.inter(
+                    color: cs.secondary,
+                    fontSize: 12.5, fontWeight: FontWeight.w800)),
+              ),
+            ),
+          ],
+        ]),
       );
     }
 
     // Workout present
+    final progress = ref.watch(programCompletionPercentageProvider(p)).asData?.value ?? 0.0;
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -984,7 +959,36 @@ class _DayDetailCard extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  ),
+                  )
+                else if (plan.isMissed)
+                  Positioned(
+                    top: 10, left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0703C),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.close_rounded, size: 11, color: Colors.white),
+                        const SizedBox(width: 3),
+                        Text(l10n.homeMissedBadge, style: GoogleFonts.inter(
+                          fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+                      ]),
+                    ),
+                  )
+                else
+                  Positioned(top: 10, right: 10, child: SizedBox(
+                    width: 34, height: 34,
+                    child: Stack(alignment: Alignment.center, children: [
+                      SizedBox.expand(child: CircularProgressIndicator(
+                        value: progress, strokeWidth: 3, strokeCap: StrokeCap.round,
+                        backgroundColor: Colors.white.withValues(alpha: 0.25),
+                        valueColor: const AlwaysStoppedAnimation(Colors.white))),
+                      Text('${(progress * 100).round()}%', style: GoogleFonts.outfit(
+                        fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white)),
+                    ]),
+                  )),
                 // Title on image
                 Positioned(
                   bottom: 12,
@@ -1052,20 +1056,11 @@ class _DayDetailCard extends ConsumerWidget {
 
               const SizedBox(height: 14),
 
-              // Action buttons
+              // Action buttons — "fait" n'est plus déclarable manuellement :
+              // seul le suivi vidéo réel (_syncDoneFromProgress) marque un
+              // jour comme terminé, pour que le statut reflète le vrai
+              // progrès plutôt qu'un simple bouton.
               Row(children: [
-                if (!isDone) ...[
-                  Expanded(
-                    child: _Btn(
-                      label: l10n.homeDone,
-                      icon: LucideIcons.checkCircle,
-                      bg: const Color(0xFF52B788),
-                      fg: Colors.white,
-                      onTap: onMarkDone,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
                 Expanded(
                   child: _Btn(
                     label: isDone ? l10n.homeReview : l10n.homeStart,
@@ -1144,9 +1139,9 @@ class _Btn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration:
-            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(50)),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(icon, color: fg, size: 13),
           const SizedBox(width: 6),
@@ -1177,373 +1172,11 @@ class _IconBtnSmall extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 38,
-        height: 38,
+        width: 40,
+        height: 40,
         decoration:
-            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+            BoxDecoration(color: bg, shape: BoxShape.circle),
         child: Icon(icon, color: color, size: 15),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// COMPLETION INDICATOR — circular progress or checkmark
-// ═══════════════════════════════════════════════════════════
-
-class _CompletionIndicator extends StatelessWidget {
-  final bool isCompleted;
-  final double percentage;
-
-  const _CompletionIndicator({
-    required this.isCompleted,
-    required this.percentage,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (isCompleted) {
-      return Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: Colors.green.shade400,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.green.shade400.withValues(alpha: 0.4),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: const Icon(
-          LucideIcons.checkCircle,
-          color: Colors.white,
-          size: 20,
-        ),
-      );
-    }
-
-    if (percentage > 0) {
-      return SizedBox(
-        width: 38,
-        height: 38,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox.expand(
-              child: CircularProgressIndicator(
-                value: percentage.clamp(0.0, 1.0),
-                strokeWidth: 2.5,
-                backgroundColor: Colors.grey.shade300,
-                valueColor: AlwaysStoppedAnimation(
-                  Color(0xFFFFD89B),
-                ),
-              ),
-            ),
-            Text(
-              '${(percentage * 100).toInt()}%',
-              style: GoogleFonts.inter(
-                fontSize: 8,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// PROGRAMS SECTION — horizontal cards, editorial
-// ═══════════════════════════════════════════════════════════
-
-class _ProgramsSection extends StatelessWidget {
-  final List<HomeProgramModel> programs;
-  final AppL10n l10n;
-  const _ProgramsSection({required this.programs, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<HomeProgramModel>>(
-      future: WorkoutProgressService.getJoinedProgramsList(programs),
-      builder: (context, snapshot) {
-        final joinedPrograms = snapshot.data ?? [];
-
-        if (joinedPrograms.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Padding(
-          padding: const EdgeInsets.only(top: 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.homeInProgress,
-                            style: GoogleFonts.inter(
-                              color: Theme.of(context).colorScheme.secondary,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 3,
-                            )),
-                        const SizedBox(height: 4),
-                        Text(l10n.homeContinueSection,
-                            style: GoogleFonts.outfit(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                            )),
-                      ],
-                    ),
-                    const Spacer(),
-                    InkWell(
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => ProgramsBottomSheet(programs: joinedPrograms),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-  decoration: BoxDecoration(
-    border: Border.all(
-      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-      width: 1,
-    ),
-    borderRadius: BorderRadius.circular(20),
-  ),
-  child: Text(
-    l10n.homeVoirTout,
-    style: GoogleFonts.inter(
-      color: Theme.of(context).colorScheme.primary,
-      fontSize: 11,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.5,
-    ),
-  ),
-)
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              SizedBox(
-                height: 232,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: joinedPrograms.length,
-                  itemBuilder: (_, i) => _ProgramCard(
-                    program: joinedPrograms[i],
-                    progress: 0.0,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ProgramCard extends ConsumerWidget {
-  final HomeProgramModel program;
-  final double progress;
-  const _ProgramCard({required this.program, required this.progress});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statusAsync = ref.watch(programStatusProvider(program));
- final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return statusAsync.when(
-      data: (status) {
-        final isCompleted = status.isCompleted;
-        final percentage = status.completionPercentage;
-
-        return Container(
-          width: 200,
-          margin: const EdgeInsets.only(right: 14),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image
-              Stack(children: [
-                Image.asset(
-                  program.imageUrl,
-                  height: 100,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 100,
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  ),
-                ),
-                // Points chip
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${program.totalPoints} PTS',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-                ),
-                // Completion indicator - top right
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: _CompletionIndicator(
-                    isCompleted: isCompleted,
-                    percentage: percentage,
-                  ),
-                ),
-              ]),
-
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      program.name,
-                      style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        letterSpacing: -0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${program.duration}  •  ${program.sessions}',
-                      style: GoogleFonts.inter(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 10,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Progress bar
-                  /*  Row(
-                      children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: (percentage).clamp(0.0, 1.0),
-                            minHeight: 5,
-                            backgroundColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                            valueColor: AlwaysStoppedAnimation(
-                              isCompleted ? Colors.green.shade400 : Color(0xFFFFD89B),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text('${(percentage * 100).toInt()}%',
-                          style: GoogleFonts.inter(
-                            color: isCompleted ? Colors.green.shade400 : Theme.of(context).colorScheme.primary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          )),
-                    ]),*/
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => WorkoutDetailScreen(program: program),
-                          ),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 9),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Center(
-                            child: Consumer(
-                              builder: (ctx, r, _) {
-                                final l = r.watch(l10nProvider);
-                                return Text(
-                                  isCompleted ? l.homeReview : l.homeResume,
-                                  style: GoogleFonts.inter(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.5,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-      loading: () => const SizedBox(
-        width: 200,
-        height: 232,
-        child: Center(child: SizedBox.shrink()),
-      ),
-      error: (_, __) => const SizedBox(
-        width: 200,
-        height: 232,
-        child: Center(child: SizedBox.shrink()),
       ),
     );
   }
@@ -1734,6 +1367,533 @@ class _ProgramPickerSheetState extends ConsumerState<_ProgramPickerSheet> {
           ),
         ),
       ]),
+    );
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// CYCLE STATUS BANNER — one-line "where you are" summary
+// ═══════════════════════════════════════════════════════════
+
+// Durée moyenne des règles (jours) — non stockée sur le profil, on utilise
+// une valeur standard faute de donnée plus précise côté utilisatrice.
+const int _kPeriodLengthDays = 5;
+
+/// Jour du cycle (1-indexed) et jour d'ovulation estimé pour [forDate]
+/// (aujourd'hui par défaut), ou null si pas applicable (grossesse/post-partum,
+/// ou pas de date de dernières règles).
+({int day, int ovulationDay, int cycleDays})? _cycleDayInfo(UserProfile profile, [DateTime? forDate]) {
+  if (profile.healthStatus == 'pregnant' || profile.healthStatus == 'postpartum') {
+    return null;
+  }
+  final lastPeriod = profile.lastPeriod;
+  if (lastPeriod == null) return null;
+
+  final target    = forDate ?? DateTime.now();
+  final targetNorm = DateTime(target.year, target.month, target.day);
+  final lastNorm  = DateTime(lastPeriod.year, lastPeriod.month, lastPeriod.day);
+  final cycleDays = profile.cycleDays;
+  final elapsed   = targetNorm.difference(lastNorm).inDays % cycleDays;
+  final day       = (elapsed + 1).clamp(1, cycleDays);
+  final ovulationDay = (cycleDays - 14).clamp(1, cycleDays);
+  return (day: day, ovulationDay: ovulationDay, cycleDays: cycleDays);
+}
+
+/// Retourne le statut du jour ("🩸 Day X of your period", "🌸 Ovulation
+/// today", etc.) ou null si l'utilisatrice n'est pas en mode "cycle"
+/// classique (grossesse/post-partum n'ont pas ces états) ou si on n'a pas
+/// encore de date de dernières règles enregistrée.
+String? _cycleStatusText(UserProfile profile) {
+  final info = _cycleDayInfo(profile);
+  if (info == null) return null;
+
+  final now       = DateTime.now();
+  final todayNorm = DateTime(now.year, now.month, now.day);
+
+  // Retard — priorité sur tout le reste.
+  final pending = profile.pendingPeriodDate;
+  if (pending != null && pending.isBefore(todayNorm)) {
+    final lateDays = todayNorm.difference(pending).inDays;
+    return '⏳ Period late by $lateDays day${lateDays > 1 ? 's' : ''}';
+  }
+
+  final day = info.day;
+  final ovulationDay = info.ovulationDay;
+
+  if (day <= _kPeriodLengthDays) {
+    return '🩸 Day $day of your period';
+  }
+  if (day == ovulationDay) {
+    return '🌸 Ovulation today';
+  }
+  if (day < ovulationDay) {
+    return '🌿 Day $day • Follicular phase';
+  }
+
+  final next = profile.nextPeriodDate;
+  final daysUntil = next?.difference(todayNorm).inDays;
+  if (daysUntil != null && daysUntil > 0) {
+    return '🌙 Period in $daysUntil day${daysUntil > 1 ? 's' : ''}';
+  }
+  return null;
+}
+
+class _CycleStatusBanner extends ConsumerWidget {
+  const _CycleStatusBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(userProfileProvider);
+    final status  = _cycleStatusText(profile);
+    if (status == null) return const SizedBox.shrink();
+
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+      child: GestureDetector(
+        onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const CycleScreen())),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFCEAF3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFB2447A).withValues(alpha: 0.25)),
+          ),
+          child: Row(children: [
+            Expanded(child: Text(status, style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w600,
+              color: const Color(0xFF7A2F52)))),
+            Icon(LucideIcons.chevronRight, size: 16, color: cs.onSurfaceVariant),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PHASE-BASED WORKOUT SUGGESTION — for the weekly plan section
+// ═══════════════════════════════════════════════════════════
+
+// Résout le libellé de phase (emoji + nom + tag "compatibleCycles" français
+// pour matcher les programmes) selon l'état réel de l'utilisatrice —
+// grossesse, post-partum, ou phase du cycle classique.
+({String emoji, String label, String tag})? _phaseLabel(UserProfile profile, AppL10n l10n, [DateTime? forDate]) {
+  if (profile.healthStatus == 'pregnant') {
+    return (emoji: '🤰', label: l10n.phasePregnancy, tag: 'grossesse');
+  }
+  if (profile.healthStatus == 'postpartum') {
+    return (emoji: '🌱', label: l10n.phasePostpartum, tag: 'recuperation');
+  }
+  final info = _cycleDayInfo(profile, forDate);
+  if (info == null) return null;
+  final day = info.day;
+  final ovulationDay = info.ovulationDay;
+  // Les tags restent en français (littéraux stockés dans compatibleCycles),
+  // seul le label affiché est traduit.
+  if (day <= _kPeriodLengthDays) return (emoji: '🧘', label: l10n.phaseMenstrual, tag: 'Règles');
+  if (day == ovulationDay)       return (emoji: '🔥', label: l10n.phaseOvulation, tag: 'Ovulation');
+  if (day < ovulationDay)        return (emoji: '💪', label: l10n.phaseFollicular, tag: 'Folliculaire');
+  return (emoji: '🌙', label: l10n.phaseLuteal, tag: 'Lutéale');
+}
+
+// ═══════════════════════════════════════════════════════════
+// STAT BAR — cycle day / calories left / workout status today
+// ═══════════════════════════════════════════════════════════
+
+class _StatBar extends ConsumerWidget {
+  const _StatBar();
+
+  static const _ppWeeksLabel = {
+    '0-2': '0-2 sem.', '2-6': '2-6 sem.', '6-12': '6-12 sem.',
+    '3-6m': '3-6 mois', '6m+': '6 mois +',
+  };
+
+  Widget _cycleScreen(BuildContext context, UserProfile profile) {
+    if (profile.healthStatus == 'pregnant') return const PregnancyHubScreen();
+    if (profile.healthStatus == 'postpartum') {
+      const weeksAgoByDuration = {
+        '0-2': 1, '2-6': 4, '6-12': 9, '3-6m': 18, '6m+': 30,
+      };
+      final weeksAgo = weeksAgoByDuration[profile.ppDuration] ?? 4;
+      return PostpartumHubScreen(
+        birthDate: DateTime.now().subtract(Duration(days: weeksAgo * 7)),
+      );
+    }
+    return const CycleScreen();
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile  = ref.watch(userProfileProvider);
+    final totals   = ref.watch(todayTotalsProvider);
+    final weekPlan = ref.watch(weeklyPlanProvider);
+
+    DayPlan? todayPlan;
+    for (final d in weekPlan) {
+      if (d.isToday) { todayPlan = d; break; }
+    }
+
+    // ── Cycle / pregnancy / postpartum value ──────────────────────────────
+    String cycleValue;
+    String cycleLabel;
+    IconData cycleIcon = Icons.favorite_rounded;
+    if (profile.healthStatus == 'pregnant') {
+      final week = profile.pregnancyWeekSA;
+      cycleValue = week != null ? 'S$week' : '—';
+      cycleLabel = 'Grossesse';
+      cycleIcon  = Icons.child_friendly_rounded;
+    } else if (profile.healthStatus == 'postpartum') {
+      cycleValue = _ppWeeksLabel[profile.ppDuration] ?? '—';
+      cycleLabel = 'Post-partum';
+    } else {
+      final lastPeriod = profile.lastPeriod;
+      if (lastPeriod != null) {
+        final today     = DateTime.now();
+        final todayNorm = DateTime(today.year, today.month, today.day);
+        final lastNorm  = DateTime(lastPeriod.year, lastPeriod.month, lastPeriod.day);
+        final cycleDays = profile.cycleDays;
+        final elapsed   = todayNorm.difference(lastNorm).inDays % cycleDays;
+        final day       = (elapsed + 1).clamp(1, cycleDays);
+        cycleValue = 'J$day';
+        cycleLabel = 'Cycle';
+      } else {
+        cycleValue = '—';
+        cycleLabel = 'Cycle';
+      }
+    }
+
+    // ── Nutrition value (calories restantes aujourd'hui) ──────────────────
+    final target    = profile.targets.tdeeKcal;
+    final remaining = (target - totals.calories).clamp(0, target > 0 ? target : 99999);
+
+    // ── Workout value ──────────────────────────────────────────────────────
+    String workoutValue;
+    String workoutLabel;
+    IconData workoutIcon;
+    if (todayPlan == null || todayPlan.status == DayStatus.empty) {
+      workoutValue = '—'; workoutLabel = 'Séance'; workoutIcon = LucideIcons.dumbbell;
+    } else {
+      switch (todayPlan.status) {
+        case DayStatus.done:
+          workoutValue = 'Fait'; workoutLabel = 'Séance'; workoutIcon = LucideIcons.check;
+          break;
+        case DayStatus.planned:
+          workoutValue = 'Prévue'; workoutLabel = 'Séance'; workoutIcon = LucideIcons.dumbbell;
+          break;
+        case DayStatus.rest:
+          workoutValue = 'Repos'; workoutLabel = 'Séance'; workoutIcon = LucideIcons.moon;
+          break;
+        case DayStatus.empty:
+          workoutValue = '—'; workoutLabel = 'Séance'; workoutIcon = LucideIcons.dumbbell;
+          break;
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Row(children: [
+        Expanded(child: _StatChip(
+          icon: cycleIcon, value: cycleValue, label: cycleLabel,
+          color: const Color(0xFFB2447A), bg: const Color(0xFFFCEAF3),
+          onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (context) => _cycleScreen(context, profile))))),
+        const SizedBox(width: 10),
+        Expanded(child: _StatChip(
+          icon: LucideIcons.apple, value: '$remaining', label: 'kcal restants',
+          color: const Color(0xFF1C4D30), bg: const Color(0xFFEAF3EC),
+          onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const NutritionHomeScreen())))),
+        const SizedBox(width: 10),
+        Expanded(child: _StatChip(
+          icon: workoutIcon, value: workoutValue, label: workoutLabel,
+          color: const Color(0xFF1A3A6B), bg: const Color(0xFFE8EEF9),
+          onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const WorkoutScreen())))),
+      ]),
+    );
+  }
+}
+
+// Chaque stat est sa propre carte (icône dans un badge coloré, valeur,
+// label) au lieu d'un seul bandeau avec des séparateurs verticaux.
+class _StatChip extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+  final Color bg;
+  final VoidCallback onTap;
+  const _StatChip({
+    required this.icon, required this.value, required this.label,
+    required this.color, required this.bg, required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8, offset: const Offset(0, 3))],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 30, height: 30,
+            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 15, color: color)),
+          const SizedBox(height: 8),
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: cs.onSurface)),
+          const SizedBox(height: 1),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(fontSize: 9.5, color: cs.onSurfaceVariant)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTINUE WORKOUTS — recap of programs started but not finished
+// ═══════════════════════════════════════════════════════════
+
+class _ContinuableProgram {
+  final HomeProgramModel program;
+  final int doneVideos;
+  final int totalVideos;
+  final double percentage;
+  _ContinuableProgram(this.program, this.doneVideos, this.totalVideos, this.percentage);
+}
+
+// Un programme est "à reprendre" dès qu'au moins une vidéo d'exercice a un
+// progrès > 0 (même partiel, avant le seuil de 80% qui la marque "terminée")
+// — sinon le cas le plus fréquent (une vidéo regardée en partie puis
+// abandon) ne remontait jamais ici.
+Future<List<_ContinuableProgram>> _fetchContinuablePrograms(
+    List<HomeProgramModel> programs) async {
+  final completedPrograms = await WorkoutProgressService.getCompletedPrograms();
+  final videoProgress     = await WorkoutProgressService.getAllVideoProgress();
+
+  final result = <_ContinuableProgram>[];
+  for (final p in programs) {
+    if (completedPrograms.contains(p.id)) continue;
+
+    var done = 0;
+    var total = 0;
+    var sumProgress = 0.0;
+    var anyStarted = false;
+    for (final w in p.workouts) {
+      for (var i = 0; i < w.exercises.length; i++) {
+        total++;
+        final vid = w.videoIdAt(i);
+        final prog = vid != null ? (videoProgress[vid] ?? 0.0) : 0.0;
+        sumProgress += prog;
+        if (prog >= 0.8) done++;
+        if (prog > 0) anyStarted = true;
+      }
+    }
+    if (anyStarted && done < total) {
+      result.add(_ContinuableProgram(
+        p, done, total, total > 0 ? sumProgress / total : 0));
+    }
+  }
+  return result;
+}
+
+class _ContinueWorkoutsSection extends StatelessWidget {
+  final List<HomeProgramModel> programs;
+  const _ContinueWorkoutsSection({required this.programs});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return FutureBuilder<List<_ContinuableProgram>>(
+      future: _fetchContinuablePrograms(programs),
+      builder: (context, snap) {
+        final started = snap.data;
+        if (started == null || started.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 0, 0),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 20),
+              child: Row(children: [
+                Expanded(child: Text('Reprendre où tu t\'es arrêtée', style: GoogleFonts.outfit(
+                  fontSize: 16, fontWeight: FontWeight.w800, color: cs.onSurface))),
+                GestureDetector(
+                  onTap: () => showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => _ContinueAllSheet(programs: started),
+                  ),
+                  child: Text('Voir tout', style: GoogleFonts.inter(
+                    fontSize: 12.5, fontWeight: FontWeight.w600, color: cs.primary)),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 180,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(right: 20),
+                itemCount: started.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, i) => SizedBox(
+                  width: 165, child: _ContinueWorkoutCard(item: started[i])),
+              ),
+            ),
+          ]),
+        );
+      },
+    );
+  }
+}
+
+class _ContinueWorkoutCard extends StatelessWidget {
+  final _ContinuableProgram item;
+  const _ContinueWorkoutCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final program = item.program;
+    final cs = Theme.of(context).colorScheme;
+    final pct = (item.percentage * 100).round();
+
+    // Carte "photo pleine" avec dégradé + anneau de progression superposé,
+    // au lieu d'une image en haut suivie d'un bloc texte séparé.
+    return GestureDetector(
+      onTap: () => Navigator.push(context,
+        MaterialPageRoute(builder: (_) => WorkoutDetailScreen(program: program))),
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 12, offset: const Offset(0, 4))],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(fit: StackFit.expand, children: [
+          Image.asset(
+            program.imageUrl, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: cs.surfaceContainerHighest,
+              child: Icon(LucideIcons.dumbbell, size: 32, color: cs.primary.withValues(alpha: 0.4))),
+          ),
+          const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            stops: [0.0, 0.5, 1.0],
+            colors: [Color(0x00000000), Color(0x33000000), Color(0xE6000000)]))),
+
+          // Anneau de progression + pourcentage, en haut à droite
+          Positioned(top: 10, right: 10, child: SizedBox(
+            width: 38, height: 38,
+            child: Stack(alignment: Alignment.center, children: [
+              SizedBox.expand(child: CircularProgressIndicator(
+                value: item.percentage, strokeWidth: 3, strokeCap: StrokeCap.round,
+                backgroundColor: Colors.white.withValues(alpha: 0.25),
+                valueColor: const AlwaysStoppedAnimation(Colors.white))),
+              Text('$pct%', style: GoogleFonts.outfit(
+                fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+            ]),
+          )),
+
+          // Pastille "Reprendre" en haut à gauche
+          Positioned(top: 10, left: 10, child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(50)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(LucideIcons.play, size: 9, color: Colors.white),
+              const SizedBox(width: 3),
+              Text('Reprendre', style: GoogleFonts.inter(
+                fontSize: 9.5, fontWeight: FontWeight.w700, color: Colors.white)),
+            ]),
+          )),
+
+          Positioned(left: 12, right: 12, bottom: 12, child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(program.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.outfit(fontSize: 13.5, fontWeight: FontWeight.w800,
+                  color: Colors.white, height: 1.15)),
+              const SizedBox(height: 4),
+              Text('${item.doneVideos}/${item.totalVideos} vidéos vues',
+                style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w500,
+                  color: Colors.white.withValues(alpha: 0.75))),
+            ],
+          )),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── "Voir tout" bottom sheet — grille des programmes à reprendre ───────────
+class _ContinueAllSheet extends StatelessWidget {
+  final List<_ContinuableProgram> programs;
+  const _ContinueAllSheet({required this.programs});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (context, scrollController) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(children: [
+          Container(
+            width: 40, height: 4,
+            margin: const EdgeInsets.only(top: 12, bottom: 12),
+            decoration: BoxDecoration(
+              color: cs.outlineVariant,
+              borderRadius: BorderRadius.circular(2)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(children: [
+              Expanded(child: Text('Reprendre où tu t\'es arrêtée', style: GoogleFonts.outfit(
+                fontSize: 17, fontWeight: FontWeight.w800, color: cs.onSurface))),
+              Text('${programs.length}', style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant)),
+            ]),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: GridView.builder(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
+                childAspectRatio: 165 / 190),
+              itemCount: programs.length,
+              itemBuilder: (context, i) => _ContinueWorkoutCard(item: programs[i]),
+            ),
+          ),
+        ]),
+      ),
     );
   }
 }

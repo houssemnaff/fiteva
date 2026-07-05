@@ -62,6 +62,12 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
   // Max position reached — used to block forward seeking
   int _maxPositionMs = 0;
 
+  // Dernier palier de 10% déjà enregistré côté serveur — évite de spammer
+  // Supabase à chaque frame tout en gardant une trace du visionnage partiel
+  // (avant, seul le seuil des 80% était sauvegardé, donc une vidéo vue à
+  // moitié puis abandonnée ne laissait aucune trace en base).
+  int _lastSavedTenth = -1;
+
   late final AnimationController _doneCtrl;
   late final Animation<double> _doneScale;
 
@@ -136,10 +142,20 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     }
     if (pos > _maxPositionMs) _maxPositionMs = pos;
 
-    // ── Track 80 % threshold ───────────────────────────────────────────────
-    if (!_hasWatched80Percent && pos / dur >= 0.80) {
+    final frac = (pos / dur).clamp(0.0, 1.0);
+
+    // ── Track 80 % threshold (marks the video as fully "done") ────────────
+    if (!_hasWatched80Percent && frac >= 0.80) {
       setState(() => _hasWatched80Percent = true);
-      WorkoutProgressService.updateVideoProgress(widget.videoId, 0.80);
+    }
+
+    // ── Save partial progress every 10% — so a video watched only
+    // partway (e.g. abandoned at 40%) still shows up as "in progress"
+    // instead of leaving no trace until the 80% mark.
+    final tenth = (frac * 10).floor();
+    if (tenth > _lastSavedTenth) {
+      _lastSavedTenth = tenth;
+      WorkoutProgressService.updateVideoProgress(widget.videoId, frac);
     }
   }
 

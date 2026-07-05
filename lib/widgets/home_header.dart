@@ -7,6 +7,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../providers/mascot_provider.dart';
 import '../providers/user_profile_provider.dart';
+import '../providers/xp_provider.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/mascot_widget.dart';
 
 class HomeHeader extends ConsumerWidget {
@@ -19,35 +21,60 @@ class HomeHeader extends ConsumerWidget {
     return 'Bonne soirée';
   }
 
+  static const _weekdaysFr = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  static const _monthsFr   = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  static const _weekdaysEn = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  static const _monthsEn   = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  static String _today(bool isFrench) {
+    final now = DateTime.now();
+    final weekday = (isFrench ? _weekdaysFr : _weekdaysEn)[now.weekday - 1];
+    final month   = (isFrench ? _monthsFr : _monthsEn)[now.month - 1];
+    return '$weekday ${now.day} $month';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile  = ref.watch(userProfileProvider);
-    final mascot   = ref.watch(mascotProvider);
+    final profile   = ref.watch(userProfileProvider);
+    final mascot    = ref.watch(mascotProvider);
+    final xp        = ref.watch(xpProvider);
+    final isFrench  = ref.watch(l10nProvider).isFrench;
     final firstName = (profile.username.isNotEmpty ? profile.username : 'Toi').split(' ').first;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
 
-        // Greeting + name
+        // Mascot → profile (moved to the left, leading the row)
+        GestureDetector(
+          onTap: () => context.push('/profile'),
+          child: Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withOpacity(0.3),
+              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+            ),
+            child: ClipOval(
+              child: MascotWidget(type: mascot.type, mood: mascot.mood, size: 44),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // Name + greeting/date on one line
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                _greeting(),
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 1),
-              Text(
                 firstName,
                 style: GoogleFonts.outfit(
-                  fontSize: 24,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: -0.3,
@@ -55,44 +82,53 @@ class HomeHeader extends ConsumerWidget {
                   shadows: [Shadow(blurRadius: 12, color: Colors.black.withOpacity(0.4))],
                 ),
               ),
+              const SizedBox(height: 2),
+              Text(
+                '${_greeting()} · ${_today(isFrench)}',
+                style: GoogleFonts.inter(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withOpacity(0.65),
+                ),
+              ),
             ],
           ),
         ),
 
-        // Bell
-        GestureDetector(
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Notifications bientôt disponibles'),
-              duration: Duration(seconds: 2),
-            ),
+        // Streak + bell merged into one pill cluster
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(50),
           ),
-          child: Container(
-            width: 38, height: 38,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (xp.streak > 0) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(LucideIcons.flame, size: 14, color: Color(0xFFFFB067)),
+                  const SizedBox(width: 4),
+                  Text('${xp.streak}', style: GoogleFonts.outfit(
+                    fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
+                ]),
+              ),
+              Container(width: 1, height: 18, color: Colors.white.withOpacity(0.18)),
+            ],
+            GestureDetector(
+              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Notifications bientôt disponibles'),
+                  duration: Duration(seconds: 2),
+                ),
+              ),
+              child: Container(
+                width: 32, height: 32,
+                alignment: Alignment.center,
+                child: Icon(LucideIcons.bell, color: Colors.white.withOpacity(0.9), size: 17),
+              ),
             ),
-            child: Icon(LucideIcons.bell, color: Colors.white.withOpacity(0.9), size: 18),
-          ),
-        ),
-
-        const SizedBox(width: 10),
-
-        // Mascot → profile
-        GestureDetector(
-          onTap: () => context.push('/profile'),
-          child: Container(
-            width: 42, height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.black.withOpacity(0.3),
-              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
-            ),
-            child: ClipOval(
-              child: MascotWidget(type: mascot.type, mood: mascot.mood, size: 42),
-            ),
-          ),
+          ]),
         ),
 
       ],

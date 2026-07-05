@@ -168,17 +168,6 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
               onTap: () { Navigator.pop(ctx); _openPicker(index); },
             ),
 
-            if (plan.status == DayStatus.planned || plan.status == DayStatus.rest)
-              _OptionTile(
-                icon: LucideIcons.checkCircle,
-                label: 'Marquer comme terminé',
-                color: const Color(0xFF34D399),
-                onTap: () {
-                  ref.read(weeklyPlanProvider.notifier).markDone(index);
-                  Navigator.pop(ctx);
-                },
-              ),
-
             _OptionTile(
               icon: LucideIcons.arrowLeftRight,
               label: 'Déplacer vers un autre jour',
