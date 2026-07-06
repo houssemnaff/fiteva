@@ -30,12 +30,19 @@ enum MealType {
     MealType.dinner    => 'dinner',
   };
 
-  int get budgetKcal => switch (this) {
-    MealType.breakfast => 500,
-    MealType.lunch     => 600,
-    MealType.snack     => 200,
-    MealType.dinner    => 620,
+  // Répartition proportionnelle de l'objectif calorique du jour — remplace
+  // les anciens budgets fixes (500/600/200/620, identiques pour tout le
+  // monde) qui ne tenaient pas compte de l'objectif réel de l'utilisatrice.
+  double get _budgetShare => switch (this) {
+    MealType.breakfast => 0.25,
+    MealType.lunch     => 0.30,
+    MealType.snack     => 0.10,
+    MealType.dinner    => 0.35,
   };
+
+  /// Budget de calories pour ce repas, calculé à partir de l'objectif
+  /// calorique journalier réel de l'utilisatrice (pas une valeur fixe).
+  int budgetKcalFor(int dailyKcal) => (dailyKcal * _budgetShare).round();
 
   static MealType fromId(String id) => switch (id) {
     'breakfast' => MealType.breakfast,
@@ -227,6 +234,17 @@ class UserProfile {
   final ActivityLevel activityLevel;
   final NutritionGoal goal;
 
+  // Cibles calculées par `NutritionTargets.compute()` (providers/user_profile_
+  // provider.dart) et persistées dans Supabase (`user_nutrition_targets`) —
+  // source de vérité unique. Quand elles sont fournies, les getters
+  // dailyKcal/dailyProtein/dailyCarbs/dailyFat les utilisent directement au
+  // lieu de recalculer une formule séparée (qui donnait des chiffres
+  // différents du reste de l'app pour le même profil).
+  final int? targetKcalOverride;
+  final int? targetProteinOverride;
+  final int? targetCarbsOverride;
+  final int? targetFatOverride;
+
   const UserProfile({
     this.name          = '',
     this.age           = 25,
@@ -235,6 +253,10 @@ class UserProfile {
     this.isFemale      = true,
     this.activityLevel = ActivityLevel.moderate,
     this.goal          = NutritionGoal.maintain,
+    this.targetKcalOverride,
+    this.targetProteinOverride,
+    this.targetCarbsOverride,
+    this.targetFatOverride,
   });
 
   factory UserProfile.fromOnboardingData(Map<String, dynamic> data) {
@@ -285,22 +307,24 @@ class UserProfile {
 
   double get tdee => bmr * activityLevel.multiplier;
 
-  int get dailyKcal => (tdee + goal.kcalAdjustment).round();
+  // Repli local (formule Mifflin-St Jeor) — utilisé uniquement si aucune
+  // cible Supabase n'est disponible (ex: avant chargement du vrai profil).
+  int get dailyKcal => targetKcalOverride ?? (tdee + goal.kcalAdjustment).round();
 
   // Macro split (grams)
-  int get dailyProtein => switch (goal) {
+  int get dailyProtein => targetProteinOverride ?? switch (goal) {
     NutritionGoal.loss     => (dailyKcal * 0.35 / 4).round(),
     NutritionGoal.maintain => (dailyKcal * 0.30 / 4).round(),
     NutritionGoal.gain     => (dailyKcal * 0.35 / 4).round(),
   };
 
-  int get dailyCarbs => switch (goal) {
+  int get dailyCarbs => targetCarbsOverride ?? switch (goal) {
     NutritionGoal.loss     => (dailyKcal * 0.35 / 4).round(),
     NutritionGoal.maintain => (dailyKcal * 0.40 / 4).round(),
     NutritionGoal.gain     => (dailyKcal * 0.45 / 4).round(),
   };
 
-  int get dailyFat => switch (goal) {
+  int get dailyFat => targetFatOverride ?? switch (goal) {
     NutritionGoal.loss     => (dailyKcal * 0.30 / 9).round(),
     NutritionGoal.maintain => (dailyKcal * 0.30 / 9).round(),
     NutritionGoal.gain     => (dailyKcal * 0.20 / 9).round(),
@@ -313,6 +337,8 @@ class UserProfile {
   UserProfile copyWith({
     String? name, int? age, double? weightKg, double? heightCm,
     bool? isFemale, ActivityLevel? activityLevel, NutritionGoal? goal,
+    int? targetKcalOverride, int? targetProteinOverride,
+    int? targetCarbsOverride, int? targetFatOverride,
   }) => UserProfile(
     name:          name          ?? this.name,
     age:           age           ?? this.age,
@@ -321,6 +347,10 @@ class UserProfile {
     isFemale:      isFemale      ?? this.isFemale,
     activityLevel: activityLevel ?? this.activityLevel,
     goal:          goal          ?? this.goal,
+    targetKcalOverride:    targetKcalOverride    ?? this.targetKcalOverride,
+    targetProteinOverride: targetProteinOverride ?? this.targetProteinOverride,
+    targetCarbsOverride:   targetCarbsOverride   ?? this.targetCarbsOverride,
+    targetFatOverride:     targetFatOverride     ?? this.targetFatOverride,
   );
 }
 

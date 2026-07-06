@@ -75,6 +75,13 @@ UserProfile _toNutritionProfile(ap.UserProfile p) {
     isFemale:      true,
     activityLevel: activity,
     goal:          goal,
+    // Cibles réelles persistées dans Supabase (user_nutrition_targets) —
+    // source de vérité unique, au lieu de laisser UserProfile (core) les
+    // recalculer avec une formule différente (-500/+300 au lieu de ×0.85/+200).
+    targetKcalOverride:    p.targets.tdeeKcal,
+    targetProteinOverride: p.targets.proteinG,
+    targetCarbsOverride:   p.targets.carbsG,
+    targetFatOverride:     p.targets.fatG,
   );
 }
 

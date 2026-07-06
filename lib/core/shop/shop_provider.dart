@@ -156,6 +156,87 @@ final shopWishlistProvider = NotifierProvider<ShopWishlistNotifier, Set<String>>
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// REDEMPTION HISTORY — "contre quoi j'ai échangé mes étoiles" (shop_redemptions)
+// ─────────────────────────────────────────────────────────────────────────────
+class RedemptionEntry {
+  final String shopItemId;
+  final int pointsSpent;
+  final String promoCode;
+  final DateTime redeemedAt;
+
+  const RedemptionEntry({
+    required this.shopItemId,
+    required this.pointsSpent,
+    required this.promoCode,
+    required this.redeemedAt,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MY PARTNER REQUESTS — candidatures "devenir partenaire" de l'utilisateur
+// ─────────────────────────────────────────────────────────────────────────────
+class PartnerRequestEntry {
+  final String id;
+  final String name;
+  final String email;
+  final String phone;
+  final String brand;
+  final String website;
+  final String message;
+  final String category;
+  final String status; // pending | approved | rejected
+  final DateTime createdAt;
+
+  const PartnerRequestEntry({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.brand,
+    required this.website,
+    required this.message,
+    required this.category,
+    required this.status,
+    required this.createdAt,
+  });
+}
+
+final myPartnerRequestsProvider = FutureProvider<List<PartnerRequestEntry>>((ref) async {
+  final rows = await ShopService.loadMyPartnerRequests();
+  return rows.map((r) => PartnerRequestEntry(
+    id:        r['id']?.toString() ?? '',
+    name:      r['name'] as String? ?? '',
+    email:     r['email'] as String? ?? '',
+    phone:     r['phone'] as String? ?? '',
+    brand:     r['brand'] as String? ?? '',
+    website:   r['website'] as String? ?? '',
+    message:   r['message'] as String? ?? '',
+    category:  r['category'] as String? ?? '',
+    status:    r['status'] as String? ?? 'pending',
+    createdAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
+  )).toList();
+});
+
+final shopRedemptionHistoryProvider = FutureProvider<List<RedemptionEntry>>((ref) async {
+  final uid = SupabaseConfig.userId;
+  if (uid == null) return [];
+  try {
+    final rows = await SupabaseConfig.table('shop_redemptions')
+        .select('shop_item_id, points_spent, promo_code, redeemed_at')
+        .eq('user_id', uid)
+        .order('redeemed_at', ascending: false);
+    return (rows as List).map((r) => RedemptionEntry(
+      shopItemId:  r['shop_item_id'] as String,
+      pointsSpent: (r['points_spent'] as num?)?.toInt() ?? 0,
+      promoCode:   r['promo_code'] as String? ?? '',
+      redeemedAt:  DateTime.tryParse(r['redeemed_at'] as String? ?? '') ?? DateTime.now(),
+    )).toList();
+  } catch (_) {
+    return [];
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CATALOGUE — charge shop_items depuis Supabase
 // ─────────────────────────────────────────────────────────────────────────────
 final shopItemsProvider = FutureProvider<List<BoutiqueItem>>(

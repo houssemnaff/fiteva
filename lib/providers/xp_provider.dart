@@ -22,6 +22,12 @@ class XpAmounts {
 // ── Level badge keys ─────────────────────────────────────────────────────────
 const _levelBadgeKeys = ['', 'level1', 'level2', 'level3', 'level4'];
 
+// Plafond quotidien pour l'XP "repas loggé" — sans ça, ajouter plein de
+// petites entrées permettait de farmer du XP à l'infini.
+const int _maxMealLoggedRewardsPerDay = 4;
+const String _mealLoggedReason = 'meal_logged';
+const String _calorieGoalXpReason = 'nutrition_calorie_goal_xp';
+
 class XpNotifier extends StateNotifier<XpModel> {
   XpNotifier() : super(const XpModel()) {
     _load();
@@ -127,7 +133,25 @@ class XpNotifier extends StateNotifier<XpModel> {
     state = state.copyWith(loginRewardedToday: true);
   }
 
-  Future<void> rewardMealLogged()       => _addXp(XpAmounts.mealLogged);
+  /// Récompense un repas loggé — plafonnée à [_maxMealLoggedRewardsPerDay]
+  /// par jour pour éviter de farmer du XP en ajoutant plein de petites
+  /// entrées d'affilée.
+  Future<void> rewardMealLogged() async {
+    final count = await XpService.countReasonToday(_mealLoggedReason);
+    if (count >= _maxMealLoggedRewardsPerDay) return;
+    await _addXp(XpAmounts.mealLogged);
+    await XpService.addXpHistory(XpAmounts.mealLogged, _mealLoggedReason);
+  }
+
+  /// Récompense l'objectif calorique du jour — une seule fois par jour,
+  /// quel que soit le nombre de fois où on ajoute/supprime des repas et
+  /// re-franchit le seuil. Retourne true si des XP viennent d'être crédités.
+  Future<bool> rewardCalorieGoalReached() async {
+    if (await XpService.hasEarnedReasonToday(_calorieGoalXpReason)) return false;
+    await _addXp(20);
+    await XpService.addXpHistory(20, _calorieGoalXpReason);
+    return true;
+  }
   Future<void> rewardCycleTracking()    => _addXp(XpAmounts.cycleTracking);
   Future<void> rewardSymptomAdded()     => _addXp(XpAmounts.symptomAdded);
   Future<void> rewardHealthTipRead()    => _addXp(XpAmounts.healthTipRead);

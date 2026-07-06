@@ -14,7 +14,6 @@ import 'widgets/home/home_widgets.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/lang.dart';
 
-import '../../providers/xp_provider.dart';
 import '../../providers/points_provider.dart';
 import 'suivi_nutrition_screen.dart';
 import 'recipes_list_screen.dart';
@@ -76,7 +75,10 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
   }
 
   void _goToSuivi(String id) => Navigator.push(context,
-      MaterialPageRoute(builder: (_) => SuiviNutritionScreen(initialMealId: id)));
+      MaterialPageRoute(builder: (_) => SuiviNutritionScreen(
+        initialMealId: id,
+        initialDate:   _selectedDate,
+      )));
 
   void _goToRecipes() => Navigator.push(context,
       MaterialPageRoute(builder: (_) => const RecipesListScreen()));
@@ -84,7 +86,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
   void _goToAjout() async {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
-      MaterialPageRoute(builder: (_) => const AjoutRapideScreen()),
+      MaterialPageRoute(builder: (_) => AjoutRapideScreen(targetDate: _selectedDate)),
     );
     if (result == null || !mounted) return;
     final entries = result['entries'] as List<core.MealEntry>?;
@@ -137,7 +139,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
       final typeTotals = core.DailyTotals.from(entries);
       return MealCategoryData(
         _mealImageUrl(type), type.labelFor(Lang.code),
-        typeTotals.calories, type.budgetKcal,
+        typeTotals.calories, type.budgetKcalFor(profile.dailyKcal),
         typeTotals.protein.toDouble(), typeTotals.carbs.toDouble(),
         time: _mealTime(type), recipeCount: entries.length,
       );
@@ -214,7 +216,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
               child: GestureDetector(
                 onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const SuiviNutritionScreen())),
+                  MaterialPageRoute(builder: (_) => SuiviNutritionScreen(initialDate: _selectedDate))),
                 child: _CalorieRingCard(
                   anim: _anim,
                   consumed: totals.calories, goal: profile.dailyKcal,
@@ -235,6 +237,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
               child: _NutritionXpBanner(
                 consumed: totals.calories,
                 goal: profile.dailyKcal,
+                goalType: profile.goal,
               ),
             ),
           ),
@@ -499,7 +502,8 @@ class _MiniMacroBar extends StatelessWidget {
 class _NutritionXpBanner extends ConsumerStatefulWidget {
   final int consumed;
   final int goal;
-  const _NutritionXpBanner({required this.consumed, required this.goal});
+  final core.NutritionGoal goalType;
+  const _NutritionXpBanner({required this.consumed, required this.goal, required this.goalType});
 
   @override
   ConsumerState<_NutritionXpBanner> createState() => _NutritionXpBannerState();
@@ -520,8 +524,23 @@ class _NutritionXpBannerState extends ConsumerState<_NutritionXpBanner> {
     _maybeAwardPoints();
   }
 
+  // "Objectif atteint" dépend du type d'objectif : en perte de poids, la
+  // cible est un plafond à ne pas dépasser (on récompense le fait de s'en
+  // approcher sans le dépasser) ; en prise de masse, c'est une cible à
+  // atteindre ou dépasser. Avant ce correctif, un même seuil ">= goal"
+  // récompensait "manger beaucoup" au lieu de "respecter son objectif" pour
+  // les utilisatrices en perte de poids.
+  static bool _isReached(int consumed, int goal, core.NutritionGoal type) {
+    if (goal <= 0) return false;
+    return switch (type) {
+      core.NutritionGoal.loss     => consumed >= goal * 0.85 && consumed <= goal,
+      core.NutritionGoal.maintain => consumed >= goal * 0.9  && consumed <= goal * 1.1,
+      core.NutritionGoal.gain     => consumed >= goal,
+    };
+  }
+
   void _maybeAwardPoints() {
-    final reached = widget.goal > 0 && widget.consumed >= widget.goal;
+    final reached = _isReached(widget.consumed, widget.goal, widget.goalType);
     if (!reached || _checkedToday) return;
     _checkedToday = true;
     ref.read(pointsProvider.notifier).awardCalorieGoalIfNeeded();
@@ -531,7 +550,7 @@ class _NutritionXpBannerState extends ConsumerState<_NutritionXpBanner> {
   Widget build(BuildContext context) {
     final consumed = widget.consumed;
     final goal     = widget.goal;
-    final reached = goal > 0 && consumed >= goal;
+    final reached = _isReached(consumed, goal, widget.goalType);
     final pct     = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
 
     return AnimatedContainer(

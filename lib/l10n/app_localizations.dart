@@ -405,15 +405,13 @@ class AppL10n {
   String get welcomeNoAccount       => _fr ? "Nouveau ici ? S'inscrire" : 'New here? Sign up';
   String get welcomeOrContinueWith  => _fr ? 'ou continuer avec'        : 'or continue with';
 
-  // StepGoals
-  String get goalsTopBarTitle       => _fr ? 'OBJECTIFS'               : 'GOALS';
+  // StepGoals — objectif de poids (perte / maintien / prise)
+  String get goalsTopBarTitle       => _fr ? 'OBJECTIF'                : 'GOAL';
   String get goalsTitle             => _fr ? 'Quel est ton objectif\nprincipal en ce moment ?' : 'What is your main\ngoal right now?';
   String get goalsHint              => _fr ? 'Touche un cercle pour choisir' : 'Tap a circle to choose';
-  String get goal1                  => _fr ? 'Prendre de la force\net me sentir plus forte'   : 'Build strength\nand feel stronger';
-  String get goal2                  => _fr ? 'Tonifier et sculpter\ntout mon corps'            : 'Tone and sculpt\nmy whole body';
-  String get goal3                  => _fr ? 'Améliorer\nma souplesse\net mobilité'            : 'Improve\nmy flexibility\nand mobility';
-  String get goal4                  => _fr ? 'Réduire le stress\net me sentir plus\néquilibrée' : 'Reduce stress\nand feel more\nbalanced';
-  String get goal5                  => _fr ? 'Reprendre\nune routine'                          : 'Get back\nto a routine';
+  String get goal1                  => _fr ? '🔥 Perdre\ndu poids'      : '🔥 Lose\nweight';
+  String get goal2                  => _fr ? '⚖️ Maintenir\nle poids'   : '⚖️ Maintain\nweight';
+  String get goal3                  => _fr ? '💪 Prendre du poids\n/ muscle' : '💪 Gain weight\n/ muscle';
 
   // StepFitnessLevel
   String get fitnessTopBarTitle     => _fr ? 'NIVEAU'                   : 'LEVEL';

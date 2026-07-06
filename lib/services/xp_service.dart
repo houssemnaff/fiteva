@@ -119,6 +119,45 @@ class XpService {
     } catch (_) {}
   }
 
+  /// Vérifie si une récompense [reason] a déjà été accordée aujourd'hui —
+  /// évite qu'une action répétable (ex: atteindre l'objectif calorique après
+  /// avoir supprimé puis rajouté un repas) ne redonne les mêmes XP plusieurs
+  /// fois le même jour.
+  static Future<bool> hasEarnedReasonToday(String reason) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return false;
+    try {
+      final todayStart = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      final rows = await SupabaseConfig.table('xp_history')
+          .select('id')
+          .eq('user_id', uid)
+          .eq('reason', reason)
+          .gte('earned_at', todayStart.toIso8601String())
+          .limit(1);
+      return (rows as List).isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Nombre de fois où [reason] a déjà été récompensé aujourd'hui — utilisé
+  /// pour plafonner les récompenses répétables (ex: XP par repas loggé).
+  static Future<int> countReasonToday(String reason) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return 0;
+    try {
+      final todayStart = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      final rows = await SupabaseConfig.table('xp_history')
+          .select('id')
+          .eq('user_id', uid)
+          .eq('reason', reason)
+          .gte('earned_at', todayStart.toIso8601String());
+      return (rows as List).length;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   static Map<String, dynamic> _empty() => {
     'totalXp':             0,
     'streak':              0,

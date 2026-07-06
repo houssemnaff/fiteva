@@ -1131,11 +1131,14 @@ class _AdvancedEditSheetState extends State<_AdvancedEditSheet> {
 
   // ── Option lists (matching onboarding)
   static const _goalOptions = [
-    'Prendre de la force\net me sentir plus forte',
-    'Tonifier et sculpter\ntout mon corps',
-    'Améliorer\nma souplesse\net mobilité',
-    'Réduire le stress\net me sentir plus\néquilibrée',
-    'Reprendre\nune routine',
+    'Perte de poids',
+    'Maintien',
+    'Prise de masse',
+  ];
+  static const _goalLabels = [
+    '🔥 Perdre du poids',
+    '⚖️ Maintenir le poids',
+    '💪 Prendre du poids / muscle',
   ];
   static const _levelOptions   = ['Débutant', 'Intermédiaire', 'Avancé'];
   static const _freqOptions    = ['2 jours', '3 jours', '4 jours', '5 jours', '6 jours'];
@@ -1234,20 +1237,24 @@ class _AdvancedEditSheetState extends State<_AdvancedEditSheet> {
             const SizedBox(height: 24),
 
             // ── Objectifs ────────────────────────────────────────────────
-            _SectionLabel(label: 'OBJECTIFS', color: muted),
+            _SectionLabel(label: 'OBJECTIF', color: muted),
             const SizedBox(height: 10),
             _AdvCard(dark: dark, surf: surf, div: div,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Wrap(spacing: 8, runSpacing: 8,
-                  children: _goalOptions.map((g) {
-                    final sel     = _goals.contains(g);
-                    final display = g.replaceAll('\n', ' ');
+                  children: List.generate(_goalOptions.length, (i) {
+                    final g   = _goalOptions[i];
+                    final sel = _goals.contains(g);
                     return _AdvChip(
-                      label: display, selected: sel, green: green,
+                      label: _goalLabels[i], selected: sel, green: green,
                       ink: ink, muted: muted, div: div,
-                      onTap: () => setState(() =>
-                        sel ? _goals.remove(g) : _goals.add(g)));
+                      // Choix unique — l'objectif pilote directement le calcul
+                      // des calories, un seul peut être actif à la fois.
+                      onTap: () => setState(() {
+                        _goals.removeWhere((x) => _goalOptions.contains(x));
+                        if (!sel) _goals.add(g);
+                      }));
                   }).toList()),
               )),
 

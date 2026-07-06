@@ -2,7 +2,65 @@ import 'package:fiteva/screens/shop/models/boutique_item.dart';
 import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter/material.dart';
 
+enum PartnerRequestCheck { ok, alreadyPending, error }
+
 class ShopService {
+  /// Vérifie si l'utilisateur a déjà une candidature "partenaire" en attente
+  /// — évite les doublons de soumission (le formulaire promet un délai de
+  /// traitement de 1-2 jours, une candidature en cours ne doit pas pouvoir
+  /// être renvoyée entre-temps).
+  static Future<PartnerRequestCheck> hasPendingPartnerRequest() async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return PartnerRequestCheck.ok;
+    try {
+      final rows = await SupabaseConfig.table('partner_requests_shop')
+          .select('id')
+          .eq('user_id', uid)
+          .eq('status', 'pending')
+          .limit(1);
+      return (rows as List).isNotEmpty
+          ? PartnerRequestCheck.alreadyPending
+          : PartnerRequestCheck.ok;
+    } catch (e) {
+      debugPrint('ShopService.hasPendingPartnerRequest error: $e');
+      return PartnerRequestCheck.error;
+    }
+  }
+
+  /// Candidatures "devenir partenaire" soumises par l'utilisateur courant.
+  static Future<List<Map<String, dynamic>>> loadMyPartnerRequests() async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return [];
+    try {
+      final rows = await SupabaseConfig.table('partner_requests_shop')
+          .select('id, name, email, phone, brand, website, message, category, status, created_at')
+          .eq('user_id', uid)
+          .order('created_at', ascending: false);
+      return (rows as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('ShopService.loadMyPartnerRequests error: $e');
+      return [];
+    }
+  }
+
+  /// Retire une candidature "partenaire" — seul l'auteur peut la supprimer
+  /// (filtre user_id en plus de l'id, par défense en profondeur au cas où
+  /// les policies RLS ne seraient pas configurées).
+  static Future<bool> deletePartnerRequest(String id) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return false;
+    try {
+      await SupabaseConfig.table('partner_requests_shop')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', uid);
+      return true;
+    } catch (e) {
+      debugPrint('ShopService.deletePartnerRequest error: $e');
+      return false;
+    }
+  }
+
   static Future<List<BoutiqueItem>> loadItems() async {
     try {
       final rows = await SupabaseConfig.table('shop_items')
@@ -29,13 +87,16 @@ class ShopService {
   }) async {
     try {
       await SupabaseConfig.table('partner_requests_shop').insert({
-        'name':     name,
-        'email':    email,
-        'phone':    phone,
-        'brand':    brand,
-        'website':  website,
-        'message':  message,
-        'category': category,
+        'user_id':    SupabaseConfig.userId,
+        'name':       name,
+        'email':      email,
+        'phone':      phone,
+        'brand':      brand,
+        'website':    website,
+        'message':    message,
+        'category':   category,
+        'status':     'pending',
+        'created_at': DateTime.now().toIso8601String(),
       });
       return true;
     } catch (e) {

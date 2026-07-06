@@ -110,10 +110,10 @@ class FavoritesScreen extends ConsumerWidget {
                 Container(
                   width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withValues(alpha: dark ? 0.2 : 0.1),
+                    color: const Color(0xFF1C4D30).withValues(alpha: dark ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(CupertinoIcons.heart_fill, size: 15, color: Color(0xFF2E7D32)),
+                  child: const Icon(CupertinoIcons.heart_fill, size: 15, color: Color(0xFF1C4D30)),
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -175,13 +175,13 @@ class FavoritesScreen extends ConsumerWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withValues(alpha: brightness == Brightness.dark ? 0.15 : 0.08),
+                color: const Color(0xFF1C4D30).withValues(alpha: brightness == Brightness.dark ? 0.15 : 0.08),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 CupertinoIcons.heart_fill,
                 size: 32,
-                color: Color(0xFF2E7D32),
+                color: Color(0xFF1C4D30),
               ),
             ),
             const SizedBox(height: 20),

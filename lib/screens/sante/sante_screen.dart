@@ -397,16 +397,14 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
               color: _T.card(dark),
               child: TabBar(
                 controller: _tab,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-                labelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
-                unselectedLabelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w400),
+                isScrollable: false,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                labelStyle: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600),
+                unselectedLabelStyle: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w400),
                 labelColor: _T.t1(dark),
                 unselectedLabelColor: _T.t3(dark),
                 indicatorColor: const Color(0xFF0D9488),
-                indicatorSize: TabBarIndicatorSize.label,
+                indicatorSize: TabBarIndicatorSize.tab,
                 indicatorWeight: 2,
                 dividerColor: _T.border(dark),
                 tabs: const [
@@ -494,11 +492,11 @@ class _ConseisTab extends StatelessWidget {
       ? _conseils : _conseils.where((c) => c.category == cat).toList();
 
   static Color _catColor(String c) => switch (c) {
-    'Sport'    => const Color(0xFF2563EB),
-    'Nutrition'=> const Color(0xFFD97706),
-    'Sommeil'  => const Color(0xFF7C3AED),
-    'Mental'   => const Color(0xFF0D9488),
-    'Hormones' => const Color(0xFFDB2777),
+    'Sport'    => const Color(0xFF4A6FA5),
+    'Nutrition'=> const Color(0xFFB8860B),
+    'Sommeil'  => const Color(0xFF8E7BA6),
+    'Mental'   => const Color(0xFF5A8A6E),
+    'Hormones' => const Color(0xFFC97B84),
     _          => const Color(0xFF1C4D30),
   };
 
@@ -577,11 +575,11 @@ class _ConseilTile extends StatelessWidget {
     required this.onLike, required this.onDoctor});
 
   static Color _catColor(String c) => switch (c) {
-    'Sport'    => const Color(0xFF2563EB),
-    'Nutrition'=> const Color(0xFFD97706),
-    'Sommeil'  => const Color(0xFF7C3AED),
-    'Mental'   => const Color(0xFF0D9488),
-    'Hormones' => const Color(0xFFDB2777),
+    'Sport'    => const Color(0xFF4A6FA5),
+    'Nutrition'=> const Color(0xFFB8860B),
+    'Sommeil'  => const Color(0xFF8E7BA6),
+    'Mental'   => const Color(0xFF5A8A6E),
+    'Hormones' => const Color(0xFFC97B84),
     _          => const Color(0xFF1C4D30),
   };
   static IconData _catIcon(String c) => switch (c) {
@@ -653,6 +651,18 @@ class _ConseilTile extends StatelessWidget {
                     const Spacer(),
                     Text(conseil.postedAgo, style: GoogleFonts.inter(
                       fontSize: 11, color: _T.t3(dark))),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: onLike,
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(isLiked ? LucideIcons.heartHandshake : LucideIcons.heart,
+                          size: 14, color: isLiked ? const Color(0xFFE53935) : _T.t3(dark)),
+                        const SizedBox(width: 4),
+                        Text('${conseil.likes + (isLiked ? 1 : 0)}',
+                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600,
+                            color: isLiked ? const Color(0xFFE53935) : _T.t2(dark))),
+                      ]),
+                    ),
                   ]),
 
                   const SizedBox(height: 12),
@@ -671,43 +681,20 @@ class _ConseilTile extends StatelessWidget {
 
                   const SizedBox(height: 14),
 
-                  // Footer: doctor + like
-                  Row(children: [
-                    GestureDetector(
-                      onTap: onDoctor,
-                      child: Row(children: [
-                        _Ava(initials: doc.initials, color: doc.color, size: 28, photoAsset: doc.photoAsset),
-                        const SizedBox(width: 8),
-                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(doc.name, style: GoogleFonts.inter(
-                            fontSize: 12, fontWeight: FontWeight.w600, color: _T.t1(dark))),
-                          Text(doc.specialty, style: GoogleFonts.inter(
-                            fontSize: 11, color: _T.t2(dark))),
-                        ]),
+                  // Footer: doctor only (le like a été déplacé en haut avec la date)
+                  GestureDetector(
+                    onTap: onDoctor,
+                    child: Row(children: [
+                      _Ava(initials: doc.initials, color: doc.color, size: 28, photoAsset: doc.photoAsset),
+                      const SizedBox(width: 8),
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(doc.name, style: GoogleFonts.inter(
+                          fontSize: 12, fontWeight: FontWeight.w600, color: _T.t1(dark))),
+                        Text(doc.specialty, style: GoogleFonts.inter(
+                          fontSize: 11, color: _T.t2(dark))),
                       ]),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: onLike,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isLiked
-                            ? const Color(0xFFE53935).withOpacity(0.10)
-                            : (dark ? const Color(0xFF242424) : const Color(0xFFF5F5F5)),
-                          borderRadius: BorderRadius.circular(20)),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(isLiked ? LucideIcons.heartHandshake : LucideIcons.heart,
-                            size: 13, color: isLiked ? const Color(0xFFE53935) : _T.t3(dark)),
-                          const SizedBox(width: 4),
-                          Text('${conseil.likes + (isLiked ? 1 : 0)}',
-                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600,
-                              color: isLiked ? const Color(0xFFE53935) : _T.t2(dark))),
-                        ]),
-                      ),
-                    ),
-                  ]),
+                    ]),
+                  ),
                 ]),
               ),
             ),
@@ -1139,7 +1126,7 @@ class _QRTabState extends ConsumerState<_QRTab> {
     final dark = widget.dark;
     final l10n = widget.l10n;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 110),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 110),
       children: [
         // Ask box
         GestureDetector(
@@ -1303,7 +1290,7 @@ class _DoctorsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final idx = _indexes;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 110),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 110),
       children: [
         // Map
         ClipRRect(

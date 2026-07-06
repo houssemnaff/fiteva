@@ -2,7 +2,6 @@
 import 'package:fiteva/core/nutrition/models.dart';
 import 'package:fiteva/core/nutrition/nutrition_provider.dart';
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
-import 'package:fiteva/screens/nutrition/recette_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +18,8 @@ import '../../widgets/xp_toast.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 class SuiviNutritionScreen extends ConsumerStatefulWidget {
   final String? initialMealId;
-  const SuiviNutritionScreen({super.key, this.initialMealId});
+  final DateTime? initialDate;
+  const SuiviNutritionScreen({super.key, this.initialMealId, this.initialDate});
 
   @override
   ConsumerState<SuiviNutritionScreen> createState() =>
@@ -27,7 +27,7 @@ class SuiviNutritionScreen extends ConsumerStatefulWidget {
 }
 
 class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate = widget.initialDate ?? DateTime.now();
 
   DateTime get _today =>
       DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
@@ -69,16 +69,20 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (_) => AjoutRapideScreen(initialTypeId: preselected?.id),
+        builder: (_) => AjoutRapideScreen(
+          initialTypeId: preselected?.id,
+          targetDate: _selectedDate,
+        ),
       ),
     );
     if (result == null || !mounted) return;
     final entries = result['entries'] as List<MealEntry>?;
     if (entries != null && entries.isNotEmpty) {
-      // Snapshot calories BEFORE adding new entries
+      // Snapshot calories BEFORE adding new entries — sur le jour réellement
+      // ciblé (_key), pas toujours "aujourd'hui".
       final nutrition = ref.read(nutritionProvider);
       final calGoal   = nutrition.userProfile.dailyKcal;
-      final calBefore = ref.read(dailyTotalsProvider(todayKey)).calories;
+      final calBefore = ref.read(dailyTotalsProvider(_key)).calories;
 
       for (final entry in entries) {
         ref.read(nutritionProvider.notifier).addMeal(entry);
@@ -86,16 +90,21 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
       ref.read(xpProvider.notifier).rewardMealLogged();
 
       // Calories AFTER
-      final calAfter = ref.read(dailyTotalsProvider(todayKey)).calories;
+      final calAfter = ref.read(dailyTotalsProvider(_key)).calories;
 
-      // Reward daily calorie goal completion (only once per day)
-      final goalJustReached = calGoal > 0
+      // La récompense "objectif atteint" ne concerne que la journée en
+      // cours — pas de sens de la déclencher en éditant rétroactivement un
+      // jour passé.
+      final goalJustReached = _isToday
+          && calGoal > 0
           && calBefore < calGoal
           && calAfter >= calGoal;
 
       if (goalJustReached) {
-        ref.read(xpProvider.notifier).addCustomXp(20);
-        XpToast.show(context, 20, label: 'Objectif calorique atteint ! 🎉');
+        final granted = await ref.read(xpProvider.notifier).rewardCalorieGoalReached();
+        if (granted && mounted) {
+          XpToast.show(context, 20, label: 'Objectif calorique atteint ! 🎉');
+        }
       }
 
       HapticFeedback.mediumImpact();
@@ -160,11 +169,14 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
                         mealType:        type,
                         entries:         entries,
                         typeTotals:      typeTotals,
+                        dailyKcal:       profile.dailyKcal,
                         showBudgetBadge: single,
                         onAdd:           () => _goToAjout(preselected: type),
-                        onTapEntry:      (entry) => Navigator.push(context,
-                            MaterialPageRoute(
-                                builder: (_) => RecipeDetailScreen(recipe: entry))),
+                        onTapEntry:      (entry) => showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => _MealEntryDetailSheet(nc: nc, entry: entry),
+                        ),
                         onDeleteEntry:   _deleteMeal,
                       ),
                     );
@@ -297,7 +309,7 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n  = AppL10n(Lang.code);
     final goal   = profile.dailyKcal;
-    final pct    = (totals.calories / goal).clamp(0.0, 1.0);
+    final pct    = goal > 0 ? (totals.calories / goal).clamp(0.0, 1.0) : 0.0;
     final over   = totals.calories > goal;
     final remain = goal - totals.calories;
 
@@ -470,6 +482,83 @@ class _MacroChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  MEAL ENTRY DETAIL SHEET — vraies données de l'aliment loggé (au lieu de
+//  rediriger vers l'écran recette qui affichait un contenu factice sans
+//  rapport avec ce qui a réellement été mangé).
+// ─────────────────────────────────────────────────────────────────────────────
+class _MealEntryDetailSheet extends StatelessWidget {
+  final NutritionColors nc;
+  final MealEntry entry;
+  const _MealEntryDetailSheet({required this.nc, required this.entry});
+
+  Widget _macroRow(String label, int value, String unit, Color fg, Color bg) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+        child: Column(children: [
+          Text('$value$unit', style: GoogleFonts.outfit(
+              fontSize: 15, fontWeight: FontWeight.w800, color: fg)),
+          const SizedBox(height: 2),
+          Text(label, style: GoogleFonts.inter(fontSize: 10, color: fg.withOpacity(0.75))),
+        ]),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppL10n(Lang.code);
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
+        decoration: BoxDecoration(color: nc.surface, borderRadius: BorderRadius.circular(24)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(width: 36, height: 4,
+                  decoration: BoxDecoration(color: nc.border, borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 20),
+            Text(entry.mealType.labelFor(Lang.code), style: GoogleFonts.inter(
+                color: NutritionColors.mint, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 2)),
+            const SizedBox(height: 4),
+            Text(entry.food.name, style: GoogleFonts.outfit(
+                fontSize: 20, fontWeight: FontWeight.w800, color: nc.text1, letterSpacing: -0.4)),
+            const SizedBox(height: 4),
+            Text('${entry.grams.toStringAsFixed(0)} g',
+                style: GoogleFonts.inter(fontSize: 13, color: nc.text2)),
+            const SizedBox(height: 20),
+            Container(height: 1, color: nc.border),
+            const SizedBox(height: 20),
+            Row(children: [
+              Text('${entry.calories}', style: GoogleFonts.outfit(
+                  fontSize: 32, fontWeight: FontWeight.w800, color: nc.text1, height: 1)),
+              const SizedBox(width: 6),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text('kcal', style: GoogleFonts.inter(fontSize: 13, color: nc.text2)),
+              ),
+            ]),
+            const SizedBox(height: 16),
+            Row(children: [
+              _macroRow(l10n.nutritionProtein, entry.protein, 'g', nc.greenFg, nc.mintBg),
+              const SizedBox(width: 8),
+              _macroRow(l10n.nutritionCarbs, entry.carbs, 'g', nc.blueFg, nc.blueBg),
+              const SizedBox(width: 8),
+              _macroRow(l10n.nutritionFat, entry.fat, 'g', nc.amberFg, nc.amberBg),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  MEAL GROUP CARD
 // ─────────────────────────────────────────────────────────────────────────────
 class _MealGroupCard extends StatelessWidget {
@@ -477,6 +566,7 @@ class _MealGroupCard extends StatelessWidget {
   final MealType mealType;
   final List<MealEntry> entries;
   final DailyTotals typeTotals;
+  final int dailyKcal;
   final bool showBudgetBadge;
   final VoidCallback onAdd;
   final void Function(MealEntry) onTapEntry;
@@ -484,13 +574,13 @@ class _MealGroupCard extends StatelessWidget {
 
   const _MealGroupCard({
     required this.nc, required this.mealType, required this.entries,
-    required this.typeTotals, this.showBudgetBadge = false,
+    required this.typeTotals, required this.dailyKcal, this.showBudgetBadge = false,
     required this.onAdd, required this.onTapEntry, required this.onDeleteEntry,
   });
 
-  int    get _budget => mealType.budgetKcal;
+  int    get _budget => mealType.budgetKcalFor(dailyKcal);
   bool   get _over   => typeTotals.calories > _budget;
-  double get _pct    => (typeTotals.calories / _budget).clamp(0.0, 1.2);
+  double get _pct    => _budget > 0 ? (typeTotals.calories / _budget).clamp(0.0, 1.2) : 0.0;
 
   IconData get _icon => switch (mealType) {
     MealType.breakfast => LucideIcons.coffee,

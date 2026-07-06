@@ -63,7 +63,7 @@ class NutritionTargets {
       proteinRatio = 1.5;
     } else if (healthStatus == 'pregnant') {
       proteinRatio = 1.5;
-    } else if (goals.contains('Tonifier') || goals.contains('Prendre de la force')) {
+    } else if (goals.contains('Prise de masse') || goals.contains('Prendre du volume')) {
       proteinRatio = 1.9;
     } else {
       proteinRatio = 1.7;
@@ -360,9 +360,12 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
         'updated_at': DateTime.now().toIso8601String(),
       }).catchError((_) {});
     } else if (_bioKeys.contains(key)) {
+      // 'frequency_days' est une colonne int — la valeur brute ('3 jours')
+      // doit être convertie, sinon Postgres renvoie 400 (type mismatch).
+      final bioValue = key == 'frequency' ? _freqToDays(value) : value;
       SupabaseConfig.table('user_biometrics').upsert({
         'user_id':    uid,
-        _toBioKey(key): value,
+        _toBioKey(key): bioValue,
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id').catchError((e) {
         debugPrint('[UserProfile] bio sync error ($key): $e');

@@ -1576,7 +1576,11 @@ class _AuthCtaButton extends StatelessWidget {
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-// STEP 2 — StepGoals  (minimalist B&W circle selector)
+// STEP 2 — StepGoals  (objectif de poids — choix unique, pilote le calcul
+// des calories : perte/maintien/prise. Les clés ci-dessous sont volontairement
+// distinctes ("poids" seulement pour la perte, "masse" pour la prise) pour ne
+// pas se faire mal-classer par la détection par mot-clé dans
+// UserProfile.fromOnboardingData et NutritionTargets.compute()).
 // ══════════════════════════════════════════════════════════════════════════════
 
 class _GoalData {
@@ -1585,11 +1589,9 @@ class _GoalData {
 }
 
 const _goals = [
-  _GoalData('Prendre de la force\net me sentir plus forte'),
-  _GoalData('Tonifier et sculpter\ntout mon corps'),
-  _GoalData('Améliorer\nma souplesse\net mobilité'),
-  _GoalData('Réduire le stress\net me sentir plus\néquilibrée'),
-  _GoalData('Reprendre\nune routine'),
+  _GoalData('Perte de poids'),
+  _GoalData('Maintien'),
+  _GoalData('Prise de masse'),
 ];
 
 class StepGoals extends StatefulWidget {
@@ -1639,8 +1641,18 @@ class _StepGoalsState extends State<StepGoals>
     super.dispose();
   }
 
+  // Choix unique : on retire l'ancienne sélection avant d'ajouter la nouvelle
+  // (le parent n'expose qu'un toggle add/remove générique, partagé avec
+  // d'autres steps — on garde donc cette logique côté widget).
   void _select(String label) {
-    widget.onToggleGoal(label);
+    for (final g in _goals) {
+      if (g.label != label && widget.selectedGoals.contains(g.label)) {
+        widget.onToggleGoal(g.label);
+      }
+    }
+    if (!widget.selectedGoals.contains(label)) {
+      widget.onToggleGoal(label);
+    }
     Future.delayed(const Duration(milliseconds: 300), widget.onNext);
   }
 
@@ -1729,36 +1741,32 @@ class _StepGoalsState extends State<StepGoals>
 
             SizedBox(height: context.rv(24)),
 
-            // ── Circle cluster ────────────────────────────────────
+            // ── Circle cluster — 3 objectifs de poids, une seule colonne ──
             Padding(
               padding: EdgeInsets.symmetric(horizontal: context.rs(20)),
               child: LayoutBuilder(
                 builder: (_, constraints) {
-                  final double d     = context.rs(138);
-                  final double vStep = context.rv(108);
+                  final double d     = context.rs(150);
+                  final double vStep = context.rv(122);
                   final double w     = constraints.maxWidth;
-                  final double lx    = d / 2 + context.rs(10);
-                  final double rx    = w - d / 2 - context.rs(10);
                   final double cx    = w / 2;
 
                   final offsets = [
-                    Offset(lx, 0),
-                    Offset(rx, 0),
+                    Offset(cx, 0),
                     Offset(cx, vStep),
-                    Offset(lx, vStep * 2),
-                    Offset(rx, vStep * 2),
+                    Offset(cx, vStep * 2),
                   ];
 
                   final l10n = AppL10n(Lang.code);
                   final _goalDisplayLabels = [
-                    l10n.goal1, l10n.goal2, l10n.goal3, l10n.goal4, l10n.goal5,
+                    l10n.goal1, l10n.goal2, l10n.goal3,
                   ];
                   return SizedBox(
                     height: vStep * 2 + d,
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: List.generate(_goals.length, (i) {
-                        final key = _goals[i].label; // French key for selection
+                        final key = _goals[i].label; // clé de stockage (objectif)
                         final displayLabel = _goalDisplayLabels[i];
                         final isSel = widget.selectedGoals.contains(key);
                         return Positioned(

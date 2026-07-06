@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:fiteva/core/nutrition/food_database.dart';
 import 'package:fiteva/core/nutrition/models.dart';
-import 'package:fiteva/core/nutrition/nutrition_provider.dart' show generateMealId;
+import 'package:fiteva/core/nutrition/nutrition_provider.dart' show generateMealId, userProfileProvider;
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:fiteva/services/nutruition_ia.dart';
 import 'package:flutter/material.dart';
@@ -124,7 +124,7 @@ String _catPhoto(FoodCategory c) => switch (c) {
 };
 
 // ── Scan state ────────────────────────────────────────────────────────────────
-enum _ScanState { idle, preview, scanning, result }
+enum _ScanState { idle, loading, preview, scanning, result }
 
 // ── Basket item ───────────────────────────────────────────────────────────────
 class _BasketItem {
@@ -142,7 +142,11 @@ class _BasketItem {
 // ════════════════════════════════════════════════════════════════════════════
 class AjoutRapideScreen extends ConsumerStatefulWidget {
   final String? initialTypeId;
-  const AjoutRapideScreen({super.key, this.initialTypeId});
+  // Jour auquel les repas ajoutés ici seront rattachés — par défaut
+  // aujourd'hui. Sans ce paramètre, un ajout fait en consultant un jour
+  // passé se retrouvait toujours enregistré sur la date du jour (bug).
+  final DateTime? targetDate;
+  const AjoutRapideScreen({super.key, this.initialTypeId, this.targetDate});
 
   @override
   ConsumerState<AjoutRapideScreen> createState() => _AjoutRapideScreenState();
@@ -181,6 +185,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   _ScanState  _scanState = _ScanState.idle;
   FoodItem?   _scannedFood;
   Uint8List?  _pickedImageBytes;
+  String?     _scanError;
   final _imagePicker = ImagePicker();
 
   // Picks a photo (camera or gallery) and shows it in the scan zone —
@@ -194,6 +199,13 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   // peut purger le dossier Caches/tmp entre la sélection de la photo et
   // le tap sur "Analyser", ce qui faisait échouer l'analyse avec une
   // PathNotFoundException — garder les bytes en mémoire élimine ce risque.
+  //
+  // La conversion peut prendre 1-2s sur un gros fichier HEIC iPhone — sans
+  // indicateur, l'écran semblait figé/ne rien faire pendant ce délai. Idem
+  // en cas d'échec : l'erreur passait par un SnackBar transitoire facile à
+  // manquer, ce qui donnait l'impression que "rien ne se passe" alors qu'une
+  // erreur s'était bien produite. On garde maintenant l'erreur affichée en
+  // permanence (bandeau) tant que l'utilisatrice ne relance pas une sélection.
   Future<void> _pickImage(ImageSource source) async {
     XFile? picked;
     try {
@@ -201,21 +213,27 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
         source: source, imageQuality: 85, maxWidth: 1600);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossible d\'ouvrir la caméra/galerie : $e')));
+      setState(() => _scanError = 'Impossible d\'ouvrir la caméra/galerie : $e');
       return;
     }
     if (picked == null) return;
 
     HapticFeedback.selectionClick();
+    setState(() {
+      _scanState = _ScanState.loading;
+      _scanError = null;
+    });
+
     Uint8List jpegBytes;
     try {
       jpegBytes = await _ensureJpegBytes(picked);
     } catch (e) {
       debugPrint('[Scan] _ensureJpegBytes FAILED: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossible de lire cette photo : $e')));
+      setState(() {
+        _scanState = _ScanState.idle;
+        _scanError = 'Impossible de lire cette photo : $e';
+      });
       return;
     }
     if (!mounted) return;
@@ -315,6 +333,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     _scannedFood       = null;
     _pickedImageBytes  = null;
     _selectedFood      = null;
+    _scanError         = null;
   });
 
   // ── Manual mode ──────────────────────────────────────────────────────────
@@ -432,12 +451,16 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     }
 
     final now = DateTime.now();
+    // Jour ciblé (peut être un jour passé consulté depuis l'écran nutrition/
+    // suivi), mais heure actuelle conservée pour un tri chronologique sensé.
+    final day = widget.targetDate ?? now;
+    final entryTime = DateTime(day.year, day.month, day.day, now.hour, now.minute, now.second);
     final entries = _basket.asMap().entries.map((e) => MealEntry(
       id:       generateMealId(),
       food:     e.value.food,
       grams:    e.value.grams,
       mealType: type!,
-      dateTime: now,
+      dateTime: entryTime,
     )).toList();
 
     if (mounted) Navigator.pop(context, {'entries': entries});
@@ -1008,14 +1031,52 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   Widget _buildScanner() {
     return switch (_scanState) {
       _ScanState.idle     => _buildScannerIdle(),
+      _ScanState.loading  => _buildScannerLoading(),
       _ScanState.preview  => _buildScannerPreview(),
       _ScanState.scanning => _buildScannerScanning(),
       _ScanState.result   => _buildScannerResult(),
     };
   }
 
+  // ── Scanner: loading (photo choisie, conversion HEIC→JPEG en cours) ──────
+  Widget _buildScannerLoading() => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(vertical: 40),
+    decoration: BoxDecoration(
+      color: _kMintBg,
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: _kMint.withOpacity(0.3)),
+    ),
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      const SizedBox(
+        width: 28, height: 28,
+        child: CircularProgressIndicator(strokeWidth: 2.6, color: _kGreen)),
+      const SizedBox(height: 14),
+      Text('Préparation de la photo…', style: GoogleFonts.inter(
+        fontSize: 13, fontWeight: FontWeight.w600, color: _kGreen)),
+    ]),
+  );
+
   // ── Scanner: idle ────────────────────────────────────────────────────────
   Widget _buildScannerIdle() => Column(children: [
+    if (_scanError != null) ...[
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFDEAEA),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE8A0A0)),
+        ),
+        child: Row(children: [
+          const Icon(LucideIcons.alertTriangle, size: 16, color: Color(0xFFB3261E)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(_scanError!, style: GoogleFonts.inter(
+            fontSize: 12.5, color: const Color(0xFFB3261E), height: 1.4))),
+        ]),
+      ),
+      const SizedBox(height: 14),
+    ],
     // Grande carte dégradée avec icône flottante — remplace l'ancien
     // "viewfinder" plat et sombre par un visuel plus doux et engageant.
     Container(
@@ -1642,11 +1703,12 @@ class _UnitPickerSheet extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 //  MEAL TYPE PICKER SHEET
 // ══════════════════════════════════════════════════════════════════════════════
-class _MealTypePickerSheet extends StatelessWidget {
+class _MealTypePickerSheet extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final nc     = NutritionColors.of(context);
     final bottom = MediaQuery.of(context).padding.bottom;
+    final dailyKcal = ref.watch(userProfileProvider).dailyKcal;
     return Container(
       decoration: BoxDecoration(
         color: nc.surface,
@@ -1687,7 +1749,7 @@ class _MealTypePickerSheet extends StatelessWidget {
                 fontSize: 15, fontWeight: FontWeight.w600,
                 color: nc.text1)),
               const Spacer(),
-              Text('${type.budgetKcal} kcal', style: GoogleFonts.inter(
+              Text('${type.budgetKcalFor(dailyKcal)} kcal', style: GoogleFonts.inter(
                 fontSize: 12, color: nc.text2)),
             ])))),
       ]));

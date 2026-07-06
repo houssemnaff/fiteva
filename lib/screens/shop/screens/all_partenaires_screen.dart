@@ -7,15 +7,16 @@ import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LOCAL PALETTE
+// PALETTE — fond blanc pur, séparation par filets fins plutôt que par cartes
+// ombrées. Vert de marque en accent unique, or pour les points, rouge wishlist.
 // ─────────────────────────────────────────────────────────────────────────────
 class _P {
-  final Color bg, surface, surfaceAlt, ink, inkMuted, inkSubtle;
-  final Color divider, chipBg, chipSel, chipSelFg, goldSurface;
+  final Color bg, surface, surfaceAlt, ink, inkMuted, inkSubtle, divider, chipBg;
   final bool  isDark;
 
-  static const Color gold    = Color(0xFFC4972A);
-  static const Color wishRed = Color(0xFFD04040);
+  static const Color brand   = Color(0xFF1C4D30);
+  static const Color gold    = Color(0xFFB8892F);
+  static const Color wishRed = Color(0xFFC24A4A);
 
   static _P of(BuildContext ctx) {
     final dark = Theme.of(ctx).brightness == Brightness.dark;
@@ -23,25 +24,18 @@ class _P {
   }
 
   const _P._light()
-      : bg = const Color(0xFFF5F5F3), surface = const Color(0xFFFFFFFF),
-        surfaceAlt = const Color(0xFFEEEEEC), ink = const Color(0xFF111110),
-        inkMuted = const Color(0xFF777774), inkSubtle = const Color(0xFFAAAAAA),
-        divider = const Color(0xFFE5E5E3), chipBg = const Color(0xFFEBEBEA),
-        chipSel = const Color(0xFF111110), chipSelFg = const Color(0xFFFFFFFF),
-        goldSurface = const Color(0xFFF7EDD8), isDark = false;
+      : bg = Colors.white, surface = Colors.white,
+        surfaceAlt = const Color(0xFFF4F4F1), ink = const Color(0xFF16211A),
+        inkMuted = const Color(0xFF6E786F), inkSubtle = const Color(0xFFA8AEA6),
+        divider = const Color(0xFFECECE8), chipBg = const Color(0xFFF4F4F1),
+        isDark = false;
 
   const _P._dark()
-      : bg = const Color(0xFF0F0F0F), surface = const Color(0xFF1C1C1C),
-        surfaceAlt = const Color(0xFF252523), ink = const Color(0xFFF2F2F0),
-        inkMuted = const Color(0xFF8A8A88), inkSubtle = const Color(0xFF5C5C5A),
-        divider = const Color(0xFF2A2A28), chipBg = const Color(0xFF272725),
-        chipSel = const Color(0xFFF2F2F0), chipSelFg = const Color(0xFF111110),
-        goldSurface = const Color(0xFF2A2010), isDark = true;
-
-  List<BoxShadow> get cardShadow => isDark ? [] : [
-    BoxShadow(color: const Color(0xFF000000).withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 5))
-  ];
-  Border? get cardBorder => isDark ? Border.all(color: divider, width: 0.5) : null;
+      : bg = const Color(0xFF10140F), surface = const Color(0xFF1A1F19),
+        surfaceAlt = const Color(0xFF232923), ink = const Color(0xFFEDF2EC),
+        inkMuted = const Color(0xFF919C90), inkSubtle = const Color(0xFF5C645B),
+        divider = const Color(0xFF2A302A), chipBg = const Color(0xFF232923),
+        isDark = true;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,22 +43,30 @@ class _P {
 // ─────────────────────────────────────────────────────────────────────────────
 class _Cat {
   final String key, label;
-  final IconData icon;
-  const _Cat({required this.key, required this.label, required this.icon});
+  const _Cat({required this.key, required this.label});
 }
 
 const _kCats = [
-  _Cat(key: 'all',       label: 'Tout',      icon: Icons.apps_rounded),
-  _Cat(key: 'mamans',    label: 'Mamans',    icon: Icons.favorite_rounded),
-  _Cat(key: 'baby',      label: 'Baby',      icon: Icons.child_care),
-  _Cat(key: 'sport',     label: 'Sport',     icon: Icons.fitness_center),
-  _Cat(key: 'vitamines', label: 'Vitamines', icon: Icons.eco_rounded),
-  _Cat(key: 'skincare',  label: 'Skincare',  icon: Icons.spa_rounded),
-  _Cat(key: 'home',      label: 'Maison',    icon: Icons.home_rounded),
+  _Cat(key: 'all',       label: 'Tout'),
+  _Cat(key: 'mamans',    label: 'Mamans'),
+  _Cat(key: 'baby',      label: 'Baby'),
+  _Cat(key: 'sport',     label: 'Sport'),
+  _Cat(key: 'vitamines', label: 'Vitamines'),
+  _Cat(key: 'skincare',  label: 'Skincare'),
+  _Cat(key: 'home',      label: 'Maison'),
 ];
 
+const Map<String, IconData> _catIcons = {
+  'mamans':    Icons.favorite_rounded,
+  'baby':      Icons.child_care,
+  'sport':     Icons.fitness_center,
+  'vitamines': Icons.eco_rounded,
+  'skincare':  Icons.spa_rounded,
+  'home':      Icons.home_rounded,
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
-// SCREEN
+// SCREEN — fond blanc, liste propre séparée par des filets fins
 // ─────────────────────────────────────────────────────────────────────────────
 class AllPartenairesScreen extends ConsumerStatefulWidget {
   const AllPartenairesScreen({super.key});
@@ -87,7 +89,7 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
     super.initState();
     _searchCtrl.addListener(() => setState(() => _search = _searchCtrl.text));
     _scrollCtrl.addListener(() {
-      final e = _scrollCtrl.offset > 10;
+      final e = _scrollCtrl.offset > 6;
       if (e != _elevated) setState(() => _elevated = e);
     });
   }
@@ -117,60 +119,62 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
     final allItems = ref.watch(shopItemsProvider).asData?.value ?? <BoutiqueItem>[];
     final filtered = _getFiltered(allItems);
     final wishlist = ref.watch(shopWishlistProvider);
+    final shop     = ref.watch(shopProvider);
+    final l10n     = ref.watch(l10nProvider);
 
-    final l10n = ref.watch(l10nProvider);
     return Scaffold(
       backgroundColor: p.bg,
       body: Column(
         children: [
-          // ── Sticky header ──────────────────────────────────────────────
-          _StickyHeader(
-            p: p,
-            l10n: l10n,
-            elevated: _elevated,
-            cat: _cat,
-            searchCtrl: _searchCtrl,
-            searchFocus: _searchFocus,
-            search: _search,
-            onCat: (k) => setState(() => _cat = k),
-            onBack: () => Navigator.pop(context),
-          ),
-          // ── Count row ─────────────────────────────────────────────────
+          _Header(p: p, l10n: l10n, elevated: _elevated, onBack: () => Navigator.pop(context)),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 14, 24, 10),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+            child: _SearchField(p: p, l10n: l10n, ctrl: _searchCtrl, focus: _searchFocus, search: _search),
+          ),
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: _kCats.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) => _CatPill(
+                p: p,
+                label: _kCats[i].label,
+                isSelected: _cat == _kCats[i].key,
+                onTap: () => setState(() => _cat = _kCats[i].key),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Row(
               children: [
-                Text(
-                  '${filtered.length} partenaire${filtered.length > 1 ? 's' : ''}',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: p.inkSubtle,
-                      letterSpacing: 0.4),
-                ),
+                Text('${filtered.length} partenaire${filtered.length > 1 ? 's' : ''}',
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: p.inkMuted)),
               ],
             ),
           ),
-          // ── List ──────────────────────────────────────────────────────
           Expanded(
             child: filtered.isEmpty
                 ? _EmptyState(p: p, l10n: l10n)
                 : ListView.separated(
                     controller: _scrollCtrl,
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
                     itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, __) => Divider(height: 1, color: p.divider),
                     itemBuilder: (ctx, i) {
                       final item = filtered[i];
-                      return _PartnerCard(
+                      return _PartnerRow(
                         p: p,
                         item: item,
                         isWishlisted: wishlist.contains(item.id),
+                        isRedeemed: shop.isRedeemed(item.id),
+                        canAfford: shop.canAfford(item.etoiles),
                         onWish: () => _toggleWish(item.id),
                         onTap: () => Navigator.push(
                             ctx,
-                            CupertinoPageRoute(
-                                builder: (_) => BoutiqueDetailScreen(item: item))),
+                            CupertinoPageRoute(builder: (_) => BoutiqueDetailScreen(item: item))),
                       );
                     },
                   ),
@@ -182,348 +186,37 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STICKY HEADER (app bar + search + chips)
+// HEADER — simple, blanc, titre + retour texte
 // ─────────────────────────────────────────────────────────────────────────────
-class _StickyHeader extends StatelessWidget {
+class _Header extends StatelessWidget {
   final _P p;
   final AppL10n l10n;
   final bool elevated;
-  final String cat;
-  final TextEditingController searchCtrl;
-  final FocusNode searchFocus;
-  final String search;
-  final ValueChanged<String> onCat;
   final VoidCallback onBack;
-
-  const _StickyHeader({
-    required this.p,
-    required this.l10n,
-    required this.elevated,
-    required this.cat,
-    required this.searchCtrl,
-    required this.searchFocus,
-    required this.search,
-    required this.onCat,
-    required this.onBack,
-  });
+  const _Header({required this.p, required this.l10n, required this.elevated, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 180),
       decoration: BoxDecoration(
         color: p.bg,
-        border: elevated
-            ? Border(bottom: BorderSide(color: p.divider, width: 1))
-            : const Border(),
+        border: elevated ? Border(bottom: BorderSide(color: p.divider, width: 1)) : const Border(),
       ),
       child: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Nav row
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: GestureDetector(
-                      onTap: onBack,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(CupertinoIcons.chevron_left, size: 15, color: p.ink),
-                          const SizedBox(width: 3),
-                          Text(l10n.allPartBoutique,
-                              style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w400,
-                                  color: p.ink)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Text(l10n.allPartPartenaires,
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: p.ink,
-                          letterSpacing: -0.3)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            // Search bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Container(
-                height: 44,
-                decoration: BoxDecoration(
-                  color: p.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: p.divider, width: 1),
-                ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 14),
-                    Icon(CupertinoIcons.search, size: 16, color: p.inkSubtle),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: searchCtrl,
-                        focusNode: searchFocus,
-                        style: TextStyle(fontSize: 14, color: p.ink),
-                        decoration: InputDecoration(
-                          hintText: l10n.allPartSearch,
-                          hintStyle: TextStyle(fontSize: 14, color: p.inkSubtle),
-                          border: InputBorder.none,
-                          isDense: true,
-                        ),
-                        cursorColor: p.ink,
-                        cursorWidth: 1.5,
-                      ),
-                    ),
-                    if (search.isNotEmpty)
-                      GestureDetector(
-                        onTap: searchCtrl.clear,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: Icon(CupertinoIcons.xmark_circle_fill,
-                              size: 16, color: p.inkSubtle),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Category chips
-            SizedBox(
-              height: 44,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 5),
-                itemCount: _kCats.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (_, i) {
-                  final c     = _kCats[i];
-                  final isSel = cat == c.key;
-                  return GestureDetector(
-                    onTap: () => onCat(c.key),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isSel ? p.chipSel : p.chipBg,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(c.icon, size: 13,
-                              color: isSel ? p.chipSelFg : p.inkMuted),
-                          const SizedBox(width: 6),
-                          Text(c.label,
-                              style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: isSel ? p.chipSelFg : p.inkMuted,
-                                  letterSpacing: 0.1)),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 4),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PARTNER CARD — horizontal list style
-// ─────────────────────────────────────────────────────────────────────────────
-class _PartnerCard extends ConsumerStatefulWidget {
-  final _P p;
-  final dynamic item;
-  final bool isWishlisted;
-  final VoidCallback onWish;
-  final VoidCallback onTap;
-
-  const _PartnerCard({
-    required this.p,
-    required this.item,
-    required this.isWishlisted,
-    required this.onWish,
-    required this.onTap,
-  });
-
-  @override
-  ConsumerState<_PartnerCard> createState() => _PartnerCardState();
-}
-
-class _PartnerCardState extends ConsumerState<_PartnerCard>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 130),
-        lowerBound: 0.97,
-        upperBound: 1.0,
-        value: 1.0);
-  }
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  bool get _can => ref.read(shopProvider).canAfford(widget.item.etoiles as int);
-
-  @override
-  Widget build(BuildContext context) {
-    final p = widget.p;
-    return GestureDetector(
-      onTapDown:   (_) => _ctrl.reverse(),
-      onTapUp:     (_) { _ctrl.forward(); widget.onTap(); },
-      onTapCancel: () => _ctrl.forward(),
-      child: ScaleTransition(
-        scale: _ctrl,
-        child: Container(
-          height: 114,
-          decoration: BoxDecoration(
-            color: p.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: p.cardShadow,
-            border: p.cardBorder,
-          ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
           child: Row(
             children: [
-              // Image
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: SizedBox(
-                        width: 90, height: 90,
-                        child: _NetImage(
-                            url: widget.item.imageUrl as String?,
-                            category: widget.item.category as String,
-                            p: p),
-                      ),
-                    ),
-                    if (!_can)
-                      Positioned.fill(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                              color: Colors.black.withValues(alpha: 0.22)),
-                        ),
-                      ),
-                    if (widget.item.discount != null &&
-                        (widget.item.discount as String).isNotEmpty)
-                      Positioned(
-                        top: 5, left: 5,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                              color: const Color(0xFF111110),
-                              borderRadius: BorderRadius.circular(6)),
-                          child: Text(widget.item.discount as String,
-                              style: const TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  letterSpacing: 0.3)),
-                        ),
-                      ),
-                    if (!_can)
-                      const Positioned(
-                        bottom: 6, right: 6,
-                        child: Icon(CupertinoIcons.lock_fill,
-                            size: 12, color: Colors.white),
-                      ),
-                  ],
-                ),
+              GestureDetector(
+                onTap: onBack,
+                behavior: HitTestBehavior.opaque,
+                child: Icon(CupertinoIcons.back, size: 22, color: p.ink),
               ),
-              // Info
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 14, 14, 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        (widget.item.brand as String).toUpperCase(),
-                        style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: p.inkSubtle,
-                            letterSpacing: 1.8,
-                            height: 1.2),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.item.title as String,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            color: p.ink,
-                            height: 1.3),
-                      ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          _StarsBadge(
-                              p: p,
-                              etoiles: widget.item.etoiles as int,
-                              can: _can),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: widget.onWish,
-                            child: Container(
-                              width: 32, height: 32,
-                              decoration: BoxDecoration(
-                                color: p.isDark
-                                    ? p.chipBg
-                                    : Colors.white.withValues(alpha: 0.9),
-                                shape: BoxShape.circle,
-                                border: p.isDark
-                                    ? Border.all(
-                                        color: p.divider, width: 0.5)
-                                    : null,
-                              ),
-                              child: Icon(
-                                widget.isWishlisted
-                                    ? CupertinoIcons.heart_fill
-                                    : CupertinoIcons.heart,
-                                size: 14,
-                                color: widget.isWishlisted
-                                    ? _P.wishRed
-                                    : p.inkSubtle,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              const SizedBox(width: 14),
+              Text(l10n.allPartPartenaires,
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: p.ink, letterSpacing: -0.4)),
             ],
           ),
         ),
@@ -533,39 +226,179 @@ class _PartnerCardState extends ConsumerState<_PartnerCard>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STARS BADGE
+// SEARCH FIELD — champ plein (fill gris clair), pas de bordure
 // ─────────────────────────────────────────────────────────────────────────────
-class _StarsBadge extends StatelessWidget {
+class _SearchField extends StatelessWidget {
   final _P p;
-  final int etoiles;
-  final bool can;
-  const _StarsBadge(
-      {required this.p, required this.etoiles, required this.can});
+  final AppL10n l10n;
+  final TextEditingController ctrl;
+  final FocusNode focus;
+  final String search;
+  const _SearchField({required this.p, required this.l10n, required this.ctrl, required this.focus, required this.search});
 
   @override
   Widget build(BuildContext context) {
-    final bg = can ? p.goldSurface : p.chipBg;
-    final fg = can ? _P.gold : p.inkSubtle;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration:
-              BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(CupertinoIcons.star_fill, size: 10, color: fg),
-            const SizedBox(width: 5),
-            Text('$etoiles',
-                style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w700, color: fg)),
-          ]),
-        ),
-        if (!can) ...[
-          const SizedBox(width: 5),
-          Icon(CupertinoIcons.lock_fill, size: 10, color: p.inkSubtle),
+    return Container(
+      height: 46,
+      decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(13)),
+      child: Row(
+        children: [
+          const SizedBox(width: 14),
+          Icon(CupertinoIcons.search, size: 17, color: p.inkSubtle),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: ctrl,
+              focusNode: focus,
+              style: TextStyle(fontSize: 14.5, color: p.ink),
+              decoration: InputDecoration(
+                hintText: l10n.allPartSearch,
+                hintStyle: TextStyle(fontSize: 14.5, color: p.inkSubtle),
+                border: InputBorder.none,
+                isDense: true,
+              ),
+              cursorColor: _P.brand,
+              cursorWidth: 1.5,
+            ),
+          ),
+          if (search.isNotEmpty)
+            GestureDetector(
+              onTap: ctrl.clear,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 14),
+                child: Icon(CupertinoIcons.xmark_circle_fill, size: 17, color: p.inkSubtle),
+              ),
+            ),
         ],
-      ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CAT PILL — pilule texte simple, sans icône
+// ─────────────────────────────────────────────────────────────────────────────
+class _CatPill extends StatelessWidget {
+  final _P p;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  const _CatPill({required this.p, required this.label, required this.isSelected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 15),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? _P.brand : Colors.transparent,
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: isSelected ? _P.brand : p.divider, width: 1.2),
+        ),
+        child: Text(label,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? Colors.white : p.inkMuted,
+            )),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARTNER ROW — ligne épurée, séparée par filet, sans ombre ni bordure
+// ─────────────────────────────────────────────────────────────────────────────
+class _PartnerRow extends StatelessWidget {
+  final _P p;
+  final BoutiqueItem item;
+  final bool isWishlisted;
+  final bool isRedeemed;
+  final bool canAfford;
+  final VoidCallback onWish;
+  final VoidCallback onTap;
+
+  const _PartnerRow({
+    required this.p,
+    required this.item,
+    required this.isWishlisted,
+    required this.isRedeemed,
+    required this.canAfford,
+    required this.onWish,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 68, height: 68,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _NetImage(url: item.imageUrl, category: item.category, p: p),
+                    if (!canAfford && !isRedeemed)
+                      Container(color: Colors.black.withValues(alpha: 0.16)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.brand.toUpperCase(),
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                          color: p.inkSubtle, letterSpacing: 1.2)),
+                  const SizedBox(height: 3),
+                  Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: p.ink)),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    if (item.discount.isNotEmpty) ...[
+                      Text(item.discount,
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: _P.brand)),
+                      const SizedBox(width: 8),
+                      Container(width: 3, height: 3, decoration: BoxDecoration(color: p.divider, shape: BoxShape.circle)),
+                      const SizedBox(width: 8),
+                    ],
+                    isRedeemed
+                        ? Text('Échangé', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: p.inkMuted))
+                        : Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(CupertinoIcons.star_fill, size: 10, color: canAfford ? _P.gold : p.inkSubtle),
+                            const SizedBox(width: 4),
+                            Text('${item.etoiles} pts',
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
+                                    color: canAfford ? p.ink : p.inkSubtle)),
+                          ]),
+                  ]),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: onWish,
+              behavior: HitTestBehavior.opaque,
+              child: Icon(isWishlisted ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+                  size: 19, color: isWishlisted ? _P.wishRed : p.inkSubtle),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -577,31 +410,19 @@ class _NetImage extends StatelessWidget {
   final String? url;
   final String  category;
   final _P      p;
-  const _NetImage(
-      {required this.url, required this.category, required this.p});
-
-  static const Map<String, IconData> _icons = {
-    'mamans': Icons.favorite_rounded,
-    'baby': Icons.child_care,
-    'sport': Icons.fitness_center,
-    'vitamines': Icons.eco_rounded,
-    'skincare': Icons.spa_rounded,
-    'home': Icons.home_rounded,
-  };
+  const _NetImage({required this.url, required this.category, required this.p});
 
   @override
   Widget build(BuildContext context) {
     if (url != null && url!.isNotEmpty) {
-      return Image.network(url!, fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _placeholder());
+      return Image.network(url!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder());
     }
     return _placeholder();
   }
 
   Widget _placeholder() => Container(
     color: p.surfaceAlt,
-    child: Icon(_icons[category] ?? Icons.shopping_bag_outlined,
-        size: 28, color: p.inkSubtle),
+    child: Icon(_catIcons[category] ?? Icons.shopping_bag_outlined, size: 22, color: p.inkSubtle),
   );
 }
 
@@ -620,19 +441,14 @@ class _EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 80, height: 80,
+            width: 76, height: 76,
             decoration: BoxDecoration(color: p.chipBg, shape: BoxShape.circle),
-            child: Icon(CupertinoIcons.bag, size: 32, color: p.inkSubtle),
+            child: Icon(CupertinoIcons.bag, size: 30, color: p.inkSubtle),
           ),
           const SizedBox(height: 20),
-          Text(l10n.allPartAucun,
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: p.ink)),
+          Text(l10n.allPartAucun, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: p.ink)),
           const SizedBox(height: 8),
-          Text(l10n.allPartEssayer,
-              style: TextStyle(fontSize: 14, color: p.inkMuted)),
+          Text(l10n.allPartEssayer, style: TextStyle(fontSize: 14, color: p.inkMuted)),
         ],
       ),
     );
