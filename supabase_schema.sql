@@ -169,10 +169,18 @@ CREATE TABLE videos (
   duration       TEXT        NOT NULL DEFAULT '',
   points         INTEGER     NOT NULL DEFAULT 0 CHECK (points >= 0),
   thumbnail_url  TEXT        NOT NULL DEFAULT '',
-  url            TEXT        NOT NULL DEFAULT '',
+  url            TEXT        NOT NULL DEFAULT '', 
   sort_order     INTEGER     NOT NULL DEFAULT 0,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE videos
+ADD COLUMN category TEXT NOT NULL DEFAULT 'dance';
+ALTER TABLE videos
+ALTER COLUMN workout_id DROP NOT NULL;
+ALTER TABLE videos
+ADD COLUMN phases TEXT NOT NULL DEFAULT '';
+
 
 -- ── 4.4  Progression workout utilisateur ────────────────────────────────────
 CREATE TABLE user_video_completions (
@@ -218,6 +226,16 @@ CREATE TABLE user_program_favorites (
   program_id  TEXT   NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, program_id)
 );
+
+-- Favoris pour les vidéos autonomes (workout_id NULL — cartes Dance/Cardio/Récupération)
+CREATE TABLE user_video_favorites (
+  user_id     UUID   NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  video_id    TEXT   NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, video_id)
+);
+ALTER TABLE user_video_favorites ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "own_user_video_favorites" ON user_video_favorites FOR ALL
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- ── 4.7  Plan hebdomadaire ───────────────────────────────────────────────────
 CREATE TABLE weekly_plan (
@@ -457,6 +475,13 @@ CREATE TABLE community_events (
   description         TEXT         NOT NULL DEFAULT '',
   created_at          TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
+
+-- Liens sociaux de l'organisateur (comme training_partners) pour que les
+-- participantes puissent communiquer.
+ALTER TABLE community_events
+  ADD COLUMN contact_whatsapp  TEXT NOT NULL DEFAULT '',
+  ADD COLUMN contact_instagram TEXT NOT NULL DEFAULT '',
+  ADD COLUMN contact_facebook  TEXT NOT NULL DEFAULT '';
 
 -- ── 9.5  Participants aux événements ─────────────────────────────────────────
 CREATE TABLE event_participants (
@@ -743,6 +768,7 @@ ALTER TABLE user_program_completions   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_joined_programs       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_workout_favorites     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_program_favorites     ENABLE ROW LEVEL SECURITY;
+-- user_video_favorites : RLS + policy déclarées juste après sa CREATE TABLE (section 4.6)
 ALTER TABLE weekly_plan                ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_weekly_plans          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meal_entries               ENABLE ROW LEVEL SECURITY;
@@ -797,6 +823,11 @@ BEGIN
 END;
 $$;
 
+-- Lecture publique des points/XP : le profil communauté affiche les étoiles
+-- et le niveau des autres utilisatrices (écriture toujours réservée via own_*).
+CREATE POLICY "user_points_public_read" ON user_points FOR SELECT USING (true);
+CREATE POLICY "user_xp_public_read"     ON user_xp     FOR SELECT USING (true);
+
 -- Partner requests : les deux parties concernées peuvent voir
 CREATE POLICY "partner_requests_read" ON partner_requests FOR SELECT
   USING (auth.uid() = from_user_id OR auth.uid() = to_user_id);
@@ -842,6 +873,7 @@ CREATE POLICY "participants_delete" ON event_participants FOR DELETE USING (auth
 
 CREATE POLICY "partners_select" ON training_partners FOR SELECT USING (true);
 CREATE POLICY "partners_insert" ON training_partners FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "partners_update" ON training_partners FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "partners_delete" ON training_partners FOR DELETE USING (auth.uid() = user_id);
 
 ALTER TABLE partner_join_requests ENABLE ROW LEVEL SECURITY;

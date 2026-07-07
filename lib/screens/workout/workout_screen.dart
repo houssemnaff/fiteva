@@ -11,6 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/video_model.dart';
 import '../../models/workout_model.dart';
 import '../../providers/mock_data_provider.dart';
 import '../../providers/user_profile_provider.dart';
@@ -21,6 +22,7 @@ import 'theme/color.dart';
 import 'theme/cycle_theme.dart';
 import 'programme_detail_screen.dart';
 import 'active_workout_screen.dart';
+import 'exercise_player_screen.dart';
 import 'weekly_plan_screen.dart';
 
 // ── Filtre étendu : les 4 phases du cycle + grossesse + post-partum ─────────
@@ -203,6 +205,44 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     );
   }
 
+  void _showVideosSheet({
+    required String title,
+    required Color color,
+    required IconData icon,
+    required List<VideoModel> videos,
+  }) {
+    final favorites = ref.read(favoritesProvider);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _VideosFilterSheet(
+        title: title,
+        color: color,
+        icon: icon,
+        videos: videos,
+        favorites: favorites,
+        onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
+        onSelectVideo: (v) {
+          Navigator.pop(ctx);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => ExercisePlayerScreen(
+            ref: ref,
+            workoutTitle: title,
+            exerciseName: v.title,
+            videoId: v.id,
+            videoUrl: v.url.isNotEmpty ? v.url : null,
+            exerciseIndex: 0,
+            totalExercises: 1,
+            totalWorkoutPoints: v.points,
+            onCompleted: () {},
+            workoutId: null,
+            allVideoIds: null,
+          )));
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs        = Theme.of(context).colorScheme;
@@ -216,6 +256,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     final dancePrograms       = ref.watch(danceProgramsProvider);
     final recuperationPrograms = ref.watch(recuperationProgramsProvider);
     final grossessePrograms   = ref.watch(grossesseProgramsProvider);
+    final danceVideos         = ref.watch(danceVideosProvider);
+    final recuperationVideos  = ref.watch(recuperationVideosProvider);
     final favorites = ref.watch(favoritesProvider);
     final profile   = ref.watch(userProfileProvider);
 
@@ -233,12 +275,14 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
 
     List<HomeProgramModel> fp(List<HomeProgramModel> list) =>
         list.where((p) => matchesPhase(p.phases)).toList();
+    List<VideoModel> fpv(List<VideoModel> list) =>
+        list.where((v) => matchesPhase(v.phases)).toList();
 
     final filteredSalle       = fp(sallePrograms);
     final filteredMaison      = fp(homePrograms);
-    final filteredDance       = fp(dancePrograms);
-    final filteredRecuperation = fp(recuperationPrograms);
     final filteredGrossesse   = fp(grossessePrograms);
+    final filteredDanceVideos = fpv(danceVideos);
+    final filteredRecuperationVideos = fpv(recuperationVideos);
 
     final showCycleSections = _selectedPhase == null || _selectedPhase!.cyclePhase != null;
     final showGrossesse     = _selectedPhase == null || _selectedPhase == _FilterKind.pregnancy;
@@ -387,7 +431,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             const SizedBox(height: 8),
 
             // ── Sections ──────────────────────────────────────────────────
-            if (showCycleSections && filteredSalle.isNotEmpty) ...[
+            if (showCycleSections) ...[
               KeyedSubtree(
                 key: _keySalle,
                 child: SalleSection(
@@ -406,7 +450,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (showCycleSections && filteredMaison.isNotEmpty) ...[
+            if (showCycleSections) ...[
               KeyedSubtree(
                 key: _keyMaison,
                 child: MaisonSection(
@@ -425,45 +469,43 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (showCycleSections && filteredDance.isNotEmpty) ...[
+            if (showCycleSections) ...[
               KeyedSubtree(
                 key: _keyDance,
                 child: DanceSection(
-                  dancePrograms: filteredDance,
+                  danceVideos: filteredDanceVideos,
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
-                  onSeeAll: () => _showProgramsSheet(
+                  onSeeAll: () => _showVideosSheet(
                     title: l10n.workoutDanceTitle,
                     color: WorkoutColors.dance,
                     icon: LucideIcons.music,
-                    programs: filteredDance,
-                    category: 'DANCE',
+                    videos: filteredDanceVideos,
                   ),
                 ),
               ),
               const SizedBox(height: 4),
             ],
 
-            if (showRecuperationSection && filteredRecuperation.isNotEmpty) ...[
+            if (showRecuperationSection) ...[
               KeyedSubtree(
                 key: _keyRecup,
                 child: RecuperationSection(
-                  recuperationPrograms: filteredRecuperation,
+                  recuperationVideos: filteredRecuperationVideos,
                   favorites: favorites,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
-                  onSeeAll: () => _showProgramsSheet(
+                  onSeeAll: () => _showVideosSheet(
                     title: l10n.workoutRecupTitle,
                     color: WorkoutColors.recuperation,
                     icon: LucideIcons.wind,
-                    programs: filteredRecuperation,
-                    category: 'RECUPERATION',
+                    videos: filteredRecuperationVideos,
                   ),
                 ),
               ),
               const SizedBox(height: 4),
             ],
 
-            if (showGrossesse && filteredGrossesse.isNotEmpty) ...[
+            if (showGrossesse) ...[
               KeyedSubtree(
                 key: _keyGrossesse,
                 child: GrossesseSection(
@@ -1115,6 +1157,103 @@ class _WorkoutsFilterSheetState
                         isFav: widget.favorites.contains(w.id),
                         onToggleFav: () => widget.onToggleFav(w.id),
                         onTap: () => widget.onSelectWorkout(w),
+                      );
+                    },
+                  ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _VideosFilterSheet extends ConsumerStatefulWidget {
+  final String title;
+  final Color color;
+  final IconData icon;
+  final List<VideoModel> videos;
+  final Set<String> favorites;
+  final void Function(String) onToggleFav;
+  final void Function(VideoModel) onSelectVideo;
+
+  const _VideosFilterSheet({
+    required this.title,
+    required this.color,
+    required this.icon,
+    required this.videos,
+    required this.favorites,
+    required this.onToggleFav,
+    required this.onSelectVideo,
+  });
+
+  @override
+  ConsumerState<_VideosFilterSheet> createState() =>
+      _VideosFilterSheetState();
+}
+
+class _VideosFilterSheetState extends ConsumerState<_VideosFilterSheet> {
+  late final TextEditingController _searchCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  List<VideoModel> get _filtered {
+    final q = _searchCtrl.text.toLowerCase();
+    if (q.isEmpty) return widget.videos;
+    return widget.videos.where((v) => v.title.toLowerCase().contains(q)).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs   = Theme.of(context).colorScheme;
+    final l10n = ref.watch(l10nProvider);
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (ctx, ctrl) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(children: [
+          _SheetHandle(
+              title: widget.title,
+              color: widget.color,
+              icon: widget.icon,
+              onClose: () => Navigator.pop(context)),
+          _SearchBar(
+              ctrl: _searchCtrl,
+              color: widget.color,
+              hint: l10n.workoutSearchHint,
+              onChanged: () => setState(() {})),
+          Expanded(
+            child: _filtered.isEmpty
+                ? _EmptySearch(label: l10n.workoutNoWorkoutFound)
+                : ListView.builder(
+                    controller: ctrl,
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    itemCount: _filtered.length,
+                    itemBuilder: (_, i) {
+                      final v = _filtered[i];
+                      return _ProgramTile(
+                        imageUrl: v.thumbnailUrl,
+                        title: v.title,
+                        subtitle: '${v.duration} · ${v.points} pts',
+                        phases: v.phases,
+                        color: widget.color,
+                        isFav: widget.favorites.contains('video:${v.id}'),
+                        onToggleFav: () => widget.onToggleFav('video:${v.id}'),
+                        onTap: () => widget.onSelectVideo(v),
                       );
                     },
                   ),

@@ -5,6 +5,7 @@ import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/theme/cycle_theme.dart';
 import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:fiteva/services/workout_progress_service.dart';
+import 'package:fiteva/screens/workout/widgets/section_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -35,28 +36,36 @@ class SalleSection extends StatelessWidget {
         const SizedBox(height: 16),
         SizedBox(
           height: 295,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: sallePrograms.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 14),
-            itemBuilder: (context, i) {
-              final program = sallePrograms[i];
-              return _SalleProgramCard(
-                program: program,
-                isFav: favorites.contains('prog:${program.id}'),
-                onToggleFav: () => onToggleFav('prog:${program.id}'),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => WorkoutDetailScreen(
-                      program: program,
-                    ),
+          child: sallePrograms.isEmpty
+              ? Center(
+                  child: SectionEmptyState(
+                    icon: LucideIcons.dumbbell,
+                    color: WorkoutColors.salle,
+                    message: 'Aucun programme disponible pour le moment',
                   ),
+                )
+              : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: sallePrograms.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, i) {
+                    final program = sallePrograms[i];
+                    return _SalleProgramCard(
+                      program: program,
+                      isFav: favorites.contains('prog:${program.id}'),
+                      onToggleFav: () => onToggleFav('prog:${program.id}'),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => WorkoutDetailScreen(
+                            program: program,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );

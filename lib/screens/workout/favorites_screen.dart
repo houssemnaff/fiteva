@@ -1,4 +1,5 @@
 import 'package:fiteva/models/home_program_model.dart';
+import 'package:fiteva/models/video_model.dart';
 import 'package:fiteva/models/workout_model.dart';
 import 'package:fiteva/providers/mock_data_provider.dart';
 import 'package:fiteva/providers/workout_progress_provider.dart';
@@ -29,12 +30,17 @@ class FavoritesScreen extends ConsumerWidget {
     final sallePrograms  = ref.watch(salleProgramsProvider);
     final homePrograms   = ref.watch(homeProgramsProvider);
     final workouts       = ref.watch(workoutsProvider);
+    final danceVideos        = ref.watch(danceVideosProvider);
+    final recuperationVideos = ref.watch(recuperationVideosProvider);
     final favorites      = ref.watch(favoritesProvider);
 
     final favSalle  = sallePrograms.where((p) => favorites.contains('prog:${p.id}')).toList();
     final favMaison = homePrograms.where((p) => favorites.contains('prog:${p.id}')).toList();
     final favWorkouts = workouts.where((w) => favorites.contains(w.id)).toList();
-    final totalCount = favSalle.length + favMaison.length + favWorkouts.length;
+    final favVideos = [...danceVideos, ...recuperationVideos]
+        .where((v) => favorites.contains('video:${v.id}'))
+        .toList();
+    final totalCount = favSalle.length + favMaison.length + favWorkouts.length + favVideos.length;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -168,7 +174,7 @@ class FavoritesScreen extends ConsumerWidget {
                   color: WorkoutColors.zone,
                   isDark: isDark),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                 sliver: SliverList.separated(
                   itemCount: favWorkouts.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -186,6 +192,51 @@ class FavoritesScreen extends ConsumerWidget {
                                   workout: w,
                                   zoneName: w.category)
                               : ActiveWorkoutScreen(workout: w),
+                        ),
+                      ),
+                      isDark: isDark,
+                    );
+                  },
+                ),
+              ),
+            ],
+
+            // ── Vidéos Dance/Cardio/Récupération ──────────────────────────
+            if (favVideos.isNotEmpty) ...[
+              _GroupHeader(
+                  label: 'Vidéos Dance & Récupération',
+                  icon: LucideIcons.playCircle,
+                  color: WorkoutColors.dance,
+                  isDark: isDark),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                sliver: SliverList.separated(
+                  itemCount: favVideos.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) {
+                    final v = favVideos[i];
+                    return _VideoFavCard(
+                      video: v,
+                      isFav: true,
+                      onToggleFav: () => ref.read(favoritesProvider.notifier).toggleFavorite('video:${v.id}'),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ExercisePlayerScreen(
+                            ref: ref,
+                            workoutTitle: v.category == 'recuperation'
+                                ? 'Récupération'
+                                : 'Danse & Cardio',
+                            exerciseName: v.title,
+                            videoId: v.id,
+                            videoUrl: v.url.isNotEmpty ? v.url : null,
+                            exerciseIndex: 0,
+                            totalExercises: 1,
+                            totalWorkoutPoints: v.points,
+                            onCompleted: () {},
+                            workoutId: null,
+                            allVideoIds: null,
+                          ),
                         ),
                       ),
                       isDark: isDark,
@@ -525,6 +576,164 @@ class _WorkoutFavCard extends StatelessWidget {
                     ]),
                     const SizedBox(height: 6),
                     CycleBadgeRow(phases: workout.phases),
+                  ],
+                ),
+              ),
+            ),
+
+            // Heart + arrow
+            Padding(
+              padding: const EdgeInsets.only(right: 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: onToggleFav,
+                    child: Icon(
+                      LucideIcons.heart,
+                      size: 18,
+                      color: isFav
+                          ? const Color(0xFFE53935)
+                          : _kGrey,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Icon(LucideIcons.chevronRight,
+                      size: 16, color: _kGrey),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Video card (VideoModel — vidéo autonome Dance/Cardio/Récupération) ───────
+class _VideoFavCard extends StatelessWidget {
+  final VideoModel video;
+  final bool isFav;
+  final VoidCallback onToggleFav;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _VideoFavCard({
+    required this.video,
+    required this.isFav,
+    required this.onToggleFav,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  Color get _catColor {
+    switch (video.category) {
+      case 'recuperation': return WorkoutColors.recuperation;
+      case 'dance':
+      case 'cardio':
+      default: return WorkoutColors.dance;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _catColor;
+    final cardBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _kBorder),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 14,
+                offset: const Offset(0, 4))
+          ],
+        ),
+        child: Row(
+          children: [
+            // Thumbnail
+            ClipRRect(
+              borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(20)),
+              child: SizedBox(
+                width: 90,
+                height: 90,
+                child: video.thumbnailUrl.isNotEmpty
+                    ? Image.asset(
+                        video.thumbnailUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: color.withValues(alpha: 0.15)),
+                      )
+                    : Container(color: color.withValues(alpha: 0.15)),
+              ),
+            ),
+
+            // Info
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Category badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        video.category.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          color: color,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      video.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        color: isDark ? Colors.white : _kDark,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      Icon(LucideIcons.clock, size: 10, color: _kGrey),
+                      const SizedBox(width: 4),
+                      Text(video.duration,
+                          style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: _kGrey,
+                              fontWeight: FontWeight.w500)),
+                      const SizedBox(width: 10),
+                      Icon(LucideIcons.star, size: 10, color: _kGrey),
+                      const SizedBox(width: 4),
+                      Text('${video.points} pts',
+                          style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: _kGrey,
+                              fontWeight: FontWeight.w500)),
+                    ]),
+                    if (video.phases.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      CycleBadgeRow(phases: video.phases),
+                    ],
                   ],
                 ),
               ),

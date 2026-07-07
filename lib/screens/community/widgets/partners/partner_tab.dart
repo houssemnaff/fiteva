@@ -5,6 +5,7 @@ import 'package:fiteva/screens/community/widgets/partners/create_partner_sheet.d
 import 'package:fiteva/screens/community/widgets/partners/partner_requests_sheet.dart';
 import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -491,20 +492,24 @@ class _PartnerCard extends ConsumerWidget {
             else
               _CardCta(status: status, partner: p, colorScheme: cs),
           ] else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.all(color: cs.outline),
-                borderRadius: BorderRadius.circular(50),
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: cs.outline),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(LucideIcons.eye, size: 13, color: cs.onSurface.withValues(alpha: 0.5)),
+                  const SizedBox(width: 6),
+                  Text(l10n.communityPartnerPublicListing, style: GoogleFonts.inter(
+                    fontSize: 11.5, fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.5))),
+                ]),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(LucideIcons.eye, size: 13, color: cs.onSurface.withValues(alpha: 0.5)),
-                const SizedBox(width: 6),
-                Text(l10n.communityPartnerPublicListing, style: GoogleFonts.inter(
-                  fontSize: 11.5, fontWeight: FontWeight.w600,
-                  color: cs.onSurface.withValues(alpha: 0.5))),
-              ]),
-            ),
+              const Spacer(),
+              _PartnerOwnerMenu(partner: p, cs: cs),
+            ]),
           const SizedBox(height: 20),
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.5)),
         ],
@@ -1149,6 +1154,85 @@ class _ContactList extends ConsumerWidget {
           ),
         ),
     ]);
+  }
+}
+
+// ─── Menu propriétaire (modifier / supprimer) ─────────────────
+class _PartnerOwnerMenu extends ConsumerWidget {
+  final PartnerModel partner;
+  final ColorScheme cs;
+  const _PartnerOwnerMenu({required this.partner, required this.cs});
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Supprimer cette annonce ?',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w800)),
+        content: Text('Cette action est irréversible.',
+            style: GoogleFonts.inter(fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Annuler',
+                style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.6))),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final ok = await ref.read(partnersNotifierProvider.notifier).deletePartner(partner.id);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: ok ? cs.primary : cs.error,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                content: Text(
+                  ok ? 'Annonce supprimée.' : 'Erreur lors de la suppression.',
+                  style: GoogleFonts.inter(
+                      color: ok ? cs.onPrimary : cs.onError,
+                      fontWeight: FontWeight.w600)),
+              ));
+            },
+            child: Text('Supprimer',
+                style: GoogleFonts.inter(color: cs.error, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<String>(
+      icon: Icon(CupertinoIcons.ellipsis,
+          color: cs.onSurface.withValues(alpha: 0.5), size: 16),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32, maxWidth: 32, maxHeight: 32),
+      color: cs.surface,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          value: 'edit',
+          height: 40,
+          child: Icon(LucideIcons.pencil, size: 18, color: cs.primary),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          height: 40,
+          child: Icon(LucideIcons.trash2, size: 18, color: cs.error),
+        ),
+      ],
+      onSelected: (value) {
+        if (value == 'edit') {
+          showCreatePartnerSheet(context, partner: partner);
+        } else {
+          _confirmDelete(context, ref);
+        }
+      },
+    );
   }
 }
 
