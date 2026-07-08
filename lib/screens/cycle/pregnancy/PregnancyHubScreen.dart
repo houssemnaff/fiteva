@@ -161,7 +161,7 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
     final l10n    = ref.watch(l10nProvider);
     final cs      = Theme.of(context).colorScheme;
     final profile = ref.watch(userProfileProvider);
-    final week    = (profile.pregnancyWeekSA ?? 1).clamp(1, 42);
+    final week    = (profile.currentPregnancyWeek ?? profile.pregnancyWeekSA ?? 1).clamp(1, 42);
     final insight = ref.watch(pregnancyInsightProvider(week)).asData?.value
         ?? PregnancyInsightRepository.forWeek(week);
     final due     = DateTime.now().add(Duration(days: (42 - week) * 7));

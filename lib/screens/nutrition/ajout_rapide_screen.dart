@@ -93,19 +93,22 @@ IconData _catIcon(FoodCategory c) => switch (c) {
   FoodCategory.desserts     => LucideIcons.cookie,
 };
 
+// Palette harmonisée (tons rompus, même famille de saturation) — remplace
+// l'ancienne palette arc-en-ciel (rouge vif, bleu vif, jaune vif…) qui
+// jurait avec le reste de l'app.
 Color _catColor(FoodCategory c) => switch (c) {
-  FoodCategory.viandes      => const Color(0xFFE53935),
-  FoodCategory.poissons     => const Color(0xFF1E88E5),
-  FoodCategory.oeufslaitiers=> const Color(0xFFF9A825),
-  FoodCategory.cereales     => const Color(0xFF8D6E63),
-  FoodCategory.legumineuses => const Color(0xFF43A047),
-  FoodCategory.legumes      => const Color(0xFF2E7D32),
-  FoodCategory.fruits       => const Color(0xFFE91E63),
-  FoodCategory.oleagineux   => const Color(0xFFFF7043),
-  FoodCategory.corpsGras    => const Color(0xFFFFC107),
-  FoodCategory.platCompose  => const Color(0xFF7ABB98),
-  FoodCategory.boissons     => const Color(0xFF00ACC1),
-  FoodCategory.desserts     => const Color(0xFFAB47BC),
+  FoodCategory.viandes      => const Color(0xFFC0725A),
+  FoodCategory.poissons     => const Color(0xFF4C8C93),
+  FoodCategory.oeufslaitiers=> const Color(0xFFB8892F),
+  FoodCategory.cereales     => const Color(0xFFA07A52),
+  FoodCategory.legumineuses => const Color(0xFF7A8B4F),
+  FoodCategory.legumes      => const Color(0xFF4F8060),
+  FoodCategory.fruits       => const Color(0xFFC97B84),
+  FoodCategory.oleagineux   => const Color(0xFFB08256),
+  FoodCategory.corpsGras    => const Color(0xFFBFA35A),
+  FoodCategory.platCompose  => const Color(0xFF5F9C7C),
+  FoodCategory.boissons     => const Color(0xFF5A7A9E),
+  FoodCategory.desserts     => const Color(0xFF8E7BA6),
 };
 
 String _catPhoto(FoodCategory c) => switch (c) {
@@ -182,8 +185,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   }
 
   // ── Scanner mode ─────────────────────────────────────────────────────────
-  _ScanState  _scanState = _ScanState.idle;
-  FoodItem?   _scannedFood;
+  _ScanState        _scanState = _ScanState.idle;
+  // Un ou plusieurs aliments détectés sur la photo (ex. poulet + riz +
+  // légumes) — l'IA ne se limite plus au seul plat dominant visuellement.
+  List<FoodItem>    _scannedFoods = [];
   Uint8List?  _pickedImageBytes;
   String?     _scanError;
   final _imagePicker = ImagePicker();
@@ -232,7 +237,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
       if (!mounted) return;
       setState(() {
         _scanState = _ScanState.idle;
-        _scanError = 'Impossible de lire cette photo : $e';
+        _scanError = e.toString().replaceFirst('Exception: ', '');
       });
       return;
     }
@@ -240,61 +245,83 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     setState(() {
       _scanState         = _ScanState.preview;
       _pickedImageBytes  = jpegBytes;
-      _scannedFood       = null;
+      _scannedFoods      = [];
     });
   }
 
   /// Réencode n'importe quelle photo (HEIC, PNG, WebP…) en bytes JPEG,
   /// pour garantir un format toujours supporté par l'API vision — peu
   /// importe la plateforme ou le format d'origine.
+  ///
+  /// Une photo ancienne avec "Optimiser le stockage" iCloud peut encore être
+  /// en train de télécharger son original au moment où l'utilisatrice la
+  /// choisit (le picker déclenche déjà ce téléchargement en arrière-plan) —
+  /// on retente donc une deuxième fois après un court délai avant d'abandonner,
+  /// plutôt que d'échouer immédiatement sur ce qui n'est souvent qu'un
+  /// problème de timing.
   Future<Uint8List> _ensureJpegBytes(XFile picked) async {
     final rawBytes = await picked.readAsBytes();
 
-    // compressWithList (variante "bytes") ne décode pas toujours le HEIC
-    // correctement sur iOS et peut renvoyer un résultat vide/invalide sans
-    // lever d'exception — ce qui produisait un data-URL cassé envoyé à
-    // l'API vision ("Invalid image data-url", 400). On détecte ce cas et on
-    // retombe sur la variante fichier (compressAndGetFile), qui décode le
-    // HEIC de façon fiable côté natif ; le fichier temporaire est lu en
-    // mémoire immédiatement puis jeté, donc le bug précédent (fichier
-    // disparu entre l'aperçu et "Analyser") ne peut pas se reproduire ici.
-    try {
-      final result = await FlutterImageCompress.compressWithList(
-        rawBytes, quality: 88, format: CompressFormat.jpeg,
-      );
-      if (_isJpeg(result)) return result;
-      debugPrint('[Scan] compressWithList produced non-JPEG output (${result.length} bytes)');
-    } catch (e) {
-      debugPrint('[Scan] compressWithList FAILED: $e');
-    }
+    for (var attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) await Future.delayed(const Duration(milliseconds: 1500));
 
-    try {
-      final tmpDir = await getTemporaryDirectory();
-      final tmpIn  = File('${tmpDir.path}/scan_src_${DateTime.now().microsecondsSinceEpoch}');
-      await tmpIn.writeAsBytes(rawBytes);
-      final outPath = '${tmpDir.path}/scan_out_${DateTime.now().microsecondsSinceEpoch}.jpg';
-      final xFile = await FlutterImageCompress.compressAndGetFile(
-        tmpIn.path, outPath, quality: 88, format: CompressFormat.jpeg,
-      );
-      await tmpIn.delete().catchError((_) => tmpIn);
-      if (xFile != null) {
-        final bytes = await File(xFile.path).readAsBytes();
-        await File(xFile.path).delete().catchError((_) => File(xFile.path));
-        if (_isJpeg(bytes)) return bytes;
-        debugPrint('[Scan] compressAndGetFile produced non-JPEG output (${bytes.length} bytes)');
+      // compressWithList (variante "bytes") ne décode pas toujours le HEIC
+      // correctement sur iOS et peut renvoyer un résultat vide/invalide sans
+      // lever d'exception — ce qui produisait un data-URL cassé envoyé à
+      // l'API vision ("Invalid image data-url", 400). On détecte ce cas et on
+      // retombe sur la variante fichier (compressAndGetFile), qui décode le
+      // HEIC de façon fiable côté natif ; le fichier temporaire est lu en
+      // mémoire immédiatement puis jeté, donc le bug précédent (fichier
+      // disparu entre l'aperçu et "Analyser") ne peut pas se reproduire ici.
+      try {
+        final result = await FlutterImageCompress.compressWithList(
+          rawBytes, quality: 88, format: CompressFormat.jpeg,
+        );
+        if (_isJpeg(result)) return result;
+        debugPrint('[Scan] compressWithList produced non-JPEG output (${result.length} bytes)');
+      } catch (e) {
+        debugPrint('[Scan] compressWithList FAILED: $e');
       }
-    } catch (e) {
-      debugPrint('[Scan] compressAndGetFile FAILED: $e');
+
+      try {
+        final tmpDir = await getTemporaryDirectory();
+        final tmpIn  = File('${tmpDir.path}/scan_src_${DateTime.now().microsecondsSinceEpoch}');
+        await tmpIn.writeAsBytes(rawBytes);
+        final outPath = '${tmpDir.path}/scan_out_${DateTime.now().microsecondsSinceEpoch}.jpg';
+        final xFile = await FlutterImageCompress.compressAndGetFile(
+          tmpIn.path, outPath, quality: 88, format: CompressFormat.jpeg,
+        );
+        await tmpIn.delete().catchError((_) => tmpIn);
+        if (xFile != null) {
+          final bytes = await File(xFile.path).readAsBytes();
+          await File(xFile.path).delete().catchError((_) => File(xFile.path));
+          if (_isJpeg(bytes)) return bytes;
+          debugPrint('[Scan] compressAndGetFile produced non-JPEG output (${bytes.length} bytes)');
+        }
+      } catch (e) {
+        debugPrint('[Scan] compressAndGetFile FAILED: $e');
+      }
     }
 
-    // Les deux méthodes de conversion ont échoué à produire un vrai JPEG —
+    // Les deux méthodes de conversion ont échoué à produire un vrai JPEG,
+    // même après une seconde tentative —
     // renvoyer les bytes bruts (potentiellement HEIC) donnerait un aperçu
     // correct (Flutter/iOS sait décoder le HEIC nativement) mais ferait
     // échouer l'analyse IA sans qu'on comprenne pourquoi (le mimetype
     // déclaré "image/jpeg" ne correspondrait pas au contenu réel). On lève
     // donc une erreur explicite plutôt que de laisser ce mensonge silencieux
     // se propager jusqu'à l'appel API.
-    throw Exception('Conversion en JPEG impossible pour cette photo (format non pris en charge)');
+    //
+    // Cause la plus fréquente sur iPhone : une photo ancienne dont
+    // "Optimiser le stockage" (iCloud) n'a téléchargé qu'un aperçu basse
+    // résolution en local — le décodeur natif refuse alors de la traiter,
+    // alors qu'une photo tout juste prise (100% locale) fonctionne. On donne
+    // donc une piste actionnable plutôt qu'un message technique opaque.
+    throw Exception(
+      'Cette photo semble ne pas être entièrement téléchargée sur ton téléphone '
+      '(souvent le cas pour une ancienne photo avec "Optimiser le stockage" activé sur iCloud). '
+      'Ouvre-la en plein écran dans l\'app Photos quelques secondes en Wi-Fi, puis réessaie ici.',
+    );
   }
 
   static bool _isJpeg(Uint8List bytes) =>
@@ -308,17 +335,25 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     setState(() => _scanState = _ScanState.scanning);
 
     try {
-      final food = await NutritionIaService.analyzeFoodImageBytes(
+      final foods = await NutritionIaService.analyzeFoodImageBytes(
         bytes, mimeType: 'image/jpeg');
       if (!mounted) return;
       setState(() {
-        _scanState   = _ScanState.result;
-        _scannedFood = food;
-        // pre-fill the food detail state so user can adjust
-        _selectedFood  = food;
-        _selectedGrams = food.defaultGrams;
-        _selectedUnit  = FoodUnit.g;
-        _amountCtrl.text = food.defaultGrams.round().toString();
+        _scanState    = _ScanState.result;
+        _scannedFoods = foods;
+        if (foods.length == 1) {
+          // Un seul aliment détecté : on garde le flux existant
+          // (pré-remplissage de la fiche détail pour ajuster la quantité).
+          final food = foods.first;
+          _selectedFood  = food;
+          _selectedGrams = food.defaultGrams;
+          _selectedUnit  = FoodUnit.g;
+          _amountCtrl.text = food.defaultGrams.round().toString();
+        } else {
+          // Plusieurs aliments détectés : pas de fiche détail unique,
+          // l'écran affiche la liste complète à ajouter d'un coup.
+          _selectedFood = null;
+        }
       });
     } catch (e) {
       if (!mounted) return;
@@ -328,9 +363,29 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     }
   }
 
+  // Ajoute tous les aliments détectés (mode multi-plats) au panier en une
+  // fois, chacun avec son grammage estimé par l'IA — même dédoublonnage par
+  // nom que _addToBasket pour éviter des lignes en double.
+  void _addAllScannedToBasket(List<FoodItem> foods) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      for (final food in foods) {
+        final idx = _basket.indexWhere((b) =>
+            b.food.id == food.id ||
+            b.food.name.trim().toLowerCase() == food.name.trim().toLowerCase());
+        if (idx != -1) {
+          _basket[idx] = _BasketItem(food, food.defaultGrams);
+        } else {
+          _basket.add(_BasketItem(food, food.defaultGrams));
+        }
+      }
+    });
+    _resetScan();
+  }
+
   void _resetScan() => setState(() {
     _scanState         = _ScanState.idle;
-    _scannedFood       = null;
+    _scannedFoods       = [];
     _pickedImageBytes  = null;
     _selectedFood      = null;
     _scanError         = null;
@@ -418,8 +473,16 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
 
     HapticFeedback.mediumImpact();
     setState(() {
-      // If already in basket (editing quantity), replace instead of appending
-      final idx = _basket.indexWhere((b) => b.food.id == food.id);
+      // If already in basket (editing quantity), replace instead of appending.
+      // On matche aussi par nom (pas seulement par id) : les aliments saisis
+      // manuellement ou scannés reçoivent un id neuf à chaque ajout
+      // (generateMealId()/"ai_<timestamp>"), donc un double-tap accidentel
+      // sur "Ajouter" pour le même nom créait deux lignes distinctes au lieu
+      // de mettre à jour la même — contrairement à la Recherche où l'id
+      // stable de la base de données évitait déjà ce doublon.
+      final idx = _basket.indexWhere((b) =>
+          b.food.id == food.id ||
+          b.food.name.trim().toLowerCase() == food.name.trim().toLowerCase());
       if (idx != -1) {
         _basket[idx] = _BasketItem(food, grams);
       } else {
@@ -964,64 +1027,95 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  //  MANUEL MODE
+  //  MANUEL MODE — nom en tête, calories en gros ("hero"), macros en chips
   // ════════════════════════════════════════════════════════════════════════════
   Widget _buildManual() {
-    final nc = NutritionColors.of(context);
+    final nc   = NutritionColors.of(context);
+    final l10n = AppL10n(Lang.code);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: nc.mintBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kMint.withOpacity(0.3))),
-      child: Row(children: [
-        const Icon(LucideIcons.pencilLine, size: 14, color: _kGreen),
-        const SizedBox(width: 10),
-        Expanded(child: Text(
-          AppL10n(Lang.code).addMealInfoHint,
-          style: GoogleFonts.inter(fontSize: 12, color: _kGreen, height: 1.5))),
-      ])),
+      // Nom de l'aliment — champ autonome avec icône, plus de bandeau texte au-dessus
+      Container(
+        decoration: BoxDecoration(
+          color: nc.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: nc.border)),
+        child: TextField(
+          controller: _nameCtrl,
+          onChanged: (_) => setState(() {}),
+          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: nc.text1),
+          decoration: InputDecoration(
+            hintText: l10n.addMealNameHint,
+            hintStyle: GoogleFonts.inter(fontSize: 14, color: nc.text2),
+            prefixIcon: Icon(LucideIcons.utensils, size: 17, color: nc.text2),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16))),
+      ),
 
-    const SizedBox(height: 16),
+      const SizedBox(height: 14),
 
-    Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: nc.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: nc.border),
-        boxShadow: nc.isDark ? [] : [BoxShadow(
-          color: Colors.black.withOpacity(0.04),
-          blurRadius: 14, offset: const Offset(0, 4))]),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(AppL10n(Lang.code).addMealInfoTitle, style: GoogleFonts.inter(
-          color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
-          letterSpacing: 2.5)),
-        const SizedBox(height: 14),
-        _AppField(AppL10n(Lang.code).addMealNameLabel, AppL10n(Lang.code).addMealNameHint, _nameCtrl,
-          onChanged: (_) => setState(() {})),
-        const SizedBox(height: 12),
-        _AppField(AppL10n(Lang.code).addMealCalLabel, AppL10n(Lang.code).addMealCalHint, _calCtrl,
-          keyboard: TextInputType.number,
-          onChanged: (_) => setState(() {})),
-        const SizedBox(height: 20),
-        Divider(height: 1, color: nc.border),
-        const SizedBox(height: 18),
-        Text(AppL10n(Lang.code).addMealMacros, style: GoogleFonts.inter(
-          color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
-          letterSpacing: 2.5)),
-        const SizedBox(height: 4),
-        Text(AppL10n(Lang.code).addMealOptional, style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
-        const SizedBox(height: 14),
-        Row(children: [
-          Expanded(child: _MacroInput(AppL10n(Lang.code).nutritionProtein, 'g', _kGreen, _protCtrl)),
-          const SizedBox(width: 12),
-          Expanded(child: _MacroInput(AppL10n(Lang.code).nutritionCarbs, 'g', const Color(0xFF3B7FD4), _glucCtrl)),
-          const SizedBox(width: 12),
-          Expanded(child: _MacroInput(AppL10n(Lang.code).nutritionFat, 'g', const Color(0xFFC47A00), _lipCtrl)),
+      // Calories — grand champ mis en avant, au centre de l'attention
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [_kGreen, Color(0xFF0F2E1C)]),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(
+            color: _kGreen.withOpacity(0.22),
+            blurRadius: 14, offset: const Offset(0, 6))],
+        ),
+        child: Column(children: [
+          Text(l10n.addMealCalLabel.toUpperCase(), style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white70, letterSpacing: 2)),
+          const SizedBox(height: 8),
+          IntrinsicWidth(
+            child: TextField(
+              controller: _calCtrl,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white, height: 1),
+              decoration: InputDecoration(
+                hintText: '0',
+                hintStyle: GoogleFonts.outfit(fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white38),
+                suffixText: ' kcal',
+                suffixStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.white70),
+                filled: false,
+                fillColor: Colors.transparent,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero)),
+          ),
         ]),
-      ])),
+      ),
+
+      const SizedBox(height: 18),
+
+      // Macros — facultatif, en chips compactes plutôt qu'en champs longs
+      Row(children: [
+        Text(l10n.addMealMacros, style: GoogleFonts.inter(
+          fontSize: 12, fontWeight: FontWeight.w700, color: nc.text1)),
+        const SizedBox(width: 6),
+        Text('(${l10n.addMealOptional})', style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
+      ]),
+      const SizedBox(height: 10),
+      Row(children: [
+        Expanded(child: _MacroChipInput(
+          icon: LucideIcons.beef, label: l10n.nutritionProtein,
+          color: _kGreen, bg: nc.mintBg, controller: _protCtrl)),
+        const SizedBox(width: 8),
+        Expanded(child: _MacroChipInput(
+          icon: LucideIcons.wheat, label: l10n.nutritionCarbs,
+          color: const Color(0xFF3B7FD4), bg: const Color(0xFFE8F1FC), controller: _glucCtrl)),
+        const SizedBox(width: 8),
+        Expanded(child: _MacroChipInput(
+          icon: LucideIcons.droplet, label: l10n.nutritionFat,
+          color: const Color(0xFFC47A00), bg: const Color(0xFFFBF0DC), controller: _lipCtrl)),
+      ]),
   ]);
   }
 
@@ -1282,10 +1376,11 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     ),
   );
 
-  // ── Scanner: result (editable card) ──────────────────────────────────────
+  // ── Scanner: result (editable card, ou liste si plusieurs aliments) ──────
   Widget _buildScannerResult() {
+    if (_scannedFoods.length > 1) return _buildScannerMultiResult();
     final nc      = NutritionColors.of(context);
-    final food    = _scannedFood!;
+    final food    = _scannedFoods.first;
     final kcal    = food.kcalFor(_selectedGrams).round();
     final protein = food.proteinFor(_selectedGrams).round();
     final carbs   = food.carbsFor(_selectedGrams).round();
@@ -1358,11 +1453,11 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
 
           // Macro pills
           Row(children: [
-            _ScanMacroPill(AppL10n(Lang.code).nutritionProtein, protein, 'g', const Color(0xFF4CAF82)),
+            _ScanMacroPill(AppL10n(Lang.code).nutritionProtein, protein, 'g', _kGreen),
             const SizedBox(width: 8),
-            _ScanMacroPill(AppL10n(Lang.code).nutritionCarbs, carbs, 'g', const Color(0xFF7BD4FF)),
+            _ScanMacroPill(AppL10n(Lang.code).nutritionCarbs, carbs, 'g', const Color(0xFF3B7FD4)),
             const SizedBox(width: 8),
-            _ScanMacroPill(AppL10n(Lang.code).nutritionFat, fat, 'g', const Color(0xFFFFB347)),
+            _ScanMacroPill(AppL10n(Lang.code).nutritionFat, fat, 'g', const Color(0xFFC47A00)),
           ]),
 
           const SizedBox(height: 16),
@@ -1463,6 +1558,119 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           ]))),
     ]);
   }
+
+  // ── Scanner: résultat multi-aliments ─────────────────────────────────────
+  // Affiché quand la photo contient plusieurs plats/aliments distincts
+  // (ex. poulet + riz + légumes) — chacun est ajoutable/retirable avant un
+  // ajout groupé au panier, au lieu de forcer un choix unique.
+  Widget _buildScannerMultiResult() {
+    final nc = NutritionColors.of(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: _kMintBg, borderRadius: BorderRadius.circular(8)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(LucideIcons.sparkles, size: 12, color: _kGreen),
+            const SizedBox(width: 4),
+            Text('${_scannedFoods.length} aliments détectés', style: GoogleFonts.inter(
+              fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen)),
+          ])),
+        const Spacer(),
+        GestureDetector(
+          onTap: _resetScan,
+          child: Text(AppL10n(Lang.code).addMealNewPhoto, style: GoogleFonts.inter(
+            fontSize: 12, color: nc.text2,
+            decoration: TextDecoration.underline))),
+      ]),
+      const SizedBox(height: 12),
+
+      if (_pickedImageBytes != null)
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.memory(_pickedImageBytes!, height: 140,
+            width: double.infinity, fit: BoxFit.cover)),
+      const SizedBox(height: 14),
+
+      ..._scannedFoods.asMap().entries.map((entry) {
+        final i    = entry.key;
+        final food = entry.value;
+        final kcal = food.kcalFor(food.defaultGrams).round();
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: nc.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: nc.border)),
+          child: Row(children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: _catColor(food.category).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10)),
+              child: Icon(_catIcon(food.category), size: 16, color: _catColor(food.category))),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(food.name, style: GoogleFonts.inter(
+                fontSize: 13.5, fontWeight: FontWeight.w700, color: nc.text1)),
+              Text('${food.defaultGrams.round()}g · $kcal kcal',
+                style: GoogleFonts.inter(fontSize: 11.5, color: nc.text2)),
+            ])),
+            GestureDetector(
+              onTap: () => setState(() => _scannedFoods.removeAt(i)),
+              child: Icon(LucideIcons.x, size: 16, color: nc.text2)),
+          ]),
+        );
+      }),
+
+      if (_scannedFoods.isEmpty)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Text('Tous les aliments ont été retirés.',
+            style: GoogleFonts.inter(fontSize: 12, color: nc.text2))),
+
+      const SizedBox(height: 8),
+
+      Row(children: [
+        Expanded(child: GestureDetector(
+          onTap: _resetScan,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: _kMintBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _kMint.withOpacity(0.4))),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(LucideIcons.camera, size: 16, color: _kGreen),
+              const SizedBox(width: 6),
+              Text(AppL10n(Lang.code).addMealOtherPhoto, style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen)),
+            ])))),
+        const SizedBox(width: 10),
+        Expanded(child: GestureDetector(
+          onTap: _scannedFoods.isEmpty ? null : () => _addAllScannedToBasket(_scannedFoods),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: _scannedFoods.isEmpty ? nc.border : _kGreen,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: _scannedFoods.isEmpty ? [] : [BoxShadow(
+                color: _kGreen.withOpacity(0.3),
+                blurRadius: 10, offset: const Offset(0, 3))]),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(LucideIcons.check, size: 16,
+                color: _scannedFoods.isEmpty ? nc.text2 : Colors.white),
+              const SizedBox(width: 6),
+              Text('Ajouter tout (${_scannedFoods.length})', style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w700,
+                color: _scannedFoods.isEmpty ? nc.text2 : Colors.white)),
+            ])))),
+      ]),
+    ]);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1528,7 +1736,7 @@ class _BasketSheetState extends State<_BasketSheet> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _TotalChip('$totalCal', 'kcal', const Color(0xFF7BA7FF)),
+              _TotalChip('$totalCal', 'kcal', _kGreen),
               _TotalChip('${totalProt}g', AppL10n(Lang.code).addMealProt, _kGreen),
               _TotalChip('${totalCarb}g', AppL10n(Lang.code).addMealGluc, const Color(0xFF3B7FD4)),
               _TotalChip('${totalFat}g', AppL10n(Lang.code).addMealLip, const Color(0xFFC47A00)),
@@ -1964,72 +2172,46 @@ class _ModeTab extends StatelessWidget {
   }
 }
 
-class _AppField extends StatelessWidget {
-  final String label, hint;
+class _MacroChipInput extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color, bg;
   final TextEditingController controller;
-  final TextInputType keyboard;
-  final ValueChanged<String>? onChanged;
-  const _AppField(this.label, this.hint, this.controller, {
-    this.keyboard = TextInputType.text, this.onChanged});
+  const _MacroChipInput({
+    required this.icon, required this.label,
+    required this.color, required this.bg, required this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final nc = NutritionColors.of(context);
-    return Column(
-    crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text(label, style: GoogleFonts.inter(
-      fontSize: 11, fontWeight: FontWeight.w600, color: nc.text2)),
-    const SizedBox(height: 6),
-    TextField(
-      controller: controller, keyboardType: keyboard, onChanged: onChanged,
-      style: GoogleFonts.inter(fontSize: 14, color: nc.text1),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: GoogleFonts.inter(fontSize: 13, color: nc.text2),
-        filled: true, fillColor: nc.chipBg,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _kMint, width: 1.5)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13)))]);
-  }
-}
-
-class _MacroInput extends StatelessWidget {
-  final String label, unit;
-  final Color color;
-  final TextEditingController controller;
-  const _MacroInput(this.label, this.unit, this.color, this.controller);
-
-  @override
-  Widget build(BuildContext context) {
-    final nc = NutritionColors.of(context);
-    return Column(
-    crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Row(children: [
-      Container(width: 6, height: 6,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-      const SizedBox(width: 5),
-      Text(label, style: GoogleFonts.inter(
-        fontSize: 10, color: nc.text2, fontWeight: FontWeight.w600)),
-    ]),
-    const SizedBox(height: 6),
-    TextField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      style: GoogleFonts.inter(fontSize: 14, color: nc.text1),
-      decoration: InputDecoration(
-        hintText: unit,
-        hintStyle: GoogleFonts.inter(fontSize: 13, color: nc.text2),
-        filled: true, fillColor: nc.chipBg,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: color, width: 1.5)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12))),
-    ]);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+      child: Column(children: [
+        Icon(icon, size: 15, color: color),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: color),
+          decoration: InputDecoration(
+            hintText: '0',
+            hintStyle: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: color.withOpacity(0.35)),
+            filled: false,
+            fillColor: Colors.transparent,
+            isDense: true,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text('$label (g)', maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.inter(fontSize: 9.5, color: color.withOpacity(0.75), fontWeight: FontWeight.w600)),
+      ]),
+    );
   }
 }
 

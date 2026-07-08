@@ -100,6 +100,11 @@ class UserProfile {
   /// 'cycle' | 'pregnant' | 'postpartum'
   final String? healthStatus;
   final int? pregnancyWeekSA;
+  // Horodatage du moment où pregnancyWeekSA a été saisi/modifié — permet de
+  // calculer une semaine de grossesse qui avance avec le temps réel plutôt
+  // que de rester figée sur la valeur saisie une fois pour toutes (voir
+  // currentPregnancyWeek).
+  final DateTime? pregnancyWeekSetAt;
   final String? ppRecovery;
   final String? ppDuration;
   final int? streak;
@@ -121,6 +126,7 @@ class UserProfile {
     required this.age,
     required this.healthStatus,
     required this.pregnancyWeekSA,
+    this.pregnancyWeekSetAt,
     required this.ppRecovery,
     required this.ppDuration,
     required this.cycleDuration,
@@ -189,6 +195,7 @@ class UserProfile {
       age:             age,
       healthStatus:    status,
       pregnancyWeekSA: m['pregnancy_week'] as int?,
+      pregnancyWeekSetAt: DateTime.tryParse(m['pregnancy_week_set_at'] as String? ?? ''),
       ppRecovery:      m['pp_recovery'] as String?,
       ppDuration:      m['pp_duration'] as String?,
       cycleDuration:   m['cycle_duration'] as String?,
@@ -237,10 +244,27 @@ class UserProfile {
     return ovulation;
   }
 
+  // Bornes réalistes pour un cycle menstruel — sans elles, une valeur mal
+  // saisie/corrompue (0, vide, ou un nombre aberrant) pouvait produire un
+  // cycleDays de 0 et faire planter tout calcul utilisant `% cycleDays`
+  // (IntegerDivisionByZeroException) dans _computeCurrentDay et ailleurs.
   int get cycleDays {
     if (cycleDuration == null) return 28;
     final n = int.tryParse(cycleDuration!.replaceAll(RegExp(r'[^0-9]'), ''));
-    return n ?? 28;
+    if (n == null || n < 15 || n > 45) return 28;
+    return n;
+  }
+
+  /// Semaine de grossesse effective — avance automatiquement avec le temps
+  /// réel écoulé depuis la dernière saisie (pregnancyWeekSetAt), au lieu de
+  /// rester figée sur la valeur choisie manuellement à un instant T. Sans
+  /// horodatage disponible (profil créé avant l'ajout de ce champ), on
+  /// retombe sur la valeur brute pour ne rien casser.
+  int? get currentPregnancyWeek {
+    if (pregnancyWeekSA == null) return null;
+    if (pregnancyWeekSetAt == null) return pregnancyWeekSA;
+    final elapsedWeeks = DateTime.now().difference(pregnancyWeekSetAt!).inDays ~/ 7;
+    return (pregnancyWeekSA! + elapsedWeeks).clamp(1, 42);
   }
 
   bool get showPregnancyContent =>
@@ -374,6 +398,11 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
       SupabaseConfig.table('user_cycle_settings').upsert({
         'user_id':    uid,
         _toCycleKey(key): value,
+        // La semaine de grossesse doit avancer avec le temps réel
+        // (currentPregnancyWeek) — on horodate donc chaque saisie manuelle
+        // pour pouvoir calculer les semaines écoulées depuis.
+        if (key == 'pregnancy_week')
+          'pregnancy_week_set_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id').catchError((e) {
         debugPrint('[UserProfile] cycle sync error ($key): $e');
@@ -445,7 +474,15 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
 
   static const _profileKeys = {'username', 'email'};
   static const _bioKeys     = {'height_cm', 'weight_kg', 'age', 'fitness_level', 'goals', 'equipment', 'frequency'};
-  static const _cycleKeys   = {'health_status', 'cycle_duration', 'last_period'};
+  // pregnancy_week/pp_recovery/pp_duration manquaient ici : updateField()
+  // les enregistrait bien en local (StorageService) mais _syncFieldToSupabase
+  // les ignorait silencieusement (aucun des 3 ensembles de clés ne les
+  // contenait) — ces champs n'étaient donc jamais persistés côté serveur, et
+  // se perdaient à la réinstallation de l'app ou sur un autre appareil.
+  static const _cycleKeys   = {
+    'health_status', 'cycle_duration', 'last_period',
+    'pregnancy_week', 'pp_recovery', 'pp_duration',
+  };
 
   static String _toBioKey(String k) => switch (k) {
     'frequency' => 'frequency_days',

@@ -256,7 +256,7 @@ class _MoodCorrelationChart extends StatelessWidget {
     for (final log in logs) {
       if (log.moodIndex == null) continue;
       final day   = dayInCycle(log.date, lastPeriod, profile.cycleDays);
-      final phase = phaseForDay(day);
+      final phase = phaseForDay(day, cycleDays: profile.cycleDays);
       sums[phase.name]   = (sums[phase.name] ?? 0) + log.moodIndex!;
       counts[phase.name] = (counts[phase.name] ?? 0) + 1;
     }

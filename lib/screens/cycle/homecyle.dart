@@ -14,6 +14,7 @@ import 'package:fiteva/screens/cycle/pregnancy/PregnancyHubScreen.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/calendar_screen.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/cycle_wheel.dart' hide CycleColors;
 import 'package:fiteva/services/cycle_log_service.dart';
+import 'package:fiteva/services/storage_service.dart';
 import 'package:fiteva/screens/cycle/widgets-cycle/mood_section.dart';
 import 'package:fiteva/screens/cycle/cycle_insights_screen.dart';
 
@@ -77,8 +78,8 @@ class CycleTheme {
   const CycleTheme({required this.gradient, required this.primary, required this.glow});
 }
 
-CycleTheme getTheme(int day) {
-  final phase = phaseForDay(day);
+CycleTheme getTheme(int day, {int cycleDays = 28}) {
+  final phase = phaseForDay(day, cycleDays: cycleDays);
   switch (phase.name) {
     case 'Règles':
       return const CycleTheme(
@@ -142,7 +143,13 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
   int _moodIndex = -1; // -1 = non sélectionné
   final DateTime _today = DateTime.now();
   bool _switching = false;
-  bool _lateSnoozed = false; // "Me rappeler demain" — masque l'écran retard pour la session
+  // "Me rappeler demain" — persisté (clé datée du jour) au lieu d'être gardé
+  // uniquement en mémoire, sinon rouvrir l'app faisait réapparaître l'écran
+  // plein écran de retard de règles alors que l'utilisatrice l'avait déjà
+  // explicitement masqué pour la journée.
+  bool _lateSnoozed = false;
+  String get _lateSnoozeKey =>
+      'cycle_late_snoozed_${_today.year}-${_today.month}-${_today.day}';
 
   late final AnimationController _switchAnim = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 550));
@@ -153,12 +160,21 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
       Tween<double>(begin: 1, end: 0.94).animate(
           CurvedAnimation(parent: _switchAnim, curve: Curves.easeInCubic));
 
-  int _computeCurrentDay(UserProfile profile) {
+  // Calcul pur jour-du-cycle pour une date donnée — partagé par
+  // _computeCurrentDay (aujourd'hui) et le sélecteur de calendrier (n'importe
+  // quelle date passée), pour éviter que deux copies de cette formule
+  // divergent silencieusement.
+  int _dayForDate(UserProfile profile, DateTime date) {
     final last = profile.lastPeriod;
     if (last == null) return 1;
+    final dateNorm = DateTime(date.year, date.month, date.day);
+    final elapsed = dateNorm.difference(last).inDays % profile.cycleDays;
+    return (elapsed + 1).clamp(1, profile.cycleDays);
+  }
+
+  int _computeCurrentDay(UserProfile profile) {
     final todayNorm = DateTime(_today.year, _today.month, _today.day);
-    final elapsed = todayNorm.difference(last).inDays % profile.cycleDays;
-    final day = (elapsed + 1).clamp(1, profile.cycleDays);
+    final day = _dayForDate(profile, todayNorm);
 
     // Si le calcul dit "jour 1" mais l'utilisatrice n'a pas encore confirmé ses règles,
     // on reste au dernier jour du cycle précédent pour ne pas afficher "Règles" de force.
@@ -177,7 +193,8 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
   @override
   void initState() {
     super.initState();
-    _currentDay = _computeCurrentDay(ref.read(userProfileProvider));
+    _currentDay   = _computeCurrentDay(ref.read(userProfileProvider));
+    _lateSnoozed  = StorageService.getBool(_lateSnoozeKey);
     _loadSymptoms();
   }
 
@@ -299,8 +316,12 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
   @override
   Widget build(BuildContext context) {
     final cc    = CycleColors.of(context);
-    final theme = getTheme(_currentDay);
-    final phase = phaseForDay(_currentDay);
+    // La durée de cycle réelle de l'utilisatrice (pas 28j fixe) détermine
+    // les plages de phases — sinon les phases affichées sont fausses pour
+    // tout cycle qui n'est pas exactement 28 jours.
+    final cycleDays = ref.watch(userProfileProvider).cycleDays;
+    final theme = getTheme(_currentDay, cycleDays: cycleDays);
+    final phase = phaseForDay(_currentDay, cycleDays: cycleDays);
 
     return Scaffold(
       backgroundColor: cc.bg,
@@ -543,6 +564,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
               GestureDetector(
                 onTap: () {
                   HapticFeedback.selectionClick();
+                  StorageService.setBool(_lateSnoozeKey, true);
                   setState(() => _lateSnoozed = true);
                 },
                 child: Container(
@@ -721,9 +743,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
                       final plain = DateTime(date.year, date.month, date.day);
                       if (!plain.isAfter(today)) {
                         final p = ref.read(userProfileProvider);
-                        final elapsed = today.difference(p.lastPeriod ?? today).inDays;
-                        final cd = elapsed % p.cycleDays + 1;
-                        setState(() => _currentDay = cd.clamp(1, p.cycleDays));
+                        setState(() => _currentDay = _dayForDate(p, plain));
                       }
                       Navigator.of(context).pop();
                     },

@@ -40,9 +40,12 @@ class NutritionIaService {
 
   static const String _prompt = '''
 Tu es un nutritionniste expert. Analyse cette photo de nourriture et identifie
-le plat ou l'aliment principal visible.
+TOUS les aliments/plats distincts visibles — pas seulement celui qui domine
+visuellement. Par exemple, une assiette avec un poulet ET du riz ET des
+légumes doit produire TROIS entrées séparées dans "items", pas une seule.
+Si un seul aliment est visible, renvoie un tableau "items" avec une seule entrée.
 
-Réponds uniquement avec les champs demandés par le schéma JSON :
+Pour chaque aliment détecté, réponds avec les champs demandés par le schéma :
 - name : nom court et clair de l'aliment/plat, en français.
 - category : catégorie la plus proche parmi la liste fournie.
 - kcal, protein, carbs, fat, fiber : valeurs nutritionnelles estimées
@@ -50,8 +53,7 @@ Réponds uniquement avec les champs demandés par le schéma JSON :
 - grams : poids estimé de la portion visible sur la photo, en grammes.
 - portion_label : courte description de la portion (ex. "1 assiette", "1 bol").
 
-Si plusieurs aliments sont visibles, choisis celui qui domine visuellement
-le plat. Base tes estimations sur des valeurs nutritionnelles réalistes.
+Base tes estimations sur des valeurs nutritionnelles réalistes.
 ''';
 
   static const List<String> _categoryValues = [
@@ -60,40 +62,56 @@ le plat. Base tes estimations sur des valeurs nutritionnelles réalistes.
     'boissons', 'desserts',
   ];
 
+  static final Map<String, dynamic> _foodItemSchema = {
+    'type': 'object',
+    'properties': {
+      'name':          {'type': 'string'},
+      'category':      {'type': 'string', 'enum': _categoryValues},
+      'kcal':          {'type': 'number'},
+      'protein':       {'type': 'number'},
+      'carbs':         {'type': 'number'},
+      'fat':           {'type': 'number'},
+      'fiber':         {'type': 'number'},
+      'grams':         {'type': 'number'},
+      'portion_label': {'type': 'string'},
+    },
+    'required': [
+      'name', 'category', 'kcal', 'protein', 'carbs', 'fat',
+      'fiber', 'grams', 'portion_label',
+    ],
+    'additionalProperties': false,
+  };
+
   static final Map<String, dynamic> _jsonSchema = {
-    'name': 'food_item',
+    'name': 'food_items',
     'strict': true,
     'schema': {
       'type': 'object',
       'properties': {
-        'name':          {'type': 'string'},
-        'category':      {'type': 'string', 'enum': _categoryValues},
-        'kcal':          {'type': 'number'},
-        'protein':       {'type': 'number'},
-        'carbs':         {'type': 'number'},
-        'fat':           {'type': 'number'},
-        'fiber':         {'type': 'number'},
-        'grams':         {'type': 'number'},
-        'portion_label': {'type': 'string'},
+        'items': {
+          'type': 'array',
+          'items': _foodItemSchema,
+        },
       },
-      'required': [
-        'name', 'category', 'kcal', 'protein', 'carbs', 'fat',
-        'fiber', 'grams', 'portion_label',
-      ],
+      'required': ['items'],
       'additionalProperties': false,
     },
   };
 
   /// Analyse une photo de nourriture depuis un fichier local
-  /// (typiquement issu de `image_picker`).
-  static Future<FoodItem> analyzeFoodImage(File imageFile) async {
+  /// (typiquement issu de `image_picker`). Retourne un aliment par plat
+  /// distinct détecté sur la photo (ex. poulet + riz + légumes → 3 entrées).
+  static Future<List<FoodItem>> analyzeFoodImage(File imageFile) async {
     final bytes = await imageFile.readAsBytes();
     final mimeType = _mimeTypeFor(imageFile.path);
     return analyzeFoodImageBytes(bytes, mimeType: mimeType);
   }
 
-  /// Analyse une photo de nourriture à partir de ses bytes bruts.
-  static Future<FoodItem> analyzeFoodImageBytes(
+  /// Analyse une photo de nourriture à partir de ses bytes bruts. Retourne
+  /// un [FoodItem] par plat/aliment distinct détecté — une photo avec
+  /// plusieurs aliments (ex. poulet + riz) renvoie plusieurs entrées au lieu
+  /// de n'en choisir qu'une seule arbitrairement.
+  static Future<List<FoodItem>> analyzeFoodImageBytes(
     Uint8List bytes, {
     String mimeType = 'image/jpeg',
   }) async {
@@ -169,7 +187,19 @@ le plat. Base tes estimations sur des valeurs nutritionnelles réalistes.
       throw NutritionIaException('Format de résultat IA invalide : $e');
     }
 
-    return _foodItemFromAi(data);
+    final items = data['items'] as List?;
+    if (items == null || items.isEmpty) {
+      throw NutritionIaException('Aucun aliment détecté sur cette photo.');
+    }
+    // L'index est ajouté à l'id : plusieurs aliments d'un même scan peuvent
+    // être traités dans la même microseconde, ce qui produirait sinon des
+    // ids identiques (et un dédoublonnage par id dans le panier écraserait
+    // silencieusement un des aliments détectés).
+    return items
+        .asMap()
+        .entries
+        .map((e) => _foodItemFromAi(e.value as Map<String, dynamic>, e.key))
+        .toList();
   }
 
   static String? _extractContent(Map<String, dynamic> decoded) {
@@ -179,7 +209,7 @@ le plat. Base tes estimations sur des valeurs nutritionnelles réalistes.
     return message?['content'] as String?;
   }
 
-  static FoodItem _foodItemFromAi(Map<String, dynamic> data) {
+  static FoodItem _foodItemFromAi(Map<String, dynamic> data, [int index = 0]) {
     final category = FoodCategory.values.firstWhere(
       (c) => c.name == (data['category'] as String? ?? ''),
       orElse: () => FoodCategory.platCompose,
@@ -187,7 +217,7 @@ le plat. Base tes estimations sur des valeurs nutritionnelles réalistes.
     final grams = (data['grams'] as num?)?.toDouble() ?? 100;
 
     return FoodItem(
-      id:           'ai_${DateTime.now().microsecondsSinceEpoch}',
+      id:           'ai_${DateTime.now().microsecondsSinceEpoch}_$index',
       name:         data['name'] as String? ?? 'Aliment scanné',
       category:     category,
       kcal:         (data['kcal'] as num?)?.toDouble() ?? 0,

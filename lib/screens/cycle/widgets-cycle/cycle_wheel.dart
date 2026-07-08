@@ -78,6 +78,11 @@ class CyclePhase {
   });
 }
 
+// Référence 28 jours — gardée pour les usages sans accès au profil (fallback).
+// Pour un cycle réel, préférer phasesForCycleDays() : la phase lutéale reste
+// cliniquement ~14 jours quelle que soit la longueur du cycle, donc c'est la
+// phase folliculaire qui doit absorber la variation (pas un simple partage
+// proportionnel des 4 phases, qui donnerait des plages fausses).
 const List<CyclePhase> kPhases = [
   CyclePhase(
     name: 'Règles',
@@ -105,6 +110,50 @@ const List<CyclePhase> kPhases = [
   ),
 ];
 
+/// Plages de phases recalculées pour la durée de cycle réelle de
+/// l'utilisatrice — avant, ces plages étaient figées sur un cycle de 28
+/// jours et donnaient des phases systématiquement fausses pour tout cycle
+/// plus court (ex. 21j) ou plus long (ex. 35j).
+List<CyclePhase> phasesForCycleDays(int cycleDays) {
+  if (cycleDays == 28) return kPhases;
+  final safeCycle = cycleDays.clamp(15, 45);
+
+  const menstrualLen = 5;
+  const lutealLen     = 14; // phase lutéale ~constante cliniquement
+  final ovulationDay  = (safeCycle - lutealLen).clamp(menstrualLen + 2, safeCycle - 1);
+  final ovulationStart = (ovulationDay - 1).clamp(menstrualLen + 1, safeCycle);
+  final ovulationEnd   = (ovulationDay + 1).clamp(ovulationStart, safeCycle);
+  final follicularEnd  = (ovulationStart - 1).clamp(menstrualLen, ovulationStart);
+  final lutealStart    = (ovulationEnd + 1).clamp(ovulationEnd, safeCycle);
+
+  return [
+    CyclePhase(
+      name: 'Règles',
+      description: 'Corps au repos · Prends soin de toi',
+      color: CycleColors.menstrual,
+      days: List.generate(menstrualLen, (i) => i + 1),
+    ),
+    CyclePhase(
+      name: 'Folliculaire',
+      description: 'Énergie en hausse · Peau lumineuse',
+      color: CycleColors.follicular,
+      days: [for (var d = menstrualLen + 1; d <= follicularEnd; d++) d],
+    ),
+    CyclePhase(
+      name: 'Ovulation',
+      description: 'Pic d\'énergie · Clarté mentale',
+      color: CycleColors.ovulation,
+      days: [for (var d = ovulationStart; d <= ovulationEnd; d++) d],
+    ),
+    CyclePhase(
+      name: 'Lutéale',
+      description: 'Corps se prépare · Écoute tes besoins',
+      color: CycleColors.luteal,
+      days: [for (var d = lutealStart; d <= safeCycle; d++) d],
+    ),
+  ];
+}
+
 // Simulated energy curve (normalized 0–1.0).
 // Represents the felt-energy quality of each day.
 const List<double> kEnergyCurve = [
@@ -116,8 +165,10 @@ const List<double> kEnergyCurve = [
   0.46, 0.43, 0.40, 0.38, 0.36,   // Luteal end: withdrawal
 ];
 
-CyclePhase phaseForDay(int day) =>
-    kPhases.firstWhere((p) => p.days.contains(day), orElse: () => kPhases.last);
+CyclePhase phaseForDay(int day, {int cycleDays = 28}) {
+  final phases = phasesForCycleDays(cycleDays);
+  return phases.firstWhere((p) => p.days.contains(day), orElse: () => phases.last);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ROOM WIDGET — Entry point

@@ -1536,7 +1536,7 @@ class _StatBar extends ConsumerWidget {
     String cycleLabel;
     IconData cycleIcon = Icons.favorite_rounded;
     if (profile.healthStatus == 'pregnant') {
-      final week = profile.pregnancyWeekSA;
+      final week = profile.currentPregnancyWeek ?? profile.pregnancyWeekSA;
       cycleValue = week != null ? 'S$week' : '—';
       cycleLabel = 'Grossesse';
       cycleIcon  = Icons.child_friendly_rounded;
