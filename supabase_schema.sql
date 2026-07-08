@@ -491,6 +491,23 @@ CREATE TABLE event_participants (
   PRIMARY KEY (user_id, event_id)
 );
 
+-- ── 9.5b  Stockage — images de couverture des événements ────────────────────
+-- Bucket public : les photos de couverture sont visibles par tous dans le
+-- feed communauté, mais seul l'organisateur peut écrire dans son propre
+-- dossier (chemin '{uid}/xxx.jpg').
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('event-images', 'event-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "event_images_public_read" ON storage.objects FOR SELECT
+  USING (bucket_id = 'event-images');
+CREATE POLICY "event_images_owner_insert" ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'event-images' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "event_images_owner_update" ON storage.objects FOR UPDATE
+  USING (bucket_id = 'event-images' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "event_images_owner_delete" ON storage.objects FOR DELETE
+  USING (bucket_id = 'event-images' AND (storage.foldername(name))[1] = auth.uid()::text);
+
 -- ── 9.6  Partenaires d'entraînement ─────────────────────────────────────────
 CREATE TABLE training_partners (
   id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

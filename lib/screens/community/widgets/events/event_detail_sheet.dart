@@ -1,14 +1,15 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/services/comuniter_service.dart';
+import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../providers/community_providers.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../shared/community_shared_widgets.dart';
 import 'participants_sheet.dart';
 
 void showEventDetail(BuildContext context, EventModel event) {
@@ -44,6 +45,8 @@ class EventDetailSheet extends ConsumerWidget {
     final spotsLeft = ev.maxSpots - ev.joinedCount;
     final isFull    = spotsLeft <= 0;
     final isJoined  = ev.isJoined;
+    final isOwner   = ev.organizerId.isNotEmpty &&
+        ev.organizerId == SupabaseConfig.userId;
     final typeIcon  = _icons[ev.type.toLowerCase()] ?? LucideIcons.calendarDays;
     final screenH   = MediaQuery.of(context).size.height;
     final bottomPad = MediaQuery.of(context).padding.bottom;
@@ -286,19 +289,21 @@ class EventDetailSheet extends ConsumerWidget {
                         ),
 
                         // ── Contact organisateur (après inscription,
-                        //    comme les partenaires acceptés) ───────
-                        if (isJoined &&
+                        //    comme les partenaires acceptés — jamais
+                        //    affiché au propriétaire) ──────────────
+                        if (isJoined && !isOwner &&
                             (ev.contactWhatsapp.trim().isNotEmpty ||
                              ev.contactInstagram.trim().isNotEmpty ||
                              ev.contactFacebook.trim().isNotEmpty)) ...[
                           const SizedBox(height: 20),
-                          Text(l10n.communityEventContactSection,
-                              style: GoogleFonts.inter(
-                            fontSize: 9, fontWeight: FontWeight.w700,
-                            color: cs.onSurface.withValues(alpha: 0.45),
-                            letterSpacing: 2)),
-                          const SizedBox(height: 10),
-                          _EventContactList(event: ev, cs: cs, l10n: l10n),
+                          SocialContactList(
+                            contactWhatsapp: ev.contactWhatsapp,
+                            contactInstagram: ev.contactInstagram,
+                            contactFacebook: ev.contactFacebook,
+                            cs: cs,
+                            linkErrorMessage: l10n.communityPartnerLinkError,
+                            title: l10n.communityEventContactSection,
+                          ),
                         ],
 
                         const SizedBox(height: 100),
@@ -382,100 +387,6 @@ class EventDetailSheet extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ─── Contact organisateur (WhatsApp / Instagram / Facebook) ──
-Uri? _contactUri(String platform, String raw) {
-  final v = raw.trim();
-  if (v.isEmpty) return null;
-  switch (platform) {
-    case 'whatsapp':
-      final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
-      return digits.isEmpty ? null : Uri.parse('https://wa.me/$digits');
-    case 'instagram':
-      if (v.startsWith('http')) return Uri.tryParse(v);
-      final handle = v.startsWith('@') ? v.substring(1) : v;
-      return Uri.parse('https://instagram.com/$handle');
-    case 'facebook':
-      if (v.startsWith('http')) return Uri.tryParse(v);
-      return Uri.parse('https://facebook.com/${Uri.encodeComponent(v)}');
-    default:
-      return null;
-  }
-}
-
-class _EventContactList extends StatelessWidget {
-  final EventModel event;
-  final ColorScheme cs;
-  final AppL10n l10n;
-  const _EventContactList({
-    required this.event, required this.cs, required this.l10n});
-
-  static const _brandColors = {
-    'whatsapp':  Color(0xFF25D366),
-    'instagram': Color(0xFFD62A7A),
-    'facebook':  Color(0xFF3B6FE0),
-  };
-
-  Future<void> _open(BuildContext context, Uri? uri) async {
-    if (uri == null) return;
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text(l10n.communityPartnerLinkError),
-      ));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final contacts = [
-      ('whatsapp', event.contactWhatsapp, LucideIcons.messageCircle, 'WhatsApp'),
-      ('instagram', event.contactInstagram, LucideIcons.atSign, 'Instagram'),
-      ('facebook', event.contactFacebook, LucideIcons.globe, 'Facebook'),
-    ].where((c) => c.$2.trim().isNotEmpty).toList();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outline),
-      ),
-      child: Column(children: [
-        for (int i = 0; i < contacts.length; i++) ...[
-          if (i > 0)
-            Divider(height: 1, indent: 16, endIndent: 16,
-                color: cs.outline.withValues(alpha: 0.6)),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _open(context,
-                _contactUri(contacts[i].$1, contacts[i].$2)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(children: [
-                Container(
-                  width: 38, height: 38,
-                  decoration: BoxDecoration(
-                    color: _brandColors[contacts[i].$1]!.withValues(alpha: 0.12),
-                    shape: BoxShape.circle),
-                  child: Icon(contacts[i].$3, size: 17,
-                      color: _brandColors[contacts[i].$1]),
-                ),
-                const SizedBox(width: 12),
-                Text(contacts[i].$4, style: GoogleFonts.inter(
-                  fontSize: 13.5, fontWeight: FontWeight.w600,
-                  color: cs.onSurface)),
-                const Spacer(),
-                Icon(LucideIcons.arrowUpRight, size: 15,
-                    color: cs.onSurface.withValues(alpha: 0.35)),
-              ]),
-            ),
-          ),
-        ],
-      ]),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:fiteva/screens/community/UserProfileScreen.dart';
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:fiteva/services/supabase_config.dart';
@@ -7,8 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../providers/community_providers.dart';
+import '../shared/community_shared_widgets.dart';
 import 'create_event_sheet.dart';
 import 'participants_sheet.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -44,8 +45,12 @@ class _EventsTabState extends ConsumerState<EventsTab> {
 
     return ColoredBox(
       color: cs.surface,
-      child: CustomScrollView(
-        slivers: [
+      child: RefreshIndicator(
+        color: cs.onSurface,
+        backgroundColor: cs.surface,
+        onRefresh: () => ref.read(eventsNotifierProvider.notifier).refresh(),
+        child: CustomScrollView(
+          slivers: [
 
           // ── Header ────────────────────────────────────────
           SliverToBoxAdapter(
@@ -133,7 +138,8 @@ class _EventsTabState extends ConsumerState<EventsTab> {
               },
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -156,6 +162,15 @@ class EventCard extends StatelessWidget {
     required this.colorScheme,
   });
 
+  void _openProfile(BuildContext context, String uid) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => UserProfileScreen(
+        userId: uid,
+        heroTag: 'event_avatar_$uid',
+      ),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs        = colorScheme;
@@ -164,6 +179,9 @@ class EventCard extends StatelessWidget {
     final isJoined  = event.isJoined;
     final isOwner   = event.organizerId.isNotEmpty &&
         event.organizerId == SupabaseConfig.userId;
+    final organizerUid = event.organizerId.isNotEmpty
+        ? event.organizerId
+        : event.organizer;
 
     return Container(
       decoration: BoxDecoration(
@@ -185,16 +203,24 @@ class EventCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
             child: Row(children: [
-              CommunityAvatar(
-                avatarUrl: event.organizerAvatar,
-                name: event.organizer,
-                radius: 20,
-                mascotType: event.organizerMascotType,
-                mascotMood: event.organizerMascotMood,
+              GestureDetector(
+                onTap: () => _openProfile(context, organizerUid),
+                child: Hero(
+                  tag: 'event_avatar_$organizerUid',
+                  child: CommunityAvatar(
+                    avatarUrl: event.organizerAvatar,
+                    name: event.organizer,
+                    radius: 20,
+                    mascotType: event.organizerMascotType,
+                    mascotMood: event.organizerMascotMood,
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
+                child: GestureDetector(
+                  onTap: () => _openProfile(context, organizerUid),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(event.organizer, style: GoogleFonts.outfit(
@@ -235,6 +261,7 @@ class EventCard extends StatelessWidget {
                       ),
                     ]),
                   ],
+                  ),
                 ),
               ),
               Column(
@@ -302,6 +329,21 @@ class EventCard extends StatelessWidget {
               ],
             ),
           ),
+
+          // ── Cover image ────────────────────────────────────
+          if (event.imageUrl.trim().isNotEmpty)
+            SizedBox(
+              height: 180, width: double.infinity,
+              child: Image.network(
+                event.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: cs.primary.withValues(alpha: 0.08),
+                  child: Icon(LucideIcons.image, size: 36,
+                      color: cs.primary.withValues(alpha: 0.3)),
+                ),
+              ),
+            ),
 
           // ── Action row (mirrors feed action row) ──────────
           Padding(
@@ -383,8 +425,9 @@ class EventCard extends StatelessWidget {
           ),
 
           // ── Contact organisateur (visible après inscription,
-          //    même pattern que la carte partenaire) ──────────
-          if (isJoined) _EventCardContacts(event: event, cs: cs),
+          //    même pattern que la carte partenaire : jamais affiché
+          //    au propriétaire sur sa propre carte) ─────────────
+          if (isJoined && !isOwner) _EventCardContacts(event: event, cs: cs),
         ],
       ),
     );
@@ -440,41 +483,29 @@ class _EventOwnerMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return PopupMenuButton<String>(
-      icon: Container(
-        width: 30, height: 30,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(CupertinoIcons.ellipsis,
-            color: cs.onSurface.withValues(alpha: 0.6), size: 15),
-      ),
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 30, minHeight: 30, maxWidth: 30, maxHeight: 30),
+      icon: Icon(CupertinoIcons.ellipsis,
+          color: cs.onSurface.withValues(alpha: 0.6), size: 18),
+      padding: const EdgeInsets.all(6),
       color: cs.surface,
-      elevation: 4,
-      offset: const Offset(0, 36),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       itemBuilder: (_) => [
         PopupMenuItem(
           value: 'edit',
-          height: 42,
           child: Row(children: [
-            Icon(LucideIcons.pencil, size: 16, color: cs.primary),
-            const SizedBox(width: 10),
+            Icon(LucideIcons.pencil, size: 18, color: cs.primary),
+            const SizedBox(width: 12),
             Text('Modifier', style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface)),
+              fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
           ]),
         ),
         PopupMenuItem(
           value: 'delete',
-          height: 42,
           child: Row(children: [
-            Icon(LucideIcons.trash2, size: 16, color: cs.error),
-            const SizedBox(width: 10),
+            Icon(LucideIcons.trash2, size: 18, color: cs.error),
+            const SizedBox(width: 12),
             Text('Supprimer', style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w600, color: cs.error)),
+              fontSize: 14, fontWeight: FontWeight.w600, color: cs.error)),
           ]),
         ),
       ],
@@ -490,96 +521,32 @@ class _EventOwnerMenu extends ConsumerWidget {
 }
 
 // ─── Contact organisateur (WhatsApp / Instagram / Facebook) ──
-Uri? _contactUri(String platform, String raw) {
-  final v = raw.trim();
-  if (v.isEmpty) return null;
-  switch (platform) {
-    case 'whatsapp':
-      final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
-      return digits.isEmpty ? null : Uri.parse('https://wa.me/$digits');
-    case 'instagram':
-      if (v.startsWith('http')) return Uri.tryParse(v);
-      final handle = v.startsWith('@') ? v.substring(1) : v;
-      return Uri.parse('https://instagram.com/$handle');
-    case 'facebook':
-      if (v.startsWith('http')) return Uri.tryParse(v);
-      return Uri.parse('https://facebook.com/${Uri.encodeComponent(v)}');
-    default:
-      return null;
-  }
-}
-
 class _EventCardContacts extends ConsumerWidget {
   final EventModel event;
   final ColorScheme cs;
   const _EventCardContacts({required this.event, required this.cs});
 
-  static const _brandColors = {
-    'whatsapp':  Color(0xFF25D366),
-    'instagram': Color(0xFFD62A7A),
-    'facebook':  Color(0xFF3B6FE0),
-  };
-
-  Future<void> _open(BuildContext context, Uri? uri, String errorMsg) async {
-    if (uri == null) return;
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text(errorMsg),
-      ));
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(l10nProvider);
-    final contacts = [
-      ('whatsapp', event.contactWhatsapp, LucideIcons.messageCircle, 'WhatsApp'),
-      ('instagram', event.contactInstagram, LucideIcons.atSign, 'Instagram'),
-      ('facebook', event.contactFacebook, LucideIcons.globe, 'Facebook'),
-    ].where((c) => c.$2.trim().isNotEmpty).toList();
-
-    if (contacts.isEmpty) return const SizedBox.shrink();
+    final hasContact = event.contactWhatsapp.trim().isNotEmpty ||
+        event.contactInstagram.trim().isNotEmpty ||
+        event.contactFacebook.trim().isNotEmpty;
+    if (!hasContact) return const SizedBox.shrink();
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Divider(height: 1, indent: 14, endIndent: 14,
           color: cs.outline.withValues(alpha: 0.5)),
       Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-        child: Text(l10n.communityEventContactSection, style: GoogleFonts.inter(
-          fontSize: 9, fontWeight: FontWeight.w700,
-          color: cs.onSurface.withValues(alpha: 0.45), letterSpacing: 2)),
-      ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-        child: Column(children: [
-          for (final (platform, value, icon, label) in contacts)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _open(context, _contactUri(platform, value),
-                    l10n.communityPartnerLinkError),
-                child: Row(children: [
-                  Container(
-                    width: 34, height: 34,
-                    decoration: BoxDecoration(
-                      color: _brandColors[platform]!.withValues(alpha: 0.12),
-                      shape: BoxShape.circle),
-                    child: Icon(icon, size: 15, color: _brandColors[platform]),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(label, style: GoogleFonts.inter(
-                    fontSize: 13, fontWeight: FontWeight.w600,
-                    color: cs.onSurface)),
-                  const Spacer(),
-                  Icon(LucideIcons.arrowUpRight, size: 15,
-                      color: cs.onSurface.withValues(alpha: 0.35)),
-                ]),
-              ),
-            ),
-        ]),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        child: SocialContactList(
+          contactWhatsapp: event.contactWhatsapp,
+          contactInstagram: event.contactInstagram,
+          contactFacebook: event.contactFacebook,
+          cs: cs,
+          linkErrorMessage: l10n.communityPartnerLinkError,
+          title: l10n.communityEventContactSection,
+        ),
       ),
     ]);
   }

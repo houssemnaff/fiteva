@@ -4,11 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'package:fiteva/providers/mascot_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/user_profile_provider.dart'
     hide UserProfile;
 import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
+import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:fiteva/services/comuniter_service.dart';
 import 'package:fiteva/services/supabase_config.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,7 +21,8 @@ class UserProfile {
   final String id;
   final String name;
   final String username;
-  final String? avatarUrl;
+  final String mascotType;
+  final String mascotMood;
   final String? bio;
   final String niveau;
   final int niveauXp;
@@ -36,7 +39,8 @@ class UserProfile {
     required this.id,
     required this.name,
     required this.username,
-    this.avatarUrl,
+    this.mascotType = 'blob',
+    this.mascotMood = 'happy',
     this.bio,
     required this.niveau,
     required this.niveauXp,
@@ -132,6 +136,7 @@ final communityUserProfileProvider =
   if (isSelf) {
     // Own profile: bio/XP/points from local providers (no extra request).
     final localUser = ref.read(userProfileProvider);
+    final mascot    = ref.read(mascotProvider);
     final xp        = ref.read(xpProvider).totalXp;
     final etoiles   = ref.read(pointsProvider);
     final name      = localUser.username.isNotEmpty ? localUser.username : 'User';
@@ -139,6 +144,8 @@ final communityUserProfileProvider =
       id:            userId,
       name:          name,
       username:      '@${name.toLowerCase().replaceAll(' ', '')}',
+      mascotType:    mascot.type.name,
+      mascotMood:    mascot.mood.name,
       niveau:        '${_xpToLevel(xp)}',
       niveauXp:      xp,
       niveauMaxXp:   5000,
@@ -172,6 +179,8 @@ final communityUserProfileProvider =
     id:            data['id'] as String,
     name:          name,
     username:      '@${name.toLowerCase().replaceAll(' ', '')}',
+    mascotType:    data['mascot_type'] as String? ?? 'blob',
+    mascotMood:    data['mascot_mood'] as String? ?? 'happy',
     niveau:        '$lvl',
     niveauXp:      totalXp,
     niveauMaxXp:   5000,
@@ -391,16 +400,6 @@ class _ProfileHeader extends ConsumerStatefulWidget {
 class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
   bool _following = false;
 
-  String get _initials {
-    final name = widget.profile.name.trim();
-    if (name.isEmpty) return '?';
-    final parts = name.split(' ');
-    if (parts.length >= 2 && parts[1].isNotEmpty) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -451,19 +450,17 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
               child: Hero(
                 tag: widget.heroTag ?? 'avatar_${profile.id}',
                 child: Container(
-                  width: 88,
-                  height: 88,
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: cs.surface, width: 4),
-                    color: cs.secondary,
+                    color: cs.surface,
                   ),
-                  child: ClipOval(
-                    child: profile.avatarUrl != null
-                        ? Image.network(profile.avatarUrl!, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _InitialsCircle(
-                              initials: _initials, cs: cs))
-                        : _InitialsCircle(initials: _initials, cs: cs),
+                  child: CommunityAvatar(
+                    avatarUrl: '',
+                    name: profile.name,
+                    radius: 40,
+                    mascotType: profile.mascotType,
+                    mascotMood: profile.mascotMood,
                   ),
                 ),
               ),
@@ -616,24 +613,6 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
     );
   }
 
-}
-
-// ─── Initials circle fallback ─────────────────────────────────
-class _InitialsCircle extends StatelessWidget {
-  final String initials;
-  final ColorScheme cs;
-  const _InitialsCircle({required this.initials, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: cs.secondary,
-      alignment: Alignment.center,
-      child: Text(initials, style: GoogleFonts.outfit(
-        fontSize: 30, fontWeight: FontWeight.w800,
-        color: Colors.white.withValues(alpha: 0.9), letterSpacing: -1)),
-    );
-  }
 }
 
 // ─── Meta pill ────────────────────────────────────────────────

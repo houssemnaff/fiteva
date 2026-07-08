@@ -1,12 +1,16 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:io';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
 import 'package:fiteva/screens/community/widgets/community_avatar.dart';
+import 'package:fiteva/services/comuniter_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -50,6 +54,9 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
   bool      _publishing   = false;
   DateTime  _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 8, minute: 0);
+
+  XFile? _pickedImage;
+  bool   _removeExistingImage = false;
 
   late final AnimationController _anim;
   late final Animation<double>   _slide;
@@ -137,6 +144,27 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
     if (picked != null) setState(() => _selectedTime = picked);
   }
 
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 82,
+      maxWidth: 1600,
+    );
+    if (picked != null) {
+      setState(() {
+        _pickedImage = picked;
+        _removeExistingImage = false;
+      });
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _pickedImage = null;
+      _removeExistingImage = true;
+    });
+  }
+
   String get _displayDate {
     const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
     const days   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
@@ -167,6 +195,14 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
     HapticFeedback.mediumImpact();
     setState(() => _publishing = true);
 
+    // Upload de la nouvelle photo si l'utilisateur en a choisi une ;
+    // sinon conserve l'existante (mode édition), sauf suppression explicite.
+    var imageUrl = _removeExistingImage ? '' : (widget.event?.imageUrl ?? '');
+    if (_pickedImage != null) {
+      final uploaded = await CommunityService.uploadEventImage(_pickedImage!);
+      if (uploaded != null) imageUrl = uploaded;
+    }
+
     bool ok;
     if (_isEditing) {
       final updated = widget.event!.copyWith(
@@ -176,6 +212,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
         time:               _displayTime,
         location:           _locationCtrl.text.trim(),
         maxSpots:           _spots,
+        imageUrl:           imageUrl,
         description:        _detailsCtrl.text.trim(),
         contactWhatsapp:    _whatsappCtrl.text.trim(),
         contactInstagram:   _instagramCtrl.text.trim(),
@@ -196,7 +233,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
         maxSpots:           _spots,
         joinedCount:        0,
         participantAvatars: [],
-        imageUrl:           '',
+        imageUrl:           imageUrl,
         description:        _detailsCtrl.text.trim(),
         contactWhatsapp:    _whatsappCtrl.text.trim(),
         contactInstagram:   _instagramCtrl.text.trim(),
@@ -349,6 +386,18 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                         color: cs.onSurface.withValues(alpha: 0.3), height: 1.65),
                     ),
                     Divider(height: 24, color: cs.outline.withValues(alpha: 0.6)),
+
+                    // ── Photo de couverture ───────────────────────
+                    _SectionLabel(text: 'Photo de couverture  (optionnel)', cs: cs),
+                    const SizedBox(height: 8),
+                    _EventImagePicker(
+                      pickedImage: _pickedImage,
+                      existingImageUrl: _removeExistingImage ? '' : (widget.event?.imageUrl ?? ''),
+                      cs: cs,
+                      onPick: _pickImage,
+                      onRemove: _removeImage,
+                    ),
+                    const SizedBox(height: 24),
 
                     // ── Spots ────────────────────────────────────
                     _SectionLabel(text: 'Participants max', cs: cs),
@@ -676,6 +725,113 @@ class _DateCard extends StatelessWidget {
           ]),
         ]),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  EVENT IMAGE PICKER  (photo de couverture)
+// ─────────────────────────────────────────────────────────────────────────────
+class _EventImagePicker extends StatelessWidget {
+  final XFile? pickedImage;
+  final String existingImageUrl;
+  final ColorScheme cs;
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+  const _EventImagePicker({
+    required this.pickedImage, required this.existingImageUrl,
+    required this.cs, required this.onPick, required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPicked   = pickedImage != null;
+    final hasExisting = !hasPicked && existingImageUrl.trim().isNotEmpty;
+
+    if (!hasPicked && !hasExisting) {
+      return GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onPick();
+        },
+        child: Container(
+          height: 130,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outline.withValues(alpha: 0.8)),
+          ),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(LucideIcons.imagePlus, size: 24,
+                color: cs.onSurface.withValues(alpha: 0.3)),
+            const SizedBox(height: 8),
+            Text('Ajouter une photo', style: GoogleFonts.inter(
+              fontSize: 12, fontWeight: FontWeight.w500,
+              color: cs.onSurface.withValues(alpha: 0.4))),
+          ]),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(children: [
+        SizedBox(
+          height: 160,
+          width: double.infinity,
+          child: hasPicked
+              ? (kIsWeb
+                  ? Image.network(pickedImage!.path, fit: BoxFit.cover)
+                  : Image.file(File(pickedImage!.path), fit: BoxFit.cover))
+              : Image.network(existingImageUrl, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: cs.primary.withValues(alpha: 0.08),
+                    child: Icon(LucideIcons.image, size: 30,
+                        color: cs.primary.withValues(alpha: 0.3)),
+                  )),
+        ),
+        Positioned(
+          top: 8, right: 8,
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onRemove();
+            },
+            child: Container(
+              width: 30, height: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.x, size: 15, color: Colors.white),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 8, right: 8,
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onPick();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(LucideIcons.imagePlus, size: 13, color: Colors.white),
+                const SizedBox(width: 5),
+                Text('Changer', style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+              ]),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }

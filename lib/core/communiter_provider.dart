@@ -121,6 +121,18 @@ class EventsNotifier extends StateNotifier<List<EventModel>> {
     ];
   }
 
+  /// Recharge les événements depuis Supabase (pull-to-refresh).
+  Future<void> refresh() async {
+    final events = await CommunityService.loadEvents();
+    final joined = await CommunityService.loadJoinedEvents();
+    _joined
+      ..clear()
+      ..addAll(joined);
+    state = [
+      for (final e in events) e.copyWith(isJoined: _joined.contains(e.id)),
+    ];
+  }
+
   Future<void> toggleJoin(String id) async {
     final wasJoined = _joined.contains(id);
     // Mise à jour optimiste immédiate

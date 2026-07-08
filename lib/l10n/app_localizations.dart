@@ -770,7 +770,6 @@ class AppL10n {
   String get communityPartnerRegionLabel   => _fr ? 'Région'                      : 'Region';
   String get communityPartnerFrequencyLabel => _fr ? 'Fréquence'                  : 'Frequency';
   String get communityPartnerInterestsSection => _fr ? 'CENTRES D\'INTÉRÊT'       : 'INTERESTS';
-  String get communityPartnerContactSection   => _fr ? 'CONTACT'                  : 'CONTACT';
   String get communityPartnerNoContact     => _fr ? 'Aucune coordonnée renseignée.' : 'No contact info provided.';
   String get communityPartnerLinkError     => _fr ? 'Impossible d\'ouvrir ce lien.' : 'Could not open this link.';
   String get communityPartnerAboutOptional => _fr ? 'À propos de toi  (optionnel)' : 'About you  (optional)';
