@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -58,7 +59,9 @@ class UserProfile {
 
 class UserPost {
   final String id;
+  final String title;
   final String content;
+  final String category;
   final DateTime createdAt;
   final int likes;
   final int comments;
@@ -66,12 +69,39 @@ class UserPost {
 
   const UserPost({
     required this.id,
+    this.title = '',
     required this.content,
+    this.category = '',
     required this.createdAt,
     required this.likes,
     required this.comments,
     this.imageUrl,
   });
+
+  /// Un post "Avant/Après" encode ses deux photos en JSON dans [imageUrl]
+  /// (voir PostModel.isBeforeAfter dans models/post_model.dart).
+  bool get isBeforeAfter {
+    final s = imageUrl?.trim() ?? '';
+    return s.startsWith('{') && s.contains('"before"') && s.contains('"after"');
+  }
+
+  String get beforeImageUrl {
+    if (!isBeforeAfter) return '';
+    try {
+      return (jsonDecode(imageUrl!) as Map<String, dynamic>)['before'] as String? ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String get afterImageUrl {
+    if (!isBeforeAfter) return '';
+    try {
+      return (jsonDecode(imageUrl!) as Map<String, dynamic>)['after'] as String? ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
 }
 
 class UserEvent {
@@ -81,6 +111,7 @@ class UserEvent {
   final String location;
   final int participants;
   final String category;
+  final String? imageUrl;
 
   const UserEvent({
     required this.id,
@@ -89,6 +120,7 @@ class UserEvent {
     required this.location,
     required this.participants,
     required this.category,
+    this.imageUrl,
   });
 }
 
@@ -113,7 +145,9 @@ final communityUserProfileProvider =
     final imgUrl = r['image_url'] as String? ?? '';
     return UserPost(
       id:        r['id'] as String,
+      title:     r['title'] as String? ?? '',
       content:   r['content'] as String? ?? '',
+      category:  r['category'] as String? ?? '',
       createdAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
       likes:     r['likes_count'] as int? ?? 0,
       comments:  r['comments_count'] as int? ?? 0,
@@ -123,6 +157,7 @@ final communityUserProfileProvider =
 
   final userEvents = rawResults[1].map((r) {
     final dateStr = r['event_date'] as String? ?? '';
+    final imgUrl  = r['image_url'] as String? ?? '';
     return UserEvent(
       id:           r['id'] as String,
       title:        r['title'] as String? ?? '',
@@ -130,6 +165,7 @@ final communityUserProfileProvider =
       location:     r['location'] as String? ?? '',
       participants: r['joined_count'] as int? ?? 0,
       category:     r['event_type'] as String? ?? '',
+      imageUrl:     imgUrl.isNotEmpty ? imgUrl : null,
     );
   }).toList();
 
@@ -353,9 +389,9 @@ class _ProfileContent extends StatelessWidget {
       body: TabBarView(
         controller: tabController,
         children: [
-          _PostsTab(posts: profile.posts, l10n: l10n),
-          _EventsTab(events: profile.events, l10n: l10n),
-          _PartnersTab(partners: profile.partners, l10n: l10n),
+          _PostsTab(posts: profile.posts, l10n: l10n, owner: profile),
+          _EventsTab(events: profile.events, l10n: l10n, owner: profile),
+          _PartnersTab(partners: profile.partners, l10n: l10n, owner: profile),
         ],
       ),
     );
@@ -830,11 +866,49 @@ class _SectionTitle extends StatelessWidget {
       color: cs.onSurface.withValues(alpha: 0.4), letterSpacing: 2));
 }
 
+// ─── Header partagé — avatar + nom du propriétaire du profil ──
+// Utilisé de façon identique par les cartes Post / Événement / Partenaire
+// pour un design uniforme entre les trois onglets.
+class _ProfileCardHeader extends StatelessWidget {
+  final UserProfile owner;
+  final Widget meta;
+  final ColorScheme cs;
+  const _ProfileCardHeader({required this.owner, required this.meta, required this.cs});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+      child: Row(children: [
+        CommunityAvatar(
+          avatarUrl: '',
+          name: owner.name,
+          radius: 18,
+          mascotType: owner.mascotType,
+          mascotMood: owner.mascotMood,
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(owner.name, style: GoogleFonts.outfit(
+              fontSize: 14, fontWeight: FontWeight.w700,
+              color: cs.onSurface, letterSpacing: -0.2)),
+            const SizedBox(height: 3),
+            meta,
+          ],
+        )),
+      ]),
+    );
+  }
+}
+
 // ─── Tab 1 — Posts (feed) ─────────────────────────────────────
 class _PostsTab extends StatelessWidget {
   final List<UserPost> posts;
   final AppL10n l10n;
-  const _PostsTab({required this.posts, required this.l10n});
+  final UserProfile owner;
+  const _PostsTab({required this.posts, required this.l10n, required this.owner});
 
   @override
   Widget build(BuildContext context) {
@@ -847,14 +921,15 @@ class _PostsTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
       itemCount: posts.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _PostCard(post: posts[i]),
+      itemBuilder: (_, i) => _PostCard(post: posts[i], owner: owner),
     );
   }
 }
 
 class _PostCard extends ConsumerStatefulWidget {
   final UserPost post;
-  const _PostCard({required this.post});
+  final UserProfile owner;
+  const _PostCard({required this.post, required this.owner});
   @override
   ConsumerState<_PostCard> createState() => _PostCardState();
 }
@@ -866,58 +941,139 @@ class _PostCardState extends ConsumerState<_PostCard> {
   Widget build(BuildContext context) {
     final l10n = ref.watch(l10nProvider);
     final cs = Theme.of(context).colorScheme;
+    final post = widget.post;
+    final hasTitle = post.title.trim().isNotEmpty;
+
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: cs.outline),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.04),
+            blurRadius: 14, offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(widget.post.content, style: GoogleFonts.inter(
-          fontSize: 15, color: cs.onSurface, height: 1.55,
-          letterSpacing: -0.1)),
-        if (widget.post.imageUrl != null) ...[
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(widget.post.imageUrl!,
-              fit: BoxFit.cover, width: double.infinity, height: 180)),
-        ],
-        const SizedBox(height: 14),
-        Row(children: [
-          Text(_timeAgo(widget.post.createdAt, l10n), style: GoogleFonts.inter(
-            fontSize: 12,
-            color: cs.onSurface.withValues(alpha: 0.4))),
-          const Spacer(),
-          GestureDetector(
-            onTap: () => setState(() => _liked = !_liked),
-            child: Row(children: [
-              Icon(
-                _liked ? LucideIcons.heart : LucideIcons.heart,
-                size: 16,
-                color: _liked
-                    ? const Color(0xFFFF375F)
-                    : cs.onSurface.withValues(alpha: 0.4)),
-              const SizedBox(width: 5),
-              Text('${widget.post.likes + (_liked ? 1 : 0)}',
-                style: GoogleFonts.inter(
-                  fontSize: 13, fontWeight: FontWeight.w600,
-                  color: _liked
-                      ? const Color(0xFFFF375F)
-                      : cs.onSurface.withValues(alpha: 0.4))),
-            ]),
-          ),
-          const SizedBox(width: 16),
-          Row(children: [
-            Icon(LucideIcons.messageCircle, size: 16,
-                color: cs.onSurface.withValues(alpha: 0.4)),
-            const SizedBox(width: 5),
-            Text('${widget.post.comments}', style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w600,
-              color: cs.onSurface.withValues(alpha: 0.4))),
+
+        // ── Header : avatar + nom + catégorie/date ──────────────
+        _ProfileCardHeader(
+          owner: widget.owner,
+          cs: cs,
+          meta: Row(children: [
+            Text(_timeAgo(post.createdAt, l10n), style: GoogleFonts.inter(
+              fontSize: 11, color: cs.onSurface.withValues(alpha: 0.6))),
+            if (post.category.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Container(width: 3, height: 3,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle, color: cs.outline.withValues(alpha: 0.3))),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(post.category, style: GoogleFonts.inter(
+                  fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary)),
+              ),
+            ],
           ]),
-        ]),
+        ),
+
+        // ── Titre + contenu ─────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (hasTitle) ...[
+              Text(post.title, style: GoogleFonts.outfit(
+                fontSize: 17, fontWeight: FontWeight.w800,
+                color: cs.onSurface, letterSpacing: -0.3, height: 1.3)),
+              if (post.content.isNotEmpty) const SizedBox(height: 5),
+            ],
+            if (post.content.isNotEmpty)
+              Text(post.content, style: GoogleFonts.inter(
+                fontSize: 14, color: cs.onSurface.withValues(alpha: 0.8),
+                height: 1.55, letterSpacing: -0.1)),
+          ]),
+        ),
+
+        // ── Image(s) ─────────────────────────────────────────────
+        if (post.isBeforeAfter)
+          SizedBox(
+            height: 200, width: double.infinity,
+            child: Row(children: [
+              Expanded(child: _ProfileBeforeAfterImage(
+                url: post.beforeImageUrl, label: 'Avant', cs: cs)),
+              Container(width: 2, color: cs.surface),
+              Expanded(child: _ProfileBeforeAfterImage(
+                url: post.afterImageUrl, label: 'Après', cs: cs)),
+            ]),
+          )
+        else if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+          Container(
+            constraints: const BoxConstraints(maxHeight: 320),
+            width: double.infinity,
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+            child: Image.network(post.imageUrl!,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Container(
+                height: 200,
+                color: cs.primary.withValues(alpha: 0.08),
+              )),
+          ),
+
+        // ── Actions ──────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 10, 12, 12),
+          child: Row(children: [
+            GestureDetector(
+              onTap: () => setState(() => _liked = !_liked),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: _liked
+                      ? const Color(0xFFFF375F).withValues(alpha: 0.08)
+                      : cs.outline.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(_liked ? LucideIcons.heart : LucideIcons.heart,
+                    size: 15,
+                    color: _liked
+                        ? const Color(0xFFFF375F)
+                        : cs.onSurface.withValues(alpha: 0.6)),
+                  const SizedBox(width: 5),
+                  Text('${post.likes + (_liked ? 1 : 0)}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w700,
+                      color: _liked
+                          ? const Color(0xFFFF375F)
+                          : cs.onSurface.withValues(alpha: 0.6))),
+                ]),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: cs.outline.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(LucideIcons.messageCircle, size: 15,
+                    color: cs.onSurface.withValues(alpha: 0.6)),
+                const SizedBox(width: 5),
+                Text('${post.comments}', style: GoogleFonts.inter(
+                  fontSize: 12, fontWeight: FontWeight.w700,
+                  color: cs.onSurface.withValues(alpha: 0.6))),
+              ]),
+            ),
+          ]),
+        ),
       ]),
     );
   }
@@ -930,11 +1086,50 @@ class _PostCardState extends ConsumerState<_PostCard> {
   }
 }
 
+// ─── Before/After image (profil) ─────────────────────────────
+class _ProfileBeforeAfterImage extends StatelessWidget {
+  final String url;
+  final String label;
+  final ColorScheme cs;
+  const _ProfileBeforeAfterImage({required this.url, required this.label, required this.cs});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(fit: StackFit.expand, children: [
+      Container(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+        child: Image.network(
+          url,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Container(
+            color: cs.primary.withValues(alpha: 0.08),
+          ),
+        ),
+      ),
+      Positioned(
+        top: 6, left: 6,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(label, style: GoogleFonts.inter(
+            fontSize: 9, fontWeight: FontWeight.w700,
+            color: Colors.white, letterSpacing: 0.3,
+          )),
+        ),
+      ),
+    ]);
+  }
+}
+
 // ─── Tab 2 — Events ───────────────────────────────────────────
 class _EventsTab extends StatelessWidget {
   final List<UserEvent> events;
   final AppL10n l10n;
-  const _EventsTab({required this.events, required this.l10n});
+  final UserProfile owner;
+  const _EventsTab({required this.events, required this.l10n, required this.owner});
 
   @override
   Widget build(BuildContext context) {
@@ -956,125 +1151,146 @@ class _EventsTab extends StatelessWidget {
         if (upcoming.isNotEmpty) ...[
           _SectionTitle(label: l10n.profileAVenir, cs: cs),
           const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: cs.outline),
-            ),
-            child: Column(children: [
-              for (int i = 0; i < upcoming.length; i++) ...[
-                _EventRow(event: upcoming[i], isPast: false, cs: cs),
-                if (i < upcoming.length - 1)
-                  Divider(height: 1,
-                    color: cs.outline.withValues(alpha: 0.5),
-                    indent: 16, endIndent: 16),
-              ],
-            ]),
-          ),
-          const SizedBox(height: 24),
+          for (final e in upcoming) ...[
+            _ProfileEventCard(event: e, isPast: false, cs: cs, owner: owner),
+            const SizedBox(height: 12),
+          ],
+          const SizedBox(height: 12),
         ],
         if (past.isNotEmpty) ...[
           _SectionTitle(label: l10n.profilePasses, cs: cs),
           const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: cs.outline),
-            ),
-            child: Column(children: [
-              for (int i = 0; i < past.length; i++) ...[
-                _EventRow(event: past[i], isPast: true, cs: cs),
-                if (i < past.length - 1)
-                  Divider(height: 1,
-                    color: cs.outline.withValues(alpha: 0.5),
-                    indent: 16, endIndent: 16),
-              ],
-            ]),
-          ),
+          for (final e in past) ...[
+            _ProfileEventCard(event: e, isPast: true, cs: cs, owner: owner),
+            const SizedBox(height: 12),
+          ],
         ],
       ],
     );
   }
 }
 
-class _EventRow extends StatelessWidget {
+class _ProfileEventCard extends StatelessWidget {
   final UserEvent event;
   final bool isPast;
   final ColorScheme cs;
-  const _EventRow({required this.event, required this.isPast, required this.cs});
+  final UserProfile owner;
+  const _ProfileEventCard({
+    required this.event, required this.isPast, required this.cs, required this.owner,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final hasImage = event.imageUrl != null && event.imageUrl!.isNotEmpty;
+
     return Opacity(
-      opacity: isPast ? 0.5 : 1.0,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(children: [
-          Container(
-            width: 46, height: 46,
-            decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: isPast ? 0.05 : 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: cs.primary.withValues(alpha: isPast ? 0.1 : 0.25)),
+      opacity: isPast ? 0.55 : 1.0,
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: cs.outline),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.04),
+              blurRadius: 14, offset: const Offset(0, 3),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(_monthShort(event.date), style: GoogleFonts.inter(
-                  fontSize: 9, fontWeight: FontWeight.w700,
-                  color: cs.primary.withValues(alpha: isPast ? 0.5 : 1))),
-                Text('${event.date.day}', style: GoogleFonts.outfit(
-                  fontSize: 18, fontWeight: FontWeight.w800,
-                  color: cs.primary.withValues(alpha: isPast ? 0.5 : 1),
-                  height: 1.1)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(event.title, style: GoogleFonts.outfit(
-                fontSize: 14, fontWeight: FontWeight.w700,
-                color: cs.onSurface)),
-              const SizedBox(height: 3),
-              Row(children: [
-                Icon(LucideIcons.mapPin, size: 10,
-                    color: cs.onSurface.withValues(alpha: 0.4)),
-                const SizedBox(width: 4),
-                Expanded(child: Text(event.location,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: cs.onSurface.withValues(alpha: 0.45)))),
-              ]),
-            ],
-          )),
-          const SizedBox(width: 10),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: Text(event.category, style: GoogleFonts.inter(
-                fontSize: 10, fontWeight: FontWeight.w700,
-                color: cs.primary)),
-            ),
-            const SizedBox(height: 5),
-            Row(children: [
-              Icon(LucideIcons.users, size: 11,
-                  color: cs.onSurface.withValues(alpha: 0.35)),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _ProfileCardHeader(
+            owner: owner,
+            cs: cs,
+            meta: Row(children: [
+              Icon(LucideIcons.calendarDays, size: 11,
+                  color: cs.onSurface.withValues(alpha: 0.4)),
               const SizedBox(width: 4),
-              Text('${event.participants}', style: GoogleFonts.inter(
-                fontSize: 11,
-                color: cs.onSurface.withValues(alpha: 0.35))),
+              Text('${event.date.day} ${_monthShort(event.date)}', style: GoogleFonts.inter(
+                fontSize: 11, color: cs.onSurface.withValues(alpha: 0.6))),
             ]),
-          ]),
+          ),
+          const SizedBox(height: 10),
+          if (hasImage)
+            Container(
+              constraints: const BoxConstraints(maxHeight: 200),
+              width: double.infinity,
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+              child: Image.network(event.imageUrl!,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 140,
+                  color: cs.primary.withValues(alpha: 0.08),
+                  child: Icon(LucideIcons.image, size: 28,
+                      color: cs.primary.withValues(alpha: 0.3)),
+                )),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                width: 46, height: 46,
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: isPast ? 0.05 : 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: cs.primary.withValues(alpha: isPast ? 0.1 : 0.25)),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(_monthShort(event.date), style: GoogleFonts.inter(
+                      fontSize: 9, fontWeight: FontWeight.w700,
+                      color: cs.primary.withValues(alpha: isPast ? 0.5 : 1))),
+                    Text('${event.date.day}', style: GoogleFonts.outfit(
+                      fontSize: 18, fontWeight: FontWeight.w800,
+                      color: cs.primary.withValues(alpha: isPast ? 0.5 : 1),
+                      height: 1.1)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(event.title, style: GoogleFonts.outfit(
+                    fontSize: 15, fontWeight: FontWeight.w700,
+                    color: cs.onSurface, letterSpacing: -0.2)),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Icon(LucideIcons.mapPin, size: 11,
+                        color: cs.onSurface.withValues(alpha: 0.4)),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text(event.location,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: cs.onSurface.withValues(alpha: 0.45)))),
+                  ]),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Text(event.category, style: GoogleFonts.inter(
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                        color: cs.primary)),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(LucideIcons.users, size: 12,
+                        color: cs.onSurface.withValues(alpha: 0.35)),
+                    const SizedBox(width: 4),
+                    Text('${event.participants}', style: GoogleFonts.inter(
+                      fontSize: 11, fontWeight: FontWeight.w600,
+                      color: cs.onSurface.withValues(alpha: 0.4))),
+                  ]),
+                ],
+              )),
+            ]),
+          ),
         ]),
       ),
     );
@@ -1091,7 +1307,8 @@ class _EventRow extends StatelessWidget {
 class _PartnersTab extends StatelessWidget {
   final List<PartnerModel> partners;
   final AppL10n l10n;
-  const _PartnersTab({required this.partners, required this.l10n});
+  final UserProfile owner;
+  const _PartnersTab({required this.partners, required this.l10n, required this.owner});
 
   @override
   Widget build(BuildContext context) {
@@ -1104,100 +1321,105 @@ class _PartnersTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
       itemCount: partners.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _PartnerCard(partner: partners[i], l10n: l10n),
+      itemBuilder: (_, i) => _PartnerCard(partner: partners[i], l10n: l10n, owner: owner),
     );
   }
 }
 
 class _PartnerCard extends StatelessWidget {
   final PartnerModel partner;
+  final UserProfile owner;
   final AppL10n l10n;
-  const _PartnerCard({required this.partner, required this.l10n});
+  const _PartnerCard({required this.partner, required this.l10n, required this.owner});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: cs.outline),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.04),
+            blurRadius: 14, offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.primary.withValues(alpha: 0.25)),
-            ),
-            child: Icon(LucideIcons.users, size: 18, color: cs.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (partner.goal.isNotEmpty)
-                Text(partner.goal, style: GoogleFonts.outfit(
-                  fontSize: 15, fontWeight: FontWeight.w700,
-                  color: cs.onSurface)),
-              const SizedBox(height: 2),
-              Row(children: [
-                if (partner.region.isNotEmpty) ...[
+
+        // ── Header : avatar + nom + niveau ──────────────────────
+        _ProfileCardHeader(
+          owner: owner,
+          cs: cs,
+          meta: partner.region.isNotEmpty
+              ? Row(children: [
                   Icon(LucideIcons.mapPin, size: 10,
                       color: cs.onSurface.withValues(alpha: 0.4)),
                   const SizedBox(width: 4),
                   Flexible(child: Text(partner.region,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: cs.onSurface.withValues(alpha: 0.45)))),
-                ],
+                      fontSize: 11,
+                      color: cs.onSurface.withValues(alpha: 0.6)))),
+                ])
+              : Text(l10n.profilePartenaires, style: GoogleFonts.inter(
+                  fontSize: 11, color: cs.onSurface.withValues(alpha: 0.6))),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              if (partner.goal.isNotEmpty)
+                Expanded(child: Text(partner.goal, style: GoogleFonts.outfit(
+                  fontSize: 16, fontWeight: FontWeight.w800,
+                  color: cs.onSurface, letterSpacing: -0.3))),
+              if (partner.level.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Text(partner.level, style: GoogleFonts.inter(
+                    fontSize: 10, fontWeight: FontWeight.w700,
+                    color: cs.primary)),
+                ),
+              ],
+            ]),
+            if (partner.description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(partner.description, style: GoogleFonts.inter(
+                fontSize: 14, color: cs.onSurface.withValues(alpha: 0.65),
+                height: 1.5)),
+            ],
+            if (partner.frequency.isNotEmpty || partner.tags.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(spacing: 6, runSpacing: 6, children: [
+                if (partner.frequency.isNotEmpty)
+                  _MetaPill(
+                    icon: LucideIcons.calendar,
+                    label: partner.frequency, cs: cs),
+                for (final tag in partner.tags)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(50),
+                      border: Border.all(color: cs.outline),
+                    ),
+                    child: Text(tag, style: GoogleFonts.inter(
+                      fontSize: 11, fontWeight: FontWeight.w600,
+                      color: cs.onSurface.withValues(alpha: 0.6))),
+                  ),
               ]),
             ],
-          )),
-          if (partner.level.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: Text(partner.level, style: GoogleFonts.inter(
-                fontSize: 10, fontWeight: FontWeight.w700,
-                color: cs.primary)),
-            ),
-        ]),
-        if (partner.description.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(partner.description, style: GoogleFonts.inter(
-            fontSize: 14, color: cs.onSurface.withValues(alpha: 0.65),
-            height: 1.5)),
-        ],
-        if (partner.frequency.isNotEmpty || partner.tags.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Wrap(spacing: 6, runSpacing: 6, children: [
-            if (partner.frequency.isNotEmpty)
-              _MetaPill(
-                icon: LucideIcons.calendar,
-                label: partner.frequency, cs: cs),
-            for (final tag in partner.tags)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: cs.surface,
-                  borderRadius: BorderRadius.circular(50),
-                  border: Border.all(color: cs.outline),
-                ),
-                child: Text(tag, style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w600,
-                  color: cs.onSurface.withValues(alpha: 0.6))),
-              ),
           ]),
-        ],
+        ),
       ]),
     );
   }

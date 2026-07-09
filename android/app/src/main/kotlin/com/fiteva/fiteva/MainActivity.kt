@@ -1,5 +1,6 @@
 package com.fiteva.fiteva
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// FlutterFragmentActivity est requis par flutter_stripe (PaymentSheet).
+class MainActivity : FlutterFragmentActivity()

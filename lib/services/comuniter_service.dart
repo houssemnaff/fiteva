@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
 import '../models/post_model.dart';
 import '../screens/community/model/event_model.dart';
 import '../screens/community/model/partner_model.dart';
+import 'cloudinary_config.dart';
 import 'supabase_config.dart';
 
 /// Service communauté — posts, likes, commentaires, événements, partenaires
@@ -150,9 +150,10 @@ class CommunityService {
     if (_uid == null) return false;
     try {
       await SupabaseConfig.table('posts').update({
-        'title':    post.title,
-        'content':  post.content,
-        'category': _validCategory(post.category.isNotEmpty ? post.category : 'Other'),
+        'title':     post.title,
+        'content':   post.content,
+        'image_url': post.imageUrl,
+        'category':  _validCategory(post.category.isNotEmpty ? post.category : 'Other'),
       }).eq('id', post.id).eq('user_id', _uid!);
       return true;
     } catch (e) {
@@ -284,25 +285,11 @@ class CommunityService {
   // ÉVÉNEMENTS
   // ────────────────────────────────────────────────────────────────────────────
 
-  static const _eventImagesBucket = 'event-images';
-
-  /// Upload une photo de couverture d'événement et retourne son URL publique.
-  /// Le chemin est préfixé par l'uid (requis par la policy RLS du bucket).
+  /// Upload une photo de couverture d'événement vers Cloudinary et retourne
+  /// son URL publique.
   static Future<String?> uploadEventImage(XFile file) async {
     if (_uid == null) return null;
-    try {
-      final bytes = await file.readAsBytes();
-      final ext = file.path.contains('.') ? file.path.split('.').last.toLowerCase() : 'jpg';
-      final path = '$_uid/${DateTime.now().millisecondsSinceEpoch}.$ext';
-      await SupabaseConfig.client.storage.from(_eventImagesBucket).uploadBinary(
-            path, bytes,
-            fileOptions: const FileOptions(upsert: true),
-          );
-      return SupabaseConfig.client.storage.from(_eventImagesBucket).getPublicUrl(path);
-    } catch (e) {
-      debugPrint('[CommunityService] uploadEventImage error: $e');
-      return null;
-    }
+    return CloudinaryConfig.uploadImage(file);
   }
 
   static Future<List<EventModel>> loadEvents() async {
@@ -850,7 +837,7 @@ class CommunityService {
   static Future<List<Map<String, dynamic>>> getUserPosts(String userId) async {
     try {
       final rows = await SupabaseConfig.table('posts')
-          .select('id, content, image_url, likes_count, comments_count, created_at')
+          .select('id, title, content, image_url, category, likes_count, comments_count, created_at')
           .eq('user_id', userId)
           .order('created_at', ascending: false)
           .limit(30) as List;
@@ -865,7 +852,7 @@ class CommunityService {
   static Future<List<Map<String, dynamic>>> getUserEvents(String userId) async {
     try {
       final rows = await SupabaseConfig.table('community_events')
-          .select('id, title, event_type, event_date, event_time, location, joined_count')
+          .select('id, title, event_type, event_date, event_time, location, joined_count, image_url')
           .eq('organizer_id', userId)
           .order('event_date', ascending: false)
           .limit(20) as List;

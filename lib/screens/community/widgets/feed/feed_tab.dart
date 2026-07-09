@@ -271,6 +271,44 @@ class _FeedSkeletonCard extends StatelessWidget {
   }
 }
 
+// ─── Before/After Image ───────────────────────────────────────
+class _BeforeAfterImage extends StatelessWidget {
+  final String url;
+  final String label;
+  final ColorScheme cs;
+  const _BeforeAfterImage({required this.url, required this.label, required this.cs});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(fit: StackFit.expand, children: [
+      Container(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+        child: Image.network(
+          url,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Container(
+            color: cs.primary.withValues(alpha: 0.08),
+          ),
+        ),
+      ),
+      Positioned(
+        top: 8, left: 8,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(label, style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: FontWeight.w700,
+            color: Colors.white, letterSpacing: 0.3,
+          )),
+        ),
+      ),
+    ]);
+  }
+}
+
 class _SkeletonBox extends StatelessWidget {
   final double height;
   final double? width;
@@ -408,9 +446,10 @@ class _PostCardState extends ConsumerState<_PostCard>
       (p) => p.id == widget.post.id,
       orElse: () => widget.post,
     );
-    final liked    = ref.read(postsNotifierProvider.notifier).isLiked(post.id);
-    final hasImage = post.imageUrl.trim().isNotEmpty;
-    final category = post.category;
+    final liked         = ref.read(postsNotifierProvider.notifier).isLiked(post.id);
+    final isBeforeAfter = post.isBeforeAfter;
+    final hasImage      = !isBeforeAfter && post.imageUrl.trim().isNotEmpty;
+    final category      = post.category;
     final cs = widget.colorScheme;
 
     return Container(
@@ -558,19 +597,33 @@ class _PostCardState extends ConsumerState<_PostCard>
           ),
 
           // ── Image ────────────────────────────────────────────
-          if (hasImage)
+          if (isBeforeAfter)
             GestureDetector(
               onDoubleTap: _toggleLike,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(0)),
-                child: SizedBox(
-                  height: 200, width: double.infinity,
-                  child: Image.network(
-                    post.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: cs.primary.withValues(alpha: 0.08),
-                    ),
+              child: SizedBox(
+                height: 200, width: double.infinity,
+                child: Row(children: [
+                  Expanded(child: _BeforeAfterImage(
+                    url: post.beforeImageUrl, label: 'Avant', cs: cs)),
+                  Container(width: 2, color: cs.surface),
+                  Expanded(child: _BeforeAfterImage(
+                    url: post.afterImageUrl, label: 'Après', cs: cs)),
+                ]),
+              ),
+            )
+          else if (hasImage)
+            GestureDetector(
+              onDoubleTap: _toggleLike,
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 320),
+                width: double.infinity,
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                child: Image.network(
+                  post.imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 200,
+                    color: cs.primary.withValues(alpha: 0.08),
                   ),
                 ),
               ),

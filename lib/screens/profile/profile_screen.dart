@@ -14,6 +14,7 @@ import '../../providers/mascot_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/mascot_widget.dart';
+import 'stripe_integration.dart';
 
 const _days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -270,6 +271,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 ),
               ),
+            ),
+          ),
+
+          // ── Abonnement (Stripe) ─────────────────────────────────────────
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: SubscriptionButton(),
             ),
           ),
 

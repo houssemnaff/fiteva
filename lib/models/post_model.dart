@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class EventParticipant {
   final String id;
   final String name;
@@ -35,6 +37,32 @@ class PostModel {
     required this.timeAgo,
     this.category = '',
   });
+
+  /// Un post "Avant/Après" encode ses deux photos en JSON dans [imageUrl]
+  /// (ex: '{"before":"https://...","after":"https://..."}') puisque la
+  /// colonne Supabase `posts.image_url` ne stocke qu'une seule URL.
+  bool get isBeforeAfter {
+    final s = imageUrl.trim();
+    return s.startsWith('{') && s.contains('"before"') && s.contains('"after"');
+  }
+
+  String get beforeImageUrl {
+    if (!isBeforeAfter) return '';
+    try {
+      return (jsonDecode(imageUrl) as Map<String, dynamic>)['before'] as String? ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String get afterImageUrl {
+    if (!isBeforeAfter) return '';
+    try {
+      return (jsonDecode(imageUrl) as Map<String, dynamic>)['after'] as String? ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
