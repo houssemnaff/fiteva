@@ -1509,15 +1509,23 @@ class _StatBar extends ConsumerWidget {
   Widget _cycleScreen(BuildContext context, UserProfile profile) {
     if (profile.healthStatus == 'pregnant') return const PregnancyHubScreen();
     if (profile.healthStatus == 'postpartum') {
-      const weeksAgoByDuration = {
-        '0-2': 1, '2-6': 4, '6-12': 9, '3-6m': 18, '6m+': 30,
-      };
-      final weeksAgo = weeksAgoByDuration[profile.ppDuration] ?? 4;
+      // Utilise la vraie date de naissance sauvegardée — avant, une fausse
+      // date était reconstituée à partir du bucket ppDuration ('2-6' → "il y
+      // a 4 semaines") à chaque ouverture, ce qui figeait le décompte au
+      // lieu de le faire avancer avec le temps réel.
       return PostpartumHubScreen(
-        birthDate: DateTime.now().subtract(Duration(days: weeksAgo * 7)),
+        birthDate: profile.ppBirthDate ?? _fallbackBirthDate(profile.ppDuration),
       );
     }
     return const CycleScreen();
+  }
+
+  static DateTime _fallbackBirthDate(String? ppDuration) {
+    const weeksAgoByDuration = {
+      '0-2': 1, '2-6': 4, '6-12': 9, '3-6m': 18, '6m+': 30,
+    };
+    final weeksAgo = weeksAgoByDuration[ppDuration] ?? 4;
+    return DateTime.now().subtract(Duration(days: weeksAgo * 7));
   }
 
   @override

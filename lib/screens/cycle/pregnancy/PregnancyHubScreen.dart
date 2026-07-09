@@ -135,6 +135,10 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
     final n = ref.read(userProfileProvider.notifier);
     await n.updateField('health_status', 'postpartum');
     await n.updateField('pp_duration', ppDuration);
+    // La vraie date est maintenant sauvegardée (pas seulement le bucket
+    // ppDuration) — sinon le décompte post-partum se figeait indéfiniment
+    // au lieu d'avancer avec le temps réel.
+    await n.updateField('pp_birth_date', birthDate.toIso8601String());
     await n.updateField('pregnancy_week', null);
   }
 
@@ -881,19 +885,29 @@ class _NavList extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 //  BORN BANNER  (week 37+)
 // ─────────────────────────────────────────────────────────────────────────────
-class _BornBanner extends StatelessWidget {
+class _BornBanner extends ConsumerWidget {
   final ColorScheme cs;
   final AppL10n l10n;
   const _BornBanner({required this.cs, required this.l10n});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         HapticFeedback.mediumImpact();
+        // Ce raccourci n'enregistrait jamais le passage en post-partum
+        // (health_status restait 'pregnant') — il ne faisait que naviguer
+        // vers l'écran, qui se réinitialisait donc à chaque réouverture.
+        final birthDate = DateTime.now();
+        final n = ref.read(userProfileProvider.notifier);
+        await n.updateField('health_status', 'postpartum');
+        await n.updateField('pp_duration', '0-2');
+        await n.updateField('pp_birth_date', birthDate.toIso8601String());
+        await n.updateField('pregnancy_week', null);
+        if (!context.mounted) return;
         Navigator.push(context, PageRouteBuilder(
           pageBuilder: (_, a, __) =>
-              PostpartumHubScreen(birthDate: DateTime.now()),
+              PostpartumHubScreen(birthDate: birthDate),
           transitionsBuilder: (_, a, __, c) => FadeTransition(
             opacity: CurvedAnimation(parent: a, curve: Curves.easeInOut),
             child: c),

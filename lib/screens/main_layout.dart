@@ -69,11 +69,11 @@ class _MainLayoutState extends ConsumerState<MainLayout>
       return const PregnancyHubScreen();
     }
     if (profile.healthStatus == 'postpartum') {
-      // pp_duration: '0-2' | '2-6' | '6-12' | '3-6m' | '6m+' → estimate birth weeks ago
-      final weeksAgo = _ppWeeksAgo(profile.ppDuration);
-      return PostpartumHubScreen(
-        birthDate: DateTime.now().subtract(Duration(days: weeksAgo * 7)),
-      );
+      // Vraie date sauvegardée en priorité — fallback sur l'estimation par
+      // bucket ppDuration uniquement pour les profils créés avant ce fix.
+      final birthDate = profile.ppBirthDate ??
+          DateTime.now().subtract(Duration(days: _ppWeeksAgo(profile.ppDuration) * 7));
+      return PostpartumHubScreen(birthDate: birthDate);
     }
     return const CycleScreen();
   }

@@ -4,6 +4,7 @@ import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_insight_repository.dart';
 import 'package:fiteva/services/pregnancy_content_service.dart';
 import 'package:fiteva/screens/cycle/pregnancy/pregnancy_colors.dart';
+import 'package:fiteva/services/cycle_log_service.dart';
 import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
@@ -55,6 +56,14 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
     super.initState();
     _birthDate = widget.birthDate;
     Future.microtask(() => ref.read(xpProvider.notifier).rewardPostpartumTask());
+    // L'humeur n'était jamais sauvegardée (setState local uniquement) —
+    // on réutilise le même stockage que le suivi de cycle (cycle_daily_logs).
+    _loadMood();
+  }
+
+  Future<void> _loadMood() async {
+    final mood = await CycleLogService.loadMood(DateTime.now());
+    if (mounted && mood != null) setState(() => _mood = mood);
   }
 
   @override
@@ -68,12 +77,17 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
   int get _weeks => _days ~/ 7;
   int get _rem   => _days % 7;
 
+  // Au-delà de 26 semaines, tout se regroupait dans un unique bucket
+  // "Forme retrouvee" jusqu'à 730 jours (~104 semaines) — deux ajouts pour
+  // que le contenu continue d'évoluer sur le long terme au lieu de rester
+  // figé pendant ~1 an et demi.
   String get _phaseName {
     if (_weeks < 2)  return 'Repos absolu';
     if (_weeks < 6)  return 'Reconstruction';
     if (_weeks < 12) return 'Renforcement';
     if (_weeks < 26) return 'Retour actif';
-    return 'Forme retrouvee';
+    if (_weeks < 52) return 'Stabilisation';
+    return 'Suivi long terme';
   }
 
   String get _phaseDesc {
@@ -81,7 +95,8 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
     if (_weeks < 6)  return 'Mobilite douce, perinee et reconnexion au corps.';
     if (_weeks < 12) return 'Renforcement progressif, posture et energie.';
     if (_weeks < 26) return 'Reprise du sport, reconditionnement musculaire.';
-    return 'Retour complet a la forme physique.';
+    if (_weeks < 52) return 'Forme retrouvee, corps stabilise sur la duree.';
+    return 'Plus d\'un an deja — continue d\'ecouter ton corps.';
   }
 
   Color get _phaseColor {
@@ -89,10 +104,18 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
     if (_weeks < 6)  return const Color(0xFFF4A940);
     if (_weeks < 12) return const Color(0xFF7ABB98);
     if (_weeks < 26) return const Color(0xFF1C4D30);
-    return const Color(0xFF1C4D30);
+    if (_weeks < 52) return const Color(0xFF1C4D30);
+    return const Color(0xFF5A7A9E);
   }
 
+  // Progression du 4e trimestre (0-12 semaines) — reste pertinente pour la
+  // carte dédiée. Au-delà, on ne la laisse plus figée à 100% indéfiniment
+  // (ce qui donnait l'impression trompeuse d'une "récupération terminée"
+  // pour une utilisatrice à 50+ semaines) : l'anneau principal bascule sur
+  // une échelle longue durée jusqu'à 1 an, avec un habillage différent.
   double get _progress => (_weeks / 12).clamp(0.0, 1.0);
+  double get _longTermProgress => (_weeks / 52).clamp(0.0, 1.0);
+  bool get _isBeyondFourthTrimester => _weeks >= 12;
 
   // ── Pickers ──────────────────────────────────────────────────────────────────
   Future<void> _pickBirthDate() async {
@@ -108,7 +131,12 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
       icon: Icons.child_care_rounded,
       accentColor: const Color(0xFF1C4D30),
     );
-    if (picked != null && mounted) setState(() => _birthDate = picked);
+    if (picked == null || !mounted) return;
+    setState(() => _birthDate = picked);
+    // La correction manuelle de la date n'était jusqu'ici jamais sauvegardée
+    // (setState local uniquement) — elle se perdait à la moindre reconstruction.
+    await ref.read(userProfileProvider.notifier)
+        .updateField('pp_birth_date', picked.toIso8601String());
   }
 
   Future<void> _switchToCycle() async {
@@ -173,6 +201,9 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
     await notifier.updateField('last_period', picked.toIso8601String());
     await notifier.updateField('pp_recovery', null);
     await notifier.updateField('pp_duration', null);
+    // Oubliée précédemment : laissait une date de naissance fantôme sur le
+    // profil après un passage explicite au mode cycle.
+    await notifier.updateField('pp_birth_date', null);
 
     if (mounted) Navigator.maybePop(context);
   }
@@ -182,8 +213,9 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
   Widget build(BuildContext context) {
     final l10n    = ref.watch(l10nProvider);
     final p       = context.p;
-    final insight = ref.watch(postpartumInsightProvider(_weeks.clamp(1, 12))).asData?.value
-        ?? PostpartumInsightRepository.forWeek(_weeks.clamp(1, 12));
+    final insightWeek = _weeks.clamp(1, 104);
+    final insight = ref.watch(postpartumInsightProvider(insightWeek)).asData?.value
+        ?? PostpartumInsightRepository.forWeek(insightWeek);
     final d       = _birthDate;
     final months  = ['janv.','fevr.','mars','avr.','mai','juin',
                      'juil.','aout','sept.','oct.','nov.','dec.'];
@@ -256,7 +288,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                   phaseName: _phaseName,
                   phaseDesc: _phaseDesc,
                   phaseColor: _phaseColor,
-                  progress: _progress,
+                  progress: _isBeyondFourthTrimester ? _longTermProgress : _progress,
                   p: p,
                   l10n: l10n,
                 ),
@@ -282,7 +314,11 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: _MoodCard(
                     selected: _mood,
-                    onSelect: (i) { HapticFeedback.selectionClick(); setState(() => _mood = i); },
+                    onSelect: (i) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _mood = i);
+                      CycleLogService.saveMood(DateTime.now(), i);
+                    },
                     p: p,
                     l10n: l10n,
                   ),

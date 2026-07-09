@@ -8,6 +8,7 @@ import '../pregnancy_colors.dart';
 import 'symptom_entry.dart';
 import 'add_symptom_sheet.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
+import 'package:fiteva/services/cycle_log_service.dart';
 
 extension _Pg on BuildContext {
   PgColors get _p => PgColors.of(this);
@@ -24,6 +25,34 @@ class SymptomsHomeScreen extends ConsumerStatefulWidget {
 
 class _SymptomsHomeScreenState extends ConsumerState<SymptomsHomeScreen> {
   final List<SymptomEntry> _entries = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEntries();
+  }
+
+  // Avant, cette liste ne vivait qu'en mémoire — perdue à chaque fermeture
+  // d'écran. On charge maintenant les 30 derniers jours depuis Supabase (le
+  // graphique/l'analyse ne regardent que les 7 derniers jours, mais garder
+  // un peu plus de marge évite de re-fetcher à chaque petit changement de date).
+  Future<void> _loadEntries() async {
+    final rows = await CycleLogService.loadPregnancySymptoms(
+      since: DateTime.now().subtract(const Duration(days: 30)),
+    );
+    if (!mounted) return;
+    setState(() {
+      _entries
+        ..clear()
+        ..addAll(rows.map((r) => SymptomEntry(
+              id:        r['id'] as String,
+              type:      SymptomType.values.byName(r['type'] as String),
+              intensity: (r['intensity'] as num).toInt(),
+              date:      DateTime.parse(r['logged_at'] as String),
+              note:      r['note'] as String?,
+            )));
+    });
+  }
 
   List<SymptomEntry> get _weekEntries {
     final now = DateTime.now();
@@ -101,8 +130,11 @@ class _SymptomsHomeScreenState extends ConsumerState<SymptomsHomeScreen> {
                 entry: entries[i],
                 timeAgo: _timeAgo(entries[i].date),
                 index: i,
-                onDelete: () => setState(() =>
-                    _entries.removeWhere((e) => e.id == entries[i].id)),
+                onDelete: () {
+                  final id = entries[i].id;
+                  setState(() => _entries.removeWhere((e) => e.id == id));
+                  CycleLogService.deleteSymptomEntry(id);
+                },
               )),
 
             SizedBox(height: bottom + 120),
@@ -115,7 +147,16 @@ class _SymptomsHomeScreenState extends ConsumerState<SymptomsHomeScreen> {
           left: 24, right: 24,
           child: _LogFAB(onTap: () => AddSymptomSheet.show(
             context: context,
-            onSave: (entry) => setState(() => _entries.add(entry)),
+            onSave: (entry) {
+              setState(() => _entries.add(entry));
+              CycleLogService.saveSymptomEntry(
+                id:        entry.id,
+                type:      entry.type.name,
+                intensity: entry.intensity,
+                date:      entry.date,
+                note:      entry.note,
+              );
+            },
           )),
         ),
       ]),

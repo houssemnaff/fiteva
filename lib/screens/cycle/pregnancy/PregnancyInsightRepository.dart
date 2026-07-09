@@ -8,6 +8,23 @@ class PregnancyInsightRepository {
   PregnancyInsightRepository._();
 
   static DailyInsight forWeek(int week) {
+    // L'UI (curseur, barre de progression) va jusqu'à 42 semaines, mais le
+    // contenu rédigé s'arrête à 40 — avant, les semaines 41-42 réutilisaient
+    // silencieusement le texte de la semaine 40 tel quel ("40 semaines de
+    // devenir…"), ce qui sonnait faux pour une grossesse dépassant le terme.
+    if (week > 40) {
+      final base = _insights.last;
+      return DailyInsight(
+        week: week.clamp(41, 42),
+        title: 'Terme dépassé — presque là',
+        babyInsight: base.babyInsight,
+        momTip: 'Bébé peut arriver à tout moment maintenant — reste en '
+            'contact avec ton équipe médicale, qui surveille de près ce '
+            'dépassement de terme.',
+        poeticLine: 'Chaque jour de plus est un jour de patience avant '
+            'la rencontre.',
+      );
+    }
     final clamped = week.clamp(1, 40);
     return _insights.firstWhere(
       (i) => i.week == clamped,

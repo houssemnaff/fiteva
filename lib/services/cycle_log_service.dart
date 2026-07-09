@@ -139,4 +139,59 @@ class CycleLogService {
       }
     } catch (_) {}
   }
+
+  // ── Pregnancy symptoms ──────────────────────────────────────────────────
+  // Avant, les symptômes de grossesse n'étaient jamais sauvegardés (liste en
+  // mémoire uniquement) — perdus à chaque fermeture d'écran/de l'app.
+
+  static Future<List<Map<String, dynamic>>> loadPregnancySymptoms({
+    DateTime? since,
+  }) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return [];
+    try {
+      var query = SupabaseConfig.table('pregnancy_symptoms')
+          .select()
+          .eq('user_id', uid);
+      if (since != null) {
+        query = query.gte('logged_at', since.toIso8601String());
+      }
+      final rows = await query.order('logged_at', ascending: false) as List;
+      return rows.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> saveSymptomEntry({
+    required String id,
+    required String type,
+    required int intensity,
+    required DateTime date,
+    String? note,
+  }) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      await SupabaseConfig.table('pregnancy_symptoms').insert({
+        'id':         id,
+        'user_id':    uid,
+        'type':       type,
+        'intensity':  intensity,
+        'note':       note,
+        'logged_at':  date.toIso8601String(),
+      });
+    } catch (_) {}
+  }
+
+  static Future<void> deleteSymptomEntry(String id) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      await SupabaseConfig.table('pregnancy_symptoms')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', uid);
+    } catch (_) {}
+  }
 }

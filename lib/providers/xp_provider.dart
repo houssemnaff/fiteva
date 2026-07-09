@@ -27,6 +27,11 @@ const _levelBadgeKeys = ['', 'level1', 'level2', 'level3', 'level4'];
 const int _maxMealLoggedRewardsPerDay = 4;
 const String _mealLoggedReason = 'meal_logged';
 const String _calorieGoalXpReason = 'nutrition_calorie_goal_xp';
+// rewardPregnancyWeek/rewardPostpartumTask s'appelaient sans aucun plafond à
+// chaque ouverture de l'écran grossesse/post-partum (initState) — naviguer
+// vers/depuis l'écran en boucle permettait de farmer de l'XP à l'infini.
+const String _pregnancyWeekXpReason  = 'pregnancy_week_xp';
+const String _postpartumTaskXpReason = 'postpartum_task_xp';
 
 class XpNotifier extends StateNotifier<XpModel> {
   XpNotifier() : super(const XpModel()) {
@@ -156,8 +161,17 @@ class XpNotifier extends StateNotifier<XpModel> {
   Future<void> rewardSymptomAdded()     => _addXp(XpAmounts.symptomAdded);
   Future<void> rewardHealthTipRead()    => _addXp(XpAmounts.healthTipRead);
   Future<void> rewardProfileCompleted() => _addXp(XpAmounts.profileCompleted);
-  Future<void> rewardPregnancyWeek()    => _addXp(XpAmounts.pregnancyWeek);
-  Future<void> rewardPostpartumTask()   => _addXp(XpAmounts.postpartumTask);
+  Future<void> rewardPregnancyWeek() async {
+    if (await XpService.hasEarnedReasonToday(_pregnancyWeekXpReason)) return;
+    await _addXp(XpAmounts.pregnancyWeek);
+    await XpService.addXpHistory(XpAmounts.pregnancyWeek, _pregnancyWeekXpReason);
+  }
+
+  Future<void> rewardPostpartumTask() async {
+    if (await XpService.hasEarnedReasonToday(_postpartumTaskXpReason)) return;
+    await _addXp(XpAmounts.postpartumTask);
+    await XpService.addXpHistory(XpAmounts.postpartumTask, _postpartumTaskXpReason);
+  }
   Future<void> rewardDailyCheckin()     => _addXp(XpAmounts.dailyCheckin);
   Future<void> rewardPainSymptom()      => _addXp(XpAmounts.painSymptomNoted);
   Future<void> addCustomXp(int amount)  => _addXp(amount);

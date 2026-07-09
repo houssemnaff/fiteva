@@ -18,8 +18,41 @@ class PostpartumInsight {
 
 abstract class PostpartumInsightRepository {
   static PostpartumInsight forWeek(int week) {
+    // Au-delà de la semaine 12 (fin du 4e trimestre), le contenu rédigé
+    // s'arrête — avant, on répétait silencieusement le texte exact de la
+    // semaine 12 ("La fin du 4e trimestre") pour n'importe quelle semaine
+    // suivante, y compris très éloignées (jusqu'à ~104 semaines), avec un
+    // titre qui ne correspondait plus du tout au numéro de semaine réel
+    // affiché à l'écran.
+    if (week > 12) return _beyondWeek12(week);
     final w = week.clamp(1, 12);
     return _data.firstWhere((d) => d.week == w, orElse: () => _data.last);
+  }
+
+  static PostpartumInsight _beyondWeek12(int week) {
+    final months = (week / 4.345).round().clamp(4, 24);
+    return PostpartumInsight(
+      week: week,
+      title: 'Environ $months mois avec bébé',
+      babyMilestone:
+          'À ce stade, chaque bébé se développe à son rythme propre — motricité, '
+          'langage, sommeil. Suis les repères de ton pédiatre plutôt qu\'un '
+          'calendrier générique pour évaluer ses progrès.',
+      momRecovery: months < 6
+          ? 'Le 4e trimestre est terminé, mais la récupération physique '
+              'continue en arrière-plan. Continue la rééducation périnéale et '
+              'le renforcement du core si ce n\'est pas encore fait.'
+          : 'Ton corps a eu le temps de se stabiliser. Si des douleurs, fuites '
+              'ou tensions persistent, ce n\'est plus "juste après '
+              'l\'accouchement" — c\'est le bon moment d\'en reparler à un '
+              'professionnel.',
+      mentalHealth:
+          'La charge mentale de la maternité évolue mais ne disparaît pas. '
+          'Continue à te ménager des moments à toi, et à demander du soutien '
+          'si tu en ressens le besoin — à tout moment, pas seulement dans les '
+          'premières semaines.',
+      poeticLine: '$months mois déjà. Le lien grandit, et toi avec lui.',
+    );
   }
 
   static const _data = [

@@ -74,7 +74,10 @@ class _PregnancyChecklistScreenState
     final bottom = MediaQuery.of(context).padding.bottom;
     final tasks  = ref.watch(pregnancyChecklistProvider(widget.currentWeek)).asData?.value
         ?? PregnancyChecklistRepository.forWeek(widget.currentWeek);
-    final doneCount = _done.length;
+    // _done contient l'historique complet (toutes semaines confondues) —
+    // il faut le filtrer aux tâches de la semaine affichée, sinon le ratio
+    // dépasse 100% dès qu'on a coché des tâches d'une semaine précédente.
+    final doneCount = _done.where((id) => tasks.any((t) => t.id == id)).length;
     final total     = tasks.length;
     final progress  = total == 0 ? 0.0 : doneCount / total;
 

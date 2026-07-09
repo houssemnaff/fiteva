@@ -107,6 +107,11 @@ class UserProfile {
   final DateTime? pregnancyWeekSetAt;
   final String? ppRecovery;
   final String? ppDuration;
+  // Vraie date de naissance du bébé — avant, seul un intervalle grossier
+  // (ppDuration : '2-6', '6-12'…) était sauvegardé, et l'app reconstituait
+  // une fausse date à partir du milieu de cet intervalle à chaque ouverture,
+  // ce qui figeait le décompte post-partum au lieu de le faire avancer.
+  final DateTime? ppBirthDate;
   final int? streak;
   final String? level;
 
@@ -129,6 +134,7 @@ class UserProfile {
     this.pregnancyWeekSetAt,
     required this.ppRecovery,
     required this.ppDuration,
+    this.ppBirthDate,
     required this.cycleDuration,
     required this.lastPeriod,
     required this.targets, this.streak, this.level,
@@ -198,6 +204,7 @@ class UserProfile {
       pregnancyWeekSetAt: DateTime.tryParse(m['pregnancy_week_set_at'] as String? ?? ''),
       ppRecovery:      m['pp_recovery'] as String?,
       ppDuration:      m['pp_duration'] as String?,
+      ppBirthDate:     DateTime.tryParse(m['pp_birth_date'] as String? ?? ''),
       cycleDuration:   m['cycle_duration'] as String?,
       lastPeriod:      lastPeriod,
       targets:         targets,
@@ -354,11 +361,17 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
 
   /// Mise à jour d'un champ : dual-write local + Supabase
   Future<void> updateField(String key, dynamic value) async {
+    // Validation à l'écriture — avant, seule la lecture (affichage) bornait
+    // pregnancy_week à 1-42 ; un futur appelant qui oublierait de clamper
+    // aurait silencieusement corrompu la donnée persistée.
+    final safeValue = key == 'pregnancy_week' && value is int
+        ? value.clamp(1, 42)
+        : value;
     final current = StorageService.getOnboardingData();
-    current[key] = value;
+    current[key] = safeValue;
     await StorageService.saveOnboardingData(current);
     _loadLocal();
-    _syncFieldToSupabase(key, value, current);
+    _syncFieldToSupabase(key, safeValue, current);
   }
 
   /// Mise à jour de plusieurs champs en une fois
@@ -481,7 +494,7 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
   // se perdaient à la réinstallation de l'app ou sur un autre appareil.
   static const _cycleKeys   = {
     'health_status', 'cycle_duration', 'last_period',
-    'pregnancy_week', 'pp_recovery', 'pp_duration',
+    'pregnancy_week', 'pp_recovery', 'pp_duration', 'pp_birth_date',
   };
 
   static String _toBioKey(String k) => switch (k) {
