@@ -256,11 +256,15 @@ class _SharedSliverAppHeader extends StatelessWidget {
     final top    = MediaQuery.of(context).padding.top;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final resolvedBg = isDark ? const Color(0xFF141414) : bgColor;
+    // Hauteur exacte du contenu (padding haut/bas + rangée la plus haute —
+    // la mascotte à 42px) : évite l'espace blanc laissé par une hauteur
+    // fixe plus grande que ce que le header a réellement besoin d'occuper.
+    const contentHeight = 70.0;
     return SliverAppBar(
       pinned: true,
       floating: false,
-      expandedHeight: top + 80,
-      collapsedHeight: top + 72,
+      expandedHeight: top + contentHeight,
+      collapsedHeight: top + contentHeight,
       backgroundColor:      resolvedBg,
       surfaceTintColor:     Colors.transparent,
       elevation:            0,

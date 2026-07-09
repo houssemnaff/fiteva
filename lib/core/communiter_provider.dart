@@ -121,6 +121,18 @@ class EventsNotifier extends StateNotifier<List<EventModel>> {
     ];
   }
 
+  /// Recharge les événements depuis Supabase (pull-to-refresh).
+  Future<void> refresh() async {
+    final events = await CommunityService.loadEvents();
+    final joined = await CommunityService.loadJoinedEvents();
+    _joined
+      ..clear()
+      ..addAll(joined);
+    state = [
+      for (final e in events) e.copyWith(isJoined: _joined.contains(e.id)),
+    ];
+  }
+
   Future<void> toggleJoin(String id) async {
     final wasJoined = _joined.contains(id);
     // Mise à jour optimiste immédiate
@@ -151,6 +163,26 @@ class EventsNotifier extends StateNotifier<List<EventModel>> {
     final saved = await CommunityService.addEvent(event);
     if (saved == null) return false;
     state = [saved, ...state];
+    return true;
+  }
+
+  /// Met à jour un événement existant. Le service refuse si `maxSpots`
+  /// est réduit sous le nombre d'inscrits.
+  Future<bool> updateEvent(EventModel event) async {
+    final updated = await CommunityService.updateEvent(event);
+    if (updated == null) return false;
+    state = [
+      for (final e in state)
+        if (e.id == updated.id) updated.copyWith(isJoined: e.isJoined) else e,
+    ];
+    return true;
+  }
+
+  Future<bool> deleteEvent(String id) async {
+    final ok = await CommunityService.deleteEvent(id);
+    if (!ok) return false;
+    state = state.where((e) => e.id != id).toList();
+    _joined.remove(id);
     return true;
   }
 }
@@ -206,6 +238,20 @@ class PartnersNotifier extends StateNotifier<List<PartnerModel>> {
     final saved = await CommunityService.addPartner(partner);
     if (saved == null) return false;
     state = [saved, ...state];
+    return true;
+  }
+
+  Future<bool> updatePartner(PartnerModel partner) async {
+    final updated = await CommunityService.updatePartner(partner);
+    if (updated == null) return false;
+    state = [for (final p in state) if (p.id == updated.id) updated else p];
+    return true;
+  }
+
+  Future<bool> deletePartner(String id) async {
+    final ok = await CommunityService.deletePartner(id);
+    if (!ok) return false;
+    state = state.where((p) => p.id != id).toList();
     return true;
   }
 

@@ -11,13 +11,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-void showCreatePartnerSheet(BuildContext context) {
+/// Si [partner] est fourni, la sheet s'ouvre en mode édition.
+void showCreatePartnerSheet(BuildContext context, {PartnerModel? partner}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withOpacity(0.45),
-    builder: (_) => const CreatePartnerSheet(),
+    builder: (_) => CreatePartnerSheet(partner: partner),
   );
 }
 
@@ -38,7 +39,9 @@ const Color _cFreqFlame = Color(0xFFB4483E);
 
 // ─────────────────────────────────────────────────────────────────────────────
 class CreatePartnerSheet extends ConsumerStatefulWidget {
-  const CreatePartnerSheet({super.key});
+  /// Si [partner] est fourni, la sheet s'ouvre en mode édition.
+  final PartnerModel? partner;
+  const CreatePartnerSheet({super.key, this.partner});
 
   @override
   ConsumerState<CreatePartnerSheet> createState() => _CreatePartnerSheetState();
@@ -87,6 +90,8 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
   Color get _selectedGoalColor =>
       _goals.firstWhere((g) => g.value == _selectedGoal).color;
 
+  bool get _isEditing => widget.partner != null;
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +99,19 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
         vsync: this, duration: const Duration(milliseconds: 400));
     _enterAnim = CurvedAnimation(parent: _enterCtrl, curve: Curves.easeOutCubic);
     _enterCtrl.forward();
+
+    // Pré-remplissage en mode édition.
+    final p = widget.partner;
+    if (p != null) {
+      if (_goals.any((g) => g.value == p.goal)) _selectedGoal = p.goal;
+      if (_levels.any((l) => l.value == p.level)) _selectedLevel = p.level;
+      if (_regions.contains(p.region)) _selectedRegion = p.region;
+      if (_freqs.any((f) => f.value == p.frequency)) _selectedFreq = p.frequency;
+      _descCtrl.text = p.description;
+      _whatsappCtrl.text = p.contactWhatsapp;
+      _instagramCtrl.text = p.contactInstagram;
+      _facebookCtrl.text = p.contactFacebook;
+    }
   }
 
   @override
@@ -113,23 +131,50 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
     HapticFeedback.mediumImpact();
     setState(() => _isPublishing = true);
     final l10n = ref.read(l10nProvider);
-    final partner = PartnerModel(
-      id:          '',
-      name:        _resolvedName(),
-      avatar:      '',
-      goal:        _selectedGoal,
-      level:       _selectedLevel,
-      region:      _selectedRegion,
-      frequency:   _selectedFreq,
-      description: _descCtrl.text.trim().isNotEmpty
-          ? _descCtrl.text.trim()
-          : l10n.communityPartnerDescHint,
-      tags: [_selectedGoal.split(' ').first, _selectedLevel],
-      contactWhatsapp: _whatsappCtrl.text.trim(),
-      contactInstagram: _instagramCtrl.text.trim(),
-      contactFacebook: _facebookCtrl.text.trim(),
-    );
-    final ok = await ref.read(partnersNotifierProvider.notifier).addPartner(partner);
+
+    bool ok;
+    if (_isEditing) {
+      final p = widget.partner!;
+      final updated = PartnerModel(
+        id:          p.id,
+        userId:      p.userId,
+        name:        p.name,
+        avatar:      p.avatar,
+        mascotType:  p.mascotType,
+        mascotMood:  p.mascotMood,
+        goal:        _selectedGoal,
+        level:       _selectedLevel,
+        region:      _selectedRegion,
+        frequency:   _selectedFreq,
+        description: _descCtrl.text.trim().isNotEmpty
+            ? _descCtrl.text.trim()
+            : l10n.communityPartnerDescHint,
+        tags: [_selectedGoal.split(' ').first, _selectedLevel],
+        contactWhatsapp: _whatsappCtrl.text.trim(),
+        contactInstagram: _instagramCtrl.text.trim(),
+        contactFacebook: _facebookCtrl.text.trim(),
+      );
+      ok = await ref.read(partnersNotifierProvider.notifier).updatePartner(updated);
+    } else {
+      final partner = PartnerModel(
+        id:          '',
+        name:        _resolvedName(),
+        avatar:      '',
+        goal:        _selectedGoal,
+        level:       _selectedLevel,
+        region:      _selectedRegion,
+        frequency:   _selectedFreq,
+        description: _descCtrl.text.trim().isNotEmpty
+            ? _descCtrl.text.trim()
+            : l10n.communityPartnerDescHint,
+        tags: [_selectedGoal.split(' ').first, _selectedLevel],
+        contactWhatsapp: _whatsappCtrl.text.trim(),
+        contactInstagram: _instagramCtrl.text.trim(),
+        contactFacebook: _facebookCtrl.text.trim(),
+      );
+      ok = await ref.read(partnersNotifierProvider.notifier).addPartner(partner);
+    }
+
     if (!mounted) return;
     setState(() => _isPublishing = false);
     final cs = Theme.of(context).colorScheme;
@@ -158,8 +203,9 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
       content: Row(children: [
         Icon(LucideIcons.checkCircle, color: cs.onPrimary, size: 18),
         const SizedBox(width: 10),
-        Text(l10n.communityProfilePublished,
-            style: GoogleFonts.inter(color: cs.onPrimary, fontWeight: FontWeight.w600)),
+        Text(
+          _isEditing ? 'Annonce modifiée avec succès !' : l10n.communityProfilePublished,
+          style: GoogleFonts.inter(color: cs.onPrimary, fontWeight: FontWeight.w600)),
       ]),
     ));
   }
@@ -197,7 +243,7 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
                   colors: [accent.withValues(alpha: cs.brightness == Brightness.dark ? 0.16 : 0.10), Colors.transparent],
                 ),
               ),
-              child: _TopBar(cs: cs, accent: accent, onClose: () => Navigator.of(context).pop()),
+              child: _TopBar(cs: cs, accent: accent, isEditing: _isEditing, onClose: () => Navigator.of(context).pop()),
             ),
 
             // ── Publier en tant que ─────────────────────────────────────────
@@ -330,7 +376,7 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
                 ),
               ),
             ),
-            _BottomBar(cs: cs, accent: accent, publishing: _isPublishing, onPublish: _publish),
+            _BottomBar(cs: cs, accent: accent, publishing: _isPublishing, isEditing: _isEditing, onPublish: _publish),
           ],
         ),
       ),
@@ -365,8 +411,9 @@ class _Handle extends StatelessWidget {
 class _TopBar extends ConsumerWidget {
   final ColorScheme cs;
   final Color accent;
+  final bool isEditing;
   final VoidCallback onClose;
-  const _TopBar({required this.cs, required this.accent, required this.onClose});
+  const _TopBar({required this.cs, required this.accent, required this.isEditing, required this.onClose});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -384,11 +431,11 @@ class _TopBar extends ConsumerWidget {
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(l10n.communityPartnerLabel, style: GoogleFonts.inter(
+          Text(isEditing ? 'MODIFIER' : l10n.communityPartnerLabel, style: GoogleFonts.inter(
             fontSize: 9, fontWeight: FontWeight.w700,
             color: accent, letterSpacing: 2.5)),
           const SizedBox(height: 2),
-          Text(l10n.communityDescribeProfile, style: GoogleFonts.outfit(
+          Text(isEditing ? 'Modifier ton annonce' : l10n.communityDescribeProfile, style: GoogleFonts.outfit(
             fontSize: 19, fontWeight: FontWeight.w700,
             color: cs.onSurface, letterSpacing: -0.3)),
         ])),
@@ -815,8 +862,9 @@ class _BottomBar extends ConsumerWidget {
   final ColorScheme cs;
   final Color accent;
   final bool publishing;
+  final bool isEditing;
   final VoidCallback onPublish;
-  const _BottomBar({required this.cs, required this.accent, required this.publishing, required this.onPublish});
+  const _BottomBar({required this.cs, required this.accent, required this.publishing, required this.isEditing, required this.onPublish});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -846,7 +894,7 @@ class _BottomBar extends ConsumerWidget {
                     width: 20, height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : Text(l10n.communityPublishProfile,
+                : Text(isEditing ? 'Modifier' : l10n.communityPublishProfile,
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 16, fontWeight: FontWeight.w800,

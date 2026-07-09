@@ -770,7 +770,6 @@ class AppL10n {
   String get communityPartnerRegionLabel   => _fr ? 'Région'                      : 'Region';
   String get communityPartnerFrequencyLabel => _fr ? 'Fréquence'                  : 'Frequency';
   String get communityPartnerInterestsSection => _fr ? 'CENTRES D\'INTÉRÊT'       : 'INTERESTS';
-  String get communityPartnerContactSection   => _fr ? 'CONTACT'                  : 'CONTACT';
   String get communityPartnerNoContact     => _fr ? 'Aucune coordonnée renseignée.' : 'No contact info provided.';
   String get communityPartnerLinkError     => _fr ? 'Impossible d\'ouvrir ce lien.' : 'Could not open this link.';
   String get communityPartnerAboutOptional => _fr ? 'À propos de toi  (optionnel)' : 'About you  (optional)';
@@ -780,6 +779,10 @@ class AppL10n {
   String get communityPartnerDescHint      => _fr
       ? 'Je cherche une partenaire pour salle 3x/semaine à Sousse…'
       : 'Looking for a gym partner 3x/week in Sousse…';
+  String get communityEventContactOptional => _fr
+      ? 'Contact pour les participantes  (optionnel)'
+      : 'Contact for participants  (optional)';
+  String get communityEventContactSection  => _fr ? 'CONTACTER L\'ORGANISATEUR' : 'CONTACT ORGANIZER';
   String get communityPartnerWhatsappHint  => _fr ? 'Numéro WhatsApp'             : 'WhatsApp number';
   String get communityPartnerInstagramHint => _fr ? '@ton_instagram'              : '@your_instagram';
   String get communityPartnerFacebookHint  => _fr ? 'Profil ou page Facebook'     : 'Facebook profile or page';
@@ -986,6 +989,10 @@ class AppL10n {
   String get profileAnnuler      => _fr ? 'Annuler'                   : 'Cancel';
   String get profileAucunPost    => _fr ? 'Aucun post publié'         : 'No posts yet';
   String get profileAucunEvt     => _fr ? 'Aucun événement créé'      : 'No events created';
+  String get profilePartenaires  => _fr ? 'Partenaires'               : 'Partners';
+  String get profileAucunPartenaire => _fr ? 'Aucune annonce partenaire' : 'No partner listings';
+  String get profileEtoiles      => _fr ? 'étoiles'                   : 'stars';
+  String get profileEtoilesLabel => _fr ? 'Points boutique'           : 'Shop points';
   String get profileAVenir       => _fr ? 'À VENIR'                   : 'UPCOMING';
   String get profilePasses       => _fr ? 'PASSÉS'                    : 'PAST';
   String get profileProgEnCours  => _fr ? 'PROGRAMMES EN COURS'       : 'PROGRAMS IN PROGRESS';

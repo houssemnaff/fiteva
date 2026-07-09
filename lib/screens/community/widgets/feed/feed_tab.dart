@@ -43,99 +43,104 @@ class _FeedTabState extends ConsumerState<FeedTab> {
         ? allPosts
         : allPosts.where((p) => p.category == category).toList();
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-      slivers: [
+    return RefreshIndicator(
+      color: cs.onSurface,
+      backgroundColor: cs.surface,
+      onRefresh: () => ref.read(postsNotifierProvider.notifier).refresh(),
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        slivers: [
 
-        // ── Section header ────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.communityEyebrow, style: GoogleFonts.inter(
-                      color: cs.secondary, fontSize: 9,
-                      fontWeight: FontWeight.w700, letterSpacing: 3,
-                    )),
-                    const SizedBox(height: 3),
-                    Text(l10n.communityTopPosts, style: GoogleFonts.outfit(
-                      color: cs.onSurface, fontSize: 24,
-                      fontWeight: FontWeight.w800, letterSpacing: -0.5,
-                    )),
-                  ],
-                ),
-                const Spacer(),
-                Text(l10n.seeAll, style: GoogleFonts.inter(
-                  color: cs.primary, fontSize: 11,
-                  fontWeight: FontWeight.w700, letterSpacing: 0.3,
-                )),
-              ],
-            ),
-          ),
-        ),
-
-        // ── Filter pills ──────────────────────────────────────
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 38,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-              itemCount: _filters.length,
-              itemBuilder: (_, i) => _FilterPill(
-                label: _filters[i],
-                selected: _selectedFilter == i,
-                onTap: () => setState(() => _selectedFilter = i),
-                colorScheme: cs,
+          // ── Section header ────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.communityEyebrow, style: GoogleFonts.inter(
+                        color: cs.secondary, fontSize: 9,
+                        fontWeight: FontWeight.w700, letterSpacing: 3,
+                      )),
+                      const SizedBox(height: 3),
+                      Text(l10n.communityTopPosts, style: GoogleFonts.outfit(
+                        color: cs.onSurface, fontSize: 24,
+                        fontWeight: FontWeight.w800, letterSpacing: -0.5,
+                      )),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(l10n.seeAll, style: GoogleFonts.inter(
+                    color: cs.primary, fontSize: 11,
+                    fontWeight: FontWeight.w700, letterSpacing: 0.3,
+                  )),
+                ],
               ),
             ),
           ),
-        ),
 
-        // ── Post list ─────────────────────────────────────────
-        if (isLoading && posts.isEmpty)
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-            sliver: SliverList.separated(
-              itemCount: 2,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, __) => _FeedSkeletonCard(colorScheme: cs),
-            ),
-          )
-        else if (posts.isEmpty)
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(LucideIcons.fileText,
-                    size: 40,
-                    color: cs.onSurface.withValues(alpha: 0.2)),
-                const SizedBox(height: 12),
-                Text(
-                  'Aucun post dans cette catégorie',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: cs.onSurface.withValues(alpha: 0.4),
-                  ),
+          // ── Filter pills ──────────────────────────────────────
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 38,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                itemCount: _filters.length,
+                itemBuilder: (_, i) => _FilterPill(
+                  label: _filters[i],
+                  selected: _selectedFilter == i,
+                  onTap: () => setState(() => _selectedFilter = i),
+                  colorScheme: cs,
                 ),
-              ],
-            ),
-          )
-        else
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-            sliver: SliverList.separated(
-              itemCount: posts.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, i) => _PostCard(post: posts[i], colorScheme: cs),
+              ),
             ),
           ),
-      ],
+
+          // ── Post list ─────────────────────────────────────────
+          if (isLoading && posts.isEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              sliver: SliverList.separated(
+                itemCount: 2,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (_, __) => _FeedSkeletonCard(colorScheme: cs),
+              ),
+            )
+          else if (posts.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(LucideIcons.fileText,
+                      size: 40,
+                      color: cs.onSurface.withValues(alpha: 0.2)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Aucun post dans cette catégorie',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: cs.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              sliver: SliverList.separated(
+                itemCount: posts.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (_, i) => _PostCard(post: posts[i], colorScheme: cs),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -489,21 +494,27 @@ class _PostCardState extends ConsumerState<_PostCard>
                       color: cs.onSurface.withValues(alpha: 0.6), size: 18),
                   padding: const EdgeInsets.all(6),
                   color: cs.surface,
-                  elevation: 4,
+                  elevation: 3,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(12)),
                   itemBuilder: (_) => [
                     PopupMenuItem(
                       value: 'edit',
-                      height: 44,
-                      child: Icon(LucideIcons.pencil,
-                          size: 20, color: cs.primary),
+                      child: Row(children: [
+                        Icon(LucideIcons.pencil, size: 18, color: cs.primary),
+                        const SizedBox(width: 12),
+                        Text('Modifier', style: GoogleFonts.inter(
+                          fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                      ]),
                     ),
                     PopupMenuItem(
                       value: 'delete',
-                      height: 44,
-                      child: Icon(LucideIcons.trash2,
-                          size: 20, color: cs.error),
+                      child: Row(children: [
+                        Icon(LucideIcons.trash2, size: 18, color: cs.error),
+                        const SizedBox(width: 12),
+                        Text('Supprimer', style: GoogleFonts.inter(
+                          fontSize: 14, fontWeight: FontWeight.w600, color: cs.error)),
+                      ]),
                     ),
                   ],
                   onSelected: (value) {

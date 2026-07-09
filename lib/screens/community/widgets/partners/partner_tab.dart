@@ -5,12 +5,13 @@ import 'package:fiteva/screens/community/widgets/partners/create_partner_sheet.d
 import 'package:fiteva/screens/community/widgets/partners/partner_requests_sheet.dart';
 import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../providers/community_providers.dart';
+import '../shared/community_shared_widgets.dart';
 import '../../../../l10n/app_localizations.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -431,11 +432,19 @@ class _PartnerCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Hero(
-              tag: 'partner_avatar_${p.userId.isNotEmpty ? p.userId : p.id}',
-              child: CommunityAvatar(
-                avatarUrl: p.avatar, name: p.name, radius: 30,
-                mascotType: p.mascotType, mascotMood: p.mascotMood,
+            GestureDetector(
+              onTap: () {
+                final uid = p.userId.isNotEmpty ? p.userId : p.id;
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => UserProfileScreen(
+                    userId: uid, heroTag: 'partner_avatar_$uid')));
+              },
+              child: Hero(
+                tag: 'partner_avatar_${p.userId.isNotEmpty ? p.userId : p.id}',
+                child: CommunityAvatar(
+                  avatarUrl: p.avatar, name: p.name, radius: 30,
+                  mascotType: p.mascotType, mascotMood: p.mascotMood,
+                ),
               ),
             ),
             const SizedBox(width: 14),
@@ -485,26 +494,38 @@ class _PartnerCard extends ConsumerWidget {
           const SizedBox(height: 14),
           if (!isOwnPost) ...[
             if (status == 'accepted')
-              _ContactList(partner: p, colorScheme: cs)
+              SocialContactList(
+                contactWhatsapp: p.contactWhatsapp,
+                contactInstagram: p.contactInstagram,
+                contactFacebook: p.contactFacebook,
+                cs: cs,
+                linkErrorMessage: l10n.communityPartnerLinkError,
+                emptyLabel: l10n.communityPartnerNoContact,
+                title: l10n.communityEventContactSection,
+              )
             else if (status == 'pending')
               const SizedBox.shrink()
             else
               _CardCta(status: status, partner: p, colorScheme: cs),
           ] else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.all(color: cs.outline),
-                borderRadius: BorderRadius.circular(50),
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: cs.outline),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(LucideIcons.eye, size: 13, color: cs.onSurface.withValues(alpha: 0.5)),
+                  const SizedBox(width: 6),
+                  Text(l10n.communityPartnerPublicListing, style: GoogleFonts.inter(
+                    fontSize: 11.5, fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.5))),
+                ]),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(LucideIcons.eye, size: 13, color: cs.onSurface.withValues(alpha: 0.5)),
-                const SizedBox(width: 6),
-                Text(l10n.communityPartnerPublicListing, style: GoogleFonts.inter(
-                  fontSize: 11.5, fontWeight: FontWeight.w600,
-                  color: cs.onSurface.withValues(alpha: 0.5))),
-              ]),
-            ),
+              const Spacer(),
+              _PartnerOwnerMenu(partner: p, cs: cs),
+            ]),
           const SizedBox(height: 20),
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.5)),
         ],
@@ -934,12 +955,19 @@ class PartnerDetailSheet extends ConsumerWidget {
                           Row(children: [
                             Icon(LucideIcons.messageCircle, size: 13, color: cs.primary),
                             const SizedBox(width: 6),
-                            Text(l10n.communityPartnerContactSection, style: GoogleFonts.inter(
+                            Text(l10n.communityEventContactSection, style: GoogleFonts.inter(
                               fontSize: 10.5, fontWeight: FontWeight.w700,
                               color: cs.onSurface.withValues(alpha: 0.4), letterSpacing: 1)),
                           ]),
                           const SizedBox(height: 14),
-                          _ContactList(partner: p, colorScheme: cs),
+                          SocialContactList(
+                            contactWhatsapp: p.contactWhatsapp,
+                            contactInstagram: p.contactInstagram,
+                            contactFacebook: p.contactFacebook,
+                            cs: cs,
+                            linkErrorMessage: l10n.communityPartnerLinkError,
+                            emptyLabel: l10n.communityPartnerNoContact,
+                          ),
                         ],
 
                         const SizedBox(height: 16),
@@ -1070,85 +1098,89 @@ class _DetailCta extends ConsumerWidget {
   }
 }
 
-// ─── Contact links (shown once the join request is accepted) ────
-Uri? _contactUri(String platform, String raw) {
-  final v = raw.trim();
-  if (v.isEmpty) return null;
-  switch (platform) {
-    case 'whatsapp':
-      final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
-      return digits.isEmpty ? null : Uri.parse('https://wa.me/$digits');
-    case 'instagram':
-      if (v.startsWith('http')) return Uri.tryParse(v);
-      final handle = v.startsWith('@') ? v.substring(1) : v;
-      return Uri.parse('https://instagram.com/$handle');
-    case 'facebook':
-      if (v.startsWith('http')) return Uri.tryParse(v);
-      return Uri.parse('https://facebook.com/${Uri.encodeComponent(v)}');
-    default:
-      return null;
-  }
-}
-
-class _ContactList extends ConsumerWidget {
+// ─── Menu propriétaire (modifier / supprimer) ─────────────────
+class _PartnerOwnerMenu extends ConsumerWidget {
   final PartnerModel partner;
-  final ColorScheme colorScheme;
-  const _ContactList({required this.partner, required this.colorScheme});
+  final ColorScheme cs;
+  const _PartnerOwnerMenu({required this.partner, required this.cs});
 
-  Future<void> _open(BuildContext context, Uri? uri, String errorMsg) async {
-    if (uri == null) return;
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text(errorMsg),
-      ));
-    }
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Supprimer cette annonce ?',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w800)),
+        content: Text('Cette action est irréversible.',
+            style: GoogleFonts.inter(fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Annuler',
+                style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.6))),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final ok = await ref.read(partnersNotifierProvider.notifier).deletePartner(partner.id);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: ok ? cs.primary : cs.error,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                content: Text(
+                  ok ? 'Annonce supprimée.' : 'Erreur lors de la suppression.',
+                  style: GoogleFonts.inter(
+                      color: ok ? cs.onPrimary : cs.onError,
+                      fontWeight: FontWeight.w600)),
+              ));
+            },
+            child: Text('Supprimer',
+                style: GoogleFonts.inter(color: cs.error, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
   }
-
-  static const _brandColors = {
-    'whatsapp':  Color(0xFF25D366),
-    'instagram': Color(0xFFD62A7A),
-    'facebook':  Color(0xFF3B6FE0),
-  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = colorScheme;
-    final l10n = ref.watch(l10nProvider);
-    final contacts = [
-      ('whatsapp', partner.contactWhatsapp, LucideIcons.messageCircle, 'WhatsApp'),
-      ('instagram', partner.contactInstagram, LucideIcons.atSign, 'Instagram'),
-      ('facebook', partner.contactFacebook, LucideIcons.globe, 'Facebook'),
-    ].where((c) => c.$2.trim().isNotEmpty).toList();
-
-    if (contacts.isEmpty) {
-      return Text(l10n.communityPartnerNoContact, style: GoogleFonts.inter(
-        fontSize: 13, color: cs.onSurface.withValues(alpha: 0.45)));
-    }
-
-    return Column(children: [
-      for (final (platform, value, icon, label) in contacts)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: GestureDetector(
-            onTap: () => _open(context, _contactUri(platform, value), l10n.communityPartnerLinkError),
-            child: Row(children: [
-              Container(
-                width: 38, height: 38,
-                decoration: BoxDecoration(
-                  color: _brandColors[platform]!.withValues(alpha: 0.12), shape: BoxShape.circle),
-                child: Icon(icon, size: 17, color: _brandColors[platform]),
-              ),
-              const SizedBox(width: 12),
-              Text(label, style: GoogleFonts.inter(
-                fontSize: 13.5, fontWeight: FontWeight.w600, color: cs.onSurface)),
-              const Spacer(),
-              Icon(LucideIcons.arrowUpRight, size: 15, color: cs.onSurface.withValues(alpha: 0.35)),
-            ]),
-          ),
+    return PopupMenuButton<String>(
+      icon: Icon(CupertinoIcons.ellipsis,
+          color: cs.onSurface.withValues(alpha: 0.5), size: 18),
+      padding: const EdgeInsets.all(6),
+      color: cs.surface,
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(children: [
+            Icon(LucideIcons.pencil, size: 18, color: cs.primary),
+            const SizedBox(width: 12),
+            Text('Modifier', style: GoogleFonts.inter(
+              fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+          ]),
         ),
-    ]);
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(children: [
+            Icon(LucideIcons.trash2, size: 18, color: cs.error),
+            const SizedBox(width: 12),
+            Text('Supprimer', style: GoogleFonts.inter(
+              fontSize: 14, fontWeight: FontWeight.w600, color: cs.error)),
+          ]),
+        ),
+      ],
+      onSelected: (value) {
+        if (value == 'edit') {
+          showCreatePartnerSheet(context, partner: partner);
+        } else {
+          _confirmDelete(context, ref);
+        }
+      },
+    );
   }
 }
 

@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
 import '../models/post_model.dart';
 import '../screens/community/model/event_model.dart';
 import '../screens/community/model/partner_model.dart';
@@ -282,11 +284,33 @@ class CommunityService {
   // ÉVÉNEMENTS
   // ────────────────────────────────────────────────────────────────────────────
 
+  static const _eventImagesBucket = 'event-images';
+
+  /// Upload une photo de couverture d'événement et retourne son URL publique.
+  /// Le chemin est préfixé par l'uid (requis par la policy RLS du bucket).
+  static Future<String?> uploadEventImage(XFile file) async {
+    if (_uid == null) return null;
+    try {
+      final bytes = await file.readAsBytes();
+      final ext = file.path.contains('.') ? file.path.split('.').last.toLowerCase() : 'jpg';
+      final path = '$_uid/${DateTime.now().millisecondsSinceEpoch}.$ext';
+      await SupabaseConfig.client.storage.from(_eventImagesBucket).uploadBinary(
+            path, bytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
+      return SupabaseConfig.client.storage.from(_eventImagesBucket).getPublicUrl(path);
+    } catch (e) {
+      debugPrint('[CommunityService] uploadEventImage error: $e');
+      return null;
+    }
+  }
+
   static Future<List<EventModel>> loadEvents() async {
     try {
       final rows = await SupabaseConfig.table('community_events')
           .select('id, organizer_id, title, event_type, event_date, event_time, '
-              'location, max_spots, joined_count, image_url, description')
+              'location, max_spots, joined_count, image_url, description, '
+              'contact_whatsapp, contact_instagram, contact_facebook')
           .order('event_date') as List;
 
       if (rows.isEmpty) return [];
@@ -317,17 +341,23 @@ class CommunityService {
           id:                 r['id'] as String,
           title:              r['title'] as String? ?? '',
           organizer:          name.isNotEmpty ? name : 'User',
+          organizerId:        orgId,
           organizerAvatar:    '',
           organizerMascotType: mascotTypeMap[orgId] ?? 'blob',
           organizerMascotMood: mascotMoodMap[orgId] ?? 'happy',
           type:               r['event_type'] as String? ?? 'other',
           date:               _formatDate(r['event_date'] as String? ?? ''),
+          dateIso:            r['event_date'] as String? ?? '',
           time:               r['event_time'] as String? ?? '',
           location:           r['location'] as String? ?? '',
           maxSpots:           r['max_spots'] as int? ?? 10,
           joinedCount:        r['joined_count'] as int? ?? 0,
           participantAvatars: [],
           imageUrl:           r['image_url'] as String? ?? '',
+          description:        r['description'] as String? ?? '',
+          contactWhatsapp:    r['contact_whatsapp'] as String? ?? '',
+          contactInstagram:   r['contact_instagram'] as String? ?? '',
+          contactFacebook:    r['contact_facebook'] as String? ?? '',
         );
       }).toList();
     } catch (e) {
@@ -359,29 +389,108 @@ class CommunityService {
         'location':     event.location,
         'max_spots':    event.maxSpots,
         'image_url':    event.imageUrl.isNotEmpty ? event.imageUrl : '',
-        'description':  '',
+        'description':  event.description,
         'joined_count': 0,
+        'contact_whatsapp':  event.contactWhatsapp,
+        'contact_instagram': event.contactInstagram,
+        'contact_facebook':  event.contactFacebook,
       }).select('id, title, event_type, event_date, event_time, location, '
-                'max_spots, joined_count, image_url')
+                'max_spots, joined_count, image_url, description, '
+                'contact_whatsapp, contact_instagram, contact_facebook')
           .single();
 
       return EventModel(
         id:                 row['id'] as String,
         title:              row['title'] as String? ?? event.title,
         organizer:          event.organizer,
+        organizerId:        _uid!,
         organizerAvatar:    '',
         type:               row['event_type'] as String? ?? 'other',
         date:               _formatDate(row['event_date'] as String? ?? ''),
+        dateIso:            row['event_date'] as String? ?? event.dateIso,
         time:               row['event_time'] as String? ?? event.time,
         location:           row['location'] as String? ?? event.location,
         maxSpots:           row['max_spots'] as int? ?? event.maxSpots,
         joinedCount:        0,
         participantAvatars: [],
         imageUrl:           row['image_url'] as String? ?? '',
+        description:        row['description'] as String? ?? event.description,
+        contactWhatsapp:    row['contact_whatsapp'] as String? ?? '',
+        contactInstagram:   row['contact_instagram'] as String? ?? '',
+        contactFacebook:    row['contact_facebook'] as String? ?? '',
       );
     } catch (e) {
       debugPrint('[CommunityService] addEvent error: $e');
       return null;
+    }
+  }
+
+  /// Met à jour un événement existant (uniquement si organizer_id correspond).
+  /// Le nombre de places ne peut jamais être réduit sous le nombre d'inscrits.
+  static Future<EventModel?> updateEvent(EventModel event) async {
+    if (_uid == null) return null;
+    try {
+      final current = await SupabaseConfig.table('community_events')
+          .select('joined_count')
+          .eq('id', event.id)
+          .maybeSingle();
+      final joinedCount = current?['joined_count'] as int? ?? 0;
+      if (event.maxSpots < joinedCount) {
+        debugPrint('[CommunityService] updateEvent: maxSpots below joinedCount');
+        return null;
+      }
+
+      final row = await SupabaseConfig.table('community_events').update({
+        'title':        event.title,
+        'event_type':   _validEventType(event.type),
+        'event_date':   event.dateIso,
+        'event_time':   event.time,
+        'location':     event.location,
+        'max_spots':    event.maxSpots,
+        'image_url':    event.imageUrl,
+        'description':  event.description,
+        'contact_whatsapp':  event.contactWhatsapp,
+        'contact_instagram': event.contactInstagram,
+        'contact_facebook':  event.contactFacebook,
+      }).eq('id', event.id).eq('organizer_id', _uid!)
+          .select('id, title, event_type, event_date, event_time, location, '
+                  'max_spots, joined_count, image_url, description, '
+                  'contact_whatsapp, contact_instagram, contact_facebook')
+          .single();
+
+      return event.copyWith(
+        title:              row['title'] as String? ?? event.title,
+        type:               row['event_type'] as String? ?? event.type,
+        date:               _formatDate(row['event_date'] as String? ?? ''),
+        dateIso:            row['event_date'] as String? ?? event.dateIso,
+        time:               row['event_time'] as String? ?? event.time,
+        location:           row['location'] as String? ?? event.location,
+        maxSpots:           row['max_spots'] as int? ?? event.maxSpots,
+        joinedCount:        row['joined_count'] as int? ?? event.joinedCount,
+        imageUrl:           row['image_url'] as String? ?? event.imageUrl,
+        description:        row['description'] as String? ?? event.description,
+        contactWhatsapp:    row['contact_whatsapp'] as String? ?? '',
+        contactInstagram:   row['contact_instagram'] as String? ?? '',
+        contactFacebook:    row['contact_facebook'] as String? ?? '',
+      );
+    } catch (e) {
+      debugPrint('[CommunityService] updateEvent error: $e');
+      return null;
+    }
+  }
+
+  /// Supprime un événement (uniquement si organizer_id correspond).
+  static Future<bool> deleteEvent(String eventId) async {
+    if (_uid == null) return false;
+    try {
+      await SupabaseConfig.table('community_events')
+          .delete()
+          .eq('id', eventId)
+          .eq('organizer_id', _uid!);
+      return true;
+    } catch (e) {
+      debugPrint('[CommunityService] deleteEvent error: $e');
+      return false;
     }
   }
 
@@ -527,6 +636,46 @@ class CommunityService {
     }
   }
 
+  /// Met à jour une annonce partenaire existante (uniquement si user_id correspond).
+  static Future<PartnerModel?> updatePartner(PartnerModel partner) async {
+    if (_uid == null) return null;
+    try {
+      final row = await SupabaseConfig.table('training_partners').update({
+        'goal':              partner.goal,
+        'level':             partner.level,
+        'region':            partner.region,
+        'frequency':         partner.frequency,
+        'description':       partner.description,
+        'tags':              partner.tags,
+        'contact_whatsapp':  partner.contactWhatsapp,
+        'contact_instagram': partner.contactInstagram,
+        'contact_facebook':  partner.contactFacebook,
+      }).eq('id', partner.id).eq('user_id', _uid!)
+          .select(_partnerColumns).single();
+
+      return _partnerFromRow(row,
+          mascotType: partner.mascotType, mascotMood: partner.mascotMood);
+    } catch (e) {
+      debugPrint('[CommunityService] updatePartner error: $e');
+      return null;
+    }
+  }
+
+  /// Supprime une annonce partenaire (uniquement si user_id correspond).
+  static Future<bool> deletePartner(String partnerId) async {
+    if (_uid == null) return false;
+    try {
+      await SupabaseConfig.table('training_partners')
+          .delete()
+          .eq('id', partnerId)
+          .eq('user_id', _uid!);
+      return true;
+    } catch (e) {
+      debugPrint('[CommunityService] deletePartner error: $e');
+      return false;
+    }
+  }
+
   static Future<void> savePartners(List<PartnerModel> partners) async {}
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -666,7 +815,7 @@ class CommunityService {
   static Future<Map<String, dynamic>?> getUserProfile(String userId) async {
     try {
       final profile = await SupabaseConfig.table('user_profiles')
-          .select('id, username, email')
+          .select('id, username, email, mascot_type, mascot_mood')
           .eq('id', userId)
           .maybeSingle();
       if (profile == null) return null;
@@ -684,6 +833,8 @@ class CommunityService {
       return {
         'id':             profile['id'] as String,
         'username':       (profile['username'] as String? ?? '').trim(),
+        'mascot_type':    profile['mascot_type'] as String? ?? 'blob',
+        'mascot_mood':    profile['mascot_mood'] as String? ?? 'happy',
         'total_xp':       xpRow?['total_xp'] as int? ?? 0,
         'streak':         xpRow?['streak'] as int? ?? 0,
         'fitness_level':  bioRow?['fitness_level'] as String? ?? '',
@@ -722,6 +873,37 @@ class CommunityService {
     } catch (e) {
       debugPrint('[CommunityService] getUserEvents error: $e');
       return [];
+    }
+  }
+
+  /// Annonces partenaire publiées par un utilisateur (onglet Partenaires du profil).
+  static Future<List<PartnerModel>> getUserPartners(String userId) async {
+    try {
+      final rows = (await SupabaseConfig.table('training_partners')
+          .select(_partnerColumns)
+          .eq('user_id', userId)
+          .order('created_at', ascending: false)
+          .limit(20) as List)
+          .cast<Map<String, dynamic>>();
+      return rows.map((r) => _partnerFromRow(r)).toList();
+    } catch (e) {
+      debugPrint('[CommunityService] getUserPartners error: $e');
+      return [];
+    }
+  }
+
+  /// Solde d'étoiles (points boutique) d'un utilisateur.
+  /// Nécessite la policy de lecture publique sur user_points (voir schema).
+  static Future<int> getUserPoints(String userId) async {
+    try {
+      final row = await SupabaseConfig.table('user_points')
+          .select('etoiles')
+          .eq('user_id', userId)
+          .maybeSingle();
+      return row?['etoiles'] as int? ?? 0;
+    } catch (e) {
+      debugPrint('[CommunityService] getUserPoints error: $e');
+      return 0;
     }
   }
 

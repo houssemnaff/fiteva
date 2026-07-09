@@ -1,11 +1,16 @@
+import 'package:fiteva/screens/community/UserProfileScreen.dart';
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/screens/community/widgets/community_avatar.dart';
+import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/community_providers.dart';
+import '../shared/community_shared_widgets.dart';
+import 'create_event_sheet.dart';
 import 'participants_sheet.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -40,8 +45,12 @@ class _EventsTabState extends ConsumerState<EventsTab> {
 
     return ColoredBox(
       color: cs.surface,
-      child: CustomScrollView(
-        slivers: [
+      child: RefreshIndicator(
+        color: cs.onSurface,
+        backgroundColor: cs.surface,
+        onRefresh: () => ref.read(eventsNotifierProvider.notifier).refresh(),
+        child: CustomScrollView(
+          slivers: [
 
           // ── Header ────────────────────────────────────────
           SliverToBoxAdapter(
@@ -129,7 +138,8 @@ class _EventsTabState extends ConsumerState<EventsTab> {
               },
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -152,12 +162,26 @@ class EventCard extends StatelessWidget {
     required this.colorScheme,
   });
 
+  void _openProfile(BuildContext context, String uid) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => UserProfileScreen(
+        userId: uid,
+        heroTag: 'event_avatar_$uid',
+      ),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs        = colorScheme;
     final spotsLeft = event.maxSpots - event.joinedCount;
     final isFull    = spotsLeft <= 0;
     final isJoined  = event.isJoined;
+    final isOwner   = event.organizerId.isNotEmpty &&
+        event.organizerId == SupabaseConfig.userId;
+    final organizerUid = event.organizerId.isNotEmpty
+        ? event.organizerId
+        : event.organizer;
 
     return Container(
       decoration: BoxDecoration(
@@ -179,16 +203,24 @@ class EventCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
             child: Row(children: [
-              CommunityAvatar(
-                avatarUrl: event.organizerAvatar,
-                name: event.organizer,
-                radius: 20,
-                mascotType: event.organizerMascotType,
-                mascotMood: event.organizerMascotMood,
+              GestureDetector(
+                onTap: () => _openProfile(context, organizerUid),
+                child: Hero(
+                  tag: 'event_avatar_$organizerUid',
+                  child: CommunityAvatar(
+                    avatarUrl: event.organizerAvatar,
+                    name: event.organizer,
+                    radius: 20,
+                    mascotType: event.organizerMascotType,
+                    mascotMood: event.organizerMascotMood,
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
+                child: GestureDetector(
+                  onTap: () => _openProfile(context, organizerUid),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(event.organizer, style: GoogleFonts.outfit(
@@ -229,26 +261,37 @@ class EventCard extends StatelessWidget {
                       ),
                     ]),
                   ],
-                ),
-              ),
-              // Spots pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isFull
-                      ? cs.error.withValues(alpha: 0.1)
-                      : cs.outline.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: Text(
-                  isFull ? 'Complet' : '$spotsLeft places',
-                  style: GoogleFonts.inter(
-                    fontSize: 10, fontWeight: FontWeight.w700,
-                    color: isFull
-                        ? cs.error
-                        : cs.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (isOwner) ...[
+                    _EventOwnerMenu(event: event, cs: cs),
+                    const SizedBox(height: 6),
+                  ],
+                  // Spots pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isFull
+                          ? cs.error.withValues(alpha: 0.1)
+                          : cs.outline.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                    child: Text(
+                      isFull ? 'Complet' : '$spotsLeft places',
+                      style: GoogleFonts.inter(
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                        color: isFull
+                            ? cs.error
+                            : cs.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ]),
           ),
@@ -275,9 +318,32 @@ class EventCard extends StatelessWidget {
                     ), overflow: TextOverflow.ellipsis),
                   ),
                 ]),
+                if (event.description.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(event.description.trim(),
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5, height: 1.5,
+                      color: cs.onSurface.withValues(alpha: 0.65))),
+                ],
               ],
             ),
           ),
+
+          // ── Cover image ────────────────────────────────────
+          if (event.imageUrl.trim().isNotEmpty)
+            SizedBox(
+              height: 180, width: double.infinity,
+              child: Image.network(
+                event.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: cs.primary.withValues(alpha: 0.08),
+                  child: Icon(LucideIcons.image, size: 36,
+                      color: cs.primary.withValues(alpha: 0.3)),
+                ),
+              ),
+            ),
 
           // ── Action row (mirrors feed action row) ──────────
           Padding(
@@ -357,9 +423,132 @@ class EventCard extends StatelessWidget {
               ),
             ]),
           ),
+
+          // ── Contact organisateur (visible après inscription,
+          //    même pattern que la carte partenaire : jamais affiché
+          //    au propriétaire sur sa propre carte) ─────────────
+          if (isJoined && !isOwner) _EventCardContacts(event: event, cs: cs),
         ],
       ),
     );
+  }
+}
+
+// ─── Menu propriétaire (modifier / supprimer) ─────────────────
+class _EventOwnerMenu extends ConsumerWidget {
+  final EventModel event;
+  final ColorScheme cs;
+  const _EventOwnerMenu({required this.event, required this.cs});
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Supprimer l\'événement ?',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w800)),
+        content: Text('Cette action est irréversible.',
+            style: GoogleFonts.inter(fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Annuler',
+                style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.6))),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final ok = await ref.read(eventsNotifierProvider.notifier).deleteEvent(event.id);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: ok ? cs.primary : cs.error,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                content: Text(
+                  ok ? 'Événement supprimé.' : 'Erreur lors de la suppression.',
+                  style: GoogleFonts.inter(
+                      color: ok ? cs.onPrimary : cs.onError,
+                      fontWeight: FontWeight.w600)),
+              ));
+            },
+            child: Text('Supprimer',
+                style: GoogleFonts.inter(color: cs.error, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<String>(
+      icon: Icon(CupertinoIcons.ellipsis,
+          color: cs.onSurface.withValues(alpha: 0.6), size: 18),
+      padding: const EdgeInsets.all(6),
+      color: cs.surface,
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(children: [
+            Icon(LucideIcons.pencil, size: 18, color: cs.primary),
+            const SizedBox(width: 12),
+            Text('Modifier', style: GoogleFonts.inter(
+              fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+          ]),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(children: [
+            Icon(LucideIcons.trash2, size: 18, color: cs.error),
+            const SizedBox(width: 12),
+            Text('Supprimer', style: GoogleFonts.inter(
+              fontSize: 14, fontWeight: FontWeight.w600, color: cs.error)),
+          ]),
+        ),
+      ],
+      onSelected: (value) {
+        if (value == 'edit') {
+          showCreateEventSheet(context, event: event);
+        } else {
+          _confirmDelete(context, ref);
+        }
+      },
+    );
+  }
+}
+
+// ─── Contact organisateur (WhatsApp / Instagram / Facebook) ──
+class _EventCardContacts extends ConsumerWidget {
+  final EventModel event;
+  final ColorScheme cs;
+  const _EventCardContacts({required this.event, required this.cs});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
+    final hasContact = event.contactWhatsapp.trim().isNotEmpty ||
+        event.contactInstagram.trim().isNotEmpty ||
+        event.contactFacebook.trim().isNotEmpty;
+    if (!hasContact) return const SizedBox.shrink();
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Divider(height: 1, indent: 14, endIndent: 14,
+          color: cs.outline.withValues(alpha: 0.5)),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        child: SocialContactList(
+          contactWhatsapp: event.contactWhatsapp,
+          contactInstagram: event.contactInstagram,
+          contactFacebook: event.contactFacebook,
+          cs: cs,
+          linkErrorMessage: l10n.communityPartnerLinkError,
+          title: l10n.communityEventContactSection,
+        ),
+      ),
+    ]);
   }
 }
 

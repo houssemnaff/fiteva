@@ -320,11 +320,25 @@ class WorkoutProgressService {
     }
   }
 
-  /// Retourne l'union des favoris — programmes préfixés "prog:" pour les distinguer
+  static Future<Set<String>> getVideoFavorites() async {
+    if (_uid == null) return {};
+    try {
+      final rows = await SupabaseConfig.table('user_video_favorites')
+          .select('video_id')
+          .eq('user_id', _uid!);
+      return {for (final r in rows as List) r['video_id'] as String};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Retourne l'union des favoris — programmes préfixés "prog:", vidéos autonomes
+  /// préfixées "video:" pour les distinguer des workouts (sans préfixe)
   static Future<Set<String>> getFavorites() async {
     final wf = await getWorkoutFavorites();
     final pf = await getProgramFavorites();
-    return {...wf, ...pf.map((id) => 'prog:$id')};
+    final vf = await getVideoFavorites();
+    return {...wf, ...pf.map((id) => 'prog:$id'), ...vf.map((id) => 'video:$id')};
   }
 
   static Future<void> addWorkoutFavorite(String workoutId) async {
@@ -365,10 +379,32 @@ class WorkoutProgressService {
     } catch (_) {}
   }
 
-  /// Détecte le type par le préfixe "prog:" (programmes) ou non (workouts)
+  static Future<void> addVideoFavorite(String videoId) async {
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_video_favorites')
+          .upsert({'user_id': _uid, 'video_id': videoId},
+              onConflict: 'user_id,video_id');
+    } catch (_) {}
+  }
+
+  static Future<void> removeVideoFavorite(String videoId) async {
+    if (_uid == null) return;
+    try {
+      await SupabaseConfig.table('user_video_favorites')
+          .delete()
+          .eq('user_id', _uid!)
+          .eq('video_id', videoId);
+    } catch (_) {}
+  }
+
+  /// Détecte le type par le préfixe "prog:" (programmes), "video:" (vidéos
+  /// autonomes) ou aucun préfixe (workouts)
   static Future<void> addFavorite(String id) async {
     if (id.startsWith('prog:')) {
       await addProgramFavorite(id.substring(5));
+    } else if (id.startsWith('video:')) {
+      await addVideoFavorite(id.substring(6));
     } else {
       await addWorkoutFavorite(id);
     }
@@ -377,6 +413,8 @@ class WorkoutProgressService {
   static Future<void> removeFavorite(String id) async {
     if (id.startsWith('prog:')) {
       await removeProgramFavorite(id.substring(5));
+    } else if (id.startsWith('video:')) {
+      await removeVideoFavorite(id.substring(6));
     } else {
       await removeWorkoutFavorite(id);
     }
@@ -401,6 +439,7 @@ class WorkoutProgressService {
     try {
       await SupabaseConfig.table('user_workout_favorites').delete().eq('user_id', _uid!);
       await SupabaseConfig.table('user_program_favorites').delete().eq('user_id', _uid!);
+      await SupabaseConfig.table('user_video_favorites').delete().eq('user_id', _uid!);
     } catch (_) {}
   }
 

@@ -4,9 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'package:fiteva/providers/mascot_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/user_profile_provider.dart'
     hide UserProfile;
+import 'package:fiteva/providers/xp_provider.dart';
+import 'package:fiteva/screens/community/model/partner_model.dart';
+import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:fiteva/services/comuniter_service.dart';
 import 'package:fiteva/services/supabase_config.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,7 +21,8 @@ class UserProfile {
   final String id;
   final String name;
   final String username;
-  final String? avatarUrl;
+  final String mascotType;
+  final String mascotMood;
   final String? bio;
   final String niveau;
   final int niveauXp;
@@ -25,14 +30,17 @@ class UserProfile {
   final String? fitnessLevel;
   final String? frequency;
   final bool isCurrentUser;
+  final int etoiles;
   final List<UserPost> posts;
   final List<UserEvent> events;
+  final List<PartnerModel> partners;
 
   const UserProfile({
     required this.id,
     required this.name,
     required this.username,
-    this.avatarUrl,
+    this.mascotType = 'blob',
+    this.mascotMood = 'happy',
     this.bio,
     required this.niveau,
     required this.niveauXp,
@@ -40,8 +48,10 @@ class UserProfile {
     this.fitnessLevel,
     this.frequency,
     this.isCurrentUser = false,
+    this.etoiles = 0,
     required this.posts,
     required this.events,
+    this.partners = const [],
   });
 }
 
@@ -88,11 +98,16 @@ final communityUserProfileProvider =
   final currentUid = SupabaseConfig.userId;
   final isSelf     = userId == currentUid;
 
-  // Fetch posts + events in parallel regardless of who the user is.
-  final rawResults = await Future.wait([
-    CommunityService.getUserPosts(userId),
-    CommunityService.getUserEvents(userId),
-  ]);
+  // Fetch posts + events + partners + points in parallel
+  // regardless of who the user is.
+  final postsFuture    = CommunityService.getUserPosts(userId);
+  final eventsFuture   = CommunityService.getUserEvents(userId);
+  final partnersFuture = CommunityService.getUserPartners(userId);
+  final pointsFuture   = CommunityService.getUserPoints(userId);
+
+  final rawResults = await Future.wait([postsFuture, eventsFuture]);
+  final userPartners = await partnersFuture;
+  final remoteEtoiles = await pointsFuture;
 
   final userPosts = rawResults[0].map((r) {
     final imgUrl = r['image_url'] as String? ?? '';
@@ -119,22 +134,28 @@ final communityUserProfileProvider =
   }).toList();
 
   if (isSelf) {
-    // Own profile: bio/XP from local providers (no extra request).
+    // Own profile: bio/XP/points from local providers (no extra request).
     final localUser = ref.read(userProfileProvider);
-    final points    = ref.read(pointsProvider);
+    final mascot    = ref.read(mascotProvider);
+    final xp        = ref.read(xpProvider).totalXp;
+    final etoiles   = ref.read(pointsProvider);
     final name      = localUser.username.isNotEmpty ? localUser.username : 'User';
     return UserProfile(
       id:            userId,
       name:          name,
       username:      '@${name.toLowerCase().replaceAll(' ', '')}',
-      niveau:        localUser.level ?? '1',
-      niveauXp:      points,
+      mascotType:    mascot.type.name,
+      mascotMood:    mascot.mood.name,
+      niveau:        '${_xpToLevel(xp)}',
+      niveauXp:      xp,
       niveauMaxXp:   5000,
       fitnessLevel:  localUser.fitnessLevel,
       frequency:     localUser.frequency != null ? '${localUser.frequency}x/sem' : null,
       isCurrentUser: true,
+      etoiles:       etoiles,
       posts:         userPosts,
       events:        userEvents,
+      partners:      userPartners,
     );
   }
 
@@ -144,7 +165,8 @@ final communityUserProfileProvider =
     return UserProfile(
       id: userId, name: 'Utilisateur', username: '@utilisateur',
       niveau: '1', niveauXp: 0, niveauMaxXp: 5000,
-      posts: userPosts, events: userEvents,
+      etoiles: remoteEtoiles,
+      posts: userPosts, events: userEvents, partners: userPartners,
     );
   }
 
@@ -157,6 +179,8 @@ final communityUserProfileProvider =
     id:            data['id'] as String,
     name:          name,
     username:      '@${name.toLowerCase().replaceAll(' ', '')}',
+    mascotType:    data['mascot_type'] as String? ?? 'blob',
+    mascotMood:    data['mascot_mood'] as String? ?? 'happy',
     niveau:        '$lvl',
     niveauXp:      totalXp,
     niveauMaxXp:   5000,
@@ -164,8 +188,10 @@ final communityUserProfileProvider =
         ? data['fitness_level'] as String : null,
     frequency:     freqDays > 0 ? '${freqDays}x/sem' : null,
     isCurrentUser: false,
+    etoiles:       remoteEtoiles,
     posts:         userPosts,
     events:        userEvents,
+    partners:      userPartners,
   );
 });
 
@@ -310,9 +336,9 @@ class _ProfileContent extends StatelessWidget {
                 unselectedLabelStyle: GoogleFonts.outfit(
                     fontSize: 13, fontWeight: FontWeight.w500),
                 tabs: [
-                  Tab(text: l10n.profileApercu),
                   Tab(text: l10n.profilePosts),
                   Tab(text: l10n.profileEvenements),
+                  Tab(text: l10n.profilePartenaires),
                 ],
               ),
             ),
@@ -327,9 +353,9 @@ class _ProfileContent extends StatelessWidget {
       body: TabBarView(
         controller: tabController,
         children: [
-          _OverviewTab(profile: profile, l10n: l10n),
           _PostsTab(posts: profile.posts, l10n: l10n),
           _EventsTab(events: profile.events, l10n: l10n),
+          _PartnersTab(partners: profile.partners, l10n: l10n),
         ],
       ),
     );
@@ -373,16 +399,6 @@ class _ProfileHeader extends ConsumerStatefulWidget {
 
 class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
   bool _following = false;
-
-  String get _initials {
-    final name = widget.profile.name.trim();
-    if (name.isEmpty) return '?';
-    final parts = name.split(' ');
-    if (parts.length >= 2 && parts[1].isNotEmpty) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -434,19 +450,17 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
               child: Hero(
                 tag: widget.heroTag ?? 'avatar_${profile.id}',
                 child: Container(
-                  width: 88,
-                  height: 88,
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: cs.surface, width: 4),
-                    color: cs.secondary,
+                    color: cs.surface,
                   ),
-                  child: ClipOval(
-                    child: profile.avatarUrl != null
-                        ? Image.network(profile.avatarUrl!, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _InitialsCircle(
-                              initials: _initials, cs: cs))
-                        : _InitialsCircle(initials: _initials, cs: cs),
+                  child: CommunityAvatar(
+                    avatarUrl: '',
+                    name: profile.name,
+                    radius: 40,
+                    mascotType: profile.mascotType,
+                    mascotMood: profile.mascotMood,
                   ),
                 ),
               ),
@@ -546,9 +560,41 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
 
         const SizedBox(height: 20),
 
-        // ── Stats strip ───────────────────────────────────────
-       
-        const SizedBox(height: 16),
+        // ── Stats strip (posts / événements / partenaires) ────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: cs.outline),
+            ),
+            child: Row(children: [
+              Expanded(child: _StripStat(
+                value: '${profile.posts.length}',
+                label: widget.l10n.profilePosts, cs: cs)),
+              _VertDivider(cs: cs),
+              Expanded(child: _StripStat(
+                value: '${profile.events.length}',
+                label: widget.l10n.profileEvenements, cs: cs)),
+              _VertDivider(cs: cs),
+              Expanded(child: _StripStat(
+                value: '${profile.partners.length}',
+                label: widget.l10n.profilePartenaires, cs: cs)),
+            ]),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // ── Points (étoiles) ──────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: _PointsCard(etoiles: profile.etoiles, l10n: widget.l10n, cs: cs),
+        ),
+
+        const SizedBox(height: 12),
 
         // ── Level progress ────────────────────────────────────
         Padding(
@@ -567,28 +613,6 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
     );
   }
 
-  String _formatKcal(double kcal) {
-    if (kcal >= 1000) return '${(kcal / 1000).toStringAsFixed(1)}k';
-    return '${kcal.toInt()}';
-  }
-}
-
-// ─── Initials circle fallback ─────────────────────────────────
-class _InitialsCircle extends StatelessWidget {
-  final String initials;
-  final ColorScheme cs;
-  const _InitialsCircle({required this.initials, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: cs.secondary,
-      alignment: Alignment.center,
-      child: Text(initials, style: GoogleFonts.outfit(
-        fontSize: 30, fontWeight: FontWeight.w800,
-        color: Colors.white.withValues(alpha: 0.9), letterSpacing: -1)),
-    );
-  }
 }
 
 // ─── Meta pill ────────────────────────────────────────────────
@@ -742,39 +766,57 @@ class _LevelBar extends StatelessWidget {
   }
 }
 
-// ─── Tab 1 — Overview ─────────────────────────────────────────
-class _OverviewTab extends ConsumerWidget {
-  final UserProfile profile;
+// ─── Points card (étoiles boutique) ───────────────────────────
+class _PointsCard extends StatelessWidget {
+  final int etoiles;
   final AppL10n l10n;
-  const _OverviewTab({required this.profile, required this.l10n});
+  final ColorScheme cs;
+  const _PointsCard({required this.etoiles, required this.l10n, required this.cs});
+
+  static const _gold = Color(0xFFF59E0B);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-   
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-      children: [
-
-        // Section label
-        _SectionTitle(label: l10n.profileStats, cs: cs),
-        const SizedBox(height: 12),
-
-       
-       
-
-        const SizedBox(height: 24),
-        _SectionTitle(label: l10n.profileRepartition, cs: cs),
-        const SizedBox(height: 12),
-
-     
-
-      ],
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _gold.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _gold.withValues(alpha: 0.25)),
+      ),
+      child: Row(children: [
+        Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            color: _gold.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(LucideIcons.star, size: 19, color: _gold),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.profileEtoilesLabel, style: GoogleFonts.inter(
+              fontSize: 11, fontWeight: FontWeight.w600,
+              color: cs.onSurface.withValues(alpha: 0.45))),
+            const SizedBox(height: 2),
+            Row(crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text('$etoiles', style: GoogleFonts.outfit(
+                  fontSize: 24, fontWeight: FontWeight.w800,
+                  color: _gold, letterSpacing: -0.5)),
+                const SizedBox(width: 5),
+                Text(l10n.profileEtoiles, style: GoogleFonts.inter(
+                  fontSize: 12, fontWeight: FontWeight.w600,
+                  color: _gold.withValues(alpha: 0.7))),
+              ]),
+          ],
+        )),
+      ]),
     );
   }
-
-
 }
 
 class _SectionTitle extends StatelessWidget {
@@ -788,88 +830,7 @@ class _SectionTitle extends StatelessWidget {
       color: cs.onSurface.withValues(alpha: 0.4), letterSpacing: 2));
 }
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String value, label;
-  final Color color;
-  final ColorScheme cs;
-  const _StatCard({
-    required this.icon, required this.value, required this.label,
-    required this.color, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cs.outline),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 34, height: 34,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 16, color: color),
-        ),
-        const SizedBox(height: 12),
-        Text(value, style: GoogleFonts.outfit(
-          fontSize: 22, fontWeight: FontWeight.w800,
-          color: cs.onSurface, letterSpacing: -0.5)),
-        const SizedBox(height: 2),
-        Text(label, style: GoogleFonts.inter(
-          fontSize: 11, color: cs.onSurface.withValues(alpha: 0.45),
-          fontWeight: FontWeight.w500)),
-      ]),
-    );
-  }
-}
-
-class _DistRow extends StatelessWidget {
-  final String label;
-  final int count;
-  final double pct;
-  final Color color;
-  final ColorScheme cs;
-  const _DistRow({
-    required this.label, required this.count,
-    required this.pct, required this.color, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            width: 8, height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 10),
-          Expanded(child: Text(label, style: GoogleFonts.inter(
-            fontSize: 14, color: cs.onSurface))),
-          Text('$count', style: GoogleFonts.outfit(
-            fontSize: 15, fontWeight: FontWeight.w700,
-            color: cs.onSurface.withValues(alpha: 0.55))),
-        ]),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(50),
-          child: LinearProgressIndicator(
-            value: pct,
-            backgroundColor: color.withValues(alpha: 0.1),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-            minHeight: 4,
-          ),
-        ),
-      ]),
-    );
-  }
-}
-
-// ─── Tab 2 — Posts ────────────────────────────────────────────
+// ─── Tab 1 — Posts (feed) ─────────────────────────────────────
 class _PostsTab extends StatelessWidget {
   final List<UserPost> posts;
   final AppL10n l10n;
@@ -969,7 +930,7 @@ class _PostCardState extends ConsumerState<_PostCard> {
   }
 }
 
-// ─── Tab 3 — Events ───────────────────────────────────────────
+// ─── Tab 2 — Events ───────────────────────────────────────────
 class _EventsTab extends StatelessWidget {
   final List<UserEvent> events;
   final AppL10n l10n;
@@ -1123,6 +1084,122 @@ class _EventRow extends StatelessWidget {
     const m = ['JAN','FÉV','MAR','AVR','MAI','JUN',
                 'JUL','AOÛ','SEP','OCT','NOV','DÉC'];
     return m[dt.month - 1];
+  }
+}
+
+// ─── Tab 3 — Partenaires ──────────────────────────────────────
+class _PartnersTab extends StatelessWidget {
+  final List<PartnerModel> partners;
+  final AppL10n l10n;
+  const _PartnersTab({required this.partners, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    if (partners.isEmpty) {
+      return _EmptyState(
+        icon: LucideIcons.users, message: l10n.profileAucunPartenaire, cs: cs);
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+      itemCount: partners.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, i) => _PartnerCard(partner: partners[i], l10n: l10n),
+    );
+  }
+}
+
+class _PartnerCard extends StatelessWidget {
+  final PartnerModel partner;
+  final AppL10n l10n;
+  const _PartnerCard({required this.partner, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outline),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cs.primary.withValues(alpha: 0.25)),
+            ),
+            child: Icon(LucideIcons.users, size: 18, color: cs.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (partner.goal.isNotEmpty)
+                Text(partner.goal, style: GoogleFonts.outfit(
+                  fontSize: 15, fontWeight: FontWeight.w700,
+                  color: cs.onSurface)),
+              const SizedBox(height: 2),
+              Row(children: [
+                if (partner.region.isNotEmpty) ...[
+                  Icon(LucideIcons.mapPin, size: 10,
+                      color: cs.onSurface.withValues(alpha: 0.4)),
+                  const SizedBox(width: 4),
+                  Flexible(child: Text(partner.region,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: cs.onSurface.withValues(alpha: 0.45)))),
+                ],
+              ]),
+            ],
+          )),
+          if (partner.level.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Text(partner.level, style: GoogleFonts.inter(
+                fontSize: 10, fontWeight: FontWeight.w700,
+                color: cs.primary)),
+            ),
+        ]),
+        if (partner.description.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(partner.description, style: GoogleFonts.inter(
+            fontSize: 14, color: cs.onSurface.withValues(alpha: 0.65),
+            height: 1.5)),
+        ],
+        if (partner.frequency.isNotEmpty || partner.tags.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            if (partner.frequency.isNotEmpty)
+              _MetaPill(
+                icon: LucideIcons.calendar,
+                label: partner.frequency, cs: cs),
+            for (final tag in partner.tags)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: BorderRadius.circular(50),
+                  border: Border.all(color: cs.outline),
+                ),
+                child: Text(tag, style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w600,
+                  color: cs.onSurface.withValues(alpha: 0.6))),
+              ),
+          ]),
+        ],
+      ]),
+    );
   }
 }
 

@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/services/comuniter_service.dart';
+import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/community_providers.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../shared/community_shared_widgets.dart';
 import 'participants_sheet.dart';
 
 void showEventDetail(BuildContext context, EventModel event) {
@@ -43,6 +45,8 @@ class EventDetailSheet extends ConsumerWidget {
     final spotsLeft = ev.maxSpots - ev.joinedCount;
     final isFull    = spotsLeft <= 0;
     final isJoined  = ev.isJoined;
+    final isOwner   = ev.organizerId.isNotEmpty &&
+        ev.organizerId == SupabaseConfig.userId;
     final typeIcon  = _icons[ev.type.toLowerCase()] ?? LucideIcons.calendarDays;
     final screenH   = MediaQuery.of(context).size.height;
     final bottomPad = MediaQuery.of(context).padding.bottom;
@@ -273,14 +277,34 @@ class EventDetailSheet extends ConsumerWidget {
                             border: Border.all(color: cs.outline),
                           ),
                           child: Text(
-                            'Rejoins-nous pour une session ${ev.type} '
-                            'inoubliable ! Niveau requis : tous niveaux '
-                            'bienvenus. Apporte ta tenue et ta motivation.',
+                            ev.description.trim().isNotEmpty
+                                ? ev.description.trim()
+                                : 'Rejoins-nous pour une session ${ev.type} '
+                                  'inoubliable ! Niveau requis : tous niveaux '
+                                  'bienvenus. Apporte ta tenue et ta motivation.',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               color: cs.onSurface.withValues(alpha: 0.7),
                               height: 1.6)),
                         ),
+
+                        // ── Contact organisateur (après inscription,
+                        //    comme les partenaires acceptés — jamais
+                        //    affiché au propriétaire) ──────────────
+                        if (isJoined && !isOwner &&
+                            (ev.contactWhatsapp.trim().isNotEmpty ||
+                             ev.contactInstagram.trim().isNotEmpty ||
+                             ev.contactFacebook.trim().isNotEmpty)) ...[
+                          const SizedBox(height: 20),
+                          SocialContactList(
+                            contactWhatsapp: ev.contactWhatsapp,
+                            contactInstagram: ev.contactInstagram,
+                            contactFacebook: ev.contactFacebook,
+                            cs: cs,
+                            linkErrorMessage: l10n.communityPartnerLinkError,
+                            title: l10n.communityEventContactSection,
+                          ),
+                        ],
 
                         const SizedBox(height: 100),
                       ],

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ─── Filter Pill ──────────────────────────────────────────────
 class FilterPill extends StatelessWidget {
@@ -6,6 +9,7 @@ class FilterPill extends StatelessWidget {
   final bool selected;
   final VoidCallback? onTap;
   final bool compact;
+
 
   const FilterPill({
     super.key,
@@ -160,6 +164,162 @@ class SheetSection extends StatelessWidget {
         const SizedBox(height: 10),
         child,
       ],
+    );
+  }
+}
+
+// ─── Social contact list (WhatsApp / Instagram / Facebook) ────
+// Widget partagé par les cartes/feuilles de détail des partenaires et des
+// événements — un seul design pour tous les contextes.
+class SocialContactList extends StatelessWidget {
+  final String contactWhatsapp;
+  final String contactInstagram;
+  final String contactFacebook;
+  final ColorScheme cs;
+  final String linkErrorMessage;
+  /// Texte affiché quand aucun contact n'est renseigné.
+  /// Si null, le widget ne rend rien dans ce cas (SizedBox.shrink).
+  final String? emptyLabel;
+  /// Libellé de section optionnel (ex. "CONTACTER L'ORGANISATEUR", "CONTACT")
+  /// affiché au-dessus de la liste. Si null, aucun titre n'est rendu.
+  final String? title;
+
+  const SocialContactList({
+    super.key,
+    required this.contactWhatsapp,
+    required this.contactInstagram,
+    required this.contactFacebook,
+    required this.cs,
+    required this.linkErrorMessage,
+    this.emptyLabel,
+    this.title,
+  });
+
+  static const _brandColors = {
+    'whatsapp':  Color(0xFF25D366),
+    'instagram': Color(0xFFD62A7A),
+    'facebook':  Color(0xFF3B6FE0),
+  };
+
+  static Uri? _contactUri(String platform, String raw) {
+    final v = raw.trim();
+    if (v.isEmpty) return null;
+    switch (platform) {
+      case 'whatsapp':
+        final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+        return digits.isEmpty ? null : Uri.parse('https://wa.me/$digits');
+      case 'instagram':
+        if (v.startsWith('http')) return Uri.tryParse(v);
+        final handle = v.startsWith('@') ? v.substring(1) : v;
+        return Uri.parse('https://instagram.com/$handle');
+      case 'facebook':
+        if (v.startsWith('http')) return Uri.tryParse(v);
+        return Uri.parse('https://facebook.com/${Uri.encodeComponent(v)}');
+      default:
+        return null;
+    }
+  }
+
+  Future<void> _open(BuildContext context, Uri? uri) async {
+    if (uri == null) return;
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(linkErrorMessage),
+      ));
+    }
+  }
+
+  Widget _buildTitle() => Row(mainAxisSize: MainAxisSize.min, children: [
+    Container(
+      width: 3, height: 12,
+      decoration: BoxDecoration(
+        color: cs.primary, borderRadius: BorderRadius.circular(2)),
+    ),
+    const SizedBox(width: 8),
+    Text(title!, style: GoogleFonts.inter(
+      fontSize: 11, fontWeight: FontWeight.w700,
+      color: cs.onSurface.withValues(alpha: 0.55), letterSpacing: 0.4)),
+  ]);
+
+  @override
+  Widget build(BuildContext context) {
+    final contacts = [
+      ('whatsapp', contactWhatsapp, LucideIcons.messageCircle, 'WhatsApp'),
+      ('instagram', contactInstagram, LucideIcons.atSign, 'Instagram'),
+      ('facebook', contactFacebook, LucideIcons.globe, 'Facebook'),
+    ].where((c) => c.$2.trim().isNotEmpty).toList();
+
+    if (contacts.isEmpty) {
+      if (emptyLabel == null) return const SizedBox.shrink();
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (title != null) ...[_buildTitle(), const SizedBox(height: 12)],
+        Row(children: [
+          Icon(LucideIcons.userX, size: 15,
+              color: cs.onSurface.withValues(alpha: 0.3)),
+          const SizedBox(width: 8),
+          Text(emptyLabel!, style: GoogleFonts.inter(
+            fontSize: 13, color: cs.onSurface.withValues(alpha: 0.45))),
+        ]),
+      ]);
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (title != null) ...[_buildTitle(), const SizedBox(height: 12)],
+      Row(children: [
+        for (int i = 0; i < contacts.length; i++)
+          Padding(
+            padding: EdgeInsets.only(right: i < contacts.length - 1 ? 10 : 0),
+            child: _ContactIcon(
+              icon: contacts[i].$3,
+              label: contacts[i].$4,
+              brandColor: _brandColors[contacts[i].$1]!,
+              onTap: () => _open(context, _contactUri(contacts[i].$1, contacts[i].$2)),
+            ),
+          ),
+      ]),
+    ]);
+  }
+}
+
+class _ContactIcon extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color brandColor;
+  final VoidCallback onTap;
+  const _ContactIcon({
+    required this.icon, required this.label,
+    required this.brandColor, required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Container(
+            width: 38, height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                colors: [
+                  brandColor.withValues(alpha: 0.20),
+                  brandColor.withValues(alpha: 0.09),
+                ],
+              ),
+            ),
+            child: Icon(icon, size: 16, color: brandColor),
+          ),
+        ),
+      ),
     );
   }
 }

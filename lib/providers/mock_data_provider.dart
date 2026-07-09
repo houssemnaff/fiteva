@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/home_program_model.dart';
 import '../models/user_model.dart';
+import '../models/video_model.dart';
 import '../models/workout_model.dart';
 
 import '../services/program_service.dart';
+import '../services/video_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgresChangeEvent;
 import '../services/supabase_config.dart';
 import 'user_profile_provider.dart';
@@ -106,6 +108,53 @@ final joinedProgramsProvider = Provider.autoDispose<List<HomeProgramModel>>((ref
 final workoutsProvider = Provider.autoDispose<List<WorkoutModel>>((ref) {
   return ref.watch(_allProgramsFutureProvider).maybeWhen(
     data: (all) => all.expand((p) => p.workouts).toList(),
+    orElse: () => [],
+  );
+});
+
+// ─── Vidéos autonomes (workout_id NULL) — Realtime Supabase ──────────────────
+// Cartes Dance/Cardio/Récupération : une vidéo = une carte, pas de programme.
+final _allStandaloneVideosProvider = StreamProvider.autoDispose<List<VideoModel>>((ref) {
+  final controller = StreamController<List<VideoModel>>();
+
+  VideoService.fetchStandalone()
+      .then(controller.add)
+      .catchError(controller.addError);
+
+  final channel = SupabaseConfig.client
+      .channel('standalone_videos_realtime')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'videos',
+        callback: (_) async {
+          try {
+            controller.add(await VideoService.fetchStandalone());
+          } catch (e) {
+            controller.addError(e);
+          }
+        },
+      )
+      .subscribe();
+
+  ref.onDispose(() {
+    SupabaseConfig.client.removeChannel(channel);
+    controller.close();
+  });
+
+  return controller.stream;
+});
+
+final danceVideosProvider = Provider.autoDispose<List<VideoModel>>((ref) {
+  return ref.watch(_allStandaloneVideosProvider).maybeWhen(
+    data: (all) => all.where((v) => v.category == 'dance' || v.category == 'cardio').toList(),
+    orElse: () => [],
+  );
+});
+
+final recuperationVideosProvider = Provider.autoDispose<List<VideoModel>>((ref) {
+  return ref.watch(_allStandaloneVideosProvider).maybeWhen(
+    data: (all) => all.where((v) => v.category == 'recuperation').toList(),
     orElse: () => [],
   );
 });

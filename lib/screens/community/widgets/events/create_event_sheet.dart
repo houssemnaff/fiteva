@@ -1,30 +1,37 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:io';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
 import 'package:fiteva/screens/community/widgets/community_avatar.dart';
+import 'package:fiteva/services/comuniter_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../l10n/app_localizations.dart';
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-void showCreateEventSheet(BuildContext context) {
+/// Si [event] est fourni, la sheet s'ouvre en mode édition.
+void showCreateEventSheet(BuildContext context, {EventModel? event}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withOpacity(0.45),
-    builder: (_) => const CreateEventSheet(),
+    builder: (_) => CreateEventSheet(event: event),
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 class CreateEventSheet extends ConsumerStatefulWidget {
-  const CreateEventSheet({super.key});
+  /// Si [event] est fourni, la sheet s'ouvre en mode édition.
+  final EventModel? event;
+  const CreateEventSheet({super.key, this.event});
 
   @override
   ConsumerState<CreateEventSheet> createState() => _CreateEventSheetState();
@@ -33,10 +40,13 @@ class CreateEventSheet extends ConsumerStatefulWidget {
 class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
     with SingleTickerProviderStateMixin {
 
-  final _titleCtrl    = TextEditingController();
-  final _locationCtrl = TextEditingController();
-  final _detailsCtrl  = TextEditingController();
-  final _scrollCtrl   = ScrollController();
+  final _titleCtrl     = TextEditingController();
+  final _locationCtrl  = TextEditingController();
+  final _detailsCtrl   = TextEditingController();
+  final _whatsappCtrl  = TextEditingController();
+  final _instagramCtrl = TextEditingController();
+  final _facebookCtrl  = TextEditingController();
+  final _scrollCtrl    = ScrollController();
 
   int       _typeIndex    = 0;
   int       _spots        = 12;
@@ -45,8 +55,17 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
   DateTime  _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 8, minute: 0);
 
+  XFile? _pickedImage;
+  bool   _removeExistingImage = false;
+
   late final AnimationController _anim;
   late final Animation<double>   _slide;
+
+  bool get _isEditing => widget.event != null;
+
+  /// Le nombre de places ne peut jamais être réduit sous le nombre
+  /// de participants déjà inscrits.
+  int get _minSpots => widget.event?.joinedCount ?? 2;
 
   // label → Supabase enum value
   static const _types = [
@@ -64,6 +83,28 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
     _anim  = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
     _slide = CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic);
     _anim.forward();
+
+    // Pré-remplissage en mode édition.
+    final ev = widget.event;
+    if (ev != null) {
+      _titleCtrl.text = ev.title;
+      _locationCtrl.text = ev.location;
+      _detailsCtrl.text = ev.description;
+      _whatsappCtrl.text = ev.contactWhatsapp;
+      _instagramCtrl.text = ev.contactInstagram;
+      _facebookCtrl.text = ev.contactFacebook;
+      _spots = ev.maxSpots;
+      final idx = _types.indexWhere((t) => t.value == ev.type);
+      _typeIndex = idx >= 0 ? idx : 0;
+      final parsedDate = DateTime.tryParse(ev.dateIso);
+      if (parsedDate != null) _selectedDate = parsedDate;
+      final timeParts = ev.time.split(':');
+      if (timeParts.length == 2) {
+        final h = int.tryParse(timeParts[0]);
+        final m = int.tryParse(timeParts[1]);
+        if (h != null && m != null) _selectedTime = TimeOfDay(hour: h, minute: m);
+      }
+    }
   }
 
   @override
@@ -71,6 +112,9 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
     _titleCtrl.dispose();
     _locationCtrl.dispose();
     _detailsCtrl.dispose();
+    _whatsappCtrl.dispose();
+    _instagramCtrl.dispose();
+    _facebookCtrl.dispose();
     _scrollCtrl.dispose();
     _anim.dispose();
     super.dispose();
@@ -98,6 +142,27 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
       initialTime: _selectedTime,
     );
     if (picked != null) setState(() => _selectedTime = picked);
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 82,
+      maxWidth: 1600,
+    );
+    if (picked != null) {
+      setState(() {
+        _pickedImage = picked;
+        _removeExistingImage = false;
+      });
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _pickedImage = null;
+      _removeExistingImage = true;
+    });
   }
 
   String get _displayDate {
@@ -129,21 +194,54 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
     }
     HapticFeedback.mediumImpact();
     setState(() => _publishing = true);
-    final event = EventModel(
-      id:                 '',
-      title:              _titleCtrl.text.trim(),
-      organizer:          _resolvedName(),
-      organizerAvatar:    '',
-      type:               _types[_typeIndex].value,
-      date:               _isoDate,        // ISO for Supabase; service converts to display
-      time:               _displayTime,
-      location:           _locationCtrl.text.trim(),
-      maxSpots:           _spots,
-      joinedCount:        0,
-      participantAvatars: [],
-      imageUrl:           '',
-    );
-    final ok = await ref.read(eventsNotifierProvider.notifier).addEvent(event);
+
+    // Upload de la nouvelle photo si l'utilisateur en a choisi une ;
+    // sinon conserve l'existante (mode édition), sauf suppression explicite.
+    var imageUrl = _removeExistingImage ? '' : (widget.event?.imageUrl ?? '');
+    if (_pickedImage != null) {
+      final uploaded = await CommunityService.uploadEventImage(_pickedImage!);
+      if (uploaded != null) imageUrl = uploaded;
+    }
+
+    bool ok;
+    if (_isEditing) {
+      final updated = widget.event!.copyWith(
+        title:              _titleCtrl.text.trim(),
+        type:               _types[_typeIndex].value,
+        dateIso:            _isoDate,
+        time:               _displayTime,
+        location:           _locationCtrl.text.trim(),
+        maxSpots:           _spots,
+        imageUrl:           imageUrl,
+        description:        _detailsCtrl.text.trim(),
+        contactWhatsapp:    _whatsappCtrl.text.trim(),
+        contactInstagram:   _instagramCtrl.text.trim(),
+        contactFacebook:    _facebookCtrl.text.trim(),
+      );
+      ok = await ref.read(eventsNotifierProvider.notifier).updateEvent(updated);
+    } else {
+      final event = EventModel(
+        id:                 '',
+        title:              _titleCtrl.text.trim(),
+        organizer:          _resolvedName(),
+        organizerAvatar:    '',
+        type:               _types[_typeIndex].value,
+        date:               _isoDate,        // ISO for Supabase; service converts to display
+        dateIso:            _isoDate,
+        time:               _displayTime,
+        location:           _locationCtrl.text.trim(),
+        maxSpots:           _spots,
+        joinedCount:        0,
+        participantAvatars: [],
+        imageUrl:           imageUrl,
+        description:        _detailsCtrl.text.trim(),
+        contactWhatsapp:    _whatsappCtrl.text.trim(),
+        contactInstagram:   _instagramCtrl.text.trim(),
+        contactFacebook:    _facebookCtrl.text.trim(),
+      );
+      ok = await ref.read(eventsNotifierProvider.notifier).addEvent(event);
+    }
+
     if (!mounted) return;
     setState(() => _publishing = false);
     final cs = Theme.of(context).colorScheme;
@@ -156,8 +254,11 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
         content: Row(children: [
           Icon(LucideIcons.circleAlert, color: cs.onError, size: 18),
           const SizedBox(width: 10),
-          Expanded(child: Text('Erreur lors de la création. Vérifiez votre connexion.',
-              style: GoogleFonts.inter(color: cs.onError, fontWeight: FontWeight.w600))),
+          Expanded(child: Text(
+            _isEditing
+                ? 'Erreur lors de la modification. Vérifiez le nombre de places ou votre connexion.'
+                : 'Erreur lors de la création. Vérifiez votre connexion.',
+            style: GoogleFonts.inter(color: cs.onError, fontWeight: FontWeight.w600))),
         ]),
       ));
       return;
@@ -172,8 +273,9 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
       content: Row(children: [
         Icon(LucideIcons.checkCircle, color: cs.onPrimary, size: 18),
         const SizedBox(width: 10),
-        Text(ref.read(l10nProvider).communityEventPublished,
-            style: GoogleFonts.inter(color: cs.onPrimary, fontWeight: FontWeight.w600)),
+        Text(
+          _isEditing ? 'Événement modifié avec succès !' : ref.read(l10nProvider).communityEventPublished,
+          style: GoogleFonts.inter(color: cs.onPrimary, fontWeight: FontWeight.w600)),
       ]),
     ));
   }
@@ -197,7 +299,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
           mainAxisSize: MainAxisSize.min,
           children: [
             _Handle(cs: cs),
-            _TopBar(cs: cs, onClose: () => Navigator.of(context).pop()),
+            _TopBar(cs: cs, isEditing: _isEditing, onClose: () => Navigator.of(context).pop()),
 
             // ── Posting as ──────────────────────────────────
             Padding(
@@ -285,6 +387,18 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                     ),
                     Divider(height: 24, color: cs.outline.withValues(alpha: 0.6)),
 
+                    // ── Photo de couverture ───────────────────────
+                    _SectionLabel(text: 'Photo de couverture  (optionnel)', cs: cs),
+                    const SizedBox(height: 8),
+                    _EventImagePicker(
+                      pickedImage: _pickedImage,
+                      existingImageUrl: _removeExistingImage ? '' : (widget.event?.imageUrl ?? ''),
+                      cs: cs,
+                      onPick: _pickImage,
+                      onRemove: _removeImage,
+                    ),
+                    const SizedBox(height: 24),
+
                     // ── Spots ────────────────────────────────────
                     _SectionLabel(text: 'Participants max', cs: cs),
                     const SizedBox(height: 10),
@@ -292,8 +406,16 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                       spots: _spots,
                       cs: cs,
                       onDecrement: () {
-                        if (_spots > 2) setState(() => _spots--);
-                        HapticFeedback.selectionClick();
+                        if (_spots > _minSpots) {
+                          setState(() => _spots--);
+                          HapticFeedback.selectionClick();
+                        } else if (_isEditing) {
+                          HapticFeedback.heavyImpact();
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(
+                              'Impossible de réduire sous le nombre de participants déjà inscrits (${widget.event!.joinedCount}).'),
+                          ));
+                        }
                       },
                       onIncrement: () {
                         if (_spots < 100) setState(() => _spots++);
@@ -318,6 +440,28 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                     ),
                     Divider(height: 24, color: cs.outline.withValues(alpha: 0.6)),
 
+                    // ── Contact organisateur ─────────────────────
+                    _SectionLabel(text: l10n.communityEventContactOptional, cs: cs),
+                    const SizedBox(height: 10),
+                    _ContactGroup(cs: cs, rows: [
+                      (
+                        icon: LucideIcons.messageCircle, color: const Color(0xFF25D366),
+                        label: 'WhatsApp', hint: l10n.communityPartnerWhatsappHint,
+                        controller: _whatsappCtrl, keyboardType: TextInputType.phone,
+                      ),
+                      (
+                        icon: LucideIcons.atSign, color: const Color(0xFFD62A7A),
+                        label: 'Instagram', hint: l10n.communityPartnerInstagramHint,
+                        controller: _instagramCtrl, keyboardType: null,
+                      ),
+                      (
+                        icon: LucideIcons.globe, color: const Color(0xFF3B6FE0),
+                        label: 'Facebook', hint: l10n.communityPartnerFacebookHint,
+                        controller: _facebookCtrl, keyboardType: null,
+                      ),
+                    ]),
+                    const SizedBox(height: 24),
+
                     // ── Visibility ───────────────────────────────
                     _VisibilityToggle(
                       isPublic: _isPublic,
@@ -329,7 +473,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
                 ),
               ),
             ),
-            _BottomBar(cs: cs, publishing: _publishing, onPublish: _publish),
+            _BottomBar(cs: cs, publishing: _publishing, isEditing: _isEditing, onPublish: _publish),
           ],
         ),
       ),
@@ -363,8 +507,9 @@ class _Handle extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _TopBar extends ConsumerWidget {
   final ColorScheme cs;
+  final bool isEditing;
   final VoidCallback onClose;
-  const _TopBar({required this.cs, required this.onClose});
+  const _TopBar({required this.cs, required this.isEditing, required this.onClose});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -373,11 +518,11 @@ class _TopBar extends ConsumerWidget {
     padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
     child: Row(children: [
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l10n.communityNewEvent, style: GoogleFonts.inter(
+        Text(isEditing ? 'MODIFIER' : l10n.communityNewEvent, style: GoogleFonts.inter(
           fontSize: 9, fontWeight: FontWeight.w700,
           color: cs.primary, letterSpacing: 2.5)),
         const SizedBox(height: 2),
-        Text(l10n.communityInvite, style: GoogleFonts.outfit(
+        Text(isEditing ? 'Modifier l\'événement' : l10n.communityInvite, style: GoogleFonts.outfit(
           fontSize: 19, fontWeight: FontWeight.w700,
           color: cs.onSurface, letterSpacing: -0.3)),
       ])),
@@ -585,6 +730,113 @@ class _DateCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  EVENT IMAGE PICKER  (photo de couverture)
+// ─────────────────────────────────────────────────────────────────────────────
+class _EventImagePicker extends StatelessWidget {
+  final XFile? pickedImage;
+  final String existingImageUrl;
+  final ColorScheme cs;
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+  const _EventImagePicker({
+    required this.pickedImage, required this.existingImageUrl,
+    required this.cs, required this.onPick, required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPicked   = pickedImage != null;
+    final hasExisting = !hasPicked && existingImageUrl.trim().isNotEmpty;
+
+    if (!hasPicked && !hasExisting) {
+      return GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onPick();
+        },
+        child: Container(
+          height: 130,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outline.withValues(alpha: 0.8)),
+          ),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(LucideIcons.imagePlus, size: 24,
+                color: cs.onSurface.withValues(alpha: 0.3)),
+            const SizedBox(height: 8),
+            Text('Ajouter une photo', style: GoogleFonts.inter(
+              fontSize: 12, fontWeight: FontWeight.w500,
+              color: cs.onSurface.withValues(alpha: 0.4))),
+          ]),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(children: [
+        SizedBox(
+          height: 160,
+          width: double.infinity,
+          child: hasPicked
+              ? (kIsWeb
+                  ? Image.network(pickedImage!.path, fit: BoxFit.cover)
+                  : Image.file(File(pickedImage!.path), fit: BoxFit.cover))
+              : Image.network(existingImageUrl, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: cs.primary.withValues(alpha: 0.08),
+                    child: Icon(LucideIcons.image, size: 30,
+                        color: cs.primary.withValues(alpha: 0.3)),
+                  )),
+        ),
+        Positioned(
+          top: 8, right: 8,
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onRemove();
+            },
+            child: Container(
+              width: 30, height: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.x, size: 15, color: Colors.white),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 8, right: 8,
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onPick();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(LucideIcons.imagePlus, size: 13, color: Colors.white),
+                const SizedBox(width: 5),
+                Text('Changer', style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+              ]),
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  SPOTS STEPPER
 // ─────────────────────────────────────────────────────────────────────────────
 class _SpotsStepper extends ConsumerWidget {
@@ -757,13 +1009,101 @@ class _Toggle extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  CONTACT GROUP  (WhatsApp / Instagram / Facebook — même pattern que partenaire)
+// ─────────────────────────────────────────────────────────────────────────────
+class _ContactGroup extends StatelessWidget {
+  final ColorScheme cs;
+  final List<({IconData icon, Color color, String label, String hint,
+      TextEditingController controller, TextInputType? keyboardType})> rows;
+  const _ContactGroup({required this.cs, required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outline),
+      ),
+      child: Column(children: [
+        for (int i = 0; i < rows.length; i++) ...[
+          if (i > 0) Divider(height: 1, indent: 16, endIndent: 16, color: cs.outline.withValues(alpha: 0.6)),
+          _ContactRow(row: rows[i], cs: cs),
+        ],
+      ]),
+    );
+  }
+}
+
+class _ContactRow extends StatefulWidget {
+  final ({IconData icon, Color color, String label, String hint,
+      TextEditingController controller, TextInputType? keyboardType}) row;
+  final ColorScheme cs;
+  const _ContactRow({required this.row, required this.cs});
+
+  @override
+  State<_ContactRow> createState() => _ContactRowState();
+}
+
+class _ContactRowState extends State<_ContactRow> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = widget.cs;
+    final r = widget.row;
+    return Focus(
+      onFocusChange: (f) => setState(() => _focused = f),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Container(
+            width: 34, height: 34,
+            decoration: BoxDecoration(
+              color: r.color.withValues(alpha: _focused ? 0.22 : 0.14), shape: BoxShape.circle),
+            child: Icon(r.icon, size: 15, color: r.color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(r.label, style: GoogleFonts.inter(
+                  fontSize: 10.5, fontWeight: FontWeight.w700,
+                  color: _focused ? r.color : cs.onSurface.withValues(alpha: 0.45))),
+                TextField(
+                  controller: r.controller,
+                  keyboardType: r.keyboardType,
+                  style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: r.hint,
+                    hintStyle: GoogleFonts.inter(
+                        color: cs.onSurface.withValues(alpha: 0.32), fontSize: 13.5),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.only(top: 3),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  BOTTOM BAR
 // ─────────────────────────────────────────────────────────────────────────────
 class _BottomBar extends ConsumerWidget {
   final ColorScheme cs;
   final bool publishing;
+  final bool isEditing;
   final VoidCallback onPublish;
-  const _BottomBar({required this.cs, required this.publishing, required this.onPublish});
+  const _BottomBar({required this.cs, required this.publishing, required this.isEditing, required this.onPublish});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -791,7 +1131,7 @@ class _BottomBar extends ConsumerWidget {
                     width: 20, height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: cs.onPrimary))
-                : Text(l10n.communityPublishEvent,
+                : Text(isEditing ? 'Modifier' : l10n.communityPublishEvent,
                     style: GoogleFonts.outfit(
                       color: cs.onPrimary,
                       fontSize: 16, fontWeight: FontWeight.w800,

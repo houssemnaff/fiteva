@@ -371,13 +371,13 @@ class _StatRow extends StatelessWidget {
             icon: LucideIcons.mapPin,
             value: '${distanceKm.toStringAsFixed(1)} km',
             label: 'Distance',
-            color: const Color(0xFF3B82F6), bg: const Color(0xFFEAF1FB)),
+            color: const Color.fromARGB(255, 3, 78, 199), bg: const Color.fromARGB(255, 113, 142, 183)),
         const SizedBox(width: 10),
         _StatTile(
             icon: LucideIcons.flame,
             value: '$calories kcal',
             label: 'Brûlées',
-            color: const Color(0xFFE0703C), bg: const Color(0xFFFCEEE7)),
+            color: const Color.fromARGB(255, 224, 112, 60), bg: const Color.fromARGB(255, 255, 206, 231)),
         const SizedBox(width: 10),
         _StatTile(
             icon: LucideIcons.clock,
@@ -385,7 +385,8 @@ class _StatRow extends StatelessWidget {
                 ? '${minutes}m'
                 : '${minutes ~/ 60}h ${minutes % 60}m',
             label: 'Durée',
-            color: _kGreen, bg: _kGreenBg),
+                       color: const Color.fromARGB(255, 46, 105, 87), bg: const Color.fromARGB(255, 133, 212, 186)),
+
       ],
     );
   }
@@ -420,7 +421,7 @@ class _StatTile extends StatelessWidget {
             Text(
               value,
               style: GoogleFonts.outfit(
-                color: cs.onSurface,
+                color: cs.onSurfaceVariant,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.3,

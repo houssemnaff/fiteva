@@ -1,7 +1,8 @@
-import 'package:fiteva/models/home_program_model.dart';
-import 'package:fiteva/screens/workout/programme_detail_screen.dart';
+import 'package:fiteva/models/video_model.dart';
+import 'package:fiteva/screens/workout/exercise_player_screen.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/theme/cycle_theme.dart';
+import 'package:fiteva/screens/workout/widgets/section_empty_state.dart';
 import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,14 +11,14 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../l10n/app_localizations.dart';
 
 class DanceSection extends StatelessWidget {
-  final List<HomeProgramModel> dancePrograms;
+  final List<VideoModel> danceVideos;
   final Set<String> favorites;
   final void Function(String) onToggleFav;
   final VoidCallback? onSeeAll;
 
   const DanceSection({
     super.key,
-    required this.dancePrograms,
+    required this.danceVideos,
     required this.favorites,
     required this.onToggleFav,
     this.onSeeAll,
@@ -33,28 +34,28 @@ class DanceSection extends StatelessWidget {
         const SizedBox(height: 16),
         SizedBox(
           height: 295,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: dancePrograms.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 14),
-            itemBuilder: (context, i) {
-              final program = dancePrograms[i];
-              return _DanceProgramCard(
-                program: program,
-                isFav: favorites.contains('prog:${program.id}'),
-                onToggleFav: () => onToggleFav('prog:${program.id}'),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => WorkoutDetailScreen(
-                      program: program,
-                    ),
+          child: danceVideos.isEmpty
+              ? Center(
+                  child: SectionEmptyState(
+                    icon: LucideIcons.music,
+                    color: WorkoutColors.dance,
+                    message: 'Aucune vidéo disponible pour le moment',
                   ),
+                )
+              : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: danceVideos.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, i) {
+                    final video = danceVideos[i];
+                    return _DanceVideoCard(
+                      video: video,
+                      isFav: favorites.contains('video:${video.id}'),
+                      onToggleFav: () => onToggleFav('video:${video.id}'),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
@@ -160,18 +161,16 @@ class _DanceHeader extends ConsumerWidget {
   }
 }
 
-// ── Program card ──────────────────────────────────────────────────────────────
-class _DanceProgramCard extends ConsumerWidget {
-  final HomeProgramModel program;
+// ── Video card ────────────────────────────────────────────────────────────────
+class _DanceVideoCard extends ConsumerWidget {
+  final VideoModel video;
   final bool isFav;
   final VoidCallback onToggleFav;
-  final VoidCallback onTap;
 
-  const _DanceProgramCard({
-    required this.program,
+  const _DanceVideoCard({
+    required this.video,
     required this.isFav,
     required this.onToggleFav,
-    required this.onTap,
   });
 
   @override
@@ -180,7 +179,24 @@ class _DanceProgramCard extends ConsumerWidget {
     const color = WorkoutColors.dance;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ExercisePlayerScreen(
+            ref: ref,
+            workoutTitle: l10n.workoutDanceTitle,
+            exerciseName: video.title,
+            videoId: video.id,
+            videoUrl: video.url.isNotEmpty ? video.url : null,
+            exerciseIndex: 0,
+            totalExercises: 1,
+            totalWorkoutPoints: video.points,
+            onCompleted: () {},
+            workoutId: null,
+            allVideoIds: null,
+          ),
+        ),
+      ),
       child: Container(
         width: 235,
         decoration: BoxDecoration(
@@ -197,13 +213,19 @@ class _DanceProgramCard extends ConsumerWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Background image
-              Image.asset(
-                program.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(color: color.withValues(alpha: 0.15)),
-              ),
+              // Background thumbnail
+              video.thumbnailUrl.isNotEmpty
+                  ? Image.asset(
+                      video.thumbnailUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          Container(color: color.withValues(alpha: 0.15)),
+                    )
+                  : Container(
+                      color: color.withValues(alpha: 0.15),
+                      child: Icon(LucideIcons.music,
+                          size: 40, color: color.withValues(alpha: 0.5)),
+                    ),
 
               // Gradient overlay
               DecoratedBox(
@@ -221,16 +243,14 @@ class _DanceProgramCard extends ConsumerWidget {
                 ),
               ),
 
-              // Top: PROGRAMME badge + completion status + heart
+              // Top: watched badge + heart
               Positioned(
                 top: 14,
                 left: 14,
                 right: 14,
                 child: Row(
                   children: [
-                    Expanded(
-                      child: _ProgramStatusBadge(program: program),
-                    ),
+                    Expanded(child: _WatchedBadge(videoId: video.id)),
                     GestureDetector(
                       onTap: onToggleFav,
                       child: AnimatedContainer(
@@ -258,7 +278,7 @@ class _DanceProgramCard extends ConsumerWidget {
                 ),
               ),
 
-              // Bottom: name + pills + button
+              // Bottom: name + duration + button
               Positioned(
                 left: 16,
                 right: 16,
@@ -268,7 +288,7 @@ class _DanceProgramCard extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      program.name,
+                      video.title,
                       maxLines: 2,
                       style: GoogleFonts.outfit(
                         color: Colors.white,
@@ -280,15 +300,17 @@ class _DanceProgramCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${program.duration} · ${program.sessions}',
+                      '${video.duration} · ${video.points} pts',
                       style: GoogleFonts.inter(
                         color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    CycleBadgeRow(phases: program.phases),
+                    if (video.phases.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      CycleBadgeRow(phases: video.phases),
+                    ],
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
@@ -331,86 +353,43 @@ class _DanceProgramCard extends ConsumerWidget {
   }
 }
 
-// ── Program status badge (completed, in-progress, or hidden) ────────────────────
-class _ProgramStatusBadge extends ConsumerWidget {
-  final HomeProgramModel program;
-
-  const _ProgramStatusBadge({required this.program});
+// ── Badge "vu" (si vidéo déjà complétée à 80 %) ─────────────────────────────────
+class _WatchedBadge extends ConsumerWidget {
+  final String videoId;
+  const _WatchedBadge({required this.videoId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statusAsync = ref.watch(programStatusProvider(program));
-
-    return statusAsync.when(
-      data: (status) {
-        if (status.isCompleted) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.80),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.green.withValues(alpha: 0.45),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3))
-              ],
+    final done = ref.watch(completedVideosProvider).asData?.value.contains(videoId) ?? false;
+    if (!done) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.80),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.green.withValues(alpha: 0.45),
+              blurRadius: 8,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(LucideIcons.checkCircle, color: Colors.white, size: 10),
+          const SizedBox(width: 4),
+          Text(
+            'Vu',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 8,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(LucideIcons.checkCircle,
-                    color: Colors.white, size: 10),
-                const SizedBox(width: 4),
-                Text(
-                  'Complété',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        if (status.isStarted) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: WorkoutColors.dance.withValues(alpha: 0.75),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                    color: WorkoutColors.dance.withValues(alpha: 0.45),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3))
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${(status.completionPercentage * 100).toInt()}%',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return const SizedBox.shrink();
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+          ),
+        ],
+      ),
     );
   }
 }
-
