@@ -332,12 +332,15 @@ class EventCard extends StatelessWidget {
 
           // ── Cover image ────────────────────────────────────
           if (event.imageUrl.trim().isNotEmpty)
-            SizedBox(
-              height: 180, width: double.infinity,
+            Container(
+              constraints: const BoxConstraints(maxHeight: 280),
+              width: double.infinity,
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
               child: Image.network(
                 event.imageUrl,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => Container(
+                  height: 180,
                   color: cs.primary.withValues(alpha: 0.08),
                   child: Icon(LucideIcons.image, size: 36,
                       color: cs.primary.withValues(alpha: 0.3)),

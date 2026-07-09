@@ -1,5 +1,6 @@
 import 'package:fiteva/services/storage_service.dart';
 import 'package:fiteva/services/supabase_config.dart';
+import 'package:fiteva/services/stripe_config.dart';
 import 'package:fiteva/services/push_notification_service.dart';
 import 'dart:io';
 
@@ -18,6 +19,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
   await SupabaseConfig.initialize();
+
+  // ── Stripe (abonnements) ───────────────────────────────────────────────────
+  try {
+    await StripeConfig.initialize();
+  } catch (e) {
+    debugPrint('[Stripe] init error: $e');
+  }
 
   // ── Firebase push notifications (Android / iOS uniquement) ────────────────
   if (!kIsWeb) {

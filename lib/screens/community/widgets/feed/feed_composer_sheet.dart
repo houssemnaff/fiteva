@@ -1,11 +1,16 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:convert';
+import 'dart:io';
 import 'package:fiteva/models/post_model.dart';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
+import 'package:fiteva/services/cloudinary_config.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -31,6 +36,16 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
   String _category   = '';        // catégorie fitness, indépendante du type format
   bool   _publishing = false;
 
+  XFile? _pickedImage;   // type == 'Photo'
+  XFile? _beforeImage;   // type == 'Avant/Après'
+  XFile? _afterImage;
+
+  // URLs déjà publiées (mode édition) — remplacées si l'utilisateur choisit
+  // une nouvelle photo, effacées s'il appuie sur retirer.
+  String _existingImageUrl  = '';
+  String _existingBeforeUrl = '';
+  String _existingAfterUrl  = '';
+
   late final AnimationController _anim;
   late final Animation<double>   _slide;
 
@@ -55,9 +70,18 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
 
     // Pré-remplissage en mode édition.
     if (_isEditing) {
-      _titleCtrl.text   = widget.post!.title;
-      _contentCtrl.text = widget.post!.content;
-      _category         = widget.post!.category;
+      final post = widget.post!;
+      _titleCtrl.text   = post.title;
+      _contentCtrl.text = post.content;
+      _category         = post.category;
+      if (post.isBeforeAfter) {
+        _type               = 'Avant/Après';
+        _existingBeforeUrl  = post.beforeImageUrl;
+        _existingAfterUrl   = post.afterImageUrl;
+      } else if (post.imageUrl.trim().isNotEmpty) {
+        _type              = 'Photo';
+        _existingImageUrl  = post.imageUrl;
+      }
     }
   }
 
@@ -77,6 +101,24 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
     return profile.username.isNotEmpty ? profile.username : user.username;
   }
 
+  Future<void> _pickPhoto() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery, imageQuality: 82, maxWidth: 1600);
+    if (picked != null) setState(() => _pickedImage = picked);
+  }
+
+  Future<void> _pickBefore() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery, imageQuality: 82, maxWidth: 1600);
+    if (picked != null) setState(() => _beforeImage = picked);
+  }
+
+  Future<void> _pickAfter() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery, imageQuality: 82, maxWidth: 1600);
+    if (picked != null) setState(() => _afterImage = picked);
+  }
+
   Future<void> _publish() async {
     final title   = _titleCtrl.text.trim();
     final content = _contentCtrl.text.trim();
@@ -85,8 +127,64 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
         const SnackBar(content: Text('Ajoutez un titre ou un contenu avant de publier.')));
       return;
     }
+    if (_type == 'Photo' && _pickedImage == null && _existingImageUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ajoutez une photo avant de publier.')));
+      return;
+    }
+    if (_type == 'Avant/Après' &&
+        ((_beforeImage == null && _existingBeforeUrl.isEmpty) ||
+         (_afterImage == null && _existingAfterUrl.isEmpty))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ajoutez une photo "avant" et une photo "après".')));
+      return;
+    }
     HapticFeedback.mediumImpact();
     setState(() => _publishing = true);
+
+    // Recalcule l'image à partir de ce qui existait déjà (mode édition) et
+    // de ce que l'utilisateur vient éventuellement de choisir/retirer.
+    var imageUrl = '';
+    if (_type == 'Photo') {
+      imageUrl = _existingImageUrl;
+      if (_pickedImage != null) {
+        final uploaded = await CloudinaryConfig.uploadImage(_pickedImage!);
+        if (uploaded == null) {
+          if (!mounted) return;
+          setState(() => _publishing = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Échec de l\'envoi de la photo.')));
+          return;
+        }
+        imageUrl = uploaded;
+      }
+    } else if (_type == 'Avant/Après') {
+      var beforeUrl = _existingBeforeUrl;
+      var afterUrl  = _existingAfterUrl;
+      if (_beforeImage != null) {
+        final uploaded = await CloudinaryConfig.uploadImage(_beforeImage!);
+        if (uploaded == null) {
+          if (!mounted) return;
+          setState(() => _publishing = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Échec de l\'envoi des photos.')));
+          return;
+        }
+        beforeUrl = uploaded;
+      }
+      if (_afterImage != null) {
+        final uploaded = await CloudinaryConfig.uploadImage(_afterImage!);
+        if (uploaded == null) {
+          if (!mounted) return;
+          setState(() => _publishing = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Échec de l\'envoi des photos.')));
+          return;
+        }
+        afterUrl = uploaded;
+      }
+      imageUrl = jsonEncode({'before': beforeUrl, 'after': afterUrl});
+    }
 
     bool ok;
 
@@ -95,6 +193,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
         title:    title,
         content:  content,
         category: _category,
+        imageUrl: imageUrl,
       );
       ok = await ref.read(postsNotifierProvider.notifier).updatePost(updated);
     } else {
@@ -105,7 +204,7 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
         userAvatarUrl:'',
         title:        title,
         content:      content,
-        imageUrl:     '',
+        imageUrl:     imageUrl,
         likes:        0,
         comments:     0,
         timeAgo:      'À l\'instant',
@@ -264,11 +363,35 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
                       const SizedBox(height: 20),
                       _type == 'Avant/Après'
                           ? Row(children: [
-                              Expanded(child: _PhotoSlot(label: 'Avant', cs: cs)),
+                              Expanded(child: _PhotoSlot(
+                                label: 'Avant', image: _beforeImage,
+                                existingUrl: _existingBeforeUrl, cs: cs,
+                                onPick: _pickBefore,
+                                onRemove: () => setState(() {
+                                  _beforeImage = null;
+                                  _existingBeforeUrl = '';
+                                }),
+                              )),
                               const SizedBox(width: 12),
-                              Expanded(child: _PhotoSlot(label: 'Après', cs: cs)),
+                              Expanded(child: _PhotoSlot(
+                                label: 'Après', image: _afterImage,
+                                existingUrl: _existingAfterUrl, cs: cs,
+                                onPick: _pickAfter,
+                                onRemove: () => setState(() {
+                                  _afterImage = null;
+                                  _existingAfterUrl = '';
+                                }),
+                              )),
                             ])
-                          : _PhotoSlot(label: 'Ajouter une photo', cs: cs),
+                          : _PhotoSlot(
+                              label: 'Ajouter une photo', image: _pickedImage,
+                              existingUrl: _existingImageUrl, cs: cs,
+                              onPick: _pickPhoto,
+                              onRemove: () => setState(() {
+                                _pickedImage = null;
+                                _existingImageUrl = '';
+                              }),
+                            ),
                     ],
 
                     const SizedBox(height: 24),
@@ -454,32 +577,85 @@ class _ComposerFieldState extends State<_ComposerField> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _PhotoSlot extends StatelessWidget {
   final String label;
+  final XFile? image;
+  final String existingUrl;
   final ColorScheme cs;
-  const _PhotoSlot({required this.label, required this.cs});
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+  const _PhotoSlot({
+    required this.label, required this.image, this.existingUrl = '',
+    required this.cs, required this.onPick, required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => HapticFeedback.selectionClick(),
-      child: Container(
-        height: 130,
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: cs.outline.withValues(alpha: 0.8),
-            width: 1,
+    final hasPicked   = image != null;
+    final hasExisting = !hasPicked && existingUrl.trim().isNotEmpty;
+
+    if (!hasPicked && !hasExisting) {
+      return GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onPick();
+        },
+        child: Container(
+          height: 130,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: cs.outline.withValues(alpha: 0.8),
+              width: 1,
+            ),
+          ),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(LucideIcons.imagePlus, size: 24,
+                color: cs.onSurface.withValues(alpha: 0.3)),
+            const SizedBox(height: 8),
+            Text(label, style: GoogleFonts.inter(
+              fontSize: 12, fontWeight: FontWeight.w500,
+              color: cs.onSurface.withValues(alpha: 0.4))),
+          ]),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(children: [
+        SizedBox(
+          height: 130,
+          width: double.infinity,
+          child: hasPicked
+              ? (kIsWeb
+                  ? Image.network(image!.path, fit: BoxFit.cover)
+                  : Image.file(File(image!.path), fit: BoxFit.cover))
+              : Image.network(existingUrl, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: cs.primary.withValues(alpha: 0.08),
+                    child: Icon(LucideIcons.image, size: 24,
+                        color: cs.primary.withValues(alpha: 0.3)),
+                  )),
+        ),
+        Positioned(
+          top: 6, right: 6,
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onRemove();
+            },
+            child: Container(
+              width: 26, height: 26,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.x, size: 13, color: Colors.white),
+            ),
           ),
         ),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(LucideIcons.imagePlus, size: 24,
-              color: cs.onSurface.withValues(alpha: 0.3)),
-          const SizedBox(height: 8),
-          Text(label, style: GoogleFonts.inter(
-            fontSize: 12, fontWeight: FontWeight.w500,
-            color: cs.onSurface.withValues(alpha: 0.4))),
-        ]),
-      ),
+      ]),
     );
   }
 }

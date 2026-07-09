@@ -1142,3 +1142,53 @@ INSERT INTO pregnancy_checklist_items (trimester, title, description, sort_order
 (3,'Valise de maternité','Préparer la valise pour la maternité.',3),
 (3,'Installation bébé','Monter le lit, le bain, les vêtements.',4);
 
+-- ══════════════════════════════════════════════════════════════════════════════
+-- SECTION 13 — ABONNEMENTS STRIPE
+-- (Nouvelle section : exécuter ce bloc seul dans le SQL Editor si le reste
+--  du schéma est déjà appliqué.)
+-- ══════════════════════════════════════════════════════════════════════════════
+
+-- ── 13.1  Abonnement de l'utilisateur (1 ligne par user) ─────────────────────
+-- plan   : 'free' | 'pro_monthly' | 'pro_annual'
+-- status : statut Stripe ('active','trialing','past_due','canceled',
+--          'incomplete', ...) + 'canceling' (annulation en fin de période)
+CREATE TABLE user_subscriptions (
+  user_id                 UUID         PRIMARY KEY REFERENCES user_profiles(id) ON DELETE CASCADE,
+  plan                    TEXT         NOT NULL DEFAULT 'free'
+                                       CHECK (plan IN ('free','pro_monthly','pro_annual')),
+  status                  TEXT         NOT NULL DEFAULT 'inactive',
+  stripe_customer_id      TEXT,
+  stripe_subscription_id  TEXT,
+  current_period_end      TIMESTAMPTZ,
+  created_at              TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at              TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_user_subscriptions_customer
+  ON user_subscriptions (stripe_customer_id);
+
+CREATE TRIGGER trg_user_subscriptions_upd
+  BEFORE UPDATE ON user_subscriptions
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ── 13.2  RLS : lecture seule pour l'utilisateur ─────────────────────────────
+-- Les écritures passent UNIQUEMENT par les Edge Functions (service role),
+-- jamais par l'app — un utilisateur ne peut pas s'attribuer le plan Pro.
+ALTER TABLE user_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "read_own_subscription" ON user_subscriptions
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- ── 13.3  Helper : l'utilisateur courant est-il Pro ? ────────────────────────
+-- Utilisable dans d'autres policies RLS ou via .rpc('is_pro') côté app.
+CREATE OR REPLACE FUNCTION is_pro()
+RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM user_subscriptions
+    WHERE user_id = auth.uid()
+      AND plan IN ('pro_monthly','pro_annual')
+      AND status IN ('active','trialing','canceling')
+      AND (current_period_end IS NULL OR current_period_end > now())
+  );
+$$;
+
