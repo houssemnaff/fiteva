@@ -61,6 +61,7 @@ class ProgramService {
       equipment:        List<String>.from(r['equipment'] as List? ?? []),
       category:         r['category']       as String? ?? 'home',
       workouts:         workoutRows.map(_workoutFromRow).toList(),
+      isPremium:        r['is_premium']     as bool? ?? false,
     );
   }
 

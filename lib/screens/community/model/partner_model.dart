@@ -14,6 +14,7 @@ class PartnerModel {
   final String contactWhatsapp;
   final String contactInstagram;
   final String contactFacebook;
+  final bool isPro;
 
   const PartnerModel({
     required this.id,
@@ -31,6 +32,7 @@ class PartnerModel {
     this.contactWhatsapp = '',
     this.contactInstagram = '',
     this.contactFacebook = '',
+    this.isPro = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -49,6 +51,7 @@ class PartnerModel {
     'contactWhatsapp': contactWhatsapp,
     'contactInstagram': contactInstagram,
     'contactFacebook': contactFacebook,
+    'isPro': isPro,
   };
 
   factory PartnerModel.fromJson(Map<String, dynamic> j) => PartnerModel(
@@ -67,6 +70,7 @@ class PartnerModel {
     contactWhatsapp: j['contactWhatsapp'] as String? ?? '',
     contactInstagram: j['contactInstagram'] as String? ?? '',
     contactFacebook: j['contactFacebook'] as String? ?? '',
+    isPro: j['isPro'] as bool? ?? false,
   );
 }
 

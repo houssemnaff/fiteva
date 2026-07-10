@@ -15,6 +15,7 @@ class HomeProgramModel {
   final String? level;
   final List<String> equipment;
   final String category; // 'home' | 'salle' | 'dance' | 'recuperation' | 'grossesse'
+  final bool isPremium;
 
   HomeProgramModel({
     required this.id,
@@ -30,5 +31,6 @@ class HomeProgramModel {
     this.level,
     this.equipment = const [],
     this.category = 'home',
+    this.isPremium = false,
   });
 }

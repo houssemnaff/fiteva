@@ -8,7 +8,9 @@ import '../../l10n/app_localizations.dart';
 import '../../models/home_program_model.dart';
 import '../../models/workout_model.dart';
 import '../../providers/workout_progress_provider.dart';
+import '../../providers/subscription_provider.dart';
 import '../../services/workout_progress_service.dart';
+import '../../widgets/paywall_sheet.dart';
 import 'active_workout_screen.dart';
 
 class WorkoutDetailScreen extends ConsumerStatefulWidget {
@@ -77,6 +79,22 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
     ));
   }
 
+  /// True si ce programme est verrouillé (premium et l'utilisatrice n'est
+  /// pas Pro) — la fiche reste consultable (teaser marketing) mais les
+  /// séances ne peuvent pas être lancées.
+  bool get _isLocked =>
+      widget.program.isPremium && !ref.read(isProProvider);
+
+  bool _blockIfLocked(BuildContext context) {
+    if (!_isLocked) return false;
+    showPaywallSheet(
+      context,
+      feature: widget.program.name,
+      description: 'Ce programme complet est réservé aux membres Pro.',
+    );
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = widget.program;
@@ -109,7 +127,9 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
                 _SessionsSliver(
                     program: p,
                     l10n: l10n,
+                    locked: _isLocked,
                     onWorkoutTap: (w) async {
+                      if (_blockIfLocked(context)) return;
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -126,7 +146,9 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
           _BottomCta(
             workouts: p.workouts,
             l10n: l10n,
+            locked: _isLocked,
             onTap: () async {
+              if (_blockIfLocked(context)) return;
               final nav = Navigator.of(context);
               await ref.read(programJoinProvider.notifier).joinProgram(p.id);
               final idx = await _getFirstIncompleteWorkoutIndex();
@@ -931,9 +953,11 @@ class _SessionsSliver extends StatelessWidget {
   final HomeProgramModel program;
   final AppL10n l10n;
   final void Function(WorkoutModel) onWorkoutTap;
+  final bool locked;
 
   const _SessionsSliver(
-      {required this.program, required this.l10n, required this.onWorkoutTap});
+      {required this.program, required this.l10n, required this.onWorkoutTap,
+      this.locked = false});
 
   Future<int> _getFirstIncomplete() async {
     final done = await WorkoutProgressService.getCompletedWorkouts();
@@ -964,14 +988,24 @@ class _SessionsSliver extends StatelessWidget {
                   builder: (context, s) {
                     final isDone = s.data == true;
                     final isCurrent = !isDone && i == nextIdx;
-                    return _SessionCard(
-                      index: i,
-                      workout: w,
-                      isDone: isDone,
-                      isCurrent: isCurrent,
-                      l10n: l10n,
-                      onTap: () => onWorkoutTap(w),
-                    );
+                    return Stack(children: [
+                      Opacity(
+                        opacity: locked ? 0.5 : 1,
+                        child: _SessionCard(
+                          index: i,
+                          workout: w,
+                          isDone: isDone,
+                          isCurrent: isCurrent,
+                          l10n: l10n,
+                          onTap: () => onWorkoutTap(w),
+                        ),
+                      ),
+                      if (locked)
+                        const Positioned(
+                          right: 14, top: 14,
+                          child: Icon(LucideIcons.lock, size: 16, color: Color(0xFFF59E0B)),
+                        ),
+                    ]);
                   },
                 );
               }),
@@ -1218,7 +1252,9 @@ class _BottomCta extends StatelessWidget {
   final List workouts;
   final AppL10n l10n;
   final VoidCallback onTap;
-  const _BottomCta({required this.workouts, required this.l10n, required this.onTap});
+  final bool locked;
+  const _BottomCta({required this.workouts, required this.l10n, required this.onTap,
+      this.locked = false});
 
   Future<bool> _allDone() async {
     final done = await WorkoutProgressService.getCompletedWorkouts();
@@ -1280,14 +1316,16 @@ class _BottomCta extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                   Icon(
-                      done ? LucideIcons.checkCircle : LucideIcons.play,
+                      done
+                          ? LucideIcons.checkCircle
+                          : locked ? LucideIcons.lock : LucideIcons.play,
                       color: Colors.white,
                       size: 18),
                   const SizedBox(width: 10),
                   Text(
                     done
                         ? l10n.progDone
-                        : l10n.progStart,
+                        : locked ? 'Débloquer avec Pro' : l10n.progStart,
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 16,

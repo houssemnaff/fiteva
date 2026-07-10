@@ -9,6 +9,7 @@ import 'package:fiteva/providers/mascot_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/user_profile_provider.dart'
     hide UserProfile;
+import 'package:fiteva/providers/subscription_provider.dart';
 import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:fiteva/screens/community/widgets/community_avatar.dart';
@@ -31,6 +32,7 @@ class UserProfile {
   final String? fitnessLevel;
   final String? frequency;
   final bool isCurrentUser;
+  final bool isPro;
   final int etoiles;
   final List<UserPost> posts;
   final List<UserEvent> events;
@@ -49,6 +51,7 @@ class UserProfile {
     this.fitnessLevel,
     this.frequency,
     this.isCurrentUser = false,
+    this.isPro = false,
     this.etoiles = 0,
     required this.posts,
     required this.events,
@@ -188,6 +191,7 @@ final communityUserProfileProvider =
       fitnessLevel:  localUser.fitnessLevel,
       frequency:     localUser.frequency != null ? '${localUser.frequency}x/sem' : null,
       isCurrentUser: true,
+      isPro:         ref.read(isProProvider),
       etoiles:       etoiles,
       posts:         userPosts,
       events:        userEvents,
@@ -224,6 +228,7 @@ final communityUserProfileProvider =
         ? data['fitness_level'] as String : null,
     frequency:     freqDays > 0 ? '${freqDays}x/sem' : null,
     isCurrentUser: false,
+    isPro:         data['is_pro'] as bool? ?? false,
     etoiles:       remoteEtoiles,
     posts:         userPosts,
     events:        userEvents,
@@ -516,9 +521,17 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(profile.name, style: GoogleFonts.outfit(
-                      fontSize: 24, fontWeight: FontWeight.w800,
-                      color: cs.onSurface, letterSpacing: -0.5, height: 1.1)),
+                    Row(children: [
+                      Flexible(child: Text(profile.name, overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                          fontSize: 24, fontWeight: FontWeight.w800,
+                          color: cs.onSurface, letterSpacing: -0.5, height: 1.1)),
+                      ),
+                      if (profile.isPro) ...[
+                        const SizedBox(width: 6),
+                        const Icon(LucideIcons.crown, size: 18, color: Color(0xFFF59E0B)),
+                      ],
+                    ]),
                     const SizedBox(height: 2),
                     Text(profile.username, style: GoogleFonts.inter(
                       fontSize: 13, fontWeight: FontWeight.w500,

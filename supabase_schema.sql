@@ -142,6 +142,7 @@ CREATE TABLE programs (
   equipment         TEXT[]           NOT NULL DEFAULT '{}',
   category          program_category NOT NULL DEFAULT 'home',
   description       TEXT             NOT NULL DEFAULT '',
+  is_premium        BOOLEAN          NOT NULL DEFAULT false,
   created_at        TIMESTAMPTZ      NOT NULL DEFAULT now()
 );
 
@@ -819,12 +820,25 @@ CREATE POLICY "own_user_profiles" ON user_profiles FOR ALL
 
 -- Vue publique : seules les colonnes safe pour affichage communautaire.
 -- Vue "security definer" implicite (propriétaire = postgres) : elle peut lire
--- toutes les lignes de user_profiles même si RLS restreint la table de base
--- à "own row only" pour l'appelant — mais elle ne renvoie jamais l'email.
+-- toutes les lignes de user_profiles/user_subscriptions même si RLS restreint
+-- ces tables de base à "own row only" pour l'appelant — mais elle ne renvoie
+-- jamais l'email ni aucun détail de facturation (customer id, etc.), juste
+-- un booléen is_pro dérivé, calculé à la volée (toujours à jour, pas de
+-- synchronisation à maintenir).
+-- NB : référence user_subscriptions (créée section 13, plus bas dans ce
+-- fichier) — sans incidence en migration ciblée sur une base déjà en place,
+-- mais si ce fichier est un jour rejoué de zéro, cette vue doit être (re)créée
+-- après la section 13.
 CREATE OR REPLACE VIEW public_profiles AS
-  SELECT id, username, avatar_seed, avatar_style, avatar_bg_color,
-         mascot_type, mascot_mood
-  FROM user_profiles;
+  SELECT
+    p.id, p.username, p.avatar_seed, p.avatar_style, p.avatar_bg_color,
+    p.mascot_type, p.mascot_mood,
+    COALESCE(
+      s.plan <> 'free' AND s.status IN ('active', 'trialing', 'canceling'),
+      false
+    ) AS is_pro
+  FROM user_profiles p
+  LEFT JOIN user_subscriptions s ON s.user_id = p.id;
 
 GRANT SELECT ON public_profiles TO authenticated;
 

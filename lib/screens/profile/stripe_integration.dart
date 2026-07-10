@@ -3,24 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../services/stripe_config.dart';
+import '../../providers/subscription_provider.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────────
 /// Abonnement — bouton "Passer Pro" du profil + bottom sheet des 3 offres
 /// (Gratuit · Pro Mensuel · Pro Annuel), paiement via Stripe PaymentSheet.
+///
+/// L'état de l'abonnement lui-même (fetch, cache, isPro) vit dans
+/// providers/subscription_provider.dart — source de vérité unique partagée
+/// avec les autres écrans qui gatent du contenu Pro (tendances, coach IA).
 /// ─────────────────────────────────────────────────────────────────────────────
 
-/// Abonnement courant (ligne de `user_subscriptions`, null = plan gratuit).
-final subscriptionProvider =
-    FutureProvider<Map<String, dynamic>?>((ref) => StripeService.fetchSubscription());
-
-/// Plan actif dérivé de l'abonnement.
+/// Plan actif dérivé de l'abonnement partagé.
 final currentPlanProvider = Provider<SubscriptionPlan>((ref) {
   final sub = ref.watch(subscriptionProvider).value;
   if (sub == null) return SubscriptionPlan.free;
-  final status = sub['status'] as String? ?? '';
-  const activeStatuses = {'active', 'trialing', 'canceling'};
-  if (!activeStatuses.contains(status)) return SubscriptionPlan.free;
-  return SubscriptionPlanX.fromId(sub['plan'] as String?);
+  return sub.isPro ? sub.plan : SubscriptionPlan.free;
 });
 
 // ─── Bouton affiché dans le profil ───────────────────────────────────────────

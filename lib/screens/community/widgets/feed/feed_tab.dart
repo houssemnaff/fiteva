@@ -493,10 +493,18 @@ class _PostCardState extends ConsumerState<_PostCard>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(post.username, style: GoogleFonts.outfit(
-                        fontSize: 14, fontWeight: FontWeight.w700,
-                        color: cs.onSurface, letterSpacing: -0.2,
-                      )),
+                      Row(children: [
+                        Flexible(child: Text(post.username, overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            fontSize: 14, fontWeight: FontWeight.w700,
+                            color: cs.onSurface, letterSpacing: -0.2,
+                          )),
+                        ),
+                        if (post.isPro) ...[
+                          const SizedBox(width: 5),
+                          const Icon(LucideIcons.crown, size: 13, color: Color(0xFFF59E0B)),
+                        ],
+                      ]),
                       const SizedBox(height: 3),
                       Row(children: [
                         Text(post.timeAgo, style: GoogleFonts.inter(

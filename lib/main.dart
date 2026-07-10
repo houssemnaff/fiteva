@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'theme/app_theme.dart';
 import 'router/app_router.dart';
+import 'providers/subscription_provider.dart';
 import 'providers/theme_provider.dart';
 import 'firebase_options.dart';
 // locale_provider is used via l10nProvider in individual screens
@@ -90,11 +91,16 @@ class _FitevaAppState extends ConsumerState<FitevaApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Eagerly load subscription so isProProvider is ready everywhere
+    ref.watch(subscriptionProvider);
+
     final themeMode = ref.watch(themeModeProvider);
+    final palette = ref.watch(colorPaletteProvider);
+    final isDefault = palette.id == 'forest';
     return MaterialApp.router(
       title: 'FITEVA',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: isDefault ? AppTheme.lightTheme : AppTheme.lightThemeFrom(palette.lightScheme),
+      darkTheme: isDefault ? AppTheme.darkTheme : AppTheme.darkThemeFrom(palette.darkScheme),
       themeMode: themeMode,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,

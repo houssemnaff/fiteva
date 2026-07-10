@@ -122,6 +122,17 @@ class AppTheme {
   static const Color overlayWhite = Color(0xFFFFFFFF);
   static const Color transparent = Colors.transparent;
 static ThemeMode themeMode = ThemeMode.system;
+
+  /// Build a light theme from a given [ColorScheme] (palette-derived).
+  static ThemeData lightThemeFrom(ColorScheme scheme) {
+    return _buildTheme(scheme, Brightness.light);
+  }
+
+  /// Build a dark theme from a given [ColorScheme] (palette-derived).
+  static ThemeData darkThemeFrom(ColorScheme scheme) {
+    return _buildTheme(scheme, Brightness.dark);
+  }
+
   static ThemeData get lightTheme {
     return ThemeData(
       primaryColor: primaryColor,
@@ -371,6 +382,94 @@ static ThemeMode themeMode = ThemeMode.system;
           borderSide: const BorderSide(color: accentColor, width: 2),
         ),
         hintStyle: GoogleFonts.inter(color: const Color(0xFF888888)),
+      ),
+    );
+  }
+
+  // ── Palette-driven theme builder ──────────────────────────────────────────
+
+  static ThemeData _buildTheme(ColorScheme cs, Brightness brightness) {
+    final isLight = brightness == Brightness.light;
+    final textColor = isLight ? const Color(0xFF1A1A1A) : Colors.white;
+    final mutedText = isLight ? const Color(0xFF757575) : const Color(0xFFAAAAAA);
+    final scaffoldBg = isLight ? const Color(0xFFFEFEFE) : const Color(0xFF0A0A0A);
+    final cardBg = isLight ? Colors.white : const Color(0xFF141414);
+    final inputBg = isLight ? Colors.white : const Color(0xFF141414);
+
+    return ThemeData(
+      brightness: brightness,
+      primaryColor: cs.primary,
+      scaffoldBackgroundColor: scaffoldBg,
+      colorScheme: cs,
+      textTheme: (isLight
+          ? GoogleFonts.interTextTheme()
+          : GoogleFonts.interTextTheme(ThemeData.dark().textTheme)
+      ).copyWith(
+        displayLarge: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.bold, fontSize: 32),
+        displayMedium: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.bold, fontSize: 28),
+        titleLarge: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.w600, fontSize: 22),
+        titleMedium: GoogleFonts.inter(color: textColor, fontWeight: FontWeight.w600, fontSize: 16),
+        bodyLarge: GoogleFonts.inter(color: textColor, fontSize: 16),
+        bodyMedium: GoogleFonts.inter(color: mutedText, fontSize: 14),
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: scaffoldBg,
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: isLight ? cs.primary : Colors.white),
+        titleTextStyle: GoogleFonts.outfit(color: textColor, fontSize: 20, fontWeight: FontWeight.w600),
+      ),
+      cardTheme: CardThemeData(
+        color: cardBg,
+        elevation: isLight ? 2 : 0,
+        shadowColor: const Color(0x0D000000),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: EdgeInsets.zero,
+      ),
+      extensions: [isLight ? PgColors.light : PgColors.dark],
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: cardBg,
+        selectedItemColor: cs.primary,
+        unselectedItemColor: mutedText,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        elevation: 10,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: cs.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: cs.primary,
+          side: BorderSide(color: cs.primary),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: cs.primary,
+          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: inputBg,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: cs.secondary, width: 2),
+        ),
+        hintStyle: GoogleFonts.inter(color: mutedText),
       ),
     );
   }

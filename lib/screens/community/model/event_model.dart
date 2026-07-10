@@ -20,6 +20,7 @@ class EventModel {
   final String contactInstagram;
   final String contactFacebook;
   bool isJoined;
+  final bool organizerIsPro;
 
   EventModel({
     required this.id,
@@ -43,6 +44,7 @@ class EventModel {
     this.contactInstagram = '',
     this.contactFacebook = '',
     this.isJoined = false,
+    this.organizerIsPro = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -66,6 +68,7 @@ class EventModel {
     'contactWhatsapp': contactWhatsapp,
     'contactInstagram': contactInstagram,
     'contactFacebook': contactFacebook,
+    'organizerIsPro': organizerIsPro,
   };
 
   factory EventModel.fromJson(Map<String, dynamic> j) => EventModel(
@@ -92,6 +95,7 @@ class EventModel {
     contactWhatsapp: j['contactWhatsapp'] as String? ?? '',
     contactInstagram: j['contactInstagram'] as String? ?? '',
     contactFacebook: j['contactFacebook'] as String? ?? '',
+    organizerIsPro: j['organizerIsPro'] as bool? ?? false,
   );
 
   EventModel copyWith({
@@ -116,6 +120,7 @@ class EventModel {
     String? contactInstagram,
     String? contactFacebook,
     bool? isJoined,
+    bool? organizerIsPro,
   }) =>
       EventModel(
         id: id ?? this.id,
@@ -139,5 +144,6 @@ class EventModel {
         contactInstagram: contactInstagram ?? this.contactInstagram,
         contactFacebook: contactFacebook ?? this.contactFacebook,
         isJoined: isJoined ?? this.isJoined,
+        organizerIsPro: organizerIsPro ?? this.organizerIsPro,
       );
 }

@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'secure_session_storage.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────────
 /// Configuration Supabase — à remplir avec vos valeurs depuis :
@@ -27,8 +28,14 @@ class SupabaseConfig {
       url: url,
       // ignore: deprecated_member_use
       anonKey: anonKey,
-      authOptions: const FlutterAuthClientOptions(
+      authOptions: FlutterAuthClientOptions(
         authFlowType: AuthFlowType.pkce,
+        // Tokens chiffrés (Android Keystore / iOS Keychain) au lieu de
+        // SharedPreferences en clair — voir SecureSessionStorage.
+        localStorage: SecureSessionStorage(
+          persistSessionKey:
+              'sb-${Uri.parse(url).host.split(".").first}-auth-token',
+        ),
       ),
     );
   }

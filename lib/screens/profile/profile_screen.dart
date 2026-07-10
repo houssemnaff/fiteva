@@ -15,9 +15,13 @@ import '../../providers/user_profile_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/mascot_provider.dart';
 import '../../providers/onboarding_provider.dart';
+import '../../providers/subscription_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/mascot_widget.dart';
+import '../../widgets/paywall_sheet.dart';
 import 'stripe_integration.dart';
+import 'theme_screen.dart';
+import 'trends_screen.dart';
 
 const _days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -165,11 +169,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                   const SizedBox(height: 12),
 
-                  Text(displayName.isNotEmpty ? displayName : l10n.profileUser,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
-                      color: ink, letterSpacing: -0.4)),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(displayName.isNotEmpty ? displayName : l10n.profileUser,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
+                            color: ink, letterSpacing: -0.4)),
+                      ),
+                      Consumer(builder: (_, ref2, __) {
+                        if (!ref2.watch(isProProvider)) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.crown, size: 11, color: Color(0xFFF59E0B)),
+                                SizedBox(width: 3),
+                                Text('PRO', style: TextStyle(fontSize: 10,
+                                    fontWeight: FontWeight.w800, color: Color(0xFFF59E0B),
+                                    letterSpacing: 0.4)),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
                   if (displayEmail.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(displayEmail,
@@ -417,6 +451,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
 
+          // ── Themes ───────────────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: GestureDetector(
+                onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const ThemeScreen())),
+                child: _SettingsTile(
+                  icon: LucideIcons.palette,
+                  label: 'Thèmes',
+                  color: const Color(0xFFE91E63),
+                  surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
+                  trailing: Consumer(builder: (_, ref2, __) {
+                    final palette = ref2.watch(colorPaletteProvider);
+                    return Row(mainAxisSize: MainAxisSize.min, children: [
+                      Container(
+                        width: 18, height: 18,
+                        decoration: BoxDecoration(
+                          color: palette.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(LucideIcons.chevronRight, size: 14,
+                        color: cs.onSurface.withValues(alpha: 0.3)),
+                    ]);
+                  }),
+                ),
+              ),
+            ),
+          ),
+
           // ── Language toggle ─────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
@@ -541,20 +608,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
 
-          // ── Tendances / analytics ───────────────────────────────────────────
+          // ── Tendances / analytics (Pro) ─────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: GestureDetector(
-                onTap: () => context.push('/trends'),
-                child: _SettingsTile(
-                  icon: LucideIcons.trendingUp,
-                  label: l10n.isFrench ? 'Mes tendances' : 'My trends',
-                  color: const Color(0xFF22C55E),
-                  surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
-                  trailing: Icon(LucideIcons.chevronRight, size: 16, color: muted),
-                ),
-              ),
+              child: Consumer(builder: (_, ref2, __) {
+                final isPro = ref2.watch(isProProvider);
+                return GestureDetector(
+                  onTap: () {
+                    if (isPro) {
+                      Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const TrendsScreen()));
+                    } else {
+                      showPaywallSheet(
+                        context,
+                        feature: l10n.isFrench ? 'Mes tendances' : 'My trends',
+                        description: l10n.isFrench
+                            ? 'Visualise tes calories, ton eau et ton humeur sur 14 jours.'
+                            : 'Visualize your calories, water and mood over 14 days.',
+                      );
+                    }
+                  },
+                  child: _SettingsTile(
+                    icon: LucideIcons.trendingUp,
+                    label: l10n.isFrench ? 'Mes tendances' : 'My trends',
+                    color: const Color(0xFF22C55E),
+                    surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
+                    trailing: isPro
+                        ? Icon(LucideIcons.chevronRight, size: 16, color: muted)
+                        : const Icon(LucideIcons.crown, size: 16, color: Color(0xFFF4A940)),
+                  ),
+                );
+              }),
             ),
           ),
 
