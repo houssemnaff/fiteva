@@ -3,7 +3,10 @@ import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/providers/locale_provider.dart';
 import 'package:fiteva/services/auth_service.dart';
 import 'package:fiteva/services/storage_service.dart';
+import 'package:fiteva/services/local_reminder_service.dart';
+import 'package:fiteva/services/privacy_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +24,9 @@ const _days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 final expandBadgesProvider  = StateProvider<bool>((ref) => false);
 final chatbotVisibilityProvider = StateProvider<bool>(
   (ref) => StorageService.getChatbotVisible(),
+);
+final remindersEnabledProvider = StateProvider<bool>(
+  (ref) => LocalReminderService.remindersEnabled,
 );
 
 // ─── ProfileScreen ──────────────────────────────────────────────────────────
@@ -488,6 +494,125 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
 
+          // ── Rappels quotidiens (eau, repas, séance) ────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: _SettingsTile(
+                icon: LucideIcons.bellRing,
+                label: l10n.isFrench ? 'Rappels quotidiens' : 'Daily reminders',
+                color: const Color(0xFFF4A940),
+                surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
+                trailing: Consumer(builder: (_, ref2, __) {
+                  final enabled = ref2.watch(remindersEnabledProvider);
+                  return GestureDetector(
+                    onTap: () async {
+                      final next = !enabled;
+                      if (next) {
+                        final granted = await LocalReminderService.requestPermission();
+                        if (!granted) return; // permission refusée : on ne change pas l'état
+                      }
+                      await LocalReminderService.setEnabled(next);
+                      ref2.read(remindersEnabledProvider.notifier).state = next;
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 42, height: 24,
+                      decoration: BoxDecoration(
+                        color: enabled ? green : (isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFD0D0CE)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: AnimatedAlign(
+                        duration: const Duration(milliseconds: 200),
+                        alignment: enabled ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Container(
+                            width: 20, height: 20,
+                            decoration: const BoxDecoration(
+                              color: Colors.white, shape: BoxShape.circle),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+
+          // ── Tendances / analytics ───────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: GestureDetector(
+                onTap: () => context.push('/trends'),
+                child: _SettingsTile(
+                  icon: LucideIcons.trendingUp,
+                  label: l10n.isFrench ? 'Mes tendances' : 'My trends',
+                  color: const Color(0xFF22C55E),
+                  surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
+                  trailing: Icon(LucideIcons.chevronRight, size: 16, color: muted),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Confidentialité (RGPD) ─────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: GestureDetector(
+                onTap: () => _exportData(context, ref),
+                child: _SettingsTile(
+                  icon: LucideIcons.download,
+                  label: l10n.isFrench ? 'Exporter mes données' : 'Export my data',
+                  color: const Color(0xFF3B7FD4),
+                  surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
+                  trailing: Icon(LucideIcons.chevronRight, size: 16, color: muted),
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: GestureDetector(
+                onTap: () => _confirmDeleteAccount(context, ref),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? const Color(0xFF1E0A0A)
+                        : const Color(0xFFFFF0F0),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFE53935).withValues(alpha: 0.30),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.trash2,
+                          color: Color(0xFFE53935), size: 18),
+                      const SizedBox(width: 10),
+                      Text(
+                        l10n.isFrench ? 'Supprimer mon compte' : 'Delete my account',
+                        style: const TextStyle(
+                          color: Color(0xFFE53935),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
           // ── Déconnexion ──────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
@@ -530,6 +655,77 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           // ── Bottom padding ───────────────────────────────────────────────
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportData(BuildContext context, WidgetRef ref) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    final data = await PrivacyService.exportUserData();
+    final json = PrivacyService.exportUserDataAsJson(data);
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // ferme le loader
+
+    await Clipboard.setData(ClipboardData(text: json));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(ref.read(l10nProvider).isFrench
+          ? 'Données copiées (format JSON) — colle-les où tu veux les garder.'
+          : 'Data copied (JSON format) — paste it wherever you want to keep it.'),
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 4),
+    ));
+  }
+
+  void _confirmDeleteAccount(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = ref.read(l10nProvider);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: cs.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          l10n.isFrench ? 'Supprimer définitivement ton compte ?' : 'Permanently delete your account?',
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+        ),
+        content: Text(
+          l10n.isFrench
+              ? 'Toutes tes données (profil, cycle, nutrition, symptômes, points, XP…) '
+                'seront supprimées. Cette action est irréversible.'
+              : 'All your data (profile, cycle, nutrition, symptoms, points, XP…) '
+                'will be deleted. This action is irreversible.',
+          style: TextStyle(fontSize: 14, color: cs.onSurface.withValues(alpha: 0.7)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.isFrench ? 'Annuler' : 'Cancel',
+                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              showDialog<void>(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const Center(child: CircularProgressIndicator()),
+              );
+              await PrivacyService.deleteAllUserData();
+              if (!context.mounted) return;
+              Navigator.of(context, rootNavigator: true).pop(); // ferme le loader
+              ref.read(onboardingProvider.notifier).reset();
+              if (context.mounted) context.go('/onboarding');
+            },
+            child: Text(l10n.isFrench ? 'Supprimer définitivement' : 'Delete permanently',
+                style: const TextStyle(
+                    color: Color(0xFFE53935), fontWeight: FontWeight.w700)),
+          ),
         ],
       ),
     );

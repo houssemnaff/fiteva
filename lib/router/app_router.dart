@@ -4,6 +4,7 @@ import '../screens/main_layout.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/avatar_customization_screen.dart';
+import '../screens/profile/trends_screen.dart';
 import '../services/storage_service.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -61,6 +62,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/edit-avatar',
       builder: (context, state) => const AvatarCustomizationScreen(userName: 'Sarra'),
+    ),
+    GoRoute(
+      path: '/trends',
+      builder: (context, state) => const TrendsScreen(),
     ),
   ],
 );

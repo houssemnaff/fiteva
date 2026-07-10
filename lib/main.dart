@@ -2,6 +2,7 @@ import 'package:fiteva/services/storage_service.dart';
 import 'package:fiteva/services/supabase_config.dart';
 import 'package:fiteva/services/stripe_config.dart';
 import 'package:fiteva/services/push_notification_service.dart';
+import 'package:fiteva/services/local_reminder_service.dart';
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -19,6 +20,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
   await SupabaseConfig.initialize();
+
+  // ── Rappels locaux (eau, repas, séance) ────────────────────────────────────
+  if (!kIsWeb) {
+    try {
+      await LocalReminderService.init();
+    } catch (e) {
+      debugPrint('[Reminders] init error: $e');
+    }
+  }
 
   // ── Stripe (abonnements) ───────────────────────────────────────────────────
   try {
@@ -60,6 +70,11 @@ class _FitevaAppState extends ConsumerState<FitevaApp> {
       if (!kIsWeb) {
         Future.delayed(const Duration(seconds: 3),
             PushNotificationService.requestPermissionIfNeeded);
+        Future.delayed(const Duration(seconds: 4), () async {
+          if (!LocalReminderService.remindersEnabled) return;
+          final granted = await LocalReminderService.requestPermission();
+          if (granted) await LocalReminderService.scheduleAllDefaults();
+        });
       }
     });
   }
