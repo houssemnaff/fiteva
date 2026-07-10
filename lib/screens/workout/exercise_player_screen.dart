@@ -100,7 +100,11 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     final url = (widget.videoUrl != null && widget.videoUrl!.isNotEmpty)
         ? widget.videoUrl!
         : _fallback[widget.exerciseIndex % _fallback.length];
-    _videoCtrl = VideoPlayerController.asset(url);
+    // URL réseau (Supabase Storage, CDN…) vs asset embarqué : .asset() sur
+    // une URL http échoue à s'initialiser → aucune progression possible.
+    _videoCtrl = url.startsWith('http')
+        ? VideoPlayerController.networkUrl(Uri.parse(url))
+        : VideoPlayerController.asset(url);
     try {
       await _videoCtrl!.initialize();
       _videoCtrl!.addListener(_onProgress);
@@ -181,16 +185,26 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
 
     HapticFeedback.mediumImpact();
 
+    // ── Marque la vidéo comme terminée en base — AVANT tout le reste ──────
+    // La sauvegarde par paliers de 10 % (_onProgress) est fire-and-forget :
+    // sans cette écriture explicite et attendue, la vidéo pouvait rester
+    // non terminée en base, et _checkAndMarkComplete (qui relit les vidéos
+    // terminées) ne marquait alors jamais le workout comme complet.
+    await WorkoutProgressService.markVideoComplete(widget.videoId);
+
     // ── Award points ───────────────────────────────────────────────────────
     final pts = _pointsForExercise(
         widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex);
     widget.ref.read(pointsProvider.notifier).addPoints(pts);
     widget.ref.read(shopProvider.notifier).refresh();
+
+    // Vérifie si tout le workout est terminé (la vidéo vient d'être écrite),
+    // PUIS invalide les providers pour qu'ils rechargent l'état à jour.
+    await _checkAndMarkComplete();
     widget.ref.invalidate(completedVideosProvider);
     widget.ref.invalidate(workoutCompletionPercentageProvider);
     widget.ref.invalidate(programCompletionPercentageProvider);
     widget.ref.invalidate(programStatusProvider);
-    await _checkAndMarkComplete();
 
     // ── Show floating badge then navigate back ─────────────────────────────
     setState(() { _isDone = true; _earnedPoints = pts; _showPoints = true; });

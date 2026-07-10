@@ -405,18 +405,6 @@ class _ProgramFavCard extends StatelessWidget {
                               fontSize: 11,
                               color: _kGrey,
                               fontWeight: FontWeight.w500)),
-                      const SizedBox(width: 10),
-                      Icon(LucideIcons.dumbbell,
-                          size: 10, color: _kGrey),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(program.sessions,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: _kGrey,
-                                fontWeight: FontWeight.w500)),
-                      ),
                     ]),
                     const SizedBox(height: 6),
                     CycleBadgeRow(phases: program.phases),

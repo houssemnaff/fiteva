@@ -29,30 +29,40 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     _loadStatus();
   }
 
-  Future<void> _loadStatus() async {
-    final done = await WorkoutProgressService.getCompletedVideos();
-    final exercises = widget.workout.exercises;
+  /// Nombre d'exercices de CE workout dont la vidéo est dans [done].
+  int _countDone(Set<String> done) {
     int count = 0;
-    for (int i = 0; i < exercises.length; i++) {
+    for (int i = 0; i < widget.workout.exercises.length; i++) {
       final videoId = widget.workout.videoIdAt(i);
       if (videoId != null && done.contains(videoId)) count++;
     }
-    if (mounted) setState(() { _completedVideos = done; _completedExercises = count; });
+    return count;
   }
 
-  Future<int> _firstIncompleteIndex() async {
-    final done = await WorkoutProgressService.getCompletedVideos();
+  /// Premier exercice dont la vidéo n'est pas terminée (-1 si tout est fait).
+  int _firstIncompleteOf(Set<String> done) {
     for (int i = 0; i < widget.workout.exercises.length; i++) {
       final videoId = widget.workout.videoIdAt(i);
       if (videoId == null || !done.contains(videoId)) return i;
     }
-    return 0;
+    return -1;
+  }
+
+  Future<void> _loadStatus() async {
+    final done = await WorkoutProgressService.getCompletedVideos();
+    if (mounted) {
+      setState(() {
+        _completedVideos = done;
+        _completedExercises = _countDone(done);
+      });
+    }
   }
 
   Future<void> _openFirstIncomplete() async {
     final exercises = widget.workout.exercises;
-    final idx = await _firstIncompleteIndex();
-    if (!mounted) return;
+    final done = await WorkoutProgressService.getCompletedVideos();
+    final idx = _firstIncompleteOf(done);
+    if (!mounted || idx < 0) return;
     _openExercise(idx, exercises[idx], widget.workout.videoIdAt(idx) ?? '', false);
   }
 
@@ -71,10 +81,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         totalExercises: widget.workout.exercises.length,
         totalWorkoutPoints: widget.workout.points,
         onCompleted: () {
-          if (!isDone) {
+          // État dérivé du set réel (idempotent) — un compteur incrémenté
+          // pouvait dériver si la même vidéo était validée deux fois.
+          if (videoId.isNotEmpty) {
             setState(() {
-              _completedExercises++;
-              _completedVideos.add(videoId);
+              _completedVideos = {..._completedVideos, videoId};
+              _completedExercises = _countDone(_completedVideos);
             });
           }
         },
@@ -232,10 +244,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                       ),
                     ]),
                     const SizedBox(height: 14),
-                    // Segmented bar
+                    // Segmented bar — chaque segment reflète SA vidéo,
+                    // pas un simple compteur ordonné.
                     Row(
                       children: List.generate(exercises.length, (i) {
-                        final done = i < _completedExercises;
+                        final vid = widget.workout.videoIdAt(i);
+                        final done = vid != null && _completedVideos.contains(vid);
                         return Expanded(
                           child: Container(
                             margin: EdgeInsets.only(right: i < exercises.length - 1 ? 4 : 0),
@@ -262,7 +276,11 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                       final name = exercises[index];
                       final videoId = widget.workout.videoIdAt(index) ?? '';
                       final isDone = videoId.isNotEmpty && _completedVideos.contains(videoId);
-                      final isCurrent = !isDone && index == _completedExercises;
+                      // Le cadre « en cours » = premier exercice non terminé
+                      // (et plus un index-compteur qui sautait de travers
+                      // quand une vidéo était finie hors ordre).
+                      final isCurrent =
+                          !isDone && index == _firstIncompleteOf(_completedVideos);
 
                       return GestureDetector(
                         onTap: () => _openExercise(index, name, videoId, isDone),

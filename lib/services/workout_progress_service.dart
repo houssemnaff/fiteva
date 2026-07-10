@@ -18,7 +18,8 @@ class ProgramProgressStatus {
     required this.totalWorkouts,
   });
 
-  bool get isStarted => completedWorkouts > 0 && !isCompleted;
+  bool get isStarted =>
+      !isCompleted && (completedWorkouts > 0 || completionPercentage > 0);
 }
 
 /// Progression workouts, vidéos, programmes et favoris — stocké dans Supabase
@@ -228,7 +229,19 @@ class WorkoutProgressService {
     }
   }
 
+  /// Progression fine d'un programme, basée sur les VIDÉOS terminées —
+  /// chaque vidéo finie fait avancer la barre, sans attendre que le
+  /// workout entier soit complété. Fallback sur les workouts si le
+  /// programme n'a pas de vidéos.
   static Future<double> getProgramCompletionPercentage(HomeProgramModel program) async {
+    final videoIds = [
+      for (final w in program.workouts)
+        for (final v in w.videos) v.id
+    ];
+    if (videoIds.isNotEmpty) {
+      final doneVideos = await getCompletedVideos();
+      return videoIds.where(doneVideos.contains).length / videoIds.length;
+    }
     if (program.workouts.isEmpty) return 0.0;
     final completedWorkouts = await getCompletedWorkouts();
     final done = program.workouts.where((w) => completedWorkouts.contains(w.id)).length;

@@ -35,7 +35,7 @@ class FavoritesBottomSheet extends ConsumerStatefulWidget {
           .map((p) => {
             'id': 'prog:${p.id}',
             'title': p.name,
-            'subtitle': '${p.duration} · ${p.sessions}',
+            'subtitle': p.duration,
             'image': p.imageUrl,
           })
           .toList();

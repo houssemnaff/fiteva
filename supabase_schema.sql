@@ -128,12 +128,12 @@ CREATE TABLE xp_history (
 -- ══════════════════════════════════════════════════════════════════════════════
 
 -- ── 4.1  Programmes ──────────────────────────────────────────────────────────
+-- NB : pas de colonne "duration" — la durée d'un programme (nombre de
+-- semaines) est dérivée de program_weeks (COUNT), jamais stockée en double.
 CREATE TABLE programs (
   id                TEXT             PRIMARY KEY,
   name              TEXT             NOT NULL,
-  duration          TEXT             NOT NULL DEFAULT '',
   phases            TEXT             NOT NULL DEFAULT '',
-  sessions          TEXT             NOT NULL DEFAULT '',
   color             INTEGER          NOT NULL DEFAULT 0,
   image_url         TEXT             NOT NULL DEFAULT '',
   compatible_cycles TEXT[]           NOT NULL DEFAULT '{}',
@@ -205,6 +205,13 @@ CREATE TABLE program_weeks (
 ALTER TABLE workouts
   ADD COLUMN week_id    TEXT    REFERENCES program_weeks(id) ON DELETE CASCADE,
   ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;
+
+-- Les anciennes colonnes texte programs.duration ("4 semaines") et
+-- programs.sessions ("3 séances / sem.") faisaient doublon avec les données
+-- réelles (program_weeks / workouts) et pouvaient diverger — supprimées.
+-- (IF EXISTS : sur une base fraîche elles ne sont plus dans le CREATE TABLE.)
+ALTER TABLE programs DROP COLUMN IF EXISTS duration;
+ALTER TABLE programs DROP COLUMN IF EXISTS sessions;
 
 -- Garde program_id cohérent avec la semaine choisie
 CREATE OR REPLACE FUNCTION sync_workout_program_id()
@@ -1022,16 +1029,16 @@ INSERT INTO xp_challenges (key, title_fr, title_en, emoji, target_days, xp_rewar
   ('cycleWeek', 'Semaine cycle',    'Cycle awareness',   '🌸', 7, 50);
 
 -- ── Programmes ───────────────────────────────────────────────────────────────
-INSERT INTO programs (id, name, duration, phases, sessions, color, image_url, compatible_cycles, total_points, level, equipment, category) VALUES
-('prog_home_glow',        'Home Glow',        '4 semaines', 'Règles + Foll. + Ovul.', '3 séances / sem.', -13181736, 'assets/images/fullbody.jpg',  ARRAY['Folliculaire','Ovulation'],            100, 'Tous niveaux',  ARRAY['Mat','Dumbbells'],                'home'),
-('prog_pilates_reset',    'Pilates Reset',    '8 semaines', 'Toutes phases',           '3 séances / sem.', -14583808, 'assets/images/pilates.jpg',   ARRAY['Règles','Lutéale'],                   100, 'Débutant',      ARRAY['Mat'],                            'home'),
-('prog_booty_home',       'Booty From Home',  '4 semaines', 'Toutes phases',           '4 séances / sem.', -14737007, 'assets/images/strength.jpg',  ARRAY['Folliculaire','Lutéale'],             100, 'Intermédiaire', ARRAY['Mat','Resistance Band'],          'home'),
-('prog_salle_builder',    'Body Builder',     '6 semaines', 'Follic. + Ovul.',         '4 séances / sem.', -14643408, 'assets/images/strength.jpg',  ARRAY['Folliculaire','Ovulation'],           100, 'Intermédiaire', ARRAY['Barbell','Dumbbells','Bench'],    'salle'),
-('prog_salle_stronger',   'Stronger You',     '4 semaines', 'Toutes phases',           '3 séances / sem.', -13983182, 'assets/images/upper.jpg',     ARRAY['Règles','Ovulation'],                 100, 'Avancé',        ARRAY['Dumbbells','Cable Machine'],      'salle'),
-('prog_salle_lean',       'Lean 4 Life',      '4 semaines', 'Toutes phases',           '3 séances / sem.', -16749764, 'assets/images/fullbody.jpg',  ARRAY['Règles','Folliculaire','Lutéale'],    100, 'Tous niveaux',  ARRAY['Barbell','Dumbbells'],            'salle'),
-('prog_dance_zumba_flow', 'Zumba Flow',       '4 semaines', 'Toutes phases',           '3 séances / sem.', -1834016,  'assets/images/fullbody.jpg',  ARRAY['Folliculaire','Ovulation'],           100, 'Tous niveaux',  ARRAY[]::TEXT[],                         'dance'),
-('prog_recovery_gentle',  'Gentle Recovery',  '2 semaines', 'Toutes phases',           '5 séances / sem.', -16722608, 'assets/images/fullbody.jpg',  ARRAY['Règles','Lutéale'],                    80, 'Tous niveaux',  ARRAY['Mat'],                            'recuperation'),
-('prog_pregnancy_safe',   'Pregnancy Safe',   '9 mois',     'Grossesse',               '3 séances / sem.', -17416,    'assets/images/fullbody.jpg',  ARRAY['Grossesse'],                          120, 'Débutant',      ARRAY['Mat'],                            'grossesse');
+INSERT INTO programs (id, name, phases, color, image_url, compatible_cycles, total_points, level, equipment, category) VALUES
+('prog_home_glow',        'Home Glow',        'Règles + Foll. + Ovul.', -13181736, 'assets/images/fullbody.jpg',  ARRAY['Folliculaire','Ovulation'],            100, 'Tous niveaux',  ARRAY['Mat','Dumbbells'],                'home'),
+('prog_pilates_reset',    'Pilates Reset',    'Toutes phases',           -14583808, 'assets/images/pilates.jpg',   ARRAY['Règles','Lutéale'],                   100, 'Débutant',      ARRAY['Mat'],                            'home'),
+('prog_booty_home',       'Booty From Home',  'Toutes phases',           -14737007, 'assets/images/strength.jpg',  ARRAY['Folliculaire','Lutéale'],             100, 'Intermédiaire', ARRAY['Mat','Resistance Band'],          'home'),
+('prog_salle_builder',    'Body Builder',     'Follic. + Ovul.',         -14643408, 'assets/images/strength.jpg',  ARRAY['Folliculaire','Ovulation'],           100, 'Intermédiaire', ARRAY['Barbell','Dumbbells','Bench'],    'salle'),
+('prog_salle_stronger',   'Stronger You',     'Toutes phases',           -13983182, 'assets/images/upper.jpg',     ARRAY['Règles','Ovulation'],                 100, 'Avancé',        ARRAY['Dumbbells','Cable Machine'],      'salle'),
+('prog_salle_lean',       'Lean 4 Life',      'Toutes phases',           -16749764, 'assets/images/fullbody.jpg',  ARRAY['Règles','Folliculaire','Lutéale'],    100, 'Tous niveaux',  ARRAY['Barbell','Dumbbells'],            'salle'),
+('prog_dance_zumba_flow', 'Zumba Flow',       'Toutes phases',           -1834016,  'assets/images/fullbody.jpg',  ARRAY['Folliculaire','Ovulation'],           100, 'Tous niveaux',  ARRAY[]::TEXT[],                         'dance'),
+('prog_recovery_gentle',  'Gentle Recovery',  'Toutes phases',           -16722608, 'assets/images/fullbody.jpg',  ARRAY['Règles','Lutéale'],                    80, 'Tous niveaux',  ARRAY['Mat'],                            'recuperation'),
+('prog_pregnancy_safe',   'Pregnancy Safe',   'Grossesse',               -17416,    'assets/images/fullbody.jpg',  ARRAY['Grossesse'],                          120, 'Débutant',      ARRAY['Mat'],                            'grossesse');
 
 -- ── Workouts ──────────────────────────────────────────────────────────────────
 INSERT INTO workouts (id, program_id, title, category, duration, level, image_url, calories, exercises, points) VALUES
@@ -1065,18 +1072,35 @@ INSERT INTO workouts (id, program_id, title, category, duration, level, image_ur
 ('preg_safe_3',       'prog_pregnancy_safe',  'Prenatal Yoga',         'GROSSESSE',   '25 min', 'Tous niveaux',  'assets/images/fullbody.jpg',  '140', ARRAY['Prenatal Poses','Stretching','Meditation'], 40);
 
 -- ── Vidéos ───────────────────────────────────────────────────────────────────
+-- NB : url pointe vers les 3 fichiers de test déjà déclarés dans
+-- pubspec.yaml (assets/videos/workout1.mp4, workout2.mp4, workout3.mp4),
+-- en alternance selon sort_order. Le suivi de progression est indexé sur
+-- videos.id (unique par ligne) — plusieurs vidéos peuvent partager le même
+-- fichier physique sans aucun impact sur le tracking ni sur l'UI.
 INSERT INTO videos (id, workout_id, title, duration, points, url, sort_order) VALUES
-('vid_hg1_1','home_glow_1','Warm Up','3 min',12,'',1),('vid_hg1_2','home_glow_1','Main Workout','14 min',12,'',2),('vid_hg1_3','home_glow_1','Cool Down','3 min',11,'',3),
-('vid_hg2_1','home_glow_2','Core Activation','6 min',10,'',1),('vid_hg2_2','home_glow_2','Posture Work','10 min',10,'',2),('vid_hg2_3','home_glow_2','Stretch','2 min',10,'',3),
-('vid_hg3_1','home_glow_3','Cardio Warm Up','3 min',12,'',1),('vid_hg3_2','home_glow_3','HIIT Circuit','10 min',12,'',2),('vid_hg3_3','home_glow_3','Recovery','2 min',11,'',3),
-('vid_pr1_1','pilates_reset_1','Breathing Exercise','5 min',12,'',1),('vid_pr1_2','pilates_reset_1','Roll Up Series','12 min',12,'',2),('vid_pr1_3','pilates_reset_1','Hundred Prep','8 min',11,'',3),
-('vid_pr2_1','pilates_reset_2','Spine Warm Up','6 min',11,'',1),('vid_pr2_2','pilates_reset_2','Mobility Flow','12 min',11,'',2),('vid_pr2_3','pilates_reset_2','Teaser Prep','4 min',10,'',3),
-('vid_pr3_1','pilates_reset_3','Core Activation','7 min',11,'',1),('vid_pr3_2','pilates_reset_3','Core Series','11 min',11,'',2),('vid_pr3_3','pilates_reset_3','Core Finisher','2 min',11,'',3),
-('vid_sb1_1','salle_body_1','Form Check','5 min',12,'',1),('vid_sb1_2','salle_body_1','Heavy Sets','16 min',12,'',2),('vid_sb1_3','salle_body_1','Recovery','4 min',11,'',3),
-('vid_squat_1','salle_body_squat','Technique Squat','3 min',30,'assets/videos/squat.mp4',1),
-('vid_dz1_1','dance_zumba_1','Intro & Warm Up','4 min',12,'',1),('vid_dz1_2','dance_zumba_1','Basic Steps','12 min',12,'',2),('vid_dz1_3','dance_zumba_1','Cool Down','4 min',11,'',3),
-('vid_rg1_1','recup_gentle_1','Centering','3 min',8,'',1),('vid_rg1_2','recup_gentle_1','Gentle Flow','10 min',9,'',2),('vid_rg1_3','recup_gentle_1','Meditation','2 min',8,'',3),
-('vid_ps1_1','preg_safe_1','Safe Start','3 min',13,'',1),('vid_ps1_2','preg_safe_1','Cardio Flow','14 min',14,'',2),('vid_ps1_3','preg_safe_1','Recovery','3 min',13,'',3);
+('vid_hg1_1','home_glow_1','Warm Up','3 min',12,'assets/videos/workout1.mp4',1),('vid_hg1_2','home_glow_1','Main Workout','14 min',12,'assets/videos/workout2.mp4',2),('vid_hg1_3','home_glow_1','Cool Down','3 min',11,'assets/videos/workout3.mp4',3),
+('vid_hg2_1','home_glow_2','Core Activation','6 min',10,'assets/videos/workout1.mp4',1),('vid_hg2_2','home_glow_2','Posture Work','10 min',10,'assets/videos/workout2.mp4',2),('vid_hg2_3','home_glow_2','Stretch','2 min',10,'assets/videos/workout3.mp4',3),
+('vid_hg3_1','home_glow_3','Cardio Warm Up','3 min',12,'assets/videos/workout1.mp4',1),('vid_hg3_2','home_glow_3','HIIT Circuit','10 min',12,'assets/videos/workout2.mp4',2),('vid_hg3_3','home_glow_3','Recovery','2 min',11,'assets/videos/workout3.mp4',3),
+('vid_pr1_1','pilates_reset_1','Breathing Exercise','5 min',12,'assets/videos/workout1.mp4',1),('vid_pr1_2','pilates_reset_1','Roll Up Series','12 min',12,'assets/videos/workout2.mp4',2),('vid_pr1_3','pilates_reset_1','Hundred Prep','8 min',11,'assets/videos/workout3.mp4',3),
+('vid_pr2_1','pilates_reset_2','Spine Warm Up','6 min',11,'assets/videos/workout1.mp4',1),('vid_pr2_2','pilates_reset_2','Mobility Flow','12 min',11,'assets/videos/workout2.mp4',2),('vid_pr2_3','pilates_reset_2','Teaser Prep','4 min',10,'assets/videos/workout3.mp4',3),
+('vid_pr3_1','pilates_reset_3','Core Activation','7 min',11,'assets/videos/workout1.mp4',1),('vid_pr3_2','pilates_reset_3','Core Series','11 min',11,'assets/videos/workout2.mp4',2),('vid_pr3_3','pilates_reset_3','Core Finisher','2 min',11,'assets/videos/workout3.mp4',3),
+('vid_sb1_1','salle_body_1','Form Check','5 min',12,'assets/videos/workout1.mp4',1),('vid_sb1_2','salle_body_1','Heavy Sets','16 min',12,'assets/videos/workout2.mp4',2),('vid_sb1_3','salle_body_1','Recovery','4 min',11,'assets/videos/workout3.mp4',3),
+('vid_squat_1','salle_body_squat','Technique Squat','3 min',30,'assets/videos/workout1.mp4',1),
+('vid_dz1_1','dance_zumba_1','Intro & Warm Up','4 min',12,'assets/videos/workout1.mp4',1),('vid_dz1_2','dance_zumba_1','Basic Steps','12 min',12,'assets/videos/workout2.mp4',2),('vid_dz1_3','dance_zumba_1','Cool Down','4 min',11,'assets/videos/workout3.mp4',3),
+('vid_rg1_1','recup_gentle_1','Centering','3 min',8,'assets/videos/workout1.mp4',1),('vid_rg1_2','recup_gentle_1','Gentle Flow','10 min',9,'assets/videos/workout2.mp4',2),('vid_rg1_3','recup_gentle_1','Meditation','2 min',8,'assets/videos/workout3.mp4',3),
+('vid_ps1_1','preg_safe_1','Safe Start','3 min',13,'assets/videos/workout1.mp4',1),('vid_ps1_2','preg_safe_1','Cardio Flow','14 min',14,'assets/videos/workout2.mp4',2),('vid_ps1_3','preg_safe_1','Recovery','3 min',13,'assets/videos/workout3.mp4',3);
+
+-- ── Migration — corrige les URLs d'une base déjà seedée (production) ────────
+-- Idempotent : à exécuter dans le SQL Editor sur une base existante pour
+-- réparer les lignes vides et le lien cassé vers l'inexistant squat.mp4
+-- (jamais déclaré dans pubspec.yaml).
+UPDATE videos
+SET url = CASE ((sort_order - 1) % 3)
+  WHEN 0 THEN 'assets/videos/workout1.mp4'
+  WHEN 1 THEN 'assets/videos/workout2.mp4'
+  ELSE        'assets/videos/workout3.mp4'
+END
+WHERE url IS NULL OR url = '' OR url = 'assets/videos/squat.mp4';
 
 -- ── Backfill semaines (voir section 4.3b) ────────────────────────────────────
 -- Chaque programme ayant déjà des workouts reçoit une « Semaine 1 » et ses

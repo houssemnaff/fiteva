@@ -70,9 +70,10 @@ class ProgramService {
     return HomeProgramModel(
       id:               r['id']             as String,
       name:             r['name']           as String,
-      duration:         r['duration']       as String? ?? '',
+      // La durée n'est plus stockée en base : elle est dérivée du nombre
+      // de semaines réelles (program_weeks).
+      duration:         _durationLabel(weeks),
       phases:           r['phases']         as String? ?? '',
-      sessions:         r['sessions']       as String? ?? '',
       color:            Color(r['color']    as int? ?? 0xFF2D4A2D),
       imageUrl:         r['image_url']      as String? ?? '',
       compatibleCycles: List<String>.from(r['compatible_cycles'] as List? ?? []),
@@ -83,6 +84,12 @@ class ProgramService {
       weeks:            weeks,
       workouts:         workouts,
     );
+  }
+
+  /// Libellé affiché ("3 semaines") calculé depuis les semaines réelles.
+  static String _durationLabel(List<ProgramWeekModel> weeks) {
+    if (weeks.isEmpty) return '';
+    return weeks.length == 1 ? '1 semaine' : '${weeks.length} semaines';
   }
 
   static ProgramWeekModel _weekFromRow(Map<String, dynamic> r) {

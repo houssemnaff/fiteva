@@ -232,7 +232,7 @@ class _ProgramsBottomSheetState extends State<ProgramsBottomSheet> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${program.duration}  •  ${program.sessions}',
+                                  program.duration,
                                   style: GoogleFonts.inter(
                                     color: cs.onSurface.withValues(alpha: 0.6),
                                     fontSize: 12,

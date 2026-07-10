@@ -817,7 +817,7 @@ class _PlannedDayBody extends ConsumerWidget {
                 fontSize: 16, fontWeight: FontWeight.w800,
                 color: cs.onSurface, letterSpacing: -0.3)),
               if (p != null)
-                Text('${p.duration} · ${p.sessions}', style: GoogleFonts.inter(
+                Text(p.duration, style: GoogleFonts.inter(
                   fontSize: 12,
                   color: cs.onSurface.withValues(alpha: 0.45))),
             ],
@@ -1326,13 +1326,6 @@ class _ProgramPickerSheetState extends ConsumerState<_ProgramPickerSheet> {
                                     color: cs.onSurface.withValues(alpha: 0.4)),
                                 const SizedBox(width: 3),
                                 Text(p.duration, style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  color: cs.onSurface.withValues(alpha: 0.45))),
-                                const SizedBox(width: 8),
-                                Icon(LucideIcons.layers, size: 11,
-                                    color: cs.onSurface.withValues(alpha: 0.4)),
-                                const SizedBox(width: 3),
-                                Text(p.sessions, style: GoogleFonts.inter(
                                   fontSize: 11,
                                   color: cs.onSurface.withValues(alpha: 0.45))),
                               ]),

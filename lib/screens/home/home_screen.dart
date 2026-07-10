@@ -319,7 +319,6 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                       runSpacing: 6,
                       children: [
                         _MetaPill(label: program!.duration, icon: LucideIcons.timer),
-                        _MetaPill(label: program.sessions, icon: LucideIcons.dumbbell),
                         _MetaPill(label: program.phases, icon: LucideIcons.activity),
                       ],
                     ),
@@ -1332,7 +1331,7 @@ class _ProgramPickerSheetState extends ConsumerState<_ProgramPickerSheet> {
                                 fontSize: 14,
                               )),
                           const SizedBox(height: 3),
-                          Text('${p.duration}  •  ${p.sessions}',
+                          Text(p.duration,
                               style: GoogleFonts.inter(
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontSize: 11,

@@ -745,7 +745,7 @@ class _RecommendedCard extends StatelessWidget {
               Text(program.name, maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white)),
               const SizedBox(height: 3),
-              Text('${program.duration} · ${program.sessions}',
+              Text(program.duration,
                 style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withValues(alpha: 0.8))),
               if (program.phases.isNotEmpty) ...[
                 const SizedBox(height: 6),
@@ -1053,7 +1053,7 @@ class _ProgramsFilterSheetState
                       return _ProgramTile(
                         imageUrl: p.imageUrl,
                         title: p.name,
-                        subtitle: '${p.duration} · ${p.sessions}',
+                        subtitle: p.duration,
                         phases: p.phases,
                         color: widget.color,
                         isFav: widget.favorites.contains('prog:${p.id}'),

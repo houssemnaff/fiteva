@@ -6,12 +6,12 @@ import '../models/home_program_model.dart';
 // ── Program Card ──────────────────────────────────────────────────────────────
 
 class ChatProgramCard {
-  final String id, name, duration, sessions, phases, category, imageUrl;
+  final String id, name, duration, phases, category, imageUrl;
   final Color color;
   final List<String> compatibleCycles;
   const ChatProgramCard({
     required this.id, required this.name, required this.duration,
-    required this.sessions, required this.phases, required this.category,
+    required this.phases, required this.category,
     required this.color, required this.imageUrl, required this.compatibleCycles,
   });
 }
@@ -135,27 +135,27 @@ class ChatMessage {
 // Fallback statique utilisé si Supabase n'a pas encore chargé
 const _fallbackPrograms = <ChatProgramCard>[
   ChatProgramCard(id: 'home_glow', name: 'Home Glow',
-    duration: '4 semaines', sessions: '3 séances / sem.', phases: 'Foll. + Ovul.',
+    duration: '4 semaines', phases: 'Foll. + Ovul.',
     category: 'MAISON', color: Color(0xFF3B7DD8), imageUrl: 'assets/images/fullbody.jpg',
     compatibleCycles: ['Folliculaire', 'Ovulation']),
   ChatProgramCard(id: 'pilates_reset', name: 'Pilates Reset',
-    duration: '8 semaines', sessions: '3 séances / sem.', phases: 'Toutes phases',
+    duration: '8 semaines', phases: 'Toutes phases',
     category: 'Pilates', color: Color(0xFF1565C0), imageUrl: 'assets/images/pilates.jpg',
     compatibleCycles: ['Règles', 'Lutéale']),
   ChatProgramCard(id: 'booty_home', name: 'Booty From Home',
-    duration: '4 semaines', sessions: '4 séances / sem.', phases: 'Toutes phases',
+    duration: '4 semaines', phases: 'Toutes phases',
     category: 'MAISON', color: Color(0xFF283593), imageUrl: 'assets/images/strength.jpg',
     compatibleCycles: ['Folliculaire', 'Lutéale']),
   ChatProgramCard(id: 'body_builder', name: 'Body Builder',
-    duration: '6 semaines', sessions: '4 séances / sem.', phases: 'Follic. + Ovul.',
+    duration: '6 semaines', phases: 'Follic. + Ovul.',
     category: 'SALLE', color: Color(0xFF1C4D30), imageUrl: 'assets/images/strength.jpg',
     compatibleCycles: ['Folliculaire', 'Ovulation']),
   ChatProgramCard(id: 'stronger_you', name: 'Stronger You',
-    duration: '4 semaines', sessions: '3 séances / sem.', phases: 'Toutes phases',
+    duration: '4 semaines', phases: 'Toutes phases',
     category: 'SALLE', color: Color(0xFF2E7D32), imageUrl: 'assets/images/upper.jpg',
     compatibleCycles: ['Règles', 'Ovulation']),
   ChatProgramCard(id: 'lean_4_life', name: 'Lean 4 Life',
-    duration: '4 semaines', sessions: '3 séances / sem.', phases: 'Toutes phases',
+    duration: '4 semaines', phases: 'Toutes phases',
     category: 'SALLE', color: Color(0xFF00695C), imageUrl: 'assets/images/fullbody.jpg',
     compatibleCycles: ['Règles', 'Folliculaire', 'Lutéale']),
 ];
@@ -173,7 +173,6 @@ ChatProgramCard _programFromModel(HomeProgramModel p) {
     id:               p.id,
     name:             p.name,
     duration:         p.duration,
-    sessions:         p.sessions,
     phases:           p.phases,
     category:         catLabel,
     color:            p.color,
