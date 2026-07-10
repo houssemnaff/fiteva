@@ -44,7 +44,7 @@ class CommunityService {
 
       // Batch-fetch usernames + mascotte pour tous les auteurs concernés.
       final userIds = rows.map((r) => r['user_id'] as String).toSet().toList();
-      final profileRows = await SupabaseConfig.table('user_profiles')
+      final profileRows = await SupabaseConfig.table('public_profiles')
           .select('id, username, mascot_type, mascot_mood')
           .inFilter('id', userIds) as List;
 
@@ -217,7 +217,7 @@ class CommunityService {
 
       final profileRows = userIds.isEmpty
           ? <Map<String, dynamic>>[]
-          : await SupabaseConfig.table('user_profiles')
+          : await SupabaseConfig.table('public_profiles')
               .select('id, username')
               .inFilter('id', userIds) as List;
 
@@ -304,7 +304,7 @@ class CommunityService {
 
       // Batch-fetch usernames + mascotte des organisateurs.
       final orgIds = rows.map((r) => r['organizer_id'] as String).toSet().toList();
-      final profileRows = await SupabaseConfig.table('user_profiles')
+      final profileRows = await SupabaseConfig.table('public_profiles')
           .select('id, username, mascot_type, mascot_mood')
           .inFilter('id', orgIds) as List;
 
@@ -526,7 +526,7 @@ class CommunityService {
       if (rows.isEmpty) return [];
 
       final userIds = rows.map((r) => r['user_id'] as String).toList();
-      final profileRows = await SupabaseConfig.table('user_profiles')
+      final profileRows = await SupabaseConfig.table('public_profiles')
           .select('id, username')
           .inFilter('id', userIds) as List;
 
@@ -562,7 +562,7 @@ class CommunityService {
           .toList();
       final profileRows = userIds.isEmpty
           ? <Map<String, dynamic>>[]
-          : (await SupabaseConfig.table('user_profiles')
+          : (await SupabaseConfig.table('public_profiles')
               .select('id, mascot_type, mascot_mood')
               .inFilter('id', userIds) as List)
               .cast<Map<String, dynamic>>();
@@ -732,7 +732,7 @@ class CommunityService {
       if (requests.isEmpty) return [];
 
       final requesterIds = requests.map((r) => r['requester_id'] as String).toSet().toList();
-      final profiles = await SupabaseConfig.table('user_profiles')
+      final profiles = await SupabaseConfig.table('public_profiles')
           .select('id, username, mascot_type, mascot_mood')
           .inFilter('id', requesterIds) as List;
       final namesById = {
@@ -801,8 +801,8 @@ class CommunityService {
   /// Récupère les données publiques d'un utilisateur par son UUID Supabase.
   static Future<Map<String, dynamic>?> getUserProfile(String userId) async {
     try {
-      final profile = await SupabaseConfig.table('user_profiles')
-          .select('id, username, email, mascot_type, mascot_mood')
+      final profile = await SupabaseConfig.table('public_profiles')
+          .select('id, username, mascot_type, mascot_mood')
           .eq('id', userId)
           .maybeSingle();
       if (profile == null) return null;

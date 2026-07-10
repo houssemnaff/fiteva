@@ -810,11 +810,23 @@ ALTER TABLE partner_requests           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_follows               ENABLE ROW LEVEL SECURITY;
 
 -- user_profiles utilise 'id' (pas 'user_id') comme clé référençant auth.users.
--- Lecture publique (username/mascotte affichés dans le feed communautaire pour
--- des utilisateurs autres que soi-même) ; écriture réservée au propriétaire.
-CREATE POLICY "user_profiles_select" ON user_profiles FOR SELECT USING (true);
+-- Contient l'email (sensible) à côté de username/mascotte (publics pour le
+-- feed communautaire) : la lecture directe de la table est donc réservée au
+-- propriétaire, et une vue dédiée (public_profiles, ci-dessous) expose
+-- uniquement les colonnes sûres pour les autres utilisatrices.
 CREATE POLICY "own_user_profiles" ON user_profiles FOR ALL
   USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- Vue publique : seules les colonnes safe pour affichage communautaire.
+-- Vue "security definer" implicite (propriétaire = postgres) : elle peut lire
+-- toutes les lignes de user_profiles même si RLS restreint la table de base
+-- à "own row only" pour l'appelant — mais elle ne renvoie jamais l'email.
+CREATE OR REPLACE VIEW public_profiles AS
+  SELECT id, username, avatar_seed, avatar_style, avatar_bg_color,
+         mascot_type, mascot_mood
+  FROM user_profiles;
+
+GRANT SELECT ON public_profiles TO authenticated;
 
 -- Policies génériques (user_id = auth.uid())
 DO $$
@@ -1192,3 +1204,26 @@ RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE AS $$
   );
 $$;
 
+
+-- ══════════════════════════════════════════════════════════════════════════
+--  14. RGPD — demandes de suppression de compte
+-- ══════════════════════════════════════════════════════════════════════════
+-- Le SDK client ne peut pas supprimer auth.users directement (nécessite la
+-- clé service_role, jamais embarquée côté app). PrivacyService.deleteAllUserData()
+-- efface toutes les lignes de données de l'utilisateur puis insère ici une
+-- demande, à traiter côté serveur (edge function / cron avec service_role)
+-- pour finaliser la suppression du compte Auth.
+CREATE TABLE account_deletion_requests (
+  id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID         NOT NULL,
+  requested_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  processed_at TIMESTAMPTZ
+);
+
+ALTER TABLE account_deletion_requests ENABLE ROW LEVEL SECURITY;
+
+-- L'utilisateur peut créer sa propre demande, mais ne peut ni la lire ni la
+-- modifier ensuite (évite de fuiter/altérer l'état de traitement) — seul le
+-- service_role, qui bypass RLS, peut lire/traiter la file.
+CREATE POLICY "own_account_deletion_insert" ON account_deletion_requests
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
