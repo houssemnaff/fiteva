@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 import '../models/home_program_model.dart';
+import '../models/program_week_model.dart';
 import '../models/workout_model.dart';
 import '../models/video_model.dart';
 import 'supabase_config.dart';
 
 class ProgramService {
-  /// Charge tous les programmes depuis Supabase avec leurs workouts et vidéos.
+  /// Hiérarchie complète : programme → semaines → workouts → vidéos.
+  /// L'embed `workouts` direct (via program_id) sert de fallback pour les
+  /// programmes dont les workouts ne sont pas encore rattachés à une semaine.
+  static const _select =
+      '*, program_weeks(*, workouts(*, videos(*))), workouts(*, videos(*))';
+
+  /// Charge tous les programmes depuis Supabase avec leurs semaines,
+  /// workouts et vidéos.
   static Future<List<HomeProgramModel>> fetchAll() async {
-    final rows = await SupabaseConfig.table('programs')
-        .select('*, workouts(*, videos(*))');
+    final rows = await SupabaseConfig.table('programs').select(_select);
 
     final list = rows as List;
     print('[ProgramService] ${list.length} programmes chargés depuis Supabase');
     for (final r in list) {
       final m = r as Map<String, dynamic>;
-      print('  → ${m['id']} (${m['category']}) — ${(m['workouts'] as List?)?.length ?? 0} workouts');
+      print('  → ${m['id']} (${m['category']}) — '
+          '${(m['program_weeks'] as List?)?.length ?? 0} semaines, '
+          '${(m['workouts'] as List?)?.length ?? 0} workouts');
     }
 
     return list.map((r) => _programFromRow(r as Map<String, dynamic>)).toList();
@@ -23,7 +32,7 @@ class ProgramService {
   /// Charge uniquement les programmes d'une catégorie donnée.
   static Future<List<HomeProgramModel>> fetchByCategory(String category) async {
     final rows = await SupabaseConfig.table('programs')
-        .select('*, workouts(*, videos(*))')
+        .select(_select)
         .eq('category', category);
 
     return (rows as List)
@@ -33,19 +42,30 @@ class ProgramService {
 
   static Future<HomeProgramModel?> fetchProgramById(String id) async {
     final row = await SupabaseConfig.table('programs')
-        .select('*, workouts(*, videos(*))')
+        .select(_select)
         .eq('id', id)
         .maybeSingle();
 
     if (row == null) return null;
-    return _programFromRow(row as Map<String, dynamic>);
+    return _programFromRow(row);
   }
 
   // ── Mappers ────────────────────────────────────────────────────────────────
 
   static HomeProgramModel _programFromRow(Map<String, dynamic> r) {
-    final workoutRows = (r['workouts'] as List? ?? [])
+    final weekRows = (r['program_weeks'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+      ..sort((a, b) => ((a['week_number'] as int?) ?? 0)
+          .compareTo((b['week_number'] as int?) ?? 0));
+    final weeks = weekRows.map(_weekFromRow).toList();
+
+    // Workouts à plat : depuis les semaines si elles existent, sinon
+    // fallback sur les workouts rattachés directement au programme (legacy).
+    final directWorkoutRows = (r['workouts'] as List? ?? [])
         .cast<Map<String, dynamic>>();
+    final workouts = weeks.isNotEmpty
+        ? [for (final wk in weeks) ...wk.workouts]
+        : directWorkoutRows.map(_workoutFromRow).toList();
 
     return HomeProgramModel(
       id:               r['id']             as String,
@@ -60,7 +80,23 @@ class ProgramService {
       level:            r['level']          as String?,
       equipment:        List<String>.from(r['equipment'] as List? ?? []),
       category:         r['category']       as String? ?? 'home',
-      workouts:         workoutRows.map(_workoutFromRow).toList(),
+      weeks:            weeks,
+      workouts:         workouts,
+    );
+  }
+
+  static ProgramWeekModel _weekFromRow(Map<String, dynamic> r) {
+    final workoutRows = (r['workouts'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+      ..sort((a, b) => ((a['sort_order'] as int?) ?? 0)
+          .compareTo((b['sort_order'] as int?) ?? 0));
+
+    return ProgramWeekModel(
+      id:          r['id']          as String,
+      weekNumber:  r['week_number'] as int? ?? 1,
+      title:       r['title']       as String? ?? '',
+      description: r['description'] as String? ?? '',
+      workouts:    workoutRows.map(_workoutFromRow).toList(),
     );
   }
 

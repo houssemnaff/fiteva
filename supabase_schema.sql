@@ -182,6 +182,52 @@ ALTER TABLE videos
 ADD COLUMN phases TEXT NOT NULL DEFAULT '';
 
 
+-- ── 4.3b  MIGRATION — Semaines de programme ─────────────────────────────────
+-- Nouveau principe : un programme se divise en 1..n semaines, chaque semaine
+-- contient 1..n workouts, et chaque workout contient 1..n vidéos :
+--   programs ──< program_weeks ──< workouts ──< videos
+-- workouts.program_id est conservé (dénormalisé) pour ne pas casser les
+-- requêtes existantes ; il est resynchronisé automatiquement par trigger.
+-- Sur une base déjà en production : exécuter ce bloc + le backfill de la
+-- section 15 dans le SQL Editor.
+
+CREATE TABLE program_weeks (
+  id           TEXT        PRIMARY KEY,                 -- ex : 'prog_home_glow-w1'
+  program_id   TEXT        NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+  week_number  INTEGER     NOT NULL CHECK (week_number >= 1),
+  title        TEXT        NOT NULL DEFAULT '',         -- ex : 'Mise en route'
+  description  TEXT        NOT NULL DEFAULT '',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (program_id, week_number)
+);
+
+-- Rattachement des workouts à leur semaine + ordre d'affichage dans la semaine
+ALTER TABLE workouts
+  ADD COLUMN week_id    TEXT    REFERENCES program_weeks(id) ON DELETE CASCADE,
+  ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;
+
+-- Garde program_id cohérent avec la semaine choisie
+CREATE OR REPLACE FUNCTION sync_workout_program_id()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.week_id IS NOT NULL THEN
+    SELECT program_id INTO NEW.program_id FROM program_weeks WHERE id = NEW.week_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trg_workouts_sync_program
+  BEFORE INSERT OR UPDATE OF week_id ON workouts
+  FOR EACH ROW EXECUTE FUNCTION sync_workout_program_id();
+
+-- Lecture publique (comme programs/workouts/videos) + index
+ALTER TABLE program_weeks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "ref_program_weeks" ON program_weeks FOR SELECT USING (true);
+
+CREATE INDEX idx_program_weeks_program ON program_weeks(program_id, week_number);
+CREATE INDEX idx_workouts_week         ON workouts(week_id, sort_order);
+
+
 -- ── 4.4  Progression workout utilisateur ────────────────────────────────────
 CREATE TABLE user_video_completions (
   user_id     UUID         NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
@@ -1019,6 +1065,21 @@ INSERT INTO videos (id, workout_id, title, duration, points, url, sort_order) VA
 ('vid_dz1_1','dance_zumba_1','Intro & Warm Up','4 min',12,'',1),('vid_dz1_2','dance_zumba_1','Basic Steps','12 min',12,'',2),('vid_dz1_3','dance_zumba_1','Cool Down','4 min',11,'',3),
 ('vid_rg1_1','recup_gentle_1','Centering','3 min',8,'',1),('vid_rg1_2','recup_gentle_1','Gentle Flow','10 min',9,'',2),('vid_rg1_3','recup_gentle_1','Meditation','2 min',8,'',3),
 ('vid_ps1_1','preg_safe_1','Safe Start','3 min',13,'',1),('vid_ps1_2','preg_safe_1','Cardio Flow','14 min',14,'',2),('vid_ps1_3','preg_safe_1','Recovery','3 min',13,'',3);
+
+-- ── Backfill semaines (voir section 4.3b) ────────────────────────────────────
+-- Chaque programme ayant déjà des workouts reçoit une « Semaine 1 » et ses
+-- workouts y sont rattachés. Idempotent : à exécuter aussi sur une base déjà
+-- en production après le bloc 4.3b. Les nouvelles semaines (w2, w3, …)
+-- s'ajoutent ensuite via des INSERT dans program_weeks + workouts.week_id.
+INSERT INTO program_weeks (id, program_id, week_number, title)
+SELECT DISTINCT w.program_id || '-w1', w.program_id, 1, 'Semaine 1'
+FROM workouts w
+WHERE w.program_id IS NOT NULL
+ON CONFLICT (program_id, week_number) DO NOTHING;
+
+UPDATE workouts
+SET week_id = program_id || '-w1'
+WHERE program_id IS NOT NULL AND week_id IS NULL;
 
 -- ── Aliments (food_items) — 140 entrées condensées ──────────────────────────
 INSERT INTO food_items (id,name,category,kcal,protein,carbs,fat,fiber,default_grams,portion_label) VALUES

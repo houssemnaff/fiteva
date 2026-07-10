@@ -275,12 +275,58 @@ class WorkoutProgressService {
   static Future<void> joinProgram(String programId) async {
     if (_uid == null) return;
     try {
+      // ignoreDuplicates : ne PAS écraser joined_at si déjà rejoint —
+      // cette date sert de point de départ au déblocage des semaines.
       await SupabaseConfig.table('user_joined_programs').upsert({
         'user_id':    _uid,
         'program_id': programId,
         'joined_at':  DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id,program_id');
+      }, onConflict: 'user_id,program_id', ignoreDuplicates: true);
     } catch (_) {}
+  }
+
+  /// Date à laquelle l'utilisateur a commencé le programme (semaine 1).
+  static Future<DateTime?> getProgramJoinedDate(String programId) async {
+    if (_uid == null) return null;
+    try {
+      final row = await SupabaseConfig.table('user_joined_programs')
+          .select('joined_at')
+          .eq('user_id', _uid!)
+          .eq('program_id', programId)
+          .maybeSingle();
+      final s = row?['joined_at'] as String?;
+      return s == null ? null : DateTime.tryParse(s);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Nombre de semaines débloquées d'un programme.
+  /// Règles :
+  ///  - la semaine 1 est toujours ouverte ;
+  ///  - la semaine N+1 s'ouvre seulement si TOUS les workouts de la
+  ///    semaine N sont terminés ET que 7×N jours sont passés depuis le
+  ///    début du programme (joined_at de la semaine 1).
+  static Future<int> getUnlockedWeeksCount(HomeProgramModel program) async {
+    final weeks = program.weeks;
+    if (weeks.length <= 1) return weeks.length;
+
+    final done     = await getCompletedWorkouts();
+    final joinedAt = await getProgramJoinedDate(program.id);
+
+    int unlocked = 1;
+    for (int i = 1; i < weeks.length; i++) {
+      final prevWeekDone =
+          weeks[i - 1].workouts.every((w) => done.contains(w.id));
+      final dateOk = joinedAt != null &&
+          !DateTime.now().isBefore(joinedAt.add(Duration(days: 7 * i)));
+      if (prevWeekDone && dateOk) {
+        unlocked = i + 1;
+      } else {
+        break;
+      }
+    }
+    return unlocked;
   }
 
   static Future<bool> isProgramJoined(String programId) async {

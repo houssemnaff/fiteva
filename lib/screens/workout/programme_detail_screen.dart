@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/home_program_model.dart';
+import '../../models/program_week_model.dart';
 import '../../models/workout_model.dart';
 import '../../providers/workout_progress_provider.dart';
 import '../../services/workout_progress_service.dart';
@@ -52,12 +53,18 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
     if (mounted) setState(() => _isProgramCompleted = done);
   }
 
-  Future<int> _getFirstIncompleteWorkoutIndex() async {
+  /// Prochain workout à lancer — limité aux semaines débloquées.
+  Future<WorkoutModel?> _getNextWorkout() async {
+    final p = widget.program;
     final completed = await WorkoutProgressService.getCompletedWorkouts();
-    for (int i = 0; i < widget.program.workouts.length; i++) {
-      if (!completed.contains(widget.program.workouts[i].id)) return i;
+    final unlocked = await WorkoutProgressService.getUnlockedWeeksCount(p);
+    final available = p.weeks.isEmpty
+        ? p.workouts
+        : [for (final wk in p.weeks.take(unlocked)) ...wk.workouts];
+    for (final w in available) {
+      if (!completed.contains(w.id)) return w;
     }
-    return 0;
+    return available.isNotEmpty ? available.first : null;
   }
 
   void _share(BuildContext context, HomeProgramModel p) {
@@ -110,6 +117,13 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
                     program: p,
                     l10n: l10n,
                     onWorkoutTap: (w) async {
+                      // Enregistre le début du programme (joined_at) dès le
+                      // premier workout lancé — point de départ de la règle
+                      // des 7 jours pour débloquer la semaine suivante.
+                      await ref
+                          .read(programJoinProvider.notifier)
+                          .joinProgram(p.id);
+                      if (!mounted) return;
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -129,12 +143,11 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
             onTap: () async {
               final nav = Navigator.of(context);
               await ref.read(programJoinProvider.notifier).joinProgram(p.id);
-              final idx = await _getFirstIncompleteWorkoutIndex();
-              if (!mounted) return;
+              final next = await _getNextWorkout();
+              if (!mounted || next == null) return;
               await nav.push(
                 MaterialPageRoute(
-                    builder: (_) =>
-                        ActiveWorkoutScreen(workout: p.workouts[idx])),
+                    builder: (_) => ActiveWorkoutScreen(workout: next)),
               );
               if (mounted) {
                 setState(() {});
@@ -537,7 +550,9 @@ class _AboutSliver extends StatelessWidget {
                 Expanded(
                     child: _QuickStat(
                         icon: LucideIcons.calendarDays,
-                        value: '4',
+                        value: program.weeks.isNotEmpty
+                            ? '${program.weeks.length}'
+                            : '1',
                         label: l10n.progWeeks)),
                 const SizedBox(width: 10),
                 Expanded(
@@ -595,7 +610,7 @@ class _AboutSliver extends StatelessWidget {
               // ── Programme phases ───────────────────────────────────────
               _SectionTitle(label: l10n.progPhases),
               const SizedBox(height: 14),
-              _PhaseList(dark: dark),
+              _PhaseList(dark: dark, weeks: program.weeks),
             ],
           ),
         ),
@@ -812,9 +827,11 @@ class _GoalChip extends StatelessWidget {
 
 class _PhaseList extends StatelessWidget {
   final bool dark;
-  const _PhaseList({required this.dark});
+  final List<ProgramWeekModel> weeks;
+  const _PhaseList({required this.dark, required this.weeks});
 
-  static const _phases = [
+  // Fallback si le programme n'a pas encore de semaines en base.
+  static const _fallbackPhases = [
     (week: 'Semaine 1', title: 'Mise en route', tag: 'Fondations'),
     (week: 'Semaine 2', title: 'Montée en charge', tag: 'Progression'),
     (week: 'Semaine 3', title: 'Intensification', tag: 'Challenge'),
@@ -827,9 +844,20 @@ class _PhaseList extends StatelessWidget {
     const accent = Color(0xFF1C4D30);
     const gold = Color(0xFFD4A853);
 
+    final phases = weeks.isEmpty
+        ? _fallbackPhases
+        : [
+            for (final w in weeks)
+              (
+                week: 'Semaine ${w.weekNumber}',
+                title: w.title.isNotEmpty ? w.title : 'Semaine ${w.weekNumber}',
+                tag: '${w.workouts.length} séance${w.workouts.length > 1 ? 's' : ''}',
+              ),
+          ];
+
     return Column(
-      children: List.generate(_phases.length, (i) {
-        final phase = _phases[i];
+      children: List.generate(phases.length, (i) {
+        final phase = phases[i];
         final active = i == 0;
         final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
 
@@ -927,7 +955,7 @@ class _PhaseList extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════════════════════
 // LES SÉANCES
 // ══════════════════════════════════════════════════════════════════════════════
-class _SessionsSliver extends StatelessWidget {
+class _SessionsSliver extends StatefulWidget {
   final HomeProgramModel program;
   final AppL10n l10n;
   final void Function(WorkoutModel) onWorkoutTap;
@@ -935,12 +963,36 @@ class _SessionsSliver extends StatelessWidget {
   const _SessionsSliver(
       {required this.program, required this.l10n, required this.onWorkoutTap});
 
-  Future<int> _getFirstIncomplete() async {
+  @override
+  State<_SessionsSliver> createState() => _SessionsSliverState();
+}
+
+class _SessionsSliverState extends State<_SessionsSliver> {
+  int _selectedWeek = 0;
+
+  /// Charge en une passe : le premier workout non terminé (toutes semaines
+  /// débloquées confondues) + le nombre de semaines débloquées.
+  Future<({String? nextId, int unlockedWeeks})> _load() async {
     final done = await WorkoutProgressService.getCompletedWorkouts();
-    for (int i = 0; i < program.workouts.length; i++) {
-      if (!done.contains(program.workouts[i].id)) return i;
+    final unlocked =
+        await WorkoutProgressService.getUnlockedWeeksCount(widget.program);
+    String? nextId;
+    for (final w in widget.program.workouts) {
+      if (!done.contains(w.id)) {
+        nextId = w.id;
+        break;
+      }
     }
-    return 0;
+    return (nextId: nextId, unlockedWeeks: unlocked);
+  }
+
+  void _showLockedMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text(
+          '🔒 Semaine verrouillée — termine d\'abord la semaine précédente. '
+          'Elle s\'ouvrira aussi après 7 jours.'),
+      duration: Duration(seconds: 3),
+    ));
   }
 
   @override
@@ -948,36 +1000,178 @@ class _SessionsSliver extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bg = dark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F5);
 
+    final weeks = widget.program.weeks;
+    final hasWeeks = weeks.isNotEmpty;
+    final weekIdx = hasWeeks ? _selectedWeek.clamp(0, weeks.length - 1) : 0;
+    // Seulement les workouts de la semaine sélectionnée (ou tout le
+    // programme si aucune semaine n'existe encore en base).
+    final workouts =
+        hasWeeks ? weeks[weekIdx].workouts : widget.program.workouts;
+
     return SliverToBoxAdapter(
       child: Container(
         color: bg,
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-        child: FutureBuilder<int>(
-          future: _getFirstIncomplete(),
+        child: FutureBuilder<({String? nextId, int unlockedWeeks})>(
+          future: _load(),
           builder: (context, snap) {
-            final nextIdx = snap.data ?? 0;
+            final nextId = snap.data?.nextId;
+            final unlockedWeeks = snap.data?.unlockedWeeks ?? 1;
+            // La semaine affichée est-elle verrouillée ? (navigation libre,
+            // mais vidéos inaccessibles tant que la semaine n'est pas ouverte)
+            final weekLocked = hasWeeks && weekIdx >= unlockedWeeks;
+
             return Column(
-              children: List.generate(program.workouts.length, (i) {
-                final w = program.workouts[i];
-                return FutureBuilder<bool>(
-                  future: WorkoutProgressService.isWorkoutCompleted(w.id),
-                  builder: (context, s) {
-                    final isDone = s.data == true;
-                    final isCurrent = !isDone && i == nextIdx;
-                    return _SessionCard(
-                      index: i,
-                      workout: w,
-                      isDone: isDone,
-                      isCurrent: isCurrent,
-                      l10n: l10n,
-                      onTap: () => onWorkoutTap(w),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasWeeks) ...[
+                  _WeekNavBar(
+                    weeks: weeks,
+                    selected: weekIdx,
+                    unlockedCount: unlockedWeeks,
+                    onSelect: (i) => setState(() => _selectedWeek = i),
+                  ),
+                  const SizedBox(height: 18),
+                ],
+                if (weekLocked)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4A853).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color:
+                              const Color(0xFFD4A853).withValues(alpha: 0.35)),
+                    ),
+                    child: Row(children: [
+                      const Icon(LucideIcons.lock,
+                          size: 15, color: Color(0xFFB8833A)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Termine la semaine précédente pour débloquer '
+                          'ces séances (7 jours par semaine).',
+                          style: GoogleFonts.inter(
+                              color: const Color(0xFFB8833A),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              height: 1.4),
+                        ),
+                      ),
+                    ]),
+                  ),
+                Column(
+                  children: List.generate(workouts.length, (i) {
+                    final w = workouts[i];
+                    return FutureBuilder<bool>(
+                      future: WorkoutProgressService.isWorkoutCompleted(w.id),
+                      builder: (context, s) {
+                        final isDone = s.data == true;
+                        final isCurrent =
+                            !weekLocked && !isDone && w.id == nextId;
+                        return _SessionCard(
+                          index: i,
+                          workout: w,
+                          isDone: isDone,
+                          isCurrent: isCurrent,
+                          locked: weekLocked,
+                          l10n: widget.l10n,
+                          onTap: weekLocked
+                              ? () => _showLockedMessage(context)
+                              : () => widget.onWorkoutTap(w),
+                        );
+                      },
                     );
-                  },
-                );
-              }),
+                  }),
+                ),
+              ],
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+// ── Navbar des semaines : « Semaine 1 · Semaine 2 · … » ──────────────────────
+class _WeekNavBar extends StatelessWidget {
+  final List<ProgramWeekModel> weeks;
+  final int selected;
+
+  /// Nombre de semaines débloquées (les index >= unlockedCount sont
+  /// verrouillés : navigables mais affichés avec un cadenas).
+  final int unlockedCount;
+  final void Function(int) onSelect;
+
+  const _WeekNavBar(
+      {required this.weeks,
+      required this.selected,
+      required this.unlockedCount,
+      required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    const accent = Color(0xFF1C4D30);
+
+    return SizedBox(
+      height: 42,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: weeks.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final sel = i == selected;
+          final locked = i >= unlockedCount;
+          final week = weeks[i];
+          return GestureDetector(
+            onTap: () => onSelect(i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: sel
+                    ? accent
+                    : (dark ? const Color(0xFF1A1A1A) : Colors.white),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: sel
+                        ? accent
+                        : cs.outline.withValues(alpha: 0.15)),
+                boxShadow: sel
+                    ? [
+                        BoxShadow(
+                            color: accent.withValues(alpha: 0.30),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4))
+                      ]
+                    : [],
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(locked ? LucideIcons.lock : LucideIcons.calendarDays,
+                    size: 13,
+                    color: sel
+                        ? Colors.white
+                        : cs.onSurface
+                            .withValues(alpha: locked ? 0.30 : 0.45)),
+                const SizedBox(width: 7),
+                Text('Semaine ${week.weekNumber}',
+                    style: GoogleFonts.inter(
+                        color: sel
+                            ? Colors.white
+                            : cs.onSurface
+                                .withValues(alpha: locked ? 0.35 : 0.60),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700)),
+              ]),
+            ),
+          );
+        },
       ),
     );
   }
@@ -988,6 +1182,10 @@ class _SessionCard extends StatelessWidget {
   final WorkoutModel workout;
   final bool isDone;
   final bool isCurrent;
+
+  /// Semaine verrouillée : la carte reste visible mais grisée, avec un
+  /// cadenas — le tap n'ouvre pas la vidéo (message explicatif à la place).
+  final bool locked;
   final AppL10n l10n;
   final VoidCallback onTap;
 
@@ -996,6 +1194,7 @@ class _SessionCard extends StatelessWidget {
     required this.workout,
     required this.isDone,
     required this.isCurrent,
+    this.locked = false,
     required this.l10n,
     required this.onTap,
   });
@@ -1010,7 +1209,9 @@ class _SessionCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: Opacity(
+        opacity: locked ? 0.55 : 1.0,
+        child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: cardBg,
@@ -1084,13 +1285,18 @@ class _SessionCard extends StatelessWidget {
                     child: isDone
                         ? const Icon(LucideIcons.check,
                             color: Colors.white, size: 16)
-                        : Text('${index + 1}',
-                            style: GoogleFonts.outfit(
-                                color: isCurrent
-                                    ? accent
-                                    : cs.onSurface.withValues(alpha: 0.45),
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900)),
+                        : locked
+                            ? Icon(LucideIcons.lock,
+                                size: 14,
+                                color: cs.onSurface.withValues(alpha: 0.45))
+                            : Text('${index + 1}',
+                                style: GoogleFonts.outfit(
+                                    color: isCurrent
+                                        ? accent
+                                        : cs.onSurface
+                                            .withValues(alpha: 0.45),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1198,13 +1404,14 @@ class _SessionCard extends StatelessWidget {
                     ]),
                   ),
                   const SizedBox(height: 12),
-                  Icon(LucideIcons.chevronRight,
+                  Icon(locked ? LucideIcons.lock : LucideIcons.chevronRight,
                       size: 16,
                       color: cs.onSurface.withValues(alpha: 0.30)),
                 ]),
               ]),
             ),
           ],
+        ),
         ),
       ),
     );
