@@ -275,12 +275,58 @@ class WorkoutProgressService {
   static Future<void> joinProgram(String programId) async {
     if (_uid == null) return;
     try {
+      // ignoreDuplicates : ne PAS écraser joined_at si déjà rejoint —
+      // cette date sert de point de départ au déblocage des semaines.
       await SupabaseConfig.table('user_joined_programs').upsert({
         'user_id':    _uid,
         'program_id': programId,
         'joined_at':  DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id,program_id');
+      }, onConflict: 'user_id,program_id', ignoreDuplicates: true);
     } catch (_) {}
+  }
+
+  /// Date à laquelle l'utilisateur a commencé le programme (semaine 1).
+  static Future<DateTime?> getProgramJoinedDate(String programId) async {
+    if (_uid == null) return null;
+    try {
+      final row = await SupabaseConfig.table('user_joined_programs')
+          .select('joined_at')
+          .eq('user_id', _uid!)
+          .eq('program_id', programId)
+          .maybeSingle();
+      final s = row?['joined_at'] as String?;
+      return s == null ? null : DateTime.tryParse(s);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Nombre de semaines débloquées d'un programme.
+  /// Règles :
+  ///  - la semaine 1 est toujours ouverte ;
+  ///  - la semaine N+1 s'ouvre seulement si TOUS les workouts de la
+  ///    semaine N sont terminés ET que 7×N jours sont passés depuis le
+  ///    début du programme (joined_at de la semaine 1).
+  static Future<int> getUnlockedWeeksCount(HomeProgramModel program) async {
+    final weeks = program.weeks;
+    if (weeks.length <= 1) return weeks.length;
+
+    final done     = await getCompletedWorkouts();
+    final joinedAt = await getProgramJoinedDate(program.id);
+
+    int unlocked = 1;
+    for (int i = 1; i < weeks.length; i++) {
+      final prevWeekDone =
+          weeks[i - 1].workouts.every((w) => done.contains(w.id));
+      final dateOk = joinedAt != null &&
+          !DateTime.now().isBefore(joinedAt.add(Duration(days: 7 * i)));
+      if (prevWeekDone && dateOk) {
+        unlocked = i + 1;
+      } else {
+        break;
+      }
+    }
+    return unlocked;
   }
 
   static Future<bool> isProgramJoined(String programId) async {
@@ -441,6 +487,47 @@ class WorkoutProgressService {
       await SupabaseConfig.table('user_program_favorites').delete().eq('user_id', _uid!);
       await SupabaseConfig.table('user_video_favorites').delete().eq('user_id', _uid!);
     } catch (_) {}
+  }
+
+  // ── Historique par date ──────────────────────────────────────────────────
+
+  static Future<Map<DateTime, int>> getWorkoutCountsByMonth(int year, int month) async {
+    if (_uid == null) return {};
+    try {
+      final start = DateTime(year, month, 1).toIso8601String();
+      final end = DateTime(year, month + 1, 0, 23, 59, 59).toIso8601String();
+      final rows = await SupabaseConfig.table('user_workout_completions')
+          .select('completed_at')
+          .eq('user_id', _uid!)
+          .gte('completed_at', start)
+          .lte('completed_at', end) as List;
+
+      final counts = <DateTime, int>{};
+      for (final r in rows) {
+        final dt = DateTime.parse(r['completed_at'] as String);
+        final day = DateTime(dt.year, dt.month, dt.day);
+        counts[day] = (counts[day] ?? 0) + 1;
+      }
+      return counts;
+    } catch (e) {
+      debugPrint('[WorkoutProgress] getWorkoutCountsByMonth error: $e');
+      return {};
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getRecentCompletions(int limit) async {
+    if (_uid == null) return [];
+    try {
+      final rows = await SupabaseConfig.table('user_workout_completions')
+          .select('workout_id, completed_at')
+          .eq('user_id', _uid!)
+          .order('completed_at', ascending: false)
+          .limit(limit) as List;
+      return rows.cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('[WorkoutProgress] getRecentCompletions error: $e');
+      return [];
+    }
   }
 
   static Future<void> clearAllProgress() async {

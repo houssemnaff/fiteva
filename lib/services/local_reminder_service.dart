@@ -2,19 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+import '../providers/notification_preferences_provider.dart';
 import 'storage_service.dart';
 
-/// Rappels locaux (eau, repas, séance) — programmés directement sur
-/// l'appareil, sans passer par un backend. Contrairement aux push FCM
-/// (PushNotificationService), ces rappels fonctionnent même hors ligne et ne
-/// nécessitent aucune infrastructure serveur pour être déclenchés.
 class LocalReminderService {
   LocalReminderService._();
 
   static const _enabledKey = 'reminders_enabled';
 
-  // IDs fixes par créneau — un id stable par rappel permet de le
-  // reprogrammer (cancel + schedule) sans dupliquer les notifications.
+  // IDs fixes par créneau
   static const _idWater1     = 1001;
   static const _idWater2     = 1002;
   static const _idWater3     = 1003;
@@ -22,26 +18,23 @@ class LocalReminderService {
   static const _idLunch      = 1011;
   static const _idDinner     = 1012;
   static const _idWorkout    = 1020;
+  static const _idCycle      = 1030;
 
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
 
   static bool get remindersEnabled =>
-      StorageService.getString(_enabledKey) != '0'; // activé par défaut
+      StorageService.getString(_enabledKey) != '0';
 
-  /// À appeler une fois au démarrage (après runApp), avant tout scheduling.
   static Future<void> init() async {
     if (_initialized) return;
     try {
       tz_data.initializeTimeZones();
-      // Best-effort : sans le fuseau local exact, les rappels partent sur
-      // UTC — décalés mais pas cassés. Assez pour une v1 sans dépendance
-      // native supplémentaire (flutter_timezone) juste pour ce détail.
       tz.setLocalLocation(tz.getLocation('Europe/Paris'));
 
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       const iosInit = DarwinInitializationSettings(
-        requestAlertPermission: false, // demandée explicitement via requestPermission()
+        requestAlertPermission: false,
         requestBadgePermission: false,
         requestSoundPermission: false,
       );
@@ -54,7 +47,6 @@ class LocalReminderService {
     }
   }
 
-  /// Demande la permission (iOS : popup système ; Android 13+ : POST_NOTIFICATIONS).
   static Future<bool> requestPermission() async {
     try {
       final ios = _plugin.resolvePlatformSpecificImplementation<
@@ -68,7 +60,7 @@ class LocalReminderService {
           AndroidFlutterLocalNotificationsPlugin>();
       if (android != null) {
         final granted = await android.requestNotificationsPermission();
-        return granted ?? true; // Android < 13 : pas de permission requise
+        return granted ?? true;
       }
       return true;
     } catch (e) {
@@ -77,7 +69,6 @@ class LocalReminderService {
     }
   }
 
-  /// Active/désactive tous les rappels — persisté pour survivre au redémarrage.
   static Future<void> setEnabled(bool enabled) async {
     await StorageService.setString(_enabledKey, enabled ? '1' : '0');
     if (enabled) {
@@ -87,28 +78,67 @@ class LocalReminderService {
     }
   }
 
-  /// Programme le jeu de rappels par défaut : eau (3x/jour), 3 repas, séance.
-  /// Idempotent — peut être rappelé sans créer de doublons (mêmes ids).
-  static Future<void> scheduleAllDefaults() async {
+  /// Reprogramme tous les rappels selon les préférences utilisateur.
+  static Future<void> scheduleFromPrefs(NotificationPreferences prefs) async {
     if (!_initialized) await init();
     if (!remindersEnabled) return;
 
-    await _scheduleDaily(_idWater1, 10, 0,
-        'Pense à boire 💧', 'Un petit verre d\'eau, ça fait toujours du bien.');
-    await _scheduleDaily(_idWater2, 14, 0,
-        'Pense à boire 💧', 'Reste hydratée pour garder ton énergie.');
-    await _scheduleDaily(_idWater3, 18, 0,
-        'Pense à boire 💧', 'Dernier rappel eau de la journée.');
+    // Cancel all first, then reschedule only enabled ones
+    await cancelAll();
 
-    await _scheduleDaily(_idBreakfast, 8, 30,
-        'Petit-déjeuner 🍳', 'N\'oublie pas de logger ton repas dans FitEva.');
-    await _scheduleDaily(_idLunch, 12, 30,
-        'Déjeuner 🥗', 'C\'est l\'heure de manger — pense à le noter.');
-    await _scheduleDaily(_idDinner, 19, 30,
-        'Dîner 🍽️', 'Dernier repas de la journée à logger.');
+    if (prefs.waterEnabled) {
+      await _scheduleDaily(_idWater1, prefs.waterTime1Hour, prefs.waterTime1Min,
+          'Pense à boire 💧', 'Un petit verre d\'eau, ça fait toujours du bien.');
+      await _scheduleDaily(_idWater2, prefs.waterTime2Hour, prefs.waterTime2Min,
+          'Pense à boire 💧', 'Reste hydratée pour garder ton énergie.');
+      await _scheduleDaily(_idWater3, prefs.waterTime3Hour, prefs.waterTime3Min,
+          'Pense à boire 💧', 'Dernier rappel eau de la journée.');
+    }
 
-    await _scheduleDaily(_idWorkout, 17, 0,
-        'Séance du jour 💪', 'Ta séance t\'attend — même 15 minutes comptent.');
+    if (prefs.mealsEnabled) {
+      await _scheduleDaily(_idBreakfast, prefs.breakfastHour, prefs.breakfastMin,
+          'Petit-déjeuner 🍳', 'N\'oublie pas de logger ton repas dans FitEva.');
+      await _scheduleDaily(_idLunch, prefs.lunchHour, prefs.lunchMin,
+          'Déjeuner 🥗', 'C\'est l\'heure de manger — pense à le noter.');
+      await _scheduleDaily(_idDinner, prefs.dinnerHour, prefs.dinnerMin,
+          'Dîner 🍽️', 'Dernier repas de la journée à logger.');
+    }
+
+    if (prefs.workoutEnabled) {
+      await _scheduleDaily(_idWorkout, prefs.workoutHour, prefs.workoutMin,
+          'Séance du jour 💪', 'Ta séance t\'attend — même 15 minutes comptent.');
+    }
+
+    if (prefs.cycleEnabled) {
+      await _scheduleDaily(_idCycle, prefs.cycleHour, prefs.cycleMin,
+          'Rappel cycle 🌸', 'Consulte ta phase du cycle et adapte ta journée.');
+    }
+  }
+
+  /// Fallback : programme avec les horaires par défaut.
+  static Future<void> scheduleAllDefaults() async {
+    await scheduleFromPrefs(const NotificationPreferences());
+  }
+
+  /// Programme un rappel cycle contextuel (une seule fois, pas récurrent).
+  static Future<void> scheduleCycleReminder({
+    required String phaseName,
+    required String advice,
+    required int hour,
+    required int minute,
+  }) async {
+    if (!_initialized) await init();
+    if (!remindersEnabled) return;
+
+    final title = switch (phaseName) {
+      'Règles'        => 'Phase menstruelle 🌙',
+      'Folliculaire'  => 'Phase folliculaire 🌱',
+      'Ovulation'     => 'Pic d\'énergie ! ⚡',
+      'Lutéale'       => 'Phase lutéale 🍂',
+      _               => 'Ton cycle 🌸',
+    };
+
+    await _scheduleDaily(_idCycle, hour, minute, title, advice);
   }
 
   static Future<void> _scheduleDaily(
@@ -125,7 +155,7 @@ class LocalReminderService {
         const NotificationDetails(
           android: AndroidNotificationDetails(
             'daily_reminders', 'Rappels quotidiens',
-            channelDescription: 'Rappels eau, repas et séance',
+            channelDescription: 'Rappels eau, repas, séance et cycle',
             importance: Importance.defaultImportance,
             priority: Priority.defaultPriority,
           ),
@@ -134,7 +164,7 @@ class LocalReminderService {
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time, // répète chaque jour à cette heure
+        matchDateTimeComponents: DateTimeComponents.time,
       );
     } catch (e) {
       debugPrint('[Reminders] schedule error ($id): $e');
