@@ -579,7 +579,9 @@ class _AboutSliver extends StatelessWidget {
               _SectionTitle(label: l10n.progDescription),
               const SizedBox(height: 12),
               Text(
-                'Ce programme complet de musculation et cardio te permettra de sculpter ton corps et d\'améliorer ton endurance. Chaque séance est pensée pour des résultats optimaux, en respectant ton cycle.',
+                program.description.isNotEmpty
+                    ? program.description
+                    : 'Description à venir pour ce programme.',
                 style: GoogleFonts.inter(
                   color: cs.onSurface.withValues(alpha: 0.60),
                   fontSize: 14,
@@ -596,16 +598,15 @@ class _AboutSliver extends StatelessWidget {
               const SizedBox(height: 28),
 
               // ── Objectifs ──────────────────────────────────────────────
-              _SectionTitle(label: l10n.progObjectives),
-              const SizedBox(height: 14),
-              Wrap(spacing: 8, runSpacing: 8, children: const [
-                _GoalChip(label: 'Tonification', icon: LucideIcons.sparkles),
-                _GoalChip(label: 'Cardio', icon: LucideIcons.heart),
-                _GoalChip(label: 'Minceur', icon: LucideIcons.trendingDown),
-                _GoalChip(label: 'Fessiers', icon: LucideIcons.zap),
-                _GoalChip(label: 'Ventre plat', icon: LucideIcons.target),
-              ]),
-              const SizedBox(height: 28),
+              if (program.goals.isNotEmpty) ...[
+                _SectionTitle(label: l10n.progObjectives),
+                const SizedBox(height: 14),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final g in program.goals)
+                    _GoalChip(label: g, icon: _goalIcon(g)),
+                ]),
+                const SizedBox(height: 28),
+              ],
 
               // ── Programme phases ───────────────────────────────────────
               _SectionTitle(label: l10n.progPhases),
@@ -793,6 +794,29 @@ class _CoachCard extends StatelessWidget {
         ),
       ]),
     );
+  }
+}
+
+/// Icône associée à un objectif (programs.goals) — mapping par libellé
+/// connu, avec une icône neutre par défaut pour tout libellé inconnu
+/// (permet d'ajouter de nouveaux objectifs en base sans casser l'UI).
+IconData _goalIcon(String goal) {
+  switch (goal) {
+    case 'Tonification':      return LucideIcons.sparkles;
+    case 'Cardio':            return LucideIcons.heart;
+    case 'Minceur':           return LucideIcons.trendingDown;
+    case 'Fessiers':          return LucideIcons.zap;
+    case 'Force':             return LucideIcons.dumbbell;
+    case 'Masse musculaire':  return LucideIcons.dumbbell;
+    case 'Endurance':         return LucideIcons.activity;
+    case 'Renforcement':      return LucideIcons.activity;
+    case 'Souplesse':         return LucideIcons.moveVertical;
+    case 'Posture':           return LucideIcons.moveVertical;
+    case 'Récupération':      return LucideIcons.wind;
+    case 'Relaxation':        return LucideIcons.moon;
+    case 'Bien-être':         return LucideIcons.sparkles;
+    case 'Respiration':       return LucideIcons.wind;
+    default:                  return LucideIcons.target;
   }
 }
 

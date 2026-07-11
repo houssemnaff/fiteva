@@ -76,6 +76,8 @@ class ProgramService {
       phases:           r['phases']         as String? ?? '',
       color:            Color(r['color']    as int? ?? 0xFF2D4A2D),
       imageUrl:         r['image_url']      as String? ?? '',
+      description:      r['description']    as String? ?? '',
+      goals:            List<String>.from(r['goals'] as List? ?? []),
       compatibleCycles: List<String>.from(r['compatible_cycles'] as List? ?? []),
       totalPoints:      r['total_points']   as int? ?? 100,
       level:            r['level']          as String?,
@@ -137,6 +139,26 @@ class ProgramService {
       points:       r['points']        as int? ?? 0,
       thumbnailUrl: r['thumbnail_url'] as String? ?? '',
       url:          r['url']           as String? ?? '',
+      category:     r['category']      as String? ?? '',
+      phases:       r['phases']        as String? ?? '',
+      techniqueDescription: r['technique_description'] as String? ?? '',
+      techniqueSteps: List<String>.from(r['technique_steps'] as List? ?? []),
+      musclesPrimary: (r['muscles_primary'] as List? ?? [])
+          .map((m) => (
+                name: m['name'] as String? ?? '',
+                level: (m['level'] as num?)?.toDouble() ?? 0.0,
+              ))
+          .toList(),
+      musclesSecondary: List<String>.from(r['muscles_secondary'] as List? ?? []),
+      tips: (r['tips'] as List? ?? [])
+          .map((t) => (
+                title: t['title'] as String? ?? '',
+                tip: t['tip'] as String? ?? '',
+              ))
+          .toList(),
+      sets:        r['sets']         as int? ?? 3,
+      workSeconds: r['work_seconds'] as int? ?? 45,
+      restSeconds: r['rest_seconds'] as int? ?? 15,
     );
   }
 }

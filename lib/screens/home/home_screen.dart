@@ -1676,37 +1676,37 @@ class _ContinuableProgram {
   _ContinuableProgram(this.program, this.doneVideos, this.totalVideos, this.percentage);
 }
 
-// Un programme est "à reprendre" dès qu'au moins une vidéo d'exercice a un
-// progrès > 0 (même partiel, avant le seuil de 80% qui la marque "terminée")
-// — sinon le cas le plus fréquent (une vidéo regardée en partie puis
-// abandon) ne remontait jamais ici.
+// Un programme apparaît dans "Reprendre" dès que l'utilisatrice l'a REJOINT
+// (user_joined_programs — via le bouton "Commencer" du détail programme),
+// qu'elle ait déjà regardé une vidéo ou non. Avant, la section se basait
+// uniquement sur videoProgress (au moins une vidéo à progrès > 0) : un
+// programme rejoint mais pas encore commencé (0 vidéo vue) n'apparaissait
+// jamais, alors qu'il devrait être immédiatement proposé pour reprendre.
+// Seuls les programmes déjà 100% terminés sont exclus (rien à "reprendre").
 Future<List<_ContinuableProgram>> _fetchContinuablePrograms(
     List<HomeProgramModel> programs) async {
+  final joinedPrograms    = await WorkoutProgressService.getJoinedPrograms();
   final completedPrograms = await WorkoutProgressService.getCompletedPrograms();
   final videoProgress     = await WorkoutProgressService.getAllVideoProgress();
 
   final result = <_ContinuableProgram>[];
   for (final p in programs) {
+    if (!joinedPrograms.contains(p.id)) continue;
     if (completedPrograms.contains(p.id)) continue;
 
     var done = 0;
     var total = 0;
     var sumProgress = 0.0;
-    var anyStarted = false;
     for (final w in p.workouts) {
-      for (var i = 0; i < w.exercises.length; i++) {
+      for (final v in w.videos) {
         total++;
-        final vid = w.videoIdAt(i);
-        final prog = vid != null ? (videoProgress[vid] ?? 0.0) : 0.0;
+        final prog = videoProgress[v.id] ?? 0.0;
         sumProgress += prog;
         if (prog >= 0.8) done++;
-        if (prog > 0) anyStarted = true;
       }
     }
-    if (anyStarted && done < total) {
-      result.add(_ContinuableProgram(
-        p, done, total, total > 0 ? sumProgress / total : 0));
-    }
+    result.add(_ContinuableProgram(
+      p, done, total, total > 0 ? sumProgress / total : 0));
   }
   return result;
 }

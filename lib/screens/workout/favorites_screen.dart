@@ -236,6 +236,7 @@ class FavoritesScreen extends ConsumerWidget {
                             onCompleted: () {},
                             workoutId: null,
                             allVideoIds: null,
+                            video: v,
                           ),
                         ),
                       ),

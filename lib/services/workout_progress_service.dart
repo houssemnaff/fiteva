@@ -29,14 +29,18 @@ class WorkoutProgressService {
   // ── Vidéos ────────────────────────────────────────────────────────────────
 
   static Future<Set<String>> getCompletedVideos() async {
-    if (_uid == null) return {};
+    if (_uid == null) {
+      debugPrint('[WorkoutProgress] getCompletedVideos SKIPPED — no user id (auth pas encore prête ?)');
+      return {};
+    }
     try {
       final rows = await SupabaseConfig.table('user_video_completions')
           .select('video_id')
           .eq('user_id', _uid!)
           .eq('completed', true);
       return {for (final r in rows as List) r['video_id'] as String};
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[WorkoutProgress] getCompletedVideos FAILED: $e');
       return {};
     }
   }
@@ -62,8 +66,16 @@ class WorkoutProgressService {
     }
   }
 
-  static Future<void> markVideoComplete(String videoId) async {
-    if (_uid == null || videoId.isEmpty) return;
+  /// Marque une vidéo terminée en base et VÉRIFIE que l'écriture a bien
+  /// abouti (retourne false sinon) — avant, les échecs étaient avalés en
+  /// silence : l'UI affichait "terminé" (état local optimiste) même quand
+  /// rien n'avait été persisté, et la vérité n'apparaissait qu'au prochain
+  /// redémarrage complet de l'app (relecture depuis la base à zéro).
+  static Future<bool> markVideoComplete(String videoId) async {
+    if (_uid == null || videoId.isEmpty) {
+      debugPrint('[WorkoutProgress] markVideoComplete SKIPPED — uid=$_uid videoId="$videoId"');
+      return false;
+    }
     try {
       await SupabaseConfig.table('user_video_completions').upsert({
         'user_id':      _uid,
@@ -72,7 +84,12 @@ class WorkoutProgressService {
         'completed':    true,
         'completed_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id,video_id');
-    } catch (_) {}
+      debugPrint('[WorkoutProgress] markVideoComplete OK — videoId=$videoId');
+      return true;
+    } catch (e) {
+      debugPrint('[WorkoutProgress] markVideoComplete FAILED: $e');
+      return false;
+    }
   }
 
   static Future<bool> isVideoCompleted(String videoId) async {
@@ -84,7 +101,8 @@ class WorkoutProgressService {
           .eq('video_id', videoId)
           .maybeSingle();
       return row?['completed'] as bool? ?? false;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[WorkoutProgress] isVideoCompleted FAILED: $e');
       return false;
     }
   }
@@ -132,20 +150,25 @@ class WorkoutProgressService {
           .select('workout_id')
           .eq('user_id', _uid!);
       return {for (final r in rows as List) r['workout_id'] as String};
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[WorkoutProgress] getCompletedWorkouts FAILED: $e');
       return {};
     }
   }
 
-  static Future<void> markWorkoutComplete(String workoutId) async {
-    if (_uid == null) return;
+  static Future<bool> markWorkoutComplete(String workoutId) async {
+    if (_uid == null) return false;
     try {
       await SupabaseConfig.table('user_workout_completions').upsert({
         'user_id':      _uid,
         'workout_id':   workoutId,
         'completed_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id,workout_id');
-    } catch (_) {}
+      return true;
+    } catch (e) {
+      debugPrint('[WorkoutProgress] markWorkoutComplete FAILED: $e');
+      return false;
+    }
   }
 
   static Future<bool> isWorkoutCompleted(String workoutId) async {
@@ -155,16 +178,10 @@ class WorkoutProgressService {
   }
 
   static Future<bool> checkAndMarkWorkoutComplete(WorkoutModel workout) async {
+    if (workout.videos.isEmpty) return false;
     final completedVideos = await getCompletedVideos();
-    bool allDone = true;
-    for (int i = 0; i < workout.exercises.length; i++) {
-      final videoId = workout.videoIdAt(i);
-      if (videoId == null || !completedVideos.contains(videoId)) {
-        allDone = false;
-        break;
-      }
-    }
-    if (allDone && workout.exercises.isNotEmpty) {
+    final allDone = workout.videos.every((v) => completedVideos.contains(v.id));
+    if (allDone) {
       await markWorkoutComplete(workout.id);
       return true;
     }
@@ -172,14 +189,10 @@ class WorkoutProgressService {
   }
 
   static Future<double> getWorkoutCompletionPercentage(WorkoutModel workout) async {
-    if (workout.exercises.isEmpty) return 0.0;
+    if (workout.videos.isEmpty) return 0.0;
     final completedVideos = await getCompletedVideos();
-    int done = 0;
-    for (int i = 0; i < workout.exercises.length; i++) {
-      final videoId = workout.videoIdAt(i);
-      if (videoId != null && completedVideos.contains(videoId)) done++;
-    }
-    return done / workout.exercises.length;
+    final done = workout.videos.where((v) => completedVideos.contains(v.id)).length;
+    return done / workout.videos.length;
   }
 
   // ── Programmes ────────────────────────────────────────────────────────────

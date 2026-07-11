@@ -1,4 +1,5 @@
 ﻿import 'dart:ui';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import 'package:chewie/chewie.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/points_provider.dart';
 import '../../core/shop/shop_provider.dart';
+import '../../models/video_model.dart';
 import '../../providers/workout_progress_provider.dart';
 import '../../services/workout_progress_service.dart';
 
@@ -16,6 +18,38 @@ int _pointsForExercise(int total, int count, int idx) {
   if (count == 0) return 0;
   final base = total ~/ count;
   return idx < total % count ? base + 1 : base;
+}
+
+/// Icône associée à un muscle (videos.muscles_primary[].name) — mapping par
+/// libellé connu, icône neutre par défaut pour tout nom inconnu (permet
+/// d'ajouter de nouveaux muscles en base sans casser l'UI).
+IconData _muscleIcon(String name) {
+  switch (name) {
+    case 'Quadriceps':
+    case 'Ischio-jambiers':
+    case 'Épaules':      return LucideIcons.zap;
+    case 'Fessiers':
+    case 'Dos':
+    case 'Lombaires':    return LucideIcons.activity;
+    case 'Abdominaux':   return LucideIcons.target;
+    case 'Pectoraux':    return LucideIcons.heart;
+    case 'Biceps':
+    case 'Triceps':      return LucideIcons.dumbbell;
+    default:             return LucideIcons.activity;
+  }
+}
+
+/// Icône associée à un conseil (videos.tips[].title) — mapping par libellé
+/// connu, icône neutre par défaut pour tout titre inconnu.
+IconData _tipIcon(String title) {
+  switch (title) {
+    case 'Regard':       return LucideIcons.eye;
+    case 'Respiration':  return LucideIcons.wind;
+    case 'Amplitude':    return LucideIcons.moveVertical;
+    case 'Posture':      return LucideIcons.activity;
+    case 'Rythme':       return LucideIcons.timer;
+    default:             return LucideIcons.info;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -32,6 +66,10 @@ class ExercisePlayerScreen extends StatefulWidget {
   final String? workoutId;
   final List<String>? allVideoIds;
 
+  /// Contenu pédagogique (technique, muscles, conseils, séries/repos) —
+  /// null ou champs vides → l'écran retombe sur son contenu générique.
+  final VideoModel? video;
+
   const ExercisePlayerScreen({
     super.key,
     required this.ref,
@@ -45,6 +83,7 @@ class ExercisePlayerScreen extends StatefulWidget {
     required this.onCompleted,
     this.workoutId,
     this.allVideoIds,
+    this.video,
   });
 
   @override
@@ -75,11 +114,24 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
   ChewieController? _chewieCtrl;
   bool _isVideoReady = false;
 
-  static const _fallback = [
-    'assets/videos/workout1.mp4',
-    'assets/videos/workout2.mp4',
-    'assets/videos/workout3.mp4',
-  ];
+  /// true si videos.url est vide ou si l'initialisation a échoué (fichier
+  /// manquant, URL cassée…) — plus de fallback silencieux vers une vidéo
+  /// de test : on affiche un état d'erreur explicite à la place.
+  bool _videoUnavailable = false;
+
+  /// Détail de l'échec (url tentée + exception) — affiché seulement en
+  /// mode debug pour diagnostiquer rapidement (asset non déclaré,
+  /// mauvais chemin, pubspec pas rechargé après un restart incomplet…).
+  String? _debugErrorDetail;
+
+  /// true si CETTE vidéo était déjà marquée terminée en base AVANT que cet
+  /// écran ne s'ouvre (capturé une seule fois, à l'ouverture — contrairement
+  /// à _hasWatched80Percent qui redevient true dès qu'on revisionne 80% de
+  /// la vidéo). Sert de garde pour n'attribuer les points qu'une seule fois
+  /// par vidéo : sans ça, rouvrir une vidéo déjà vue réactivait le bouton
+  /// "Terminer" (car _hasWatched80Percent partait déjà à true) et chaque
+  /// appui rappelait addPoints, donc les points étaient regagnés à l'infini.
+  bool _wasAlreadyCompleted = false;
 
   @override
   void initState() {
@@ -87,19 +139,51 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _doneCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _doneScale = CurvedAnimation(parent: _doneCtrl, curve: Curves.elasticOut);
-    _checkVideoCompletion();
-    _initVideo();
+    // IMPORTANT : on ATTEND la vérification "déjà terminée ?" avant de
+    // démarrer la vidéo. Avant, les deux tournaient en parallèle — une
+    // vidéo en asset local s'initialise quasi instantanément (autoplay),
+    // alors que isVideoCompleted() est un aller-retour réseau vers
+    // Supabase. Le lecteur commençait donc à jouer et _onProgress() à
+    // écrire "completed: false" AVANT même que _wasAlreadyCompleted soit
+    // positionné à true — le garde-fou dans _onProgress arrivait toujours
+    // trop tard, donc une vidéo déjà terminée repassait "non terminée" dès
+    // qu'on la rouvrait. En séquençant, _wasAlreadyCompleted est garanti
+    // correct avant que la vidéo ne puisse émettre le moindre événement.
+    _initAfterCompletionCheck();
+  }
+
+  Future<void> _initAfterCompletionCheck() async {
+    await _checkVideoCompletion();
+    if (!mounted) return;
+    await _initVideo();
   }
 
   Future<void> _checkVideoCompletion() async {
     final done = await WorkoutProgressService.isVideoCompleted(widget.videoId);
-    if (mounted) setState(() => _hasWatched80Percent = done);
+    if (mounted) {
+      setState(() {
+        _hasWatched80Percent = done;
+        _wasAlreadyCompleted = done;
+      });
+    }
   }
 
   Future<void> _initVideo() async {
-    final url = (widget.videoUrl != null && widget.videoUrl!.isNotEmpty)
-        ? widget.videoUrl!
-        : _fallback[widget.exerciseIndex % _fallback.length];
+    final url = widget.videoUrl;
+
+    // videos.url vide en base — plus de fallback vers une vidéo de test :
+    // état d'erreur explicite affiché à l'utilisatrice.
+    if (url == null || url.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _videoUnavailable = true;
+          _debugErrorDetail = 'videos.url est vide (NULL ou "") en base '
+              'pour videoId=${widget.videoId}.';
+        });
+      }
+      return;
+    }
+
     // URL réseau (Supabase Storage, CDN…) vs asset embarqué : .asset() sur
     // une URL http échoue à s'initialiser → aucune progression possible.
     _videoCtrl = url.startsWith('http')
@@ -126,12 +210,36 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
       );
       setState(() => _isVideoReady = true);
     } catch (e) {
-      debugPrint('Video error: $e');
+      // Fichier manquant, URL cassée, format non supporté… — état d'erreur
+      // explicite au lieu d'un spinner qui tourne indéfiniment.
+      //
+      // Causes les plus fréquentes quand l'url en base est correcte
+      // (ex : "assets/videos/workout3.mp4") mais que ça échoue quand même :
+      //  1. pubspec.yaml modifié sans ARRÊT COMPLET + relance de `flutter
+      //     run` — le hot reload/restart ne régénère PAS AssetManifest.json.
+      //  2. Build cache obsolète → `flutter clean` puis relancer.
+      //  3. Provider Riverpod encore en cache avec l'ancienne donnée
+      //     (fetchée avant la mise à jour SQL) → redémarrage complet requis.
+      debugPrint('Video error for url="$url": $e');
+      if (mounted) {
+        setState(() {
+          _videoUnavailable = true;
+          _debugErrorDetail = 'url="$url"\n$e';
+        });
+      }
     }
   }
 
 
   void _onProgress() {
+    // Vidéo déjà terminée avant l'ouverture de cet écran : on ne track/écrit
+    // plus rien pendant une relecture. Sans ça, updateVideoProgress() (fire-
+    // and-forget, appelé à chaque palier de 10%) upserte "completed: false"
+    // dès les premières secondes de la relecture (frac proche de 0), et
+    // cette écriture pouvait arriver APRÈS celle de "Terminer" côté réseau
+    // — un vrai risque de course qui repassait la vidéo à "non terminée".
+    if (_wasAlreadyCompleted) return;
+
     final ctrl = _videoCtrl;
     if (ctrl == null || !ctrl.value.isInitialized) return;
     final dur = ctrl.value.duration.inMilliseconds;
@@ -177,6 +285,11 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
   Future<void> _complete() async {
     if (_isDone) return;
 
+    if (_videoUnavailable) {
+      _showUnavailableWarning();
+      return;
+    }
+
     // ── Not watched 80 % → show warning, block completion ─────────────────
     if (!_hasWatched80Percent) {
       _showIncompleteWarning();
@@ -190,13 +303,38 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     // sans cette écriture explicite et attendue, la vidéo pouvait rester
     // non terminée en base, et _checkAndMarkComplete (qui relit les vidéos
     // terminées) ne marquait alors jamais le workout comme complet.
-    await WorkoutProgressService.markVideoComplete(widget.videoId);
+    // (idempotent — sans risque de rappeler sur une vidéo déjà marquée.)
+    //
+    // IMPORTANT : on VÉRIFIE que l'écriture a réellement abouti avant de
+    // continuer. Avant, l'échec était avalé en silence — l'UI passait quand
+    // même en "terminé" (état local optimiste) alors que rien n'était
+    // persisté, et la vérité n'apparaissait qu'au prochain redémarrage
+    // complet de l'app (relecture depuis la base à zéro).
+    final saved = await WorkoutProgressService.markVideoComplete(widget.videoId);
+    if (!saved) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Impossible d\'enregistrer ta progression. Vérifie ta connexion et réessaie.'),
+          duration: Duration(seconds: 3),
+        ));
+      }
+      return; // ne pas attribuer de points ni afficher "terminé" tant que
+               // ce n'est pas confirmé en base.
+    }
 
-    // ── Award points ───────────────────────────────────────────────────────
-    final pts = _pointsForExercise(
-        widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex);
-    widget.ref.read(pointsProvider.notifier).addPoints(pts);
-    widget.ref.read(shopProvider.notifier).refresh();
+    // ── Award points — UNE SEULE FOIS par vidéo ────────────────────────────
+    // Si la vidéo était déjà terminée avant l'ouverture de cet écran, la
+    // revisionner ne doit pas régénérer les points (sinon un utilisateur
+    // pourrait en gagner à l'infini en rouvrant la même vidéo).
+    final pts = _wasAlreadyCompleted
+        ? 0
+        : _pointsForExercise(
+            widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex);
+    if (!_wasAlreadyCompleted) {
+      widget.ref.read(pointsProvider.notifier).addPoints(pts);
+      widget.ref.read(shopProvider.notifier).refresh();
+    }
 
     // Vérifie si tout le workout est terminé (la vidéo vient d'être écrite),
     // PUIS invalide les providers pour qu'ils rechargent l'état à jour.
@@ -206,13 +344,24 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     widget.ref.invalidate(programCompletionPercentageProvider);
     widget.ref.invalidate(programStatusProvider);
 
-    // ── Show floating badge then navigate back ─────────────────────────────
-    setState(() { _isDone = true; _earnedPoints = pts; _showPoints = true; });
+    // ── Show floating badge (seulement si des points ont été gagnés) ──────
+    setState(() {
+      _isDone = true;
+      _earnedPoints = pts;
+      _showPoints = pts > 0;
+    });
     _doneCtrl.forward();
     widget.onCompleted();
 
     await Future.delayed(const Duration(milliseconds: 2000));
     if (mounted) Navigator.of(context).pop();
+  }
+
+  void _showUnavailableWarning() {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Vidéo non disponible pour le moment.'),
+      duration: Duration(seconds: 2),
+    ));
   }
 
   void _showIncompleteWarning() {
@@ -389,10 +538,12 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
               // 16:9 player
               AspectRatio(
                 aspectRatio: 16 / 9,
-                child: _isVideoReady && _chewieCtrl != null
-                    ? Chewie(controller: _chewieCtrl!)
-                    : Center(child: CircularProgressIndicator(
-                        color: cs.primary, strokeWidth: 2)),
+                child: _videoUnavailable
+                    ? _VideoUnavailable(debugDetail: _debugErrorDetail)
+                    : _isVideoReady && _chewieCtrl != null
+                        ? Chewie(controller: _chewieCtrl!)
+                        : Center(child: CircularProgressIndicator(
+                            color: cs.primary, strokeWidth: 2)),
               ),
             ]),
           ),
@@ -446,11 +597,11 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(children: [
-                      _StatChip(icon: LucideIcons.repeat2, value: '3', label: l10n.exStatSets, color: cs.primary, t3: t3, t2: t2),
+                      _StatChip(icon: LucideIcons.repeat2, value: '${widget.video?.sets ?? 3}', label: l10n.exStatSets, color: cs.primary, t3: t3, t2: t2),
                       const SizedBox(width: 8),
-                      _StatChip(icon: LucideIcons.timer, value: '45s', label: l10n.exStatWork, color: const Color(0xFF2563EB), t3: t3, t2: t2),
+                      _StatChip(icon: LucideIcons.timer, value: '${widget.video?.workSeconds ?? 45}s', label: l10n.exStatWork, color: const Color(0xFF2563EB), t3: t3, t2: t2),
                       const SizedBox(width: 8),
-                      _StatChip(icon: LucideIcons.pause, value: '15s', label: l10n.exStatRest, color: const Color(0xFF7C3AED), t3: t3, t2: t2),
+                      _StatChip(icon: LucideIcons.pause, value: '${widget.video?.restSeconds ?? 15}s', label: l10n.exStatRest, color: const Color(0xFF7C3AED), t3: t3, t2: t2),
                       const SizedBox(width: 8),
                       _StatChip(icon: LucideIcons.star, value: '$pts', label: 'pts', color: const Color(0xFFF59E0B), t3: t3, t2: t2),
                     ]),
@@ -479,10 +630,10 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   child: _tab == 0
-                      ? _TechniqueTab(key: const ValueKey(0), l10n: l10n, t1: t1, t2: t2, cs: cs)
+                      ? _TechniqueTab(key: const ValueKey(0), l10n: l10n, t1: t1, t2: t2, cs: cs, video: widget.video)
                       : _tab == 1
-                          ? _MusclesTab(key: const ValueKey(1), t1: t1, t2: t2, t3: t3, cs: cs)
-                          : _ConseilsTab(key: const ValueKey(2), l10n: l10n, t1: t1, t2: t2),
+                          ? _MusclesTab(key: const ValueKey(1), t1: t1, t2: t2, t3: t3, cs: cs, video: widget.video)
+                          : _ConseilsTab(key: const ValueKey(2), l10n: l10n, t1: t1, t2: t2, video: widget.video),
                 ),
               ),
 
@@ -530,43 +681,58 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
           ),
           const SizedBox(width: 12),
 
-          // Complete button
-          Expanded(
-            child: ScaleTransition(
-              scale: _isDone ? _doneScale : const AlwaysStoppedAnimation(1.0),
-              child: GestureDetector(
-                onTap: _isDone ? null : _complete,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: _isDone
-                        ? Colors.green.shade600
-                        : cs.primary,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: cs.primary.withValues(alpha: 0.35),
-                        blurRadius: 16, offset: const Offset(0, 5),
+          // Complete button — traite "déjà terminé avant l'ouverture" comme
+          // "terminé" : bouton désactivé, pas de re-déclenchement possible
+          // (évite à la fois un clic inutile et la course décrite ci-dessus).
+          Builder(builder: (_) {
+            final effectivelyDone = _isDone || _wasAlreadyCompleted;
+            return Expanded(
+              child: ScaleTransition(
+                scale: _isDone ? _doneScale : const AlwaysStoppedAnimation(1.0),
+                child: GestureDetector(
+                  onTap: effectivelyDone ? null : _complete,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: effectivelyDone
+                          ? Colors.green.shade600
+                          : _videoUnavailable
+                              ? t2
+                              : cs.primary,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cs.primary.withValues(alpha: 0.35),
+                          blurRadius: 16, offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(
+                        effectivelyDone
+                            ? LucideIcons.checkCircle
+                            : _videoUnavailable
+                                ? LucideIcons.alertTriangle
+                                : LucideIcons.check,
+                        color: Colors.white, size: 18,
                       ),
-                    ],
+                      const SizedBox(width: 10),
+                      Text(
+                        effectivelyDone
+                            ? l10n.exDoneLabel
+                            : _videoUnavailable
+                                ? 'Indisponible'
+                                : l10n.exCompleteBtn,
+                        style: GoogleFonts.outfit(
+                          color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                      ),
+                    ]),
                   ),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(
-                      _isDone ? LucideIcons.checkCircle : LucideIcons.check,
-                      color: Colors.white, size: 18,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      _isDone ? l10n.exDoneLabel : l10n.exCompleteBtn,
-                      style: GoogleFonts.outfit(
-                        color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
-                    ),
-                  ]),
                 ),
               ),
-            ),
-          ),
+            );
+          }),
         ]),
       ),
     );
@@ -581,15 +747,23 @@ class _TechniqueTab extends StatelessWidget {
   final AppL10n l10n;
   final Color t1, t2;
   final ColorScheme cs;
-  const _TechniqueTab({super.key, required this.l10n, required this.t1, required this.t2, required this.cs});
+  final VideoModel? video;
+  const _TechniqueTab({super.key, required this.l10n, required this.t1, required this.t2, required this.cs, this.video});
 
   @override
   Widget build(BuildContext context) {
-    final steps = [l10n.exTip1, l10n.exTip2, l10n.exTip3];
+    // videos.technique_steps / .technique_description en base — repli sur
+    // le contenu générique tant que la vidéo n'a pas été enrichie.
+    final steps = video != null && video!.techniqueSteps.isNotEmpty
+        ? video!.techniqueSteps
+        : [l10n.exTip1, l10n.exTip2, l10n.exTip3];
+    final description = video != null && video!.techniqueDescription.isNotEmpty
+        ? video!.techniqueDescription
+        : l10n.exTechniqueDesc;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.exTechniqueDesc,
+        Text(description,
           style: GoogleFonts.inter(fontSize: 14, color: t2, height: 1.7)),
         const SizedBox(height: 20),
         Text('Étapes clés',
@@ -628,20 +802,25 @@ class _TechniqueTab extends StatelessWidget {
 class _MusclesTab extends StatelessWidget {
   final Color t1, t2, t3;
   final ColorScheme cs;
-  const _MusclesTab({super.key, required this.t1, required this.t2, required this.t3, required this.cs});
+  final VideoModel? video;
+  const _MusclesTab({super.key, required this.t1, required this.t2, required this.t3, required this.cs, this.video});
 
   @override
   Widget build(BuildContext context) {
-    final primary = [
-      (icon: LucideIcons.zap, name: 'Quadriceps', level: 1.0),
-      (icon: LucideIcons.activity, name: 'Fessiers', level: 0.85),
-      (icon: LucideIcons.zap, name: 'Ischio-jambiers', level: 0.60),
-    ];
-    final secondary = [
-      (name: 'Mollets', level: 0.40),
-      (name: 'Abdominaux', level: 0.30),
-      (name: 'Lombaires', level: 0.35),
-    ];
+    // videos.muscles_primary / .muscles_secondary en base — repli sur le
+    // contenu générique tant que la vidéo n'a pas été enrichie.
+    final dbPrimary = video?.musclesPrimary ?? const [];
+    final primary = dbPrimary.isNotEmpty
+        ? [for (final m in dbPrimary) (icon: _muscleIcon(m.name), name: m.name, level: m.level)]
+        : [
+            (icon: LucideIcons.zap, name: 'Quadriceps', level: 1.0),
+            (icon: LucideIcons.activity, name: 'Fessiers', level: 0.85),
+            (icon: LucideIcons.zap, name: 'Ischio-jambiers', level: 0.60),
+          ];
+    final dbSecondary = video?.musclesSecondary ?? const [];
+    final secondary = dbSecondary.isNotEmpty
+        ? dbSecondary
+        : const ['Mollets', 'Abdominaux', 'Lombaires'];
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('Muscles principaux',
@@ -681,7 +860,7 @@ class _MusclesTab extends StatelessWidget {
             color: t3,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(m.name,
+          child: Text(m,
             style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: t2)),
         )).toList(),
       ),
@@ -692,15 +871,21 @@ class _MusclesTab extends StatelessWidget {
 class _ConseilsTab extends StatelessWidget {
   final AppL10n l10n;
   final Color t1, t2;
-  const _ConseilsTab({super.key, required this.l10n, required this.t1, required this.t2});
+  final VideoModel? video;
+  const _ConseilsTab({super.key, required this.l10n, required this.t1, required this.t2, this.video});
 
   @override
   Widget build(BuildContext context) {
-    final conseils = [
-      (icon: LucideIcons.eye, title: 'Regard', tip: l10n.exTip1),
-      (icon: LucideIcons.wind, title: 'Respiration', tip: l10n.exTip2),
-      (icon: LucideIcons.moveVertical, title: 'Amplitude', tip: l10n.exTip3),
-    ];
+    // videos.tips en base — repli sur le contenu générique tant que la
+    // vidéo n'a pas été enrichie.
+    final dbTips = video?.tips ?? const [];
+    final conseils = dbTips.isNotEmpty
+        ? [for (final t in dbTips) (icon: _tipIcon(t.title), title: t.title, tip: t.tip)]
+        : [
+            (icon: LucideIcons.eye, title: 'Regard', tip: l10n.exTip1),
+            (icon: LucideIcons.wind, title: 'Respiration', tip: l10n.exTip2),
+            (icon: LucideIcons.moveVertical, title: 'Amplitude', tip: l10n.exTip3),
+          ];
     return Column(crossAxisAlignment: CrossAxisAlignment.start,
       children: conseils.map((c) => Padding(
         padding: const EdgeInsets.only(bottom: 14),
@@ -725,6 +910,42 @@ class _ConseilsTab extends StatelessWidget {
       )).toList(),
     );
   }
+}
+
+// ── Vidéo indisponible (url vide en base ou échec de chargement) ────────────
+class _VideoUnavailable extends StatelessWidget {
+  final String? debugDetail;
+  const _VideoUnavailable({this.debugDetail});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: Colors.black,
+    child: Center(
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(LucideIcons.videoOff,
+            color: Colors.white.withValues(alpha: 0.55), size: 32),
+        const SizedBox(height: 10),
+        Text('Vidéo non disponible',
+            style: GoogleFonts.inter(
+                color: Colors.white.withValues(alpha: 0.70),
+                fontSize: 13,
+                fontWeight: FontWeight.w600)),
+        // Détail visible uniquement en debug — jamais en production.
+        if (kDebugMode && debugDetail != null) ...[
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(debugDetail!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                    color: Colors.orangeAccent.withValues(alpha: 0.85),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500)),
+          ),
+        ],
+      ]),
+    ),
+  );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

@@ -190,6 +190,7 @@ class _RecuperationVideoCard extends ConsumerWidget {
             onCompleted: () {},
             workoutId: null,
             allVideoIds: null,
+            video: video,
           ),
         ),
       ),

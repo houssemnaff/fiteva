@@ -237,6 +237,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             onCompleted: () {},
             workoutId: null,
             allVideoIds: null,
+            video: v,
           )));
         },
       ),
