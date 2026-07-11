@@ -457,6 +457,10 @@ class _PartnerCard extends ConsumerWidget {
                       fontSize: 16.5, fontWeight: FontWeight.w700,
                       color: cs.onSurface, letterSpacing: -0.3),
                       overflow: TextOverflow.ellipsis)),
+                    if (p.isPro) ...[
+                      const SizedBox(width: 5),
+                      const Icon(LucideIcons.crown, size: 13, color: Color(0xFFF59E0B)),
+                    ],
                     if (isOwnPost) ...[
                       const SizedBox(width: 8),
                       Text(l10n.communityPartnerYouSuffix, style: GoogleFonts.inter(
@@ -857,9 +861,15 @@ class PartnerDetailSheet extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 18),
-                        Text(p.name, style: GoogleFonts.outfit(
-                          fontSize: 24, fontWeight: FontWeight.w700,
-                          color: cs.onSurface, letterSpacing: -0.5)),
+                        Row(mainAxisSize: MainAxisSize.min, children: [
+                          Text(p.name, style: GoogleFonts.outfit(
+                            fontSize: 24, fontWeight: FontWeight.w700,
+                            color: cs.onSurface, letterSpacing: -0.5)),
+                          if (p.isPro) ...[
+                            const SizedBox(width: 7),
+                            const Icon(LucideIcons.crown, size: 19, color: Color(0xFFF59E0B)),
+                          ],
+                        ]),
                         const SizedBox(height: 10),
                         Row(mainAxisSize: MainAxisSize.min, children: [
                           Container(

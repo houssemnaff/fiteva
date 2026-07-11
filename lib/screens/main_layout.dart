@@ -8,6 +8,8 @@ import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_hub_screen.
 import 'package:fiteva/screens/sante/sante_screen.dart';
 import 'package:fiteva/screens/shop/screens/boutique_screen.dart';
 import 'package:fiteva/widgets/chatbot_sheet.dart';
+import 'package:fiteva/widgets/paywall_sheet.dart';
+import 'package:fiteva/providers/subscription_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -145,11 +147,21 @@ class _MainLayoutState extends ConsumerState<MainLayout>
     _plusAnim.reverse();
   }
 
-  void _openChatbot() => showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => const ChatbotSheet());
+  void _openChatbot() {
+    if (!ref.read(isProProvider)) {
+      showPaywallSheet(
+        context,
+        feature: 'Coach IA',
+        description: 'Discute avec ton assistant santé & fitness personnel, disponible 24/7.',
+      );
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const ChatbotSheet());
+  }
 
   bool get _isSecondary => _currentIndex >= 4;
 

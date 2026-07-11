@@ -21,6 +21,7 @@ class PostModel {
   final int comments;
   final String timeAgo;
   final String category;
+  final bool isPro;
 
   const PostModel({
     required this.id,
@@ -36,6 +37,7 @@ class PostModel {
     required this.comments,
     required this.timeAgo,
     this.category = '',
+    this.isPro = false,
   });
 
   /// Un post "Avant/Après" encode ses deux photos en JSON dans [imageUrl]
@@ -78,6 +80,7 @@ class PostModel {
     'comments': comments,
     'timeAgo': timeAgo,
     'category': category,
+    'isPro': isPro,
   };
 
   factory PostModel.fromJson(Map<String, dynamic> j) => PostModel(
@@ -94,6 +97,7 @@ class PostModel {
     comments: j['comments'] as int? ?? 0,
     timeAgo: j['timeAgo'] as String? ?? '',
     category: j['category'] as String? ?? '',
+    isPro: j['isPro'] as bool? ?? false,
   );
 
   PostModel copyWith({
@@ -110,6 +114,7 @@ class PostModel {
     int? comments,
     String? timeAgo,
     String? category,
+    bool? isPro,
   }) =>
       PostModel(
         id: id ?? this.id,
@@ -125,5 +130,6 @@ class PostModel {
         comments: comments ?? this.comments,
         timeAgo: timeAgo ?? this.timeAgo,
         category: category ?? this.category,
+        isPro: isPro ?? this.isPro,
       );
 }

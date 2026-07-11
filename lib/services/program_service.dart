@@ -85,6 +85,7 @@ class ProgramService {
       category:         r['category']       as String? ?? 'home',
       weeks:            weeks,
       workouts:         workouts,
+      isPremium:        r['is_premium']     as bool? ?? false,
     );
   }
 

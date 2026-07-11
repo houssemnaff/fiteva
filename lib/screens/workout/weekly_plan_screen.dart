@@ -7,7 +7,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/home_program_model.dart';
 import '../../providers/mock_data_provider.dart';
+import '../../providers/subscription_provider.dart';
 import '../../providers/weekly_plan_provider.dart';
+import '../../widgets/paywall_sheet.dart';
 import 'programme_detail_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════
@@ -355,6 +357,80 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                         color: const Color(0xFFFBBF24))),
                     ]),
                   ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ── Auto-generate button (Pro) ───────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Consumer(builder: (context, ref, _) {
+                    final isPro = ref.watch(isProProvider);
+                    return GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        if (!isPro) {
+                          showPaywallSheet(context,
+                            feature: 'Plan intelligent',
+                            description:
+                              'Génère automatiquement ton plan de la semaine '
+                              'adapté à ta phase du cycle, ton niveau et tes objectifs.');
+                          return;
+                        }
+                        ref.read(weeklyPlanProvider.notifier).generateSmartPlan();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Plan généré selon ta phase du cycle !',
+                              style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                            backgroundColor: cs.primary,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isPro
+                              ? [cs.primary, cs.primary.withValues(alpha: 0.8)]
+                              : [const Color(0xFFD4A017), const Color(0xFFB8860B)],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isPro ? LucideIcons.sparkles : LucideIcons.lock,
+                              color: Colors.white, size: 16),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Générer mon plan intelligent',
+                              style: GoogleFonts.outfit(
+                                fontSize: 14, fontWeight: FontWeight.w800,
+                                color: Colors.white)),
+                            if (!isPro) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text('PRO', style: GoogleFonts.inter(
+                                  fontSize: 9, fontWeight: FontWeight.w800,
+                                  color: Colors.white)),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
                 ),
 
                 const SizedBox(height: 24),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/home_program_model.dart';
 import '../services/supabase_config.dart';
 import 'mock_data_provider.dart';
+import 'user_profile_provider.dart';
 import 'workout_progress_provider.dart';
 
 // ── Status ────────────────────────────────────────────────────────────────────
@@ -313,6 +314,108 @@ class WeeklyPlanNotifier extends Notifier<List<DayPlan>> {
     );
     state = updated;
     _save(index);
+  }
+
+  /// Génère automatiquement un plan hebdo adapté à la phase du cycle.
+  /// Pour chaque jour de la semaine, calcule la phase du cycle à cette date
+  /// et assigne un programme compatible. Ajoute des jours de repos pendant
+  /// les Règles et espace les programmes pour varier.
+  void generateSmartPlan() {
+    _rolloverIfNeeded();
+    final profile = ref.read(userProfileProvider);
+    final programs = ref.read(allProgramsProvider);
+    if (programs.isEmpty) return;
+
+    final lastPeriod = profile.lastPeriod;
+    final totalDays = profile.cycleDays;
+    final isPregnant = profile.healthStatus == 'pregnant';
+    final isPostpartum = profile.healthStatus == 'postpartum';
+
+    final updated = List<DayPlan>.from(state);
+    final usedIds = <String>{};
+
+    for (var i = 0; i < 7; i++) {
+      final day = updated[i];
+      // Skip days already done
+      if (day.status == DayStatus.done) continue;
+
+      final date = day.date;
+
+      // Determine cycle phase for this specific day
+      String phase;
+      if (isPregnant) {
+        phase = 'Grossesse';
+      } else if (isPostpartum) {
+        phase = 'Règles'; // gentle recovery
+      } else if (lastPeriod == null) {
+        phase = 'Folliculaire';
+      } else {
+        final cycleDay = (date.difference(lastPeriod).inDays % totalDays + 1)
+            .clamp(1, totalDays);
+        if (cycleDay <= 5) {
+          phase = 'Règles';
+        } else if (cycleDay <= 13) {
+          phase = 'Folliculaire';
+        } else if (cycleDay <= 16) {
+          phase = 'Ovulation';
+        } else {
+          phase = 'Lutéale';
+        }
+      }
+
+      // During Règles: rest on some days (day 1, 3, 5 of the week if in Règles)
+      if (phase == 'Règles' && (i % 2 == 1)) {
+        updated[i] = day.copyWith(
+          status: DayStatus.rest,
+          categoryId: 'rest',
+          clearProgram: true,
+        );
+        _save(i);
+        continue;
+      }
+
+      // Recovery for postpartum
+      if (isPostpartum) {
+        phase = 'Règles'; // maps to recuperation programs
+      }
+
+      // Find compatible programs not yet used this week
+      final compatible = programs.where((p) {
+        if (p.isPremium) return false; // don't auto-assign locked programs
+        if (usedIds.contains(p.id)) return false;
+        if (isPregnant) return p.category == 'grossesse';
+        if (isPostpartum) return p.category == 'recuperation';
+        return p.compatibleCycles.contains(phase);
+      }).toList();
+
+      // Fallback: any non-premium program not yet used
+      final candidates = compatible.isNotEmpty
+          ? compatible
+          : programs.where((p) => !p.isPremium && !usedIds.contains(p.id)).toList();
+
+      if (candidates.isEmpty) {
+        // All programs used — allow repeats
+        final fallback = compatible.isNotEmpty ? compatible : programs.where((p) => !p.isPremium).toList();
+        if (fallback.isEmpty) continue;
+        final pick = fallback[i % fallback.length];
+        updated[i] = day.copyWith(
+          status: DayStatus.planned,
+          categoryId: pick.category,
+          program: pick,
+        );
+      } else {
+        final pick = candidates.first;
+        usedIds.add(pick.id);
+        updated[i] = day.copyWith(
+          status: DayStatus.planned,
+          categoryId: pick.category,
+          program: pick,
+        );
+      }
+      _save(i);
+    }
+
+    state = updated;
   }
 
   void swap(int a, int b) {

@@ -34,11 +34,16 @@ class AuthResult {
 class AuthService {
   static SupabaseClient get _client => SupabaseConfig.client;
 
-  // ── TODO: remplace par ton Web Client ID (Google Cloud Console)
-  // Android : le "Web application" OAuth client ID
-  // iOS     : le "iOS" OAuth client ID (pour clientId)
+  // Web application OAuth client ID (Google Cloud Console, projet "fiteva")
+  // — utilisé comme serverClientId pour obtenir un idToken valable côté
+  // Android ET iOS. Doit correspondre au "Client ID" configuré dans
+  // Supabase > Authentication > Providers > Google ("fiteva Web 1").
   static const _googleWebClientId =
-      'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
+      '404813740186-fanhi41cltvrq267otbin9l6t62lcfhc.apps.googleusercontent.com';
+  // TODO iOS : crée un OAuth client de type "iOS" dans Google Cloud Console
+  // (bundle id com.fiteva.fiteva), télécharge le GoogleService-Info.plist
+  // associé dans ios/Runner/, puis remplace la valeur ci-dessous et ajoute
+  // son "REVERSED_CLIENT_ID" comme CFBundleURLSchemes dans ios/Runner/Info.plist.
   static const _googleIosClientId =
       'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com';
 
@@ -154,9 +159,17 @@ class AuthService {
     return signUpResult;
   }
 
+  // Doit correspondre à une Redirect URL autorisée dans Supabase >
+  // Authentication > URL Configuration, et être enregistrée comme URL
+  // scheme natif (AndroidManifest.xml + Info.plist) pour rouvrir l'app.
+  static const _resetPasswordRedirect = 'io.supabase.flutter://reset-password/';
+
   static Future<AuthResult> resetPassword(String email) async {
     try {
-      await _client.auth.resetPasswordForEmail(email.trim());
+      await _client.auth.resetPasswordForEmail(
+        email.trim(),
+        redirectTo: _resetPasswordRedirect,
+      );
       // resetPasswordForEmail ne retourne pas d'user — on retourne un succès fictif
       return AuthResult._(success: true);
     } on AuthException catch (e) {
@@ -179,6 +192,13 @@ class AuthService {
         scopes: ['email', 'profile'],
       );
 
+      // Le SDK Google garde en cache le dernier compte connecté et le
+      // renvoie silencieusement sans afficher le sélecteur de compte. On
+      // force la déconnexion locale avant chaque tentative pour que
+      // l'utilisatrice puisse toujours choisir un autre compte Google
+      // (connexion comme inscription).
+      await googleSignIn.signOut();
+
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) return AuthResult.fail('Connexion Google annulée.');
 
@@ -197,11 +217,12 @@ class AuthService {
 
       final email    = user.email ?? googleUser.email;
       final username = googleUser.displayName ?? email.split('@').first;
+      final hasCompletedOnboarding = await _hasCompletedOnboarding(user.id);
 
       await _saveLocally(uid: user.id, email: email, username: username);
       await _upsertProfile(uid: user.id, email: email, username: username);
-      await _pullProfileToLocal(user.id);
-      return AuthResult.ok(user);
+      if (hasCompletedOnboarding) await _pullProfileToLocal(user.id);
+      return AuthResult.ok(user, isNewAccount: !hasCompletedOnboarding);
     } on AuthException catch (e) {
       return AuthResult.fail(_translateAuthError(e.message));
     } catch (e) {
@@ -244,11 +265,12 @@ class AuthService {
       final lastName  = credential.familyName ?? '';
       final username  = [firstName, lastName].where((s) => s.isNotEmpty).join(' ').trim();
       final email     = user.email ?? '';
+      final hasCompletedOnboarding = await _hasCompletedOnboarding(user.id);
 
       await _saveLocally(uid: user.id, email: email, username: username.isNotEmpty ? username : email.split('@').first);
       await _upsertProfile(uid: user.id, email: email, username: username.isNotEmpty ? username : email.split('@').first);
-      await _pullProfileToLocal(user.id);
-      return AuthResult.ok(user);
+      if (hasCompletedOnboarding) await _pullProfileToLocal(user.id);
+      return AuthResult.ok(user, isNewAccount: !hasCompletedOnboarding);
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
         return AuthResult.fail('Connexion Apple annulée.');
@@ -289,6 +311,19 @@ class AuthService {
     current['email'] = email;
     if (username != null) current['username'] = username;
     await StorageService.saveOnboardingData(current);
+  }
+
+  /// true si `onboarding_done` est déjà à true côté Supabase pour cet uid —
+  /// utilisé par les connexions Google/Apple pour distinguer une inscription
+  /// (profil à compléter) d'une reconnexion (saut direct dans l'app).
+  static Future<bool> _hasCompletedOnboarding(String uid) async {
+    try {
+      final row = await SupabaseConfig.table('user_profiles')
+          .select('onboarding_done').eq('id', uid).maybeSingle();
+      return row?['onboarding_done'] == true;
+    } catch (_) {
+      return false;
+    }
   }
 
   static Future<void> _pullProfileToLocal(String uid) async {

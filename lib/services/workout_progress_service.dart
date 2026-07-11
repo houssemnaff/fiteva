@@ -515,6 +515,47 @@ class WorkoutProgressService {
     } catch (_) {}
   }
 
+  // ── Historique par date ──────────────────────────────────────────────────
+
+  static Future<Map<DateTime, int>> getWorkoutCountsByMonth(int year, int month) async {
+    if (_uid == null) return {};
+    try {
+      final start = DateTime(year, month, 1).toIso8601String();
+      final end = DateTime(year, month + 1, 0, 23, 59, 59).toIso8601String();
+      final rows = await SupabaseConfig.table('user_workout_completions')
+          .select('completed_at')
+          .eq('user_id', _uid!)
+          .gte('completed_at', start)
+          .lte('completed_at', end) as List;
+
+      final counts = <DateTime, int>{};
+      for (final r in rows) {
+        final dt = DateTime.parse(r['completed_at'] as String);
+        final day = DateTime(dt.year, dt.month, dt.day);
+        counts[day] = (counts[day] ?? 0) + 1;
+      }
+      return counts;
+    } catch (e) {
+      debugPrint('[WorkoutProgress] getWorkoutCountsByMonth error: $e');
+      return {};
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getRecentCompletions(int limit) async {
+    if (_uid == null) return [];
+    try {
+      final rows = await SupabaseConfig.table('user_workout_completions')
+          .select('workout_id, completed_at')
+          .eq('user_id', _uid!)
+          .order('completed_at', ascending: false)
+          .limit(limit) as List;
+      return rows.cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('[WorkoutProgress] getRecentCompletions error: $e');
+      return [];
+    }
+  }
+
   static Future<void> clearAllProgress() async {
     if (_uid == null) return;
     try {

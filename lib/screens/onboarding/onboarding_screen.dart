@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import '../../providers/onboarding_provider.dart';
 import '../../providers/user_profile_provider.dart';
@@ -220,23 +221,44 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   /// Connexion via Google (inscription ou connexion automatique).
+  /// Un nouveau compte enchaîne sur la suite de l'onboarding pour compléter
+  /// le profil ; un compte existant saute directement dans l'app.
   Future<void> _googleSignIn() async {
     final result = await AuthService.signInWithGoogle();
     if (!mounted) return;
-    if (result.isSuccess) {
-      StorageService.setOnboardingCompleted(true);
-      ref.read(userProfileProvider.notifier).reload();
-      ref.invalidate(postsNotifierProvider);
-      ref.invalidate(eventsNotifierProvider);
-      ref.invalidate(partnersNotifierProvider);
-      context.go('/');
-    } else {
+    if (!result.isSuccess) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(result.error ?? 'Erreur Google'),
         backgroundColor: const Color(0xFFB00020),
         behavior: SnackBarBehavior.floating,
       ));
+      return;
     }
+    if (result.isNewAccount) {
+      _prefillFromOAuthUser(result.user);
+      await _goNext();
+      return;
+    }
+    StorageService.setOnboardingCompleted(true);
+    ref.read(userProfileProvider.notifier).reload();
+    ref.invalidate(postsNotifierProvider);
+    ref.invalidate(eventsNotifierProvider);
+    ref.invalidate(partnersNotifierProvider);
+    context.go('/');
+  }
+
+  /// Renseigne nom/email à partir du compte OAuth pour que les steps suivants
+  /// (avatar, sync Supabase à la fin) disposent des bonnes valeurs — sinon
+  /// `_finish()` écraserait le profil déjà créé avec des champs vides.
+  void _prefillFromOAuthUser(User? user) {
+    if (user == null) return;
+    final meta = user.userMetadata;
+    final displayName = (meta?['full_name'] ?? meta?['name']) as String?;
+    final email = user.email ?? '';
+    _nameCtrl.text  = (displayName != null && displayName.isNotEmpty)
+        ? displayName
+        : email.split('@').first;
+    _emailCtrl.text = email;
   }
 
   /// Connexion via Apple — iOS/macOS uniquement.
@@ -251,20 +273,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
     final result = await AuthService.signInWithApple();
     if (!mounted) return;
-    if (result.isSuccess) {
-      StorageService.setOnboardingCompleted(true);
-      ref.read(userProfileProvider.notifier).reload();
-      ref.invalidate(postsNotifierProvider);
-      ref.invalidate(eventsNotifierProvider);
-      ref.invalidate(partnersNotifierProvider);
-      context.go('/');
-    } else {
+    if (!result.isSuccess) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(result.error ?? 'Erreur Apple'),
         backgroundColor: const Color(0xFFB00020),
         behavior: SnackBarBehavior.floating,
       ));
+      return;
     }
+    if (result.isNewAccount) {
+      _prefillFromOAuthUser(result.user);
+      await _goNext();
+      return;
+    }
+    StorageService.setOnboardingCompleted(true);
+    ref.read(userProfileProvider.notifier).reload();
+    ref.invalidate(postsNotifierProvider);
+    ref.invalidate(eventsNotifierProvider);
+    ref.invalidate(partnersNotifierProvider);
+    context.go('/');
   }
 
   /// Création de compte depuis l'écran Welcome (onglet "Créer mon compte").

@@ -223,10 +223,18 @@ class EventCard extends StatelessWidget {
                   child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(event.organizer, style: GoogleFonts.outfit(
-                      fontSize: 14, fontWeight: FontWeight.w700,
-                      color: cs.onSurface, letterSpacing: -0.2,
-                    )),
+                    Row(children: [
+                      Flexible(child: Text(event.organizer, overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                          fontSize: 14, fontWeight: FontWeight.w700,
+                          color: cs.onSurface, letterSpacing: -0.2,
+                        )),
+                      ),
+                      if (event.organizerIsPro) ...[
+                        const SizedBox(width: 5),
+                        const Icon(LucideIcons.crown, size: 13, color: Color(0xFFF59E0B)),
+                      ],
+                    ]),
                     const SizedBox(height: 3),
                     Row(children: [
                       Flexible(

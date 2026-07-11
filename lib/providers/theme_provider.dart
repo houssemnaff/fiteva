@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/storage_service.dart';
 import '../services/supabase_config.dart';
+import '../theme/color_palettes.dart';
+
+// ── Theme mode (dark/light) ──────────────────────────────────────────────────
 
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
   ThemeModeNotifier.new,
@@ -30,6 +33,38 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
       'id':         uid,
       'theme_mode': themeMode,
       'updated_at': DateTime.now().toIso8601String(),
+    }).catchError((_) {});
+  }
+}
+
+// ── Color palette ────────────────────────────────────────────────────────────
+
+final colorPaletteProvider = NotifierProvider<ColorPaletteNotifier, AppColorPalette>(
+  ColorPaletteNotifier.new,
+);
+
+class ColorPaletteNotifier extends Notifier<AppColorPalette> {
+  static const _storageKey = 'color_palette_id';
+
+  @override
+  AppColorPalette build() {
+    final id = StorageService.getString(_storageKey);
+    return paletteById(id ?? 'forest');
+  }
+
+  Future<void> setPalette(AppColorPalette palette) async {
+    state = palette;
+    await StorageService.setString(_storageKey, palette.id);
+    _syncToSupabase(palette.id);
+  }
+
+  void _syncToSupabase(String paletteId) {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    SupabaseConfig.table('user_profiles').upsert({
+      'id':           uid,
+      'color_palette': paletteId,
+      'updated_at':   DateTime.now().toIso8601String(),
     }).catchError((_) {});
   }
 }
