@@ -135,7 +135,7 @@ class _HeaderContent extends ConsumerWidget {
     final mascot = ref.watch(mascotProvider);
     return Container(
       color: resolvedBg,
-      padding: EdgeInsets.fromLTRB(20, topPadding + 14, 20, 14),
+      padding: EdgeInsets.fromLTRB(20, topPadding + 14, 20, 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -259,7 +259,7 @@ class _SharedSliverAppHeader extends StatelessWidget {
     // Hauteur exacte du contenu (padding haut/bas + rangée la plus haute —
     // la mascotte à 42px) : évite l'espace blanc laissé par une hauteur
     // fixe plus grande que ce que le header a réellement besoin d'occuper.
-    const contentHeight = 70.0;
+    const contentHeight = 64.0;
     return SliverAppBar(
       pinned: true,
       floating: false,

@@ -605,46 +605,62 @@ class StepIntro extends StatefulWidget {
 
 class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
   late final AnimationController _ctrl;
+  late final AnimationController _shimmerCtrl;
 
+  late final Animation<double> _logoScale;
   late final Animation<double> _logoFade;
-  late final Animation<Offset> _logoSlide;
   late final Animation<double> _headFade;
   late final Animation<Offset> _headSlide;
+  late final Animation<double> _tagFade;
+  late final Animation<Offset> _tagSlide;
   late final Animation<double> _chipsFade;
   late final Animation<double> _proofFade;
   late final Animation<double> _btnFade;
   late final Animation<Offset> _btnSlide;
+  late final Animation<double> _orbFade;
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1900),
+      duration: const Duration(milliseconds: 2000),
     )..forward();
+
+    _shimmerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
 
     Animation<double> iv(double s, double e) => CurvedAnimation(
           parent: _ctrl, curve: Interval(s, e, curve: Curves.easeOut));
 
     Animation<Offset> sl(double s, double e, [Offset? from]) =>
-        Tween<Offset>(begin: from ?? const Offset(0, 0.22), end: Offset.zero)
+        Tween<Offset>(begin: from ?? const Offset(0, 0.25), end: Offset.zero)
             .animate(CurvedAnimation(
                 parent: _ctrl,
                 curve: Interval(s, e, curve: Curves.easeOutCubic)));
 
-    _logoFade  = iv(0.00, 0.28);
-    _logoSlide = sl(0.00, 0.35, const Offset(0, -0.25));
-    _headFade  = iv(0.18, 0.50);
-    _headSlide = sl(0.18, 0.52);
-    _chipsFade = iv(0.40, 0.65);
-    _proofFade = iv(0.55, 0.78);
-    _btnFade   = iv(0.65, 0.92);
-    _btnSlide  = sl(0.65, 0.92);
+    _orbFade   = iv(0.00, 0.35);
+    _logoScale = Tween<double>(begin: 0.5, end: 1.0).animate(CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.05, 0.38, curve: Curves.elasticOut),
+    ));
+    _logoFade  = iv(0.05, 0.28);
+    _headFade  = iv(0.20, 0.45);
+    _headSlide = sl(0.20, 0.45);
+    _tagFade   = iv(0.30, 0.52);
+    _tagSlide  = sl(0.30, 0.52);
+    _chipsFade = iv(0.42, 0.62);
+    _proofFade = iv(0.52, 0.72);
+    _btnFade   = iv(0.62, 0.88);
+    _btnSlide  = sl(0.62, 0.88);
   }
 
   @override
   void dispose() {
     _ctrl.dispose();
+    _shimmerCtrl.dispose();
     super.dispose();
   }
 
@@ -655,51 +671,125 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
 
     return Scaffold(
       body: Container(
-        color: const Color(0xFF0B1A0E),
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF061A0D),
+              Color(0xFF0F3D1E),
+              Color(0xFF1A5C2E),
+              Color(0xFF0F3D1E),
+              Color(0xFF061A0D),
+            ],
+            stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+          ),
+        ),
         child: Stack(
           children: [
-            // Ambient glow orbs
-            Positioned(
-              top: -sh * 0.12, left: -sw * 0.28,
-              child: _orb(sw * 0.88, const Color(0xFF1A5C26), 0.55),
-            ),
-            Positioned(
-              bottom: sh * 0.08, right: -sw * 0.22,
-              child: _orb(sw * 0.72, const Color(0xFF0E3A15), 0.65),
-            ),
-            Positioned(
-              top: sh * 0.38, left: sw * 0.15,
-              child: _orb(sw * 0.55, const Color(0xFF5CD57A), 0.06),
+            // ── Glowing orbs with blur ──
+            FadeTransition(
+              opacity: _orbFade,
+              child: Stack(children: [
+                Positioned(
+                  top: -sh * 0.08, left: -sw * 0.18,
+                  child: _glowOrb(sw * 0.75, const Color(0xFF2ECC71), 0.14),
+                ),
+                Positioned(
+                  top: sh * 0.25, right: -sw * 0.25,
+                  child: _glowOrb(sw * 0.55, const Color(0xFF27AE60), 0.10),
+                ),
+                Positioned(
+                  bottom: sh * 0.18, left: -sw * 0.12,
+                  child: _glowOrb(sw * 0.50, const Color(0xFF1ABC9C), 0.10),
+                ),
+                Positioned(
+                  bottom: -sh * 0.06, right: -sw * 0.10,
+                  child: _glowOrb(sw * 0.65, const Color(0xFF2ECC71), 0.12),
+                ),
+              ]),
             ),
 
+            // ── Frosted overlay ──
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+
+            // ── Content ──
             SafeArea(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: sh < 700 ? 22 : 28),
+                padding: EdgeInsets.symmetric(horizontal: sh < 700 ? 22 : 30),
                 child: Column(
                   children: [
-                    SizedBox(height: sh * 0.032),
-                    FadeTransition(
-                      opacity: _logoFade,
-                      child: SlideTransition(
-                          position: _logoSlide, child: _buildLogo(sh)),
+                    SizedBox(height: sh * 0.04),
+
+                    // Logo — scale + fade
+                    ScaleTransition(
+                      scale: _logoScale,
+                      child: FadeTransition(
+                        opacity: _logoFade,
+                        child: _buildLogo(sh),
+                      ),
                     ),
+
                     Spacer(flex: sh < 700 ? 1 : 2),
+
+                    // Headline
                     FadeTransition(
                       opacity: _headFade,
                       child: SlideTransition(
-                          position: _headSlide, child: _buildHeadline(sh)),
+                        position: _headSlide,
+                        child: _buildHeadline(sh),
+                      ),
                     ),
+
+                    SizedBox(height: sh * 0.012),
+
+                    // Tagline
+                    FadeTransition(
+                      opacity: _tagFade,
+                      child: SlideTransition(
+                        position: _tagSlide,
+                        child: Text(
+                          "Fitness, cycle & nutrition —\ntout ce dont une femme a besoin.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: (sh * 0.018).clamp(12.0, 15.0),
+                            color: Colors.white.withValues(alpha: 0.50),
+                            height: 1.55,
+                          ),
+                        ),
+                      ),
+                    ),
+
                     SizedBox(height: sh * 0.030),
+
+                    // Feature chips
                     FadeTransition(opacity: _chipsFade, child: _buildChips(sh)),
+
                     SizedBox(height: sh * 0.024),
+
+                    // Social proof
                     FadeTransition(opacity: _proofFade, child: _buildSocialProof(sh)),
+
                     Spacer(flex: sh < 700 ? 1 : 3),
+
+                    // CTA with shimmer
                     FadeTransition(
                       opacity: _btnFade,
                       child: SlideTransition(
-                          position: _btnSlide, child: _buildCTA(sh)),
+                        position: _btnSlide,
+                        child: _buildCTA(sh),
+                      ),
                     ),
-                    SizedBox(height: sh * 0.014),
+
+                    SizedBox(height: sh * 0.012),
+
                     FadeTransition(
                       opacity: _btnFade,
                       child: Text(
@@ -707,12 +797,13 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: sh < 700 ? 10 : 11,
-                          color: Colors.white.withValues(alpha: 0.28),
+                          color: Colors.white.withValues(alpha: 0.25),
                           height: 1.4,
                         ),
                       ),
                     ),
-                    SizedBox(height: sh * 0.028),
+
+                    SizedBox(height: sh * 0.024),
                   ],
                 ),
               ),
@@ -723,40 +814,55 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
     );
   }
 
-  Widget _orb(double size, Color color, double opacity) => Container(
+  Widget _glowOrb(double size, Color color, double opacity) => Container(
         width: size,
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: color.withValues(alpha: opacity),
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: opacity),
+              color.withValues(alpha: 0),
+            ],
+          ),
         ),
       );
 
   Widget _buildLogo(double sh) {
-    final logoSz = sh < 700 ? 36.0 : 44.0;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    final logoSz = sh < 700 ? 50.0 : 60.0;
+    return Column(
       children: [
         Container(
           width: logoSz, height: logoSz,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(logoSz * 0.27),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
+            borderRadius: BorderRadius.circular(logoSz * 0.28),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2ECC71).withValues(alpha: 0.3),
+                blurRadius: 30,
+                spreadRadius: 4,
+              ),
+            ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(logoSz * 0.25),
+            borderRadius: BorderRadius.circular(logoSz * 0.28),
             child: Image.asset('assets/images/logfiteva.jpeg', fit: BoxFit.cover),
           ),
         ),
-        const SizedBox(width: 13),
+        const SizedBox(height: 14),
         Text(
           "FITEVA",
           style: TextStyle(
-            fontSize: sh < 700 ? 18 : 22,
-            fontWeight: FontWeight.w800,
+            fontSize: sh < 700 ? 20 : 24,
+            fontWeight: FontWeight.w900,
             color: Colors.white,
-            letterSpacing: 3.5,
+            letterSpacing: 5,
+            shadows: [
+              Shadow(
+                color: const Color(0xFF2ECC71).withValues(alpha: 0.4),
+                blurRadius: 20,
+              ),
+            ],
           ),
         ),
       ],
@@ -764,38 +870,25 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
   }
 
   Widget _buildHeadline(double sh) {
-    final headFs = (sh * 0.051).clamp(28.0, 46.0);
-    final subFs  = (sh * 0.018).clamp(12.0, 16.0);
-    return Column(
-      children: [
-        RichText(
-          textAlign: TextAlign.center,
-          text: TextSpan(
-            style: TextStyle(
-              fontSize: headFs,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              height: 1.08,
-              letterSpacing: -1.2,
-            ),
-            children: const [
-              TextSpan(text: "Transforme\nton corps,\n"),
-              TextSpan(text: "libère ta force.",
-                style: TextStyle(color: Color(0xFF5CD57A))),
-            ],
-          ),
+    final headFs = (sh * 0.050).clamp(28.0, 44.0);
+    return RichText(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        style: TextStyle(
+          fontSize: headFs,
+          fontWeight: FontWeight.w900,
+          color: Colors.white,
+          height: 1.10,
+          letterSpacing: -1.0,
         ),
-        SizedBox(height: sh * 0.018),
-        Text(
-          "Fitness, cycle & nutrition —\ntout ce dont une femme a besoin.",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: subFs,
-            color: Colors.white.withValues(alpha: 0.50),
-            height: 1.55,
+        children: const [
+          TextSpan(text: "Transforme\nton corps,\n"),
+          TextSpan(
+            text: "libère ta force.",
+            style: TextStyle(color: Color(0xFF5CD57A)),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -815,9 +908,9 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
       children: features.map((f) => Container(
         padding: EdgeInsets.symmetric(horizontal: 14, vertical: chipPadV),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.07),
+          color: Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(40),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(f.$1, color: const Color(0xFF5CD57A), size: 14),
@@ -840,31 +933,26 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 58,
-              height: 26,
+              width: 58, height: 26,
               child: Stack(
-                children: List.generate(
-                  3,
-                  (i) => Positioned(
-                    left: i * 17.0,
-                    child: Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const [
-                          Color(0xFF4CAF7A),
-                          Color(0xFF2E7D4F),
-                          Color(0xFF81C784),
-                        ][i],
-                        border: Border.all(
-                            color: const Color(0xFF0B1A0E), width: 1.5),
-                      ),
-                      child: const Icon(Icons.person,
-                          color: Colors.white, size: 12),
+                children: List.generate(3, (i) => Positioned(
+                  left: i * 17.0,
+                  child: Container(
+                    width: 26, height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const [
+                        Color(0xFF4CAF7A),
+                        Color(0xFF2E7D4F),
+                        Color(0xFF81C784),
+                      ][i],
+                      border: Border.all(
+                          color: const Color(0xFF061A0D), width: 1.5),
                     ),
+                    child: const Icon(Icons.person,
+                        color: Colors.white, size: 12),
                   ),
-                ),
+                )),
               ),
             ),
             const SizedBox(width: 11),
@@ -896,37 +984,86 @@ class _StepIntroState extends State<StepIntro> with TickerProviderStateMixin {
 
   Widget _buildCTA(double sh) => GestureDetector(
         onTap: widget.onNext,
-        child: Container(
-          width: double.infinity,
-          height: sh < 700 ? 50 : 58,
-          decoration: BoxDecoration(
-           color: Color.fromARGB(255, 21, 80, 44),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color:    const Color.fromARGB(255, 21, 80, 44),
-                blurRadius: 28,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Commencer gratuitement",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 0.2,
+        child: AnimatedBuilder(
+          animation: _shimmerCtrl,
+          builder: (context, _) {
+            return Container(
+              width: double.infinity,
+              height: sh < 700 ? 52 : 60,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF2ECC71),
+                    Color(0xFF27AE60),
+                    Color(0xFF1ABC9C),
+                  ],
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF2ECC71).withValues(alpha: 0.35),
+                    blurRadius: 28,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-              SizedBox(width: 10),
-              Icon(Icons.arrow_forward_rounded,
-                  color: Colors.white, size: 20),
-            ],
-          ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Stack(children: [
+                  // Shimmer sweep
+                  Positioned.fill(
+                    child: Transform.translate(
+                      offset: Offset(
+                        (_shimmerCtrl.value * 2 - 0.5) *
+                            MediaQuery.of(context).size.width,
+                        0,
+                      ),
+                      child: Container(
+                        width: 100,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white.withValues(alpha: 0),
+                              Colors.white.withValues(alpha: 0.15),
+                              Colors.white.withValues(alpha: 0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Commencer gratuitement",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Container(
+                          width: 30, height: 30,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: const Icon(Icons.arrow_forward_rounded,
+                              color: Colors.white, size: 17),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]),
+              ),
+            );
+          },
         ),
       );
 }

@@ -272,7 +272,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
               child: Builder(builder: (_) {
                 WidgetsBinding.instance.addPostFrameCallback((_) => _startHeroAutoSlide(hero.length));
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
                   child: _HeroBanner(
                     c: c,
                     items: hero,
@@ -289,7 +289,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
           if (isLoading)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
                 child: _HeroSkeleton(c: c),
               ),
             ),

@@ -56,68 +56,70 @@ class _EventsTabState extends ConsumerState<EventsTab> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(l10n.communityEyebrow, style: GoogleFonts.inter(
-                    color: cs.secondary, fontSize: 9,
-                    fontWeight: FontWeight.w700, letterSpacing: 3,
-                  )),
-                  const SizedBox(height: 3),
-                  Text(l10n.communityEventsLabel, style: GoogleFonts.outfit(
-                    color: cs.onSurface, fontSize: 26,
-                    fontWeight: FontWeight.w800, letterSpacing: -0.5,
-                  )),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.communityEyebrow, style: GoogleFonts.inter(
+                        color: cs.secondary, fontSize: 9,
+                        fontWeight: FontWeight.w700, letterSpacing: 3,
+                      )),
+                      const SizedBox(height: 3),
+                      Text(l10n.communityEventsLabel, style: GoogleFonts.outfit(
+                        color: cs.onSurface, fontSize: 24,
+                        fontWeight: FontWeight.w800, letterSpacing: -0.5,
+                      )),
+                    ],
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => _showFilterSheet(context, cs),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _selectedType == 'Tous'
+                            ? cs.onSurface.withValues(alpha: 0.05)
+                            : cs.primary.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.slidersHorizontal, size: 13,
+                            color: _selectedType == 'Tous'
+                                ? cs.onSurface.withValues(alpha: 0.45)
+                                : cs.primary),
+                          const SizedBox(width: 5),
+                          Text(
+                            _selectedType == 'Tous' ? 'Filtres' : _selectedType,
+                            style: GoogleFonts.inter(
+                              fontSize: 12, fontWeight: FontWeight.w600,
+                              color: _selectedType == 'Tous'
+                                  ? cs.onSurface.withValues(alpha: 0.5)
+                                  : cs.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
 
-          // ── Filter pills ──────────────────────────────────
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 40,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                itemCount: _filters.length,
-                itemBuilder: (_, i) {
-                  final label = _filters[i];
-                  final sel = _selectedType == label;
-                  return GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _selectedType = label);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: sel ? cs.primary : cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(50),
-                        border: Border.all(
-                            color: sel ? cs.primary : cs.outline),
-                      ),
-                      child: Text(label, style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: sel ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
-                      )),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
           // ── Event List ────────────────────────────────────
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
             sliver: SliverList.separated(
               itemCount: filtered.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 14),
+              separatorBuilder: (_, __) => Container(
+                height: 0.5,
+                color: cs.onSurface.withValues(alpha: 0.06),
+              ),
               itemBuilder: (_, i) {
                 final event = filtered[i];
                 return EventCard(
@@ -139,6 +141,73 @@ class _EventsTabState extends ConsumerState<EventsTab> {
             ),
           ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showFilterSheet(BuildContext context, ColorScheme cs) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                  color: cs.onSurface.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('Filtrer par type', style: GoogleFonts.outfit(
+                fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface)),
+              const SizedBox(height: 16),
+              ...List.generate(_filters.length, (i) {
+                final label = _filters[i];
+                final active = _selectedType == label;
+                final icon = _icons[label.toLowerCase()];
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _selectedType = label);
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    margin: const EdgeInsets.only(bottom: 6),
+                    decoration: BoxDecoration(
+                      color: active ? cs.primary.withValues(alpha: 0.08) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: active ? cs.primary.withValues(alpha: 0.3) : cs.onSurface.withValues(alpha: 0.06),
+                      ),
+                    ),
+                    child: Row(children: [
+                      if (icon != null) ...[
+                        Icon(icon, size: 16, color: active ? cs.primary : cs.onSurface.withValues(alpha: 0.4)),
+                        const SizedBox(width: 10),
+                      ],
+                      Text(label, style: GoogleFonts.inter(
+                        fontSize: 14, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                        color: active ? cs.primary : cs.onSurface.withValues(alpha: 0.6),
+                      )),
+                      const Spacer(),
+                      if (active)
+                        Icon(LucideIcons.check, size: 16, color: cs.primary),
+                    ]),
+                  ),
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );
@@ -183,48 +252,37 @@ class EventCard extends StatelessWidget {
         ? event.organizerId
         : event.organizer;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.outline),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.04),
-            blurRadius: 14, offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          // ── Header row (mirrors feed post header) ─────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
-            child: Row(children: [
-              GestureDetector(
-                onTap: () => _openProfile(context, organizerUid),
-                child: Hero(
-                  tag: 'event_avatar_$organizerUid',
-                  child: CommunityAvatar(
-                    avatarUrl: event.organizerAvatar,
-                    name: event.organizer,
-                    radius: 20,
-                    mascotType: event.organizerMascotType,
-                    mascotMood: event.organizerMascotMood,
-                  ),
+          // ── Header row ─────────────────────────────────────
+          Row(children: [
+            GestureDetector(
+              onTap: () => _openProfile(context, organizerUid),
+              child: Hero(
+                tag: 'event_avatar_$organizerUid',
+                child: CommunityAvatar(
+                  avatarUrl: event.organizerAvatar,
+                  name: event.organizer,
+                  radius: 18,
+                  mascotType: event.organizerMascotType,
+                  mascotMood: event.organizerMascotMood,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _openProfile(context, organizerUid),
-                  child: Column(
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _openProfile(context, organizerUid),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
-                      Flexible(child: Text(event.organizer, overflow: TextOverflow.ellipsis,
+                      Flexible(child: Text(event.organizer,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.outfit(
                           fontSize: 14, fontWeight: FontWeight.w700,
                           color: cs.onSurface, letterSpacing: -0.2,
@@ -232,28 +290,21 @@ class EventCard extends StatelessWidget {
                       ),
                       if (event.organizerIsPro) ...[
                         const SizedBox(width: 5),
-                        const Icon(LucideIcons.crown, size: 13, color: Color(0xFFF59E0B)),
-                      ],
-                    ]),
-                    const SizedBox(height: 3),
-                    Row(children: [
-                      Flexible(
-                        child: Text('${event.date} · ${event.time}',
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: cs.onSurface.withValues(alpha: 0.6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text('PRO', style: GoogleFonts.inter(
+                            fontSize: 9, fontWeight: FontWeight.w800,
+                            color: const Color(0xFFF59E0B),
                           )),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(width: 3, height: 3,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: cs.outline.withValues(alpha: 0.3))),
+                        ),
+                      ],
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
                           color: cs.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(6),
@@ -268,177 +319,161 @@ class EventCard extends StatelessWidget {
                         ]),
                       ),
                     ]),
+                    const SizedBox(height: 2),
+                    Text('${event.date} · ${event.time}',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: cs.onSurface.withValues(alpha: 0.4),
+                      )),
                   ],
-                  ),
                 ),
               ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (isOwner) ...[
-                    _EventOwnerMenu(event: event, cs: cs),
-                    const SizedBox(height: 6),
-                  ],
-                  // Spots pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isFull
-                          ? cs.error.withValues(alpha: 0.1)
-                          : cs.outline.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    child: Text(
-                      isFull ? 'Complet' : '$spotsLeft places',
-                      style: GoogleFonts.inter(
-                        fontSize: 10, fontWeight: FontWeight.w700,
-                        color: isFull
-                            ? cs.error
-                            : cs.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ),
-                ],
+            ),
+            if (isOwner)
+              _EventOwnerMenu(event: event, cs: cs),
+          ]),
+
+          // ── Event title ─────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(event.title, style: GoogleFonts.outfit(
+              fontSize: 15, color: cs.onSurface,
+              height: 1.4, letterSpacing: -0.2,
+              fontWeight: FontWeight.w700,
+            )),
+          ),
+
+          // ── Location ────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(children: [
+              Icon(LucideIcons.mapPin, size: 12,
+                  color: cs.onSurface.withValues(alpha: 0.35)),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(event.location, style: GoogleFonts.inter(
+                  fontSize: 12.5, color: cs.onSurface.withValues(alpha: 0.45),
+                ), overflow: TextOverflow.ellipsis),
               ),
             ]),
           ),
 
-          // ── Event title + location ─────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(event.title, style: GoogleFonts.inter(
-                  fontSize: 14, color: cs.onSurface,
-                  height: 1.5, letterSpacing: -0.1,
-                  fontWeight: FontWeight.w700,
-                )),
-                const SizedBox(height: 6),
-                Row(children: [
-                  Icon(LucideIcons.mapPin, size: 11,
-                      color: cs.onSurface.withValues(alpha: 0.5)),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(event.location, style: GoogleFonts.inter(
-                      fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6),
-                    ), overflow: TextOverflow.ellipsis),
-                  ),
-                ]),
-                if (event.description.trim().isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(event.description.trim(),
-                    maxLines: 2, overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 12.5, height: 1.5,
-                      color: cs.onSurface.withValues(alpha: 0.65))),
-                ],
-              ],
+          // ── Description ─────────────────────────────────────
+          if (event.description.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(event.description.trim(),
+                maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 13, height: 1.5,
+                  color: cs.onSurface.withValues(alpha: 0.6))),
             ),
-          ),
 
           // ── Cover image ────────────────────────────────────
           if (event.imageUrl.trim().isNotEmpty)
-            Container(
-              constraints: const BoxConstraints(maxHeight: 280),
-              width: double.infinity,
-              color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-              child: Image.network(
-                event.imageUrl,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 180,
-                  color: cs.primary.withValues(alpha: 0.08),
-                  child: Icon(LucideIcons.image, size: 36,
-                      color: cs.primary.withValues(alpha: 0.3)),
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 280),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Image.network(
+                      event.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 160,
+                        color: cs.primary.withValues(alpha: 0.06),
+                        child: Icon(LucideIcons.image, size: 32,
+                            color: cs.primary.withValues(alpha: 0.2)),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
 
-          // ── Action row (mirrors feed action row) ──────────
+          // ── Action row ──────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 4, 12, 12),
+            padding: const EdgeInsets.only(top: 12),
             child: Row(children: [
-              // Join pill
+              // Join button
               GestureDetector(
-                onTap: isFull ? null : onJoin,
+                onTap: isFull && !isJoined ? null : onJoin,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 7),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: isJoined
-                        ? cs.secondary.withValues(alpha: 0.1)
+                        ? cs.primary.withValues(alpha: 0.08)
                         : isFull
-                            ? cs.error.withValues(alpha: 0.08)
-                            : cs.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(50),
-                    border: isJoined
-                        ? Border.all(
-                            color: cs.primary.withValues(alpha: 0.3))
-                        : null,
+                            ? cs.error.withValues(alpha: 0.06)
+                            : cs.primary,
+                    borderRadius: BorderRadius.circular(22),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(
-                      isJoined
-                          ? LucideIcons.checkCircle
-                          : isFull
-                              ? LucideIcons.xCircle
-                              : LucideIcons.userPlus,
-                      size: 15,
-                      color: isJoined
-                          ? cs.primary
-                          : isFull
-                              ? cs.error
-                              : cs.primary,
+                      isJoined ? LucideIcons.checkCircle
+                          : isFull ? LucideIcons.xCircle
+                          : LucideIcons.userPlus,
+                      size: 14,
+                      color: isJoined ? cs.primary
+                          : isFull ? cs.error
+                          : cs.onPrimary,
                     ),
-                    const SizedBox(width: 5),
+                    const SizedBox(width: 6),
                     Text(
                       isJoined ? 'Inscrit' : isFull ? 'Complet' : 'Rejoindre',
                       style: GoogleFonts.inter(
-                        fontSize: 12, fontWeight: FontWeight.w700,
-                        color: isJoined
-                            ? cs.primary
-                            : isFull
-                                ? cs.error
-                                : cs.primary,
+                        fontSize: 12.5, fontWeight: FontWeight.w700,
+                        color: isJoined ? cs.primary
+                            : isFull ? cs.error
+                            : cs.onPrimary,
                       ),
                     ),
                   ]),
                 ),
               ),
 
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
 
-              // Participants pill
+              // Participants
               GestureDetector(
                 onTap: onViewParticipants,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: cs.outline.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(LucideIcons.users, size: 15,
-                        color: cs.onSurface.withValues(alpha: 0.6)),
-                    const SizedBox(width: 5),
-                    Text('${event.joinedCount}', style: GoogleFonts.inter(
-                      fontSize: 12, fontWeight: FontWeight.w700,
-                      color: cs.onSurface.withValues(alpha: 0.6),
-                    )),
-                  ]),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(LucideIcons.users, size: 15,
+                      color: cs.onSurface.withValues(alpha: 0.35)),
+                  const SizedBox(width: 5),
+                  Text('${event.joinedCount}', style: GoogleFonts.inter(
+                    fontSize: 12.5, fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.35),
+                  )),
+                ]),
+              ),
+
+              const Spacer(),
+
+              // Spots left
+              Text(
+                isFull ? 'Complet' : '$spotsLeft places',
+                style: GoogleFonts.inter(
+                  fontSize: 11.5, fontWeight: FontWeight.w600,
+                  color: isFull
+                      ? cs.error.withValues(alpha: 0.6)
+                      : cs.onSurface.withValues(alpha: 0.3),
                 ),
               ),
             ]),
           ),
 
-          // ── Contact organisateur (visible après inscription,
-          //    même pattern que la carte partenaire : jamais affiché
-          //    au propriétaire sur sa propre carte) ─────────────
-          if (isJoined && !isOwner) _EventCardContacts(event: event, cs: cs),
+          // ── Contact organisateur ────────────────────────────
+          if (isJoined && !isOwner) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: _EventCardContacts(event: event, cs: cs),
+            ),
+          ],
         ],
       ),
     );
@@ -495,7 +530,7 @@ class _EventOwnerMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return PopupMenuButton<String>(
       icon: Icon(CupertinoIcons.ellipsis,
-          color: cs.onSurface.withValues(alpha: 0.6), size: 18),
+          color: cs.onSurface.withValues(alpha: 0.4), size: 18),
       padding: const EdgeInsets.all(6),
       color: cs.surface,
       elevation: 3,
@@ -545,21 +580,13 @@ class _EventCardContacts extends ConsumerWidget {
         event.contactFacebook.trim().isNotEmpty;
     if (!hasContact) return const SizedBox.shrink();
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Divider(height: 1, indent: 14, endIndent: 14,
-          color: cs.outline.withValues(alpha: 0.5)),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-        child: SocialContactList(
-          contactWhatsapp: event.contactWhatsapp,
-          contactInstagram: event.contactInstagram,
-          contactFacebook: event.contactFacebook,
-          cs: cs,
-          linkErrorMessage: l10n.communityPartnerLinkError,
-          title: l10n.communityEventContactSection,
-        ),
-      ),
-    ]);
+    return SocialContactList(
+      contactWhatsapp: event.contactWhatsapp,
+      contactInstagram: event.contactInstagram,
+      contactFacebook: event.contactFacebook,
+      cs: cs,
+      linkErrorMessage: l10n.communityPartnerLinkError,
+      title: l10n.communityEventContactSection,
+    );
   }
 }
-
