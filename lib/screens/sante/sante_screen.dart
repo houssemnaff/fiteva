@@ -15,34 +15,17 @@ import '../../widgets/xp_toast.dart';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 
+/// Tokens dérivés du ColorScheme actif (thème + palette de couleurs Pro),
+/// même logique que community_screen.dart / theme_screen.dart.
 class _T {
-  // Light
-  static const lBg      = Color.fromARGB(255, 255, 255, 255);
-  static const lCard    = Color(0xFFFFFFFF);
-  static const lBorder  = Color(0xFFF0F0F0);
-  static const lT1      = Color(0xFF111111);
-  static const lT2      = Color(0xFF888888);
-  static const lT3      = Color(0xFFBBBBBB);
-  static const lAccent  = Color(0xFF1C4D30);
-
-  // Dark
-  static const dBg      = Color(0xFF0C0C0C);
-  static const dCard    = Color(0xFF161616);
-  static const dBorder  = Color(0xFF242424);
-  static const dT1      = Color(0xFFF5F5F5);
-  static const dT2      = Color(0xFF888888);
-  static const dT3      = Color(0xFF444444);
-  static const dAccent  = Color(0xFF4ADE80);
-
-  static Color bg(bool d)     => d ? dBg     : lBg;
-  static Color card(bool d)   => d ? dCard   : lCard;
-  static Color border(bool d) => d ? dBorder : lBorder;
-  static Color t1(bool d)     => d ? dT1     : lT1;
-  static Color t2(bool d)     => d ? dT2     : lT2;
-  static Color t3(bool d)     => d ? dT3     : lT3;
-  static Color accent(bool d) => d ? dAccent : lAccent;
-
-
+  static Color bg(BuildContext c)     => Theme.of(c).colorScheme.surface;
+  static Color card(BuildContext c)   => Theme.of(c).colorScheme.surfaceContainerHighest;
+  static Color border(BuildContext c) => Theme.of(c).colorScheme.outline;
+  static Color t1(BuildContext c)     => Theme.of(c).colorScheme.onSurface;
+  static Color t2(BuildContext c)     => Theme.of(c).colorScheme.onSurface.withValues(alpha: 0.5);
+  static Color t3(BuildContext c)     => Theme.of(c).colorScheme.onSurface.withValues(alpha: 0.25);
+  static Color accent(BuildContext c) => Theme.of(c).colorScheme.primary;
+  static Color onAccent(BuildContext c) => Theme.of(c).colorScheme.onPrimary;
 }
 
 // ─── Models ───────────────────────────────────────────────────────────────────
@@ -382,31 +365,31 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
     final questions = ref.watch(_santeQuestionsProvider).asData?.value ?? _questions;
 
     return Scaffold(
-      backgroundColor: _T.bg(dark),
+      backgroundColor: _T.bg(context),
       body: NestedScrollView(
         headerSliverBuilder: (_, __) => [
           SharedAppHeader.sliver(
             eyebrow: l10n.santeSanteEyebrow,
             title: l10n.santeMySpace,
-            accentColor: const Color(0xFF0D9488),
+            accentColor: _T.accent(context),
             bgColor: Colors.white,
           ),
 
           SliverToBoxAdapter(
             child: Container(
-              color: _T.card(dark),
+              color: _T.card(context),
               child: TabBar(
                 controller: _tab,
                 isScrollable: false,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                 labelStyle: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600),
                 unselectedLabelStyle: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w400),
-                labelColor: _T.t1(dark),
-                unselectedLabelColor: _T.t3(dark),
-                indicatorColor: const Color(0xFF0D9488),
+                labelColor: _T.t1(context),
+                unselectedLabelColor: _T.t3(context),
+                indicatorColor: _T.accent(context),
                 indicatorSize: TabBarIndicatorSize.tab,
                 indicatorWeight: 2,
-                dividerColor: _T.border(dark),
+                dividerColor: _T.border(context),
                 tabs: const [
                   Tab(icon: Icon(LucideIcons.stethoscope, size: 14), text: 'Conseils'),
                   Tab(icon: Icon(LucideIcons.video, size: 14), text: 'Ressources'),
@@ -464,8 +447,8 @@ class _StatPill extends StatelessWidget {
       child: Icon(icon, size: 16, color: color),
     ),
     const SizedBox(height: 6),
-    Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: _T.t1(dark))),
-    Text(sub, style: GoogleFonts.inter(fontSize: 10, color: _T.t2(dark))),
+    Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: _T.t1(context))),
+    Text(sub, style: GoogleFonts.inter(fontSize: 10, color: _T.t2(context))),
   ]));
 }
 
@@ -473,7 +456,7 @@ class _Divider extends StatelessWidget {
   final bool dark;
   const _Divider({required this.dark});
   @override
-  Widget build(BuildContext context) => Container(width: 1, height: 40, color: _T.border(dark));
+  Widget build(BuildContext context) => Container(width: 1, height: 40, color: _T.border(context));
 }
 
 // ─── Tab 1 · Conseils ─────────────────────────────────────────────────────────
@@ -524,7 +507,7 @@ class _ConseisTab extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (_, i) {
                 final c = _cats[i]; final active = c == cat;
-                final color = _catColor(c);
+                final color = c == 'Tout' ? _T.accent(context) : _catColor(c);
                 return GestureDetector(
                   onTap: () => onCat(c),
                   child: AnimatedContainer(
@@ -537,11 +520,11 @@ class _ConseisTab extends StatelessWidget {
                         color: active ? color : Colors.transparent, width: 1.5)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(_catIcon(c), size: 12,
-                        color: active ? Colors.white : _T.t2(dark)),
+                        color: active ? Colors.white : _T.t2(context)),
                       const SizedBox(width: 5),
                       Text(c, style: GoogleFonts.inter(
                         fontSize: 13, fontWeight: FontWeight.w600,
-                        color: active ? Colors.white : _T.t2(dark))),
+                        color: active ? Colors.white : _T.t2(context))),
                     ]),
                   ),
                 );
@@ -642,25 +625,25 @@ class _ConseilTile extends StatelessWidget {
                         color: dark ? const Color(0xFF242424) : const Color(0xFFF5F5F5),
                         borderRadius: BorderRadius.circular(20)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(LucideIcons.clock, size: 10, color: _T.t3(dark)),
+                        Icon(LucideIcons.clock, size: 10, color: _T.t3(context)),
                         const SizedBox(width: 3),
                         Text('${conseil.readMin} min', style: GoogleFonts.inter(
-                          fontSize: 11, color: _T.t2(dark))),
+                          fontSize: 11, color: _T.t2(context))),
                       ]),
                     ),
                     const Spacer(),
                     Text(conseil.postedAgo, style: GoogleFonts.inter(
-                      fontSize: 11, color: _T.t3(dark))),
+                      fontSize: 11, color: _T.t3(context))),
                     const SizedBox(width: 10),
                     GestureDetector(
                       onTap: onLike,
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(isLiked ? LucideIcons.heartHandshake : LucideIcons.heart,
-                          size: 14, color: isLiked ? const Color(0xFFE53935) : _T.t3(dark)),
+                          size: 14, color: isLiked ? const Color(0xFFE53935) : _T.t3(context)),
                         const SizedBox(width: 4),
                         Text('${conseil.likes + (isLiked ? 1 : 0)}',
                           style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600,
-                            color: isLiked ? const Color(0xFFE53935) : _T.t2(dark))),
+                            color: isLiked ? const Color(0xFFE53935) : _T.t2(context))),
                       ]),
                     ),
                   ]),
@@ -670,13 +653,13 @@ class _ConseilTile extends StatelessWidget {
                   // Title
                   Text(conseil.title, style: GoogleFonts.outfit(
                     fontSize: 16, fontWeight: FontWeight.w700,
-                    color: _T.t1(dark), height: 1.3)),
+                    color: _T.t1(context), height: 1.3)),
 
                   const SizedBox(height: 7),
 
                   // Body
                   Text(conseil.body, style: GoogleFonts.inter(
-                    fontSize: 13.5, color: _T.t2(dark), height: 1.6),
+                    fontSize: 13.5, color: _T.t2(context), height: 1.6),
                     maxLines: 3, overflow: TextOverflow.ellipsis),
 
                   const SizedBox(height: 14),
@@ -689,9 +672,9 @@ class _ConseilTile extends StatelessWidget {
                       const SizedBox(width: 8),
                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(doc.name, style: GoogleFonts.inter(
-                          fontSize: 12, fontWeight: FontWeight.w600, color: _T.t1(dark))),
+                          fontSize: 12, fontWeight: FontWeight.w600, color: _T.t1(context))),
                         Text(doc.specialty, style: GoogleFonts.inter(
-                          fontSize: 11, color: _T.t2(dark))),
+                          fontSize: 11, color: _T.t2(context))),
                       ]),
                     ]),
                   ),
@@ -787,14 +770,14 @@ class _RessourcesTab extends StatelessWidget {
             decoration: BoxDecoration(
               color: dark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F8F8),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _T.border(dark))),
+              border: Border.all(color: _T.border(context))),
             child: TextField(
               onChanged: onLex,
-              style: GoogleFonts.inter(fontSize: 14, color: _T.t1(dark)),
+              style: GoogleFonts.inter(fontSize: 14, color: _T.t1(context)),
               decoration: InputDecoration(
                 hintText: l10n.santeLexiqueHint,
-                hintStyle: GoogleFonts.inter(fontSize: 14, color: _T.t3(dark)),
-                prefixIcon: Icon(LucideIcons.search, size: 16, color: _T.t3(dark)),
+                hintStyle: GoogleFonts.inter(fontSize: 14, color: _T.t3(context)),
+                prefixIcon: Icon(LucideIcons.search, size: 16, color: _T.t3(context)),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14)),
             ),
@@ -829,15 +812,15 @@ class _SectionHeader extends StatelessWidget {
       Container(
         width: 36, height: 36,
         decoration: BoxDecoration(
-          color: const Color(0xFF0D9488).withOpacity(0.10),
+          color: _T.accent(context).withOpacity(0.10),
           borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, size: 16, color: const Color(0xFF0D9488)),
+        child: Icon(icon, size: 16, color: _T.accent(context)),
       ),
       const SizedBox(width: 10),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: GoogleFonts.outfit(
-          fontSize: 17, fontWeight: FontWeight.w700, color: _T.t1(dark))),
-        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: _T.t2(dark))),
+          fontSize: 17, fontWeight: FontWeight.w700, color: _T.t1(context))),
+        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: _T.t2(context))),
       ]),
     ]),
   );
@@ -1010,22 +993,22 @@ class _ArticleCard extends StatelessWidget {
                 const SizedBox(height: 7),
                 Text(article.title, style: GoogleFonts.outfit(
                   fontSize: 14, fontWeight: FontWeight.w700,
-                  color: _T.t1(dark), height: 1.3),
+                  color: _T.t1(context), height: 1.3),
                   maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 5),
                 Text(article.excerpt, style: GoogleFonts.inter(
-                  fontSize: 12, color: _T.t2(dark), height: 1.5),
+                  fontSize: 12, color: _T.t2(context), height: 1.5),
                   maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 6),
                 Text(article.author, style: GoogleFonts.inter(
-                  fontSize: 11, color: _T.t3(dark), fontWeight: FontWeight.w500)),
+                  fontSize: 11, color: _T.t3(context), fontWeight: FontWeight.w500)),
               ]),
             ),
           ),
           // Arrow
           Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: Icon(LucideIcons.chevronRight, size: 16, color: _T.t3(dark)),
+            child: Icon(LucideIcons.chevronRight, size: 16, color: _T.t3(context)),
           ),
         ]),
       ),
@@ -1056,7 +1039,7 @@ class _LexCardState extends State<_LexCard> {
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _open ? const Color(0xFF0D9488) : border, width: _open ? 1.5 : 1),
+          border: Border.all(color: _open ? _T.accent(context) : border, width: _open ? 1.5 : 1),
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -1065,36 +1048,36 @@ class _LexCardState extends State<_LexCard> {
               Container(
                 width: 28, height: 28,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0D9488).withOpacity(0.10),
+                  color: _T.accent(context).withOpacity(0.10),
                   borderRadius: BorderRadius.circular(8)),
                 child: Center(child: Text(e.term[0], style: GoogleFonts.outfit(
                   fontSize: 13, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0D9488)))),
+                  color: _T.accent(context)))),
               ),
               const SizedBox(width: 10),
               Expanded(child: Text(e.term, style: GoogleFonts.outfit(
-                fontSize: 14, fontWeight: FontWeight.w700, color: _T.t1(dark)))),
+                fontSize: 14, fontWeight: FontWeight.w700, color: _T.t1(context)))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
                   color: dark ? const Color(0xFF242424) : const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(10)),
                 child: Text(e.category, style: GoogleFonts.inter(
-                  fontSize: 10, color: _T.t2(dark))),
+                  fontSize: 10, color: _T.t2(context))),
               ),
               const SizedBox(width: 6),
               AnimatedRotation(
                 turns: _open ? 0.5 : 0,
                 duration: const Duration(milliseconds: 200),
-                child: Icon(LucideIcons.chevronDown, size: 16, color: _T.t3(dark)),
+                child: Icon(LucideIcons.chevronDown, size: 16, color: _T.t3(context)),
               ),
             ]),
             if (_open) ...[
               const SizedBox(height: 10),
-              Divider(height: 1, color: _T.border(dark)),
+              Divider(height: 1, color: _T.border(context)),
               const SizedBox(height: 10),
               Text(e.definition, style: GoogleFonts.inter(
-                fontSize: 13, color: _T.t2(dark), height: 1.65)),
+                fontSize: 13, color: _T.t2(context), height: 1.65)),
             ],
           ]),
         ),
@@ -1123,7 +1106,6 @@ class _QRTabState extends ConsumerState<_QRTab> {
 
   @override
   Widget build(BuildContext context) {
-    final dark = widget.dark;
     final l10n = widget.l10n;
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 110),
@@ -1134,26 +1116,26 @@ class _QRTabState extends ConsumerState<_QRTab> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _T.card(dark),
+              color: _T.card(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _open ? _T.accent(dark).withOpacity(0.4) : _T.border(dark))),
+              border: Border.all(color: _open ? _T.accent(context).withOpacity(0.4) : _T.border(context))),
             child: _open
                 ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(l10n.santeYourQuestion, style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600, color: _T.t1(dark))),
+                      fontSize: 13, fontWeight: FontWeight.w600, color: _T.t1(context))),
                     const SizedBox(height: 10),
                     TextField(controller: _ctrl, maxLines: 3,
-                      style: GoogleFonts.inter(fontSize: 14, color: _T.t1(dark)),
+                      style: GoogleFonts.inter(fontSize: 14, color: _T.t1(context)),
                       decoration: InputDecoration(
                         hintText: l10n.santeDecrire,
-                        hintStyle: GoogleFonts.inter(color: _T.t3(dark)),
+                        hintStyle: GoogleFonts.inter(color: _T.t3(context)),
                         border: InputBorder.none, contentPadding: EdgeInsets.zero)),
                     const SizedBox(height: 14),
                     Row(children: [
-                      Icon(LucideIcons.lockKeyhole, size: 12, color: _T.t3(dark)),
+                      Icon(LucideIcons.lockKeyhole, size: 12, color: _T.t3(context)),
                       const SizedBox(width: 5),
                       Text(l10n.santeAnonPost, style: GoogleFonts.inter(
-                        fontSize: 12, color: _T.t3(dark))),
+                        fontSize: 12, color: _T.t3(context))),
                       const Spacer(),
                       GestureDetector(
                         onTap: () async {
@@ -1174,17 +1156,17 @@ class _QRTabState extends ConsumerState<_QRTab> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                           decoration: BoxDecoration(
-                            color: _T.t1(dark), borderRadius: BorderRadius.circular(10)),
+                            color: _T.accent(context), borderRadius: BorderRadius.circular(10)),
                           child: Text(l10n.santeSendBtn, style: GoogleFonts.inter(
                             fontSize: 13, fontWeight: FontWeight.w600,
-                            color: _T.card(dark))))),
+                            color: _T.onAccent(context))))),
                     ]),
                   ])
                 : Row(children: [
-                    Icon(LucideIcons.pencil, size: 16, color: _T.t3(dark)),
+                    Icon(LucideIcons.pencil, size: 16, color: _T.t3(context)),
                     const SizedBox(width: 12),
                     Text(l10n.santeAskDoctorHint,
-                      style: GoogleFonts.inter(fontSize: 14, color: _T.t2(dark))),
+                      style: GoogleFonts.inter(fontSize: 14, color: _T.t2(context))),
                   ]),
           ),
         ),
@@ -1198,16 +1180,16 @@ class _QRTabState extends ConsumerState<_QRTab> {
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Container(
                   width: 28, height: 28,
-                  decoration: BoxDecoration(color: _T.border(dark), shape: BoxShape.circle),
-                  child: Icon(LucideIcons.userRound, size: 14, color: _T.t3(dark))),
+                  decoration: BoxDecoration(color: _T.border(context), shape: BoxShape.circle),
+                  child: Icon(LucideIcons.userRound, size: 14, color: _T.t3(context))),
                 const SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('${l10n.santeAnonyme} · ${q.postedAgo}', style: GoogleFonts.inter(
-                    fontSize: 12, color: _T.t3(dark))),
+                    fontSize: 12, color: _T.t3(context))),
                   const SizedBox(height: 6),
                   Text(q.question, style: GoogleFonts.outfit(
                     fontSize: 15, fontWeight: FontWeight.w600,
-                    color: _T.t1(dark), height: 1.4)),
+                    color: _T.t1(context), height: 1.4)),
                 ])),
               ]),
               // Answer
@@ -1217,19 +1199,19 @@ class _QRTabState extends ConsumerState<_QRTab> {
                   margin: const EdgeInsets.only(left: 38),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: _T.card(dark),
+                    color: _T.card(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _T.border(dark))),
+                    border: Border.all(color: _T.border(context))),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      Icon(LucideIcons.badgeCheck, size: 13, color: _T.accent(dark)),
+                      Icon(LucideIcons.badgeCheck, size: 13, color: _T.accent(context)),
                       const SizedBox(width: 6),
                       Text(q.answerDoctor ?? '', style: GoogleFonts.inter(
-                        fontSize: 12, fontWeight: FontWeight.w600, color: _T.accent(dark))),
+                        fontSize: 12, fontWeight: FontWeight.w600, color: _T.accent(context))),
                     ]),
                     const SizedBox(height: 8),
                     Text(q.doctorAnswer!, style: GoogleFonts.inter(
-                      fontSize: 13, color: _T.t2(dark), height: 1.6)),
+                      fontSize: 13, color: _T.t2(context), height: 1.6)),
                   ]),
                 ),
               ] else ...[
@@ -1237,7 +1219,7 @@ class _QRTabState extends ConsumerState<_QRTab> {
                 Padding(
                   padding: const EdgeInsets.only(left: 38),
                   child: Text(l10n.santeEnAttente, style: GoogleFonts.inter(
-                    fontSize: 12, color: _T.t3(dark), fontStyle: FontStyle.italic))),
+                    fontSize: 12, color: _T.t3(context), fontStyle: FontStyle.italic))),
               ],
               const SizedBox(height: 10),
               Padding(
@@ -1246,16 +1228,16 @@ class _QRTabState extends ConsumerState<_QRTab> {
                   onTap: () => setState(() { if (voted) _voted.remove(i); else _voted.add(i); }),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(LucideIcons.thumbsUp, size: 14,
-                      color: voted ? _T.accent(dark) : _T.t3(dark)),
+                      color: voted ? _T.accent(context) : _T.t3(context)),
                     const SizedBox(width: 5),
                     Text('${q.votes + (voted ? 1 : 0)} ${l10n.santeVotesUtiles}',
                       style: GoogleFonts.inter(fontSize: 12,
-                        color: voted ? _T.accent(dark) : _T.t3(dark))),
+                        color: voted ? _T.accent(context) : _T.t3(context))),
                   ]),
                 ),
               ),
               const SizedBox(height: 20),
-              Divider(height: 1, color: _T.border(dark)),
+              Divider(height: 1, color: _T.border(context)),
             ]),
           );
         }),
@@ -1321,9 +1303,9 @@ class _DoctorsTab extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: (dark ? const Color(0xFF1A1A1A) : Colors.white).withOpacity(0.92),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: _T.border(dark))),
+                        border: Border.all(color: _T.border(context))),
                       child: Text(l10n.santeSpecialistsCount(doctors.length),
-                        style: GoogleFonts.inter(fontSize: 11, color: _T.t2(dark))))),
+                        style: GoogleFonts.inter(fontSize: 11, color: _T.t2(context))))),
                   if (marker != null && marker! >= 0 && marker! < doctors.length)
                     _MapPopup(doctor: doctors[marker!],
                       pos: _doctorPositions[marker! < _doctorPositions.length ? marker! : 0],
@@ -1350,12 +1332,12 @@ class _DoctorsTab extends StatelessWidget {
                   duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
-                    color: active ? _T.t1(dark) : Colors.transparent,
+                    color: active ? _T.accent(context) : Colors.transparent,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: active ? _T.t1(dark) : _T.border(dark))),
+                    border: Border.all(color: active ? _T.accent(context) : _T.border(context))),
                   child: Text(s, style: GoogleFonts.inter(fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: active ? _T.card(dark) : _T.t2(dark))),
+                    color: active ? _T.onAccent(context) : _T.t2(context))),
                 ),
               );
             },
@@ -1377,26 +1359,26 @@ class _DoctorsTab extends StatelessWidget {
                     const SizedBox(width: 14),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(doc.name, style: GoogleFonts.inter(
-                        fontSize: 14, fontWeight: FontWeight.w600, color: _T.t1(dark))),
+                        fontSize: 14, fontWeight: FontWeight.w600, color: _T.t1(context))),
                       const SizedBox(height: 2),
                       Text(doc.specialty, style: GoogleFonts.inter(
-                        fontSize: 13, color: _T.t2(dark))),
+                        fontSize: 13, color: _T.t2(context))),
                       const SizedBox(height: 4),
                       Row(children: [
-                        Icon(LucideIcons.mapPin, size: 11, color: _T.t3(dark)),
+                        Icon(LucideIcons.mapPin, size: 11, color: _T.t3(context)),
                         const SizedBox(width: 3),
-                        Text(doc.location, style: GoogleFonts.inter(fontSize: 12, color: _T.t3(dark))),
+                        Text(doc.location, style: GoogleFonts.inter(fontSize: 12, color: _T.t3(context))),
                         const SizedBox(width: 10),
                         Icon(LucideIcons.star, size: 11, color: const Color(0xFFF59E0B)),
                         const SizedBox(width: 3),
                         Text('${doc.rating}', style: GoogleFonts.inter(
-                          fontSize: 12, color: _T.t3(dark))),
+                          fontSize: 12, color: _T.t3(context))),
                       ]),
                     ])),
-                    Icon(LucideIcons.chevronRight, size: 16, color: _T.t3(dark)),
+                    Icon(LucideIcons.chevronRight, size: 16, color: _T.t3(context)),
                   ]),
                 ),
-                Divider(height: 1, color: _T.border(dark)),
+                Divider(height: 1, color: _T.border(context)),
               ]),
             ),
           );
@@ -1468,16 +1450,16 @@ class _MapPopup extends StatelessWidget {
           decoration: BoxDecoration(
             color: dark ? const Color(0xFF1A1A1A) : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _T.border(dark)),
+            border: Border.all(color: _T.border(context)),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 14, offset: const Offset(0,4))]),
           child: Row(children: [
             _Ava(initials: doctor.initials, color: doctor.color, size: 32, photoAsset: doctor.photoAsset),
             const SizedBox(width: 8),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(doctor.name, style: GoogleFonts.inter(fontSize: 11,
-                fontWeight: FontWeight.w600, color: _T.t1(dark)),
+                fontWeight: FontWeight.w600, color: _T.t1(context)),
                 maxLines: 1, overflow: TextOverflow.ellipsis),
-              Text(doctor.specialty, style: GoogleFonts.inter(fontSize: 10, color: _T.t2(dark))),
+              Text(doctor.specialty, style: GoogleFonts.inter(fontSize: 10, color: _T.t2(context))),
             ])),
           ]),
         ),
@@ -1499,31 +1481,31 @@ class _DoctorSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: _T.card(dark),
+        color: _T.card(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 24),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 12),
         Container(width: 36, height: 4, decoration: BoxDecoration(
-          color: _T.border(dark), borderRadius: BorderRadius.circular(2))),
+          color: _T.border(context), borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 28),
         _Ava(initials: doctor.initials, color: doctor.color, size: 70, photoAsset: doctor.photoAsset),
         const SizedBox(height: 14),
         Text(doctor.name, style: GoogleFonts.outfit(
-          fontSize: 20, fontWeight: FontWeight.w800, color: _T.t1(dark))),
+          fontSize: 20, fontWeight: FontWeight.w800, color: _T.t1(context))),
         const SizedBox(height: 4),
-        Text(doctor.specialty, style: GoogleFonts.inter(fontSize: 14, color: _T.t2(dark))),
+        Text(doctor.specialty, style: GoogleFonts.inter(fontSize: 14, color: _T.t2(context))),
         const SizedBox(height: 8),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(LucideIcons.star, size: 13, color: const Color(0xFFF59E0B)),
           const SizedBox(width: 4),
           Text('${doctor.rating}', style: GoogleFonts.inter(
-            fontSize: 13, fontWeight: FontWeight.w600, color: _T.t1(dark))),
+            fontSize: 13, fontWeight: FontWeight.w600, color: _T.t1(context))),
           const SizedBox(width: 12),
-          Text('·', style: GoogleFonts.inter(color: _T.t3(dark))),
+          Text('·', style: GoogleFonts.inter(color: _T.t3(context))),
           const SizedBox(width: 12),
           Text(l10n.santeConsultationsCount(doctor.consultations), style: GoogleFonts.inter(
-            fontSize: 13, color: _T.t2(dark))),
+            fontSize: 13, color: _T.t2(context))),
         ]),
         const SizedBox(height: 28),
         Padding(
@@ -1541,10 +1523,10 @@ class _DoctorSheet extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      border: Border.all(color: _T.border(dark)),
+                      border: Border.all(color: _T.border(context)),
                       borderRadius: BorderRadius.circular(14)),
                     child: Center(child: Text(l10n.santeCall, style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.w600, color: _T.t1(dark)))))),
+                      fontSize: 14, fontWeight: FontWeight.w600, color: _T.t1(context)))))),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1553,9 +1535,9 @@ class _DoctorSheet extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      color: _T.t1(dark), borderRadius: BorderRadius.circular(14)),
+                      color: _T.t1(context), borderRadius: BorderRadius.circular(14)),
                     child: Center(child: Text(l10n.santeAppointment, style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.w600, color: _T.card(dark)))))),
+                      fontSize: 14, fontWeight: FontWeight.w600, color: _T.card(context)))))),
               ),
             ]),
           ]),
@@ -1665,7 +1647,7 @@ class _SeriesSheet extends ConsumerWidget {
                         : (dark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F8F8)),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isFirst ? series.color.withOpacity(0.4) : _T.border(dark),
+                        color: isFirst ? series.color.withOpacity(0.4) : _T.border(context),
                         width: isFirst ? 1.5 : 1)),
                     padding: const EdgeInsets.all(14),
                     child: Row(children: [
@@ -1682,7 +1664,7 @@ class _SeriesSheet extends ConsumerWidget {
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(ep.title, style: GoogleFonts.inter(
                           fontSize: 13, fontWeight: FontWeight.w600,
-                          color: _T.t1(dark), height: 1.35),
+                          color: _T.t1(context), height: 1.35),
                           maxLines: 2, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 5),
                         Container(
@@ -1691,10 +1673,10 @@ class _SeriesSheet extends ConsumerWidget {
                             color: dark ? const Color(0xFF242424) : const Color(0xFFEEEEEE),
                             borderRadius: BorderRadius.circular(8)),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(LucideIcons.clock3, size: 10, color: _T.t3(dark)),
+                            Icon(LucideIcons.clock3, size: 10, color: _T.t3(context)),
                             const SizedBox(width: 4),
                             Text(ep.duration, style: GoogleFonts.inter(
-                              fontSize: 11, color: _T.t2(dark), fontWeight: FontWeight.w500)),
+                              fontSize: 11, color: _T.t2(context), fontWeight: FontWeight.w500)),
                           ]),
                         ),
                       ])),
@@ -1840,7 +1822,7 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                       ),
                       const SizedBox(width: 8),
                       Expanded(child: Text(s.title, style: GoogleFonts.inter(
-                        fontSize: 11, color: _T.t3(dark)), overflow: TextOverflow.ellipsis)),
+                        fontSize: 11, color: _T.t3(context)), overflow: TextOverflow.ellipsis)),
                       // duration pill
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1848,10 +1830,10 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                           color: dark ? const Color(0xFF242424) : const Color(0xFFF0F0F0),
                           borderRadius: BorderRadius.circular(10)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(LucideIcons.clock3, size: 10, color: _T.t3(dark)),
+                          Icon(LucideIcons.clock3, size: 10, color: _T.t3(context)),
                           const SizedBox(width: 4),
                           Text(ep.duration, style: GoogleFonts.inter(
-                            fontSize: 11, color: _T.t2(dark), fontWeight: FontWeight.w500)),
+                            fontSize: 11, color: _T.t2(context), fontWeight: FontWeight.w500)),
                         ]),
                       ),
                     ]),
@@ -1860,7 +1842,7 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                     // episode title
                     Text(ep.title, style: GoogleFonts.outfit(
                       fontSize: 18, fontWeight: FontWeight.w800,
-                      color: _T.t1(dark), height: 1.25)),
+                      color: _T.t1(context), height: 1.25)),
                     const SizedBox(height: 16),
 
                     // action row: like + share
@@ -1876,11 +1858,11 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                             border: _liked ? Border.all(color: s.color.withOpacity(0.4)) : null),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(LucideIcons.heart, size: 15,
-                              color: _liked ? s.color : _T.t2(dark)),
+                              color: _liked ? s.color : _T.t2(context)),
                             const SizedBox(width: 6),
                             Text(l10n.santeLike, style: GoogleFonts.inter(
                               fontSize: 13, fontWeight: FontWeight.w600,
-                              color: _liked ? s.color : _T.t2(dark))),
+                              color: _liked ? s.color : _T.t2(context))),
                           ]),
                         ),
                       ),
@@ -1891,16 +1873,16 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                           color: dark ? const Color(0xFF242424) : const Color(0xFFF2F2F2),
                           borderRadius: BorderRadius.circular(20)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(LucideIcons.share2, size: 15, color: _T.t2(dark)),
+                          Icon(LucideIcons.share2, size: 15, color: _T.t2(context)),
                           const SizedBox(width: 6),
                           Text(l10n.santeShare, style: GoogleFonts.inter(
-                            fontSize: 13, fontWeight: FontWeight.w600, color: _T.t2(dark))),
+                            fontSize: 13, fontWeight: FontWeight.w600, color: _T.t2(context))),
                         ]),
                       ),
                     ]),
 
                     const SizedBox(height: 16),
-                    Divider(height: 1, color: _T.border(dark)),
+                    Divider(height: 1, color: _T.border(context)),
                     const SizedBox(height: 16),
 
                     // doctor row
@@ -1910,9 +1892,9 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                       const SizedBox(width: 12),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(doc.name, style: GoogleFonts.outfit(
-                          fontSize: 15, fontWeight: FontWeight.w700, color: _T.t1(dark))),
+                          fontSize: 15, fontWeight: FontWeight.w700, color: _T.t1(context))),
                         Text(doc.specialty, style: GoogleFonts.inter(
-                          fontSize: 12, color: _T.t2(dark))),
+                          fontSize: 12, color: _T.t2(context))),
                       ])),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -1931,7 +1913,7 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
                     child: Text(l10n.santeDansCetteSerie, style: GoogleFonts.outfit(
-                      fontSize: 16, fontWeight: FontWeight.w700, color: _T.t1(dark))),
+                      fontSize: 16, fontWeight: FontWeight.w700, color: _T.t1(context))),
                   ),
                   ...others.map((other) => Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
@@ -1944,7 +1926,7 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                         decoration: BoxDecoration(
                           color: cardBg,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: _T.border(dark))),
+                          border: Border.all(color: _T.border(context))),
                         padding: const EdgeInsets.all(12),
                         child: Row(children: [
                           // thumbnail with play overlay
@@ -1990,7 +1972,7 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                             const SizedBox(height: 5),
                             Text(other.title, style: GoogleFonts.inter(
                               fontSize: 13, fontWeight: FontWeight.w600,
-                              color: _T.t1(dark), height: 1.3),
+                              color: _T.t1(context), height: 1.3),
                               maxLines: 2, overflow: TextOverflow.ellipsis),
                           ])),
                         ]),
@@ -2042,7 +2024,7 @@ class _Label extends StatelessWidget {
   const _Label({required this.text, required this.dark});
   @override
   Widget build(BuildContext context) => Text(text, style: GoogleFonts.outfit(
-    fontSize: 20, fontWeight: FontWeight.w700, color: _T.t1(dark), letterSpacing: -0.3));
+    fontSize: 20, fontWeight: FontWeight.w700, color: _T.t1(context), letterSpacing: -0.3));
 }
 
 class _InfoRow2 extends StatelessWidget {
@@ -2052,9 +2034,9 @@ class _InfoRow2 extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Row(children: [
-      Icon(icon, size: 15, color: _T.t3(dark)),
+      Icon(icon, size: 15, color: _T.t3(context)),
       const SizedBox(width: 12),
-      Flexible(child: Text(label, style: GoogleFonts.inter(fontSize: 14, color: _T.t1(dark)))),
+      Flexible(child: Text(label, style: GoogleFonts.inter(fontSize: 14, color: _T.t1(context)))),
     ]),
   );
 }
@@ -2068,20 +2050,20 @@ class _InputBox extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
     decoration: BoxDecoration(
-      color: _T.card(dark), borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: _T.border(dark))),
+      color: _T.card(context), borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: _T.border(context))),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        Icon(icon, size: 12, color: _T.t3(dark)),
+        Icon(icon, size: 12, color: _T.t3(context)),
         const SizedBox(width: 5),
-        Text(label, style: GoogleFonts.inter(fontSize: 11, color: _T.t3(dark))),
+        Text(label, style: GoogleFonts.inter(fontSize: 11, color: _T.t3(context))),
       ]),
       const SizedBox(height: 4),
       TextField(controller: ctrl,
-        style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: _T.t1(dark)),
+        style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: _T.t1(context)),
         decoration: InputDecoration(
           hintText: hint, hintStyle: GoogleFonts.inter(
-            fontSize: 16, color: _T.t3(dark), fontWeight: FontWeight.w400),
+            fontSize: 16, color: _T.t3(context), fontWeight: FontWeight.w400),
           border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero)),
     ]),
   );
