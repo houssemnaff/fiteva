@@ -29,8 +29,10 @@ import '../l10n/app_localizations.dart';
 
 class _NavItem {
   final IconData icon;
+  final IconData activeIcon;
   final String label;
-  const _NavItem(this.icon, this.label);
+  const _NavItem(this.icon, this.label, {IconData? activeIcon})
+      : activeIcon = activeIcon ?? icon;
 }
 
 // Secondary 3 screens revealed by "+" (indices 4–6)
@@ -92,8 +94,8 @@ class _MainLayoutState extends ConsumerState<MainLayout>
   }
 
   _NavItem _tab1NavItem(String? healthStatus, AppL10n l10n) {
-    if (healthStatus == 'pregnant')  return _NavItem(Icons.child_friendly_rounded, l10n.navPregnancy);
-    if (healthStatus == 'postpartum') return _NavItem(Icons.favorite_rounded, l10n.navPostpartum);
+    if (healthStatus == 'pregnant')  return _NavItem(Icons.child_friendly_outlined, l10n.navPregnancy, activeIcon: Icons.child_friendly_rounded);
+    if (healthStatus == 'postpartum') return _NavItem(Icons.favorite_outline_rounded, l10n.navPostpartum, activeIcon: Icons.favorite_rounded);
     return _NavItem(LucideIcons.loader, l10n.navCycle);
   }
 
@@ -173,7 +175,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
     final size    = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
     const btnSize = 85.0;
-    const navH    = 90.0;
+    const navH    = 88.0;
 
     final List<_SecondaryItem> secondaryItemsL10n = [
       _SecondaryItem(LucideIcons.shoppingBag, l10n.navShop,
@@ -191,10 +193,10 @@ class _MainLayoutState extends ConsumerState<MainLayout>
     ];
 
     final List<_NavItem> mainNavItems = [
-      _NavItem(LucideIcons.home, l10n.navHome),
+      _NavItem(Icons.home_outlined, l10n.navHome, activeIcon: Icons.home_rounded),
       _tab1NavItem(profile.healthStatus, l10n),
-      _NavItem(LucideIcons.dumbbell, l10n.navWorkout),
-      _NavItem(LucideIcons.apple, l10n.navNutrition),
+      _NavItem(Icons.fitness_center_outlined, l10n.navWorkout, activeIcon: Icons.fitness_center_rounded),
+      _NavItem(Icons.restaurant_outlined, l10n.navNutrition, activeIcon: Icons.restaurant_rounded),
     ];
 
     final List<Widget> mainScreens = [
@@ -258,17 +260,14 @@ class _MainLayoutState extends ConsumerState<MainLayout>
             }),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: _PlusFloatingButton(
-        open: _plusOpen,
-        animation: _plusScale,
-        onTap: _togglePlus,
-      ),
-      bottomNavigationBar: _LiquidGlassNavBar(
+      bottomNavigationBar: _GlassNavBar(
         currentIndex: _currentIndex,
         isSecondary: _isSecondary,
         navItems: mainNavItems,
         onTap: _selectMain,
+        plusOpen: _plusOpen,
+        plusAnimation: _plusScale,
+        onPlusTap: _togglePlus,
       ),
     );
   }
@@ -430,185 +429,214 @@ class _SecondaryMenu extends StatelessWidget {
 //  FLOATING PLUS BUTTON — centred above nav bar via floatingActionButton
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PlusFloatingButton extends StatelessWidget {
-  final bool open;
-  final Animation<double> animation;
-  final VoidCallback onTap;
+// ─────────────────────────────────────────────────────────────────────────────
+//  GLASS NAV BAR — floating pill, glassmorphism, sliding indicator,
+//  icon morphing, integrated "+" center button
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const _PlusFloatingButton({
-    required this.open,
-    required this.animation,
+class _GlassNavBar extends StatelessWidget {
+  final int currentIndex;
+  final bool isSecondary;
+  final List<_NavItem> navItems;
+  final ValueChanged<int> onTap;
+  final bool plusOpen;
+  final Animation<double> plusAnimation;
+  final VoidCallback onPlusTap;
+
+  const _GlassNavBar({
+    required this.currentIndex,
+    required this.isSecondary,
+    required this.navItems,
     required this.onTap,
+    required this.plusOpen,
+    required this.plusAnimation,
+    required this.onPlusTap,
   });
+
+  static const _barH   = 68.0;
+  static const _margin = 16.0;
+  static const _radius = 26.0;
+  static const _accent = Color(0xFF2ECC71);
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedBuilder(
-        animation: animation,
-        builder: (_, __) => Transform.scale(
-          scale: 1.0 + animation.value * 0.08,
+    final bottom = MediaQuery.of(context).padding.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final glassBg = isDark
+        ? Colors.black.withOpacity(0.55)
+        : Colors.white.withOpacity(0.72);
+    final glassBorder = isDark
+        ? Colors.white.withOpacity(0.10)
+        : Colors.black.withOpacity(0.06);
+    final unselected = isDark
+        ? Colors.white.withOpacity(0.35)
+        : Colors.black.withOpacity(0.30);
+
+    // 5 slots: tab0, tab1, plus, tab2, tab3
+    final totalSlots = navItems.length + 1; // 4 tabs + 1 plus
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(_margin, 0, _margin, bottom + 10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_radius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
           child: Container(
-            width: 58, height: 58,
+            height: _barH,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: open
-                    ? [const Color(0xFF3A6B4A), const Color(0xFF1C4D30)]
-                    : [const Color(0xFF5CD57A), const Color(0xFF2D8A50)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: glassBg,
+              borderRadius: BorderRadius.circular(_radius),
+              border: Border.all(color: glassBorder, width: 0.8),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2D8A50).withOpacity(0.55),
-                  blurRadius: 22, offset: const Offset(0, 8)),
+                  color: Colors.black.withOpacity(isDark ? 0.30 : 0.10),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
               ],
             ),
-            child: AnimatedRotation(
-              turns: open ? 0.125 : 0,
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-              child: const Icon(Icons.add, color: Colors.white, size: 30),
-            ),
+            child: LayoutBuilder(builder: (context, constraints) {
+              final slotW = constraints.maxWidth / totalSlots;
+              // Sliding indicator position (only for main tabs 0-3)
+              // Tabs map: slot 0=tab0, slot 1=tab1, slot 2=plus, slot 3=tab2, slot 4=tab3
+              double indicatorLeft;
+              if (isSecondary || currentIndex < 0) {
+                indicatorLeft = -slotW; // off-screen
+              } else {
+                final slotIdx = currentIndex < 2 ? currentIndex : currentIndex + 1;
+                indicatorLeft = slotIdx * slotW + (slotW - 42) / 2;
+              }
+
+              return Stack(children: [
+                // ── Sliding pill indicator ─────────────────────────────
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  left: indicatorLeft,
+                  top: 8,
+                  child: AnimatedOpacity(
+                    opacity: isSecondary ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Container(
+                      width: 42,
+                      height: _barH - 16,
+                      decoration: BoxDecoration(
+                        color: _accent.withOpacity(isDark ? 0.18 : 0.12),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── Items row ─────────────────────────────────────────
+                Row(children: [
+                  // First 2 tabs
+                  for (int i = 0; i < 2; i++)
+                    _buildTab(i, navItems[i], unselected, slotW),
+
+                  // Center "+" button
+                  SizedBox(
+                    width: slotW,
+                    child: Center(child: _buildPlusButton()),
+                  ),
+
+                  // Last 2 tabs
+                  for (int i = 2; i < navItems.length; i++)
+                    _buildTab(i, navItems[i], unselected, slotW),
+                ]),
+              ]);
+            }),
           ),
         ),
       ),
     );
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  CLASSY NAV BAR — 4 tabs, floating pill, adaptive dark/light
-// ─────────────────────────────────────────────────────────────────────────────
+  Widget _buildTab(int index, _NavItem item, Color unselected, double width) {
+    final isSelected = !isSecondary && index == currentIndex;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap(index);
+      },
+      child: SizedBox(
+        width: width,
+        height: _barH,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon — morphs between outlined and filled
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, anim) =>
+                  ScaleTransition(scale: anim, child: child),
+              child: Icon(
+                isSelected ? item.activeIcon : item.icon,
+                key: ValueKey(isSelected),
+                size: 23,
+                color: isSelected ? _accent : unselected,
+              ),
+            ),
 
-class _LiquidGlassNavBar extends StatelessWidget {
-  final int currentIndex;
-  final bool isSecondary;
-  final List<_NavItem> navItems;
-  final ValueChanged<int> onTap;
+            const SizedBox(height: 4),
 
-  const _LiquidGlassNavBar({
-    required this.currentIndex,
-    required this.isSecondary,
-    required this.navItems,
-    required this.onTap,
-  });
-
-  static const _barH = 70.0;
-  static const _r    = 28.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final bottom  = MediaQuery.of(context).padding.bottom;
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
-
-    // Pill colours — adaptive
-    final pillBg     = isDark
-        ? const Color(0xFF12151A)
-        : Colors.white;
-    final pillBorder = isDark
-        ? Colors.white.withOpacity(0.08)
-        : Colors.black.withOpacity(0.08);
-    final unselectedColor = isDark
-        ? Colors.white.withOpacity(0.38)
-        : Colors.black.withOpacity(0.32);
-    final accent = const Color(0xFF3DA85A);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: pillBg,
-        border: Border(top: BorderSide(color: pillBorder, width: 0.8)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.20 : 0.06),
-            blurRadius: 16, offset: const Offset(0, -4)),
-        ],
+            // Label
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: GoogleFonts.inter(
+                fontSize: 10.5,
+                height: 1.0,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                color: isSelected ? _accent : unselected,
+                letterSpacing: -0.1,
+              ),
+              child: Text(item.label, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          ],
+        ),
       ),
-      padding: EdgeInsets.only(bottom: bottom),
-      child: Stack(children: [
+    );
+  }
 
-        // ── Full-width bar ───────────────────────────────────────────────
-        Container(height: _barH, color: Colors.transparent),
-
-        // ── Nav items ────────────────────────────────────────────────────
-        SizedBox(
-          height: _barH,
-          child: Row(
-            children: List.generate(navItems.length, (i) {
-              // leave gap in the middle for the floating + button
-              final isSelected = !isSecondary && i == currentIndex;
-              final item       = navItems[i];
-
-              return Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onTap(i);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 240),
-                    curve: Curves.easeOutCubic,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Selected dot indicator above icon
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 240),
-                          curve: Curves.easeOutCubic,
-                          width:  isSelected ? 20 : 0,
-                          height: 3,
-                          margin: const EdgeInsets.only(bottom: 4),
-                          decoration: BoxDecoration(
-                            color: accent,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-
-                        // Icon
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 240),
-                          curve: Curves.easeOutCubic,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 4),
-                          decoration: isSelected ? BoxDecoration(
-                            color: accent.withOpacity(0.14),
-                            borderRadius: BorderRadius.circular(14),
-                          ) : null,
-                          child: Icon(
-                            item.icon,
-                            size: 22,
-                            color: isSelected ? accent : unselectedColor,
-                          ),
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        // Label — bigger, classier
-                        AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 200),
-                          style: GoogleFonts.inter(
-                            fontSize: 11.5,
-                            height: 1.0,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w400,
-                            color: isSelected ? accent : unselectedColor,
-                            letterSpacing: -0.2,
-                          ),
-                          child: Text(item.label, maxLines: 1),
-                        ),
-                      ],
-                    ),
-                  ),
+  Widget _buildPlusButton() {
+    return GestureDetector(
+      onTap: onPlusTap,
+      child: AnimatedBuilder(
+        animation: plusAnimation,
+        builder: (_, __) => Transform.scale(
+          scale: 1.0 + plusAnimation.value * 0.06,
+          child: Container(
+            width: 48, height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: plusOpen
+                    ? [const Color(0xFF1A5C2E), const Color(0xFF0F3D1E)]
+                    : [const Color(0xFF2ECC71), const Color(0xFF27AE60)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _accent.withOpacity(0.45),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
                 ),
-              );
-            }),
+              ],
+            ),
+            child: AnimatedRotation(
+              turns: plusOpen ? 0.125 : 0,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              child: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
+            ),
           ),
         ),
-      ]),
+      ),
     );
   }
 }

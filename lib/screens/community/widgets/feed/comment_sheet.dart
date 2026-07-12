@@ -2,13 +2,15 @@ import 'dart:async';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
 import 'package:fiteva/services/comuniter_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../l10n/app_localizations.dart';
-
+import '../../../../providers/mascot_provider.dart';
+import '../../../../widgets/mascot_widget.dart';
 
 class CommentSheet extends ConsumerStatefulWidget {
   final String postId;
@@ -22,7 +24,7 @@ class CommentSheet extends ConsumerStatefulWidget {
 typedef _Comment = ({String text, String author, DateTime createdAt});
 
 class _CommentSheetState extends ConsumerState<CommentSheet> {
-  final _ctrl  = TextEditingController();
+  final _ctrl = TextEditingController();
   final _focus = FocusNode();
   List<_Comment> _comments = [];
   bool _loading = false;
@@ -88,121 +90,130 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
           maxHeight: MediaQuery.of(context).size.height * 0.85),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.10),
-            blurRadius: 24,
-            offset: const Offset(0, -6),
-          ),
-        ],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 6),
-            width: 36, height: 4,
-            decoration: BoxDecoration(
-              color: cs.outline.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(3),
+          // ── Handle ──────────────────────────────────────────
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: cs.onSurface.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-          // Header
+
+          // ── Header ──────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 14, 14),
+            padding: const EdgeInsets.fromLTRB(20, 8, 14, 12),
             child: Row(children: [
               Text(l10n.communityComments,
                 style: GoogleFonts.outfit(
-                  fontSize: 19, fontWeight: FontWeight.w800,
-                  color: cs.onSurface, letterSpacing: -0.4)),
+                  fontSize: 18, fontWeight: FontWeight.w800,
+                  color: cs.onSurface, letterSpacing: -0.3)),
               const SizedBox(width: 8),
               if (!_loading)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: cs.primary.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text('${_comments.length}',
-                    style: GoogleFonts.inter(
-                      fontSize: 12, fontWeight: FontWeight.w700, color: cs.primary)),
-                ),
+                Text('${_comments.length}',
+                  style: GoogleFonts.inter(
+                    fontSize: 14, fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.35))),
               const Spacer(),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
-                  width: 34, height: 34,
+                  width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest, shape: BoxShape.circle),
-                  child: Icon(LucideIcons.x, size: 15, color: cs.onSurface.withValues(alpha: 0.7)),
+                    color: cs.onSurface.withValues(alpha: 0.06),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(LucideIcons.x, size: 14,
+                      color: cs.onSurface.withValues(alpha: 0.5)),
                 ),
               ),
             ]),
           ),
 
-          // Comment list
+          // ── Thin divider ────────────────────────────────────
+          Container(
+            height: 0.5,
+            color: cs.onSurface.withValues(alpha: 0.06),
+          ),
+
+          // ── Comment list ────────────────────────────────────
           Flexible(
             child: _loading
-                ? ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    itemCount: 3,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (_, __) => _CommentSkeletonRow(colorScheme: cs),
+                ? ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    itemCount: 4,
+                    itemBuilder: (_, __) => _CommentSkeleton(cs: cs),
                   )
                 : _comments.isEmpty
                     ? Padding(
-                        padding: const EdgeInsets.all(32),
+                        padding: const EdgeInsets.symmetric(vertical: 48),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 56, height: 56,
-                              decoration: BoxDecoration(
-                                color: cs.primary.withValues(alpha: 0.08),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(LucideIcons.messageCircle,
-                                  size: 24, color: cs.primary.withValues(alpha: 0.6)),
-                            ),
-                            const SizedBox(height: 14),
-                            Text(l10n.communityNoComments,
-                              textAlign: TextAlign.center,
+                            Icon(CupertinoIcons.chat_bubble_2,
+                                size: 36,
+                                color: cs.onSurface.withValues(alpha: 0.12)),
+                            const SizedBox(height: 12),
+                            Text('Sois le premier à commenter',
                               style: GoogleFonts.inter(
-                                  color: cs.onSurface.withValues(alpha: 0.6),
-                                  fontSize: 13, height: 1.5)),
+                                fontSize: 14, fontWeight: FontWeight.w500,
+                                color: cs.onSurface.withValues(alpha: 0.3))),
                           ],
                         ),
                       )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                         itemCount: _comments.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
                         itemBuilder: (_, i) => _CommentRow(
                           text: _comments[i].text,
                           author: _comments[i].author,
                           createdAt: _comments[i].createdAt,
-                          colorScheme: cs,
+                          cs: cs,
+                          isLast: i == _comments.length - 1,
                         ),
                       ),
           ),
 
-          // Input bar
+          // ── Input bar ───────────────────────────────────────
           Container(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottom),
+            padding: EdgeInsets.fromLTRB(20, 10, 12, 10 + bottom),
             decoration: BoxDecoration(
               color: cs.surface,
-              border: Border(top: BorderSide(color: cs.outline.withValues(alpha: 0.4))),
+              border: Border(
+                top: BorderSide(
+                  color: cs.onSurface.withValues(alpha: 0.06),
+                ),
+              ),
             ),
             child: Row(children: [
+              // Mascot avatar
+              Consumer(builder: (_, ref2, __) {
+                final mascot = ref2.watch(mascotProvider);
+                return Container(
+                  width: 34, height: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: cs.primary.withValues(alpha: 0.10),
+                  ),
+                  child: ClipOval(
+                    child: MascotWidget(
+                      type: mascot.type, mood: mascot.mood, size: 34),
+                  ),
+                );
+              }),
+              const SizedBox(width: 10),
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(50),
-                    border: Border.all(color: cs.outline.withValues(alpha: 0.3)),
+                    color: cs.onSurface.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(22),
                   ),
                   child: TextField(
                     controller: _ctrl,
@@ -213,47 +224,38 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                     decoration: InputDecoration(
                       hintText: l10n.communityAddComment,
                       hintStyle: GoogleFonts.inter(
-                          color: cs.onSurface.withValues(alpha: 0.5), fontSize: 13),
+                          color: cs.onSurface.withValues(alpha: 0.3),
+                          fontSize: 13.5),
                       filled: false,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 12),
+                          horizontal: 16, vertical: 10),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(50),
+                        borderRadius: BorderRadius.circular(22),
                         borderSide: BorderSide.none,
                       ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: _sending ? null : _send,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  width: 44, height: 44,
+                  width: 38, height: 38,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft, end: Alignment.bottomRight,
-                      colors: _sending
-                          ? [cs.secondary, cs.secondary]
-                          : [cs.primary, cs.primary.withValues(alpha: 0.75)],
-                    ),
+                    color: _sending
+                        ? cs.onSurface.withValues(alpha: 0.08)
+                        : cs.primary,
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: cs.primary.withValues(alpha: 0.28),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
                   child: _sending
                       ? Center(child: SizedBox(
-                          width: 17, height: 17,
+                          width: 15, height: 15,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: cs.onPrimary)))
-                      : Icon(LucideIcons.send,
-                          color: cs.onPrimary, size: 17),
+                              strokeWidth: 1.8, color: cs.onPrimary)))
+                      : Icon(LucideIcons.arrowUp,
+                          color: cs.onPrimary, size: 18),
                 ),
               ),
             ]),
@@ -264,43 +266,43 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
   }
 }
 
-class _CommentSkeletonRow extends StatelessWidget {
-  final ColorScheme colorScheme;
-  const _CommentSkeletonRow({required this.colorScheme});
+// ─── Comment Skeleton ────────────────────────────────────────
+class _CommentSkeleton extends StatelessWidget {
+  final ColorScheme cs;
+  const _CommentSkeleton({required this.cs});
 
   @override
   Widget build(BuildContext context) {
-    // Card frame stays static — only the placeholder shapes shimmer.
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(18),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
       child: Shimmer.fromColors(
-        baseColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
-        highlightColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
+        baseColor: cs.onSurface.withValues(alpha: 0.06),
+        highlightColor: cs.onSurface.withValues(alpha: 0.12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 34,
-              height: 34,
+            Container(width: 34, height: 34,
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 10),
+                color: cs.onSurface, shape: BoxShape.circle)),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(height: 10, width: 90, decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(999))),
+                  Container(height: 10, width: 100,
+                    decoration: BoxDecoration(
+                      color: cs.onSurface,
+                      borderRadius: BorderRadius.circular(5))),
                   const SizedBox(height: 8),
-                  Container(height: 10, width: double.infinity, decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(999))),
+                  Container(height: 10, width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: cs.onSurface,
+                      borderRadius: BorderRadius.circular(5))),
                   const SizedBox(height: 6),
-                  Container(height: 10, width: 180, decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(999))),
+                  Container(height: 10, width: 140,
+                    decoration: BoxDecoration(
+                      color: cs.onSurface,
+                      borderRadius: BorderRadius.circular(5))),
                 ],
               ),
             ),
@@ -311,81 +313,112 @@ class _CommentSkeletonRow extends StatelessWidget {
   }
 }
 
-// Deterministic accent color per author — gives each avatar a distinct,
-// consistent gradient instead of a single flat tint for every commenter.
-const _kAvatarGradients = [
-  [Color(0xFFFF6B6B), Color(0xFFEE5A6F)],
-  [Color(0xFF6C5CE7), Color(0xFF4834D4)],
-  [Color(0xFF00B894), Color(0xFF00CEC9)],
-  [Color(0xFFFDA085), Color(0xFFF6784E)],
-  [Color(0xFF4A90D9), Color(0xFF2E6FBE)],
-  [Color(0xFFA55EEA), Color(0xFF8854D0)],
+// ─── Avatar Colors ───────────────────────────────────────────
+const _kAvatarColors = [
+  Color(0xFFFF6B6B),
+  Color(0xFF6C5CE7),
+  Color(0xFF00B894),
+  Color(0xFFFDA085),
+  Color(0xFF4A90D9),
+  Color(0xFFA55EEA),
+  Color(0xFFFF9FF3),
+  Color(0xFF2ED573),
 ];
 
-class _CommentRow extends StatelessWidget {
+// ─── Comment Row ─────────────────────────────────────────────
+class _CommentRow extends ConsumerWidget {
   final String text;
   final String author;
   final DateTime createdAt;
-  final ColorScheme colorScheme;
-  const _CommentRow({required this.text, required this.author, required this.createdAt, required this.colorScheme});
+  final ColorScheme cs;
+  final bool isLast;
+  const _CommentRow({
+    required this.text, required this.author,
+    required this.createdAt, required this.cs,
+    this.isLast = false,
+  });
 
   String _timeAgo(DateTime date) {
     final diff = DateTime.now().difference(date);
-    if (diff.inMinutes < 1) return 'à l\'instant';
-    if (diff.inHours < 1) return 'il y a ${diff.inMinutes} min';
-    if (diff.inDays < 1) return 'il y a ${diff.inHours}h';
-    if (diff.inDays < 7) return 'il y a ${diff.inDays}j';
-    return '${date.day}/${date.month}/${date.year}';
+    if (diff.inMinutes < 1) return 'maintenant';
+    if (diff.inHours < 1) return '${diff.inMinutes}min';
+    if (diff.inDays < 1) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}j';
+    return '${date.day}/${date.month}';
   }
 
   @override
-  Widget build(BuildContext context) {
-    final gradient = _kAvatarGradients[author.hashCode.abs() % _kAvatarGradients.length];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mascot = ref.watch(mascotProvider);
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(18),
-      ),
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Mascot avatar
           Container(
             width: 34, height: 34,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
-                colors: gradient,
-              ),
               shape: BoxShape.circle,
+              color: cs.primary.withValues(alpha: 0.10),
             ),
-            child: Center(
-              child: Text(author.isNotEmpty ? author[0].toUpperCase() : '?',
-                style: GoogleFonts.outfit(
-                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+            child: ClipOval(
+              child: MascotWidget(
+                type: mascot.type, mood: mascot.mood, size: 34),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
+
+          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(author,
-                      style: GoogleFonts.inter(
-                        fontSize: 12.5, fontWeight: FontWeight.w700, color: colorScheme.onSurface)),
-                    const SizedBox(width: 8),
+                // Name + text in a bubble
+                Container(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withValues(alpha: 0.04),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(4),
+                      topRight: Radius.circular(18),
+                      bottomLeft: Radius.circular(18),
+                      bottomRight: Radius.circular(18),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(author,
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5, fontWeight: FontWeight.w700,
+                          color: cs.onSurface)),
+                      const SizedBox(height: 3),
+                      Text(text,
+                        style: GoogleFonts.inter(
+                          fontSize: 13.5,
+                          color: cs.onSurface.withValues(alpha: 0.8),
+                          height: 1.4)),
+                    ],
+                  ),
+                ),
+
+                // Meta row: time + reply
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 6, 0, 8),
+                  child: Row(children: [
                     Text(_timeAgo(createdAt),
                       style: GoogleFonts.inter(
-                        fontSize: 11, color: colorScheme.onSurface.withValues(alpha: 0.5))),
-                  ],
+                        fontSize: 11.5, fontWeight: FontWeight.w500,
+                        color: cs.onSurface.withValues(alpha: 0.3))),
+                    const SizedBox(width: 16),
+                    Text('Répondre',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5, fontWeight: FontWeight.w700,
+                        color: cs.onSurface.withValues(alpha: 0.3))),
+                  ]),
                 ),
-                const SizedBox(height: 4),
-                Text(text,
-                  style: GoogleFonts.inter(
-                    fontSize: 13.5, color: colorScheme.onSurface, height: 1.45)),
               ],
             ),
           ),
