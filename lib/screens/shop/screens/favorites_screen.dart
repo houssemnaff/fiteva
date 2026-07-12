@@ -12,28 +12,15 @@ import 'boutique_detail_screen.dart';
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
 
-  // ── Color helpers (brightness-inline) ─────────────────────────────────────
+  // ── Color helpers — dérivés du ColorScheme du thème actif (palette Pro) ────
 
-  Color _bg(Brightness b) =>
-      b == Brightness.light ? const Color(0xFFF5F5F3) : const Color(0xFF0F0F0F);
-
-  Color _surface(Brightness b) =>
-      b == Brightness.light ? const Color(0xFFFFFFFF) : const Color(0xFF1C1C1C);
-
-  Color _ink(Brightness b) =>
-      b == Brightness.light ? const Color(0xFF111110) : const Color(0xFFF2F2F0);
-
-  Color _inkMuted(Brightness b) =>
-      b == Brightness.light ? const Color(0xFF777774) : const Color(0xFF8A8A88);
-
-  Color _inkSubtle(Brightness b) =>
-      b == Brightness.light ? const Color(0xFFAAAAAA) : const Color(0xFF5C5C5A);
-
-  Color _divider(Brightness b) =>
-      b == Brightness.light ? const Color(0xFFE5E5E3) : const Color(0xFF2A2A28);
-
-  Color _chipBg(Brightness b) =>
-      b == Brightness.light ? const Color(0xFFEBEBEA) : const Color(0xFF272725);
+  Color _bg(ColorScheme cs)     => cs.surface;
+  Color _surface(ColorScheme cs) => cs.surface;
+  Color _ink(ColorScheme cs)     => cs.onSurface;
+  Color _inkMuted(ColorScheme cs) => cs.onSurface.withValues(alpha: 0.55);
+  Color _inkSubtle(ColorScheme cs) => cs.onSurface.withValues(alpha: 0.35);
+  Color _divider(ColorScheme cs) => cs.outline;
+  Color _chipBg(ColorScheme cs)  => cs.surfaceContainerHighest;
 
   Color _goldSurface(Brightness b) =>
       b == Brightness.light ? const Color(0xFFF7EDD8) : const Color(0xFF2A2010);
@@ -41,6 +28,7 @@ class FavoritesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final brightness = Theme.of(context).brightness;
+    final cs = Theme.of(context).colorScheme;
     final wishlist  = ref.watch(shopWishlistProvider);
     final allItems  = ref.watch(shopItemsProvider).asData?.value ?? <BoutiqueItem>[];
     final favorites = allItems.where((e) => wishlist.contains(e.id)).toList();
@@ -65,15 +53,15 @@ class FavoritesScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: _bg(brightness),
+      backgroundColor: _bg(cs),
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(context),
             Expanded(
               child: favorites.isEmpty
-                  ? _buildEmptyState(brightness)
-                  : _buildList(context, ref, favorites, brightness, removeFromWishlist),
+                  ? _buildEmptyState(brightness, cs)
+                  : _buildList(context, ref, favorites, brightness, cs, removeFromWishlist),
             ),
           ],
         ),
@@ -84,13 +72,12 @@ class FavoritesScreen extends ConsumerWidget {
   // ── Header ─────────────────────────────────────────────────────────────────
 
   Widget _buildHeader(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final dark = brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 8, 20, 12),
       decoration: BoxDecoration(
-        color: _surface(brightness),
-        border: Border(bottom: BorderSide(color: _divider(brightness), width: 0.5)),
+        color: _surface(cs),
+        border: Border(bottom: BorderSide(color: _divider(cs), width: 0.5)),
       ),
       child: Row(
         children: [
@@ -100,7 +87,7 @@ class FavoritesScreen extends ConsumerWidget {
               width: 40, height: 40,
               alignment: Alignment.center,
               color: Colors.transparent,
-              child: Icon(CupertinoIcons.chevron_left, color: _ink(brightness), size: 20),
+              child: Icon(CupertinoIcons.chevron_left, color: _ink(cs), size: 20),
             ),
           ),
           const SizedBox(width: 4),
@@ -110,16 +97,16 @@ class FavoritesScreen extends ConsumerWidget {
                 Container(
                   width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1C4D30).withValues(alpha: dark ? 0.2 : 0.1),
+                    color: cs.primary.withValues(alpha: cs.brightness == Brightness.dark ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(CupertinoIcons.heart_fill, size: 15, color: Color(0xFF1C4D30)),
+                  child: Icon(CupertinoIcons.heart_fill, size: 15, color: cs.primary),
                 ),
                 const SizedBox(width: 10),
                 Text(
                   'Mes favoris',
                   style: TextStyle(
-                    color: _ink(brightness),
+                    color: _ink(cs),
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.4,
@@ -135,7 +122,7 @@ class FavoritesScreen extends ConsumerWidget {
 
   // ── List ───────────────────────────────────────────────────────────────────
 
-  Widget _buildList(BuildContext context, WidgetRef ref, List<BoutiqueItem> items, Brightness brightness, Function(BoutiqueItem) removeFromWishlist) {
+  Widget _buildList(BuildContext context, WidgetRef ref, List<BoutiqueItem> items, Brightness brightness, ColorScheme cs, Function(BoutiqueItem) removeFromWishlist) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       itemCount: items.length,
@@ -151,12 +138,12 @@ class FavoritesScreen extends ConsumerWidget {
             builder: (_) => BoutiqueDetailScreen(item: items[i]),
           ),
         ),
-        surface: _surface(brightness),
-        ink: _ink(brightness),
-        inkMuted: _inkMuted(brightness),
-        inkSubtle: _inkSubtle(brightness),
-        dividerColor: _divider(brightness),
-        chipBg: _chipBg(brightness),
+        surface: _surface(cs),
+        ink: _ink(cs),
+        inkMuted: _inkMuted(cs),
+        inkSubtle: _inkSubtle(cs),
+        dividerColor: _divider(cs),
+        chipBg: _chipBg(cs),
         goldSurface: _goldSurface(brightness),
       ),
     );
@@ -164,7 +151,7 @@ class FavoritesScreen extends ConsumerWidget {
 
   // ── Empty state ────────────────────────────────────────────────────────────
 
-  Widget _buildEmptyState(Brightness brightness) {
+  Widget _buildEmptyState(Brightness brightness, ColorScheme cs) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -175,13 +162,13 @@ class FavoritesScreen extends ConsumerWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFF1C4D30).withValues(alpha: brightness == Brightness.dark ? 0.15 : 0.08),
+                color: cs.primary.withValues(alpha: brightness == Brightness.dark ? 0.15 : 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 CupertinoIcons.heart_fill,
                 size: 32,
-                color: Color(0xFF1C4D30),
+                color: cs.primary,
               ),
             ),
             const SizedBox(height: 20),
@@ -190,7 +177,7 @@ class FavoritesScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: _ink(brightness),
+                color: _ink(cs),
                 letterSpacing: -0.4,
               ),
             ),
@@ -200,7 +187,7 @@ class FavoritesScreen extends ConsumerWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: _inkMuted(brightness),
+                color: _inkMuted(cs),
                 height: 1.5,
               ),
             ),

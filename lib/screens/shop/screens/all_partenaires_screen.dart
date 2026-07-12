@@ -7,35 +7,42 @@ import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PALETTE — fond blanc pur, séparation par filets fins plutôt que par cartes
-// ombrées. Vert de marque en accent unique, or pour les points, rouge wishlist.
+// PALETTE — dérivée du ColorScheme du thème actif (donc de la palette Pro),
+// même logique que community_screen.dart / boutique_screen.dart.
+// Or = points, rouge = wishlist : couleurs sémantiques fixes.
 // ─────────────────────────────────────────────────────────────────────────────
 class _P {
   final Color bg, surface, surfaceAlt, ink, inkMuted, inkSubtle, divider, chipBg;
+  final Color accent, accentSoft;
   final bool  isDark;
 
-  static const Color brand   = Color(0xFF1C4D30);
   static const Color gold    = Color(0xFFB8892F);
   static const Color wishRed = Color(0xFFC24A4A);
 
-  static _P of(BuildContext ctx) {
-    final dark = Theme.of(ctx).brightness == Brightness.dark;
-    return dark ? const _P._dark() : const _P._light();
+  factory _P.of(BuildContext ctx) {
+    final cs = Theme.of(ctx).colorScheme;
+    return _P._(
+      bg:         cs.surface,
+      surface:    cs.surface,
+      surfaceAlt: cs.surfaceContainerHighest,
+      ink:        cs.onSurface,
+      inkMuted:   cs.onSurface.withValues(alpha: 0.55),
+      inkSubtle:  cs.onSurface.withValues(alpha: 0.35),
+      divider:    cs.outline,
+      chipBg:     cs.surfaceContainerHighest,
+      accent:     cs.primary,
+      accentSoft: cs.secondaryContainer,
+      isDark:     cs.brightness == Brightness.dark,
+    );
   }
 
-  const _P._light()
-      : bg = Colors.white, surface = Colors.white,
-        surfaceAlt = const Color(0xFFF4F4F1), ink = const Color(0xFF16211A),
-        inkMuted = const Color(0xFF6E786F), inkSubtle = const Color(0xFFA8AEA6),
-        divider = const Color(0xFFECECE8), chipBg = const Color(0xFFF4F4F1),
-        isDark = false;
-
-  const _P._dark()
-      : bg = const Color(0xFF10140F), surface = const Color(0xFF1A1F19),
-        surfaceAlt = const Color(0xFF232923), ink = const Color(0xFFEDF2EC),
-        inkMuted = const Color(0xFF919C90), inkSubtle = const Color(0xFF5C645B),
-        divider = const Color(0xFF2A302A), chipBg = const Color(0xFF232923),
-        isDark = true;
+  const _P._({
+    required this.bg, required this.surface, required this.surfaceAlt,
+    required this.ink, required this.inkMuted, required this.inkSubtle,
+    required this.divider, required this.chipBg,
+    required this.accent, required this.accentSoft,
+    required this.isDark,
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -257,7 +264,7 @@ class _SearchField extends StatelessWidget {
                 border: InputBorder.none,
                 isDense: true,
               ),
-              cursorColor: _P.brand,
+              cursorColor: p.accent,
               cursorWidth: 1.5,
             ),
           ),
@@ -294,9 +301,9 @@ class _CatPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 15),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? _P.brand : Colors.transparent,
+          color: isSelected ? p.accent : Colors.transparent,
           borderRadius: BorderRadius.circular(17),
-          border: Border.all(color: isSelected ? _P.brand : p.divider, width: 1.2),
+          border: Border.all(color: isSelected ? p.accent : p.divider, width: 1.2),
         ),
         child: Text(label,
             style: TextStyle(
@@ -371,7 +378,7 @@ class _PartnerRow extends StatelessWidget {
                   Row(children: [
                     if (item.discount.isNotEmpty) ...[
                       Text(item.discount,
-                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: _P.brand)),
+                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: p.accent)),
                       const SizedBox(width: 8),
                       Container(width: 3, height: 3, decoration: BoxDecoration(color: p.divider, shape: BoxShape.circle)),
                       const SizedBox(width: 8),

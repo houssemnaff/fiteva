@@ -14,8 +14,10 @@ import 'partner_form_screen.dart';
 import 'redemption_history_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// COLOR PALETTE — un seul accent (couleur de marque de l'app), gris neutre
-// pour le reste. Doré = points/étoiles, rouge = wishlist uniquement.
+// COLOR PALETTE — dérivée du ColorScheme du thème actif (donc de la palette
+// Pro choisie dans theme_screen.dart), même logique que community_screen.dart.
+// Doré = points/étoiles, rouge = wishlist : couleurs sémantiques fixes,
+// volontairement indépendantes de la marque (cf. commentaire d'origine).
 // ─────────────────────────────────────────────────────────────────────────────
 class _C {
   final Color bg;
@@ -26,39 +28,43 @@ class _C {
   final Color inkSubtle;
   final Color divider;
   final Color chipBg;
+  final Color accent;
+  final Color accentSoft;
   final bool  isDark;
 
-  static const Color brand     = Color(0xFF1C4D30);
-  static const Color brandSoft = Color(0xFFE7EFE9);
-  static const Color gold      = Color(0xFFB8892F);
-  static const Color wishRed   = Color(0xFFC24A4A);
+  static const Color gold    = Color(0xFFB8892F);
+  static const Color wishRed = Color(0xFFC24A4A);
 
-  static _C of(BuildContext ctx) {
-    final dark = Theme.of(ctx).brightness == Brightness.dark;
-    return dark ? const _C._dark() : const _C._light();
+  factory _C.of(BuildContext ctx) {
+    final cs = Theme.of(ctx).colorScheme;
+    return _C._(
+      bg:         cs.surface,
+      surface:    cs.surface,
+      surfaceAlt: cs.surfaceContainerHighest,
+      ink:        cs.onSurface,
+      inkMuted:   cs.onSurface.withValues(alpha: 0.55),
+      inkSubtle:  cs.onSurface.withValues(alpha: 0.35),
+      divider:    cs.outline,
+      chipBg:     cs.surfaceContainerHighest,
+      accent:     cs.primary,
+      accentSoft: cs.secondaryContainer,
+      isDark:     cs.brightness == Brightness.dark,
+    );
   }
 
-  const _C._light()
-      : bg         = const Color.fromARGB(255, 255, 255, 255),
-        surface    = const Color(0xFFFFFFFF),
-        surfaceAlt = const Color(0xFFEFEFEB),
-        ink        = const Color(0xFF16211A),
-        inkMuted   = const Color(0xFF6E786F),
-        inkSubtle  = const Color(0xFFA8AEA6),
-        divider    = const Color(0xFFE6E6E1),
-        chipBg     = const Color(0xFFEFEFEB),
-        isDark     = false;
-
-  const _C._dark()
-      : bg         = const Color(0xFF10140F),
-        surface    = const Color(0xFF1A1F19),
-        surfaceAlt = const Color(0xFF232923),
-        ink        = const Color(0xFFEDF2EC),
-        inkMuted   = const Color(0xFF919C90),
-        inkSubtle  = const Color(0xFF5C645B),
-        divider    = const Color(0xFF2A302A),
-        chipBg     = const Color(0xFF232923),
-        isDark     = true;
+  const _C._({
+    required this.bg,
+    required this.surface,
+    required this.surfaceAlt,
+    required this.ink,
+    required this.inkMuted,
+    required this.inkSubtle,
+    required this.divider,
+    required this.chipBg,
+    required this.accent,
+    required this.accentSoft,
+    required this.isDark,
+  });
 }
 
 List<BoxShadow> _cardShadow(_C c) => c.isDark
@@ -246,7 +252,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
           SharedAppHeader.sliver(
             eyebrow:    l10n.boutiqueEyebrow,
             title:      l10n.boutiqueTitle,
-            accentColor: _C.brand,
+            accentColor: c.accent,
             bgColor:     c.bg,
             actions: [
               _PointsPill(c: c, points: userPoints),
@@ -406,7 +412,7 @@ class _PointsPill extends StatelessWidget {
       height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: _C.brand,
+        color: c.accent,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -615,7 +621,7 @@ class _HeroBanner extends StatelessWidget {
               width: active ? 16 : 5,
               height: 5,
               decoration: BoxDecoration(
-                color: active ? _C.brand : c.divider,
+                color: active ? c.accent : c.divider,
                 borderRadius: BorderRadius.circular(3),
               ),
             );
@@ -645,12 +651,12 @@ class _PartnerLink extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Row(
         children: [
-          Icon(Icons.handshake_rounded, size: 15, color: _C.brand),
+          Icon(Icons.handshake_rounded, size: 15, color: c.accent),
           const SizedBox(width: 8),
           Text(l10n.boutiquePartner,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _C.brand)),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.accent)),
           const SizedBox(width: 4),
-          Icon(CupertinoIcons.chevron_right, size: 12, color: _C.brand),
+          Icon(CupertinoIcons.chevron_right, size: 12, color: c.accent),
         ],
       ),
     );
@@ -736,15 +742,15 @@ class _SortLink extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(CupertinoIcons.arrow_up_arrow_down, size: 12, color: active ? _C.brand : c.inkMuted),
+          Icon(CupertinoIcons.arrow_up_arrow_down, size: 12, color: active ? c.accent : c.inkMuted),
           const SizedBox(width: 5),
           Text(l10n.boutiqueTrier,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: active ? _C.brand : c.inkMuted,
+                color: active ? c.accent : c.inkMuted,
                 decoration: TextDecoration.underline,
-                decorationColor: active ? _C.brand : c.inkMuted,
+                decorationColor: active ? c.accent : c.inkMuted,
               )),
           if (active) ...[
             const SizedBox(width: 4),
@@ -780,7 +786,7 @@ class _CatAvatar extends StatelessWidget {
             duration: const Duration(milliseconds: 180),
             width: 42, height: 42,
             decoration: BoxDecoration(
-              color: isSelected ? _C.brand : c.chipBg,
+              color: isSelected ? c.accent : c.chipBg,
               shape: BoxShape.circle,
               border: isSelected ? Border.all(color: _C.gold, width: 1.6) : null,
             ),
@@ -875,7 +881,7 @@ class _SortSheet extends StatelessWidget {
                   GestureDetector(
                     onTap: onClear,
                     child: Text(l10n.boutiqueClear,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _C.brand)),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.accent)),
                   ),
               ],
             ),
@@ -894,9 +900,9 @@ class _SortSheet extends StatelessWidget {
                     duration: const Duration(milliseconds: 160),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isSel ? _C.brand : c.chipBg,
+                      color: isSel ? c.accent : c.chipBg,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: isSel ? _C.brand : c.divider, width: 1),
+                      border: Border.all(color: isSel ? c.accent : c.divider, width: 1),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -952,7 +958,7 @@ class _EmptyState extends StatelessWidget {
             onTap: onReset,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 13),
-              decoration: BoxDecoration(color: _C.brand, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(12)),
               child: Text(l10n.boutiqueReset,
                   style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white)),
             ),
@@ -1106,12 +1112,12 @@ class _RedeemedTag extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: _C.brandSoft, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: c.accentSoft, borderRadius: BorderRadius.circular(8)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.check_circle_rounded, size: 11, color: _C.brand),
+        Icon(Icons.check_circle_rounded, size: 11, color: c.accent),
         const SizedBox(width: 4),
         Flexible(child: Text(label, overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: _C.brand, fontSize: 10.5, fontWeight: FontWeight.w700))),
+            style: TextStyle(color: c.accent, fontSize: 10.5, fontWeight: FontWeight.w700))),
       ]),
     );
   }

@@ -6,7 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ── Colors ───────────────────────────────────────────────────────────────────
-const _brand  = Color(0xFF1C4D30);
+// L'accent de marque vient du ColorScheme du thème actif (palette Pro) —
+// voir `cs.primary` dans build(). errRed reste une couleur d'erreur fixe.
 const _errRed = Color(0xFFC24A4A);
 
 // ── Categories ───────────────────────────────────────────────────────────────
@@ -96,12 +97,14 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
 
   void _showSuccess() {
     final d = Theme.of(context).brightness == Brightness.dark;
+    final accent = Theme.of(context).colorScheme.primary;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _SuccessSheet(
         isDark: d,
+        accent: accent,
         onClose: () { Navigator.pop(context); Navigator.pop(context); },
       ),
     );
@@ -111,13 +114,15 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
   Widget build(BuildContext context) {
     final l10n  = ref.watch(l10nProvider);
     final d     = Theme.of(context).brightness == Brightness.dark;
-    final bg    = d ? const Color(0xFF10140F) : const Color.fromARGB(255, 255, 255, 255);
-    final surf  = d ? const Color(0xFF1A1F19) : Colors.white;
-    final ink   = d ? const Color(0xFFEDF2EC) : const Color(0xFF16211A);
-    final muted = d ? const Color(0xFF919C90) : const Color(0xFF6E786F);
-    final line  = d ? const Color(0xFF2A302A) : const Color(0xFFECECE8);
+    final cs    = Theme.of(context).colorScheme;
+    final accent = cs.primary;
+    final bg    = cs.surface;
+    final surf  = cs.surface;
+    final ink   = cs.onSurface;
+    final muted = cs.onSurface.withValues(alpha: 0.55);
+    final line  = cs.outline;
     final shadow = d ? <BoxShadow>[] : [
-      BoxShadow(color: const Color(0xFF16211A).withValues(alpha: 0.05), blurRadius: 18, offset: const Offset(0, 6)),
+      BoxShadow(color: ink.withValues(alpha: 0.05), blurRadius: 18, offset: const Offset(0, 6)),
     ];
 
     return GestureDetector(
@@ -155,7 +160,7 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                 Container(
                   padding: const EdgeInsets.fromLTRB(14, 12, 16, 12),
                   decoration: BoxDecoration(
-                    color: _brand,
+                    color: accent,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -187,15 +192,15 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
 
                 // ── Coordonnées ────────────────────────────────────────────
                 _SectionCard(
-                  surf: surf, line: line, shadow: shadow,
+                  surf: surf, line: line, shadow: shadow, accent: accent,
                   icon: CupertinoIcons.person_fill, title: l10n.formCoordonnees, ink: ink,
                   children: [
                     _field(ctrl: _nameCtrl, label: l10n.formNomComplet, icon: CupertinoIcons.person,
-                        ink: ink, muted: muted, line: line, d: d,
+                        ink: ink, muted: muted, line: line, accent: accent, fill: cs.surfaceContainerHighest,
                         validator: (v) => v!.trim().isEmpty ? l10n.formChampRequis : null),
                     const SizedBox(height: 12),
                     _field(ctrl: _emailCtrl, label: l10n.formEmail, icon: CupertinoIcons.mail,
-                        ink: ink, muted: muted, line: line, d: d,
+                        ink: ink, muted: muted, line: line, accent: accent, fill: cs.surfaceContainerHighest,
                         keyboard: TextInputType.emailAddress,
                         validator: (v) {
                           if (v!.trim().isEmpty) return l10n.formChampRequis;
@@ -204,7 +209,7 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                         }),
                     const SizedBox(height: 12),
                     _field(ctrl: _phoneCtrl, label: l10n.formTelephone, icon: CupertinoIcons.phone,
-                        ink: ink, muted: muted, line: line, d: d, keyboard: TextInputType.phone,
+                        ink: ink, muted: muted, line: line, accent: accent, fill: cs.surfaceContainerHighest, keyboard: TextInputType.phone,
                         inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s]'))]),
                   ],
                 ),
@@ -212,19 +217,19 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
 
                 // ── Marque ─────────────────────────────────────────────────
                 _SectionCard(
-                  surf: surf, line: line, shadow: shadow,
+                  surf: surf, line: line, shadow: shadow, accent: accent,
                   icon: CupertinoIcons.bag_fill, title: l10n.formVotreMarque, ink: ink,
                   children: [
                     _field(ctrl: _brandCtrl, label: l10n.formNomMarque, icon: CupertinoIcons.bag,
-                        ink: ink, muted: muted, line: line, d: d,
+                        ink: ink, muted: muted, line: line, accent: accent, fill: cs.surfaceContainerHighest,
                         validator: (v) => v!.trim().isEmpty ? l10n.formChampRequis : null),
                     const SizedBox(height: 12),
                     _field(ctrl: _websiteCtrl, label: l10n.formSiteWeb, icon: CupertinoIcons.link,
-                        ink: ink, muted: muted, line: line, d: d,
+                        ink: ink, muted: muted, line: line, accent: accent, fill: cs.surfaceContainerHighest,
                         hint: 'https://…  ou  @votremarque', keyboard: TextInputType.url),
                     const SizedBox(height: 12),
                     _field(ctrl: _messageCtrl, label: l10n.formPresenter, icon: CupertinoIcons.text_alignleft,
-                        ink: ink, muted: muted, line: line, d: d, hint: l10n.formProduits, lines: 3),
+                        ink: ink, muted: muted, line: line, accent: accent, fill: cs.surfaceContainerHighest, hint: l10n.formProduits, lines: 3),
                     const SizedBox(height: 14),
                     Text(l10n.formCategorie.toUpperCase(),
                         style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: muted, letterSpacing: 1.2)),
@@ -240,9 +245,9 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                             duration: const Duration(milliseconds: 160),
                             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
                             decoration: BoxDecoration(
-                              color: sel ? _brand : (d ? const Color(0xFF232923) : const Color(0xFFF4F4F1)),
+                              color: sel ? accent : cs.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: sel ? _brand : line, width: 1),
+                              border: Border.all(color: sel ? accent : line, width: 1),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -273,9 +278,9 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                         duration: const Duration(milliseconds: 160),
                         width: 20, height: 20,
                         decoration: BoxDecoration(
-                          color: _agreed ? _brand : Colors.transparent,
+                          color: _agreed ? accent : Colors.transparent,
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: _agreed ? _brand : line, width: 1.5),
+                          border: Border.all(color: _agreed ? accent : line, width: 1.5),
                         ),
                         child: _agreed ? const Icon(Icons.check_rounded, color: Colors.white, size: 13) : null,
                       ),
@@ -287,8 +292,8 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                             TextSpan(text: l10n.formJAccepte),
                             TextSpan(
                               text: l10n.formConditions,
-                              style: const TextStyle(color: _brand, fontWeight: FontWeight.w600,
-                                  decoration: TextDecoration.underline, decorationColor: _brand),
+                              style: TextStyle(color: accent, fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.underline, decorationColor: accent),
                             ),
                             TextSpan(text: l10n.formDeFiteva),
                           ],
@@ -305,8 +310,8 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                   child: ElevatedButton(
                     onPressed: _loading ? null : _onSubmit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _brand,
-                      disabledBackgroundColor: _brand.withValues(alpha: 0.5),
+                      backgroundColor: accent,
+                      disabledBackgroundColor: accent.withValues(alpha: 0.5),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       elevation: 0,
@@ -348,14 +353,14 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
     required Color ink,
     required Color muted,
     required Color line,
-    required bool d,
+    required Color accent,
+    required Color fill,
     String? hint,
     TextInputType? keyboard,
     int lines = 1,
     String? Function(String?)? validator,
     List<TextInputFormatter>? inputFormatters,
   }) {
-    final fill = d ? const Color(0xFF232923) : const Color(0xFFF4F4F1);
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(13),
       borderSide: BorderSide.none,
@@ -384,7 +389,7 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
         enabledBorder: border,
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: _brand, width: 1.4),
+          borderSide: BorderSide(color: accent, width: 1.4),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
@@ -408,6 +413,7 @@ class _SectionCard extends StatelessWidget {
   final Color surf;
   final Color line;
   final Color ink;
+  final Color accent;
   final List<BoxShadow> shadow;
   final IconData icon;
   final String title;
@@ -417,6 +423,7 @@ class _SectionCard extends StatelessWidget {
     required this.surf,
     required this.line,
     required this.ink,
+    required this.accent,
     required this.shadow,
     required this.icon,
     required this.title,
@@ -440,8 +447,8 @@ class _SectionCard extends StatelessWidget {
             children: [
               Container(
                 width: 28, height: 28,
-                decoration: BoxDecoration(color: _brand.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
-                child: Icon(icon, size: 14, color: _brand),
+                decoration: BoxDecoration(color: accent.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
+                child: Icon(icon, size: 14, color: accent),
               ),
               const SizedBox(width: 10),
               Text(title, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: ink)),
@@ -458,8 +465,9 @@ class _SectionCard extends StatelessWidget {
 // ── Success Sheet ─────────────────────────────────────────────────────────────
 class _SuccessSheet extends ConsumerStatefulWidget {
   final bool isDark;
+  final Color accent;
   final VoidCallback onClose;
-  const _SuccessSheet({required this.isDark, required this.onClose});
+  const _SuccessSheet({required this.isDark, required this.accent, required this.onClose});
 
   @override
   ConsumerState<_SuccessSheet> createState() => _SuccessSheetState();
@@ -488,11 +496,12 @@ class _SuccessSheetState extends ConsumerState<_SuccessSheet>
   @override
   Widget build(BuildContext context) {
     final l10n    = ref.watch(l10nProvider);
-    final surface = widget.isDark ? const Color(0xFF1A1F19) : Colors.white;
-    final ink     = widget.isDark ? const Color(0xFFEDF2EC) : const Color(0xFF16211A);
-    final muted   = widget.isDark ? const Color(0xFF919C90) : const Color(0xFF6E786F);
-    final handle  = widget.isDark ? const Color(0xFF2A302A) : const Color(0xFFE6E6E1);
-    final line    = widget.isDark ? const Color(0xFF2A302A) : const Color(0xFFECECE8);
+    final cs      = Theme.of(context).colorScheme;
+    final surface = cs.surface;
+    final ink     = cs.onSurface;
+    final muted   = cs.onSurface.withValues(alpha: 0.55);
+    final handle  = cs.outline;
+    final line    = cs.outline;
 
     return FadeTransition(
       opacity: _fade,
@@ -515,10 +524,10 @@ class _SuccessSheetState extends ConsumerState<_SuccessSheet>
               child: Container(
                 width: 72, height: 72,
                 decoration: BoxDecoration(
-                  color: _brand.withValues(alpha: widget.isDark ? 0.18 : 0.10),
+                  color: widget.accent.withValues(alpha: widget.isDark ? 0.18 : 0.10),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_rounded, color: _brand, size: 34),
+                child: Icon(Icons.check_rounded, color: widget.accent, size: 34),
               ),
             ),
             const SizedBox(height: 20),
@@ -544,7 +553,7 @@ class _SuccessSheetState extends ConsumerState<_SuccessSheet>
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       children: [
-                        const Icon(Icons.circle, size: 6, color: _brand),
+                        Icon(Icons.circle, size: 6, color: widget.accent),
                         const SizedBox(width: 10),
                         Expanded(child: Text(s.$1,
                             style: TextStyle(fontSize: 13, color: ink, fontWeight: FontWeight.w500))),
@@ -563,7 +572,7 @@ class _SuccessSheetState extends ConsumerState<_SuccessSheet>
               child: ElevatedButton(
                 onPressed: widget.onClose,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _brand,
+                  backgroundColor: widget.accent,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
