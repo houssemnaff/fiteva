@@ -8,10 +8,20 @@ class WorkoutModel {
   final String level;
   final String imageUrl;
   final String calories;
-  final List<String> exercises;
   final String phases;
   final int points;
+
+  /// Source de vérité unique pour les exercices d'un workout — un
+  /// VideoModel = un exercice (relation workouts.id → videos.workout_id).
   final List<VideoModel> videos;
+
+  /// Colonne Supabase `workouts.exercises` (legacy) — conservée pour
+  /// compatibilité avec le schéma existant, mais NE DOIT PLUS être lue par
+  /// la logique UI. `exercises` et `videos` ne sont pas garantis alignés
+  /// par index (longueurs différentes possibles) — toute logique doit
+  /// utiliser exclusivement [videos] / [exerciseCount] / [videoAt] /
+  /// [exerciseNameAt] / [videoIdAt] ci-dessous.
+  final List<String> exercises;
 
   WorkoutModel({
     required this.id,
@@ -27,8 +37,16 @@ class WorkoutModel {
     this.videos = const [],
   });
 
-  /// Real Supabase `videos.id` for the exercise at [index], or null if no
-  /// matching video row exists (exercises and videos are aligned by index).
-  String? videoIdAt(int index) =>
-      index >= 0 && index < videos.length ? videos[index].id : null;
+  /// Nombre d'exercices — dérivé exclusivement de [videos].
+  int get exerciseCount => videos.length;
+
+  /// Exercice (vidéo) à [index], ou null si hors bornes.
+  VideoModel? videoAt(int index) =>
+      index >= 0 && index < videos.length ? videos[index] : null;
+
+  /// Nom d'exercice affiché — vient de VideoModel.title.
+  String exerciseNameAt(int index) => videoAt(index)?.title ?? '';
+
+  /// Id Supabase de la vidéo à [index] — vient de VideoModel.id.
+  String? videoIdAt(int index) => videoAt(index)?.id;
 }

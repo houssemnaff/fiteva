@@ -7,9 +7,10 @@ class HomeProgramModel {
   final String name;
   final String duration;
   final String phases;
-  final String sessions;
   final Color color;
   final String imageUrl;
+  final String description;
+  final List<String> goals;
 
   /// Semaines du programme (1..n), chacune avec ses workouts.
   final List<ProgramWeekModel> weeks;
@@ -29,10 +30,11 @@ class HomeProgramModel {
     required this.name,
     required this.duration,
     required this.phases,
-    required this.sessions,
     required this.color,
     required this.imageUrl,
     required this.workouts,
+    this.description = '',
+    this.goals = const [],
     this.weeks = const [],
     this.compatibleCycles = const [],
     this.totalPoints = 100,

@@ -29,54 +29,65 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     _loadStatus();
   }
 
-  Future<void> _loadStatus() async {
-    final done = await WorkoutProgressService.getCompletedVideos();
-    final exercises = widget.workout.exercises;
+  /// Nombre de vidéos de CE workout dont l'id est dans [done].
+  int _countDone(Set<String> done) {
     int count = 0;
-    for (int i = 0; i < exercises.length; i++) {
-      final videoId = widget.workout.videoIdAt(i);
-      if (videoId != null && done.contains(videoId)) count++;
+    for (final v in widget.workout.videos) {
+      if (done.contains(v.id)) count++;
     }
-    if (mounted) setState(() { _completedVideos = done; _completedExercises = count; });
+    return count;
   }
 
-  Future<int> _firstIncompleteIndex() async {
-    final done = await WorkoutProgressService.getCompletedVideos();
-    for (int i = 0; i < widget.workout.exercises.length; i++) {
-      final videoId = widget.workout.videoIdAt(i);
-      if (videoId == null || !done.contains(videoId)) return i;
+  /// Premier exercice (vidéo) non terminé (-1 si tout est fait).
+  int _firstIncompleteOf(Set<String> done) {
+    final videos = widget.workout.videos;
+    for (int i = 0; i < videos.length; i++) {
+      if (!done.contains(videos[i].id)) return i;
     }
-    return 0;
+    return -1;
+  }
+
+  Future<void> _loadStatus() async {
+    final done = await WorkoutProgressService.getCompletedVideos();
+    if (mounted) {
+      setState(() {
+        _completedVideos = done;
+        _completedExercises = _countDone(done);
+      });
+    }
   }
 
   Future<void> _openFirstIncomplete() async {
-    final exercises = widget.workout.exercises;
-    final idx = await _firstIncompleteIndex();
-    if (!mounted) return;
-    _openExercise(idx, exercises[idx], widget.workout.videoIdAt(idx) ?? '', false);
+    final done = await WorkoutProgressService.getCompletedVideos();
+    final idx = _firstIncompleteOf(done);
+    if (!mounted || idx < 0) return;
+    _openExercise(idx);
   }
 
-  void _openExercise(int index, String name, String videoId, bool isDone) {
-    final videoUrl = index < widget.workout.videos.length
-        ? widget.workout.videos[index].url
-        : null;
+  /// Ouvre l'exercice à [index] — dérivé exclusivement de
+  /// `widget.workout.videos[index]` (VideoModel = source unique de vérité :
+  /// titre, id, url, métadonnées technique/muscles/tips).
+  void _openExercise(int index) {
+    final video = widget.workout.videoAt(index);
+    if (video == null) return;
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => ExercisePlayerScreen(
         ref: ref,
         workoutTitle: widget.workout.title,
-        exerciseName: name,
-        videoId: videoId,
-        videoUrl: videoUrl?.isNotEmpty == true ? videoUrl : null,
+        exerciseName: video.title,
+        videoId: video.id,
+        videoUrl: video.url.isNotEmpty ? video.url : null,
         exerciseIndex: index,
-        totalExercises: widget.workout.exercises.length,
+        totalExercises: widget.workout.exerciseCount,
         totalWorkoutPoints: widget.workout.points,
+        video: video,
         onCompleted: () {
-          if (!isDone) {
-            setState(() {
-              _completedExercises++;
-              _completedVideos.add(videoId);
-            });
-          }
+          // État dérivé du set réel (idempotent) — un compteur incrémenté
+          // pouvait dériver si la même vidéo était validée deux fois.
+          setState(() {
+            _completedVideos = {..._completedVideos, video.id};
+            _completedExercises = _countDone(_completedVideos);
+          });
         },
         workoutId: widget.workout.id,
         allVideoIds: widget.workout.videos.map((v) => v.id).toList(),
@@ -85,7 +96,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   Future<void> _markCompleteIfNeeded() async {
-    if (_completedExercises >= widget.workout.exercises.length && !_workoutMarkedComplete) {
+    if (_completedExercises >= widget.workout.exerciseCount && !_workoutMarkedComplete) {
       _workoutMarkedComplete = true;
       await WorkoutProgressService.markWorkoutComplete(widget.workout.id);
     }
@@ -95,8 +106,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final exercises = widget.workout.exercises;
-    final progress = exercises.isEmpty ? 0.0 : _completedExercises / exercises.length;
+    final videos = widget.workout.videos;
+    final progress = videos.isEmpty ? 0.0 : _completedExercises / videos.length;
     final l10n = ref.watch(l10nProvider);
 
     final bg     = dark ? const Color(0xFF0F0F0F) : const Color(0xFFF6F6F6);
@@ -225,20 +236,21 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                             strokeCap: StrokeCap.round,
                           ),
                           Text(
-                            '${_completedExercises}/${exercises.length}',
+                            '$_completedExercises/${videos.length}',
                             style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w800, color: t1),
                           ),
                         ]),
                       ),
                     ]),
                     const SizedBox(height: 14),
-                    // Segmented bar
+                    // Segmented bar — chaque segment reflète SA vidéo,
+                    // pas un simple compteur ordonné.
                     Row(
-                      children: List.generate(exercises.length, (i) {
-                        final done = i < _completedExercises;
+                      children: List.generate(videos.length, (i) {
+                        final done = _completedVideos.contains(videos[i].id);
                         return Expanded(
                           child: Container(
-                            margin: EdgeInsets.only(right: i < exercises.length - 1 ? 4 : 0),
+                            margin: EdgeInsets.only(right: i < videos.length - 1 ? 4 : 0),
                             height: 6,
                             decoration: BoxDecoration(
                               color: done ? cs.primary : t3,
@@ -253,25 +265,30 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
                 const SizedBox(height: 8),
 
-                // ── Exercise list ──
+                // ── Exercise list — une ligne par vidéo, source unique ──
                 Container(
                   color: cardBg,
                   padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
                   child: Column(
-                    children: List.generate(exercises.length, (index) {
-                      final name = exercises[index];
-                      final videoId = widget.workout.videoIdAt(index) ?? '';
-                      final isDone = videoId.isNotEmpty && _completedVideos.contains(videoId);
-                      final isCurrent = !isDone && index == _completedExercises;
+                    children: List.generate(videos.length, (index) {
+                      final video = videos[index];
+                      final isDone = _completedVideos.contains(video.id);
+                      // Le cadre « en cours » = premier exercice non terminé
+                      // (et plus un index-compteur qui sautait de travers
+                      // quand une vidéo était finie hors ordre).
+                      final isCurrent =
+                          !isDone && index == _firstIncompleteOf(_completedVideos);
 
                       return GestureDetector(
-                        onTap: () => _openExercise(index, name, videoId, isDone),
+                        onTap: () => _openExercise(index),
                         child: _ExerciseRow(
                           index: index,
-                          name: name,
+                          name: video.title,
                           isDone: isDone,
                           isCurrent: isCurrent,
-                          imageUrl: widget.workout.imageUrl,
+                          imageUrl: video.thumbnailUrl.isNotEmpty
+                              ? video.thumbnailUrl
+                              : widget.workout.imageUrl,
                           l10n: l10n,
                           cs: cs, t1: t1, t2: t2, t3: t3, dark: dark,
                         ),

@@ -85,6 +85,15 @@
 				<string>com.fiteva.fiteva</string>
 			</array>
 		</dict>
+		<!-- Reset password + callback OAuth (redirect URLs configurés dans Supabase) -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.supabase.flutter</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

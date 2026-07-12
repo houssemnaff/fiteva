@@ -13,6 +13,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../l10n/lang.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/auth_service.dart';
 
 // ─── Responsive helpers ────────────────────────────────────────────────────
 // Reference device: 390 × 844 (iPhone 14)
@@ -1121,8 +1122,8 @@ class StepWelcome extends StatefulWidget {
   /// Connecte un compte existant. Retourne un message d'erreur, ou null si ok
   /// (l'appelant saute alors directement dans l'app).
   final Future<String?> Function(String email, String password) onLogin;
-  final VoidCallback? onGoogleSignIn;
-  final VoidCallback? onAppleSignIn;
+  final Future<void> Function()? onGoogleSignIn;
+  final Future<void> Function()? onAppleSignIn;
   final TextEditingController emailController;
   final TextEditingController passwordController;
 
@@ -1152,6 +1153,9 @@ class _StepWelcomeState extends State<StepWelcome>
   bool _obscure      = true;
   String? _error;
   bool _submitting   = false;
+  bool _resetSubmitting = false;
+  bool _googleSubmitting = false;
+  bool _appleSubmitting  = false;
 
   static final RegExp _emailRegex =
       RegExp(r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$');
@@ -1173,6 +1177,47 @@ class _StepWelcomeState extends State<StepWelcome>
         : await widget.onSignUp(email, password);
     if (!mounted) return;
     setState(() { _error = error; _submitting = false; });
+  }
+
+  /// Envoie l'email de réinitialisation via Supabase, à partir de l'email
+  /// déjà saisi dans le champ du formulaire de connexion.
+  Future<void> _forgotPassword() async {
+    final email = widget.emailController.text.trim();
+    if (!_emailRegex.hasMatch(email)) {
+      setState(() => _error = 'Entre ton email ci-dessus pour recevoir le lien de réinitialisation.');
+      return;
+    }
+    setState(() { _resetSubmitting = true; _error = null; });
+    final result = await AuthService.resetPassword(email);
+    if (!mounted) return;
+    setState(() => _resetSubmitting = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(result.isSuccess
+          ? 'Email de réinitialisation envoyé à $email.'
+          : (result.error ?? 'Erreur lors de l\'envoi de l\'email.')),
+      backgroundColor: result.isSuccess ? const Color(0xFF2E7D32) : const Color(0xFFB00020),
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_googleSubmitting || widget.onGoogleSignIn == null) return;
+    setState(() => _googleSubmitting = true);
+    try {
+      await widget.onGoogleSignIn!();
+    } finally {
+      if (mounted) setState(() => _googleSubmitting = false);
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    if (_appleSubmitting || widget.onAppleSignIn == null) return;
+    setState(() => _appleSubmitting = true);
+    try {
+      await widget.onAppleSignIn!();
+    } finally {
+      if (mounted) setState(() => _appleSubmitting = false);
+    }
   }
 
   late final AnimationController _fadeCtrl;
@@ -1340,14 +1385,16 @@ class _StepWelcomeState extends State<StepWelcome>
                 Row(children: [
                   Expanded(
                     child: _GlassSocialBtn(
-                      onTap: widget.onGoogleSignIn ?? () {},
+                      onTap: _handleGoogleSignIn,
+                      loading: _googleSubmitting,
                       child: SvgPicture.asset('assets/images/google-color.svg', width: 20, height: 20),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _GlassSocialBtn(
-                      onTap: widget.onAppleSignIn ?? () {},
+                      onTap: _handleAppleSignIn,
+                      loading: _appleSubmitting,
                       child: Icon(Icons.apple_rounded, color: _kWhite, size: 22),
                     ),
                   ),
@@ -1395,6 +1442,23 @@ class _StepWelcomeState extends State<StepWelcome>
                             ),
                             onChanged: (_) => setState(() { _error = null; }),
                           ),
+                          if (_isLoginMode) ...[
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: GestureDetector(
+                                onTap: _resetSubmitting ? null : _forgotPassword,
+                                child: Text(
+                                  _resetSubmitting
+                                      ? (l10n.isFrench ? 'Envoi en cours...' : 'Sending...')
+                                      : (l10n.isFrench ? 'Mot de passe oublié ?' : 'Forgot password?'),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12.5, fontWeight: FontWeight.w600,
+                                    color: _kWhite.withOpacity(0.85)),
+                                ),
+                              ),
+                            ),
+                          ],
                           if (_error != null) ...[
                             const SizedBox(height: 6),
                             Align(
@@ -1579,12 +1643,13 @@ class _ModeTab extends StatelessWidget {
 class _GlassSocialBtn extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
-  const _GlassSocialBtn({required this.child, required this.onTap});
+  final bool loading;
+  const _GlassSocialBtn({required this.child, required this.onTap, this.loading = false});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: loading ? null : onTap,
       child: Container(
         height: 52,
         decoration: BoxDecoration(
@@ -1592,7 +1657,14 @@ class _GlassSocialBtn extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: _kWhite.withOpacity(0.28)),
         ),
-        child: Center(child: child),
+        child: Center(
+          child: loading
+              ? SizedBox(
+                  width: 18, height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: _kWhite.withOpacity(0.85)),
+                )
+              : child,
+        ),
       ),
     );
   }

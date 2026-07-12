@@ -66,13 +66,7 @@ flutter:
     - assets/images/logfiteva.jpeg
     - assets/images/cover_nutrition.jpg
     - assets/images/
-    - assets/videos/workout1.mp4
-    - assets/videos/workout2.mp4
-    - assets/videos/workout3.mp4
-    - assets/videos/ptitdej.mp4
-    - assets/videos/sante.mov
-    
-    
+    - assets/videos/
     - assets/fetus_sheet.png
     - assets/fetus/
 

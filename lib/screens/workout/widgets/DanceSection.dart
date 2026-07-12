@@ -194,6 +194,7 @@ class _DanceVideoCard extends ConsumerWidget {
             onCompleted: () {},
             workoutId: null,
             allVideoIds: null,
+            video: video,
           ),
         ),
       ),

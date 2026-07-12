@@ -289,7 +289,7 @@ class _MaisonProgramCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${program.duration} · ${program.sessions}',
+                      program.duration,
                       style: GoogleFonts.inter(
                         color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 12.5,
