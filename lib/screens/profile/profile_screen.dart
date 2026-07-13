@@ -1,5 +1,6 @@
+import 'package:fiteva/models/points_model.dart';
+import 'package:fiteva/providers/diamonds_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
-import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/providers/locale_provider.dart';
 import 'package:fiteva/services/auth_service.dart';
 import 'package:fiteva/services/storage_service.dart';
@@ -48,9 +49,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(xpProvider.notifier).reload();
-      ref.read(pointsProvider.notifier).loadPoints();
+      ref.read(pointsProvider.notifier).reload();
+      ref.read(diamondsProvider.notifier).loadDiamonds();
     });
+  }
+
+  void _showLevelsSheet(BuildContext context, PointsModel xp) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LevelsSheet(xp: xp),
+    );
   }
 
   @override
@@ -60,8 +70,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
     final cs         = Theme.of(context).colorScheme;
     final l10n       = ref.watch(l10nProvider);
-    final points     = ref.watch(pointsProvider);
-    final xp         = ref.watch(xpProvider);
+    final diamonds   = ref.watch(diamondsProvider);
+    final xp         = ref.watch(pointsProvider);
     final mascot     = ref.watch(mascotProvider);
 
     final displayName = profile.username.isNotEmpty ? profile.username : user.username;
@@ -254,10 +264,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       SizedBox(
                         width: itemWidth,
                         child: _StatChip(
-                          icon: LucideIcons.star,
-                          value: '$points',
-                          label: 'pts',
-                          color: const Color(0xFFF59E0B),
+                          icon: LucideIcons.gem,
+                          value: '$diamonds',
+                          label: l10n.profileDiamonds,
+                          color: const Color(0xFF60A5FA),
                           bg: surf, ink: ink, muted: muted,
                         ),
                       ),
@@ -285,13 +295,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Level ${xp.level}',
+                        Text(PointsModel.levelEmojis[xp.level],
+                          style: const TextStyle(fontSize: 14)),
+                        const SizedBox(width: 6),
+                        Text('Level ${xp.level} · ${PointsModel.levelTitles[xp.level]}',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
                             color: green)),
-                        Text('${xp.totalXp} / ${xp.xpForNextLevel} XP',
-                          style: TextStyle(fontSize: 12, color: muted)),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () => _showLevelsSheet(context, xp),
+                          behavior: HitTestBehavior.opaque,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Voir tout',
+                                style: TextStyle(fontSize: 11.5,
+                                  fontWeight: FontWeight.w700, color: green)),
+                              const SizedBox(width: 2),
+                              Icon(LucideIcons.chevronRight, size: 13, color: green),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -305,11 +330,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(green),
                       ),
                     ),
-                    if (xp.xpForNextLevel - xp.totalXp > 0) ...[
-                      const SizedBox(height: 6),
-                      Text(l10n.profileXpToNext(xp.xpForNextLevel - xp.totalXp),
-                        style: TextStyle(fontSize: 11, color: muted)),
-                    ],
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (xp.pointsForNextLevel - xp.totalPoints > 0)
+                          Expanded(
+                            child: Text(
+                              l10n.profileXpToNext(xp.pointsForNextLevel - xp.totalPoints),
+                              style: TextStyle(fontSize: 11, color: muted)),
+                          )
+                        else
+                          Text('Niveau maximum atteint 👑',
+                            style: TextStyle(fontSize: 11, color: muted)),
+                        Text('${xp.totalPoints} / ${xp.pointsForNextLevel} pts',
+                          style: TextStyle(fontSize: 11, color: muted)),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -1054,7 +1091,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     await notifier.updateField('height_cm', height ?? widget.profile.heightCm);
     await notifier.updateField('weight_kg', weight ?? widget.profile.weightKg);
     await notifier.updateField('age', age ?? widget.profile.age);
-    widget.ref.read(xpProvider.notifier).rewardProfileCompleted();
+    widget.ref.read(pointsProvider.notifier).rewardProfileCompleted();
     if (mounted) Navigator.pop(context);
   }
 
@@ -1919,4 +1956,228 @@ class _StepperBtn extends StatelessWidget {
     ),
     child: Icon(icon, size: 18, color: cs.primary),
   );
+}
+
+// ── Bottom sheet : tous les niveaux + récompense diamants de chaque palier ──
+class _LevelsSheet extends StatelessWidget {
+  final PointsModel xp;
+  const _LevelsSheet({required this.xp});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs    = Theme.of(context).colorScheme;
+    final dark  = Theme.of(context).brightness == Brightness.dark;
+    final green = const Color(0xFF22C55E);
+    final muted = dark ? const Color(0xFF888886) : const Color(0xFF6B6B68);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.72,
+      minChildSize: 0.45,
+      maxChildSize: 0.92,
+      builder: (_, ctrl) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: cs.onSurface.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(
+                      color: green.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12)),
+                    child: Icon(LucideIcons.trophy, size: 18, color: green),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Niveaux & récompenses',
+                          style: TextStyle(fontSize: 18,
+                            fontWeight: FontWeight.w800, color: cs.onSurface,
+                            letterSpacing: -0.3)),
+                        Text('Gagne des points, passe des niveaux, reçois des 💎',
+                          style: TextStyle(fontSize: 11.5, color: muted)),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: cs.onSurface.withValues(alpha: 0.08),
+                        shape: BoxShape.circle),
+                      child: Icon(LucideIcons.x, size: 16,
+                        color: cs.onSurface.withValues(alpha: 0.55)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 20, color: cs.onSurface.withValues(alpha: 0.08)),
+            Expanded(
+              child: ListView.separated(
+                controller: ctrl,
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+                itemCount: PointsModel.maxLevel,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (_, i) {
+                  final level     = i + 1;
+                  final threshold = PointsModel.thresholdForLevel(level);
+                  final diamonds  = PointsModel.diamondsForLevel(level);
+                  final isCurrent = level == xp.level;
+                  final isDone    = level < xp.level;
+                  final isLocked  = level > xp.level;
+
+                  final accent = isCurrent
+                      ? green
+                      : isDone
+                          ? green.withValues(alpha: 0.7)
+                          : muted;
+
+                  return Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? green.withValues(alpha: dark ? 0.10 : 0.07)
+                          : cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isCurrent
+                            ? green.withValues(alpha: 0.45)
+                            : cs.onSurface.withValues(alpha: 0.06)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Emoji du niveau
+                        Opacity(
+                          opacity: isLocked ? 0.45 : 1,
+                          child: Container(
+                            width: 42, height: 42,
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12)),
+                            child: Center(
+                              child: Text(PointsModel.levelEmojis[level],
+                                style: const TextStyle(fontSize: 20)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Titre + seuil
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      'Niveau $level · ${PointsModel.levelTitles[level]}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(fontSize: 13.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: isLocked
+                                            ? cs.onSurface.withValues(alpha: 0.45)
+                                            : cs.onSurface),
+                                    ),
+                                  ),
+                                  if (isCurrent) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 7, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: green,
+                                        borderRadius: BorderRadius.circular(20)),
+                                      child: const Text('EN COURS',
+                                        style: TextStyle(fontSize: 8,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                          letterSpacing: 0.4)),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                level == 1 ? 'Départ' : 'dès $threshold pts',
+                                style: TextStyle(fontSize: 11, color: muted)),
+                              if (isCurrent) ...[
+                                const SizedBox(height: 7),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(3),
+                                  child: LinearProgressIndicator(
+                                    value: xp.levelProgress.clamp(0.0, 1.0),
+                                    minHeight: 4,
+                                    backgroundColor:
+                                        green.withValues(alpha: 0.15),
+                                    valueColor:
+                                        AlwaysStoppedAnimation<Color>(green),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Récompense / statut
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (diamonds > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 9, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF60A5FA)
+                                      .withValues(alpha: isLocked ? 0.08 : 0.14),
+                                  borderRadius: BorderRadius.circular(20)),
+                                child: Text('+$diamonds 💎',
+                                  style: TextStyle(fontSize: 11.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF3B82F6)
+                                        .withValues(alpha: isLocked ? 0.55 : 1)),
+                                ),
+                              )
+                            else
+                              Text('—',
+                                style: TextStyle(fontSize: 12, color: muted)),
+                            if (isDone) ...[
+                              const SizedBox(height: 5),
+                              Icon(LucideIcons.checkCircle,
+                                size: 14, color: green),
+                            ] else if (isLocked) ...[
+                              const SizedBox(height: 5),
+                              Icon(LucideIcons.lock,
+                                size: 12,
+                                color: cs.onSurface.withValues(alpha: 0.3)),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

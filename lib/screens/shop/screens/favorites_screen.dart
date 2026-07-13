@@ -129,7 +129,7 @@ class FavoritesScreen extends ConsumerWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (ctx, i) => _FavoriteCard(
         item: items[i],
-        userEtoiles: ref.read(shopProvider).points,
+        userDiamonds: ref.read(shopProvider).diamonds,
         brightness: brightness,
         onRemove: () => removeFromWishlist(items[i]),
         onTap: () => Navigator.push(
@@ -204,7 +204,7 @@ class FavoritesScreen extends ConsumerWidget {
 
 class _FavoriteCard extends StatelessWidget {
   final BoutiqueItem item;
-  final int userEtoiles;
+  final int userDiamonds;
   final Brightness brightness;
   final VoidCallback onRemove;
   final VoidCallback onTap;
@@ -220,7 +220,7 @@ class _FavoriteCard extends StatelessWidget {
 
   const _FavoriteCard({
     required this.item,
-    required this.userEtoiles,
+    required this.userDiamonds,
     required this.brightness,
     required this.onRemove,
     required this.onTap,
@@ -233,7 +233,7 @@ class _FavoriteCard extends StatelessWidget {
     required this.goldSurface,
   });
 
-  bool get _canAfford => userEtoiles >= item.etoiles;
+  bool get _canAfford => userDiamonds >= item.diamonds;
 
   @override
   Widget build(BuildContext context) {
@@ -294,7 +294,7 @@ class _FavoriteCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         _StarsBadge(
-                          etoiles: item.etoiles,
+                          diamonds: item.diamonds,
                           canAfford: _canAfford,
                           inkSubtle: inkSubtle,
                           goldSurface: goldSurface,
@@ -385,7 +385,7 @@ class _FavoriteCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _StarsBadge extends StatelessWidget {
-  final int etoiles;
+  final int diamonds;
   final bool canAfford;
   final Color inkSubtle;
   final Color goldSurface;
@@ -393,7 +393,7 @@ class _StarsBadge extends StatelessWidget {
   static const Color _gold = Color(0xFFC4972A);
 
   const _StarsBadge({
-    required this.etoiles,
+    required this.diamonds,
     required this.canAfford,
     required this.inkSubtle,
     required this.goldSurface,
@@ -426,7 +426,7 @@ class _StarsBadge extends StatelessWidget {
           ),
           const SizedBox(width: 3),
           Text(
-            '$etoiles',
+            '$diamonds',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,

@@ -1,8 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-class EtoilesCard extends StatelessWidget {
-  final int etoiles;
-  const EtoilesCard({super.key, required this.etoiles});
+
+class DiamondsCard extends StatelessWidget {
+  final int diamonds;
+  const DiamondsCard({super.key, required this.diamonds});
 
   @override
   Widget build(BuildContext context) {
@@ -31,12 +31,8 @@ class EtoilesCard extends StatelessWidget {
               color: colorScheme.tertiary.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Center(
-              child: Icon(
-                CupertinoIcons.star_fill,
-                color: colorScheme.tertiary,
-                size: 22,
-              ),
+            child: const Center(
+              child: Text('💎', style: TextStyle(fontSize: 20)),
             ),
           ),
 
@@ -48,7 +44,7 @@ class EtoilesCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Étoiles disponibles',
+                  'Diamants disponibles',
                   style: TextStyle(
                     color: colorScheme.onSurfaceVariant,
                     fontSize: 12,
@@ -61,7 +57,7 @@ class EtoilesCard extends StatelessWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      '$etoiles',
+                      '$diamonds',
                       style: TextStyle(
                         color: colorScheme.onSurface,
                         fontSize: 22,
@@ -71,7 +67,7 @@ class EtoilesCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      'étoiles',
+                      'diamants',
                       style: TextStyle(
                         color: colorScheme.onSurfaceVariant,
                         fontSize: 13,

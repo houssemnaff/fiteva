@@ -7,20 +7,20 @@ import 'timer_badge.dart';
 
 class BoutiqueCard extends StatelessWidget {
   final BoutiqueItem item;
-  final int userEtoiles;
+  final int userDiamonds;
   final VoidCallback onTap;
 
   const BoutiqueCard({
     super.key,
     required this.item,
-    required this.userEtoiles,
+    required this.userDiamonds,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final canAfford = userEtoiles >= item.etoiles;
+    final canAfford = userDiamonds >= item.diamonds;
 
     return GestureDetector(
       onTap: onTap,
@@ -153,7 +153,7 @@ class BoutiqueCard extends StatelessWidget {
                           Icon(Icons.water_drop, color: colorScheme.primary, size: 14),
                           const SizedBox(width: 3),
                           Text(
-                            '${item.etoiles}',
+                            '${item.diamonds}',
                             style: TextStyle(
                               color: colorScheme.primary,
                               fontSize: 13,

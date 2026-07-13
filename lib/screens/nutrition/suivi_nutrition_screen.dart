@@ -10,8 +10,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'ajout_rapide_screen.dart';
 import '../../l10n/lang.dart';
 import '../../l10n/app_localizations.dart';
-import '../../providers/xp_provider.dart';
-import '../../widgets/xp_toast.dart';
+import '../../providers/points_provider.dart';
+import '../../widgets/points_toast.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCREEN
@@ -87,7 +87,7 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
       for (final entry in entries) {
         ref.read(nutritionProvider.notifier).addMeal(entry);
       }
-      ref.read(xpProvider.notifier).rewardMealLogged();
+      ref.read(pointsProvider.notifier).rewardMealLogged();
 
       // Calories AFTER
       final calAfter = ref.read(dailyTotalsProvider(_key)).calories;
@@ -101,9 +101,11 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
           && calAfter >= calGoal;
 
       if (goalJustReached) {
-        final granted = await ref.read(xpProvider.notifier).rewardCalorieGoalReached();
+        final granted = await ref.read(pointsProvider.notifier).rewardCalorieGoalReached();
         if (granted && mounted) {
-          XpToast.show(context, 20, label: 'Objectif calorique atteint ! 🎉');
+          PointsToast.show(context, PointsAmounts.calorieGoalReached,
+              label: 'Objectif calorique atteint ! 🎉');
+          maybeShowLevelUpToast(context, ref);
         }
       }
 

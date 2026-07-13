@@ -127,7 +127,7 @@ class ShopService {
       title:          r['title'] as String,
       discount:       r['discount']     as String? ?? '',
       discountValue:  ((r['discount_value'] as num?) ?? 0).toInt(),
-      etoiles:        (r['etoiles_cost'] as int?)  ?? 0,
+      diamonds:       (r['diamonds_cost'] as int?) ?? 0,
       daysLeft:       (r['days_left']    as int?)  ?? 0,
       primaryColor:   primaryColor,
       secondaryColor: secondaryColor,

@@ -1,26 +1,26 @@
-import 'package:fiteva/providers/points_provider.dart';
+import 'package:fiteva/providers/diamonds_provider.dart';
 import 'package:fiteva/screens/shop/models/boutique_item.dart';
-import 'package:fiteva/services/points_service.dart';
+import 'package:fiteva/services/diamonds_service.dart';
 import 'package:fiteva/services/shop_service.dart';
 import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STATE
+// STATE — la boutique ne débite QUE des diamants (bonus de level-up).
 // ─────────────────────────────────────────────────────────────────────────────
 class ShopState {
-  final int         points;
+  final int         diamonds;
   final Set<String> redeemed;
 
-  const ShopState({required this.points, required this.redeemed});
+  const ShopState({required this.diamonds, required this.redeemed});
 
-  ShopState copyWith({int? points, Set<String>? redeemed}) => ShopState(
-    points:   points   ?? this.points,
+  ShopState copyWith({int? diamonds, Set<String>? redeemed}) => ShopState(
+    diamonds: diamonds ?? this.diamonds,
     redeemed: redeemed ?? this.redeemed,
   );
 
   bool isRedeemed(String id) => redeemed.contains(id);
-  bool canAfford(int cost)   => points >= cost;
+  bool canAfford(int cost)   => diamonds >= cost;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,13 +30,13 @@ class ShopNotifier extends Notifier<ShopState> {
   @override
   ShopState build() {
     _load();
-    return const ShopState(points: 0, redeemed: {});
+    return const ShopState(diamonds: 0, redeemed: {});
   }
 
   Future<void> _load() async {
-    final pts      = await PointsService.getPoints();
+    final diamonds = await DiamondsService.getDiamonds();
     final redeemed = await _loadRedeemed();
-    state = ShopState(points: pts, redeemed: redeemed);
+    state = ShopState(diamonds: diamonds, redeemed: redeemed);
   }
 
   Future<Set<String>> _loadRedeemed() async {
@@ -54,16 +54,10 @@ class ShopNotifier extends Notifier<ShopState> {
 
   Future<void> refresh() => _load();
 
-  Future<void> addPoints(int amount) async {
-    final updated = await PointsService.addPoints(amount, reason: 'reward');
-    state = state.copyWith(points: updated);
-    ref.read(pointsProvider.notifier).loadPoints();
-  }
-
-  /// Échange un article : déduit les points et enregistre dans shop_redemptions.
+  /// Échange un article : déduit les diamants et enregistre dans shop_redemptions.
   Future<bool> redeem(BoutiqueItem item) async {
     if (state.isRedeemed(item.id)) return false;
-    if (!state.canAfford(item.etoiles)) return false;
+    if (!state.canAfford(item.diamonds)) return false;
 
     final uid = SupabaseConfig.userId;
 
@@ -73,20 +67,20 @@ class ShopNotifier extends Notifier<ShopState> {
         await SupabaseConfig.table('shop_redemptions').insert({
           'user_id':      uid,
           'shop_item_id': item.id,
-          'points_spent': item.etoiles,
+          'points_spent': item.diamonds,
           'promo_code':   item.promoCode,
           'redeemed_at':  DateTime.now().toIso8601String(),
         });
       } catch (_) {}
     }
 
-    final updated = await PointsService.spendPoints(
-      item.etoiles,
+    final updated = await DiamondsService.spendDiamonds(
+      item.diamonds,
       reason: 'shop_${item.id}',
     );
     final newIds = {...state.redeemed, item.id};
-    state = state.copyWith(points: updated, redeemed: newIds);
-    ref.read(pointsProvider.notifier).loadPoints();
+    state = state.copyWith(diamonds: updated, redeemed: newIds);
+    ref.read(diamondsProvider.notifier).loadDiamonds();
     return true;
   }
 }
@@ -156,7 +150,7 @@ final shopWishlistProvider = NotifierProvider<ShopWishlistNotifier, Set<String>>
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REDEMPTION HISTORY — "contre quoi j'ai échangé mes étoiles" (shop_redemptions)
+// REDEMPTION HISTORY — "contre quoi j'ai échangé mes diamants" (shop_redemptions)
 // ─────────────────────────────────────────────────────────────────────────────
 class RedemptionEntry {
   final String shopItemId;

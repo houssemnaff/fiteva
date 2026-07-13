@@ -7,7 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../providers/mascot_provider.dart';
 import '../providers/user_profile_provider.dart';
-import '../providers/xp_provider.dart';
+import '../providers/points_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/mascot_widget.dart';
 
@@ -39,7 +39,7 @@ class HomeHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile   = ref.watch(userProfileProvider);
     final mascot    = ref.watch(mascotProvider);
-    final xp        = ref.watch(xpProvider);
+    final xp        = ref.watch(pointsProvider);
     final isFrench  = ref.watch(l10nProvider).isFrench;
     final firstName = (profile.username.isNotEmpty ? profile.username : 'Toi').split(' ').first;
 
@@ -103,6 +103,8 @@ class HomeHeader extends ConsumerWidget {
             borderRadius: BorderRadius.circular(50),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
+            // Streak = jours CONSÉCUTIFS (flamme) — recalculé côté serveur
+            // (trigger fn_track_login_day), fiable même au premier frame.
             if (xp.streak > 0) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -110,6 +112,19 @@ class HomeHeader extends ConsumerWidget {
                   const Icon(LucideIcons.flame, size: 14, color: Color(0xFFFFB067)),
                   const SizedBox(width: 4),
                   Text('${xp.streak}', style: GoogleFonts.outfit(
+                    fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
+                ]),
+              ),
+              Container(width: 1, height: 18, color: Colors.white.withOpacity(0.18)),
+            ],
+            // Total de jours de connexion (distincts, pas forcément consécutifs)
+            if (xp.totalLoginDays > 0) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(LucideIcons.calendarDays, size: 13, color: Color(0xFF9CC8F5)),
+                  const SizedBox(width: 4),
+                  Text('${xp.totalLoginDays}j', style: GoogleFonts.outfit(
                     fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
                 ]),
               ),

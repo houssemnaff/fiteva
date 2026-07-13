@@ -823,7 +823,7 @@ class CommunityService {
       if (profile == null) return null;
 
       final xpRow = await SupabaseConfig.table('user_xp')
-          .select('total_xp, streak')
+          .select('total_points, streak')
           .eq('user_id', userId)
           .maybeSingle();
 
@@ -838,7 +838,7 @@ class CommunityService {
         'mascot_type':    profile['mascot_type'] as String? ?? 'blob',
         'mascot_mood':    profile['mascot_mood'] as String? ?? 'happy',
         'is_pro':         profile['is_pro'] as bool? ?? false,
-        'total_xp':       xpRow?['total_xp'] as int? ?? 0,
+        'total_points':   xpRow?['total_points'] as int? ?? 0,
         'streak':         xpRow?['streak'] as int? ?? 0,
         'fitness_level':  bioRow?['fitness_level'] as String? ?? '',
         'frequency_days': bioRow?['frequency_days'] as int? ?? 3,
@@ -895,17 +895,17 @@ class CommunityService {
     }
   }
 
-  /// Solde d'étoiles (points boutique) d'un utilisateur.
-  /// Nécessite la policy de lecture publique sur user_points (voir schema).
-  static Future<int> getUserPoints(String userId) async {
+  /// Solde de diamants (monnaie boutique) d'un utilisateur.
+  /// Nécessite la policy de lecture publique sur user_diamonds (voir schema).
+  static Future<int> getUserDiamonds(String userId) async {
     try {
-      final row = await SupabaseConfig.table('user_points')
-          .select('etoiles')
+      final row = await SupabaseConfig.table('user_diamonds')
+          .select('diamonds')
           .eq('user_id', userId)
           .maybeSingle();
-      return row?['etoiles'] as int? ?? 0;
+      return row?['diamonds'] as int? ?? 0;
     } catch (e) {
-      debugPrint('[CommunityService] getUserPoints error: $e');
+      debugPrint('[CommunityService] getUserDiamonds error: $e');
       return 0;
     }
   }

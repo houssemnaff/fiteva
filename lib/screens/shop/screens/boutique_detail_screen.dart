@@ -75,7 +75,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
   late final AnimationController _ctaBounceCtrl;
   late final Animation<double> _ctaScale;
 
-  bool get _canAfford       => ref.read(shopProvider).canAfford(widget.item.etoiles);
+  bool get _canAfford       => ref.read(shopProvider).canAfford(widget.item.diamonds);
   bool get _alreadyRedeemed => ref.read(shopProvider).isRedeemed(widget.item.id);
 
   int get _daysLeft {
@@ -297,8 +297,8 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
   Widget _buildOfferSummaryCard(BuildContext context, _P p) {
     final item      = widget.item;
     final shop      = ref.watch(shopProvider);
-    final canAfford = shop.canAfford(item.etoiles);
-    final shortage  = item.etoiles - shop.points;
+    final canAfford = shop.canAfford(item.diamonds);
+    final shortage  = item.diamonds - shop.diamonds;
     final l10n      = ref.read(l10nProvider);
 
     return _Card(
@@ -324,7 +324,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(l10n.detailCout, style: TextStyle(fontSize: 12, color: p.inkMuted)),
-                  Text('${item.etoiles} ${l10n.detailEtoiles}',
+                  Text('${item.diamonds} ${l10n.detailDiamonds}',
                       style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: _P.gold, letterSpacing: -0.3)),
                 ],
               ),
@@ -387,10 +387,10 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l10n.detailMesEtoiles, style: TextStyle(fontSize: 12, color: p.inkMuted)),
+                  Text(l10n.detailMesDiamonds, style: TextStyle(fontSize: 12, color: p.inkMuted)),
                   Row(
                     children: [
-                      Text('${shop.points} ${l10n.detailDisponibles}',
+                      Text('${shop.diamonds} ${l10n.detailDisponibles}',
                           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
                               color: canAfford ? p.accent : _P.warning, letterSpacing: -0.2)),
                       if (!canAfford) ...[
@@ -453,9 +453,9 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
 
   Widget _buildCTABar(BuildContext context, _P p) {
     final shop      = ref.watch(shopProvider);
-    final canAfford = shop.canAfford(widget.item.etoiles);
+    final canAfford = shop.canAfford(widget.item.diamonds);
     final redeemed  = shop.isRedeemed(widget.item.id);
-    final shortage  = widget.item.etoiles - shop.points;
+    final shortage  = widget.item.diamonds - shop.diamonds;
     final ctaActive = canAfford && !redeemed;
     final l10n      = ref.read(l10nProvider);
 
@@ -536,7 +536,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                     Text(
                       redeemed
                           ? l10n.detailDejaEchangeBtn
-                          : ctaActive ? l10n.detailEchangerEtoiles(widget.item.etoiles) : l10n.detailEtoilesInsuff,
+                          : ctaActive ? l10n.detailEchangerDiamonds(widget.item.diamonds) : l10n.detailDiamondsInsuff,
                       style: TextStyle(
                           color: ctaActive ? Colors.white : p.inkSubtle,
                           fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.3),

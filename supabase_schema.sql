@@ -79,16 +79,21 @@ CREATE TABLE user_nutrition_targets (
 );
 
 -- ══════════════════════════════════════════════════════════════════════════════
--- SECTION 3 — XP, NIVEAUX & GAMIFICATION
+-- SECTION 3 — POINTS, NIVEAUX & GAMIFICATION
+-- Points (ex-XP) = progression → niveaux → bonus DIAMANTS (section 10) au
+-- passage de niveau (trigger fn_award_level_up_diamonds, section 12).
 -- ══════════════════════════════════════════════════════════════════════════════
 
--- ── 3.1  Compte XP global ────────────────────────────────────────────────────
+-- ── 3.1  Compte points global ────────────────────────────────────────────────
 CREATE TABLE user_xp (
   user_id               UUID         PRIMARY KEY REFERENCES user_profiles(id) ON DELETE CASCADE,
-  total_xp              INTEGER      NOT NULL DEFAULT 0 CHECK (total_xp >= 0),
+  total_points          INTEGER      NOT NULL DEFAULT 0 CHECK (total_points >= 0),
   streak                INTEGER      NOT NULL DEFAULT 0 CHECK (streak >= 0),
   last_active_date      DATE,
   login_rewarded_today  BOOLEAN      NOT NULL DEFAULT false,
+  -- Jours de connexion distincts (pas forcément consécutifs) — maintenu par
+  -- le trigger fn_track_login_day, jamais écrit par le client.
+  total_login_days      INTEGER      NOT NULL DEFAULT 0 CHECK (total_login_days >= 0),
   badges                TEXT[]       NOT NULL DEFAULT '{}',
   completed_challenges  TEXT[]       NOT NULL DEFAULT '{}',
   updated_at            TIMESTAMPTZ  NOT NULL DEFAULT now()
@@ -114,8 +119,8 @@ CREATE TABLE user_challenge_progress (
   PRIMARY KEY (user_id, challenge_key)
 );
 
--- ── 3.4  Historique XP (pour graphiques / analytics) ────────────────────────
-CREATE TABLE xp_history (
+-- ── 3.4  Historique points (analytics + garde-fous anti-farming 1×/jour) ────
+CREATE TABLE points_progress_history (
   id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID         NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   amount      INTEGER      NOT NULL,
@@ -654,7 +659,7 @@ CREATE TABLE shop_items (
   category         TEXT         NOT NULL DEFAULT '',
   discount         TEXT         NOT NULL DEFAULT '',         -- '20%' | '2 semaines gratuites'
   discount_value   NUMERIC(6,2) NOT NULL DEFAULT 0,
-  etoiles_cost     INTEGER      NOT NULL DEFAULT 0 CHECK (etoiles_cost >= 0),  -- points requis
+  diamonds_cost    INTEGER      NOT NULL DEFAULT 0 CHECK (diamonds_cost >= 0), -- diamants requis
   days_left        INTEGER      CHECK (days_left >= 0),
   primary_color    INTEGER      NOT NULL DEFAULT 0,
   secondary_color  INTEGER      NOT NULL DEFAULT 0,
@@ -704,19 +709,21 @@ CREATE TABLE shop_redemptions (
   UNIQUE (user_id, shop_item_id)    -- un seul échange par item par user
 );
 
--- ── 10.4  Portefeuille étoiles (points) ──────────────────────────────────────
-CREATE TABLE user_points (
+-- ── 10.4  Portefeuille diamants (monnaie boutique) ───────────────────────────
+-- Crédité UNIQUEMENT par les bonus de passage de niveau
+-- (fn_award_level_up_diamonds), débité par les échanges boutique.
+CREATE TABLE user_diamonds (
   user_id      UUID    PRIMARY KEY REFERENCES user_profiles(id) ON DELETE CASCADE,
-  etoiles      INTEGER NOT NULL DEFAULT 0 CHECK (etoiles >= 0),
+  diamonds     INTEGER NOT NULL DEFAULT 0 CHECK (diamonds >= 0),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- ── 10.5  Historique points ───────────────────────────────────────────────────
-CREATE TABLE points_history (
+-- ── 10.5  Historique diamants ─────────────────────────────────────────────────
+CREATE TABLE diamonds_history (
   id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID         NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   amount      INTEGER      NOT NULL,                         -- positif = gain, négatif = dépense
-  reason      TEXT         NOT NULL DEFAULT '',
+  reason      TEXT         NOT NULL DEFAULT '',              -- 'level_up_bonus_L<n>' | 'shop_<item>'
   earned_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
@@ -858,14 +865,125 @@ BEGIN
   INSERT INTO user_profiles (id, email)
   VALUES (NEW.id, NEW.email)
   ON CONFLICT DO NOTHING;
-  INSERT INTO user_xp     (user_id) VALUES (NEW.id) ON CONFLICT DO NOTHING;
-  INSERT INTO user_points (user_id) VALUES (NEW.id) ON CONFLICT DO NOTHING;
+  INSERT INTO user_xp       (user_id) VALUES (NEW.id) ON CONFLICT DO NOTHING;
+  INSERT INTO user_diamonds (user_id) VALUES (NEW.id) ON CONFLICT DO NOTHING;
   RETURN NEW;
 END;
 $$;
 CREATE TRIGGER trg_on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION fn_create_user_profile();
+
+-- Bonus diamants au passage de niveau (points → niveaux → diamants).
+-- Seuils (points) :   0   100   300   600   1000   1600   2400
+-- Niveau           :  1    2     3     4      5      6      7
+-- Bonus diamants   :  -   10    15    20     30     40     60
+-- Idempotent : reason unique 'level_up_bonus_L<n>' par user — jamais crédité
+-- deux fois, même si le client (DiamondsService.creditLevelUpBonus) tente
+-- aussi. Doit rester aligné avec PointsModel (lib/models/points_model.dart).
+CREATE OR REPLACE FUNCTION fn_award_level_up_diamonds()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  thresholds CONSTANT INTEGER[] := ARRAY[0, 100, 300, 600, 1000, 1600, 2400];
+  bonuses    CONSTANT INTEGER[] := ARRAY[0,  10,  15,  20,   30,   40,   60];
+  old_pts    INTEGER := 0;
+  old_level  INTEGER := 1;
+  new_level  INTEGER := 1;
+  bonus      INTEGER;
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    old_pts := COALESCE(OLD.total_points, 0);
+  END IF;
+
+  FOR i IN REVERSE array_length(thresholds, 1)..1 LOOP
+    IF old_pts >= thresholds[i] THEN old_level := i; EXIT; END IF;
+  END LOOP;
+  FOR i IN REVERSE array_length(thresholds, 1)..1 LOOP
+    IF COALESCE(NEW.total_points, 0) >= thresholds[i] THEN new_level := i; EXIT; END IF;
+  END LOOP;
+
+  IF new_level <= old_level THEN RETURN NEW; END IF;
+
+  FOR lvl IN (old_level + 1)..new_level LOOP
+    bonus := bonuses[lvl];
+    CONTINUE WHEN bonus <= 0;
+    CONTINUE WHEN EXISTS (
+      SELECT 1 FROM diamonds_history
+      WHERE user_id = NEW.user_id
+        AND reason  = 'level_up_bonus_L' || lvl
+    );
+    INSERT INTO diamonds_history (user_id, amount, reason)
+    VALUES (NEW.user_id, bonus, 'level_up_bonus_L' || lvl);
+    INSERT INTO user_diamonds (user_id, diamonds)
+    VALUES (NEW.user_id, bonus)
+    ON CONFLICT (user_id) DO UPDATE
+      SET diamonds   = user_diamonds.diamonds + EXCLUDED.diamonds,
+          updated_at = now();
+  END LOOP;
+
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trg_award_level_up_diamonds
+  AFTER INSERT OR UPDATE OF total_points ON user_xp
+  FOR EACH ROW EXECUTE FUNCTION fn_award_level_up_diamonds();
+
+-- Streak + total_login_days : la source de vérité est le SERVEUR — le trigger
+-- recalcule les compteurs à partir de la progression de last_active_date et
+-- ignore les valeurs envoyées par le client (protège contre un client qui
+-- upsert avant d'avoir chargé son état).
+CREATE OR REPLACE FUNCTION fn_track_login_day()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  diff INTEGER;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.last_active_date IS NOT NULL THEN
+      NEW.streak           := 1;
+      NEW.total_login_days := 1;
+    ELSE
+      NEW.streak           := 0;
+      NEW.total_login_days := 0;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  -- Pas un nouveau jour (ex: simple gain de points) : compteurs conservés.
+  IF NEW.last_active_date IS NOT DISTINCT FROM OLD.last_active_date THEN
+    NEW.streak           := COALESCE(OLD.streak, 0);
+    NEW.total_login_days := COALESCE(OLD.total_login_days, 0);
+    RETURN NEW;
+  END IF;
+
+  -- Premier login jamais enregistré.
+  IF OLD.last_active_date IS NULL THEN
+    NEW.streak           := 1;
+    NEW.total_login_days := COALESCE(OLD.total_login_days, 0) + 1;
+    RETURN NEW;
+  END IF;
+
+  -- Date qui recule ou effacée : client incohérent, on ne touche à rien.
+  IF NEW.last_active_date IS NULL OR NEW.last_active_date < OLD.last_active_date THEN
+    NEW.last_active_date := OLD.last_active_date;
+    NEW.streak           := COALESCE(OLD.streak, 0);
+    NEW.total_login_days := COALESCE(OLD.total_login_days, 0);
+    RETURN NEW;
+  END IF;
+
+  diff := NEW.last_active_date - OLD.last_active_date;
+  IF diff = 1 THEN
+    NEW.streak := COALESCE(OLD.streak, 0) + 1;   -- jour consécutif
+  ELSE
+    NEW.streak := 1;                              -- streak cassé
+  END IF;
+  NEW.total_login_days := COALESCE(OLD.total_login_days, 0) + 1;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_track_login_day ON user_xp;
+CREATE TRIGGER trg_track_login_day
+  BEFORE INSERT OR UPDATE ON user_xp
+  FOR EACH ROW EXECUTE FUNCTION fn_track_login_day();
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- SECTION 13 — ROW LEVEL SECURITY (RLS)
@@ -877,7 +995,7 @@ ALTER TABLE user_biometrics            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_nutrition_targets     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_xp                    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_challenge_progress    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE xp_history                 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE points_progress_history    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_video_completions     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_workout_completions   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_program_completions   ENABLE ROW LEVEL SECURITY;
@@ -902,8 +1020,8 @@ ALTER TABLE user_pregnancy_checklist   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_postpartum            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shop_wishlist              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shop_redemptions           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_points                ENABLE ROW LEVEL SECURITY;
-ALTER TABLE points_history             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_diamonds              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE diamonds_history           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_read_articles         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE partner_requests           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_follows               ENABLE ROW LEVEL SECURITY;
@@ -946,14 +1064,14 @@ DECLARE tbl TEXT;
 BEGIN
   FOR tbl IN SELECT unnest(ARRAY[
     'user_biometrics','user_nutrition_targets','user_xp',
-    'user_challenge_progress','xp_history',
+    'user_challenge_progress','points_progress_history',
     'user_video_completions','user_workout_completions','user_program_completions',
     'user_joined_programs','user_workout_favorites','user_program_favorites',
     'weekly_plan','user_weekly_plans','meal_entries','water_tracking','meal_budgets',
     'nutrition_recipe_favorites','user_cycle_settings','period_history',
     'daily_symptoms','daily_moods','user_pregnancy','pregnancy_moods',
     'pregnancy_symptoms','user_pregnancy_checklist','user_postpartum',
-    'shop_wishlist','shop_redemptions','user_points','points_history',
+    'shop_wishlist','shop_redemptions','user_diamonds','diamonds_history',
     'user_read_articles'
   ]) LOOP
     EXECUTE format(
@@ -964,10 +1082,10 @@ BEGIN
 END;
 $$;
 
--- Lecture publique des points/XP : le profil communauté affiche les étoiles
--- et le niveau des autres utilisatrices (écriture toujours réservée via own_*).
-CREATE POLICY "user_points_public_read" ON user_points FOR SELECT USING (true);
-CREATE POLICY "user_xp_public_read"     ON user_xp     FOR SELECT USING (true);
+-- Lecture publique des diamants/points : le profil communauté affiche les
+-- diamants et le niveau des autres utilisatrices (écriture réservée via own_*).
+CREATE POLICY "user_diamonds_public_read" ON user_diamonds FOR SELECT USING (true);
+CREATE POLICY "user_xp_public_read"       ON user_xp       FOR SELECT USING (true);
 
 -- Partner requests : les deux parties concernées peuvent voir
 CREATE POLICY "partner_requests_read" ON partner_requests FOR SELECT

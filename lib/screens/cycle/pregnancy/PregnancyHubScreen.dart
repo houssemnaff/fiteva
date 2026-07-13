@@ -2,7 +2,7 @@
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/PregnancyInsightRepository.dart';
 import 'package:fiteva/services/pregnancy_content_service.dart';
-import 'package:fiteva/providers/xp_provider.dart';
+import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/baby-story/baby_story_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/checklist/pregnancy_checklist_screen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/body/pregnancy_body_screen.dart';
@@ -84,7 +84,7 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
   void initState() {
     super.initState();
     Future.microtask(() =>
-      ref.read(xpProvider.notifier).rewardPregnancyWeek());
+      ref.read(pointsProvider.notifier).rewardPregnancyWeek());
   }
 
   @override

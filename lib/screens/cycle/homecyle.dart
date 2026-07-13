@@ -1,9 +1,9 @@
-﻿// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use
 import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import '../../l10n/app_localizations.dart';
-import '../../providers/xp_provider.dart';
-import '../../widgets/xp_toast.dart';
+import '../../providers/points_provider.dart';
+import '../../widgets/points_toast.dart';
 import 'package:fiteva/screens/cycle/cycle_colors.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/material.dart';
@@ -202,8 +202,8 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
     final saved = await CycleLogService.loadSymptoms(_today);
     final mood  = await CycleLogService.loadMood(_today);
     if (!mounted) return;
-    ref.read(xpProvider.notifier).rewardDailyCheckin();
-    ref.read(xpProvider.notifier).rewardCycleTracking();
+    ref.read(pointsProvider.notifier).rewardDailyCheckin();
+    ref.read(pointsProvider.notifier).rewardCycleTracking();
     setState(() {
       _logged.addAll(saved.map((s) => FloSymptom.values.firstWhere(
         (e) => e.name == s, orElse: () => FloSymptom.flow)));
@@ -832,10 +832,12 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
               _logged.map((e) => e.name).toSet(),
             );
             if (!wasLogged) {
-              ref.read(xpProvider.notifier).rewardSymptomAdded();
-              XpToast.show(context, XpAmounts.symptomAdded, label: 'Symptôme noté !');
+              ref.read(pointsProvider.notifier).rewardSymptomAdded().then((_) {
+                if (context.mounted) maybeShowLevelUpToast(context, ref);
+              });
+              PointsToast.show(context, PointsAmounts.symptomAdded, label: 'Symptôme noté !');
               if (s == FloSymptom.cramps) {
-                ref.read(xpProvider.notifier).rewardPainSymptom();
+                ref.read(pointsProvider.notifier).rewardPainSymptom();
               }
             }
           },

@@ -1,4 +1,4 @@
-﻿// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use
 
 
 import 'package:chewie/chewie.dart';
@@ -10,8 +10,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/sante_service.dart';
-import '../../providers/xp_provider.dart';
-import '../../widgets/xp_toast.dart';
+import '../../providers/points_provider.dart';
+import '../../widgets/points_toast.dart';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 
@@ -410,8 +410,10 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
             _RessourcesTab(dark: dark, lex: _lex, l10n: l10n, articles: articles,
               onLex: (s) => setState(() => _lex = s),
               onArticleTap: () {
-                ref.read(xpProvider.notifier).rewardHealthTipRead();
-                XpToast.show(context, XpAmounts.healthTipRead, label: 'Article lu !');
+                ref.read(pointsProvider.notifier).rewardHealthTipRead().then((_) {
+                  if (context.mounted) maybeShowLevelUpToast(context, ref);
+                });
+                PointsToast.show(context, PointsAmounts.healthTipRead, label: 'Article lu !');
               }),
             _QRTab(dark: dark, l10n: l10n, questions: questions),
             _DoctorsTab(

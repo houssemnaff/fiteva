@@ -1,66 +1,137 @@
 import 'supabase_config.dart';
 
-/// Gestion des étoiles (points boutique) — stocké dans user_points + points_history
+/// Gestion des points de progression / streak / badges (ex-XP) — stocké dans
+/// user_xp (colonne total_points) + points_progress_history (Supabase).
+/// Les points font monter de niveau et ne se dépensent jamais ; la monnaie
+/// boutique est gérée à part (DiamondsService).
 class PointsService {
-  static const int pointsPerVideo = 10;
-  static const int pointsPerCalorieGoal = 20;
-  static const String calorieGoalReason = 'nutrition_calorie_goal';
+  static String _today() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  static bool _isToday(String? dateStr) => dateStr != null && dateStr == _today();
 
   // ── Lecture ────────────────────────────────────────────────────────────────
 
-  static Future<int> getPoints() async {
+  static Future<Map<String, dynamic>> load() async {
     final uid = SupabaseConfig.userId;
-    if (uid == null) return 0;
+    if (uid == null) return _empty();
 
     try {
-      final row = await SupabaseConfig.table('user_points')
-          .select('etoiles')
+      final row = await SupabaseConfig.table('user_xp')
+          .select()
           .eq('user_id', uid)
           .maybeSingle();
-      return row?['etoiles'] as int? ?? 0;
+
+      if (row == null) return _empty();
+
+      final progressRows = await SupabaseConfig.table('user_challenge_progress')
+          .select('challenge_key, progress')
+          .eq('user_id', uid);
+
+      final Map<String, int> challengeProgress = {
+        for (final r in progressRows as List)
+          r['challenge_key'] as String: r['progress'] as int,
+      };
+
+      final completedRows = await SupabaseConfig.table('user_challenge_progress')
+          .select('challenge_key')
+          .eq('user_id', uid)
+          .eq('completed', true);
+
+      final completedChallenges = (completedRows as List)
+          .map((r) => r['challenge_key'] as String)
+          .toList();
+
+      return {
+        'totalPoints':         row['total_points'] as int? ?? 0,
+        'streak':              row['streak'] as int? ?? 0,
+        'lastActiveDate':      row['last_active_date'] as String?,
+        'badges':              List<String>.from(row['badges'] as List? ?? []),
+        'challengeProgress':   challengeProgress,
+        'completedChallenges': completedChallenges,
+        'loginRewardedToday':  _isToday(row['last_active_date'] as String?),
+        'totalLoginDays':      row['total_login_days'] as int? ?? 0,
+      };
     } catch (_) {
-      return 0;
+      return _empty();
     }
   }
 
-  // ── Ajout ─────────────────────────────────────────────────────────────────
+  // ── Sauvegarde ─────────────────────────────────────────────────────────────
 
-  static Future<int> addPoints(int amount, {String reason = 'reward'}) async {
+  static Future<void> save({
+    required int totalPoints,
+    required int streak,
+    required String? lastActiveDate,
+    required List<String> badges,
+    required Map<String, int> challengeProgress,
+    required List<String> completedChallenges,
+  }) async {
     final uid = SupabaseConfig.userId;
-    if (uid == null) return 0;
+    if (uid == null) return;
 
     try {
-      final current = await getPoints();
-      final updated = current + amount;
-
-      await SupabaseConfig.table('user_points').upsert({
-        'user_id':    uid,
-        'etoiles':    updated,
-        'updated_at': DateTime.now().toIso8601String(),
+      await SupabaseConfig.table('user_xp').upsert({
+        'user_id':          uid,
+        'total_points':     totalPoints,
+        'streak':           streak,
+        'last_active_date': lastActiveDate,
+        'badges':           badges,
       }, onConflict: 'user_id');
 
-      await SupabaseConfig.table('points_history').insert({
+      // Synchronise la progression par challenge
+      for (final entry in challengeProgress.entries) {
+        await SupabaseConfig.table('user_challenge_progress').upsert({
+          'user_id':       uid,
+          'challenge_key': entry.key,
+          'progress':      entry.value,
+          'completed':     completedChallenges.contains(entry.key),
+          'completed_at':  completedChallenges.contains(entry.key)
+              ? DateTime.now().toIso8601String()
+              : null,
+        });
+      }
+    } catch (_) {}
+  }
+
+  // ── Ajouter des points avec historique ────────────────────────────────────
+
+  static Future<void> addPointsHistory(int amount, String reason) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      await SupabaseConfig.table('points_progress_history').insert({
         'user_id':   uid,
         'amount':    amount,
         'reason':    reason,
         'earned_at': DateTime.now().toIso8601String(),
       });
-
-      return updated;
-    } catch (_) {
-      return 0;
-    }
+    } catch (_) {}
   }
 
-  /// Vérifie si des points ont déjà été gagnés aujourd'hui pour [reason]
-  /// (empêche de récompenser plusieurs fois le même défi journalier).
-  static Future<bool> hasEarnedToday(String reason) async {
+  static Future<void> markLoginRewarded() async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      await SupabaseConfig.table('user_xp').upsert({
+        'user_id':              uid,
+        'login_rewarded_today': true,
+        'last_active_date':     _today(),
+      }, onConflict: 'user_id');
+    } catch (_) {}
+  }
+
+  /// Vérifie si une récompense [reason] a déjà été accordée aujourd'hui —
+  /// garde-fou anti-farming côté serveur, à utiliser pour TOUTE récompense
+  /// répétable (objectif calorique, check-in cycle, pas quotidiens, etc.).
+  static Future<bool> hasEarnedReasonToday(String reason) async {
     final uid = SupabaseConfig.userId;
     if (uid == null) return false;
-
     try {
       final todayStart = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-      final rows = await SupabaseConfig.table('points_history')
+      final rows = await SupabaseConfig.table('points_progress_history')
           .select('id')
           .eq('user_id', uid)
           .eq('reason', reason)
@@ -72,67 +143,32 @@ class PointsService {
     }
   }
 
-  /// Récompense l'objectif calorique du jour une seule fois par jour.
-  /// Retourne le nouveau total de points, ou `null` si déjà réclamé aujourd'hui.
-  static Future<int?> awardCalorieGoalReached() async {
-    if (await hasEarnedToday(calorieGoalReason)) return null;
-    return addPoints(pointsPerCalorieGoal, reason: calorieGoalReason);
-  }
-
-  // ── Dépense ───────────────────────────────────────────────────────────────
-
-  static Future<int> spendPoints(int amount, {String reason = 'shop_redemption'}) async {
+  /// Nombre de fois où [reason] a déjà été récompensé aujourd'hui — utilisé
+  /// pour plafonner les récompenses répétables (ex: points par repas loggé).
+  static Future<int> countReasonToday(String reason) async {
     final uid = SupabaseConfig.userId;
     if (uid == null) return 0;
-
     try {
-      final current = await getPoints();
-      final updated = (current - amount).clamp(0, 999999);
-
-      await SupabaseConfig.table('user_points').upsert({
-        'user_id': uid,
-        'etoiles': updated,
-      }, onConflict: 'user_id');
-
-      await SupabaseConfig.table('points_history').insert({
-        'user_id':   uid,
-        'amount':    -amount,
-        'reason':    reason,
-        'earned_at': DateTime.now().toIso8601String(),
-      });
-
-      return updated;
+      final todayStart = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      final rows = await SupabaseConfig.table('points_progress_history')
+          .select('id')
+          .eq('user_id', uid)
+          .eq('reason', reason)
+          .gte('earned_at', todayStart.toIso8601String());
+      return (rows as List).length;
     } catch (_) {
       return 0;
     }
   }
 
-  // ── Historique ────────────────────────────────────────────────────────────
-
-  static Future<List<Map<String, dynamic>>> getHistory({int limit = 20}) async {
-    final uid = SupabaseConfig.userId;
-    if (uid == null) return [];
-
-    try {
-      final rows = await SupabaseConfig.table('points_history')
-          .select()
-          .eq('user_id', uid)
-          .order('earned_at', ascending: false)
-          .limit(limit);
-      return List<Map<String, dynamic>>.from(rows as List);
-    } catch (_) {
-      return [];
-    }
-  }
-
-  static Future<void> resetPoints() async {
-    final uid = SupabaseConfig.userId;
-    if (uid == null) return;
-    try {
-      await SupabaseConfig.table('user_points').upsert({
-        'user_id': uid,
-        'etoiles': 0,
-      }, onConflict: 'user_id');
-    } catch (_) {}
-  }
+  static Map<String, dynamic> _empty() => {
+    'totalPoints':         0,
+    'streak':              0,
+    'lastActiveDate':      null,
+    'badges':              <String>[],
+    'challengeProgress':   <String, int>{},
+    'completedChallenges': <String>[],
+    'loginRewardedToday':  false,
+    'totalLoginDays':      0,
+  };
 }

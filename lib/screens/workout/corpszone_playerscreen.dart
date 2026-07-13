@@ -5,10 +5,9 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/workout_model.dart';
-import '../../services/points_service.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/points_provider.dart';
-import '../../core/shop/shop_provider.dart';
+import '../../widgets/points_toast.dart';
 
 class CorpsZonePlayerScreen extends ConsumerStatefulWidget {
   final WorkoutModel workout;
@@ -205,19 +204,19 @@ class _CorpsZonePlayerScreenState extends ConsumerState<CorpsZonePlayerScreen>
     if (dur <= 0) return;
     if (pos / dur >= 0.80 && !_pointsAwardedForIndex.contains(_currentListenerIndex)) {
       _pointsAwardedForIndex.add(_currentListenerIndex);
-      PointsService.addPoints(PointsService.pointsPerVideo).then((total) {
+      // Donne des points de progression (plus des étoiles/diamants) — les
+      // diamants ne viennent que du passage de niveau.
+      ref.read(pointsProvider.notifier).rewardVideoWatched().then((_) {
         if (!mounted) return;
-        ref.read(pointsProvider.notifier).loadPoints();
-        ref.read(shopProvider.notifier).refresh();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(ref.read(l10nProvider).corpszonePoints(PointsService.pointsPerVideo, total)),
-              duration: const Duration(seconds: 2),
-              backgroundColor: const Color(0xFF1C4D30),
-            ),
-          );
-        }
+        final total = ref.read(pointsProvider).totalPoints;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ref.read(l10nProvider).corpszonePoints(PointsAmounts.videoWatched, total)),
+            duration: const Duration(seconds: 2),
+            backgroundColor: const Color(0xFF1C4D30),
+          ),
+        );
+        maybeShowLevelUpToast(context, ref);
       });
     }
   }

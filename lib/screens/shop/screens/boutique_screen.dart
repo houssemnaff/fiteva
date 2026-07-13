@@ -5,6 +5,7 @@ import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/boutique_item.dart';
@@ -16,7 +17,7 @@ import 'redemption_history_screen.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // COLOR PALETTE — dérivée du ColorScheme du thème actif (donc de la palette
 // Pro choisie dans theme_screen.dart), même logique que community_screen.dart.
-// Doré = points/étoiles, rouge = wishlist : couleurs sémantiques fixes,
+// Doré = points/diamants, rouge = wishlist : couleurs sémantiques fixes,
 // volontairement indépendantes de la marque (cf. commentaire d'origine).
 // ─────────────────────────────────────────────────────────────────────────────
 class _C {
@@ -33,6 +34,7 @@ class _C {
   final bool  isDark;
 
   static const Color gold    = Color(0xFFB8892F);
+  static const Color diamond = Color(0xFF4A90D9); // bleu diamant — monnaie boutique
   static const Color wishRed = Color(0xFFC24A4A);
 
   factory _C.of(BuildContext ctx) {
@@ -162,9 +164,9 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
     if (_cat != 'all') list = list.where((e) => e.category == _cat).toList();
     switch (_sort) {
       case _Sort.topDeals:
-        list.sort((a, b) => b.etoiles.compareTo(a.etoiles));
+        list.sort((a, b) => b.diamonds.compareTo(a.diamonds));
       case _Sort.mostPopular:
-        list.sort((a, b) => a.etoiles.compareTo(b.etoiles));
+        list.sort((a, b) => a.diamonds.compareTo(b.diamonds));
       case _Sort.expiringSoon:
         list = list.where((e) => e.discount.isNotEmpty).toList();
       case _Sort.discount10:
@@ -235,7 +237,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
   Widget build(BuildContext context) {
     final c          = _C.of(context);
     final shop       = ref.watch(shopProvider);
-    final userPoints = shop.points;
+    final userPoints = shop.diamonds;
     final l10n       = ref.watch(l10nProvider);
     final wishlist   = ref.watch(shopWishlistProvider);
     final allItems   = ref.watch(shopItemsProvider).asData?.value ?? <BoutiqueItem>[];
@@ -255,7 +257,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
             accentColor: c.accent,
             bgColor:     c.bg,
             actions: [
-              _PointsPill(c: c, points: userPoints),
+              _DiamondsPill(c: c, diamonds: userPoints),
               const SizedBox(width: 8),
               _CircleIconButton(
                 c: c,
@@ -379,7 +381,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
                       c: c,
                       item: item,
                       l10n: l10n,
-                      userEtoiles: userPoints,
+                      userDiamonds: userPoints,
                       isWishlisted: wishlist.contains(item.id),
                       isRedeemed: isRedeemed,
                       onWish: () => _toggleWish(item.id),
@@ -399,12 +401,12 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HEADER — points pill + wishlist button
+// HEADER — diamonds pill + wishlist button
 // ─────────────────────────────────────────────────────────────────────────────
-class _PointsPill extends StatelessWidget {
+class _DiamondsPill extends StatelessWidget {
   final _C c;
-  final int points;
-  const _PointsPill({required this.c, required this.points});
+  final int diamonds;
+  const _DiamondsPill({required this.c, required this.diamonds});
 
   @override
   Widget build(BuildContext context) {
@@ -418,9 +420,9 @@ class _PointsPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(CupertinoIcons.star_fill, color: _C.gold, size: 13),
+          const Icon(LucideIcons.gem, color: Color(0xFF9CC8F5), size: 13),
           const SizedBox(width: 6),
-          Text('$points', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+          Text('$diamonds', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -595,9 +597,9 @@ class _HeroBanner extends StatelessWidget {
                                     color: Colors.white, letterSpacing: -0.4)),
                             const SizedBox(height: 8),
                             Row(mainAxisSize: MainAxisSize.min, children: [
-                              const Icon(CupertinoIcons.star_fill, size: 12, color: _C.gold),
+                              const Icon(LucideIcons.gem, size: 12, color: Color(0xFF9CC8F5)),
                               const SizedBox(width: 5),
-                              Text('${item.etoiles} pts',
+                              Text('${item.diamonds} diamants',
                                   style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
                             ]),
                           ],
@@ -976,7 +978,7 @@ class _GridProductCard extends StatelessWidget {
   final _C c;
   final BoutiqueItem item;
   final AppL10n l10n;
-  final int userEtoiles;
+  final int userDiamonds;
   final bool isWishlisted;
   final bool isRedeemed;
   final VoidCallback onWish;
@@ -987,14 +989,14 @@ class _GridProductCard extends StatelessWidget {
     required this.c,
     required this.item,
     required this.l10n,
-    required this.userEtoiles,
+    required this.userDiamonds,
     required this.isWishlisted,
     required this.isRedeemed,
     required this.onWish,
     required this.onTap,
   });
 
-  bool get _canAfford => userEtoiles >= item.etoiles;
+  bool get _canAfford => userDiamonds >= item.diamonds;
 
   @override
   Widget build(BuildContext context) {
@@ -1046,7 +1048,7 @@ class _GridProductCard extends StatelessWidget {
                     const Spacer(),
                     isRedeemed
                         ? _RedeemedTag(c: c, label: l10n.boutiqueEchange)
-                        : _StarsBadge(c: c, etoiles: item.etoiles, canAfford: _canAfford),
+                        : _DiamondBadge(c: c, diamonds: item.diamonds, canAfford: _canAfford),
                   ],
                 ),
               ),
@@ -1123,25 +1125,25 @@ class _RedeemedTag extends StatelessWidget {
   }
 }
 
-class _StarsBadge extends StatelessWidget {
+class _DiamondBadge extends StatelessWidget {
   final _C c;
-  final int etoiles;
+  final int diamonds;
   final bool canAfford;
-  const _StarsBadge({required this.c, required this.etoiles, required this.canAfford});
+  const _DiamondBadge({required this.c, required this.diamonds, required this.canAfford});
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = canAfford ? (c.isDark ? _C.gold.withValues(alpha: 0.16) : const Color(0xFFF6EFDF)) : c.chipBg;
-    final fgColor = canAfford ? _C.gold : c.inkSubtle;
+    final bgColor = canAfford ? (c.isDark ? _C.diamond.withValues(alpha: 0.16) : const Color(0xFFE8F1FB)) : c.chipBg;
+    final fgColor = canAfford ? _C.diamond : c.inkSubtle;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(CupertinoIcons.star_fill, size: 10, color: fgColor),
+          Icon(LucideIcons.gem, size: 10, color: fgColor),
           const SizedBox(width: 5),
-          Text('$etoiles', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: fgColor)),
+          Text('$diamonds', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: fgColor)),
         ],
       ),
     );

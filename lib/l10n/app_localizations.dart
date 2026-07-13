@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/locale_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -898,24 +898,24 @@ class AppL10n {
   String get detailSurSite        => _fr ? 'sur le site'             : 'on the website';
   String get detailResume         => _fr ? "Résumé de l'offre"       : 'Offer summary';
   String get detailCout           => _fr ? "Coût de l'offre"         : 'Offer cost';
-  String get detailEtoiles        => _fr ? 'étoiles'                 : 'stars';
+  String get detailDiamonds        => _fr ? 'diamants'                 : 'diamonds';
   String get detailValable        => _fr ? "Valable jusqu'au"        : 'Valid until';
   String get detailNonPrecise     => _fr ? 'Non précisé'             : 'Not specified';
   String get detailExpireDemain   => _fr ? 'Expire demain !'         : 'Expires tomorrow!';
-  String get detailMesEtoiles     => _fr ? 'Mes étoiles'             : 'My stars';
+  String get detailMesDiamonds     => _fr ? 'Mes diamants'             : 'My diamonds';
   String get detailDisponibles    => _fr ? 'disponibles'             : 'available';
   String get detailAPropos        => _fr ? "À propos de l'offre"     : 'About the offer';
   String get detailComment        => _fr ? 'Comment ça marche ?'     : 'How does it work?';
-  String get detailStep1          => _fr ? 'Appuie sur "Échanger mes étoiles"' : 'Tap "Exchange my stars"';
+  String get detailStep1          => _fr ? 'Appuie sur "Échanger mes diamants"' : 'Tap "Exchange my diamonds"';
   String get detailStep2          => _fr ? 'Reçois ton code promo et QR code' : 'Receive your promo code and QR code';
   String get detailStep3          => _fr ? 'Télécharge ta carte en PDF' : 'Download your card as PDF';
   String get detailStep4          => _fr ? 'Utilise-le lors de ta commande' : 'Use it when ordering';
   String get detailOffresSimilaires => _fr ? 'Offres similaires'     : 'Similar offers';
   String get detailDejaEchange    => _fr ? 'Offre déjà échangée — consulte ton code ci-dessus' : 'Offer already redeemed — see your code above';
-  String get detailEtoilesInsuff  => _fr ? 'Étoiles insuffisantes'   : 'Insufficient stars';
+  String get detailDiamondsInsuff  => _fr ? 'Diamants insuffisants'   : 'Insufficient diamonds';
   String get detailDejaEchangeBtn => _fr ? 'Offre déjà échangée'     : 'Offer already redeemed';
-  String detailManque(int n)      => _fr ? 'Il te manque $n étoile${n > 1 ? 's' : ''} pour débloquer cette offre' : 'You need $n more star${n > 1 ? 's' : ''} to unlock this offer';
-  String detailEchangerEtoiles(int n) => _fr ? 'Échanger $n étoiles' : 'Exchange $n stars';
+  String detailManque(int n)      => _fr ? 'Il te manque $n diamant${n > 1 ? 's' : ''} pour débloquer cette offre' : 'You need $n more diamond${n > 1 ? 's' : ''} to unlock this offer';
+  String detailEchangerDiamonds(int n) => _fr ? 'Échanger $n diamant${n > 1 ? 's' : ''}' : 'Exchange $n diamond${n > 1 ? 's' : ''}';
   String detailCopierCode(String c)   => _fr ? 'Copier le code : $c' : 'Copy code: $c';
 
 // ── All partenaires screen ─────────────────────────────────────────────────
@@ -991,8 +991,8 @@ class AppL10n {
   String get profileAucunEvt     => _fr ? 'Aucun événement créé'      : 'No events created';
   String get profilePartenaires  => _fr ? 'Partenaires'               : 'Partners';
   String get profileAucunPartenaire => _fr ? 'Aucune annonce partenaire' : 'No partner listings';
-  String get profileEtoiles      => _fr ? 'étoiles'                   : 'stars';
-  String get profileEtoilesLabel => _fr ? 'Points boutique'           : 'Shop points';
+  String get profileDiamonds      => _fr ? 'diamants'                   : 'diamonds';
+  String get profileDiamondsLabel => _fr ? 'Diamants boutique'         : 'Shop diamonds';
   String get profileAVenir       => _fr ? 'À VENIR'                   : 'UPCOMING';
   String get profilePasses       => _fr ? 'PASSÉS'                    : 'PAST';
   String get profileProgEnCours  => _fr ? 'PROGRAMMES EN COURS'       : 'PROGRAMS IN PROGRESS';
@@ -1002,7 +1002,7 @@ class AppL10n {
   String get profileAvance       => _fr ? 'Avancé'                    : 'Advanced';
   String get profileExpert       => _fr ? 'Expert'                    : 'Expert';
   String profileNiveau(String lbl) => _fr ? 'Niveau $lbl'            : 'Level $lbl';
-  String profileXPToNext(int n)    => _fr ? '$n XP avant le prochain niveau' : '$n XP to next level';
+  String profileXPToNext(int n)    => _fr ? '$n points avant le prochain niveau' : '$n points to next level';
   String profileTimeAgoMin(int n)  => _fr ? 'il y a ${n} min'        : '${n}m ago';
   String profileTimeAgoH(int n)    => _fr ? 'il y a ${n}h'           : '${n}h ago';
   String profileTimeAgoD(int n)    => _fr ? 'il y a ${n}j'           : '${n}d ago';
@@ -1243,7 +1243,7 @@ class AppL10n {
   String get profileUser           => _fr ? 'Utilisateur'                 : 'User';
   String get profileXpProgress     => _fr ? 'Progression XP'              : 'XP Progress';
   String get profileMaxLevel       => _fr ? '🏆 Niveau maximum atteint !' : '🏆 Max level reached!';
-  String profileXpToNext(int xp)   => _fr ? '$xp XP avant le prochain niveau' : '$xp XP to next level';
+  String profileXpToNext(int xp)   => _fr ? '$xp points avant le prochain niveau' : '$xp points to next level';
   String get profileWeeklyGoal     => _fr ? 'Objectif hebdomadaire'       : 'Weekly goal';
   String profileWeeklyDays(int d)  => _fr ? '$d jours complétés cette semaine' : '$d days completed this week';
   String get profileBadges         => _fr ? 'Badges'                      : 'Badges';
