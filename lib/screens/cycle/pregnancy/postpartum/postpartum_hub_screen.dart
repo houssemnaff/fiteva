@@ -103,8 +103,8 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
     if (_weeks < 2)  return const Color(0xFFE58F8A);
     if (_weeks < 6)  return const Color(0xFFF4A940);
     if (_weeks < 12) return const Color(0xFF7ABB98);
-    if (_weeks < 26) return const Color(0xFF1C4D30);
-    if (_weeks < 52) return const Color(0xFF1C4D30);
+    if (_weeks < 26) return Theme.of(context).colorScheme.primary;
+    if (_weeks < 52) return Theme.of(context).colorScheme.primary;
     return const Color(0xFF5A7A9E);
   }
 
@@ -129,7 +129,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
       title: l10n.ppDateAccouch,
       subtitle: l10n.ppQuandNe,
       icon: Icons.child_care_rounded,
-      accentColor: const Color(0xFF1C4D30),
+      accentColor: Theme.of(context).colorScheme.primary,
     );
     if (picked == null || !mounted) return;
     setState(() => _birthDate = picked);

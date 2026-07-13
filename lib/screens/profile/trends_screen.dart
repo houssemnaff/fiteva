@@ -53,10 +53,11 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
     final profile = ref.watch(userProfileProvider);
     final nutProfile = ref.watch(nut.userProfileProvider);
 
-    final bg = isDarkMode ? const Color(0xFF0D0D0D) : const Color(0xFFF6F7F5);
-    final ink = isDarkMode ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
-    final muted = isDarkMode ? const Color(0xFF888886) : const Color(0xFF6B6B68);
-    final surf = isDarkMode ? const Color(0xFF1A1A1A) : Colors.white;
+    final cs = Theme.of(context).colorScheme;
+    final bg = cs.surface;
+    final ink = cs.onSurface;
+    final muted = cs.onSurface.withValues(alpha: 0.5);
+    final surf = isDarkMode ? cs.surfaceContainerLow : Colors.white;
 
     return Scaffold(
       backgroundColor: bg,

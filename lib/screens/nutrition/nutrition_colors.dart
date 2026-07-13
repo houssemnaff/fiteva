@@ -46,7 +46,18 @@ class NutritionColors {
 
   factory NutritionColors.of(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return dark ? _dark : _light;
+    final base = dark ? _dark : _light;
+    final cs = Theme.of(context).colorScheme;
+    return NutritionColors._(
+      isDark: base.isDark, bg: base.bg, surface: base.surface,
+      surface2: base.surface2, border: base.border, text1: base.text1,
+      text2: base.text2, chipBg: base.chipBg,
+      mintBg: cs.primary.withOpacity(0.08),
+      greenFg: cs.primary,
+      blueBg: base.blueBg, blueFg: base.blueFg,
+      amberBg: base.amberBg, amberFg: base.amberFg,
+      redBg: base.redBg, redFg: base.redFg,
+    );
   }
 
   static final _light = NutritionColors._(

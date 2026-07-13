@@ -15,7 +15,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const _kGreen  = Color(0xFF1C4D30);
+Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
 const _kDark   = Color(0xFF1A1A1A);
 const _kGrey   = Color(0xFF6B7280);
 const _kBorder = Color(0xFFECECE8);
@@ -56,11 +56,11 @@ class FavoritesScreen extends ConsumerWidget {
               child: Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _kGreen.withValues(alpha: 0.08),
+                  color: _kGreen(context).withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(LucideIcons.arrowLeft,
-                    size: 18, color: _kGreen),
+                child: Icon(LucideIcons.arrowLeft,
+                    size: 18, color: _kGreen(context)),
               ),
             ),
             title: Row(
@@ -80,7 +80,7 @@ class FavoritesScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
-                      color: _kGreen,
+                      color: _kGreen(context),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -771,11 +771,11 @@ class _EmptyState extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: _kGreen.withValues(alpha: 0.08),
+                color: _kGreen(context).withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.heart,
-                  size: 32, color: _kGreen),
+              child: Icon(LucideIcons.heart,
+                  size: 32, color: _kGreen(context)),
             ),
             const SizedBox(height: 20),
             Text(

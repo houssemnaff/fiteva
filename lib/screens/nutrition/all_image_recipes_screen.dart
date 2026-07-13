@@ -12,7 +12,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'models/models.dart';
 
-const _kGreen  = Color(0xFF1C4D30);
+Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
 const _kMint   = Color(0xFF7ABB98);
 const _kMintBg = Color(0xFFEAF3EC);
 const _kCream  = Color(0xFFFAFAF8);
@@ -74,13 +74,13 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
                       width: 38, height: 38,
                       decoration: BoxDecoration(
                         color: _kMintBg, borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(LucideIcons.chevronLeft, color: _kGreen, size: 18))),
+                      child: Icon(LucideIcons.chevronLeft, color: _kGreen(context), size: 18))),
                   const SizedBox(width: 14),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(l10n.recettesEyebrow, style: GoogleFonts.inter(
                       color: _kMint, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 3)),
                     Text(l10n.recettesPhotos, style: GoogleFonts.outfit(
-                      color: _kGreen, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+                      color: _kGreen(context), fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
                   ]),
                   const Spacer(),
                   Container(
@@ -88,7 +88,7 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
                     decoration: BoxDecoration(
                       color: _kMintBg, borderRadius: BorderRadius.circular(20)),
                     child: Text(l10n.recettesCount(recipes.length), style: GoogleFonts.inter(
-                      fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
+                      fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen(context)))),
                 ]),
               ),
             ),
@@ -150,7 +150,7 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
                     Container(
                       width: 56, height: 56,
                       decoration: BoxDecoration(color: _kMintBg, borderRadius: BorderRadius.circular(18)),
-                      child: const Icon(LucideIcons.search, color: _kGreen, size: 24)),
+                      child: Icon(LucideIcons.search, color: _kGreen(context), size: 24)),
                     const SizedBox(height: 14),
                     Text(l10n.recettesAucune, style: GoogleFonts.outfit(
                       fontSize: 17, fontWeight: FontWeight.w700, color: _kText1)),

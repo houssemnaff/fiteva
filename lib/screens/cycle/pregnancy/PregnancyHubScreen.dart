@@ -17,10 +17,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
 
-// ── Brand colors (matches AppTheme) ──────────────────────────────────────────
-const _primary   = Color(0xFF1C4D30);
-const _accent    = Color(0xFF7ABB98);
-const _heroBg    = Color(0xFF0B1A0E);
+// ── Brand colors (theme-aware helpers) ───────────────────────────────────────
+Color _primary(BuildContext c) => Theme.of(c).colorScheme.primary;
+Color _accent(BuildContext c)  => Theme.of(c).colorScheme.secondary;
+Color _heroBg(BuildContext c)  => Color.lerp(Theme.of(c).colorScheme.primary, Colors.black, 0.8)!;
 const _heroMid   = Color(0xFF122015);
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
       title: l10n.pregDateAccouch,
       subtitle: l10n.pregQuandNe,
       icon: Icons.child_care_rounded,
-      accentColor: _primary,
+      accentColor: _primary(context),
     );
     if (birthDate == null || !mounted) return;
     final weeks = DateTime.now().difference(birthDate).inDays ~/ 7;
@@ -185,7 +185,7 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
             SharedAppHeader.sliver(
               eyebrow: l10n.pregTitle,
               title: l10n.pregMonSuivi,
-              accentColor: _accent,
+              accentColor: _accent(context),
               bgColor: cs.surface,
               actions: [
                 PopupMenuButton<String>(
@@ -210,16 +210,16 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
                       child: Text(l10n.pregMonCycle,
                         style: GoogleFonts.inter(
                           fontSize: 13, fontWeight: FontWeight.w500,
-                          color: _accent))),
+                          color: _accent(context)))),
                   ],
                   child: Container(
                     width: 38, height: 38,
                     decoration: BoxDecoration(
-                      color: _accent.withOpacity(0.10),
+                      color: _accent(context).withOpacity(0.10),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(Icons.more_horiz_rounded,
-                        size: 18, color: _primary),
+                        size: 18, color: _primary(context)),
                   ),
                 ),
               ],
@@ -323,12 +323,12 @@ class _Hero extends StatelessWidget {
         children: [
 
           // Deep dark background gradient
-          const DecoratedBox(
+          DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [_heroBg, _heroMid, Color(0xFF0D1A10)],
+                colors: [_heroBg(context), _heroMid, const Color(0xFF0D1A10)],
               ),
             ),
           ),
@@ -342,7 +342,7 @@ class _Hero extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    _primary.withOpacity(0.35),
+                    _primary(context).withOpacity(0.35),
                     Colors.transparent,
                   ],
                 ),
@@ -362,11 +362,11 @@ class _Hero extends StatelessWidget {
 
                   // ── Eyebrow (matches home screen) ─────────────────────
                   Row(children: [
-                    Container(width: 24, height: 2, color: _accent),
+                    Container(width: 24, height: 2, color: _accent(context)),
                     const SizedBox(width: 10),
                     Text(triLabel, style: GoogleFonts.inter(
                       fontSize: 10, fontWeight: FontWeight.w700,
-                      color: _accent, letterSpacing: 3)),
+                      color: _accent(context), letterSpacing: 3)),
                   ]),
 
                   const SizedBox(height: 10),
@@ -390,7 +390,7 @@ class _Hero extends StatelessWidget {
 
                   // ── Fruit size ─────────────────────────────────────────
                   Row(children: [
-                    Icon(LucideIcons.sprout, size: 14, color: _accent),
+                    Icon(LucideIcons.sprout, size: 14, color: _accent(context)),
                     const SizedBox(width: 8),
                     Text(l10n.pregCommeFruit(fruit), style: GoogleFonts.inter(
                       fontSize: 13, color: Colors.white60)),
@@ -409,7 +409,7 @@ class _Hero extends StatelessWidget {
                         color: Colors.white.withOpacity(0.12)),
                       FractionallySizedBox(
                         widthFactor: progress,
-                        child: Container(height: 3, color: _accent),
+                        child: Container(height: 3, color: _accent(context)),
                       ),
                     ]),
                   ),
@@ -474,16 +474,16 @@ class _ProgressStrip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
           decoration: BoxDecoration(
             color: active
-                ? _primary
+                ? _primary(context)
                 : done
-                    ? _primary.withOpacity(0.08)
+                    ? _primary(context).withOpacity(0.08)
                     : cs.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: active
-                  ? _primary
+                  ? _primary(context)
                   : done
-                      ? _primary.withOpacity(0.2)
+                      ? _primary(context).withOpacity(0.2)
                       : cs.outline,
               width: 1,
             ),
@@ -496,13 +496,13 @@ class _ProgressStrip extends StatelessWidget {
                 color: active
                     ? Colors.white
                     : done
-                        ? _primary
+                        ? _primary(context)
                         : cs.onSurface.withOpacity(0.35)),
             ),
             const SizedBox(height: 3),
             Text(labels[i], style: GoogleFonts.inter(
               fontSize: 9, fontWeight: FontWeight.w700,
-              color: active ? Colors.white : done ? _primary : cs.onSurface.withOpacity(0.45),
+              color: active ? Colors.white : done ? _primary(context) : cs.onSurface.withOpacity(0.45),
               letterSpacing: 0.2),
               textAlign: TextAlign.center),
             Text(subtitles[i], style: GoogleFonts.inter(
@@ -544,10 +544,10 @@ class _MoodRow extends StatelessWidget {
             margin: EdgeInsets.only(right: i < 2 ? 10 : 0),
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              color: sel ? _primary : cs.surfaceContainerHighest,
+              color: sel ? _primary(context) : cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: sel ? _primary : cs.outline, width: 1),
+                color: sel ? _primary(context) : cs.outline, width: 1),
             ),
             child: Column(children: [
               Icon(_icons[i], size: 20,
@@ -640,9 +640,9 @@ class _MoodResponseState extends State<_MoodResponse>
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _primary.withOpacity(0.06),
+            color: _primary(context).withOpacity(0.06),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _primary.withOpacity(0.12)),
+            border: Border.all(color: _primary(context).withOpacity(0.12)),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(message, style: GoogleFonts.outfit(
@@ -653,7 +653,7 @@ class _MoodResponseState extends State<_MoodResponse>
               Container(width: 3, height: 36,
                 margin: const EdgeInsets.only(right: 10, top: 2),
                 decoration: BoxDecoration(
-                  color: _accent,
+                  color: _accent(context),
                   borderRadius: BorderRadius.circular(2))),
               Expanded(child: Text(tip, style: GoogleFonts.inter(
                 fontSize: 12, height: 1.6,
@@ -688,7 +688,7 @@ class _WeekCard extends StatelessWidget {
         _InsightRow(
           label: 'VOTRE BÉBÉ',
           text: insight.babyInsight,
-          accent: _primary,
+          accent: _primary(context),
           cs: cs,
           topRadius: true,
         ),
@@ -699,7 +699,7 @@ class _WeekCard extends StatelessWidget {
         _InsightRow(
           label: 'POUR VOUS',
           text: insight.momTip,
-          accent: _accent,
+          accent: _accent(context),
           cs: cs,
           bottomRadius: true,
         ),
@@ -781,7 +781,7 @@ class _FitCard extends StatelessWidget {
         Container(
           width: 48, height: 48,
           decoration: BoxDecoration(
-            color: _primary,
+            color: _primary(context),
             borderRadius: BorderRadius.circular(14)),
           child: const Center(
             child: Icon(LucideIcons.activity, size: 22, color: Colors.white)),
@@ -790,7 +790,7 @@ class _FitCard extends StatelessWidget {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('MOUVEMENT', style: GoogleFonts.inter(
             fontSize: 9, fontWeight: FontWeight.w700,
-            color: _accent, letterSpacing: 1.8)),
+            color: _accent(context), letterSpacing: 1.8)),
           const SizedBox(height: 3),
           Text(_fitLabel(week), style: GoogleFonts.outfit(
             fontSize: 15, fontWeight: FontWeight.w700,
@@ -855,9 +855,9 @@ class _NavList extends StatelessWidget {
                 Container(
                   width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color: _primary.withOpacity(0.08),
+                    color: _primary(context).withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12)),
-                  child: Icon(icon, size: 18, color: _primary),
+                  child: Icon(icon, size: 18, color: _primary(context)),
                 ),
                 const SizedBox(width: 14),
                 Expanded(child: Column(
@@ -917,7 +917,7 @@ class _BornBanner extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: _primary,
+          color: _primary(context),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(children: [

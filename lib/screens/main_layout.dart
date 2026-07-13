@@ -174,16 +174,17 @@ class _MainLayoutState extends ConsumerState<MainLayout>
     final chatbotVisible = ref.watch(chatbotVisibilityProvider);
     final size    = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
+    final cs      = Theme.of(context).colorScheme;
     const btnSize = 85.0;
     const navH    = 88.0;
 
     final List<_SecondaryItem> secondaryItemsL10n = [
       _SecondaryItem(LucideIcons.shoppingBag, l10n.navShop,
-          const Color(0xFFB8860B), const Color(0xFFFFF8E7)),
+          cs.primary, cs.primary.withValues(alpha: 0.08)),
       _SecondaryItem(LucideIcons.users, l10n.navCommunity,
-          const Color(0xFF1C4D30), const Color(0xFFEAF3EC)),
+          cs.secondary, cs.secondary.withValues(alpha: 0.08)),
       _SecondaryItem(LucideIcons.activity, l10n.navHealth,
-          const Color(0xFF9B3E6A), const Color(0xFFFCEEF5)),
+          cs.primary, cs.primary.withValues(alpha: 0.08)),
     ];
 
     final List<Widget> secondaryScreens = [
@@ -456,12 +457,13 @@ class _GlassNavBar extends StatelessWidget {
   static const _barH   = 68.0;
   static const _margin = 16.0;
   static const _radius = 26.0;
-  static const _accent = Color(0xFF2ECC71);
 
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final accent = cs.primary;
 
     final glassBg = isDark
         ? Colors.black.withOpacity(0.55)
@@ -522,7 +524,7 @@ class _GlassNavBar extends StatelessWidget {
                       width: 42,
                       height: _barH - 16,
                       decoration: BoxDecoration(
-                        color: _accent.withOpacity(isDark ? 0.18 : 0.12),
+                        color: accent.withOpacity(isDark ? 0.18 : 0.12),
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
@@ -533,17 +535,17 @@ class _GlassNavBar extends StatelessWidget {
                 Row(children: [
                   // First 2 tabs
                   for (int i = 0; i < 2; i++)
-                    _buildTab(i, navItems[i], unselected, slotW),
+                    _buildTab(i, navItems[i], unselected, slotW, accent: accent),
 
                   // Center "+" button
                   SizedBox(
                     width: slotW,
-                    child: Center(child: _buildPlusButton()),
+                    child: Center(child: _buildPlusButton(accent)),
                   ),
 
                   // Last 2 tabs
                   for (int i = 2; i < navItems.length; i++)
-                    _buildTab(i, navItems[i], unselected, slotW),
+                    _buildTab(i, navItems[i], unselected, slotW, accent: accent),
                 ]),
               ]);
             }),
@@ -553,7 +555,7 @@ class _GlassNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildTab(int index, _NavItem item, Color unselected, double width) {
+  Widget _buildTab(int index, _NavItem item, Color unselected, double width, {required Color accent}) {
     final isSelected = !isSecondary && index == currentIndex;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -578,7 +580,7 @@ class _GlassNavBar extends StatelessWidget {
                 isSelected ? item.activeIcon : item.icon,
                 key: ValueKey(isSelected),
                 size: 23,
-                color: isSelected ? _accent : unselected,
+                color: isSelected ? accent : unselected,
               ),
             ),
 
@@ -591,7 +593,7 @@ class _GlassNavBar extends StatelessWidget {
                 fontSize: 10.5,
                 height: 1.0,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-                color: isSelected ? _accent : unselected,
+                color: isSelected ? accent : unselected,
                 letterSpacing: -0.1,
               ),
               child: Text(item.label, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -602,7 +604,7 @@ class _GlassNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildPlusButton() {
+  Widget _buildPlusButton(Color accent) {
     return GestureDetector(
       onTap: onPlusTap,
       child: AnimatedBuilder(
@@ -615,14 +617,14 @@ class _GlassNavBar extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: plusOpen
-                    ? [const Color(0xFF1A5C2E), const Color(0xFF0F3D1E)]
-                    : [const Color(0xFF2ECC71), const Color(0xFF27AE60)],
+                    ? [Color.lerp(accent, Colors.black, 0.3)!, Color.lerp(accent, Colors.black, 0.5)!]
+                    : [accent, Color.lerp(accent, Colors.black, 0.15)!],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: _accent.withOpacity(0.45),
+                  color: accent.withOpacity(0.45),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -708,14 +710,14 @@ class _StarCirclePainter extends CustomPainter {
     canvas.drawCircle(
       Offset(cx, cy + 2),
       26,
-      Paint()..color = const Color(0xFF1C4D30).withOpacity(0.35)
+      Paint()..color = const Color(0xFF888888).withOpacity(0.35)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
 
-    // Main green circle gradient
+    // Main circle gradient — uses neutral since CustomPainter can't access theme
     final gradient = Paint()
       ..shader = RadialGradient(
-        colors: [const Color(0xFF4ADE80), const Color(0xFF16A34A)],
+        colors: [const Color(0xFFAAAAAA), const Color(0xFF666666)],
       ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 26));
     canvas.drawCircle(Offset(cx, cy), 26, gradient);
 

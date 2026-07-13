@@ -18,7 +18,7 @@ class CycleInsightsScreen extends ConsumerStatefulWidget {
 }
 
 class _CycleInsightsScreenState extends ConsumerState<CycleInsightsScreen> {
-  static const _green = Color(0xFF1C4D30);
+  Color get _green => Theme.of(context).colorScheme.primary;
 
   bool _loading = true;
   List<CycleDailyLog> _logs = [];
@@ -56,7 +56,7 @@ class _CycleInsightsScreenState extends ConsumerState<CycleInsightsScreen> {
       backgroundColor: cc.bg,
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: _green))
+            ? Center(child: CircularProgressIndicator(color: _green))
             : SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
@@ -170,8 +170,6 @@ class _SymptomsChart extends StatelessWidget {
   final CycleColors cc;
   final AppL10n l10n;
 
-  static const _green = Color(0xFF1C4D30);
-
   const _SymptomsChart({required this.logs, required this.cc, required this.l10n});
 
   @override
@@ -212,7 +210,7 @@ class _SymptomsChart extends StatelessWidget {
                   value: counts[key]! / maxCount,
                   minHeight: 8,
                   backgroundColor: cc.isDark ? const Color(0xFF242424) : const Color(0xFFF0EBEC),
-                  valueColor: const AlwaysStoppedAnimation(_green),
+                  valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
                 ),
               ),
             ),
@@ -269,7 +267,7 @@ class _MoodCorrelationChart extends StatelessWidget {
     final phaseColors = {
       'Règles':      const Color(0xFFE58F8A),
       'Folliculaire': const Color(0xFF7ABB98),
-      'Ovulation':   const Color(0xFF1C4D30),
+      'Ovulation':   Theme.of(context).colorScheme.primary,
       'Lutéale':     const Color(0xFFA7B8AD),
     };
 
@@ -318,7 +316,6 @@ class _MonthlyTrendsChart extends StatelessWidget {
   final CycleColors cc;
   final AppL10n l10n;
 
-  static const _green = Color(0xFF1C4D30);
   static const _monthsFr = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'];
   static const _monthsEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -357,7 +354,7 @@ class _MonthlyTrendsChart extends StatelessWidget {
                   width: 34,
                   height: 70 * (counts['${m.year}-${m.month}']! / maxCount).clamp(0.06, 1.0),
                   decoration: BoxDecoration(
-                    color: _green.withOpacity(0.85),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.85),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                   ),
                 ),

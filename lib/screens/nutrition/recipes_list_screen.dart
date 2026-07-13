@@ -16,7 +16,7 @@ import 'all_image_recipes_screen.dart';
 import '../../services/recipe_service.dart';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const _kGreen  = Color(0xFF1C4D30);
+Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
 const _kMint   = Color(0xFF7ABB98);
 const _kMintBg = Color(0xFFEAF3EC);
 const _kCream  = Color(0xFFFAFAF8);
@@ -519,7 +519,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                               child: Container(
                                 width: 26, height: 26,
                                 decoration: BoxDecoration(
-                                  color: _kGreen.withOpacity(0.88),
+                                  color: _kGreen(context).withOpacity(0.88),
                                   shape: BoxShape.circle),
                                 child: const Icon(LucideIcons.play,
                                   color: Colors.white, size: 11)))),
@@ -580,7 +580,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                               : LucideIcons.search,
                           color: _activeCategory == 'Favoris'
                               ? const Color(0xFFE03050)
-                              : _kGreen,
+                              : _kGreen(context),
                           size: 26)),
                       const SizedBox(height: 16),
                       Text(
@@ -667,7 +667,7 @@ class _StickyHeader extends StatelessWidget {
                 width: 38, height: 38,
                 decoration: BoxDecoration(
                   color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
-                child: const Icon(LucideIcons.chevronLeft, color: _kGreen, size: 18),
+                child: Icon(LucideIcons.chevronLeft, color: _kGreen(context), size: 18),
               ),
             ),
             const SizedBox(width: 14),
@@ -798,11 +798,10 @@ class _CategoryPill extends StatelessWidget {
 
   bool get _isFav => label == 'Favoris';
 
-  Color get _activeColor => _isFav ? const Color(0xFFE03050) : _kGreen;
-  Color get _activeBg    => _isFav ? const Color(0xFFE03050) : _kGreen;
-
   @override
   Widget build(BuildContext context) {
+    final _activeColor = _isFav ? const Color(0xFFE03050) : _kGreen(context);
+    final _activeBg    = _isFav ? const Color(0xFFE03050) : _kGreen(context);
     final nc = NutritionColors.of(context);
     return GestureDetector(
     onTap: onTap,
@@ -876,7 +875,7 @@ class _SectionHeader extends StatelessWidget {
           width: 32, height: 32,
           decoration: BoxDecoration(
             color: nc.mintBg, borderRadius: BorderRadius.circular(10)),
-          child: const Icon(LucideIcons.salad, size: 14, color: _kGreen),
+          child: Icon(LucideIcons.salad, size: 14, color: _kGreen(context)),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -899,7 +898,7 @@ class _SectionHeader extends StatelessWidget {
               onTap: onAction,
               child: Text(action!, style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w700,
-                color: onAction != null ? _kGreen : nc.text2))),
+                color: onAction != null ? _kGreen(context) : nc.text2))),
           ),
       ]),
     );

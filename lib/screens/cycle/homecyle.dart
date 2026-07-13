@@ -257,36 +257,36 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(l10n.cycleIAmPregnant,
             style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700,
-                color: const Color(0xFF1A2E20))),
+                color: Theme.of(ctx).colorScheme.onSurface)),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(l10n.cycleWhichWeek,
-              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5A7A65))),
+              style: GoogleFonts.inter(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.5))),
             const SizedBox(height: 20),
             Text('${l10n.cycleWeekLabel} $selectedWeek',
               style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1C4D30))),
+                  color: Theme.of(ctx).colorScheme.primary)),
             Slider(
               value: selectedWeek.toDouble(),
               min: 1, max: 42,
               divisions: 41,
-              activeColor: const Color(0xFF1C4D30),
-              inactiveColor: const Color(0xFFD0E8D8),
+              activeColor: Theme.of(ctx).colorScheme.primary,
+              inactiveColor: Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.2),
               onChanged: (v) => setDlg(() => selectedWeek = v.round()),
             ),
             Text(
               selectedWeek <= 13 ? l10n.cycleTrimester1
                   : selectedWeek <= 26 ? l10n.cycleTrimester2 : l10n.cycleTrimester3,
               style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600,
-                  color: const Color(0xFF7ABB98))),
+                  color: Theme.of(ctx).colorScheme.secondary)),
           ]),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(l10n.cancel,
-                style: GoogleFonts.inter(color: const Color(0xFF888888)))),
+                style: GoogleFonts.inter(color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.4)))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1C4D30),
+                backgroundColor: Theme.of(ctx).colorScheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -406,8 +406,8 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
   // règles prévues ne sont ni loggées ni reportées à demain.
 
   // Vert signature de l'app — le même que Profil / Ovulation / boutons primaires
-  static const _green    = Color(0xFF1C4D30);
-  static const _greenBg  = Color(0xFFE8F5E9);
+  Color get _green   => Theme.of(context).colorScheme.primary;
+  Color get _greenBg => Theme.of(context).colorScheme.primary.withValues(alpha: 0.08);
 
   static String _fmtDate(DateTime d, AppL10n l10n) {
     final monthsFr = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'];
@@ -697,11 +697,11 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
                 PopupMenuItem(
                   value: 'insights',
                   child: Row(children: [
-                    const Icon(Icons.insights_rounded, size: 17, color: Color(0xFF1C4D30)),
+                    Icon(Icons.insights_rounded, size: 17, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 10),
                     Text(l10n.insightsMenuLabel, style: GoogleFonts.inter(
                       fontSize: 13, fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A2E20))),
+                      color: Theme.of(context).colorScheme.onSurface)),
                   ]),
                 ),
                 PopupMenuItem(
@@ -998,8 +998,6 @@ class _LateStatChip extends StatelessWidget {
   final CycleColors cc;
   final bool highlight;
 
-  static const _amber = Color(0xFF1C4D30);
-
   const _LateStatChip({
     required this.label, required this.value, required this.cc,
     this.highlight = false,
@@ -1007,14 +1005,15 @@ class _LateStatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = highlight ? _amber : cc.text;
+    final accent = Theme.of(context).colorScheme.primary;
+    final color = highlight ? accent : cc.text;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
         color: cc.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: highlight ? _amber.withOpacity(0.3) : cc.border),
+            color: highlight ? accent.withOpacity(0.3) : cc.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label.toUpperCase(), style: GoogleFonts.inter(
@@ -1269,7 +1268,7 @@ class _OvulationCard extends StatelessWidget {
     }
     return _InfoCard(
       icon: Icons.spa_outlined,
-      color: const Color(0xFF7ABB98),
+      color: Theme.of(context).colorScheme.secondary,
       title: l10n.cycleOvulation,
       value: value, subtitle: sub, cc: cc,
     );

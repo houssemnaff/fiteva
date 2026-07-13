@@ -11,7 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-const _kGreen  = Color(0xFF1C4D30);
+Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
 const _kMint   = Color(0xFF7ABB98);
 const _kMintBg = Color(0xFFEAF3EC);
 const _kCream  = Color(0xFFFAFAF8);
@@ -51,7 +51,7 @@ class AllVideoRecipesScreen extends ConsumerWidget {
                       width: 38, height: 38,
                       decoration: BoxDecoration(
                         color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(LucideIcons.chevronLeft, color: _kGreen, size: 18))),
+                      child: Icon(LucideIcons.chevronLeft, color: _kGreen(context), size: 18))),
                   const SizedBox(width: 14),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(l10n.recettesEyebrow, style: GoogleFonts.inter(
@@ -65,7 +65,7 @@ class AllVideoRecipesScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: nc.mintBg, borderRadius: BorderRadius.circular(20)),
                     child: Text(l10n.recettesCount(dbVideos.length), style: GoogleFonts.inter(
-                      fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
+                      fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen(context)))),
                 ]),
               ),
             ),
@@ -152,7 +152,7 @@ class _VideoGridCard extends StatelessWidget {
                   width: 40, height: 40,
                   decoration: BoxDecoration(
                     color: recipe.videoAsset != null
-                        ? _kGreen.withOpacity(0.92)
+                        ? _kGreen(context).withOpacity(0.92)
                         : Colors.white.withOpacity(0.88),
                     shape: BoxShape.circle,
                     boxShadow: [BoxShadow(
@@ -168,7 +168,7 @@ class _VideoGridCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
-                      color: _kGreen,
+                      color: _kGreen(context),
                       borderRadius: BorderRadius.circular(8)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(LucideIcons.video, size: 9, color: Colors.white),

@@ -8,13 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-// ── Palette ───────────────────────────────────────────────────────────────────
-const _kGreen   = Color(0xFF1C4D30);
-const _kMint    = Color(0xFF7ABB98);
-const _kSurface = Color(0xFFFEFEFE);
-const _kBorder  = Color(0xFFECECEC);
-const _kText1   = Color(0xFF1A1A1A);
-const _kText2   = Color(0xFF6B7280);
+// ── Palette (theme-aware helpers) ─────────────────────────────────────────────
+Color _green(BuildContext c)   => Theme.of(c).colorScheme.primary;
+Color _mint(BuildContext c)    => Theme.of(c).colorScheme.secondary;
+Color _surface(BuildContext c) => Theme.of(c).colorScheme.surface;
+Color _border(BuildContext c)  => Theme.of(c).colorScheme.outline;
+Color _text1(BuildContext c)   => Theme.of(c).colorScheme.onSurface;
+Color _text2(BuildContext c)   => Theme.of(c).colorScheme.onSurface.withValues(alpha: 0.5);
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  MODELS

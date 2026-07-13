@@ -8,17 +8,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // TOKENS LOCAUX — cohérents avec le reste de l'app
 // ─────────────────────────────────────────────────────────────────────────────
-abstract class _C {
-  static const bg        = Color(0xFFF5F3EE); // même fond que NutritionHomeScreen
-  static const white     = Colors.white;
-  static const card      = Colors.white;
-  static const border    = Color(0x14000000); // black 8%
+class _C {
+  final ColorScheme _cs;
+  _C._(this._cs);
+  static _C of(BuildContext c) => _C._(Theme.of(c).colorScheme);
+
+  Color get bg        => _cs.surface;
+  Color get white     => _cs.brightness == Brightness.dark ? _cs.surface : Colors.white;
+  Color get card      => _cs.brightness == Brightness.dark ? _cs.surfaceContainerLow : Colors.white;
+  Color get border    => _cs.outline;
+  Color get primary   => _cs.primary;
+  Color get primaryBg => _cs.primary.withValues(alpha: 0.08);
+  // Static fallbacks for const data
   static const green     = Color(0xFF085041);
   static const greenDark = Color(0xFF085041);
   static const greenBg   = Color(0xFFE1F5EE);
-  static const textDark  = Color(0xFF1A1A1A);
-  static const textGrey  = Color(0xFF888780);
-  static const pill      = Color(0xFFF1EFE8);
+  Color get textDark  => _cs.onSurface;
+  Color get textGrey  => _cs.onSurface.withValues(alpha: 0.5);
+  Color get pill      => _cs.surfaceContainerHighest;
+  // Semantic colors — keep fixed
   static const orange    = Color(0xFFD85A30);
   static const orangeBg  = Color(0xFFFAECE7);
   static const blue      = Color(0xFF378ADD);
@@ -698,7 +706,7 @@ class _IngredientCard extends StatelessWidget {
             ingredient.imageUrl,
             width: 52, height: 52, fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
-              width: 52, height: 52, color: _C.pill,
+              width: 52, height: 52, color: _C.of(context).pill,
               child: Icon(Icons.restaurant, color: colorScheme.onSurfaceVariant, size: 20),
             ),
           ),

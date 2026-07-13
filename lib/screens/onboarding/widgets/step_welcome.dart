@@ -4,8 +4,11 @@ import 'shared_onboarding_widgets.dart';
 // ══════════════════════════════════════════════════════════════════════════════
 // STEP 1 — StepWelcome (inchangé visuellement, mais fond mint)
 // ══════════════════════════════════════════════════════════════════════════════
-const _kGreenLight  = Color(0xFF2E7D4F);
-const _kGreenPale   = Color(0xFFE8F5EE);
+// Theme-aware helpers
+Color _kGreenOf(BuildContext c)      => Theme.of(c).colorScheme.primary;
+Color _kGreenLightOf(BuildContext c)  => Color.lerp(Theme.of(c).colorScheme.primary, Colors.white, 0.2)!;
+Color _kGreenPaleOf(BuildContext c) => Theme.of(c).colorScheme.primary.withValues(alpha: 0.08);
+// Fallback consts for const contexts
 const _kGreen       = Color(0xFF2D4A2D);
 
 class StepWelcome extends StatefulWidget {
@@ -120,11 +123,11 @@ class _StepWelcomeState extends State<StepWelcome>
                     child: Container(
                       width: 38, height: 38,
                       decoration: BoxDecoration(
-                        color: _kGreenPale,
+                        color: _kGreenPaleOf(context),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(Icons.arrow_back_ios_new,
-                          color: _kGreen, size: 15),
+                          color: _kGreenOf(context), size: 15),
                     ),
                   ),
                   Row(
@@ -133,7 +136,7 @@ class _StepWelcomeState extends State<StepWelcome>
                       width: i == 0 ? 18 : 6,
                       height: 6,
                       decoration: BoxDecoration(
-                        color: i == 0 ? _kGreen : const Color(0xFFD8E8DF),
+                        color: i == 0 ? _kGreenOf(context) : const Color(0xFFD8E8DF),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     )),
@@ -283,7 +286,7 @@ class _StepWelcomeState extends State<StepWelcome>
 
   Widget _buildSocialButtons() => Column(children: [
     _socialBtn(label: "Continuer avec Email", icon: Icons.mail_outline_rounded,
-        iconColor: _kGreen, bgColor: _kGreenPale, textColor: _kGreen,
+        iconColor: _kGreenOf(context), bgColor: _kGreenPaleOf(context), textColor: _kGreenOf(context),
         borderColor: const Color(0xFFB8D9C5),
         onTap: () => setState(() => _emailMode = true)),
     const SizedBox(height: 12),
@@ -336,13 +339,13 @@ class _StepWelcomeState extends State<StepWelcome>
         duration: const Duration(milliseconds: 250),
         height: 56,
         decoration: BoxDecoration(
-          gradient: enabled ? const LinearGradient(
-            colors: [_kGreenLight, _kGreen],
+          gradient: enabled ? LinearGradient(
+            colors: [_kGreenLightOf(context), _kGreenOf(context)],
             begin: Alignment.topLeft, end: Alignment.bottomRight,
           ) : null,
           color: enabled ? null : const Color(0xFFE8EDE9),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: enabled ? [BoxShadow(color: _kGreen.withOpacity(0.30),
+          boxShadow: enabled ? [BoxShadow(color: _kGreenOf(context).withOpacity(0.30),
               blurRadius: 18, offset: const Offset(0, 6))] : [],
         ),
         child: Center(

@@ -504,7 +504,7 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const accent = Color(0xFF1C4D30);
+    final accent = Theme.of(context).colorScheme.primary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -651,7 +651,7 @@ class _SectionTitle extends StatelessWidget {
           width: 4,
           height: 18,
           decoration: BoxDecoration(
-              color: const Color(0xFF1C4D30),
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(4))),
       const SizedBox(width: 10),
       Text(label,
@@ -675,7 +675,7 @@ class _QuickStat extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    const accent = Color(0xFF1C4D30);
+    final accent = Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
@@ -726,7 +726,7 @@ class _CoachCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFF1C4D30);
+    final accent = Theme.of(context).colorScheme.primary;
     const gold = Color(0xFFD4A853);
     final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
 
@@ -751,10 +751,10 @@ class _CoachCard extends StatelessWidget {
                   colors: [gold, Color(0xFFB8833A)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight)),
-          child: const CircleAvatar(
+          child: CircleAvatar(
             radius: 26,
             backgroundColor: accent,
-            child: Text('S',
+            child: const Text('S',
                 style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -847,7 +847,7 @@ class _GoalChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    const accent = Color(0xFF1C4D30);
+    final accent = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
       decoration: BoxDecoration(
@@ -884,7 +884,7 @@ class _PhaseList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const accent = Color(0xFF1C4D30);
+    final accent = Theme.of(context).colorScheme.primary;
     const gold = Color(0xFFD4A853);
 
     final phases = weeks.isEmpty
@@ -1164,7 +1164,7 @@ class _WeekNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    const accent = Color(0xFF1C4D30);
+    final accent = Theme.of(context).colorScheme.primary;
 
     return SizedBox(
       height: 42,
@@ -1251,7 +1251,7 @@ class _SessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    const accent = Color(0xFF1C4D30);
+    final accent = Theme.of(context).colorScheme.primary;
     const gold = Color(0xFFD4A853);
     final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
 
@@ -1290,9 +1290,9 @@ class _SessionCard extends StatelessWidget {
                 width: double.infinity,
                 padding:
                     const EdgeInsets.symmetric(vertical: 7, horizontal: 16),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: accent,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(21)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(21)),
                 ),
                 child: Row(children: [
                   const Icon(LucideIcons.play,
@@ -1488,7 +1488,7 @@ class _BottomCta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    const accent = Color(0xFF1C4D30);
+    final accent = Theme.of(context).colorScheme.primary;
     const gold = Color(0xFFD4A853);
     final bg = dark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F5);
 

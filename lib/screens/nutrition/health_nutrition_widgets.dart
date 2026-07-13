@@ -9,8 +9,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  DESIGN TOKENS
+//  Note: These are const fallbacks. Widgets should prefer cs.primary etc.
+//  from Theme.of(context).colorScheme when possible.
 // ══════════════════════════════════════════════════════════════════════════════
-const _kGreen   = Color(0xFF1C4D30);
+Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
 const _kMint    = Color(0xFF7ABB98);
 const _kMintBg  = Color(0xFFEAF3EC);
 const _kBorder  = Color(0xFFECECEC);
@@ -177,7 +179,7 @@ extension CyclePhaseCalorieExt on CyclePhase {
       ]),
     CyclePhase.folliculaire => const DailyNutrientTip(
       nutrient: 'Protéines', icon: LucideIcons.dumbbell,
-      color: _kGreen, bg: _kMintBg,
+      color: Color(0xFF7ABB98), bg: _kMintBg,
       reason: 'Soutient la synthèse hormonale et la récupération musculaire.',
       sources: [
         NutrientFoodSource('Poulet grillé', '31 g / 100 g'),
@@ -264,10 +266,10 @@ class VitalityScoreCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _kGreen,
+        color: _kGreen(context),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [BoxShadow(
-          color: _kGreen.withOpacity(0.28),
+          color: _kGreen(context).withOpacity(0.28),
           blurRadius: 20, offset: const Offset(0, 6))]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
@@ -428,7 +430,7 @@ class MicronutrientsCard extends StatelessWidget {
     eyebrow: 'MICRONUTRIMENTS',
     title: 'Nutriments essentiels',
     trailing: _StatusPill('${_nutrients.where((n) => n.pct >= 0.7).length}/4 OK',
-      _kGreen, _kMintBg),
+      _kGreen(context), _kMintBg),
     child: GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 10, mainAxisSpacing: 10,
@@ -535,10 +537,10 @@ class _BodySignalCardState extends ConsumerState<BodySignalCard> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 13),
               decoration: BoxDecoration(
-                color: _kGreen,
+                color: _kGreen(context),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [BoxShadow(
-                  color: _kGreen.withOpacity(0.2),
+                  color: _kGreen(context).withOpacity(0.2),
                   blurRadius: 12, offset: const Offset(0, 4))]),
               child: Center(child: Text(l10n.healthEnregistrer,
                 style: GoogleFonts.inter(
@@ -556,10 +558,10 @@ class _BodySignalCardState extends ConsumerState<BodySignalCard> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _kMint.withOpacity(0.35))),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(LucideIcons.checkCircle, size: 14, color: _kGreen),
+              Icon(LucideIcons.checkCircle, size: 14, color: _kGreen(context)),
               const SizedBox(width: 7),
               Text(l10n.healthSignalEnreg, style: GoogleFonts.inter(
-                fontSize: 13, fontWeight: FontWeight.w600, color: _kGreen)),
+                fontSize: 13, fontWeight: FontWeight.w600, color: _kGreen(context))),
             ])),
         ],
       ]),
@@ -633,7 +635,7 @@ class WaterTrackerCard extends ConsumerWidget {
     final remaining  = goalMl - currentMl;
 
     final statusColor = pct >= 0.8
-        ? _kGreen
+        ? _kGreen(context)
         : pct >= 0.5
             ? const Color(0xFFC47A00)
             : const Color(0xFFE24B4A);
@@ -655,7 +657,7 @@ class WaterTrackerCard extends ConsumerWidget {
             child: Text((currentMl / 1000).toStringAsFixed(1),
               style: GoogleFonts.outfit(
                 fontSize: 42, fontWeight: FontWeight.w800,
-                color: _kGreen, height: 1)))),
+                color: _kGreen(context), height: 1)))),
           const SizedBox(width: 6),
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
@@ -667,7 +669,7 @@ class WaterTrackerCard extends ConsumerWidget {
               maxLines: 1,
               style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w600,
-                color: remaining > 0 ? _kText2 : _kGreen)),
+                color: remaining > 0 ? _kText2 : _kGreen(context))),
             Text('$glasses / $goalGlasses ${l10n.healthVerres}',
               style: GoogleFonts.inter(fontSize: 10, color: _kText2)),
           ]),
@@ -745,7 +747,7 @@ class _WaterBtn extends StatelessWidget {
             color: minus ? _kBorder : _kMint.withOpacity(0.4))),
         child: Center(child: Text(label, style: GoogleFonts.inter(
           fontSize: 12, fontWeight: FontWeight.w700,
-          color: minus ? _kText2 : _kGreen)))),
+          color: minus ? _kText2 : _kGreen(context))))),
     ),
   );
 }
@@ -1191,7 +1193,7 @@ class _DynamicCalorieCardState extends State<DynamicCalorieCard>
                 child: Text('${adj > 0 ? '+' : ''}$adj kcal vs base',
                   style: GoogleFonts.inter(
                     fontSize: 10, fontWeight: FontWeight.w700,
-                    color: adj > 0 ? const Color(0xFF9B5E0A) : _kGreen))),
+                    color: adj > 0 ? const Color(0xFF9B5E0A) : _kGreen(context)))),
             ],
             const SizedBox(height: 10),
             Container(
@@ -1371,9 +1373,9 @@ class _SleepQualityCardState extends State<SleepQualityCard> {
 
   static const _labels = ['Mauvais', 'Correct', 'Bon', 'Excellent'];
   static const _icons  = [LucideIcons.frown, LucideIcons.meh, LucideIcons.smile, LucideIcons.laugh];
-  static const _colors = [
-    Color(0xFFE24B4A), Color(0xFFC47A00),
-    Color(0xFF5BAE8A), _kGreen,
+  List<Color> get _colors => [
+    const Color(0xFFE24B4A), const Color(0xFFC47A00),
+    const Color(0xFF5BAE8A), _kGreen(context),
   ];
 
   @override
@@ -1383,7 +1385,7 @@ class _SleepQualityCardState extends State<SleepQualityCard> {
       title: 'Qualité du sommeil',
       trailing: _StatusPill(
         '${_hours.toStringAsFixed(1)}h',
-        _hours >= 7 ? _kGreen : const Color(0xFFC47A00),
+        _hours >= 7 ? _kGreen(context) : const Color(0xFFC47A00),
         _hours >= 7 ? _kMintBg : const Color(0xFFFAEEDA)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
@@ -1392,7 +1394,7 @@ class _SleepQualityCardState extends State<SleepQualityCard> {
           Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
             child: Text(_hours.toStringAsFixed(1), style: GoogleFonts.outfit(
               fontSize: 42, fontWeight: FontWeight.w800,
-              color: _kGreen, height: 1)))),
+              color: _kGreen(context), height: 1)))),
           const SizedBox(width: 6),
           Padding(
             padding: const EdgeInsets.only(bottom: 7),
@@ -1407,17 +1409,17 @@ class _SleepQualityCardState extends State<SleepQualityCard> {
             child: Text(_hours >= 8 ? 'Idéal' : _hours >= 7 ? 'Suffisant' : 'Insuffisant',
               style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w700,
-                color: _hours >= 7 ? _kGreen : const Color(0xFFB26200)))),
+                color: _hours >= 7 ? _kGreen(context) : const Color(0xFFB26200)))),
         ]),
 
         const SizedBox(height: 8),
 
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: _kGreen,
+            activeTrackColor: _kGreen(context),
             inactiveTrackColor: const Color(0xFFF0F0F0),
-            thumbColor: _kGreen,
-            overlayColor: _kGreen.withOpacity(0.12),
+            thumbColor: _kGreen(context),
+            overlayColor: _kGreen(context).withOpacity(0.12),
             trackHeight: 5,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10)),
           child: Slider(
@@ -1525,7 +1527,7 @@ class ActiveMinutesCard extends StatelessWidget {
       title: 'Minutes actives',
       trailing: _StatusPill(
         pct >= 1.0 ? 'Objectif atteint !' : '$left min restantes',
-        pct >= 1.0 ? _kGreen : _kText2,
+        pct >= 1.0 ? _kGreen(context) : _kText2,
         pct >= 1.0 ? _kMintBg : const Color(0xFFF4F4F4)),
       child: Column(children: [
 
@@ -1539,12 +1541,12 @@ class ActiveMinutesCard extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: pct, strokeWidth: 8,
                   backgroundColor: _kMint.withOpacity(0.12),
-                  valueColor: const AlwaysStoppedAnimation(_kGreen),
+                  valueColor: AlwaysStoppedAnimation(_kGreen(context)),
                   strokeCap: StrokeCap.round)),
               Column(mainAxisSize: MainAxisSize.min, children: [
                 Text('$activeMinutes', style: GoogleFonts.outfit(
                   fontSize: 26, fontWeight: FontWeight.w800,
-                  color: _kGreen, height: 1)),
+                  color: _kGreen(context), height: 1)),
                 Text('min', style: GoogleFonts.inter(
                   fontSize: 10, color: _kText2)),
               ]),
@@ -1562,11 +1564,11 @@ class ActiveMinutesCard extends StatelessWidget {
                 color: _kMintBg,
                 borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
-                const Icon(LucideIcons.footprints, size: 14, color: _kGreen),
+                Icon(LucideIcons.footprints, size: 14, color: _kGreen(context)),
                 const SizedBox(width: 8),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('$steps', style: GoogleFonts.outfit(
-                    fontSize: 16, fontWeight: FontWeight.w800, color: _kGreen)),
+                    fontSize: 16, fontWeight: FontWeight.w800, color: _kGreen(context))),
                   Text('pas aujourd\'hui', style: GoogleFonts.inter(
                     fontSize: 10, color: _kText2)),
                 ]),

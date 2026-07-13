@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 class WorkoutColors {
   // 🏋️ Gym / Salle — force, discipline, performance
-  static const salle = Color(0xFF1C4D30); // deep forest (core brand)
+  static const salle = Color(0xFF1C4D30); // deep forest (fallback)
+  static Color salleOf(BuildContext c) => Theme.of(c).colorScheme.primary;
 
   // 🏠 Home workout — calme, accessible, soft energy
   static const maison = Color(0xFF4F7D66); // muted sage green

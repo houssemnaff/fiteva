@@ -655,14 +655,14 @@ class _DayDetailCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _statusColor(plan.status, cat).withValues(alpha: 0.12),
+                  color: _statusColor(context, plan.status, cat).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(50),
                   border: Border.all(
-                    color: _statusColor(plan.status, cat).withValues(alpha: 0.3)),
+                    color: _statusColor(context, plan.status, cat).withValues(alpha: 0.3)),
                 ),
                 child: Text(_statusLabel(plan.status), style: GoogleFonts.inter(
                   fontSize: 10, fontWeight: FontWeight.w700,
-                  color: _statusColor(plan.status, cat))),
+                  color: _statusColor(context, plan.status, cat))),
               ),
             const SizedBox(width: 8),
             if (onOptions != null)
@@ -702,10 +702,10 @@ class _DayDetailCard extends StatelessWidget {
     );
   }
 
-  Color _statusColor(DayStatus s, ProgramCategory? cat) {
+  Color _statusColor(BuildContext context, DayStatus s, ProgramCategory? cat) {
     switch (s) {
       case DayStatus.done:    return const Color(0xFF34D399);
-      case DayStatus.planned: return cat?.color ?? const Color(0xFF1C4D30);
+      case DayStatus.planned: return cat?.color ?? Theme.of(context).colorScheme.primary;
       case DayStatus.rest:    return const Color(0xFF6B7280);
       case DayStatus.empty:   return const Color(0xFF9CA3AF);
     }

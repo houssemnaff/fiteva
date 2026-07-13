@@ -319,7 +319,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
       l10n.workoutChipGrossesse,
     ];
 
-    final bg = dark ? const Color(0xFF0D0D0D) : const Color.fromARGB(255, 255, 255, 255);
+    final bg = cs.surface;
 
     return Scaffold(
       backgroundColor: bg,
@@ -562,11 +562,9 @@ class _PhaseBanner extends StatelessWidget {
     } else if (healthStatus == 'postpartum') {
       label = 'POST-PARTUM'; icon = Icons.favorite_rounded; accent = const Color(0xFF1C7A6E);
     } else {
-      label = cycle.name.toUpperCase(); icon = LucideIcons.leaf; accent = const Color(0xFFB2447A);
+      label = cycle.name.toUpperCase(); icon = LucideIcons.leaf; accent = cs.primary;
     }
-    // Bandeau blanc avec liseré coloré à gauche (style "note"), et un bouton
-    // dédié pour les séances recommandées au lieu d'une simple flèche.
-    final surface = dark ? const Color(0xFF1A1A1A) : Colors.white;
+    final surface = cs.surfaceContainerHigh;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -662,7 +660,7 @@ class _RecommendedSheet extends StatelessWidget {
         child: Column(children: [
           _SheetHandle(
               title: 'Recommandées pour toi',
-              color: const Color(0xFFB2447A),
+              color: cs.primary,
               icon: LucideIcons.sparkles,
               onClose: () => Navigator.pop(context)),
           Expanded(
@@ -705,6 +703,7 @@ class _RecommendedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -720,8 +719,8 @@ class _RecommendedCard extends StatelessWidget {
           Image.asset(
             program.imageUrl, fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
-              color: const Color(0xFFB2447A).withValues(alpha: 0.15),
-              child: const Icon(LucideIcons.dumbbell, size: 32, color: Color(0xFFB2447A))),
+              color: cs.primary.withValues(alpha: 0.15),
+              child: Icon(LucideIcons.dumbbell, size: 32, color: cs.primary)),
           ),
           const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,

@@ -214,7 +214,7 @@ class _CorpsZonePlayerScreenState extends ConsumerState<CorpsZonePlayerScreen>
             SnackBar(
               content: Text(ref.read(l10nProvider).corpszonePoints(PointsService.pointsPerVideo, total)),
               duration: const Duration(seconds: 2),
-              backgroundColor: const Color(0xFF1C4D30),
+              backgroundColor: Theme.of(context).colorScheme.primary,
             ),
           );
         }

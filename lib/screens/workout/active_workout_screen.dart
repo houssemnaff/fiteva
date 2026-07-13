@@ -110,11 +110,11 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final progress = videos.isEmpty ? 0.0 : _completedExercises / videos.length;
     final l10n = ref.watch(l10nProvider);
 
-    final bg     = dark ? const Color(0xFF0F0F0F) : const Color(0xFFF6F6F6);
-    final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
-    final t1     = dark ? const Color(0xFFF0F0F0) : const Color(0xFF111111);
-    final t2     = dark ? const Color(0xFF888888) : const Color(0xFF666666);
-    final t3     = dark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE);
+    final bg     = cs.surface;
+    final cardBg = dark ? cs.surfaceContainerLow : Colors.white;
+    final t1     = cs.onSurface;
+    final t2     = cs.onSurface.withValues(alpha: 0.5);
+    final t3     = cs.outline;
 
     if (progress >= 1.0) Future.microtask(_markCompleteIfNeeded);
 

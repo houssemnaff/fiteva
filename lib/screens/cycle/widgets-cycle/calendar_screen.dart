@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // ── Couleurs fixes (identiques light/dark) ────────────────────────────────────
-const _kGreen     = Color(0xFF1C4D30);
+Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
 const _kRed       = Color(0xFFD94F6B);
 const _kOvulation = Color(0xFF7ABB98);
 
@@ -260,13 +260,13 @@ class _CycleCalendarState extends ConsumerState<CycleCalendar> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 17),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF2E6B45), _kGreen],
+                          gradient: LinearGradient(
+                            colors: [Color.lerp(_kGreen(context), Colors.white, 0.2)!, _kGreen(context)],
                             begin: Alignment.topLeft, end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(50),
                           boxShadow: [BoxShadow(
-                            color: _kGreen.withOpacity(0.35),
+                            color: _kGreen(context).withOpacity(0.35),
                             blurRadius: 20, offset: const Offset(0, 8),
                           )],
                         ),
@@ -310,10 +310,10 @@ class _CycleCalendarState extends ConsumerState<CycleCalendar> {
               child: Container(
                 width: 38, height: 38,
                 decoration: BoxDecoration(
-                  color: _kGreen.withOpacity(0.10),
+                  color: _kGreen(context).withOpacity(0.10),
                   borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.chevron_left_rounded,
-                    size: 24, color: _kGreen),
+                child: Icon(Icons.chevron_left_rounded,
+                    size: 24, color: _kGreen(context)),
               ),
             ),
             Expanded(
@@ -391,7 +391,7 @@ class _EditPanel extends StatelessWidget {
         color: cc.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [BoxShadow(
-          color: _kGreen.withOpacity(cc.isDark ? 0.15 : 0.10),
+          color: _kGreen(context).withOpacity(cc.isDark ? 0.15 : 0.10),
           blurRadius: 30, offset: const Offset(0, -6),
         )],
       ),
@@ -432,18 +432,18 @@ class _EditPanel extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: _kGreen.withOpacity(cc.isDark ? 0.08 : 0.05),
+                color: _kGreen(context).withOpacity(cc.isDark ? 0.08 : 0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _kGreen.withOpacity(0.22)),
+                border: Border.all(color: _kGreen(context).withOpacity(0.22)),
               ),
               child: Row(children: [
                 Container(
                   width: 30, height: 30,
                   decoration: BoxDecoration(
-                    color: _kGreen.withOpacity(0.12),
+                    color: _kGreen(context).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.calendar_today_outlined,
-                      size: 15, color: _kGreen),
+                  child: Icon(Icons.calendar_today_outlined,
+                      size: 15, color: _kGreen(context)),
                 ),
                 const SizedBox(width: 12),
                 Text(fmtDate(editStart), style: GoogleFonts.inter(
@@ -553,13 +553,13 @@ class _EditPanel extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF2E6B45), _kGreen],
+                    gradient: LinearGradient(
+                      colors: [Color.lerp(_kGreen(context), Colors.white, 0.2)!, _kGreen(context)],
                       begin: Alignment.topLeft, end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(50),
                     boxShadow: [BoxShadow(
-                      color: _kGreen.withOpacity(0.32),
+                      color: _kGreen(context).withOpacity(0.32),
                       blurRadius: 14, offset: const Offset(0, 5),
                     )],
                   ),
@@ -629,7 +629,7 @@ class _MonthBlock extends StatelessWidget {
             child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
               Text(_monthNames[month.month - 1], style: GoogleFonts.outfit(
                 fontSize: 22, fontWeight: FontWeight.w700,
-                color: isCurrent ? _kGreen : cc.text)),
+                color: isCurrent ? _kGreen(context) : cc.text)),
               if (month.year != today.year) ...[
                 const SizedBox(width: 8),
                 Text('${month.year}', style: GoogleFonts.inter(
@@ -640,12 +640,12 @@ class _MonthBlock extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                   decoration: BoxDecoration(
-                    color: _kGreen.withOpacity(0.12),
+                    color: _kGreen(context).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _kGreen.withOpacity(0.22)),
+                    border: Border.all(color: _kGreen(context).withOpacity(0.22)),
                   ),
                   child: Text(l10n.cycleCeMois, style: GoogleFonts.inter(
-                    fontSize: 10, color: _kGreen, fontWeight: FontWeight.w700,
+                    fontSize: 10, color: _kGreen(context), fontWeight: FontWeight.w700,
                     letterSpacing: 0.2)),
                 ),
               ],
@@ -763,7 +763,7 @@ class _DayCircle extends StatelessWidget {
         ),
         child: Center(child: Text(label, style: GoogleFonts.inter(
           fontSize: 13, fontWeight: FontWeight.w600,
-          color: _kGreen))),
+          color: _kGreen(context)))),
       );
     }
 
@@ -773,11 +773,11 @@ class _DayCircle extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(label, style: GoogleFonts.inter(
-            fontSize: 14, fontWeight: FontWeight.w800, color: _kGreen)),
+            fontSize: 14, fontWeight: FontWeight.w800, color: _kGreen(context))),
           const SizedBox(height: 1),
           Text(l10n.cycleAuj, style: GoogleFonts.inter(
             fontSize: 8, fontWeight: FontWeight.w700,
-            color: _kGreen, letterSpacing: 0.3)),
+            color: _kGreen(context), letterSpacing: 0.3)),
         ],
       );
     }

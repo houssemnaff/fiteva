@@ -1605,7 +1605,7 @@ class _StatBar extends ConsumerWidget {
         const SizedBox(width: 10),
         Expanded(child: _StatChip(
           icon: LucideIcons.apple, value: '$remaining', label: 'kcal restants',
-          color: const Color(0xFF1C4D30), bg: const Color(0xFFEAF3EC),
+          color: Theme.of(context).colorScheme.primary, bg: Theme.of(context).colorScheme.primary.withOpacity(0.08),
           onTap: () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const NutritionHomeScreen())))),
         const SizedBox(width: 10),

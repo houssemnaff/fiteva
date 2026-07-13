@@ -75,13 +75,13 @@ class _Reward {
     required this.title, required this.color, required this.bg});
 }
 
-const _rewards = [
+List<_Reward> _getRewards(ColorScheme cs) => [
   _Reward(need: 1, icon: LucideIcons.star,   title: '+50 Points',
-    color: Color(0xFF1C4D30), bg: Color(0xFFEAF3EC)),
+    color: cs.primary, bg: cs.primary.withValues(alpha: 0.08)),
   _Reward(need: 3, icon: LucideIcons.flame,  title: 'Premium 24h',
-    color: Color(0xFFE0703C), bg: Color(0xFFFCEEE7)),
+    color: const Color(0xFFE0703C), bg: const Color(0xFFFCEEE7)),
   _Reward(need: 5, icon: LucideIcons.trophy, title: 'Badge exclusif',
-    color: Color(0xFFB8860B), bg: Color(0xFFFFF8E7)),
+    color: const Color(0xFFB8860B), bg: const Color(0xFFFFF8E7)),
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -106,7 +106,7 @@ class _ReferralCardState extends ConsumerState<ReferralCard> {
     ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
       content: Text(l10n.referralCodeCopied(code),
         style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
-      backgroundColor: const Color(0xFF166534),
+      backgroundColor: Theme.of(ctx).colorScheme.primary,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.all(16),
@@ -164,8 +164,9 @@ class _ReferralCardState extends ConsumerState<ReferralCard> {
     final revealed   = ref.watch(revealedRewardsProvider).asData?.value ?? <int>{};
     final cs         = Theme.of(context).colorScheme;
 
+    final rewards = _getRewards(cs);
     _Reward? nextToReveal;
-    for (final r in _rewards) {
+    for (final r in rewards) {
       final stillAnimating = _revealAnimatingNeed == r.need;
       if (count >= r.need && (!revealed.contains(r.need) || stillAnimating)) {
         nextToReveal = r;
@@ -180,12 +181,12 @@ class _ReferralCardState extends ConsumerState<ReferralCard> {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       child: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [Color(0xFF1C4D30), Color(0xFF0E2B1A)]),
+            colors: [cs.primary, Color.lerp(cs.primary, Colors.black, 0.4)!]),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [BoxShadow(
-            color: const Color(0xFF1C4D30).withValues(alpha: 0.30),
+            color: cs.primary.withValues(alpha: 0.30),
             blurRadius: 20, offset: const Offset(0, 8))],
         ),
         child: Column(children: [
@@ -258,7 +259,7 @@ class _ReferralCardState extends ConsumerState<ReferralCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1C4D30),
+                      color: cs.primary,
                       borderRadius: BorderRadius.circular(50)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(LucideIcons.share2, color: Colors.white, size: 13),
@@ -289,12 +290,12 @@ class _ReferralCardState extends ConsumerState<ReferralCard> {
           // ── Paliers de récompense ────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Row(children: List.generate(_rewards.length, (i) {
-              final r        = _rewards[i];
+            child: Row(children: List.generate(rewards.length, (i) {
+              final r        = rewards[i];
               final unlocked = count >= r.need;
               final done     = revealed.contains(r.need);
               return Expanded(child: Padding(
-                padding: EdgeInsets.only(right: i < _rewards.length - 1 ? 10 : 0),
+                padding: EdgeInsets.only(right: i < rewards.length - 1 ? 10 : 0),
                 child: Row(children: [
                   Container(
                     width: 28, height: 28,
@@ -472,7 +473,7 @@ class _ShareSheet extends StatelessWidget {
               content: Text(l10n.referralCopied,
                 style: GoogleFonts.inter(color: Colors.white,
                   fontWeight: FontWeight.w600)),
-              backgroundColor: const Color(0xFF166534),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12)),
@@ -484,10 +485,10 @@ class _ShareSheet extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFF1C4D30),
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [BoxShadow(
-                color: const Color(0xFF1C4D30).withValues(alpha: 0.25),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
                 blurRadius: 10, offset: const Offset(0, 4))]),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(LucideIcons.copy, color: Colors.white, size: 14),

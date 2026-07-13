@@ -160,7 +160,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
           final l10n = r.watch(l10nProvider);
           return FloatingActionButton.extended(
             onPressed: () { HapticFeedback.mediumImpact(); _goToAjout(); },
-            backgroundColor: const Color(0xFF1C4D30),
+            backgroundColor: Theme.of(context).colorScheme.primary,
             elevation: 4,
             icon: const Icon(LucideIcons.plus, color: Colors.white, size: 18),
             label: Text(l10n.nutritionAdd, style: GoogleFonts.inter(
@@ -275,9 +275,9 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
                       children: [
                         Text(
                           _isToday ? "Aujourd'hui" : _formatDateLabel(_selectedDate),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w700,
-                            color: Color(0xFF1C4D30)),
+                            color: Theme.of(context).colorScheme.primary),
                         ),
                         if (!_isToday)
                           const Text('Retour à aujourd\'hui',
@@ -391,10 +391,10 @@ class _CalorieRingCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C4D30),
+        color: Theme.of(context).colorScheme.primary,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [BoxShadow(
-          color: const Color(0xFF1C4D30).withOpacity(0.25),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
           blurRadius: 20, offset: const Offset(0, 6))],
       ),
       child: Row(children: [
@@ -558,13 +558,13 @@ class _NutritionXpBannerState extends ConsumerState<_NutritionXpBanner> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       decoration: BoxDecoration(
         color: reached
-            ? const Color(0xFF4CAF50).withOpacity(0.12)
+            ? Theme.of(context).colorScheme.primary.withOpacity(0.12)
             : const Color(0xFF1A2E20).withOpacity(0.05),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: reached
-              ? const Color(0xFF4CAF50).withOpacity(0.45)
-              : const Color(0xFF4CAF50).withOpacity(0.20),
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.45)
+              : Theme.of(context).colorScheme.primary.withOpacity(0.20),
           width: 1.2,
         ),
       ),
@@ -583,7 +583,7 @@ class _NutritionXpBannerState extends ConsumerState<_NutritionXpBanner> {
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: reached
-                      ? const Color(0xFF2E7D32)
+                      ? Theme.of(context).colorScheme.primary
                       : const Color(0xFF1A2E20),
                 ),
               ),
@@ -592,15 +592,15 @@ class _NutritionXpBannerState extends ConsumerState<_NutritionXpBanner> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: reached
-                    ? const Color(0xFF4CAF50)
-                    : const Color(0xFF4CAF50).withOpacity(0.15),
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.primary.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text('+20 pts',
                 style: GoogleFonts.outfit(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
-                  color: reached ? Colors.white : const Color(0xFF2E7D32),
+                  color: reached ? Colors.white : Theme.of(context).colorScheme.primary,
                 )),
             ),
           ]),
@@ -611,7 +611,7 @@ class _NutritionXpBannerState extends ConsumerState<_NutritionXpBanner> {
               child: LinearProgressIndicator(
                 value: pct,
                 minHeight: 5,
-                backgroundColor: const Color(0xFF4CAF50).withOpacity(0.15),
+                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
                 valueColor: const AlwaysStoppedAnimation(Color(0xFF4CAF50)),
               ),
             ),
@@ -620,7 +620,7 @@ class _NutritionXpBannerState extends ConsumerState<_NutritionXpBanner> {
               '${consumed} / $goal kcal — encore ${goal - consumed} kcal à logger',
               style: GoogleFonts.inter(
                 fontSize: 11,
-                color: const Color(0xFF4CAF50).withOpacity(0.8),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
               ),
             ),
           ],
@@ -650,7 +650,7 @@ class _EmptyDayBanner extends StatelessWidget {
           Container(
             width: 44, height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFF1C4D30),
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(14)),
             child: const Icon(LucideIcons.utensils, color: Colors.white, size: 20)),
           const SizedBox(width: 14),
@@ -658,7 +658,7 @@ class _EmptyDayBanner extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(l10n.nutritionNoMealsToday, style: GoogleFonts.outfit(
               fontSize: 14, fontWeight: FontWeight.w700,
-              color: const Color(0xFF1C4D30))),
+              color: Theme.of(context).colorScheme.primary)),
             const SizedBox(height: 2),
             Text(l10n.nutritionStartTracking, style: GoogleFonts.inter(
               fontSize: 12, color: const Color(0xFF6B7280))),
@@ -851,12 +851,12 @@ class _FavoritesScreen extends ConsumerWidget {
                               width: 60, height: 60, fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) =>
                                 Container(width: 60, height: 60,
-                                  color: const Color(0xFF1C4D30).withOpacity(0.10)))),
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.10)))),
                           Positioned.fill(child: Center(
                             child: Container(
                               width: 24, height: 24,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1C4D30).withOpacity(0.85),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.85),
                                 shape: BoxShape.circle),
                               child: const Icon(LucideIcons.play,
                                 color: Colors.white, size: 10)))),

@@ -52,11 +52,12 @@ class _AvatarCustomizationScreenState extends ConsumerState<AvatarCustomizationS
 
     final bg       = isDarkMode ? const Color(0xFF0D0D0D) : const Color(0xFFF6F9F7);
     final surf     = isDarkMode ? const Color(0xFF1A1A1A) : Colors.white;
-    final ink      = isDarkMode ? const Color(0xFFF0F0EE) : const Color(0xFF1C4D30);
+    final cs = Theme.of(context).colorScheme;
+    final ink      = isDarkMode ? const Color(0xFFF0F0EE) : cs.primary;
     final muted    = isDarkMode ? const Color(0xFF888886) : const Color(0xFF6B7280);
     final border   = isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFE0EBE5);
-    final green    = const Color(0xFF1C4D30);
-    final greenBg  = isDarkMode ? const Color(0xFF1E2A1E) : const Color(0xFFE8F3EC);
+    final green    = cs.primary;
+    final greenBg  = isDarkMode ? const Color(0xFF1E2A1E) : cs.primary.withOpacity(0.08);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDarkMode ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,

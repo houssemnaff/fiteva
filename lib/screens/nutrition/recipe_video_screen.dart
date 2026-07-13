@@ -12,7 +12,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const _kGreen  = Color(0xFF1C4D30);
+Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
 const _kMint   = Color(0xFF7ABB98);
 const _kMintBg = Color(0xFFEAF3EC);
 const _kCream  = Color(0xFFFAFAF8);
@@ -173,7 +173,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
                 duration: const Duration(milliseconds: 180),
                 width: 68, height: 68,
                 decoration: BoxDecoration(
-                  color: _videoReady ? _kGreen : Colors.white.withOpacity(0.25),
+                  color: _videoReady ? _kGreen(context) : Colors.white.withOpacity(0.25),
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2.5),
                   boxShadow: [BoxShadow(
@@ -211,7 +211,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
                 allowScrubbing: true,
                 padding: EdgeInsets.zero,
                 colors: VideoProgressColors(
-                  playedColor: _kGreen,
+                  playedColor: _kGreen(context),
                   bufferedColor: Colors.white.withOpacity(0.3),
                   backgroundColor: Colors.white.withOpacity(0.15)),
               )),
@@ -289,7 +289,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
                   _DarkBadge(
                     icon: LucideIcons.video,
                     label: 'Vidéo disponible',
-                    color: _kGreen.withOpacity(0.88)),
+                    color: _kGreen(context).withOpacity(0.88)),
                 ],
               ])),
         ]),
@@ -354,7 +354,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
                 decoration: BoxDecoration(
                   color: nc.mintBg, borderRadius: BorderRadius.circular(8)),
                 child: Text('${ing.kcal} kcal', style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
+                  fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen(context)))),
             ]),
           ),
         )),
@@ -366,14 +366,14 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
             borderRadius: BorderRadius.circular(13),
             border: Border.all(color: _kMint.withOpacity(0.35))),
           child: Row(children: [
-            const Icon(LucideIcons.zap, size: 15, color: _kGreen),
+            Icon(LucideIcons.zap, size: 15, color: _kGreen(context)),
             const SizedBox(width: 8),
             Text(l10n.videoTotalEstime, style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w600, color: _kGreen)),
+              fontSize: 13, fontWeight: FontWeight.w600, color: _kGreen(context))),
             const Spacer(),
             Text('${widget.recipe.kcal} kcal  ·  ${widget.recipe.proteins}g protéines',
               style: GoogleFonts.inter(
-                fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen)),
+                fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen(context))),
           ]),
         ),
       ]),
@@ -402,13 +402,13 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: active ? _kGreen : nc.surface,
+                  color: active ? _kGreen(context) : nc.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: active ? _kGreen : nc.border,
+                    color: active ? _kGreen(context) : nc.border,
                     width: active ? 0 : 1),
                   boxShadow: active ? [BoxShadow(
-                    color: _kGreen.withOpacity(0.20),
+                    color: _kGreen(context).withOpacity(0.20),
                     blurRadius: 12, offset: const Offset(0, 4))] : [],
                 ),
                 child: Padding(
@@ -424,7 +424,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
                       child: Center(child: Text('${step.number}',
                         style: GoogleFonts.outfit(
                           fontSize: 14, fontWeight: FontWeight.w800,
-                          color: active ? Colors.white : _kGreen)))),
+                          color: active ? Colors.white : _kGreen(context))))),
                     const SizedBox(width: 12),
                     Expanded(child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,7 +556,7 @@ class _SectionLabel extends StatelessWidget {
       Container(
         width: 34, height: 34,
         decoration: BoxDecoration(color: nc.mintBg, borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, size: 15, color: _kGreen)),
+        child: Icon(icon, size: 15, color: _kGreen(context))),
       const SizedBox(width: 10),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(eyebrow, style: GoogleFonts.inter(
@@ -583,7 +583,7 @@ class _MetaChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(11),
         border: Border.all(color: nc.border)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12, color: _kGreen),
+        Icon(icon, size: 12, color: _kGreen(context)),
         const SizedBox(width: 5),
         Text(label, style: GoogleFonts.inter(
           fontSize: 12, fontWeight: FontWeight.w600, color: nc.text1)),

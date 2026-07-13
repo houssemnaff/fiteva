@@ -245,12 +245,12 @@ class _InsightBanner extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1C4D30), Color(0xFF2E7050)],
+          gradient: LinearGradient(
+            colors: [Theme.of(context).colorScheme.primary, Color.lerp(Theme.of(context).colorScheme.primary, Colors.white, 0.2)!],
             begin: Alignment.topLeft, end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [BoxShadow(
-            color: Color(0x301C4D30), blurRadius: 20, offset: Offset(0, 6))],
+          boxShadow: [BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.19), blurRadius: 20, offset: const Offset(0, 6))],
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(

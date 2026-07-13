@@ -4,12 +4,19 @@ import 'package:flutter/services.dart';
 class ThreadTheme {
   ThreadTheme._();
 
-    // Background palette — deep obsidian
-   // Background system — warm luxury neutral
-static const Color bg = Colors.white;        // soft ivory base
-  static const Color bgSurface = Colors.white;   // clean surface
-  static const Color bgCard = Colors.white;     // soft elevated card
-  static const Color bgCardBorder = Colors.white;  // warm subtle border
+  // Theme-aware getters
+  static Color bgOf(BuildContext c) => Theme.of(c).colorScheme.surface;
+  static Color bgSurfaceOf(BuildContext c) => Theme.of(c).colorScheme.surface;
+  static Color bgCardOf(BuildContext c) => Theme.of(c).brightness == Brightness.dark
+      ? Theme.of(c).colorScheme.surfaceContainerLow : Colors.white;
+  static Color textPrimaryOf(BuildContext c) => Theme.of(c).colorScheme.onSurface;
+  static Color accentOf(BuildContext c) => Theme.of(c).colorScheme.secondary;
+
+  // Legacy statics
+  static const Color bg = Colors.white;
+  static const Color bgSurface = Colors.white;
+  static const Color bgCard = Colors.white;
+  static const Color bgCardBorder = Colors.white;
 
   // ─────────────────────────────
   // Pregnancy progression (natural growth system)

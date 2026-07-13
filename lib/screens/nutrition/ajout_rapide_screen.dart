@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:fiteva/core/nutrition/food_database.dart';
@@ -6,6 +7,7 @@ import 'package:fiteva/core/nutrition/models.dart';
 import 'package:fiteva/core/nutrition/nutrition_provider.dart' show generateMealId, userProfileProvider;
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:fiteva/services/nutruition_ia.dart';
+import 'package:fiteva/services/spoonacular_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +20,7 @@ import '../../l10n/lang.dart';
 import '../../l10n/app_localizations.dart';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const _kGreen   = Color(0xFF1C4D30);
+Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
 const _kMint    = Color(0xFF7ABB98);
 const _kMintBg  = Color(0xFFEAF3EC);
 const _kCream   = Color(0xFFFAFAF8);
@@ -26,6 +28,123 @@ const _kBorder  = Color(0xFFECECEC);
 const _kText1   = Color(0xFF1A1A1A);
 const _kText2   = Color(0xFF6B7280);
 const _kSurface = Colors.white;
+
+// ── Spoonacular CDN image mapping ─────────────────────────────────────────────
+const _kSpoonBase = 'https://spoonacular.com/cdn/ingredients_250x250/';
+const _foodImage = <String, String>{
+  'chicken_breast': 'chicken-breasts.png',
+  'chicken_thigh': 'chicken-thigh.jpg',
+  'turkey_breast': 'turkey-breast.jpg',
+  'beef_lean': 'fresh-ground-beef.jpg',
+  'beef_steak': 'beef-steak.jpg',
+  'pork_tenderloin': 'pork-tenderloin-raw.jpg',
+  'lamb_leg': 'lamb-leg.jpg',
+  'ham_cooked': 'ham-whole.jpg',
+  'chorizo': 'chorizo.jpg',
+  'salmon': 'salmon.png',
+  'tuna_canned': 'canned-tuna.png',
+  'cod': 'cod-fillet.jpg',
+  'trout': 'trout.jpg',
+  'sardines': 'sardines-canned.jpg',
+  'shrimp': 'shrimp.png',
+  'mussels': 'mussels.jpg',
+  'mackerel': 'mackerel.jpg',
+  'egg_whole': 'egg.png',
+  'egg_white': 'egg-white.jpg',
+  'greek_yogurt': 'greek-yogurt.jpg',
+  'yogurt_nature': 'plain-yogurt.jpg',
+  'cottage_cheese': 'cottage-cheese.jpg',
+  'milk_skimmed': 'milk.png',
+  'milk_whole': 'milk.png',
+  'cheddar': 'cheddar-cheese.png',
+  'mozzarella': 'mozzarella.png',
+  'parmesan': 'parmesan.jpg',
+  'feta': 'feta.png',
+  'rice_white': 'uncooked-white-rice.png',
+  'rice_brown': 'brown-rice.png',
+  'quinoa': 'uncooked-quinoa.png',
+  'pasta_cooked': 'pasta.jpg',
+  'pasta_ww': 'whole-wheat-spaghetti.jpg',
+  'oats': 'rolled-oats.jpg',
+  'bread_whole': 'whole-wheat-bread.jpg',
+  'bread_white': 'french-bread.jpg',
+  'sweet_potato': 'sweet-potato.png',
+  'potato': 'potatoes-yukon-background.png',
+  'couscous': 'couscous.png',
+  'corn': 'corn.png',
+  'granola': 'granola.jpg',
+  'lentils': 'lentils-brown.jpg',
+  'chickpeas': 'chickpeas.png',
+  'black_beans': 'black-beans.jpg',
+  'white_beans': 'cannellini-beans.jpg',
+  'edamame': 'edamame.png',
+  'tofu': 'tofu.png',
+  'hummus': 'hummus.png',
+  'spinach': 'spinach.jpg',
+  'broccoli': 'broccoli.jpg',
+  'carrots': 'sliced-carrots.png',
+  'tomato': 'tomato.png',
+  'cucumber': 'cucumber.jpg',
+  'bell_pepper': 'red-pepper.jpg',
+  'zucchini': 'zucchini.jpg',
+  'eggplant': 'eggplant.png',
+  'onion': 'brown-onion.png',
+  'garlic': 'garlic.png',
+  'mushroom': 'mushrooms-white.jpg',
+  'lettuce': 'iceberg-lettuce.jpg',
+  'cauliflower': 'cauliflower.jpg',
+  'green_beans': 'green-beans-background.jpg',
+  'apple': 'apple.jpg',
+  'banana': 'bananas.jpg',
+  'orange': 'orange.png',
+  'avocado': 'avocado.jpg',
+  'strawberry': 'strawberries.png',
+  'blueberry': 'blueberries.jpg',
+  'mango': 'mango.jpg',
+  'pineapple': 'pineapple.jpg',
+  'grapes': 'red-grapes.jpg',
+  'kiwi': 'kiwi.png',
+  'watermelon': 'watermelon.jpg',
+  'dates': 'dates.jpg',
+  'almonds': 'almonds.jpg',
+  'walnuts': 'walnuts.jpg',
+  'cashews': 'cashews.jpg',
+  'peanuts': 'peanuts.png',
+  'peanut_butter': 'peanut-butter.png',
+  'almond_butter': 'almond-butter.jpg',
+  'chia_seeds': 'chia-seeds.jpg',
+  'flaxseeds': 'flax-seeds.png',
+  'pumpkin_seeds': 'pumpkin-seeds.jpg',
+  'olive_oil': 'olive-oil.jpg',
+  'butter': 'butter-sliced.jpg',
+  'coconut_oil': 'coconut-oil.jpg',
+  'avocado_oil': 'vegetable-oil.jpg',
+  'caesar_salad': 'caesar-salad.png',
+  'chicken_rice_bowl': 'chicken-breast.png',
+  'protein_smoothie': 'berry-smoothie.jpg',
+  'overnight_oats': 'rolled-oats.jpg',
+  'veggie_wrap': 'flour-tortilla.jpg',
+  'pasta_bolognese': 'pasta.jpg',
+  'vegetable_soup': 'mixed-vegetables.png',
+  'water': 'water.png',
+  'coffee_black': 'brewed-coffee.jpg',
+  'orange_juice': 'orange-juice.jpg',
+  'almond_milk': 'almond-milk.png',
+  'oat_milk': 'milk.png',
+  'green_tea': 'green-tea-bags.jpg',
+  'dark_chocolate': 'dark-chocolate-pieces.jpg',
+  'honey': 'honey.png',
+  'rice_cake': 'rice-cakes.jpg',
+  'protein_bar': 'protein-bar.jpg',
+  'whey_protein': 'protein-powder.jpg',
+};
+
+String _foodImageUrl(String foodId) =>
+    '$_kSpoonBase${_foodImage[foodId] ?? 'mixed-vegetables.png'}';
+
+Widget _foodFallbackIcon(FoodCategory cat) => Container(
+  color: _catColor(cat).withOpacity(0.10),
+  child: Icon(_catIcon(cat), size: 20, color: _catColor(cat)));
 
 // ── Food units ────────────────────────────────────────────────────────────────
 enum FoodUnit { g, kg, ml, cup, tbsp, tsp, piece }
@@ -176,6 +295,57 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   FoodUnit _selectedUnit = FoodUnit.g;
   final _amountCtrl = TextEditingController(text: '100');
   FoodCategory? _activeCategory;
+
+  // Spoonacular API search
+  List<SpoonIngredient> _spoonResults = [];
+  final Map<String, FoodItem> _spoonFoodCache = {};
+  bool _spoonLoading = false;
+  bool _spoonError = false;
+  Timer? _debounce;
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query;
+      _activeCategory = null;
+    });
+    _debounce?.cancel();
+    if (query.length >= 2) {
+      _debounce = Timer(const Duration(milliseconds: 400), () => _searchSpoonacular(query));
+    } else {
+      setState(() { _spoonResults = []; _spoonLoading = false; _spoonError = false; });
+    }
+  }
+
+  Future<void> _searchSpoonacular(String query) async {
+    if (!mounted) return;
+    setState(() { _spoonLoading = true; _spoonError = false; });
+    try {
+      final results = await SpoonacularService.searchIngredients(query);
+      if (!mounted || _searchQuery != query) return;
+      setState(() {
+        _spoonResults = results;
+        _spoonLoading = false;
+        _spoonError = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _spoonLoading = false; _spoonError = true; });
+    }
+  }
+
+  List<FoodItem> _localResults() {
+    final allFoods = ref.read(foodItemsProvider).asData?.value ?? FoodDatabase.all;
+    return FoodDatabase.searchIn(allFoods, _searchQuery);
+  }
+
+  FoodItem _resolveSpoonFood(SpoonIngredient ingredient) {
+    if (_spoonFoodCache.containsKey(ingredient.id)) {
+      return _spoonFoodCache[ingredient.id]!;
+    }
+    final food = SpoonacularService.toFoodItem(ingredient);
+    _spoonFoodCache[ingredient.id] = food;
+    return food;
+  }
 
   List<FoodItem> _searchResults(List<FoodItem> allFoods) {
     if (_selectedFood != null) return [];
@@ -408,6 +578,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose(); _amountCtrl.dispose();
     _nameCtrl.dispose(); _calCtrl.dispose();
     _protCtrl.dispose(); _glucCtrl.dispose(); _lipCtrl.dispose();
@@ -533,76 +704,69 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   Widget build(BuildContext context) {
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
-    final nc     = NutritionColors.of(context);
-    final l10n = AppL10n(Lang.code);
+    final cs     = Theme.of(context).colorScheme;
+    final l10n   = AppL10n(Lang.code);
+
     return Scaffold(
-      backgroundColor: nc.bg,
+      backgroundColor: cs.surface,
       body: Column(children: [
-        // ── Header ───────────────────────────────────────────────────────────
-        Container(
-          color: nc.surface,
-          padding: EdgeInsets.fromLTRB(20, top + 14, 20, 16),
+
+        // ── Header — clean, no colored bg ─────────────────────────────────
+        Padding(
+          padding: EdgeInsets.fromLTRB(20, top + 12, 20, 0),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 38, height: 38,
-                  decoration: BoxDecoration(
-                    color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(LucideIcons.chevronLeft,
-                    color: _kGreen, size: 18))),
-              const SizedBox(width: 14),
+                child: Icon(LucideIcons.chevronLeft,
+                  color: cs.onSurface, size: 22)),
+              const SizedBox(width: 12),
               Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(l10n.addMealTitle, style: GoogleFonts.inter(
-                  color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
+                  color: cs.primary, fontSize: 9, fontWeight: FontWeight.w700,
                   letterSpacing: 2.5)),
                 Text(
                   _preselectedType != null
                       ? _preselectedType!.labelFor(Lang.code)
                       : l10n.addMealSubtitle,
                   style: GoogleFonts.outfit(
-                    color: _kGreen, fontSize: 22,
+                    color: cs.onSurface, fontSize: 22,
                     fontWeight: FontWeight.w800, letterSpacing: -0.4)),
               ])),
-              // basket badge
               if (_basket.isNotEmpty)
                 GestureDetector(
                   onTap: () => _showBasketSheet(),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    width: 38, height: 38,
                     decoration: BoxDecoration(
-                      color: nc.mintBg,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _kMint.withOpacity(0.4))),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(LucideIcons.shoppingBasket, size: 14, color: _kGreen),
-                      const SizedBox(width: 5),
-                      Text('${_basket.length}', style: GoogleFonts.inter(
-                        fontSize: 13, fontWeight: FontWeight.w800, color: _kGreen)),
-                    ])),
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(12)),
+                    child: Center(child: Text('${_basket.length}',
+                      style: GoogleFonts.inter(
+                        fontSize: 14, fontWeight: FontWeight.w800,
+                        color: Colors.white))),
+                  ),
                 ),
             ]),
 
             const SizedBox(height: 16),
 
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: nc.chipBg,
-                borderRadius: BorderRadius.circular(16)),
-              child: Row(children: [
-                _ModeTab(icon: LucideIcons.search,    label: l10n.addMealSearch,  active: _mode == 0,
-                  onTap: () => setState(() { _mode = 0; _selectedFood = null; })),
-                _ModeTab(icon: LucideIcons.squarePen, label: l10n.addMealManual,  active: _mode == 1,
-                  onTap: () => setState(() => _mode = 1)),
-                _ModeTab(icon: LucideIcons.scanLine,  label: l10n.addMealScanner, active: _mode == 2,
-                  onTap: () => setState(() => _mode = 2)),
-              ]),
-            ),
+            // ── Underline tabs ──────────────────────────────────────────
+            Row(children: [
+              _ModeTab(label: l10n.addMealSearch, active: _mode == 0,
+                onTap: () => setState(() { _mode = 0; _selectedFood = null; })),
+              const SizedBox(width: 24),
+              _ModeTab(label: l10n.addMealManual, active: _mode == 1,
+                onTap: () => setState(() => _mode = 1)),
+              const SizedBox(width: 24),
+              _ModeTab(label: l10n.addMealScanner, active: _mode == 2,
+                onTap: () => setState(() => _mode = 2)),
+            ]),
           ]),
         ),
+
+        Divider(height: 1, color: cs.outline.withOpacity(0.15)),
 
         // ── Body ─────────────────────────────────────────────────────────────
         Expanded(
@@ -611,7 +775,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: _mode == 0
                       ? _buildSearch()
                       : _mode == 1
@@ -624,13 +788,15 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           ),
         ),
 
-        // ── Bottom actions ────────────────────────────────────────────────────
+        // ── Bottom bar ───────────────────────────────────────────────────────
         Container(
-          color: nc.surface,
+          decoration: BoxDecoration(
+            color: cs.surface,
+            border: Border(top: BorderSide(
+              color: cs.outline.withOpacity(0.1)))),
           padding: EdgeInsets.fromLTRB(20, 12, 20, bottom + 16),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
 
-            // "Add / update" button — shown when a food is selected in detail
             if (_canAddToBasket) ...[
               GestureDetector(
                 onTap: _addToBasket,
@@ -638,31 +804,28 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: nc.mintBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _kMint.withOpacity(0.5))),
+                    color: cs.primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14)),
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(
                       _selectedFood != null &&
                           _basket.any((b) => b.food.id == _selectedFood!.id)
-                        ? LucideIcons.check
-                        : LucideIcons.plus,
-                      size: 16, color: _kGreen),
+                        ? LucideIcons.check : LucideIcons.plus,
+                      size: 16, color: cs.primary),
                     const SizedBox(width: 7),
                     Text(
                       _selectedFood != null &&
                           _basket.any((b) => b.food.id == _selectedFood!.id)
-                        ? l10n.addMealUpdateQty
-                        : l10n.addMealAddToList,
+                        ? l10n.addMealUpdateQty : l10n.addMealAddToList,
                       style: GoogleFonts.inter(
-                        fontSize: 14, fontWeight: FontWeight.w700, color: _kGreen)),
+                        fontSize: 14, fontWeight: FontWeight.w700,
+                        color: cs.primary)),
                   ]),
                 ),
               ),
               const SizedBox(height: 8),
             ],
 
-            // Main confirm button — only enabled when basket has items
             GestureDetector(
               onTap: _canSubmit ? () {
                 HapticFeedback.mediumImpact();
@@ -673,14 +836,11 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: _canSubmit ? _kGreen : nc.border,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: _canSubmit ? [BoxShadow(
-                    color: _kGreen.withOpacity(0.3),
-                    blurRadius: 16, offset: const Offset(0, 5))] : []),
+                  color: _canSubmit ? cs.primary : cs.outline.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(14)),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Icon(LucideIcons.check, size: 17,
-                    color: _canSubmit ? Colors.white : nc.text2),
+                    color: _canSubmit ? Colors.white : cs.onSurface.withOpacity(0.3)),
                   const SizedBox(width: 8),
                   Text(
                     _basket.isEmpty
@@ -688,7 +848,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
                         : l10n.addMealConfirm(_basket.length, _basketCalories),
                     style: GoogleFonts.inter(
                       fontSize: 14, fontWeight: FontWeight.w700,
-                      color: _canSubmit ? Colors.white : nc.text2)),
+                      color: _canSubmit ? Colors.white : cs.onSurface.withOpacity(0.3))),
                 ]),
               ),
             ),
@@ -718,9 +878,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   // ════════════════════════════════════════════════════════════════════════════
   Widget _buildSearch() {
     if (_selectedFood != null) return _buildFoodDetail(_selectedFood!);
-    final nc = NutritionColors.of(context);
-    final allFoods = ref.watch(foodItemsProvider).asData?.value ?? FoodDatabase.all;
-    final results  = _searchResults(allFoods);
+    final cs = Theme.of(context).colorScheme;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
@@ -740,7 +898,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _kGreen,
+                    color: cs.primary,
                     borderRadius: BorderRadius.circular(20)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(item.food.name, style: GoogleFonts.inter(
@@ -755,28 +913,23 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
 
       // ── Search bar ──────────────────────────────────────────────────────────
       Container(
-        height: 48,
+        height: 46,
         decoration: BoxDecoration(
-          color: nc.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: nc.border),
-          boxShadow: nc.isDark ? [] : [BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8, offset: const Offset(0, 2))]),
+          color: cs.outline.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(children: [
-          Icon(LucideIcons.search, size: 16, color: nc.text2),
+          Icon(LucideIcons.search, size: 16,
+            color: cs.onSurface.withOpacity(0.35)),
           const SizedBox(width: 10),
           Expanded(child: TextField(
             controller: _searchCtrl,
-            onChanged: (v) => setState(() {
-              _searchQuery    = v;
-              _activeCategory = null;
-            }),
-            style: GoogleFonts.inter(fontSize: 14, color: nc.text1),
+            onChanged: _onSearchChanged,
+            style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
             decoration: InputDecoration(
               hintText: AppL10n(Lang.code).addMealHint,
-              hintStyle: GoogleFonts.inter(fontSize: 14, color: nc.text2),
+              hintStyle: GoogleFonts.inter(fontSize: 14,
+                color: cs.onSurface.withOpacity(0.35)),
               border: InputBorder.none, isDense: true,
               contentPadding: EdgeInsets.zero),
           )),
@@ -784,94 +937,151 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
             GestureDetector(
               onTap: () {
                 _searchCtrl.clear();
-                setState(() { _searchQuery = ''; _activeCategory = null; });
+                _debounce?.cancel();
+                setState(() { _searchQuery = ''; _spoonResults = []; _spoonLoading = false; });
               },
-              child: Icon(LucideIcons.x, size: 14, color: nc.text2)),
+              child: Icon(LucideIcons.x, size: 14,
+                color: cs.onSurface.withOpacity(0.35))),
         ]),
       ),
 
-      const SizedBox(height: 14),
+      const SizedBox(height: 16),
 
-      // ── Category pills ──────────────────────────────────────────────────────
-      if (_searchQuery.isEmpty) ...[
-        SizedBox(
-          height: 36,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.zero,
-            separatorBuilder: (_, __) => const SizedBox(width: 7),
-            itemCount: FoodCategory.values.length,
-            itemBuilder: (_, i) {
-              final cat = FoodCategory.values[i];
-              final sel = _activeCategory == cat;
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _activeCategory = sel ? null : cat);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: sel ? _kGreen : nc.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: sel ? _kGreen : nc.border)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(_catIcon(cat), size: 13,
-                      color: sel ? Colors.white : _catColor(cat)),
-                    const SizedBox(width: 5),
-                    Text(cat.label.split(' ').first, style: GoogleFonts.inter(
-                      fontSize: 11, fontWeight: FontWeight.w600,
-                      color: sel ? Colors.white : nc.text1)),
-                  ])));
-            })),
-        const SizedBox(height: 14),
+      // ── Results ─────────────────────────────────────────────────────────────
+      if (_searchQuery.length < 2)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Center(child: Column(children: [
+            Icon(LucideIcons.search, size: 32,
+              color: cs.onSurface.withOpacity(0.15)),
+            const SizedBox(height: 12),
+            Text(AppL10n(Lang.code).addMealHint,
+              style: GoogleFonts.inter(fontSize: 14,
+                color: cs.onSurface.withOpacity(0.35))),
+          ])))
+      else if (_spoonLoading)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 30),
+          child: Center(child: SizedBox(
+            width: 22, height: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2, color: cs.primary))))
+      else ...[
+        // Spoonacular API results
+        if (_spoonResults.isNotEmpty) ...[
+          Text(
+            AppL10n(Lang.code).addMealResults(_spoonResults.length),
+            style: GoogleFonts.inter(
+              fontSize: 9, fontWeight: FontWeight.w700,
+              color: cs.onSurface.withOpacity(0.4),
+              letterSpacing: 2.0)),
+          const SizedBox(height: 8),
+          ..._spoonResults.map((ingredient) => _SpoonTile(
+            ingredient: ingredient,
+            isSelected: _basket.any((b) => b.food.id == 'off_${ingredient.id}'),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              final existIdx = _basket.indexWhere((b) => b.food.id == 'off_${ingredient.id}');
+              if (existIdx != -1) {
+                setState(() => _basket.removeAt(existIdx));
+                return;
+              }
+              final food = _resolveSpoonFood(ingredient);
+              setState(() => _basket.add(_BasketItem(food, food.defaultGrams)));
+            },
+          )),
+        ],
+
+        // Fallback to local database when API fails or returns empty
+        if (_spoonResults.isEmpty) ...[
+          if (_spoonError)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3CD),
+                  borderRadius: BorderRadius.circular(10)),
+                child: Row(children: [
+                  const Icon(LucideIcons.wifiOff, size: 14, color: Color(0xFF856404)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Résultats hors-ligne',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600,
+                      color: const Color(0xFF856404)))),
+                ]))),
+          ..._buildLocalFallback(cs),
+        ],
       ],
+    ]);
+  }
 
-      // ── Section label ───────────────────────────────────────────────────────
+  List<Widget> _buildLocalFallback(ColorScheme cs) {
+    final results = _localResults();
+    if (results.isEmpty) return [_EmptySearch(query: _searchQuery)];
+    return [
       Text(
-        _searchQuery.isNotEmpty
-            ? AppL10n(Lang.code).addMealResults(results.length)
-            : _activeCategory != null
-                ? _activeCategory!.label.toUpperCase()
-                : AppL10n(Lang.code).addMealPopular,
+        AppL10n(Lang.code).addMealResults(results.length),
         style: GoogleFonts.inter(
           fontSize: 9, fontWeight: FontWeight.w700,
-          color: nc.text2, letterSpacing: 2.0)),
+          color: cs.onSurface.withOpacity(0.4),
+          letterSpacing: 2.0)),
       const SizedBox(height: 8),
-
-      // ── Food list (multi-select) ─────────────────────────────────────────────
-      if (results.isEmpty && _searchQuery.isNotEmpty)
-        _EmptySearch(query: _searchQuery)
-      else
-        Column(children: results.map((food) {
-          final basketIdx = _basket.indexWhere((b) => b.food.id == food.id);
-          final isSelected = basketIdx != -1;
-          final item = isSelected ? _basket[basketIdx] : null;
-
-          return _FoodSelectTile(
-            food: food,
-            isSelected: isSelected,
-            selectedGrams: item?.grams,
-            onToggle: () {
-              HapticFeedback.selectionClick();
-              if (isSelected) {
-                setState(() => _basket.removeAt(basketIdx));
-              } else {
-                setState(() => _basket.add(_BasketItem(food, food.defaultGrams)));
-              }
-            },
-            onEditQuantity: () {
-              setState(() {
-                _selectedFood  = food;
-                _selectedGrams = item?.grams ?? food.defaultGrams;
-                _selectedUnit  = FoodUnit.g;
-                _amountCtrl.text = (item?.grams ?? food.defaultGrams).round().toString();
-              });
-            },
-          );
-        }).toList()),
-    ]);
+      ...results.map((food) {
+        final basketIdx = _basket.indexWhere((b) => b.food.id == food.id);
+        final isSelected = basketIdx != -1;
+        final grams = isSelected ? _basket[basketIdx].grams : food.defaultGrams;
+        final kcal = food.kcalFor(grams).round();
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            if (isSelected) {
+              setState(() => _basket.removeAt(basketIdx));
+            } else {
+              setState(() => _basket.add(_BasketItem(food, food.defaultGrams)));
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(
+                color: cs.outline.withOpacity(0.08)))),
+            child: Row(children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: _catColor(food.category).withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(10)),
+                child: Icon(_catIcon(food.category),
+                  size: 20, color: _catColor(food.category))),
+              const SizedBox(width: 12),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(food.name, style: GoogleFonts.inter(
+                  fontSize: 14, fontWeight: FontWeight.w600,
+                  color: cs.onSurface)),
+                const SizedBox(height: 4),
+                Row(children: [
+                  Text(food.portionLabel, style: GoogleFonts.inter(
+                    fontSize: 12, color: cs.onSurface.withOpacity(0.45))),
+                  const SizedBox(width: 10),
+                  Text('$kcal kcal', style: GoogleFonts.inter(
+                    fontSize: 12, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                ]),
+              ])),
+              const SizedBox(width: 8),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 30, height: 30,
+                decoration: BoxDecoration(
+                  color: isSelected ? cs.primary : cs.outline.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8)),
+                child: Icon(
+                  isSelected ? LucideIcons.check : LucideIcons.plus,
+                  size: 15,
+                  color: isSelected ? Colors.white : cs.onSurface.withOpacity(0.35))),
+            ])));
+      }),
+    ];
   }
 
   // ── Food detail ───────────────────────────────────────────────────────────
@@ -933,14 +1143,14 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text('$kcal', style: GoogleFonts.outfit(
               fontSize: 44, fontWeight: FontWeight.w800,
-              color: _kGreen, height: 1)),
+              color: _kGreen(context), height: 1)),
             const SizedBox(width: 6),
             Padding(
               padding: const EdgeInsets.only(bottom: 7),
               child: Text('kcal', style: GoogleFonts.inter(
                 fontSize: 15, color: _kText2))),
             const Spacer(),
-            _MacroBadge('P ${protein}g', _kGreen, _kMintBg),
+            _MacroBadge('P ${protein}g', _kGreen(context), _kMintBg),
             const SizedBox(width: 6),
             _MacroBadge('G ${carbs}g', const Color(0xFF3B7FD4), const Color(0xFFEBF2FC)),
             const SizedBox(width: 6),
@@ -948,7 +1158,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           ]),
 
           const SizedBox(height: 16),
-          _MacroBar(AppL10n(Lang.code).nutritionProtein, protein, food.proteinFor(100).round(), _kGreen),
+          _MacroBar(AppL10n(Lang.code).nutritionProtein, protein, food.proteinFor(100).round(), _kGreen(context)),
           const SizedBox(height: 10),
           _MacroBar(AppL10n(Lang.code).nutritionCarbs, carbs, food.carbsFor(100).round(), const Color(0xFF3B7FD4)),
           const SizedBox(height: 10),
@@ -1058,12 +1268,12 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [_kGreen, Color(0xFF0F2E1C)]),
+            colors: [_kGreen(context), const Color(0xFF0F2E1C)]),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [BoxShadow(
-            color: _kGreen.withOpacity(0.22),
+            color: _kGreen(context).withOpacity(0.22),
             blurRadius: 14, offset: const Offset(0, 6))],
         ),
         child: Column(children: [
@@ -1106,7 +1316,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
       Row(children: [
         Expanded(child: _MacroChipInput(
           icon: LucideIcons.beef, label: l10n.nutritionProtein,
-          color: _kGreen, bg: nc.mintBg, controller: _protCtrl)),
+          color: _kGreen(context), bg: nc.mintBg, controller: _protCtrl)),
         const SizedBox(width: 8),
         Expanded(child: _MacroChipInput(
           icon: LucideIcons.wheat, label: l10n.nutritionCarbs,
@@ -1142,12 +1352,12 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
       border: Border.all(color: _kMint.withOpacity(0.3)),
     ),
     child: Column(mainAxisSize: MainAxisSize.min, children: [
-      const SizedBox(
+      SizedBox(
         width: 28, height: 28,
-        child: CircularProgressIndicator(strokeWidth: 2.6, color: _kGreen)),
+        child: CircularProgressIndicator(strokeWidth: 2.6, color: _kGreen(context))),
       const SizedBox(height: 14),
       Text('Préparation de la photo…', style: GoogleFonts.inter(
-        fontSize: 13, fontWeight: FontWeight.w600, color: _kGreen)),
+        fontSize: 13, fontWeight: FontWeight.w600, color: _kGreen(context))),
     ]),
   );
 
@@ -1177,12 +1387,12 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [_kGreen, Color(0xFF0F2E1C)]),
+          colors: [_kGreen(context), const Color(0xFF0F2E1C)]),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [BoxShadow(
-          color: _kGreen.withOpacity(0.24),
+          color: _kGreen(context).withOpacity(0.24),
           blurRadius: 16, offset: const Offset(0, 6))],
       ),
       child: Column(children: [
@@ -1230,10 +1440,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
-            color: _kGreen,
+            color: _kGreen(context),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [BoxShadow(
-              color: _kGreen.withOpacity(0.25),
+              color: _kGreen(context).withOpacity(0.25),
               blurRadius: 12, offset: const Offset(0, 4))]),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             const Icon(LucideIcons.camera, size: 17, color: Colors.white),
@@ -1251,10 +1461,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: _kMint.withOpacity(0.5))),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(LucideIcons.image, size: 17, color: _kGreen),
+            Icon(LucideIcons.image, size: 17, color: _kGreen(context)),
             const SizedBox(width: 8),
             Text(AppL10n(Lang.code).nutritionPhoto, style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen)),
+              fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen(context))),
           ])))),
     ]),
   ]);
@@ -1319,7 +1529,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: _kGreen,
+                color: _kGreen(context),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [BoxShadow(
                   color: Colors.black.withOpacity(0.3),
@@ -1394,10 +1604,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           decoration: BoxDecoration(
             color: _kMintBg, borderRadius: BorderRadius.circular(8)),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(LucideIcons.sparkles, size: 12, color: _kGreen),
+            Icon(LucideIcons.sparkles, size: 12, color: _kGreen(context)),
             const SizedBox(width: 4),
             Text(AppL10n(Lang.code).addMealScanResult, style: GoogleFonts.inter(
-              fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen)),
+              fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen(context))),
           ])),
         const Spacer(),
         GestureDetector(
@@ -1430,7 +1640,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
                 : Container(
                     width: 52, height: 52,
                     color: nc.mintBg,
-                    child: const Icon(LucideIcons.utensils, size: 20, color: _kGreen))),
+                    child: Icon(LucideIcons.utensils, size: 20, color: _kGreen(context)))),
             const SizedBox(width: 12),
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1444,7 +1654,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
               decoration: BoxDecoration(
                 color: _kMintBg, borderRadius: BorderRadius.circular(8)),
               child: Text('$kcal kcal', style: GoogleFonts.inter(
-                fontSize: 12, fontWeight: FontWeight.w700, color: _kGreen))),
+                fontSize: 12, fontWeight: FontWeight.w700, color: _kGreen(context)))),
           ]),
 
           const SizedBox(height: 16),
@@ -1453,7 +1663,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
 
           // Macro pills
           Row(children: [
-            _ScanMacroPill(AppL10n(Lang.code).nutritionProtein, protein, 'g', _kGreen),
+            _ScanMacroPill(AppL10n(Lang.code).nutritionProtein, protein, 'g', _kGreen(context)),
             const SizedBox(width: 8),
             _ScanMacroPill(AppL10n(Lang.code).nutritionCarbs, carbs, 'g', const Color(0xFF3B7FD4)),
             const SizedBox(width: 8),
@@ -1507,10 +1717,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: _kMint.withOpacity(0.4))),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(LucideIcons.camera, size: 16, color: _kGreen),
+              Icon(LucideIcons.camera, size: 16, color: _kGreen(context)),
               const SizedBox(width: 6),
               Text(AppL10n(Lang.code).addMealOtherPhoto, style: GoogleFonts.inter(
-                fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen)),
+                fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen(context))),
             ])))),
         const SizedBox(width: 10),
         Expanded(child: GestureDetector(
@@ -1521,10 +1731,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              color: _kGreen,
+              color: _kGreen(context),
               borderRadius: BorderRadius.circular(14),
               boxShadow: [BoxShadow(
-                color: _kGreen.withOpacity(0.3),
+                color: _kGreen(context).withOpacity(0.3),
                 blurRadius: 10, offset: const Offset(0, 3))]),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(LucideIcons.check, size: 16, color: Colors.white),
@@ -1572,10 +1782,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           decoration: BoxDecoration(
             color: _kMintBg, borderRadius: BorderRadius.circular(8)),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(LucideIcons.sparkles, size: 12, color: _kGreen),
+            Icon(LucideIcons.sparkles, size: 12, color: _kGreen(context)),
             const SizedBox(width: 4),
             Text('${_scannedFoods.length} aliments détectés', style: GoogleFonts.inter(
-              fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen)),
+              fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen(context))),
           ])),
         const Spacer(),
         GestureDetector(
@@ -1644,10 +1854,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: _kMint.withOpacity(0.4))),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(LucideIcons.camera, size: 16, color: _kGreen),
+              Icon(LucideIcons.camera, size: 16, color: _kGreen(context)),
               const SizedBox(width: 6),
               Text(AppL10n(Lang.code).addMealOtherPhoto, style: GoogleFonts.inter(
-                fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen)),
+                fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen(context))),
             ])))),
         const SizedBox(width: 10),
         Expanded(child: GestureDetector(
@@ -1655,10 +1865,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              color: _scannedFoods.isEmpty ? nc.border : _kGreen,
+              color: _scannedFoods.isEmpty ? nc.border : _kGreen(context),
               borderRadius: BorderRadius.circular(14),
               boxShadow: _scannedFoods.isEmpty ? [] : [BoxShadow(
-                color: _kGreen.withOpacity(0.3),
+                color: _kGreen(context).withOpacity(0.3),
                 blurRadius: 10, offset: const Offset(0, 3))]),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Icon(LucideIcons.check, size: 16,
@@ -1723,7 +1933,7 @@ class _BasketSheetState extends State<_BasketSheet> {
                 color: nc.mintBg, borderRadius: BorderRadius.circular(20)),
               child: Text(AppL10n(Lang.code).addMealBasketCount(widget.basket.length),
                 style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen))),
+                  fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen(context)))),
           ])),
 
         // totals row
@@ -1736,8 +1946,8 @@ class _BasketSheetState extends State<_BasketSheet> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _TotalChip('$totalCal', 'kcal', _kGreen),
-              _TotalChip('${totalProt}g', AppL10n(Lang.code).addMealProt, _kGreen),
+              _TotalChip('$totalCal', 'kcal', _kGreen(context)),
+              _TotalChip('${totalProt}g', AppL10n(Lang.code).addMealProt, _kGreen(context)),
               _TotalChip('${totalCarb}g', AppL10n(Lang.code).addMealGluc, const Color(0xFF3B7FD4)),
               _TotalChip('${totalFat}g', AppL10n(Lang.code).addMealLip, const Color(0xFFC47A00)),
             ],
@@ -1798,7 +2008,7 @@ class _BasketSheetState extends State<_BasketSheet> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: _kGreen,
+                color: _kGreen(context),
                 borderRadius: BorderRadius.circular(16)),
               child: Center(child: Text(AppL10n(Lang.code).addMealClose, style: GoogleFonts.inter(
                 fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)))),
@@ -1849,9 +2059,9 @@ class _UnitSelector extends StatelessWidget {
           border: Border.all(color: _kMint.withOpacity(0.4))),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Text(selected.shortLabel, style: GoogleFonts.inter(
-            fontSize: 14, fontWeight: FontWeight.w700, color: _kGreen)),
+            fontSize: 14, fontWeight: FontWeight.w700, color: _kGreen(context))),
           const SizedBox(width: 6),
-          const Icon(LucideIcons.chevronsUpDown, size: 14, color: _kGreen),
+          Icon(LucideIcons.chevronsUpDown, size: 14, color: _kGreen(context)),
         ]),
       ),
     );
@@ -1892,10 +2102,10 @@ class _UnitPickerSheet extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? _kGreen : nc.surface2,
+                  color: isSelected ? _kGreen(context) : nc.surface2,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isSelected ? _kGreen : nc.border)),
+                    color: isSelected ? _kGreen(context) : nc.border)),
                 child: Text(unit.label, style: GoogleFonts.inter(
                   fontSize: 14, fontWeight: FontWeight.w600,
                   color: isSelected ? Colors.white : nc.text1)),
@@ -1951,7 +2161,7 @@ class _MealTypePickerSheet extends ConsumerWidget {
                   color: nc.mintBg,
                   borderRadius: BorderRadius.circular(10)),
                 child: Icon(_typeIcon(type), size: 16,
-                  color: const Color(0xFF1C4D30))),
+                  color: Theme.of(context).colorScheme.primary)),
               const SizedBox(width: 12),
               Text(type.labelFor(Lang.code), style: GoogleFonts.inter(
                 fontSize: 15, fontWeight: FontWeight.w600,
@@ -1990,103 +2200,173 @@ class _FoodSelectTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nc    = NutritionColors.of(context);
     final grams = selectedGrams ?? food.defaultGrams;
     final kcal  = food.kcalFor(grams).round();
+    final cs = Theme.of(context).colorScheme;
+    final prot = food.proteinFor(grams).round();
+    final carb = food.carbsFor(grams).round();
+    final fat  = food.fatFor(grams).round();
 
     return GestureDetector(
       onTap: onToggle,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? nc.mintBg : nc.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? _kMint : nc.border,
-            width: isSelected ? 1.5 : 1.0)),
+          border: Border(bottom: BorderSide(
+            color: cs.outline.withOpacity(0.08)))),
         child: Row(children: [
 
-          // Food photo
+          // Food photo from Spoonacular CDN
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             child: SizedBox(
-              width: 42, height: 42,
-              child: Image.network(
-                _catPhoto(food.category),
-                fit: BoxFit.cover,
-                loadingBuilder: (_, child, progress) => progress == null
-                    ? child
-                    : Container(
-                        color: _catColor(food.category).withOpacity(0.12),
-                        child: Icon(_catIcon(food.category),
-                          size: 18, color: _catColor(food.category))),
-                errorBuilder: (_, __, ___) => Container(
-                  color: _catColor(food.category).withOpacity(0.12),
-                  child: Icon(_catIcon(food.category),
-                    size: 18, color: _catColor(food.category))),
-              ))),
+              width: 44, height: 44,
+              child: _foodImage.containsKey(food.id)
+                  ? Image.network(
+                      _foodImageUrl(food.id),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _foodFallbackIcon(food.category))
+                  : FutureBuilder<String?>(
+                      future: SpoonacularService.getImageForName(food.name),
+                      builder: (context, snap) {
+                        if (snap.hasData && snap.data != null) {
+                          return Image.network(
+                            snap.data!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _foodFallbackIcon(food.category));
+                        }
+                        return _foodFallbackIcon(food.category);
+                      }))),
 
           const SizedBox(width: 12),
 
-          // Name + serving info
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(food.name, style: GoogleFonts.inter(
-              fontSize: 14, fontWeight: FontWeight.w700,
-              color: nc.text1)),
-            const SizedBox(height: 3),
+              fontSize: 14, fontWeight: FontWeight.w600,
+              color: cs.onSurface)),
+            const SizedBox(height: 4),
             Row(children: [
-              // Serving/quantity pill — tap to edit when selected
               GestureDetector(
                 onTap: isSelected ? onEditQuantity : null,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isSelected ? nc.surface : nc.chipBg,
-                    borderRadius: BorderRadius.circular(8),
-                    border: isSelected
-                        ? Border.all(color: _kMint.withOpacity(0.5))
-                        : null),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(
-                      isSelected
-                          ? '${grams.round()} g'
-                          : food.portionLabel,
-                      style: GoogleFonts.inter(
-                        fontSize: 11, fontWeight: FontWeight.w600,
-                        color: isSelected ? _kGreen : nc.text2)),
-                    if (isSelected) ...[
-                      const SizedBox(width: 3),
-                      const Icon(LucideIcons.chevronDown, size: 10, color: _kGreen),
-                    ],
-                  ])),
-              ),
+                child: Text(
+                  isSelected ? '${grams.round()} g' : food.portionLabel,
+                  style: GoogleFonts.inter(
+                    fontSize: 12, fontWeight: FontWeight.w500,
+                    color: cs.onSurface.withOpacity(0.45)))),
+              const SizedBox(width: 10),
+              Text('$kcal kcal', style: GoogleFonts.inter(
+                fontSize: 12, fontWeight: FontWeight.w700,
+                color: cs.onSurface)),
               const SizedBox(width: 8),
-              Text('$kcal kcal',
-                style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w700,
-                  color: isSelected ? _kGreen : nc.text2)),
+              Text('P $prot', style: GoogleFonts.inter(
+                fontSize: 10, fontWeight: FontWeight.w600,
+                color: const Color(0xFF3B82F6))),
+              const SizedBox(width: 4),
+              Text('G $carb', style: GoogleFonts.inter(
+                fontSize: 10, fontWeight: FontWeight.w600,
+                color: const Color(0xFFF59E0B))),
+              const SizedBox(width: 4),
+              Text('L $fat', style: GoogleFonts.inter(
+                fontSize: 10, fontWeight: FontWeight.w600,
+                color: const Color(0xFFEF4444))),
             ]),
           ])),
 
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
 
-          // Toggle button
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            width: 32, height: 32,
+            width: 30, height: 30,
             decoration: BoxDecoration(
-              color: isSelected ? _kGreen : nc.chipBg,
-              shape: BoxShape.circle,
-              boxShadow: isSelected ? [BoxShadow(
-                color: _kGreen.withOpacity(0.3),
-                blurRadius: 8, offset: const Offset(0, 2))] : []),
+              color: isSelected ? cs.primary : cs.outline.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8)),
             child: Icon(
               isSelected ? LucideIcons.check : LucideIcons.plus,
-              size: 16,
-              color: isSelected ? Colors.white : nc.text2)),
+              size: 15,
+              color: isSelected ? Colors.white : cs.onSurface.withOpacity(0.35))),
+        ])));
+  }
+}
+
+class _SpoonTile extends StatelessWidget {
+  final SpoonIngredient ingredient;
+  final bool isSelected;
+  final VoidCallback onTap;
+  const _SpoonTile({
+    required this.ingredient,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(
+            color: cs.outline.withOpacity(0.08)))),
+        child: Row(children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 44, height: 44,
+              child: Image.network(
+                ingredient.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: cs.primary.withOpacity(0.08),
+                  child: Icon(LucideIcons.utensils, size: 18, color: cs.primary))))),
+          const SizedBox(width: 12),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(ingredient.name,
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontSize: 14, fontWeight: FontWeight.w600,
+                color: cs.onSurface)),
+            const SizedBox(height: 4),
+            Row(children: [
+              if (ingredient.brand.isNotEmpty) ...[
+                Text(ingredient.brand,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 11, color: cs.onSurface.withOpacity(0.4))),
+                const SizedBox(width: 8),
+              ],
+              if (ingredient.kcal > 0) ...[
+                Text('${ingredient.kcal.round()} kcal', style: GoogleFonts.inter(
+                  fontSize: 12, fontWeight: FontWeight.w700,
+                  color: cs.onSurface)),
+                const SizedBox(width: 6),
+                Text('P ${ingredient.protein.round()}', style: GoogleFonts.inter(
+                  fontSize: 10, fontWeight: FontWeight.w600,
+                  color: const Color(0xFF3B82F6))),
+                const SizedBox(width: 4),
+                Text('G ${ingredient.carbs.round()}', style: GoogleFonts.inter(
+                  fontSize: 10, fontWeight: FontWeight.w600,
+                  color: const Color(0xFFF59E0B))),
+                const SizedBox(width: 4),
+                Text('L ${ingredient.fat.round()}', style: GoogleFonts.inter(
+                  fontSize: 10, fontWeight: FontWeight.w600,
+                  color: const Color(0xFFEF4444))),
+              ],
+            ]),
+          ])),
+          const SizedBox(width: 8),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 30, height: 30,
+            decoration: BoxDecoration(
+              color: isSelected ? cs.primary : cs.outline.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8)),
+            child: Icon(
+              isSelected ? LucideIcons.check : LucideIcons.plus,
+              size: 15,
+              color: isSelected ? Colors.white : cs.onSurface.withOpacity(0.35))),
         ])));
   }
 }
@@ -2130,9 +2410,9 @@ class _PortionChip extends StatelessWidget {
       duration: const Duration(milliseconds: 150),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: selected ? _kGreen : nc.chipBg,
+        color: selected ? _kGreen(context) : nc.chipBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: selected ? _kGreen : nc.border)),
+        border: Border.all(color: selected ? _kGreen(context) : nc.border)),
       child: Text(label, style: GoogleFonts.inter(
         fontSize: 11, fontWeight: FontWeight.w600,
         color: selected ? Colors.white : nc.text1))));
@@ -2140,35 +2420,27 @@ class _PortionChip extends StatelessWidget {
 }
 
 class _ModeTab extends StatelessWidget {
-  final IconData icon;
   final String label;
   final bool active;
   final VoidCallback onTap;
-  const _ModeTab({required this.icon, required this.label,
+  const _ModeTab({required this.label,
     required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final nc = NutritionColors.of(context);
-    return Expanded(
-    child: GestureDetector(
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 9),
+        padding: const EdgeInsets.only(bottom: 10, top: 4),
         decoration: BoxDecoration(
-          color: active ? _kGreen : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: active ? [BoxShadow(
-            color: _kGreen.withOpacity(0.2),
-            blurRadius: 8, offset: const Offset(0, 2))] : []),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 16, color: active ? Colors.white : nc.text2),
-          const SizedBox(height: 3),
-          Text(label, style: GoogleFonts.inter(
-            fontSize: 10, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? Colors.white : nc.text2)),
-        ]))));
+          border: Border(bottom: BorderSide(
+            color: active ? cs.primary : Colors.transparent,
+            width: 2))),
+        child: Text(label, style: GoogleFonts.inter(
+          fontSize: 13, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+          color: active ? cs.primary : cs.onSurface.withOpacity(0.45)))));
   }
 }
 

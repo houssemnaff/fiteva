@@ -73,8 +73,14 @@ class PgColors extends ThemeExtension<PgColors> {
     border:    Color(0xFF2C2C2C),
   );
 
-  static PgColors of(BuildContext context) =>
-      Theme.of(context).extension<PgColors>() ?? light;
+  static PgColors of(BuildContext context) {
+    final base = Theme.of(context).extension<PgColors>() ?? light;
+    final cs = Theme.of(context).colorScheme;
+    return base.copyWith(
+      green: cs.primary,
+      mint: Color.lerp(cs.primary, Colors.white, 0.4)!,
+    );
+  }
 
   // ── ThemeExtension boilerplate ─────────────────────────────────────────────
   @override

@@ -578,8 +578,8 @@ class _ConseilTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final doc   = conseil.doctor;
     final color = _catColor(conseil.category);
-    final cardBg = dark ? const Color(0xFF161616) : Colors.white;
-    final borderColor = dark ? const Color(0xFF242424) : const Color(0xFFF0F0F0);
+    final cardBg = Theme.of(context).colorScheme.surfaceContainerLow;
+    final borderColor = Theme.of(context).colorScheme.outline;
 
     return Container(
       decoration: BoxDecoration(
@@ -622,7 +622,7 @@ class _ConseilTile extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: dark ? const Color(0xFF242424) : const Color(0xFFF5F5F5),
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(20)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(LucideIcons.clock, size: 10, color: _T.t3(context)),
@@ -937,8 +937,8 @@ class _ArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardBg = dark ? const Color(0xFF161616) : Colors.white;
-    final border = dark ? const Color(0xFF242424) : const Color(0xFFF0F0F0);
+    final cardBg = Theme.of(context).colorScheme.surfaceContainerLow;
+    final border = Theme.of(context).colorScheme.outline;
     return Container(
       decoration: BoxDecoration(
         color: cardBg,
@@ -1030,8 +1030,8 @@ class _LexCardState extends State<_LexCard> {
   Widget build(BuildContext context) {
     final dark = widget.dark;
     final e = widget.entry;
-    final cardBg = dark ? const Color(0xFF161616) : Colors.white;
-    final border = dark ? const Color(0xFF242424) : const Color(0xFFF0F0F0);
+    final cardBg = Theme.of(context).colorScheme.surfaceContainerLow;
+    final border = Theme.of(context).colorScheme.outline;
     return GestureDetector(
       onTap: () => setState(() => _open = !_open),
       child: AnimatedContainer(
@@ -1060,7 +1060,7 @@ class _LexCardState extends State<_LexCard> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: dark ? const Color(0xFF242424) : const Color(0xFFF5F5F5),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(10)),
                 child: Text(e.category, style: GoogleFonts.inter(
                   fontSize: 10, color: _T.t2(context))),
@@ -1670,7 +1670,7 @@ class _SeriesSheet extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: dark ? const Color(0xFF242424) : const Color(0xFFEEEEEE),
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(8)),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(LucideIcons.clock3, size: 10, color: _T.t3(context)),
@@ -1753,7 +1753,7 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
     final ep = widget.episode;
     final doc = s.doctor;
     final bg = dark ? const Color(0xFF0A0A0A) : const Color(0xFFF5F5F5);
-    final cardBg = dark ? const Color(0xFF161616) : Colors.white;
+    final cardBg = Theme.of(context).colorScheme.surfaceContainerLow;
 
     // other episodes excluding current
     final others = s.episodes.where((e) => e.episode != ep.episode).toList();
@@ -1827,7 +1827,7 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: dark ? const Color(0xFF242424) : const Color(0xFFF0F0F0),
+                          color: Theme.of(context).colorScheme.outline,
                           borderRadius: BorderRadius.circular(10)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(LucideIcons.clock3, size: 10, color: _T.t3(context)),
@@ -1853,7 +1853,7 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: _liked ? s.color.withOpacity(0.12) : (dark ? const Color(0xFF242424) : const Color(0xFFF2F2F2)),
+                            color: _liked ? s.color.withOpacity(0.12) : (Theme.of(context).colorScheme.surfaceContainerHighest),
                             borderRadius: BorderRadius.circular(20),
                             border: _liked ? Border.all(color: s.color.withOpacity(0.4)) : null),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -1870,7 +1870,7 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: dark ? const Color(0xFF242424) : const Color(0xFFF2F2F2),
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(20)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(LucideIcons.share2, size: 15, color: _T.t2(context)),
