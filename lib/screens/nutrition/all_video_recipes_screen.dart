@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/core/nutrition/favorites_provider.dart';
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
-import 'package:fiteva/screens/cycle/widgets-cycle/Phasecolors.dart';
 import 'package:fiteva/screens/nutrition/recipe_video_screen.dart';
 import 'package:fiteva/screens/nutrition/recipes_list_screen.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +27,7 @@ class AllVideoRecipesScreen extends ConsumerWidget {
     final top = MediaQuery.of(context).padding.top;
     final nc  = NutritionColors.of(context);
     final l10n = ref.watch(l10nProvider);
-    final dbVideos = ref.watch(videoRecipesProvider).asData?.value ?? videoRecipes;
+    final dbVideos = ref.watch(videoRecipesProvider).asData?.value ?? [];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: (nc.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
@@ -120,16 +119,15 @@ class _VideoGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nc = NutritionColors.of(context);
-    final pc = PhaseColors.forPhase(recipe.phase);
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: nc.surface,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: nc.border),
-          boxShadow: nc.isDark ? [] : [BoxShadow(
+          border: Border.all(color: cs.outline.withOpacity(0.1)),
+          boxShadow: [BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 8, offset: const Offset(0, 3))],
         ),
@@ -140,7 +138,7 @@ class _VideoGridCard extends StatelessWidget {
             flex: 3,
             child: Stack(fit: StackFit.expand, children: [
               Image.network(recipe.imageUrl, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: pc.light)),
+                errorBuilder: (_, __, ___) => Container(color: cs.primary.withOpacity(0.05))),
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -159,7 +157,7 @@ class _VideoGridCard extends StatelessWidget {
                       color: Colors.black.withOpacity(0.2),
                       blurRadius: 8)]),
                   child: Icon(LucideIcons.play,
-                    color: recipe.videoAsset != null ? Colors.white : pc.primary,
+                    color: recipe.videoAsset != null ? Colors.white : cs.primary,
                     size: 16))),
               // Video badge if has video
               if (recipe.videoAsset != null)
@@ -216,21 +214,21 @@ class _VideoGridCard extends StatelessWidget {
                   Text(recipe.name, maxLines: 2, overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(
                       fontSize: 12.5, fontWeight: FontWeight.w700,
-                      color: nc.text1, height: 1.3)),
+                      color: cs.onSurface, height: 1.3)),
                   Row(children: [
-                    Icon(LucideIcons.flame, size: 10, color: pc.primary),
+                    Icon(LucideIcons.flame, size: 10, color: cs.primary),
                     const SizedBox(width: 3),
                     Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
-                      fontSize: 10.5, fontWeight: FontWeight.w600, color: pc.primary)),
+                      fontSize: 10.5, fontWeight: FontWeight.w600, color: cs.primary)),
                     const Spacer(),
                     Text(recipe.difficulty, style: GoogleFonts.inter(
-                      fontSize: 9.5, color: nc.text2)),
+                      fontSize: 9.5, color: cs.onSurface.withOpacity(0.4))),
                   ]),
                 ],
               ),
             ),
           ),
-          Container(height: 3, color: pc.primary),
+          Container(height: 3, color: cs.primary),
         ]),
       ),
     );

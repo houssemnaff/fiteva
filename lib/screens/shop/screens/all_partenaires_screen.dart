@@ -177,7 +177,7 @@ class _AllPartenairesScreenState extends ConsumerState<AllPartenairesScreen> {
                         item: item,
                         isWishlisted: wishlist.contains(item.id),
                         isRedeemed: shop.isRedeemed(item.id),
-                        canAfford: shop.canAfford(item.etoiles),
+                        canAfford: shop.canAfford(item.diamonds),
                         onWish: () => _toggleWish(item.id),
                         onTap: () => Navigator.push(
                             ctx,
@@ -388,7 +388,7 @@ class _PartnerRow extends StatelessWidget {
                         : Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(CupertinoIcons.star_fill, size: 10, color: canAfford ? _P.gold : p.inkSubtle),
                             const SizedBox(width: 4),
-                            Text('${item.etoiles} pts',
+                            Text('${item.diamonds} pts',
                                 style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
                                     color: canAfford ? p.ink : p.inkSubtle)),
                           ]),

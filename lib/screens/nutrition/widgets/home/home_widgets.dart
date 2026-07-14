@@ -212,7 +212,7 @@ class MealCategoryCard extends StatelessWidget {
     _kBreakfastColor, _kLunchColor, _kSnackColor, _kDinnerColor,
   ];
   static const _bgColors = [
-    Color(0xFFFFFBEB), Color(0xFFECFDF5), Color(0xFFF5F3FF), Color(0xFFEFF6FF),
+    Color.fromARGB(255, 255, 255, 255), Colors.white, Colors.white, Colors.white,
   ];
   static const _namesFr = ['Petit déjeuner', 'Déjeuner', 'Collation', 'Dîner'];
   static const _namesEn = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];

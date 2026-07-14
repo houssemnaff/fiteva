@@ -10,6 +10,7 @@ import 'package:pedometer/pedometer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/points_provider.dart';
 import '../services/step_service.dart';
+import '../widgets/points_toast.dart';
 import '../l10n/app_localizations.dart';
 
 // ── Design tokens — alignés sur le reste de l'accueil (cartes claires,
@@ -137,10 +138,16 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
       if (mounted) setState(() => _goalAlreadyRewarded = true);
       return;
     }
-    await prefs.setBool(today, true);
     if (mounted) setState(() => _goalAlreadyRewarded = true);
-    await ref.read(pointsProvider.notifier).addPoints(50);
-    if (mounted) _showGoalNotification();
+    // Garde-fou 1×/jour vérifié CÔTÉ SERVEUR (points_progress_history) — les
+    // prefs ne servent que de cache local pour éviter de re-requêter.
+    final granted =
+        await ref.read(pointsProvider.notifier).rewardStepGoalReached();
+    await prefs.setBool(today, true);
+    if (granted && mounted) {
+      _showGoalNotification();
+      maybeShowLevelUpToast(context, ref);
+    }
   }
 
   void _showGoalNotification() {

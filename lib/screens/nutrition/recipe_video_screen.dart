@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/core/nutrition/favorites_provider.dart';
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
-import 'package:fiteva/screens/cycle/widgets-cycle/Phasecolors.dart';
 import 'package:fiteva/screens/nutrition/recipes_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
+import 'recipe_author_screen.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
@@ -48,7 +48,10 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
   Future<void> _initVideo() async {
     final asset = widget.recipe.videoAsset;
     if (asset == null) return;
-    final ctrl = VideoPlayerController.asset(asset);
+    final isUrl = asset.startsWith('http://') || asset.startsWith('https://');
+    final ctrl = isUrl
+        ? VideoPlayerController.networkUrl(Uri.parse(asset))
+        : VideoPlayerController.asset(asset);
     try {
       await ctrl.initialize();
       ctrl.addListener(_onVideoUpdate);
@@ -105,7 +108,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.of(context).padding.top;
-    final pc  = PhaseColors.forPhase(widget.recipe.phase);
+    final cs  = Theme.of(context).colorScheme;
     final nc  = NutritionColors.of(context);
     final l10n = ref.watch(l10nProvider);
     final videoH = top + 260.0;
@@ -123,14 +126,14 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
               pinned: true,
               delegate: _VideoHeaderDelegate(
                 height: videoH,
-                child: _buildVideoHeader(top, pc),
+                child: _buildVideoHeader(top),
               ),
             ),
 
             // ── Content ───────────────────────────────────────────────────
-            SliverToBoxAdapter(child: _buildMeta(pc, nc, l10n)),
-            SliverToBoxAdapter(child: _buildIngredients(pc, nc, l10n)),
-            SliverToBoxAdapter(child: _buildSteps(pc, nc)),
+            SliverToBoxAdapter(child: _buildMeta(nc, l10n)),
+            SliverToBoxAdapter(child: _buildIngredients(nc, l10n)),
+            SliverToBoxAdapter(child: _buildSteps(nc)),
             const SliverToBoxAdapter(child: SizedBox(height: 60)),
           ],
         ),
@@ -139,7 +142,8 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
   }
 
   // ── VIDEO HEADER ───────────────────────────────────────────────────────────
-  Widget _buildVideoHeader(double top, PhaseColorSet pc) {
+  Widget _buildVideoHeader(double top) {
+    final cs = Theme.of(context).colorScheme;
     final hasVideo = widget.recipe.videoAsset != null;
 
     return GestureDetector(
@@ -156,7 +160,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
           if (!_playing)
             Image.network(
               widget.recipe.imageUrl, fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: pc.light)),
+              errorBuilder: (_, __, ___) => Container(color: cs.primary.withOpacity(0.08))),
 
           // ── Gradient overlay ──
           if (!_playing)
@@ -266,17 +270,22 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
           // ── Phase badge ──
           Positioned(
             top: top + 14, right: 64,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-              decoration: BoxDecoration(
-                color: pc.primary.withOpacity(0.88),
-                borderRadius: BorderRadius.circular(20)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(pc.emoji, style: const TextStyle(fontSize: 11)),
-                const SizedBox(width: 5),
-                Text(pc.name, style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
-              ]))),
+            child: Builder(builder: (_) {
+              final pi = PhaseInfo.from(widget.recipe.phase);
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                decoration: BoxDecoration(
+                  color: pi.color.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Container(width: 6, height: 6,
+                    decoration: const BoxDecoration(
+                      color: Colors.white, shape: BoxShape.circle)),
+                  const SizedBox(width: 5),
+                  Text(pi.label, style: GoogleFonts.inter(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                ]));
+            })),
 
           // ── Duration + video badge (before play) ──
           if (!_playing)
@@ -298,7 +307,8 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
   }
 
   // ── META ──────────────────────────────────────────────────────────────────
-  Widget _buildMeta(PhaseColorSet pc, NutritionColors nc, AppL10n l10n) {
+  Widget _buildMeta(NutritionColors nc, AppL10n l10n) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -315,14 +325,51 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
           _MetaChip(icon: LucideIcons.dumbbell,  label: '${widget.recipe.proteins}g protéines'),
           _MetaChip(icon: LucideIcons.barChart2, label: widget.recipe.difficulty),
         ]),
+        // Author row
+        if (widget.recipe.authorName != null) ...[
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: widget.recipe.authorId != null ? () {
+              HapticFeedback.lightImpact();
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => RecipeAuthorScreen(
+                  userId: widget.recipe.authorId!,
+                  username: widget.recipe.authorName!)));
+            } : null,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: cs.primary.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(12)),
+              child: Row(children: [
+                Container(width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: cs.primary.withOpacity(0.12), shape: BoxShape.circle),
+                  child: Center(child: Text(
+                    widget.recipe.authorName![0].toUpperCase(),
+                    style: GoogleFonts.outfit(fontSize: 14,
+                      fontWeight: FontWeight.w800, color: cs.primary)))),
+                const SizedBox(width: 10),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('par ${widget.recipe.authorName}', style: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                    Text('Voir toutes ses recettes', style: GoogleFonts.inter(
+                      fontSize: 11, color: cs.primary)),
+                  ])),
+                Icon(LucideIcons.chevronRight, size: 16, color: cs.primary),
+              ]))),
+        ],
         const SizedBox(height: 20),
-        _WhyPhaseCard(pc: pc, l10n: l10n),
+        _WhyPhaseCard(l10n: l10n, phase: widget.recipe.phase),
       ]),
     );
   }
 
   // ── INGREDIENTS ───────────────────────────────────────────────────────────
-  Widget _buildIngredients(PhaseColorSet pc, NutritionColors nc, AppL10n l10n) {
+  Widget _buildIngredients(NutritionColors nc, AppL10n l10n) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -343,7 +390,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
             child: Row(children: [
               Container(
                 width: 7, height: 7,
-                decoration: BoxDecoration(color: pc.primary, shape: BoxShape.circle)),
+                decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle)),
               const SizedBox(width: 12),
               Expanded(child: Text(ing.name, style: GoogleFonts.inter(
                 fontSize: 13.5, fontWeight: FontWeight.w600, color: nc.text1))),
@@ -381,7 +428,8 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
   }
 
   // ── STEPS ─────────────────────────────────────────────────────────────────
-  Widget _buildSteps(PhaseColorSet pc, NutritionColors nc) {
+  Widget _buildSteps(NutritionColors nc) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -506,38 +554,41 @@ class _DarkBadge extends StatelessWidget {
 }
 
 class _WhyPhaseCard extends StatelessWidget {
-  final PhaseColorSet pc;
   final AppL10n l10n;
-  const _WhyPhaseCard({required this.pc, required this.l10n});
+  final String phase;
+  const _WhyPhaseCard({required this.l10n, this.phase = 'all'});
 
-  static const _text = {
-    CyclePhase.menstrual:
-        'Pendant les règles, privilégie des aliments riches en fer et anti-inflammatoires pour soulager les crampes.',
-    CyclePhase.follicular:
-        'En phase folliculaire, ton énergie remonte. Les recettes légères et protéinées soutiennent ta vitalité.',
-    CyclePhase.ovulation:
-        'Autour de l\'ovulation, les aliments antioxydants et colorés soutiennent l\'endurance.',
-    CyclePhase.luteal:
-        'En phase lutéale, les aliments riches en magnésium réduisent les symptômes du SPM.',
+  String get _tip => switch (phase) {
+    'menstrual'  => 'Pendant tes règles, privilégie le fer et le magnésium pour compenser les pertes et réduire la fatigue.',
+    'follicular' => 'En phase folliculaire, les protéines et fibres soutiennent la montée d\'énergie et la reconstruction.',
+    'ovulation'  => 'Autour de l\'ovulation, les antioxydants et le zinc favorisent l\'équilibre hormonal.',
+    'luteal'     => 'En phase lutéale, les glucides complexes et le calcium aident à stabiliser l\'humeur.',
+    _            => 'Cette recette est conçue pour soutenir ton bien-être avec des ingrédients riches en nutriments essentiels.',
   };
 
   @override
   Widget build(BuildContext context) {
+    final pi = PhaseInfo.from(phase);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: pc.light,
+        color: pi.color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: pc.border)),
+        border: Border.all(color: pi.color.withOpacity(0.2))),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(pc.emoji, style: const TextStyle(fontSize: 18)),
+        Icon(LucideIcons.lightbulb, size: 18, color: pi.color),
         const SizedBox(width: 10),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(l10n.videoPourquoiPhase(pc.name), style: GoogleFonts.inter(
-            fontSize: 12.5, fontWeight: FontWeight.w700, color: pc.text)),
+          Row(children: [
+            Container(width: 6, height: 6,
+              decoration: BoxDecoration(color: pi.color, shape: BoxShape.circle)),
+            const SizedBox(width: 6),
+            Text(pi.label, style: GoogleFonts.inter(
+              fontSize: 12.5, fontWeight: FontWeight.w700, color: pi.color)),
+          ]),
           const SizedBox(height: 4),
-          Text(_text[pc.phase] ?? '', style: GoogleFonts.inter(
-            fontSize: 12, color: pc.text.withOpacity(0.8), height: 1.5)),
+          Text(_tip, style: GoogleFonts.inter(
+            fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8), height: 1.5)),
         ])),
       ]),
     );

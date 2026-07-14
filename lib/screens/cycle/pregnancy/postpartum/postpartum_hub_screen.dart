@@ -1,6 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/providers/user_profile_provider.dart';
-import 'package:fiteva/providers/xp_provider.dart';
+import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_insight_repository.dart';
 import 'package:fiteva/services/pregnancy_content_service.dart';
 import 'package:fiteva/screens/cycle/pregnancy/pregnancy_colors.dart';
@@ -55,7 +55,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
   void initState() {
     super.initState();
     _birthDate = widget.birthDate;
-    Future.microtask(() => ref.read(xpProvider.notifier).rewardPostpartumTask());
+    Future.microtask(() => ref.read(pointsProvider.notifier).rewardPostpartumTask());
     // L'humeur n'était jamais sauvegardée (setState local uniquement) —
     // on réutilise le même stockage que le suivi de cycle (cycle_daily_logs).
     _loadMood();

@@ -9,7 +9,6 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/points_provider.dart';
-import '../../core/shop/shop_provider.dart';
 import '../../models/video_model.dart';
 import '../../providers/workout_progress_provider.dart';
 import '../../services/workout_progress_service.dart';
@@ -332,8 +331,9 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
         : _pointsForExercise(
             widget.totalWorkoutPoints, widget.totalExercises, widget.exerciseIndex);
     if (!_wasAlreadyCompleted) {
-      widget.ref.read(pointsProvider.notifier).addPoints(pts);
-      widget.ref.read(shopProvider.notifier).refresh();
+      // Points de progression (plus des diamants) — les diamants ne viennent
+      // que des passages de niveau, crédités automatiquement par le notifier.
+      widget.ref.read(pointsProvider.notifier).addWorkoutPoints(pts);
     }
 
     // Vérifie si tout le workout est terminé (la vidéo vient d'être écrite),

@@ -1,9 +1,13 @@
 import 'package:fiteva/core/nutrition/favorites_provider.dart';
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
+import 'package:fiteva/screens/nutrition/recipe_author_screen.dart';
+import 'package:fiteva/services/recipe_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TOKENS LOCAUX — cohérents avec le reste de l'app
@@ -131,6 +135,25 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     return _heroUrl;
   }
 
+  String? get _authorName {
+    try {
+      final r = widget.recipe;
+      if (r is AppRecipe) return r.author?.username;
+      final a = r?.author;
+      if (a != null) return a.username as String?;
+    } catch (_) {}
+    return null;
+  }
+
+  String? get _authorId {
+    try {
+      final r = widget.recipe;
+      if (r is AppRecipe) return r.userId;
+      return r?.userId as String?;
+    } catch (_) {}
+    return null;
+  }
+
   late final ScrollController _scroll;
 
   @override
@@ -175,6 +198,13 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                   onBack: () => Navigator.maybePop(context),
                 ),
               ),
+
+              // ── Author ─────────────────────────────────────────
+              if (_authorName != null && _authorId != null)
+                SliverToBoxAdapter(child: _AuthorRow(
+                  name: _authorName!,
+                  userId: _authorId!,
+                )),
 
               // ── Actions ───────────────────────────────────────
               const SliverToBoxAdapter(child: _ActionsRow()),
@@ -414,6 +444,53 @@ class _MetaPill extends StatelessWidget {
         Text(label, style: TextStyle(
           fontSize: 11, fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
       ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTHOR ROW
+// ─────────────────────────────────────────────────────────────────────────────
+class _AuthorRow extends StatelessWidget {
+  final String name;
+  final String userId;
+  const _AuthorRow({required this.name, required this.userId});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => RecipeAuthorScreen(userId: userId, username: name),
+        ));
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
+        child: Row(children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: cs.primary.withOpacity(0.1),
+              shape: BoxShape.circle),
+            child: Center(child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : '?',
+              style: GoogleFonts.outfit(
+                fontSize: 14, fontWeight: FontWeight.w800,
+                color: cs.primary))),
+          ),
+          const SizedBox(width: 10),
+          Text('par ', style: GoogleFonts.inter(
+            fontSize: 13, color: cs.onSurface.withOpacity(0.45))),
+          Text(name, style: GoogleFonts.inter(
+            fontSize: 13, fontWeight: FontWeight.w600,
+            color: cs.primary)),
+          const Spacer(),
+          Icon(LucideIcons.chevronRight, size: 16,
+            color: cs.onSurface.withOpacity(0.3)),
+        ]),
+      ),
     );
   }
 }

@@ -6,7 +6,8 @@ class BoutiqueItem {
   final String title;
   final String discount;
   final int discountValue;
-  final int etoiles;
+  /// Coût en diamants (colonne shop_items.diamonds_cost).
+  final int diamonds;
   final int daysLeft;
   final Color primaryColor;
   final Color secondaryColor;
@@ -23,7 +24,7 @@ class BoutiqueItem {
     required this.title,
     required this.discount,
     required this.discountValue,
-    required this.etoiles,
+    required this.diamonds,
     required this.daysLeft,
     required this.primaryColor,
     required this.secondaryColor,

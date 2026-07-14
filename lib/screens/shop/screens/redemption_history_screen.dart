@@ -47,7 +47,7 @@ class _P {
 enum _Tab { redemptions, requests }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCREEN — échanges (étoiles) + candidatures "devenir partenaire"
+// SCREEN — échanges (diamants) + candidatures "devenir partenaire"
 // ─────────────────────────────────────────────────────────────────────────────
 class RedemptionHistoryScreen extends ConsumerStatefulWidget {
   const RedemptionHistoryScreen({super.key});
@@ -144,7 +144,7 @@ class _TabButton extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ÉCHANGES — ce que l'utilisatrice a obtenu avec ses étoiles
+// ÉCHANGES — ce que l'utilisatrice a obtenu avec ses diamants
 // ─────────────────────────────────────────────────────────────────────────────
 class _RedemptionsList extends ConsumerWidget {
   final _P p;
@@ -162,12 +162,12 @@ class _RedemptionsList extends ConsumerWidget {
       loading: () => Center(child: CircularProgressIndicator(color: p.accent)),
       error: (_, __) => _EmptyState(p: p, icon: CupertinoIcons.clock,
           title: 'Aucun échange pour le moment',
-          subtitle: 'Les articles échangés avec tes étoiles\napparaîtront ici.'),
+          subtitle: 'Les articles échangés avec tes diamants\napparaîtront ici.'),
       data: (entries) {
         if (entries.isEmpty) {
           return _EmptyState(p: p, icon: CupertinoIcons.clock,
               title: 'Aucun échange pour le moment',
-              subtitle: 'Les articles échangés avec tes étoiles\napparaîtront ici.');
+              subtitle: 'Les articles échangés avec tes diamants\napparaîtront ici.');
         }
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),

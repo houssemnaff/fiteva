@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
-import 'package:fiteva/providers/xp_provider.dart';
+import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/weekly_plan_provider.dart';
 import 'package:fiteva/core/nutrition/nutrition_provider.dart' hide userProfileProvider;
 import 'package:fiteva/screens/cycle/homecyle.dart';
@@ -124,7 +124,7 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
     });
     // Daily login XP (once per day, safe to call repeatedly)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(xpProvider.notifier).rewardDailyLogin();
+      ref.read(pointsProvider.notifier).rewardDailyLogin();
     });
   }
 

@@ -5,12 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'package:fiteva/models/points_model.dart';
+import 'package:fiteva/providers/diamonds_provider.dart';
 import 'package:fiteva/providers/mascot_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/user_profile_provider.dart'
     hide UserProfile;
 import 'package:fiteva/providers/subscription_provider.dart';
-import 'package:fiteva/providers/xp_provider.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:fiteva/services/comuniter_service.dart';
@@ -33,7 +34,7 @@ class UserProfile {
   final String? frequency;
   final bool isCurrentUser;
   final bool isPro;
-  final int etoiles;
+  final int diamonds;
   final List<UserPost> posts;
   final List<UserEvent> events;
   final List<PartnerModel> partners;
@@ -52,7 +53,7 @@ class UserProfile {
     this.frequency,
     this.isCurrentUser = false,
     this.isPro = false,
-    this.etoiles = 0,
+    this.diamonds = 0,
     required this.posts,
     required this.events,
     this.partners = const [],
@@ -133,16 +134,16 @@ final communityUserProfileProvider =
   final currentUid = SupabaseConfig.userId;
   final isSelf     = userId == currentUid;
 
-  // Fetch posts + events + partners + points in parallel
+  // Fetch posts + events + partners + diamonds in parallel
   // regardless of who the user is.
   final postsFuture    = CommunityService.getUserPosts(userId);
   final eventsFuture   = CommunityService.getUserEvents(userId);
   final partnersFuture = CommunityService.getUserPartners(userId);
-  final pointsFuture   = CommunityService.getUserPoints(userId);
+  final diamondsFuture = CommunityService.getUserDiamonds(userId);
 
   final rawResults = await Future.wait([postsFuture, eventsFuture]);
   final userPartners = await partnersFuture;
-  final remoteEtoiles = await pointsFuture;
+  final remoteDiamonds = await diamondsFuture;
 
   final userPosts = rawResults[0].map((r) {
     final imgUrl = r['image_url'] as String? ?? '';
@@ -173,11 +174,11 @@ final communityUserProfileProvider =
   }).toList();
 
   if (isSelf) {
-    // Own profile: bio/XP/points from local providers (no extra request).
+    // Own profile: bio/points/diamonds from local providers (no extra request).
     final localUser = ref.read(userProfileProvider);
     final mascot    = ref.read(mascotProvider);
-    final xp        = ref.read(xpProvider).totalXp;
-    final etoiles   = ref.read(pointsProvider);
+    final pts       = ref.read(pointsProvider);
+    final diamonds  = ref.read(diamondsProvider);
     final name      = localUser.username.isNotEmpty ? localUser.username : 'User';
     return UserProfile(
       id:            userId,
@@ -185,14 +186,14 @@ final communityUserProfileProvider =
       username:      '@${name.toLowerCase().replaceAll(' ', '')}',
       mascotType:    mascot.type.name,
       mascotMood:    mascot.mood.name,
-      niveau:        '${_xpToLevel(xp)}',
-      niveauXp:      xp,
-      niveauMaxXp:   5000,
+      niveau:        '${pts.level}',
+      niveauXp:      pts.totalPoints,
+      niveauMaxXp:   pts.pointsForNextLevel,
       fitnessLevel:  localUser.fitnessLevel,
       frequency:     localUser.frequency != null ? '${localUser.frequency}x/sem' : null,
       isCurrentUser: true,
       isPro:         ref.read(isProProvider),
-      etoiles:       etoiles,
+      diamonds:      diamonds,
       posts:         userPosts,
       events:        userEvents,
       partners:      userPartners,
@@ -204,16 +205,17 @@ final communityUserProfileProvider =
   if (data == null) {
     return UserProfile(
       id: userId, name: 'Utilisateur', username: '@utilisateur',
-      niveau: '1', niveauXp: 0, niveauMaxXp: 5000,
-      etoiles: remoteEtoiles,
+      niveau: '1', niveauXp: 0, niveauMaxXp: 100,
+      diamonds: remoteDiamonds,
       posts: userPosts, events: userEvents, partners: userPartners,
     );
   }
 
   final name      = (data['username'] as String).isNotEmpty ? data['username'] as String : 'User';
   final freqDays  = data['frequency_days'] as int? ?? 0;
-  final totalXp   = data['total_xp'] as int? ?? 0;
-  final lvl       = _xpToLevel(totalXp);
+  // Barème UNIQUE de niveaux (PointsModel) — remplace l'ancien _xpToLevel
+  // local qui divergeait de l'écran Profil.
+  final remotePts = PointsModel(totalPoints: data['total_points'] as int? ?? 0);
 
   return UserProfile(
     id:            data['id'] as String,
@@ -221,30 +223,20 @@ final communityUserProfileProvider =
     username:      '@${name.toLowerCase().replaceAll(' ', '')}',
     mascotType:    data['mascot_type'] as String? ?? 'blob',
     mascotMood:    data['mascot_mood'] as String? ?? 'happy',
-    niveau:        '$lvl',
-    niveauXp:      totalXp,
-    niveauMaxXp:   5000,
+    niveau:        '${remotePts.level}',
+    niveauXp:      remotePts.totalPoints,
+    niveauMaxXp:   remotePts.pointsForNextLevel,
     fitnessLevel:  (data['fitness_level'] as String?)?.isNotEmpty == true
         ? data['fitness_level'] as String : null,
     frequency:     freqDays > 0 ? '${freqDays}x/sem' : null,
     isCurrentUser: false,
     isPro:         data['is_pro'] as bool? ?? false,
-    etoiles:       remoteEtoiles,
+    diamonds:      remoteDiamonds,
     posts:         userPosts,
     events:        userEvents,
     partners:      userPartners,
   );
 });
-
-int _xpToLevel(int xp) {
-  if (xp < 500)  return 1;
-  if (xp < 1500) return 2;
-  if (xp < 3000) return 3;
-  if (xp < 5000) return 4;
-  if (xp < 8000) return 5;
-  if (xp < 12000) return 6;
-  return 7;
-}
 
 // ─── Main Screen ──────────────────────────────────────────────
 class UserProfileScreen extends ConsumerStatefulWidget {
@@ -601,7 +593,7 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
                 cs: cs),
             _MetaPill(
               icon: LucideIcons.star,
-              label: '${profile.niveauXp} XP',
+              label: '${profile.niveauXp} pts',
               cs: cs,
               highlight: true),
           ]),
@@ -637,10 +629,10 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
 
         const SizedBox(height: 12),
 
-        // ── Points (étoiles) ──────────────────────────────────
+        // ── Points (diamants) ──────────────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: _PointsCard(etoiles: profile.etoiles, l10n: widget.l10n, cs: cs),
+          child: _PointsCard(diamonds: profile.diamonds, l10n: widget.l10n, cs: cs),
         ),
 
         const SizedBox(height: 12),
@@ -767,8 +759,11 @@ class _LevelBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (xp / maxXp).clamp(0.0, 1.0);
-    final remaining = ((1 - progress) * maxXp).round();
+    // Progression au sein du niveau courant — même calcul que l'écran Profil
+    // (PointsModel), plus de barème local divergent.
+    final model     = PointsModel(totalPoints: xp);
+    final progress  = model.levelProgress;
+    final remaining = (maxXp - xp).clamp(0, maxXp);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -792,7 +787,7 @@ class _LevelBar extends StatelessWidget {
             fontSize: 14, fontWeight: FontWeight.w800,
             color: _accent, letterSpacing: -0.2)),
           const Spacer(),
-          Text('$xp / $maxXp XP', style: GoogleFonts.inter(
+          Text('$xp / $maxXp pts', style: GoogleFonts.inter(
             fontSize: 11, fontWeight: FontWeight.w600,
             color: cs.onSurface.withValues(alpha: 0.45))),
         ]),
@@ -815,12 +810,12 @@ class _LevelBar extends StatelessWidget {
   }
 }
 
-// ─── Points card (étoiles boutique) ───────────────────────────
+// ─── Points card (diamants boutique) ───────────────────────────
 class _PointsCard extends StatelessWidget {
-  final int etoiles;
+  final int diamonds;
   final AppL10n l10n;
   final ColorScheme cs;
-  const _PointsCard({required this.etoiles, required this.l10n, required this.cs});
+  const _PointsCard({required this.diamonds, required this.l10n, required this.cs});
 
   static const _gold = Color(0xFFF59E0B);
 
@@ -846,18 +841,18 @@ class _PointsCard extends StatelessWidget {
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.profileEtoilesLabel, style: GoogleFonts.inter(
+            Text(l10n.profileDiamondsLabel, style: GoogleFonts.inter(
               fontSize: 11, fontWeight: FontWeight.w600,
               color: cs.onSurface.withValues(alpha: 0.45))),
             const SizedBox(height: 2),
             Row(crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Text('$etoiles', style: GoogleFonts.outfit(
+                Text('$diamonds', style: GoogleFonts.outfit(
                   fontSize: 24, fontWeight: FontWeight.w800,
                   color: _gold, letterSpacing: -0.5)),
                 const SizedBox(width: 5),
-                Text(l10n.profileEtoiles, style: GoogleFonts.inter(
+                Text(l10n.profileDiamonds, style: GoogleFonts.inter(
                   fontSize: 12, fontWeight: FontWeight.w600,
                   color: _gold.withValues(alpha: 0.7))),
               ]),

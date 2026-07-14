@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/core/nutrition/favorites_provider.dart';
 import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
-import 'package:fiteva/screens/cycle/widgets-cycle/Phasecolors.dart';
 import 'package:fiteva/screens/nutrition/recette_detail_screen.dart';
 import 'package:fiteva/screens/nutrition/recipes_list_screen.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +49,7 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
     final favorites = ref.watch(favoritesProvider);
     final nc        = NutritionColors.of(context);
     final l10n      = ref.watch(l10nProvider);
-    final recipes   = ref.watch(imageRecipesProvider).asData?.value ?? allRecipes;
+    final recipes   = ref.watch(imageRecipesProvider).asData?.value ?? [];
     final filtered  = _filtered(recipes);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -175,7 +174,7 @@ class _AllImageRecipesScreenState extends ConsumerState<AllImageRecipesScreen> {
                     },
                     onTap: () => Navigator.push(ctx, MaterialPageRoute(
                       builder: (_) => RecipeDetailScreen(
-                        recipe: RecipeItem(
+                        recipe: filtered[i].source ?? RecipeItem(
                           filtered[i].imageUrl,
                           filtered[i].name,
                           filtered[i].name,
@@ -202,20 +201,16 @@ class _ImageRecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nc = NutritionColors.of(context);
-    final pc = PhaseColors.forPhase(recipe.phase);
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 100,
         decoration: BoxDecoration(
-          color: nc.surface,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isFavorite
-                ? const Color(0xFFE03050).withOpacity(0.25)
-                : nc.border),
-          boxShadow: nc.isDark ? [] : [BoxShadow(
+          border: Border.all(color: cs.outline.withOpacity(0.1)),
+          boxShadow: [BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 8, offset: const Offset(0, 2))]),
         clipBehavior: Clip.antiAlias,
@@ -225,12 +220,12 @@ class _ImageRecipeCard extends StatelessWidget {
             child: Stack(fit: StackFit.expand, children: [
               Image.network(recipe.imageUrl, fit: BoxFit.cover,
                 loadingBuilder: (_, child, p) =>
-                  p == null ? child : Container(color: nc.mintBg),
+                  p == null ? child : Container(color: cs.primary.withOpacity(0.05)),
                 errorBuilder: (_, __, ___) =>
-                  Container(color: nc.mintBg,
-                    child: const Center(child: Icon(LucideIcons.image, color: NutritionColors.mint, size: 22)))),
+                  Container(color: cs.primary.withOpacity(0.05),
+                    child: Icon(LucideIcons.image, color: cs.primary.withOpacity(0.2), size: 22))),
               Positioned(bottom: 0, left: 0, right: 0,
-                child: Container(height: 3, color: pc.primary)),
+                child: Container(height: 3, color: cs.primary)),
             ]),
           ),
 
@@ -240,29 +235,21 @@ class _ImageRecipeCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    Container(width: 5, height: 5,
-                      decoration: BoxDecoration(color: pc.primary, shape: BoxShape.circle)),
-                    const SizedBox(width: 5),
-                    Text(pc.name, style: GoogleFonts.inter(
-                      fontSize: 10, fontWeight: FontWeight.w600, color: pc.primary)),
-                  ]),
-                  const SizedBox(height: 3),
                   Text(recipe.name, maxLines: 2, overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(
                       fontSize: 13.5, fontWeight: FontWeight.w700,
-                      color: nc.text1, height: 1.3)),
+                      color: cs.onSurface, height: 1.3)),
                   const Spacer(),
                   Row(children: [
-                    Icon(LucideIcons.clock, size: 10, color: nc.text2),
+                    Icon(LucideIcons.clock, size: 10, color: cs.onSurface.withOpacity(0.4)),
                     const SizedBox(width: 4),
                     Text(recipe.duration, style: GoogleFonts.inter(
-                      fontSize: 11, color: nc.text2)),
+                      fontSize: 11, color: cs.onSurface.withOpacity(0.4))),
                     const SizedBox(width: 10),
-                    Icon(LucideIcons.flame, size: 10, color: pc.primary),
+                    Icon(LucideIcons.flame, size: 10, color: cs.primary),
                     const SizedBox(width: 4),
                     Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
-                      fontSize: 11, fontWeight: FontWeight.w600, color: pc.primary)),
+                      fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary)),
                   ]),
                 ],
               ),
@@ -278,11 +265,11 @@ class _ImageRecipeCard extends StatelessWidget {
                 width: 32, height: 32,
                 decoration: BoxDecoration(
                   color: isFavorite
-                      ? const Color(0xFFE03050).withOpacity(nc.isDark ? 0.25 : 0.10)
-                      : nc.chipBg,
+                      ? const Color(0xFFE03050).withOpacity(0.10)
+                      : cs.surfaceContainerHighest.withOpacity(0.5),
                   shape: BoxShape.circle),
                 child: Icon(LucideIcons.heart, size: 14,
-                  color: isFavorite ? const Color(0xFFE03050) : nc.text2))),
+                  color: isFavorite ? const Color(0xFFE03050) : cs.onSurface.withOpacity(0.3)))),
           ),
         ]),
       ),
