@@ -152,7 +152,7 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
               if (!single)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: _SummaryCard(nc: nc, totals: totals, profile: profile),
                   ),
                 ),
@@ -165,7 +165,7 @@ class _SuiviNutritionScreenState extends ConsumerState<SuiviNutritionScreen> {
                         (dateKey: _key, type: type)));
                     final typeTotals = DailyTotals.from(entries);
                     return Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                       child: _MealGroupCard(
                         nc:              nc,
                         mealType:        type,
@@ -214,59 +214,28 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppL10n(Lang.code);
     return Container(
       color: nc.surface,
-      padding: EdgeInsets.fromLTRB(20, top + 14, 20, 14),
-      child: Column(children: [
-        // Title row
+      padding: EdgeInsets.fromLTRB(16, top + 10, 16, 10),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
         Row(children: [
           GestureDetector(
             onTap: onBack,
             child: Container(
-              width: 38, height: 38,
+              width: 34, height: 34,
               decoration: BoxDecoration(
-                color: nc.mintBg, borderRadius: BorderRadius.circular(12)),
-              child: Icon(LucideIcons.chevronLeft, color: nc.greenFg, size: 20)),
+                color: nc.mintBg, borderRadius: BorderRadius.circular(10)),
+              child: Icon(LucideIcons.chevronLeft, color: nc.greenFg, size: 18)),
           ),
-          const SizedBox(width: 14),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l10n.nutritionTracking, style: GoogleFonts.inter(
-              color: NutritionColors.mint, fontSize: 9,
-              fontWeight: FontWeight.w700, letterSpacing: 2.5)),
-            Text(title, style: GoogleFonts.outfit(
-              color: nc.greenFg, fontSize: 20,
-              fontWeight: FontWeight.w800, letterSpacing: -0.4)),
-          ]),
-          const Spacer(),
-        ]),
-
-        const SizedBox(height: 12),
-
-        // Date nav row
-        Row(children: [
+          const SizedBox(width: 12),
+          Expanded(child: Text(title, style: GoogleFonts.outfit(
+            color: nc.text1, fontSize: 17,
+            fontWeight: FontWeight.w800, letterSpacing: -0.3))),
           _NavBtn(nc: nc, icon: LucideIcons.chevronLeft, onTap: onPrev),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: nc.mintBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: NutritionColors.mint.withOpacity(0.25))),
-              child: Row(children: [
-                Icon(LucideIcons.calendarDays, size: 13, color: nc.greenFg),
-                const SizedBox(width: 8),
-                Expanded(child: Text(dateLabel,
-                  maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 13, fontWeight: FontWeight.w600,
-                    color: nc.greenFg))),
-              ]),
-            ),
-          ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 4),
+          Text(dateLabel, style: GoogleFonts.inter(
+            fontSize: 11, fontWeight: FontWeight.w600, color: nc.text2)),
+          const SizedBox(width: 4),
           _NavBtn(nc: nc, icon: LucideIcons.chevronRight,
             onTap: onNext, disabled: onNext == null),
         ]),
@@ -288,11 +257,10 @@ class _NavBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 34, height: 34,
+        width: 28, height: 28,
         decoration: BoxDecoration(
-          color: nc.surface2, shape: BoxShape.circle,
-          border: Border.all(color: nc.border)),
-        child: Icon(icon, size: 16,
+          color: nc.surface2, shape: BoxShape.circle),
+        child: Icon(icon, size: 14,
           color: disabled ? nc.border : nc.text2)),
     );
   }
@@ -316,76 +284,53 @@ class _SummaryCard extends StatelessWidget {
     final remain = goal - totals.calories;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: nc.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: nc.border),
-        boxShadow: nc.isDark ? [] : [BoxShadow(
-          color: Colors.black.withOpacity(0.04),
-          blurRadius: 16, offset: const Offset(0, 4))]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: nc.border)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
         Row(children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l10n.nutritionCaloriesDay, style: GoogleFonts.inter(
-              color: NutritionColors.mint, fontSize: 9,
-              fontWeight: FontWeight.w700, letterSpacing: 2.5)),
-            const SizedBox(height: 2),
-            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
-                child: Text('${totals.calories}', style: GoogleFonts.outfit(
-                  fontSize: 38, fontWeight: FontWeight.w800,
-                  color: nc.text1, height: 1)))),
-              const SizedBox(width: 6),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text('/ $goal kcal', style: GoogleFonts.inter(
-                  fontSize: 12, color: nc.text2))),
-            ]),
-          ]),
+          Text('${totals.calories}', style: GoogleFonts.outfit(
+            fontSize: 28, fontWeight: FontWeight.w800, color: nc.text1, height: 1)),
+          const SizedBox(width: 4),
+          Text('/ $goal kcal', style: GoogleFonts.inter(
+            fontSize: 11, color: nc.text2)),
           const Spacer(),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: over ? nc.redBg : nc.mintBg,
-              borderRadius: BorderRadius.circular(20)),
+              borderRadius: BorderRadius.circular(12)),
             child: Text(
-              over ? '+${-remain} ${l10n.nutritionSurplus}' : '$remain ${l10n.nutritionLeft}',
+              over ? '+${-remain}' : '$remain ${l10n.nutritionLeft}',
               style: GoogleFonts.inter(
-                fontSize: 11, fontWeight: FontWeight.w700,
+                fontSize: 10, fontWeight: FontWeight.w700,
                 color: over ? nc.redFg : nc.greenFg))),
         ]),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
 
-        // Calorie progress bar
         ClipRRect(
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
-            value: pct, minHeight: 7,
+            value: pct, minHeight: 5,
             backgroundColor: nc.border,
             valueColor: AlwaysStoppedAnimation(over ? nc.redFg : nc.greenFg))),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
 
-        // XP motivation banner
-        _XpGoalBanner(nc: nc, reached: totals.calories >= goal && goal > 0),
-
-        const SizedBox(height: 16),
-
-        // Macro chips
         Row(children: [
           _MacroChip(nc: nc, label: l10n.nutritionProtein,
             value: '${totals.protein}g',
             goal: '${profile.dailyProtein}g',
             fg: nc.greenFg, bg: nc.mintBg),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _MacroChip(nc: nc, label: l10n.nutritionCarbs,
             value: '${totals.carbs}g',
             goal: '${profile.dailyCarbs}g',
             fg: nc.blueFg, bg: nc.blueBg),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _MacroChip(nc: nc, label: l10n.nutritionFat,
             value: '${totals.fat}g',
             goal: '${profile.dailyFat}g',
@@ -396,63 +341,6 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _XpGoalBanner extends StatelessWidget {
-  final NutritionColors nc;
-  final bool reached;
-  const _XpGoalBanner({required this.nc, required this.reached});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOut,
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: reached
-            ? const Color(0xFF4CAF50).withOpacity(0.13)
-            : const Color(0xFF4CAF50).withOpacity(0.06),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: reached
-              ? const Color(0xFF4CAF50).withOpacity(0.5)
-              : const Color(0xFF4CAF50).withOpacity(0.18),
-          width: 1.2,
-        ),
-      ),
-      child: Row(children: [
-        Text(reached ? '🏆' : '⭐', style: const TextStyle(fontSize: 18)),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            reached
-                ? 'Bravo ! Tu as gagné +20 XP pour avoir atteint ton objectif !'
-                : 'Complète ton objectif calorique du jour pour gagner +20 XP',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: reached
-                  ? const Color(0xFF2E7D32)
-                  : const Color(0xFF4CAF50),
-              height: 1.4,
-            ),
-          ),
-        ),
-        if (reached)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text('+20 XP',
-              style: GoogleFonts.outfit(
-                fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
-          ),
-      ]),
-    );
-  }
-}
 
 class _MacroChip extends StatelessWidget {
   final NutritionColors nc;
@@ -465,19 +353,17 @@ class _MacroChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Expanded(
     child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
       decoration: BoxDecoration(
-        color: bg, borderRadius: BorderRadius.circular(14)),
-      child: Column(children: [
+        color: bg, borderRadius: BorderRadius.circular(10)),
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Text(label[0], style: GoogleFonts.inter(
+          fontSize: 9, fontWeight: FontWeight.w800, color: fg)),
+        const SizedBox(width: 4),
         Text(value, style: GoogleFonts.outfit(
-          fontSize: 14, fontWeight: FontWeight.w800, color: fg)),
-        const SizedBox(height: 1),
-        Text('/ $goal', style: GoogleFonts.inter(
-          fontSize: 9, color: fg.withOpacity(0.6))),
-        const SizedBox(height: 2),
-        Text(label, style: GoogleFonts.inter(
-          fontSize: 9, color: fg.withOpacity(0.75),
-          fontWeight: FontWeight.w600)),
+          fontSize: 12, fontWeight: FontWeight.w700, color: fg)),
+        Text(' /$goal', style: GoogleFonts.inter(
+          fontSize: 9, color: fg.withOpacity(0.5))),
       ]),
     ),
   );
@@ -597,148 +483,73 @@ class _MealGroupCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: nc.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: nc.border),
-        boxShadow: nc.isDark ? [] : [BoxShadow(
-          color: Colors.black.withOpacity(0.03),
-          blurRadius: 12, offset: const Offset(0, 3))]),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: nc.border)),
       child: Column(children: [
-
-        // Header row
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
           child: Row(children: [
             Container(
-              width: 42, height: 42,
+              width: 32, height: 32,
               decoration: BoxDecoration(
                 color: _over ? nc.redBg : nc.mintBg,
-                borderRadius: BorderRadius.circular(14)),
-              child: Icon(_icon, size: 19,
+                borderRadius: BorderRadius.circular(10)),
+              child: Icon(_icon, size: 15,
                 color: _over ? nc.redFg : nc.greenFg)),
-            const SizedBox(width: 12),
-            Expanded(child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(mealType.labelFor(Lang.code), style: GoogleFonts.outfit(
-                fontSize: 16, fontWeight: FontWeight.w800, color: nc.text1)),
-              Text(entries.isEmpty
-                  ? l10n.nutritionNoFood
-                  : l10n.nutritionFoodItems(entries.length),
-                style: GoogleFonts.inter(fontSize: 11, color: nc.text2)),
-            ])),
-            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Text('${typeTotals.calories}', style: GoogleFonts.outfit(
-                fontSize: 20, fontWeight: FontWeight.w800,
-                color: _over ? nc.redFg : nc.text1, height: 1)),
-              Text('/ $_budget kcal', style: GoogleFonts.inter(
-                fontSize: 10, color: nc.text2)),
-            ]),
+            const SizedBox(width: 10),
+            Expanded(child: Text(mealType.labelFor(Lang.code), style: GoogleFonts.outfit(
+              fontSize: 14, fontWeight: FontWeight.w800, color: nc.text1))),
+            Text('${typeTotals.calories}', style: GoogleFonts.outfit(
+              fontSize: 16, fontWeight: FontWeight.w800,
+              color: _over ? nc.redFg : nc.text1, height: 1)),
+            Text(' / $_budget', style: GoogleFonts.inter(
+              fontSize: 10, color: nc.text2)),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: onAdd,
+              child: Container(
+                width: 28, height: 28,
+                decoration: BoxDecoration(
+                  color: nc.mintBg, shape: BoxShape.circle),
+                child: Icon(LucideIcons.plus, size: 13, color: nc.greenFg))),
           ]),
         ),
 
-        // Progress bar
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(3),
             child: LinearProgressIndicator(
-              value: _pct.clamp(0.0, 1.0), minHeight: 4,
+              value: _pct.clamp(0.0, 1.0), minHeight: 3,
               backgroundColor: nc.border,
               valueColor: AlwaysStoppedAnimation(
                   _over ? nc.redFg : NutritionColors.mint))),
         ),
 
-        // Budget badge (single meal view)
-        if (showBudgetBadge)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Row(children: [
-              Icon(
-                _over ? LucideIcons.alertTriangle : LucideIcons.checkCircle,
-                size: 12, color: _over ? nc.redFg : nc.greenFg),
-              const SizedBox(width: 6),
-              Text(
-                _over
-                    ? '+${typeTotals.calories - _budget} ${l10n.nutritionKcalExceeded}'
-                    : '${_budget - typeTotals.calories} ${l10n.nutritionKcalRemaining}',
-                style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w600,
-                  color: _over ? nc.redFg : nc.greenFg)),
-            ]),
-          ),
-
-        // Mini macro badges
         if (entries.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: Row(children: [
-              _MiniMacro('P', '${typeTotals.protein}g', nc.greenFg, nc.mintBg),
-              const SizedBox(width: 6),
-              _MiniMacro('G', '${typeTotals.carbs}g',  nc.blueFg,  nc.blueBg),
-              const SizedBox(width: 6),
-              _MiniMacro('L', '${typeTotals.fat}g',    nc.amberFg, nc.amberBg),
-            ]),
-          ),
-
-        // Entry rows
-        if (entries.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
             child: Column(
-              children: entries.map((entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: _EntryRow(
-                  nc:       nc,
-                  entry:    entry,
-                  onTap:    () => onTapEntry(entry),
-                  onDelete: () => onDeleteEntry(entry),
-                ))).toList()),
+              children: entries.map((entry) => _EntryRow(
+                nc: nc,
+                entry: entry,
+                onTap: () => onTapEntry(entry),
+                onDelete: () => onDeleteEntry(entry),
+              )).toList()),
           ),
 
-        // Add button
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-          child: GestureDetector(
-            onTap: onAdd,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: nc.mintBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: NutritionColors.mint.withOpacity(0.30))),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(LucideIcons.plus, size: 14, color: nc.greenFg),
-                const SizedBox(width: 7),
-                Text(l10n.nutritionAddFood, style: GoogleFonts.inter(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: nc.greenFg)),
-              ]),
-            ),
-          ),
-        ),
+        if (entries.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Text(l10n.nutritionNoFood,
+              style: GoogleFonts.inter(fontSize: 11, color: nc.text2))),
+
+        const SizedBox(height: 10),
       ]),
     );
   }
 }
 
-class _MiniMacro extends StatelessWidget {
-  final String letter, value;
-  final Color fg, bg;
-  const _MiniMacro(this.letter, this.value, this.fg, this.bg);
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Text(letter, style: GoogleFonts.inter(
-        fontSize: 10, fontWeight: FontWeight.w800, color: fg)),
-      const SizedBox(width: 4),
-      Text(value, style: GoogleFonts.inter(
-        fontSize: 10, fontWeight: FontWeight.w600, color: fg)),
-    ]),
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ENTRY ROW
@@ -752,89 +563,44 @@ class _EntryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10),
+    return Dismissible(
+      key: ValueKey(entry.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDelete(),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: nc.surface2,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: nc.border)),
-        child: Row(children: [
-          // Category emoji
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              color: nc.mintBg, borderRadius: BorderRadius.circular(10)),
-            child: Center(child: Text(
-              entry.food.category.emoji,
-              style: const TextStyle(fontSize: 18)))),
-          const SizedBox(width: 10),
-
-          // Name + grams + macros
-          Expanded(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(entry.food.name,
-              maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                fontSize: 13, fontWeight: FontWeight.w600, color: nc.text1)),
-            const SizedBox(height: 3),
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
+          color: nc.redBg, borderRadius: BorderRadius.circular(10)),
+        child: Icon(LucideIcons.trash2, size: 14, color: nc.redFg)),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: nc.surface2,
+            borderRadius: BorderRadius.circular(10)),
+          child: Row(children: [
+            Text(entry.food.category.emoji, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: nc.chipBg,
-                    borderRadius: BorderRadius.circular(5)),
-                  child: Text('${entry.grams.round()}g', style: GoogleFonts.inter(
-                    fontSize: 10, color: nc.text2, fontWeight: FontWeight.w500))),
-                _Tag('P ${entry.protein}g', nc.greenFg, nc.mintBg),
-                _Tag('G ${entry.carbs}g', nc.blueFg, nc.blueBg),
-                _Tag('L ${entry.fat}g', nc.amberFg, nc.amberBg),
-              ],
-            ),
-          ])),
-
-          const SizedBox(width: 8),
-
-          // Kcal badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-            decoration: BoxDecoration(
-              color: nc.greenFg,
-              borderRadius: BorderRadius.circular(10)),
-            child: Text('${entry.calories}', style: GoogleFonts.outfit(
-              fontSize: 12, fontWeight: FontWeight.w800,
-              color: Colors.white))),
-
-          const SizedBox(width: 6),
-
-          // Delete
-          GestureDetector(
-            onTap: onDelete,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 32, height: 32,
-              decoration: BoxDecoration(
-                color: nc.redBg, borderRadius: BorderRadius.circular(9)),
-              child: Icon(LucideIcons.trash2, size: 13, color: nc.redFg))),
-        ]),
+                Text(entry.food.name,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 12, fontWeight: FontWeight.w600, color: nc.text1)),
+                Text('${entry.grams.round()}g', style: GoogleFonts.inter(
+                  fontSize: 10, color: nc.text2)),
+              ])),
+            Text('${entry.calories}', style: GoogleFonts.outfit(
+              fontSize: 13, fontWeight: FontWeight.w800, color: nc.text1)),
+            Text(' kcal', style: GoogleFonts.inter(
+              fontSize: 9, color: nc.text2)),
+          ]),
+        ),
       ),
     );
   }
 }
 
-class _Tag extends StatelessWidget {
-  final String label;
-  final Color fg, bg;
-  const _Tag(this.label, this.fg, this.bg);
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
-    child: Text(label, style: GoogleFonts.inter(
-      fontSize: 9, fontWeight: FontWeight.w600, color: fg)));
-}

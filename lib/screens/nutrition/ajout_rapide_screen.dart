@@ -567,10 +567,33 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   final _protCtrl  = TextEditingController();
   final _glucCtrl  = TextEditingController();
   final _lipCtrl   = TextEditingController();
+  FoodCategory _manualCategory = FoodCategory.platCompose;
+  double _manualGrams = 100;
+  FoodUnit _manualUnit = FoodUnit.g;
+  final _manualAmountCtrl = TextEditingController(text: '100');
+  bool _manualShowErrors = false;
+
+  String? _manualNameError(String name) {
+    if (name.isEmpty) return 'Le nom est requis';
+    if (!RegExp(r'[a-zA-ZÀ-ÿ]').hasMatch(name)) return 'Le nom doit contenir au moins une lettre';
+    return null;
+  }
+
+  String? _manualCalError(double? kcal) {
+    if (kcal == null && _calCtrl.text.isNotEmpty) return 'Valeur invalide';
+    if (kcal == null || kcal <= 0) return 'Les calories sont requises';
+    return null;
+  }
 
   bool get _canAddToBasket {
     if (_mode == 0) return _selectedFood != null;
-    if (_mode == 1) return _nameCtrl.text.isNotEmpty && _calCtrl.text.isNotEmpty;
+    if (_mode == 1) {
+      final name = _nameCtrl.text.trim();
+      final kcal = double.tryParse(_calCtrl.text);
+      return name.isNotEmpty
+          && RegExp(r'[a-zA-ZÀ-ÿ]').hasMatch(name)
+          && kcal != null && kcal > 0;
+    }
     return false;
   }
 
@@ -582,6 +605,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     _searchCtrl.dispose(); _amountCtrl.dispose();
     _nameCtrl.dispose(); _calCtrl.dispose();
     _protCtrl.dispose(); _glucCtrl.dispose(); _lipCtrl.dispose();
+    _manualAmountCtrl.dispose();
     super.dispose();
   }
 
@@ -618,28 +642,27 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
       }
     } else {
       final name    = _nameCtrl.text.trim();
-      final kcal    = double.tryParse(_calCtrl.text) ?? 0;
+      final kcal    = double.tryParse(_calCtrl.text);
       final protein = double.tryParse(_protCtrl.text) ?? 0;
       final carbs   = double.tryParse(_glucCtrl.text) ?? 0;
       final fat     = double.tryParse(_lipCtrl.text) ?? 0;
-      if (name.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Le nom de l\'aliment est requis.')));
+
+      final nameError = _manualNameError(name);
+      final calError  = _manualCalError(kcal);
+      if (nameError != null || calError != null || _manualGrams <= 0) {
+        setState(() => _manualShowErrors = true);
         return;
       }
-      if (kcal < 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Les calories ne peuvent pas être négatives.')));
-        return;
-      }
+
+      grams = _manualGrams;
       food = FoodItem(
         id:       generateMealId(),
         name:     name,
-        category: FoodCategory.platCompose,
-        kcal: kcal, protein: protein, carbs: carbs, fat: fat,
-        defaultGrams: 100,
+        category: _manualCategory,
+        kcal: kcal!, protein: protein, carbs: carbs, fat: fat,
+        defaultGrams: grams,
+        portionLabel: '${grams.round()} ${_manualUnit.shortLabel}',
       );
-      grams = 100;
     }
 
     HapticFeedback.mediumImpact();
@@ -668,6 +691,11 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
       _searchCtrl.clear();
       _nameCtrl.clear(); _calCtrl.clear();
       _protCtrl.clear(); _glucCtrl.clear(); _lipCtrl.clear();
+      _manualCategory = FoodCategory.platCompose;
+      _manualGrams = 100;
+      _manualUnit = FoodUnit.g;
+      _manualAmountCtrl.text = '100';
+      _manualShowErrors = false;
     });
   }
 
@@ -700,6 +728,33 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
     if (mounted) Navigator.pop(context, {'entries': entries});
   }
 
+  Widget _buildModePill(int mode, IconData icon, String label, ColorScheme cs) {
+    final active = _mode == mode;
+    return Expanded(child: GestureDetector(
+      onTap: () => setState(() {
+        _mode = mode;
+        if (mode == 0) _selectedFood = null;
+      }),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: BoxDecoration(
+          color: active ? cs.surface : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: active ? [BoxShadow(
+            color: cs.onSurface.withOpacity(0.06),
+            blurRadius: 6, offset: const Offset(0, 1))] : []),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, size: 14,
+            color: active ? cs.primary : cs.onSurface.withOpacity(0.35)),
+          const SizedBox(width: 6),
+          Text(label, style: GoogleFonts.inter(
+            fontSize: 12, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            color: active ? cs.primary : cs.onSurface.withOpacity(0.4))),
+        ])),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final top    = MediaQuery.of(context).padding.top;
@@ -711,62 +766,70 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
       backgroundColor: cs.surface,
       body: Column(children: [
 
-        // ── Header — clean, no colored bg ─────────────────────────────────
-        Padding(
-          padding: EdgeInsets.fromLTRB(20, top + 12, 20, 0),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // ── Header ─────────────────────────────────────────────────────────
+        Container(
+          padding: EdgeInsets.fromLTRB(20, top + 14, 20, 14),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            boxShadow: [BoxShadow(
+              color: cs.onSurface.withOpacity(0.04),
+              blurRadius: 8, offset: const Offset(0, 2))]),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            // Top row: back + title + basket
             Row(children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: Icon(LucideIcons.chevronLeft,
-                  color: cs.onSurface, size: 22)),
+                child: Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: cs.outline.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(10)),
+                  child: Icon(LucideIcons.chevronLeft,
+                    color: cs.onSurface, size: 18))),
               const SizedBox(width: 12),
-              Expanded(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(l10n.addMealTitle, style: GoogleFonts.inter(
-                  color: cs.primary, fontSize: 9, fontWeight: FontWeight.w700,
-                  letterSpacing: 2.5)),
-                Text(
-                  _preselectedType != null
-                      ? _preselectedType!.labelFor(Lang.code)
-                      : l10n.addMealSubtitle,
-                  style: GoogleFonts.outfit(
-                    color: cs.onSurface, fontSize: 22,
-                    fontWeight: FontWeight.w800, letterSpacing: -0.4)),
-              ])),
+              Expanded(child: Text(
+                _preselectedType != null
+                    ? _preselectedType!.labelFor(Lang.code)
+                    : l10n.addMealSubtitle,
+                style: GoogleFonts.outfit(
+                  color: cs.onSurface, fontSize: 20,
+                  fontWeight: FontWeight.w800, letterSpacing: -0.3))),
               if (_basket.isNotEmpty)
                 GestureDetector(
                   onTap: () => _showBasketSheet(),
                   child: Container(
-                    width: 38, height: 38,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: cs.primary,
-                      borderRadius: BorderRadius.circular(12)),
-                    child: Center(child: Text('${_basket.length}',
-                      style: GoogleFonts.inter(
-                        fontSize: 14, fontWeight: FontWeight.w800,
-                        color: Colors.white))),
+                      borderRadius: BorderRadius.circular(10)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(LucideIcons.shoppingBag, size: 13, color: Colors.white),
+                      const SizedBox(width: 5),
+                      Text('${_basket.length}',
+                        style: GoogleFonts.inter(
+                          fontSize: 13, fontWeight: FontWeight.w800,
+                          color: Colors.white)),
+                    ]),
                   ),
                 ),
             ]),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
-            // ── Underline tabs ──────────────────────────────────────────
-            Row(children: [
-              _ModeTab(label: l10n.addMealSearch, active: _mode == 0,
-                onTap: () => setState(() { _mode = 0; _selectedFood = null; })),
-              const SizedBox(width: 24),
-              _ModeTab(label: l10n.addMealManual, active: _mode == 1,
-                onTap: () => setState(() => _mode = 1)),
-              const SizedBox(width: 24),
-              _ModeTab(label: l10n.addMealScanner, active: _mode == 2,
-                onTap: () => setState(() => _mode = 2)),
-            ]),
+            // Mode pills
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: cs.outline.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(12)),
+              child: Row(children: [
+                _buildModePill(0, LucideIcons.search, l10n.addMealSearch, cs),
+                _buildModePill(1, LucideIcons.penLine, l10n.addMealManual, cs),
+                _buildModePill(2, LucideIcons.camera, l10n.addMealScanner, cs),
+              ]),
+            ),
           ]),
         ),
-
-        Divider(height: 1, color: cs.outline.withOpacity(0.15)),
 
         // ── Body ─────────────────────────────────────────────────────────────
         Expanded(
@@ -879,10 +942,16 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
   Widget _buildSearch() {
     if (_selectedFood != null) return _buildFoodDetail(_selectedFood!);
     final cs = Theme.of(context).colorScheme;
+    final nc = NutritionColors.of(context);
+
+    // No category selected & no search -> show category grid only
+    if (_activeCategory == null && _searchQuery.length < 2) {
+      return _buildInitialBrowse(cs);
+    }
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
-      // ── Selected chips row ──────────────────────────────────────────────────
+      // ── Basket chips ────────────────────────────────────────────────────────
       if (_basket.isNotEmpty) ...[
         SizedBox(
           height: 36,
@@ -911,108 +980,346 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
         const SizedBox(height: 14),
       ],
 
-      // ── Search bar ──────────────────────────────────────────────────────────
-      Container(
-        height: 46,
-        decoration: BoxDecoration(
-          color: cs.outline.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: Row(children: [
-          Icon(LucideIcons.search, size: 16,
-            color: cs.onSurface.withOpacity(0.35)),
-          const SizedBox(width: 10),
-          Expanded(child: TextField(
-            controller: _searchCtrl,
-            onChanged: _onSearchChanged,
-            style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
-            decoration: InputDecoration(
-              hintText: AppL10n(Lang.code).addMealHint,
-              hintStyle: GoogleFonts.inter(fontSize: 14,
-                color: cs.onSurface.withOpacity(0.35)),
-              border: InputBorder.none, isDense: true,
-              contentPadding: EdgeInsets.zero),
-          )),
-          if (_searchQuery.isNotEmpty)
-            GestureDetector(
+      // ── Category detail view ───────────────────────────────────────────────
+      if (_activeCategory != null) ...[
+        // Back button + category name
+        GestureDetector(
+          onTap: () => setState(() => _activeCategory = null),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: _catColor(_activeCategory!).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(LucideIcons.chevronLeft, size: 14,
+                color: _catColor(_activeCategory!)),
+              const SizedBox(width: 6),
+              Icon(_catIcon(_activeCategory!), size: 15,
+                color: _catColor(_activeCategory!)),
+              const SizedBox(width: 6),
+              Text(_activeCategory!.label, style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w700,
+                color: _catColor(_activeCategory!))),
+              const SizedBox(width: 8),
+              Builder(builder: (_) {
+                final allFoods = ref.read(foodItemsProvider).asData?.value ?? FoodDatabase.all;
+                final count = FoodDatabase.byCategoryIn(allFoods, _activeCategory!).length;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: _catColor(_activeCategory!).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8)),
+                  child: Text('$count', style: GoogleFonts.inter(
+                    fontSize: 11, fontWeight: FontWeight.w700,
+                    color: _catColor(_activeCategory!))));
+              }),
+            ]))),
+        const SizedBox(height: 12),
+
+        // Filter search bar inside category
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: cs.outline.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(14)),
+          child: Row(children: [
+            Icon(LucideIcons.search, size: 16,
+              color: cs.onSurface.withOpacity(0.3)),
+            const SizedBox(width: 10),
+            Expanded(child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _searchQuery = v),
+              style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
+              decoration: InputDecoration(
+                hintText: 'Filtrer ${_activeCategory!.label.toLowerCase()}...',
+                hintStyle: GoogleFonts.inter(
+                  fontSize: 14, color: cs.onSurface.withOpacity(0.3)),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 13)))),
+            if (_searchQuery.isNotEmpty)
+              GestureDetector(
+                onTap: () => setState(() {
+                  _searchQuery = '';
+                  _searchCtrl.clear();
+                }),
+                child: Icon(LucideIcons.x, size: 16,
+                  color: cs.onSurface.withOpacity(0.3))),
+          ])),
+        const SizedBox(height: 14),
+
+        // Food list for this category (filtered by search query)
+        Builder(builder: (_) {
+          final allFoods = ref.read(foodItemsProvider).asData?.value ?? FoodDatabase.all;
+          var catFoods = FoodDatabase.byCategoryIn(allFoods, _activeCategory!);
+          if (_searchQuery.isNotEmpty) {
+            final q = _searchQuery.toLowerCase();
+            catFoods = catFoods.where((f) => f.name.toLowerCase().contains(q)).toList();
+          }
+          if (catFoods.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 30),
+              child: Center(child: Text('Aucun aliment trouvé',
+                style: GoogleFonts.inter(
+                  fontSize: 14, color: cs.onSurface.withOpacity(0.4)))));
+          }
+          return Column(children: catFoods.map((food) => _buildFoodRow(food, cs, nc)).toList());
+        }),
+      ]
+
+      // ── Search results (when typing in search tab) ─────────────────────────
+      else if (_searchQuery.length >= 2) ...[
+        // Search bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: cs.outline.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(14)),
+          child: Row(children: [
+            Icon(LucideIcons.search, size: 16,
+              color: cs.onSurface.withOpacity(0.3)),
+            const SizedBox(width: 10),
+            Expanded(child: TextField(
+              controller: _searchCtrl,
+              onChanged: _onSearchChanged,
+              style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
+              decoration: InputDecoration(
+                hintText: 'Rechercher un aliment...',
+                hintStyle: GoogleFonts.inter(
+                  fontSize: 14, color: cs.onSurface.withOpacity(0.3)),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 13)))),
+            if (_searchQuery.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  _searchCtrl.clear();
+                  _onSearchChanged('');
+                },
+                child: Icon(LucideIcons.x, size: 16,
+                  color: cs.onSurface.withOpacity(0.3))),
+          ])),
+        const SizedBox(height: 16),
+        if (_spoonLoading)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 30),
+            child: Center(child: SizedBox(
+              width: 22, height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2, color: cs.primary))))
+        else ...[
+          // Spoonacular API results
+          if (_spoonResults.isNotEmpty) ...[
+            Text(
+              AppL10n(Lang.code).addMealResults(_spoonResults.length),
+              style: GoogleFonts.inter(
+                fontSize: 9, fontWeight: FontWeight.w700,
+                color: cs.onSurface.withOpacity(0.4),
+                letterSpacing: 2.0)),
+            const SizedBox(height: 8),
+            ..._spoonResults.map((ingredient) => _SpoonTile(
+              ingredient: ingredient,
+              isSelected: _basket.any((b) => b.food.id == 'off_${ingredient.id}'),
               onTap: () {
-                _searchCtrl.clear();
-                _debounce?.cancel();
-                setState(() { _searchQuery = ''; _spoonResults = []; _spoonLoading = false; });
+                HapticFeedback.selectionClick();
+                final existIdx = _basket.indexWhere((b) => b.food.id == 'off_${ingredient.id}');
+                if (existIdx != -1) {
+                  setState(() => _basket.removeAt(existIdx));
+                  return;
+                }
+                final food = _resolveSpoonFood(ingredient);
+                setState(() => _basket.add(_BasketItem(food, food.defaultGrams)));
               },
-              child: Icon(LucideIcons.x, size: 14,
-                color: cs.onSurface.withOpacity(0.35))),
-        ]),
-      ),
+            )),
+          ],
 
-      const SizedBox(height: 16),
-
-      // ── Results ─────────────────────────────────────────────────────────────
-      if (_searchQuery.length < 2)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40),
-          child: Center(child: Column(children: [
-            Icon(LucideIcons.search, size: 32,
-              color: cs.onSurface.withOpacity(0.15)),
-            const SizedBox(height: 12),
-            Text(AppL10n(Lang.code).addMealHint,
-              style: GoogleFonts.inter(fontSize: 14,
-                color: cs.onSurface.withOpacity(0.35))),
-          ])))
-      else if (_spoonLoading)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 30),
-          child: Center(child: SizedBox(
-            width: 22, height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2, color: cs.primary))))
-      else ...[
-        // Spoonacular API results
-        if (_spoonResults.isNotEmpty) ...[
-          Text(
-            AppL10n(Lang.code).addMealResults(_spoonResults.length),
-            style: GoogleFonts.inter(
-              fontSize: 9, fontWeight: FontWeight.w700,
-              color: cs.onSurface.withOpacity(0.4),
-              letterSpacing: 2.0)),
-          const SizedBox(height: 8),
-          ..._spoonResults.map((ingredient) => _SpoonTile(
-            ingredient: ingredient,
-            isSelected: _basket.any((b) => b.food.id == 'off_${ingredient.id}'),
-            onTap: () {
-              HapticFeedback.selectionClick();
-              final existIdx = _basket.indexWhere((b) => b.food.id == 'off_${ingredient.id}');
-              if (existIdx != -1) {
-                setState(() => _basket.removeAt(existIdx));
-                return;
-              }
-              final food = _resolveSpoonFood(ingredient);
-              setState(() => _basket.add(_BasketItem(food, food.defaultGrams)));
-            },
-          )),
-        ],
-
-        // Fallback to local database when API fails or returns empty
-        if (_spoonResults.isEmpty) ...[
-          if (_spoonError)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3CD),
-                  borderRadius: BorderRadius.circular(10)),
-                child: Row(children: [
-                  const Icon(LucideIcons.wifiOff, size: 14, color: Color(0xFF856404)),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text('Résultats hors-ligne',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600,
-                      color: const Color(0xFF856404)))),
-                ]))),
-          ..._buildLocalFallback(cs),
+          // Fallback to local database when API fails or returns empty
+          if (_spoonResults.isEmpty) ...[
+            if (_spoonError)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3CD),
+                    borderRadius: BorderRadius.circular(10)),
+                  child: Row(children: [
+                    const Icon(LucideIcons.wifiOff, size: 14, color: Color(0xFF856404)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('Résultats hors-ligne',
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600,
+                        color: const Color(0xFF856404)))),
+                  ]))),
+            ..._buildLocalFallback(cs),
+          ],
         ],
       ],
     ]);
+  }
+
+  // ── Initial browse ──────────────────────────────────────────────────────
+  Widget _buildInitialBrowse(ColorScheme cs) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+      // ── Basket chips ──────────────────────────────────────────────────────
+      if (_basket.isNotEmpty) ...[
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemCount: _basket.length,
+            itemBuilder: (_, i) {
+              final item = _basket[i];
+              return GestureDetector(
+                onTap: () => setState(() => _basket.removeAt(i)),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: cs.primary,
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(item.food.name, style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w600,
+                      color: Colors.white)),
+                    const SizedBox(width: 6),
+                    const Icon(LucideIcons.x, size: 11, color: Colors.white70),
+                  ])));
+            })),
+        const SizedBox(height: 14),
+      ],
+
+      // ── Category grid (photos + color overlay) ─────────────────────────
+      GridView.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 2.4,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        children: FoodCategory.values.map((cat) {
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _activeCategory = cat);
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                image: DecorationImage(
+                  image: NetworkImage(_catPhoto(cat)),
+                  fit: BoxFit.cover,
+                  onError: (_, __) {})),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      _catColor(cat).withOpacity(0.92),
+                      _catColor(cat).withOpacity(0.6),
+                    ])),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(children: [
+                  Container(
+                    width: 32, height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10)),
+                    child: Icon(_catIcon(cat), size: 16, color: Colors.white)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(
+                    cat.label.split(' & ').first.split(' (').first,
+                    style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w700,
+                      color: Colors.white, height: 1.2),
+                    maxLines: 2, overflow: TextOverflow.ellipsis)),
+                ]),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+
+    ]);
+  }
+
+  // ── Food list row ──────────────────────────────────────────────────────
+  Widget _buildFoodRow(FoodItem food, ColorScheme cs, NutritionColors nc) {
+    final basketIdx = _basket.indexWhere((b) => b.food.id == food.id);
+    final isSelected = basketIdx != -1;
+    final grams = isSelected ? _basket[basketIdx].grams : food.defaultGrams;
+    final kcal = food.kcalFor(grams).round();
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        if (isSelected) {
+          setState(() => _basket.removeAt(basketIdx));
+        } else {
+          setState(() {
+            _selectedFood = food;
+            _selectedGrams = food.defaultGrams;
+            _selectedUnit = FoodUnit.g;
+            _amountCtrl.text = food.defaultGrams.round().toString();
+          });
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: isSelected ? cs.primary.withOpacity(0.05) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+          border: isSelected
+            ? Border.all(color: cs.primary.withOpacity(0.25))
+            : null),
+        child: Row(children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 44, height: 44,
+              child: Image.network(
+                _foodImageUrl(food.id),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: _catColor(food.category).withOpacity(0.10),
+                  child: Icon(_catIcon(food.category),
+                    size: 20, color: _catColor(food.category)))))),
+          const SizedBox(width: 12),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(food.name, style: GoogleFonts.inter(
+              fontSize: 14, fontWeight: FontWeight.w600,
+              color: cs.onSurface)),
+            const SizedBox(height: 3),
+            Row(children: [
+              Text(food.portionLabel, style: GoogleFonts.inter(
+                fontSize: 11, color: cs.onSurface.withOpacity(0.4))),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 6),
+                width: 3, height: 3,
+                decoration: BoxDecoration(
+                  color: cs.onSurface.withOpacity(0.2),
+                  shape: BoxShape.circle)),
+              Text('$kcal kcal', style: GoogleFonts.inter(
+                fontSize: 11, fontWeight: FontWeight.w700,
+                color: cs.onSurface.withOpacity(0.55))),
+            ]),
+          ])),
+          const SizedBox(width: 8),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 30, height: 30,
+            decoration: BoxDecoration(
+              color: isSelected ? cs.primary : cs.outline.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(8)),
+            child: Icon(
+              isSelected ? LucideIcons.check : LucideIcons.plus,
+              size: 14,
+              color: isSelected ? Colors.white : cs.onSurface.withOpacity(0.3))),
+        ])),
+    );
   }
 
   List<Widget> _buildLocalFallback(ColorScheme cs) {
@@ -1086,226 +1393,336 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
 
   // ── Food detail ───────────────────────────────────────────────────────────
   Widget _buildFoodDetail(FoodItem food) {
-    final nc      = NutritionColors.of(context);
+    final cs      = Theme.of(context).colorScheme;
     final grams   = _selectedGrams;
     final kcal    = food.kcalFor(grams).round();
     final protein = food.proteinFor(grams).round();
     final carbs   = food.carbsFor(grams).round();
     final fat     = food.fatFor(grams).round();
+    final catCol  = _catColor(food.category);
+    final l10n    = AppL10n(Lang.code);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+      // ── Back button ──────────────────────────────────────────────────────
       GestureDetector(
         onTap: () => setState(() { _selectedFood = null; _searchQuery = ''; _searchCtrl.clear(); }),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: cs.outline.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(10)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(LucideIcons.chevronLeft, size: 14, color: cs.onSurface.withOpacity(0.6)),
+            const SizedBox(width: 4),
+            Text(l10n.addMealBack, style: GoogleFonts.inter(
+              fontSize: 12, fontWeight: FontWeight.w600,
+              color: cs.onSurface.withOpacity(0.6))),
+          ]))),
+
+      const SizedBox(height: 16),
+
+      // ── Hero: food image + name ──────────────────────────────────────────
+      Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [catCol.withOpacity(0.15), catCol.withOpacity(0.05)])),
+        padding: const EdgeInsets.all(16),
         child: Row(children: [
-          const Icon(LucideIcons.chevronLeft, size: 14, color: _kMint),
-          const SizedBox(width: 4),
-          Text(AppL10n(Lang.code).addMealBack, style: GoogleFonts.inter(
-            fontSize: 12, color: _kMint, fontWeight: FontWeight.w600)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              width: 72, height: 72,
+              child: Image.network(
+                _foodImageUrl(food.id),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: catCol.withOpacity(0.12),
+                  child: Icon(_catIcon(food.category), size: 28, color: catCol))))),
+          const SizedBox(width: 14),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(food.name, style: GoogleFonts.outfit(
+              fontSize: 20, fontWeight: FontWeight.w800,
+              color: cs.onSurface, height: 1.2)),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: catCol.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(_catIcon(food.category), size: 11, color: catCol),
+                const SizedBox(width: 5),
+                Text(food.category.label, style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: catCol)),
+              ])),
+          ])),
         ])),
 
       const SizedBox(height: 16),
 
-      Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: nc.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: nc.border),
-          boxShadow: nc.isDark ? [] : [BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 14, offset: const Offset(0, 4))]),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // ── Calories center ──────────────────────────────────────────────────
+      Center(child: Column(children: [
+        Text('$kcal', style: GoogleFonts.outfit(
+          fontSize: 48, fontWeight: FontWeight.w800,
+          color: cs.primary, height: 1)),
+        Text('kcal', style: GoogleFonts.inter(
+          fontSize: 13, fontWeight: FontWeight.w600,
+          color: cs.onSurface.withOpacity(0.35))),
+      ])),
 
-          Row(children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                width: 44, height: 44,
-                child: Image.network(
-                  _catPhoto(food.category),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: _catColor(food.category).withOpacity(0.12),
-                    child: Icon(_catIcon(food.category),
-                      size: 22, color: _catColor(food.category)))))),
-            const SizedBox(width: 12),
-            Expanded(child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(food.name, style: GoogleFonts.outfit(
-                fontSize: 18, fontWeight: FontWeight.w800, color: nc.text1)),
-              Text(food.category.label, style: GoogleFonts.inter(
-                fontSize: 11, color: nc.text2)),
-            ])),
-          ]),
+      const SizedBox(height: 16),
 
-          const SizedBox(height: 16),
+      // ── Macro cards row ──────────────────────────────────────────────────
+      Row(children: [
+        _buildMacroCard(l10n.nutritionProtein, '${protein}g',
+          cs.primary, cs),
+        const SizedBox(width: 8),
+        _buildMacroCard(l10n.nutritionCarbs, '${carbs}g',
+          const Color(0xFF3B7FD4), cs),
+        const SizedBox(width: 8),
+        _buildMacroCard(l10n.nutritionFat, '${fat}g',
+          const Color(0xFFC47A00), cs),
+        if (food.fiber > 0) ...[
+          const SizedBox(width: 8),
+          _buildMacroCard(l10n.addMealFibers, '${food.fiberFor(grams).round()}g',
+            const Color(0xFF5BAE8A), cs),
+        ],
+      ]),
 
-          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('$kcal', style: GoogleFonts.outfit(
-              fontSize: 44, fontWeight: FontWeight.w800,
-              color: _kGreen(context), height: 1)),
-            const SizedBox(width: 6),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 7),
-              child: Text('kcal', style: GoogleFonts.inter(
-                fontSize: 15, color: _kText2))),
-            const Spacer(),
-            _MacroBadge('P ${protein}g', _kGreen(context), _kMintBg),
-            const SizedBox(width: 6),
-            _MacroBadge('G ${carbs}g', const Color(0xFF3B7FD4), const Color(0xFFEBF2FC)),
-            const SizedBox(width: 6),
-            _MacroBadge('L ${fat}g', const Color(0xFFC47A00), const Color(0xFFFFF3DC)),
-          ]),
+      const SizedBox(height: 20),
 
-          const SizedBox(height: 16),
-          _MacroBar(AppL10n(Lang.code).nutritionProtein, protein, food.proteinFor(100).round(), _kGreen(context)),
-          const SizedBox(height: 10),
-          _MacroBar(AppL10n(Lang.code).nutritionCarbs, carbs, food.carbsFor(100).round(), const Color(0xFF3B7FD4)),
-          const SizedBox(height: 10),
-          _MacroBar(AppL10n(Lang.code).nutritionFat, fat, food.fatFor(100).round(), const Color(0xFFC47A00)),
-          if (food.fiber > 0) ...[
-            const SizedBox(height: 10),
-            _MacroBar(AppL10n(Lang.code).addMealFibers, food.fiberFor(grams).round(),
-              food.fiberFor(100).round(), const Color(0xFF5BAE8A)),
-          ],
+      // ── Quantity section ──────────────────────────────────────────────────
+      Text(l10n.addMealQuantity.toUpperCase(), style: GoogleFonts.inter(
+        fontSize: 10, fontWeight: FontWeight.w700,
+        color: cs.onSurface.withOpacity(0.35), letterSpacing: 1.5)),
+      const SizedBox(height: 10),
 
-          const SizedBox(height: 16),
-          Divider(height: 1, color: nc.border),
-          const SizedBox(height: 14),
+      // Portion chips
+      Wrap(spacing: 7, runSpacing: 7, children: [
+        for (final g in <double>{50, 100, food.defaultGrams, 150, 200}
+            .toList()..sort())
+          _PortionChip(
+            label: g == food.defaultGrams && food.portionLabel != '100 g'
+                ? '${g.round()}g · ${food.portionLabel}'
+                : '${g.round()}g',
+            selected: _selectedGrams == g && _selectedUnit == FoodUnit.g,
+            onTap: () => setState(() {
+              _selectedUnit  = FoodUnit.g;
+              _selectedGrams = g;
+              _amountCtrl.text = g.round().toString();
+            })),
+      ]),
 
-          Text(AppL10n(Lang.code).addMealQuantity, style: GoogleFonts.inter(
-            color: _kMint, fontSize: 9, fontWeight: FontWeight.w700,
-            letterSpacing: 2.5)),
-          const SizedBox(height: 10),
+      const SizedBox(height: 12),
 
-          // Quick portion chips (always in grams)
-          Wrap(spacing: 7, runSpacing: 7, children: [
-            for (final g in <double>{50, 100, food.defaultGrams, 150, 200}
-                .toList()..sort())
-              _PortionChip(
-                label: g == food.defaultGrams && food.portionLabel != '100 g'
-                    ? '${g.round()}g · ${food.portionLabel}'
-                    : '${g.round()}g',
-                selected: _selectedGrams == g && _selectedUnit == FoodUnit.g,
-                onTap: () => setState(() {
-                  _selectedUnit  = FoodUnit.g;
-                  _selectedGrams = g;
-                  _amountCtrl.text = g.round().toString();
-                })),
-          ]),
+      // Amount + unit row
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          child: TextField(
+            controller: _amountCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (v) {
+              final val = double.tryParse(v);
+              if (val != null && val > 0) _setAmount(val);
+            },
+            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: cs.onSurface),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: cs.outline.withOpacity(0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: cs.primary, width: 1.5)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13)),
+          ),
+        ),
+        const SizedBox(width: 10),
+        _UnitSelector(
+          selected: _selectedUnit,
+          onChanged: _setUnit,
+        ),
+      ]),
 
-          const SizedBox(height: 12),
-
-          // Amount + unit row
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(
-              child: TextField(
-                controller: _amountCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                onChanged: (v) {
-                  final val = double.tryParse(v);
-                  if (val != null && val > 0) _setAmount(val);
-                },
-                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: nc.text1),
-                decoration: InputDecoration(
-                  filled: true, fillColor: nc.chipBg,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _kMint, width: 1.5)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13)),
-              ),
-            ),
-            const SizedBox(width: 10),
-            _UnitSelector(
-              selected: _selectedUnit,
-              onChanged: _setUnit,
-            ),
-          ]),
-
-          if (_selectedUnit != FoodUnit.g)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                '≈ ${_selectedGrams.round()} g',
-                style: GoogleFonts.inter(fontSize: 11, color: nc.text2))),
-        ]),
-      ),
+      if (_selectedUnit != FoodUnit.g)
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            '≈ ${_selectedGrams.round()} g',
+            style: GoogleFonts.inter(fontSize: 11, color: cs.onSurface.withOpacity(0.4)))),
     ]);
+  }
+
+  Widget _buildMacroCard(String label, String value, Color color, ColorScheme cs) {
+    return Expanded(child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14)),
+      child: Column(children: [
+        Text(value, style: GoogleFonts.outfit(
+          fontSize: 18, fontWeight: FontWeight.w800, color: color)),
+        const SizedBox(height: 2),
+        Text(label, style: GoogleFonts.inter(
+          fontSize: 10, fontWeight: FontWeight.w600,
+          color: color.withOpacity(0.7))),
+      ]),
+    ));
   }
 
   // ════════════════════════════════════════════════════════════════════════════
   //  MANUEL MODE — nom en tête, calories en gros ("hero"), macros en chips
   // ════════════════════════════════════════════════════════════════════════════
   Widget _buildManual() {
+    final cs   = Theme.of(context).colorScheme;
     final nc   = NutritionColors.of(context);
     final l10n = AppL10n(Lang.code);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // Nom de l'aliment — champ autonome avec icône, plus de bandeau texte au-dessus
-      Container(
-        decoration: BoxDecoration(
-          color: nc.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: nc.border)),
-        child: TextField(
-          controller: _nameCtrl,
-          onChanged: (_) => setState(() {}),
-          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: nc.text1),
-          decoration: InputDecoration(
-            hintText: l10n.addMealNameHint,
-            hintStyle: GoogleFonts.inter(fontSize: 14, color: nc.text2),
-            prefixIcon: Icon(LucideIcons.utensils, size: 17, color: nc.text2),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16))),
-      ),
+
+      // ── Name ────────────────────────────────────────────────────────────────
+      Builder(builder: (_) {
+        final nameErr = _manualShowErrors
+            ? _manualNameError(_nameCtrl.text.trim())
+            : null;
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            decoration: BoxDecoration(
+              color: nc.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: nameErr != null
+                    ? const Color(0xFFE53935)
+                    : nc.border)),
+            child: TextField(
+              controller: _nameCtrl,
+              onChanged: (_) => setState(() {}),
+              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: nc.text1),
+              decoration: InputDecoration(
+                hintText: l10n.addMealNameHint,
+                hintStyle: GoogleFonts.inter(fontSize: 14, color: nc.text2),
+                prefixIcon: Icon(LucideIcons.utensils, size: 17,
+                  color: nameErr != null ? const Color(0xFFE53935) : nc.text2),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16))),
+          ),
+          if (nameErr != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 14, top: 5),
+              child: Row(children: [
+                const Icon(LucideIcons.alertCircle, size: 12, color: Color(0xFFE53935)),
+                const SizedBox(width: 5),
+                Text(nameErr, style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w600,
+                  color: const Color(0xFFE53935))),
+              ])),
+        ]);
+      }),
 
       const SizedBox(height: 14),
 
-      // Calories — grand champ mis en avant, au centre de l'attention
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [_kGreen(context), const Color(0xFF0F2E1C)]),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(
-            color: _kGreen(context).withOpacity(0.22),
-            blurRadius: 14, offset: const Offset(0, 6))],
-        ),
-        child: Column(children: [
-          Text(l10n.addMealCalLabel.toUpperCase(), style: GoogleFonts.inter(
-            fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white70, letterSpacing: 2)),
-          const SizedBox(height: 8),
-          IntrinsicWidth(
-            child: TextField(
-              controller: _calCtrl,
-              keyboardType: TextInputType.number,
-              onChanged: (_) => setState(() {}),
-              textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white, height: 1),
-              decoration: InputDecoration(
-                hintText: '0',
-                hintStyle: GoogleFonts.outfit(fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white38),
-                suffixText: ' kcal',
-                suffixStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.white70),
-                filled: false,
-                fillColor: Colors.transparent,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero)),
-          ),
-        ]),
-      ),
+      // ── Category picker ─────────────────────────────────────────────────────
+      Text('CATÉGORIE', style: GoogleFonts.inter(
+        fontSize: 10, fontWeight: FontWeight.w700,
+        color: cs.onSurface.withOpacity(0.35), letterSpacing: 1.5)),
+      const SizedBox(height: 8),
+      Wrap(spacing: 6, runSpacing: 6, children: FoodCategory.values.map((cat) {
+        final selected = _manualCategory == cat;
+        final col = _catColor(cat);
+        return GestureDetector(
+          onTap: () => setState(() => _manualCategory = cat),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: selected ? col.withOpacity(0.15) : cs.outline.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(10),
+              border: selected ? Border.all(color: col.withOpacity(0.4)) : null),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(_catIcon(cat), size: 13,
+                color: selected ? col : cs.onSurface.withOpacity(0.35)),
+              const SizedBox(width: 5),
+              Text(cat.label.split(' & ').first.split(' (').first,
+                style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? col : cs.onSurface.withOpacity(0.5))),
+            ])));
+      }).toList()),
 
       const SizedBox(height: 18),
 
-      // Macros — facultatif, en chips compactes plutôt qu'en champs longs
+      // ── Calories ────────────────────────────────────────────────────────────
+      Builder(builder: (_) {
+        final calErr = _manualShowErrors
+            ? _manualCalError(double.tryParse(_calCtrl.text))
+            : null;
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                colors: calErr != null
+                    ? [const Color(0xFFE53935), const Color(0xFF8B1A1A)]
+                    : [_kGreen(context), const Color(0xFF0F2E1C)]),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [BoxShadow(
+                color: (calErr != null
+                    ? const Color(0xFFE53935)
+                    : _kGreen(context)).withOpacity(0.22),
+                blurRadius: 14, offset: const Offset(0, 6))],
+            ),
+            child: Column(children: [
+              Text(l10n.addMealCalLabel.toUpperCase(), style: GoogleFonts.inter(
+                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white70, letterSpacing: 2)),
+              const SizedBox(height: 8),
+              IntrinsicWidth(
+                child: TextField(
+                  controller: _calCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (_) => setState(() {}),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white, height: 1),
+                  decoration: InputDecoration(
+                    hintText: '0',
+                    hintStyle: GoogleFonts.outfit(fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white38),
+                    suffixText: ' kcal',
+                    suffixStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.white70),
+                    filled: false,
+                    fillColor: Colors.transparent,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero)),
+              ),
+              const SizedBox(height: 4),
+              Text('pour 100g', style: GoogleFonts.inter(
+                fontSize: 11, color: Colors.white54)),
+            ]),
+          ),
+          if (calErr != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 14, top: 5),
+              child: Row(children: [
+                const Icon(LucideIcons.alertCircle, size: 12, color: Color(0xFFE53935)),
+                const SizedBox(width: 5),
+                Text(calErr, style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w600,
+                  color: const Color(0xFFE53935))),
+              ])),
+        ]);
+      }),
+
+      const SizedBox(height: 18),
+
+      // ── Macros (optional) ───────────────────────────────────────────────────
       Row(children: [
         Text(l10n.addMealMacros, style: GoogleFonts.inter(
           fontSize: 12, fontWeight: FontWeight.w700, color: nc.text1)),
@@ -1326,7 +1743,77 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
           icon: LucideIcons.droplet, label: l10n.nutritionFat,
           color: const Color(0xFFC47A00), bg: const Color(0xFFFBF0DC), controller: _lipCtrl)),
       ]),
-  ]);
+
+      const SizedBox(height: 20),
+
+      // ── Quantity ────────────────────────────────────────────────────────────
+      Text('QUANTITÉ', style: GoogleFonts.inter(
+        fontSize: 10, fontWeight: FontWeight.w700,
+        color: cs.onSurface.withOpacity(0.35), letterSpacing: 1.5)),
+      const SizedBox(height: 10),
+
+      Wrap(spacing: 7, runSpacing: 7, children: [
+        for (final g in <double>[50, 100, 150, 200, 250])
+          _PortionChip(
+            label: '${g.round()}g',
+            selected: _manualGrams == g && _manualUnit == FoodUnit.g,
+            onTap: () => setState(() {
+              _manualUnit = FoodUnit.g;
+              _manualGrams = g;
+              _manualAmountCtrl.text = g.round().toString();
+            })),
+      ]),
+
+      const SizedBox(height: 12),
+
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          child: TextField(
+            controller: _manualAmountCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (v) {
+              final val = double.tryParse(v);
+              if (val != null && val > 0) {
+                setState(() {
+                  _manualGrams = _manualUnit.toGrams(val, pieceGrams: 100);
+                });
+              }
+            },
+            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: cs.onSurface),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: cs.outline.withOpacity(0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: cs.primary, width: 1.5)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13)),
+          ),
+        ),
+        const SizedBox(width: 10),
+        _UnitSelector(
+          selected: _manualUnit,
+          onChanged: (unit) {
+            final newAmount = unit.defaultAmount(_manualGrams, pieceGrams: 100);
+            setState(() {
+              _manualUnit = unit;
+              _manualAmountCtrl.text = newAmount < 10
+                  ? newAmount.toStringAsFixed(1)
+                  : newAmount.round().toString();
+            });
+          },
+        ),
+      ]),
+
+      if (_manualUnit != FoodUnit.g)
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            '≈ ${_manualGrams.round()} g',
+            style: GoogleFonts.inter(fontSize: 11, color: cs.onSurface.withOpacity(0.4)))),
+    ]);
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -2419,30 +2906,7 @@ class _PortionChip extends StatelessWidget {
   }
 }
 
-class _ModeTab extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _ModeTab({required this.label,
-    required this.active, required this.onTap});
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.only(bottom: 10, top: 4),
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(
-            color: active ? cs.primary : Colors.transparent,
-            width: 2))),
-        child: Text(label, style: GoogleFonts.inter(
-          fontSize: 13, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-          color: active ? cs.primary : cs.onSurface.withOpacity(0.45)))));
-  }
-}
 
 class _MacroChipInput extends StatelessWidget {
   final IconData icon;
@@ -2464,7 +2928,8 @@ class _MacroChipInput extends StatelessWidget {
         const SizedBox(height: 6),
         TextField(
           controller: controller,
-          keyboardType: TextInputType.number,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.,]'))],
           textAlign: TextAlign.center,
           style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: color),
           decoration: InputDecoration(

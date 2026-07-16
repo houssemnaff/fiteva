@@ -215,7 +215,7 @@ class RecipeService {
   static Future<List<AppRecipe>> fetchAppRecipes() async {
     try {
       final rows = await SupabaseConfig.table('recipes')
-          .select('*')
+          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, avatar_seed, avatar_style, avatar_bg_color)')
           .order('created_at', ascending: false) as List;
       return rows
           .cast<Map<String, dynamic>>()
@@ -230,7 +230,7 @@ class RecipeService {
   static Future<List<AppRecipe>> fetchRecipesByUser(String userId) async {
     try {
       final rows = await SupabaseConfig.table('recipes')
-          .select('*')
+          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, avatar_seed, avatar_style, avatar_bg_color)')
           .eq('user_id', userId)
           .order('created_at', ascending: false) as List;
       return rows
@@ -245,7 +245,7 @@ class RecipeService {
   static Future<List<AppRecipe>> fetchRecipesByPhase(String phase) async {
     try {
       final rows = await SupabaseConfig.table('recipes')
-          .select('*')
+          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, avatar_seed, avatar_style, avatar_bg_color)')
           .or('phase.eq.$phase,phase.eq.all')
           .order('created_at', ascending: false) as List;
       return rows
@@ -260,7 +260,7 @@ class RecipeService {
   static Future<List<AppRecipe>> fetchFeaturedRecipes() async {
     try {
       final rows = await SupabaseConfig.table('recipes')
-          .select('*')
+          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, avatar_seed, avatar_style, avatar_bg_color)')
           .eq('is_featured', true)
           .order('created_at', ascending: false) as List;
       return rows
@@ -275,7 +275,7 @@ class RecipeService {
   static Future<AppRecipe?> fetchAppRecipeById(String id) async {
     try {
       final row = await SupabaseConfig.table('recipes')
-          .select('*')
+          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, avatar_seed, avatar_style, avatar_bg_color)')
           .eq('id', id)
           .maybeSingle();
       if (row == null) return null;

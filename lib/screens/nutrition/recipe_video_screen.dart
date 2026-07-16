@@ -1,47 +1,36 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/core/nutrition/favorites_provider.dart';
-import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:fiteva/screens/nutrition/recipes_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'recipe_author_screen.dart';
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
-Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
-const _kMint   = Color(0xFF7ABB98);
-const _kMintBg = Color(0xFFEAF3EC);
-const _kCream  = Color(0xFFFAFAF8);
-const _kBorder = Color(0xFFECECEC);
-const _kText1  = Color(0xFF111110);
-const _kText2  = Color(0xFF6B7280);
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Screen
+// SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 class RecipeVideoPlayerScreen extends ConsumerStatefulWidget {
   final VideoRecipe recipe;
   const RecipeVideoPlayerScreen({super.key, required this.recipe});
 
   @override
-  ConsumerState<RecipeVideoPlayerScreen> createState() => _RecipeVideoPlayerScreenState();
+  ConsumerState<RecipeVideoPlayerScreen> createState() =>
+      _RecipeVideoPlayerScreenState();
 }
 
-class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScreen> {
+class _RecipeVideoPlayerScreenState
+    extends ConsumerState<RecipeVideoPlayerScreen> {
   VideoPlayerController? _ctrl;
   bool _videoReady = false;
-  bool _playing    = false;
-  bool _showCtrl   = true; // show play/pause overlay
-  int  _activeStep = 0;
+  bool _playing = false;
+  bool _showCtrl = true;
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
     _initVideo();
   }
 
@@ -64,7 +53,6 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
 
   void _onVideoUpdate() {
     if (_ctrl == null) return;
-    // hide controls 2s after play starts
     if (_ctrl!.value.isPlaying && _showCtrl) {
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted && _ctrl!.value.isPlaying) {
@@ -89,11 +77,7 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
 
   void _togglePlayPause() {
     if (_ctrl == null) return;
-    if (_ctrl!.value.isPlaying) {
-      _ctrl!.pause();
-    } else {
-      _ctrl!.play();
-    }
+    _ctrl!.value.isPlaying ? _ctrl!.pause() : _ctrl!.play();
     setState(() {});
   }
 
@@ -101,544 +85,659 @@ class _RecipeVideoPlayerScreenState extends ConsumerState<RecipeVideoPlayerScree
   void dispose() {
     _ctrl?.removeListener(_onVideoUpdate);
     _ctrl?.dispose();
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final top = MediaQuery.of(context).padding.top;
-    final cs  = Theme.of(context).colorScheme;
-    final nc  = NutritionColors.of(context);
-    final l10n = ref.watch(l10nProvider);
-    final videoH = top + 260.0;
+    final r = widget.recipe;
+    final pi = PhaseInfo.from(r.phase);
+    final isFav = ref.watch(favoritesProvider).contains(r.name);
+    final hasVideo = r.videoAsset != null;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: nc.bg,
+        backgroundColor: cs.surface,
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
+            // ── Video / cover ────────────────────────────────────────
+            SliverToBoxAdapter(
+                child: _buildVideo(cs, top, hasVideo, isFav, pi)),
 
-            // ── Sticky video header ───────────────────────────────────────
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _VideoHeaderDelegate(
-                height: videoH,
-                child: _buildVideoHeader(top),
-              ),
-            ),
+            // ── Title + meta ─────────────────────────────────────────
+            SliverToBoxAdapter(child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text(r.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface,
+                        height: 1.15,
+                        letterSpacing: -0.3)),
+                if (r.subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(r.subtitle,
+                      style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: cs.onSurface.withOpacity(0.45),
+                          height: 1.4)),
+                ],
+                const SizedBox(height: 12),
+                Row(children: [
+                  _Chip(LucideIcons.clock, r.duration, cs),
+                  const SizedBox(width: 8),
+                  _Chip(LucideIcons.flame, '${r.kcal} kcal', cs),
+                  const SizedBox(width: 8),
+                  _Chip(LucideIcons.dumbbell, '${r.proteins}g prot.', cs),
+                ]),
+              ]),
+            )),
 
-            // ── Content ───────────────────────────────────────────────────
-            SliverToBoxAdapter(child: _buildMeta(nc, l10n)),
-            SliverToBoxAdapter(child: _buildIngredients(nc, l10n)),
-            SliverToBoxAdapter(child: _buildSteps(nc)),
-            const SliverToBoxAdapter(child: SizedBox(height: 60)),
+            // ── Author ───────────────────────────────────────────────
+            if (r.authorName != null)
+              SliverToBoxAdapter(child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                child: GestureDetector(
+                  onTap: r.authorId != null
+                      ? () {
+                          HapticFeedback.lightImpact();
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => RecipeAuthorScreen(
+                                      userId: r.authorId!,
+                                      username: r.authorName!)));
+                        }
+                      : null,
+                  child: Row(children: [
+                    Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                            color: cs.primary.withOpacity(0.1),
+                            shape: BoxShape.circle),
+                        child: Center(
+                            child: Text(r.authorName![0].toUpperCase(),
+                                style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: cs.primary)))),
+                    const SizedBox(width: 8),
+                    Text('par ',
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: cs.onSurface.withOpacity(0.4))),
+                    Text(r.authorName!,
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: cs.primary)),
+                  ]),
+                ),
+              )),
+
+            // ── Phase tip ────────────────────────────────────────────
+            SliverToBoxAdapter(child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: _PhaseTip(phase: r.phase),
+            )),
+
+            // ── Macro cards ──────────────────────────────────────────
+            SliverToBoxAdapter(child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Row(children: [
+                _MacroCard('Calories', '${r.kcal}', 'kcal',
+                    const Color(0xFFE03050), cs),
+                const SizedBox(width: 8),
+                _MacroCard('Protéines', '${r.proteins}', 'g',
+                    const Color(0xFF5BAE8A), cs),
+                const SizedBox(width: 8),
+                _MacroCard('Difficulté', r.difficulty, '',
+                    const Color(0xFF6B8FD4), cs),
+              ]),
+            )),
+
+            // ── Ingredients ──────────────────────────────────────────
+            if (r.ingredients.isNotEmpty) ...[
+              SliverToBoxAdapter(child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+                child: Row(children: [
+                  Icon(LucideIcons.shoppingBasket,
+                      size: 15, color: cs.primary),
+                  const SizedBox(width: 8),
+                  Text('Ingrédients',
+                      style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: cs.onSurface)),
+                  const Spacer(),
+                  Text('${r.ingredients.length}',
+                      style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface.withOpacity(0.3))),
+                ]),
+              )),
+              SliverToBoxAdapter(child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                    children: r.ingredients.map((ing) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                          color: cs.outline.withOpacity(0.04),
+                          borderRadius: BorderRadius.circular(12)),
+                      child: Row(children: [
+                        Container(
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                                color: cs.primary,
+                                shape: BoxShape.circle)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                            child: Text(ing.name,
+                                style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.onSurface))),
+                        Text(ing.qty,
+                            style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: cs.onSurface.withOpacity(0.4))),
+                        const SizedBox(width: 10),
+                        Text('${ing.kcal} kcal',
+                            style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: cs.primary)),
+                      ]),
+                    ),
+                  );
+                }).toList()),
+              )),
+
+              // Total bar
+              SliverToBoxAdapter(child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                      color: cs.primary.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(12)),
+                  child: Row(children: [
+                    Icon(LucideIcons.zap, size: 13, color: cs.primary),
+                    const SizedBox(width: 8),
+                    Text('Total estimé',
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: cs.primary)),
+                    const Spacer(),
+                    Text('${r.kcal} kcal  ·  ${r.proteins}g prot.',
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: cs.primary)),
+                  ]),
+                ),
+              )),
+            ],
+
+            // ── Steps ────────────────────────────────────────────────
+            if (r.steps.isNotEmpty) ...[
+              SliverToBoxAdapter(child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+                child: Row(children: [
+                  Icon(LucideIcons.listOrdered, size: 15, color: cs.primary),
+                  const SizedBox(width: 8),
+                  Text('Préparation',
+                      style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: cs.onSurface)),
+                  const Spacer(),
+                  Text('${r.steps.length} étapes',
+                      style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface.withOpacity(0.3))),
+                ]),
+              )),
+              SliverToBoxAdapter(child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _StepsList(steps: r.steps),
+              )),
+            ],
+
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
       ),
     );
   }
 
-  // ── VIDEO HEADER ───────────────────────────────────────────────────────────
-  Widget _buildVideoHeader(double top) {
-    final cs = Theme.of(context).colorScheme;
-    final hasVideo = widget.recipe.videoAsset != null;
-
+  // ── VIDEO SECTION ──────────────────────────────────────────────────────────
+  Widget _buildVideo(
+      ColorScheme cs, double top, bool hasVideo, bool isFav, PhaseInfo pi) {
     return GestureDetector(
       onTap: _tapVideo,
-      child: Container(
-        color: Colors.black,
+      child: SizedBox(
+        height: top + 260,
         child: Stack(fit: StackFit.expand, children: [
-
-          // ── Video frame (raw VideoPlayer) ──
+          // Video or cover
           if (_ctrl != null && _playing)
-            VideoPlayer(_ctrl!),
-
-          // ── Cover image (shown before play) ──
+            Container(color: Colors.black, child: VideoPlayer(_ctrl!)),
           if (!_playing)
-            Image.network(
-              widget.recipe.imageUrl, fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: cs.primary.withOpacity(0.08))),
-
-          // ── Gradient overlay ──
+            Image.network(widget.recipe.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    Container(color: cs.primary.withOpacity(0.06))),
           if (!_playing)
             Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [Colors.black.withOpacity(0.15), Colors.black.withOpacity(0.50)]))),
+                decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                  Colors.black.withOpacity(0.15),
+                  Colors.black.withOpacity(0.5)
+                ]))),
 
-          // ── Play button (before play) ──
+          // Bottom fade into surface
+          Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 60,
+              child: DecoratedBox(
+                  decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                    cs.surface,
+                    cs.surface.withOpacity(0)
+                  ])))),
+
+          // Play button (before play)
           if (hasVideo && !_playing)
             Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 68, height: 68,
-                decoration: BoxDecoration(
-                  color: _videoReady ? _kGreen(context) : Colors.white.withOpacity(0.25),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2.5),
-                  boxShadow: [BoxShadow(
-                    color: Colors.black.withOpacity(0.30),
-                    blurRadius: 16, offset: const Offset(0, 4))]),
-                child: _videoReady
-                    ? const Icon(LucideIcons.play, color: Colors.white, size: 26)
-                    : const SizedBox(
-                        width: 24, height: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2)))),
+                child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                        color: _videoReady
+                            ? cs.primary
+                            : Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle),
+                    child: _videoReady
+                        ? const Icon(LucideIcons.play,
+                            color: Colors.white, size: 24)
+                        : const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2)))),
 
-          // ── Play/pause overlay (during playback, appears on tap) ──
+          // Play/pause overlay (during playback)
           if (_playing && _showCtrl)
             Center(
-              child: GestureDetector(
-                onTap: _togglePlayPause,
-                child: Container(
-                  width: 54, height: 54,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.50),
-                    shape: BoxShape.circle),
-                  child: Icon(
-                    _ctrl!.value.isPlaying
-                        ? LucideIcons.pause
-                        : LucideIcons.play,
-                    color: Colors.white, size: 22)))),
+                child: GestureDetector(
+                    onTap: _togglePlayPause,
+                    child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.45),
+                            shape: BoxShape.circle),
+                        child: Icon(
+                            _ctrl!.value.isPlaying
+                                ? LucideIcons.pause
+                                : LucideIcons.play,
+                            color: Colors.white,
+                            size: 20)))),
 
-          // ── Progress bar (during playback) ──
+          // Progress bar
           if (_playing && _ctrl != null)
             Positioned(
-              bottom: 0, left: 0, right: 0,
-              child: VideoProgressIndicator(
-                _ctrl!,
-                allowScrubbing: true,
-                padding: EdgeInsets.zero,
-                colors: VideoProgressColors(
-                  playedColor: _kGreen(context),
-                  bufferedColor: Colors.white.withOpacity(0.3),
-                  backgroundColor: Colors.white.withOpacity(0.15)),
-              )),
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: VideoProgressIndicator(_ctrl!,
+                    allowScrubbing: true,
+                    padding: EdgeInsets.zero,
+                    colors: VideoProgressColors(
+                        playedColor: cs.primary,
+                        bufferedColor: Colors.white.withOpacity(0.3),
+                        backgroundColor: Colors.white.withOpacity(0.15)))),
 
-          // ── Top gradient for buttons ──
+          // Top gradient for buttons
           Positioned(
-            top: 0, left: 0, right: 0, height: top + 70,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                    colors: [Colors.black.withOpacity(0.55), Colors.transparent]))))),
+              top: 0,
+              left: 0,
+              right: 0,
+              height: top + 60,
+              child: IgnorePointer(
+                  child: DecoratedBox(
+                      decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                    Colors.black.withOpacity(0.5),
+                    Colors.transparent
+                  ]))))),
 
-          // ── Back button ──
+          // Back
           Positioned(
-            top: top + 12, left: 16,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
+              top: top + 10,
+              left: 16,
+              child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.25),
+                          shape: BoxShape.circle),
+                      child: const Icon(LucideIcons.chevronLeft,
+                          color: Colors.white, size: 18)))),
+
+          // Phase pill
+          Positioned(
+              top: top + 12,
+              right: 60,
               child: Container(
-                width: 38, height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.40),
-                  shape: BoxShape.circle),
-                child: const Icon(LucideIcons.chevronLeft, color: Colors.white, size: 20)))),
-
-          // ── Fav button (top-right) ──
-          Positioned(
-            top: top + 12, right: 16,
-            child: Builder(builder: (ctx) {
-              final isFav = ref.watch(favoritesProvider)
-                  .contains(widget.recipe.name);
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  ref.read(favoritesProvider.notifier)
-                      .toggle(widget.recipe.name);
-                },
-                child: Container(
-                  width: 38, height: 38,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isFav
-                        ? const Color(0xFFE03050)
-                        : Colors.black.withOpacity(0.40),
-                    shape: BoxShape.circle),
-                  child: Icon(
-                    LucideIcons.heart,
-                    color: Colors.white,
-                    size: 18)));
-            })),
+                      color: pi.color.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(8)),
+                  child: Text(pi.label,
+                      style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white)))),
 
-          // ── Phase badge ──
+          // Fav
           Positioned(
-            top: top + 14, right: 64,
-            child: Builder(builder: (_) {
-              final pi = PhaseInfo.from(widget.recipe.phase);
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                decoration: BoxDecoration(
-                  color: pi.color.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(20)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(width: 6, height: 6,
-                    decoration: const BoxDecoration(
-                      color: Colors.white, shape: BoxShape.circle)),
-                  const SizedBox(width: 5),
-                  Text(pi.label, style: GoogleFonts.inter(
-                    fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
-                ]));
-            })),
+              top: top + 10,
+              right: 16,
+              child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    ref
+                        .read(favoritesProvider.notifier)
+                        .toggle(widget.recipe.name);
+                  },
+                  child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                          color: isFav
+                              ? cs.primary
+                              : Colors.black.withOpacity(0.25),
+                          shape: BoxShape.circle),
+                      child: const Icon(LucideIcons.heart,
+                          color: Colors.white, size: 16)))),
 
-          // ── Duration + video badge (before play) ──
+          // Duration badge (before play)
           if (!_playing)
             Positioned(
-              bottom: 16, left: 16,
-              child: Row(children: [
-                _DarkBadge(icon: LucideIcons.clock, label: widget.recipe.duration),
-                if (hasVideo) ...[
-                  const SizedBox(width: 8),
-                  _DarkBadge(
-                    icon: LucideIcons.video,
-                    label: 'Vidéo disponible',
-                    color: _kGreen(context).withOpacity(0.88)),
-                ],
-              ])),
+                bottom: 20,
+                left: 16,
+                child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(6)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(LucideIcons.clock,
+                          size: 10, color: Colors.white70),
+                      const SizedBox(width: 4),
+                      Text(widget.recipe.duration,
+                          style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white)),
+                    ]))),
         ]),
       ),
     );
   }
-
-  // ── META ──────────────────────────────────────────────────────────────────
-  Widget _buildMeta(NutritionColors nc, AppL10n l10n) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(widget.recipe.name, style: GoogleFonts.outfit(
-          fontSize: 26, fontWeight: FontWeight.w800,
-          color: nc.text1, letterSpacing: -0.5, height: 1.15)),
-        const SizedBox(height: 4),
-        Text(widget.recipe.subtitle, style: GoogleFonts.inter(
-          fontSize: 14, color: nc.text2, height: 1.4)),
-        const SizedBox(height: 16),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _MetaChip(icon: LucideIcons.clock,     label: widget.recipe.duration),
-          _MetaChip(icon: LucideIcons.flame,     label: '${widget.recipe.kcal} kcal'),
-          _MetaChip(icon: LucideIcons.dumbbell,  label: '${widget.recipe.proteins}g protéines'),
-          _MetaChip(icon: LucideIcons.barChart2, label: widget.recipe.difficulty),
-        ]),
-        // Author row
-        if (widget.recipe.authorName != null) ...[
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: widget.recipe.authorId != null ? () {
-              HapticFeedback.lightImpact();
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => RecipeAuthorScreen(
-                  userId: widget.recipe.authorId!,
-                  username: widget.recipe.authorName!)));
-            } : null,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: cs.primary.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(12)),
-              child: Row(children: [
-                Container(width: 32, height: 32,
-                  decoration: BoxDecoration(
-                    color: cs.primary.withOpacity(0.12), shape: BoxShape.circle),
-                  child: Center(child: Text(
-                    widget.recipe.authorName![0].toUpperCase(),
-                    style: GoogleFonts.outfit(fontSize: 14,
-                      fontWeight: FontWeight.w800, color: cs.primary)))),
-                const SizedBox(width: 10),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('par ${widget.recipe.authorName}', style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface)),
-                    Text('Voir toutes ses recettes', style: GoogleFonts.inter(
-                      fontSize: 11, color: cs.primary)),
-                  ])),
-                Icon(LucideIcons.chevronRight, size: 16, color: cs.primary),
-              ]))),
-        ],
-        const SizedBox(height: 20),
-        _WhyPhaseCard(l10n: l10n, phase: widget.recipe.phase),
-      ]),
-    );
-  }
-
-  // ── INGREDIENTS ───────────────────────────────────────────────────────────
-  Widget _buildIngredients(NutritionColors nc, AppL10n l10n) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _SectionLabel(
-          icon: LucideIcons.shoppingBasket,
-          eyebrow: 'POUR ${widget.recipe.ingredients.length} PORTIONS',
-          title: 'Ingrédients',
-        ),
-        const SizedBox(height: 14),
-        ...widget.recipe.ingredients.map((ing) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: nc.surface,
-              borderRadius: BorderRadius.circular(13),
-              border: Border.all(color: nc.border)),
-            child: Row(children: [
-              Container(
-                width: 7, height: 7,
-                decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle)),
-              const SizedBox(width: 12),
-              Expanded(child: Text(ing.name, style: GoogleFonts.inter(
-                fontSize: 13.5, fontWeight: FontWeight.w600, color: nc.text1))),
-              Text(ing.qty, style: GoogleFonts.inter(fontSize: 12, color: nc.text2)),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: nc.mintBg, borderRadius: BorderRadius.circular(8)),
-                child: Text('${ing.kcal} kcal', style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen(context)))),
-            ]),
-          ),
-        )),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          decoration: BoxDecoration(
-            color: nc.mintBg,
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: _kMint.withOpacity(0.35))),
-          child: Row(children: [
-            Icon(LucideIcons.zap, size: 15, color: _kGreen(context)),
-            const SizedBox(width: 8),
-            Text(l10n.videoTotalEstime, style: GoogleFonts.inter(
-              fontSize: 13, fontWeight: FontWeight.w600, color: _kGreen(context))),
-            const Spacer(),
-            Text('${widget.recipe.kcal} kcal  ·  ${widget.recipe.proteins}g protéines',
-              style: GoogleFonts.inter(
-                fontSize: 13, fontWeight: FontWeight.w700, color: _kGreen(context))),
-          ]),
-        ),
-      ]),
-    );
-  }
-
-  // ── STEPS ─────────────────────────────────────────────────────────────────
-  Widget _buildSteps(NutritionColors nc) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _SectionLabel(
-          icon: LucideIcons.listOrdered,
-          eyebrow: '${widget.recipe.steps.length} ÉTAPES',
-          title: 'Préparation',
-        ),
-        const SizedBox(height: 14),
-        ...widget.recipe.steps.asMap().entries.map((e) {
-          final i    = e.key;
-          final step = e.value;
-          final active = _activeStep == i;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: GestureDetector(
-              onTap: () => setState(() => _activeStep = active ? -1 : i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: active ? _kGreen(context) : nc.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: active ? _kGreen(context) : nc.border,
-                    width: active ? 0 : 1),
-                  boxShadow: active ? [BoxShadow(
-                    color: _kGreen(context).withOpacity(0.20),
-                    blurRadius: 12, offset: const Offset(0, 4))] : [],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Container(
-                      width: 32, height: 32,
-                      decoration: BoxDecoration(
-                        color: active
-                            ? Colors.white.withOpacity(0.18)
-                            : nc.mintBg,
-                        shape: BoxShape.circle),
-                      child: Center(child: Text('${step.number}',
-                        style: GoogleFonts.outfit(
-                          fontSize: 14, fontWeight: FontWeight.w800,
-                          color: active ? Colors.white : _kGreen(context))))),
-                    const SizedBox(width: 12),
-                    Expanded(child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(step.title, style: GoogleFonts.outfit(
-                          fontSize: 15, fontWeight: FontWeight.w700,
-                          color: active ? Colors.white : nc.text1)),
-                        if (active) ...[
-                          const SizedBox(height: 8),
-                          Text(step.description, style: GoogleFonts.inter(
-                            fontSize: 13.5,
-                            color: Colors.white.withOpacity(0.88),
-                            height: 1.55)),
-                        ] else ...[
-                          const SizedBox(height: 3),
-                          Text(step.description,
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                              fontSize: 12.5, color: nc.text2, height: 1.4)),
-                        ],
-                      ],
-                    )),
-                    const SizedBox(width: 8),
-                    Icon(
-                      active ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                      size: 16,
-                      color: active ? Colors.white.withOpacity(0.7) : nc.text2),
-                  ]),
-                ),
-              ),
-            ),
-          );
-        }),
-      ]),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SliverPersistentHeaderDelegate — hauteur fixe
+// SMALL WIDGETS
 // ─────────────────────────────────────────────────────────────────────────────
-class _VideoHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final double height;
-  final Widget child;
-  const _VideoHeaderDelegate({required this.height, required this.child});
-
-  @override double get minExtent => height;
-  @override double get maxExtent => height;
-
-  @override
-  Widget build(BuildContext ctx, double shrinkOffset, bool overlapsContent) => child;
-
-  @override
-  bool shouldRebuild(_VideoHeaderDelegate old) =>
-      old.height != height || old.child != child;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Small widgets
-// ─────────────────────────────────────────────────────────────────────────────
-class _DarkBadge extends StatelessWidget {
+class _Chip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color? color;
-  const _DarkBadge({required this.icon, required this.label, this.color});
+  final ColorScheme cs;
+  const _Chip(this.icon, this.label, this.cs);
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: color ?? Colors.black.withOpacity(0.50),
-      borderRadius: BorderRadius.circular(10)),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 12, color: Colors.white),
-      const SizedBox(width: 5),
-      Text(label, style: GoogleFonts.inter(
-        fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
-    ]));
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+            color: cs.outline.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(8)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 12, color: cs.primary),
+          const SizedBox(width: 5),
+          Text(label,
+              style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface)),
+        ]),
+      );
 }
 
-class _WhyPhaseCard extends StatelessWidget {
-  final AppL10n l10n;
+class _MacroCard extends StatelessWidget {
+  final String label, value, unit;
+  final Color color;
+  final ColorScheme cs;
+  const _MacroCard(this.label, this.value, this.unit, this.color, this.cs);
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+          child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+            color: color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12)),
+        child: Column(children: [
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(value,
+                style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: color)),
+            if (unit.isNotEmpty)
+              Text(' $unit',
+                  style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: color.withOpacity(0.7))),
+          ]),
+          const SizedBox(height: 2),
+          Text(label,
+              style: GoogleFonts.inter(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  color: color.withOpacity(0.7))),
+        ]),
+      ));
+}
+
+class _PhaseTip extends StatelessWidget {
   final String phase;
-  const _WhyPhaseCard({required this.l10n, this.phase = 'all'});
+  const _PhaseTip({required this.phase});
 
   String get _tip => switch (phase) {
-    'menstrual'  => 'Pendant tes règles, privilégie le fer et le magnésium pour compenser les pertes et réduire la fatigue.',
-    'follicular' => 'En phase folliculaire, les protéines et fibres soutiennent la montée d\'énergie et la reconstruction.',
-    'ovulation'  => 'Autour de l\'ovulation, les antioxydants et le zinc favorisent l\'équilibre hormonal.',
-    'luteal'     => 'En phase lutéale, les glucides complexes et le calcium aident à stabiliser l\'humeur.',
-    _            => 'Cette recette est conçue pour soutenir ton bien-être avec des ingrédients riches en nutriments essentiels.',
-  };
+        'menstrual' =>
+          'Pendant tes règles, privilégie le fer et le magnésium pour compenser les pertes et réduire la fatigue.',
+        'follicular' =>
+          'En phase folliculaire, les protéines et fibres soutiennent la montée d\'énergie et la reconstruction.',
+        'ovulation' =>
+          'Autour de l\'ovulation, les antioxydants et le zinc favorisent l\'équilibre hormonal.',
+        'luteal' =>
+          'En phase lutéale, les glucides complexes et le calcium aident à stabiliser l\'humeur.',
+        _ =>
+          'Cette recette est conçue pour soutenir ton bien-être avec des ingrédients riches en nutriments essentiels.',
+      };
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final pi = PhaseInfo.from(phase);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: pi.color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: pi.color.withOpacity(0.2))),
+          color: pi.color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: pi.color.withOpacity(0.12))),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(LucideIcons.lightbulb, size: 18, color: pi.color),
+        Icon(LucideIcons.lightbulb, size: 15, color: pi.color),
         const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(width: 6, height: 6,
-              decoration: BoxDecoration(color: pi.color, shape: BoxShape.circle)),
-            const SizedBox(width: 6),
-            Text(pi.label, style: GoogleFonts.inter(
-              fontSize: 12.5, fontWeight: FontWeight.w700, color: pi.color)),
-          ]),
-          const SizedBox(height: 4),
-          Text(_tip, style: GoogleFonts.inter(
-            fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8), height: 1.5)),
-        ])),
+        Expanded(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+              Text(pi.label,
+                  style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: pi.color)),
+              const SizedBox(height: 3),
+              Text(_tip,
+                  style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      color: cs.onSurface.withOpacity(0.6),
+                      height: 1.5)),
+            ])),
       ]),
     );
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  final IconData icon;
-  final String eyebrow, title;
-  const _SectionLabel({required this.icon, required this.eyebrow, required this.title});
+// ─────────────────────────────────────────────────────────────────────────────
+// STEPS LIST (tap to expand)
+// ─────────────────────────────────────────────────────────────────────────────
+class _StepsList extends StatefulWidget {
+  final List<VideoStep> steps;
+  const _StepsList({required this.steps});
 
   @override
-  Widget build(BuildContext context) {
-    final nc = NutritionColors.of(context);
-    return Row(children: [
-      Container(
-        width: 34, height: 34,
-        decoration: BoxDecoration(color: nc.mintBg, borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, size: 15, color: _kGreen(context))),
-      const SizedBox(width: 10),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(eyebrow, style: GoogleFonts.inter(
-          fontSize: 9, fontWeight: FontWeight.w700, color: _kMint, letterSpacing: 2.2)),
-        Text(title, style: GoogleFonts.outfit(
-          fontSize: 18, fontWeight: FontWeight.w800, color: nc.text1, letterSpacing: -0.3)),
-      ]),
-    ]);
-  }
+  State<_StepsList> createState() => _StepsListState();
 }
 
-class _MetaChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _MetaChip({required this.icon, required this.label});
+class _StepsListState extends State<_StepsList> {
+  int _active = 0;
 
   @override
   Widget build(BuildContext context) {
-    final nc = NutritionColors.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-      decoration: BoxDecoration(
-        color: nc.surface,
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: nc.border)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12, color: _kGreen(context)),
-        const SizedBox(width: 5),
-        Text(label, style: GoogleFonts.inter(
-          fontSize: 12, fontWeight: FontWeight.w600, color: nc.text1)),
-      ]),
-    );
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+        children: widget.steps.asMap().entries.map((e) {
+      final i = e.key;
+      final step = e.value;
+      final active = _active == i;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _active = active ? -1 : i);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+                color: active
+                    ? cs.primary
+                    : cs.outline.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(14)),
+            child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                          color: active
+                              ? Colors.white.withOpacity(0.18)
+                              : cs.outline.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Center(
+                          child: Text('${step.number}',
+                              style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: active
+                                      ? Colors.white
+                                      : cs.onSurface.withOpacity(0.4))))),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                        Text(step.title,
+                            style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: active
+                                    ? Colors.white
+                                    : cs.onSurface)),
+                        if (active) ...[
+                          const SizedBox(height: 6),
+                          Text(step.description,
+                              style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color:
+                                      Colors.white.withOpacity(0.8),
+                                  height: 1.5)),
+                        ] else ...[
+                          const SizedBox(height: 2),
+                          Text(step.description,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: cs.onSurface
+                                      .withOpacity(0.35))),
+                        ],
+                      ])),
+                  const SizedBox(width: 8),
+                  Icon(
+                      active
+                          ? LucideIcons.chevronUp
+                          : LucideIcons.chevronDown,
+                      size: 14,
+                      color: active
+                          ? Colors.white.withOpacity(0.6)
+                          : cs.onSurface.withOpacity(0.25)),
+                ]),
+          ),
+        ),
+      );
+    }).toList());
   }
 }

@@ -1,32 +1,22 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/screens/nutrition/models/models.dart';
-import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:fiteva/screens/nutrition/recette_detail_screen.dart';
-import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-// ── Palette (theme-aware helpers) ─────────────────────────────────────────────
-Color _green(BuildContext c)   => Theme.of(c).colorScheme.primary;
-Color _mint(BuildContext c)    => Theme.of(c).colorScheme.secondary;
-Color _surface(BuildContext c) => Theme.of(c).colorScheme.surface;
-Color _border(BuildContext c)  => Theme.of(c).colorScheme.outline;
-Color _text1(BuildContext c)   => Theme.of(c).colorScheme.onSurface;
-Color _text2(BuildContext c)   => Theme.of(c).colorScheme.onSurface.withValues(alpha: 0.5);
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  MODELS
 // ─────────────────────────────────────────────────────────────────────────────
 class _Goal {
-  final String id, label, sublabel;
+  final String id, label;
   final IconData icon;
-  final Color primary, light, text;
+  final Color color;
   const _Goal({
-    required this.id, required this.label, required this.sublabel,
-    required this.icon,
-    required this.primary, required this.light, required this.text,
+    required this.id, required this.label,
+    required this.icon, required this.color,
   });
 }
 
@@ -45,51 +35,11 @@ class _RecoMeal {
 //  DATA
 // ─────────────────────────────────────────────────────────────────────────────
 const _goals = [
-  _Goal(
-    id: 'loss',
-    label: 'Perte de poids',
-    sublabel: 'Déficit calorique',
-    icon: LucideIcons.trendingDown,
-    primary: Color(0xFF5BAE8A),
-    light:   Color(0xFFEEF8F3),
-    text:    Color(0xFF2A6E52),
-  ),
-  _Goal(
-    id: 'maintain',
-    label: 'Maintien',
-    sublabel: 'Équilibre calorique',
-    icon: LucideIcons.minus,
-    primary: Color(0xFF6B8FD4),
-    light:   Color(0xFFF0F3FC),
-    text:    Color(0xFF2E4A8A),
-  ),
-  _Goal(
-    id: 'muscle',
-    label: 'Prise de muscle',
-    sublabel: 'Surplus protéiné',
-    icon: LucideIcons.dumbbell,
-    primary: Color(0xFFF4A940),
-    light:   Color(0xFFFFF6E9),
-    text:    Color(0xFF8A5800),
-  ),
-  _Goal(
-    id: 'pregnancy',
-    label: 'Grossesse',
-    sublabel: 'Nutriments essentiels',
-    icon: LucideIcons.heart,
-    primary: Color(0xFFD94F6B),
-    light:   Color(0xFFFDF0F2),
-    text:    Color(0xFF8B2A3A),
-  ),
-  _Goal(
-    id: 'postpartum',
-    label: 'Post-partum',
-    sublabel: 'Récupération & énergie',
-    icon: LucideIcons.sparkles,
-    primary: Color(0xFF9B6FD4),
-    light:   Color(0xFFF4EEFF),
-    text:    Color(0xFF5A2A8A),
-  ),
+  _Goal(id: 'loss',      label: 'Perte',     icon: LucideIcons.trendingDown, color: Color(0xFF5BAE8A)),
+  _Goal(id: 'maintain',  label: 'Maintien',  icon: LucideIcons.minus,        color: Color(0xFF6B8FD4)),
+  _Goal(id: 'muscle',    label: 'Muscle',    icon: LucideIcons.dumbbell,     color: Color(0xFFF4A940)),
+  _Goal(id: 'pregnancy', label: 'Grossesse', icon: LucideIcons.heart,        color: Color(0xFFD94F6B)),
+  _Goal(id: 'postpartum',label: 'Post-partum',icon: LucideIcons.sparkles,   color: Color(0xFF9B6FD4)),
 ];
 
 const _meals = {
@@ -98,58 +48,58 @@ const _meals = {
       name: 'Bowl de quinoa & légumes rôtis',
       description: 'Riche en fibres, faible en calories — satiété durable.',
       imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
-      tag: 'Fibres · Végétarien',
+      tag: 'Fibres',
       kcal: 320, protein: 14, carbs: 42, fat: 9,
     ),
     _RecoMeal(
       name: 'Poulet grillé & brocoli vapeur',
       description: 'Protéines maigres + légumes croquants pour rester rassasiée.',
       imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80',
-      tag: 'Protéiné · Léger',
+      tag: 'Protéiné',
       kcal: 280, protein: 38, carbs: 14, fat: 7,
     ),
     _RecoMeal(
       name: 'Soupe miso & tofu soyeux',
       description: 'Faible en calories, probiotiques naturels.',
       imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&q=80',
-      tag: 'Détox · Chaud',
+      tag: 'Détox',
       kcal: 190, protein: 12, carbs: 18, fat: 5,
     ),
     _RecoMeal(
       name: 'Salade niçoise légère',
       description: 'Thon, œuf dur, haricots verts — équilibre parfait.',
       imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
-      tag: 'Complet · Frais',
+      tag: 'Complet',
       kcal: 350, protein: 28, carbs: 20, fat: 14,
     ),
   ],
   'maintain': [
     _RecoMeal(
       name: 'Poke bowl saumon avocat',
-      description: 'Oméga-3, glucides complexes et bons lipides — le trio gagnant.',
+      description: 'Oméga-3, glucides complexes et bons lipides.',
       imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80',
-      tag: 'Équilibré · Gourmet',
+      tag: 'Équilibré',
       kcal: 480, protein: 28, carbs: 52, fat: 16,
     ),
     _RecoMeal(
       name: 'Pasta complète pesto basilic',
       description: 'Énergie durable, satiété et plaisir gustatif.',
       imageUrl: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&q=80',
-      tag: 'Glucides complexes',
+      tag: 'Glucides',
       kcal: 520, protein: 18, carbs: 68, fat: 18,
     ),
     _RecoMeal(
       name: 'Omelette champignons & fromage',
       description: 'Protéines complètes, lipides sains, rapide à préparer.',
       imageUrl: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=600&q=80',
-      tag: 'Brunch · Rapide',
+      tag: 'Rapide',
       kcal: 410, protein: 26, carbs: 8, fat: 22,
     ),
     _RecoMeal(
       name: 'Riz thaï au lait de coco',
       description: 'Saveurs d\'Asie, macros équilibrées.',
       imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
-      tag: 'Savoureux · Complet',
+      tag: 'Savoureux',
       kcal: 460, protein: 16, carbs: 60, fat: 14,
     ),
   ],
@@ -158,58 +108,58 @@ const _meals = {
       name: 'Steak de bœuf & patate douce',
       description: 'Protéines complètes + glucides à index glycémique bas.',
       imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&q=80',
-      tag: 'Haute protéine',
+      tag: 'Haute prot.',
       kcal: 620, protein: 52, carbs: 46, fat: 18,
     ),
     _RecoMeal(
       name: 'Blanc de dinde & riz basmati',
-      description: 'Le classique du bâtisseur de muscle — simple et efficace.',
+      description: 'Le classique — simple et efficace.',
       imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80',
-      tag: 'Muscle · Léger',
+      tag: 'Classique',
       kcal: 550, protein: 56, carbs: 58, fat: 8,
     ),
     _RecoMeal(
       name: 'Greek bowl protéiné',
-      description: 'Yaourt grec, pois chiches, concombre — récupération optimale.',
+      description: 'Yaourt grec, pois chiches, concombre — récupération.',
       imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
-      tag: 'Récupération',
+      tag: 'Récup.',
       kcal: 490, protein: 42, carbs: 38, fat: 14,
     ),
     _RecoMeal(
       name: 'Saumon & lentilles beluga',
       description: 'Oméga-3 anti-inflammatoires + protéines végétales.',
       imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&q=80',
-      tag: 'Oméga-3 · Force',
+      tag: 'Oméga-3',
       kcal: 570, protein: 48, carbs: 32, fat: 20,
     ),
   ],
   'pregnancy': [
     _RecoMeal(
       name: 'Épinards & lentilles corail au curry',
-      description: 'Fer, acide folique et protéines végétales pour bébé.',
+      description: 'Fer, acide folique et protéines végétales.',
       imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&q=80',
-      tag: 'Fer · Acide folique',
+      tag: 'Fer',
       kcal: 380, protein: 18, carbs: 48, fat: 10,
     ),
     _RecoMeal(
       name: 'Sardines grillées & quinoa',
       description: 'Oméga-3 DHA essentiels au développement cérébral.',
       imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80',
-      tag: 'DHA · Cerveau bébé',
+      tag: 'DHA',
       kcal: 420, protein: 32, carbs: 36, fat: 14,
     ),
     _RecoMeal(
       name: 'Smoothie bowl avocat & banane',
-      description: 'Potassium, magnésium, vitamine B6 — anti-nausées.',
+      description: 'Potassium, magnésium, vitamine B6.',
       imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
-      tag: 'Anti-nausées · Doux',
+      tag: 'Anti-nausées',
       kcal: 340, protein: 8, carbs: 52, fat: 14,
     ),
     _RecoMeal(
       name: 'Soupe de potimarron & amandes',
-      description: 'Zinc, calcium et bêta-carotène pour la croissance.',
+      description: 'Zinc, calcium et bêta-carotène.',
       imageUrl: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&q=80',
-      tag: 'Calcium · Zinc',
+      tag: 'Calcium',
       kcal: 290, protein: 10, carbs: 38, fat: 12,
     ),
   ],
@@ -218,21 +168,21 @@ const _meals = {
       name: 'Porridge avoine & graines de lin',
       description: 'Galactogènes naturels, oméga-3 et énergie durable.',
       imageUrl: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=600&q=80',
-      tag: 'Allaitement · Énergie',
+      tag: 'Allaitement',
       kcal: 360, protein: 12, carbs: 54, fat: 12,
     ),
     _RecoMeal(
-      name: 'Bouillon de poulet maison & vermicelles',
-      description: 'Collagène, minéraux et chaleur réconfortante pour la récupération.',
+      name: 'Bouillon de poulet maison',
+      description: 'Collagène, minéraux et chaleur réconfortante.',
       imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&q=80',
-      tag: 'Récupération · Chaud',
+      tag: 'Récupération',
       kcal: 310, protein: 24, carbs: 28, fat: 8,
     ),
     _RecoMeal(
-      name: 'Salade de betterave, noix & chèvre',
-      description: 'Fer, magnésium et bons lipides pour reconstituer les réserves.',
+      name: 'Salade betterave, noix & chèvre',
+      description: 'Fer, magnésium et bons lipides.',
       imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
-      tag: 'Fer · Anti-fatigue',
+      tag: 'Anti-fatigue',
       kcal: 390, protein: 14, carbs: 30, fat: 22,
     ),
     _RecoMeal(
@@ -249,7 +199,6 @@ const _meals = {
 //  PUBLIC WIDGET
 // ─────────────────────────────────────────────────────────────────────────────
 class RecommendedMealsSection extends ConsumerStatefulWidget {
-  /// Objectif initial (id parmi loss / maintain / muscle / pregnancy / postpartum)
   final String initialGoalId;
   const RecommendedMealsSection({super.key, this.initialGoalId = 'loss'});
 
@@ -274,219 +223,152 @@ class _RecommendedMealsSectionState extends ConsumerState<RecommendedMealsSectio
 
   @override
   Widget build(BuildContext context) {
-    final l10n = ref.watch(l10nProvider);
+    final cs   = Theme.of(context).colorScheme;
     final goal = _goal;
-    final nc   = NutritionColors.of(context);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // ── Section header ────────────────────────────────────────────
+
+      // ── Header ─────────────────────────────────────────────────────
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
         child: Row(children: [
-          Container(
-            width: 3, height: 36,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [goal.primary, goal.primary.withOpacity(0.4)]),
-              borderRadius: BorderRadius.circular(3))),
-          const SizedBox(width: 14),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l10n.mealsRecommandations, style: GoogleFonts.inter(
-              color: goal.primary, fontSize: 9,
-              fontWeight: FontWeight.w700, letterSpacing: 3)),
-            Text(l10n.mealsRepasJour, style: GoogleFonts.outfit(
-              color: nc.text1, fontSize: 22,
-              fontWeight: FontWeight.w800, letterSpacing: -0.4)),
-          ]),
+          Icon(LucideIcons.sparkles, size: 15, color: goal.color),
+          const SizedBox(width: 8),
+          Text('Recommandations', style: GoogleFonts.outfit(
+            fontSize: 16, fontWeight: FontWeight.w800, color: cs.onSurface)),
         ]),
       ),
 
-      const SizedBox(height: 14),
+      const SizedBox(height: 12),
 
-      // ── Goal selector ─────────────────────────────────────────────
+      // ── Goal pills ─────────────────────────────────────────────────
       SizedBox(
-        height: 72,
+        height: 34,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
           itemCount: _goals.length,
           itemBuilder: (_, i) {
-            final g        = _goals[i];
-            final selected = g.id == _selectedId;
+            final g = _goals[i];
+            final sel = g.id == _selectedId;
             return GestureDetector(
-              onTap: () => setState(() => _selectedId = g.id),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedId = g.id);
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: selected ? g.primary : nc.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  color: sel ? g.color : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: selected
-                        ? g.primary
-                        : nc.border,
-                    width: selected ? 0 : 1),
-                  boxShadow: selected
-                      ? [BoxShadow(
-                          color: g.primary.withOpacity(0.25),
-                          blurRadius: 12, offset: const Offset(0, 4))]
-                      : [],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(g.icon,
-                        size: 13,
-                        color: selected
-                            ? Colors.white
-                            : g.primary),
-                      const SizedBox(width: 6),
-                      Text(g.label, style: GoogleFonts.inter(
-                        fontSize: 12, fontWeight: FontWeight.w700,
-                        color: selected ? Colors.white : nc.text1)),
-                    ]),
-                    const SizedBox(height: 3),
-                    Text(g.sublabel, style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: selected
-                          ? Colors.white.withOpacity(0.75)
-                          : nc.text2)),
-                  ],
-                ),
-              ),
-            );
+                    color: sel ? g.color : cs.outline.withOpacity(0.12))),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(g.icon, size: 12,
+                    color: sel ? Colors.white : cs.onSurface.withOpacity(0.35)),
+                  const SizedBox(width: 5),
+                  Text(g.label, style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                    color: sel ? Colors.white : cs.onSurface.withOpacity(0.45))),
+                ])));
           },
         ),
       ),
 
-      const SizedBox(height: 16),
+      const SizedBox(height: 14),
 
-      // ── Featured card (first meal) ─────────────────────────────────
+      // ── Featured card ──────────────────────────────────────────────
       if (_currentMeals.isNotEmpty)
-        LayoutBuilder(builder: (ctx, constraints) {
-          final featH = (constraints.maxWidth * 0.52).clamp(180.0, 230.0);
-          final meal  = _currentMeals.first;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: GestureDetector(
-              onTap: () => Navigator.of(ctx, rootNavigator: true).push(MaterialPageRoute(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              final meal = _currentMeals.first;
+              Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
                 builder: (_) => RecipeDetailScreen(
-                  recipe: RecipeItem(meal.imageUrl, meal.name, meal.name,
-                    goal.primary)))),
-              child: _FeaturedCard(meal: meal, goal: goal, height: featH),
-            ),
-          );
-        }),
+                  recipe: RecipeItem(meal.imageUrl, meal.name, meal.name, goal.color))));
+            },
+            child: _FeaturedCard(meal: _currentMeals.first, goal: goal),
+          ),
+        ),
 
-      const SizedBox(height: 12),
+      const SizedBox(height: 10),
 
-      // ── Horizontal compact cards (rest) ───────────────────────────
+      // ── Horizontal cards ───────────────────────────────────────────
       if (_currentMeals.length > 1)
-        LayoutBuilder(builder: (_, constraints) {
-          final cardW = constraints.maxWidth * 0.42;
-          final imgH  = cardW * 0.55;
-          final listH = imgH + 96; // extra for flexible content area
-          return SizedBox(
-            height: listH,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemCount: _currentMeals.length - 1,
-              itemBuilder: (ctx, i) {
-                final meal = _currentMeals[i + 1];
-                return GestureDetector(
-                  onTap: () => Navigator.of(ctx, rootNavigator: true).push(MaterialPageRoute(
+        SizedBox(
+          height: 170,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemCount: _currentMeals.length - 1,
+            itemBuilder: (ctx, i) {
+              final meal = _currentMeals[i + 1];
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.of(ctx, rootNavigator: true).push(MaterialPageRoute(
                     builder: (_) => RecipeDetailScreen(
-                      recipe: RecipeItem(meal.imageUrl, meal.name, meal.name,
-                        goal.primary)))),
-                  child: _CompactCard(
-                    meal: meal, goal: goal, width: cardW, imageHeight: imgH),
-                );
-              },
-            ),
-          );
-        }),
+                      recipe: RecipeItem(meal.imageUrl, meal.name, meal.name, goal.color))));
+                },
+                child: _CompactCard(meal: meal, goal: goal),
+              );
+            },
+          ),
+        ),
     ]);
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FEATURED CARD  (grande carte principale)
+//  FEATURED CARD
 // ─────────────────────────────────────────────────────────────────────────────
 class _FeaturedCard extends StatelessWidget {
   final _RecoMeal meal;
   final _Goal goal;
-  final double height;
-  const _FeaturedCard({
-      required this.meal, required this.goal, required this.height});
+  const _FeaturedCard({required this.meal, required this.goal});
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      height: height,
+      height: 180,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(
-          color: Colors.black.withOpacity(0.10),
-          blurRadius: 20, offset: const Offset(0, 6))],
-      ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outline.withOpacity(0.08))),
       clipBehavior: Clip.antiAlias,
       child: Stack(fit: StackFit.expand, children: [
-        // Image
         Image.network(meal.imageUrl, fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => Container(
-            color: goal.light,
+            color: goal.color.withOpacity(0.08),
             child: Center(child: Icon(
-                LucideIcons.salad, color: goal.primary, size: 40)))),
+              LucideIcons.salad, color: goal.color, size: 32)))),
 
-        // Gradient overlay
+        // Gradient
         DecoratedBox(decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
             colors: [
               Colors.transparent,
-              Colors.black.withOpacity(0.20),
-              Colors.black.withOpacity(0.72),
+              Colors.black.withOpacity(0.65),
             ],
-            stops: const [0.1, 0.5, 1.0]))),
+            stops: const [0.3, 1.0]))),
 
-        // Goal badge top-left
-        Positioned(top: 14, left: 14,
+        // Kcal top-right
+        Positioned(top: 12, right: 12,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: goal.primary,
-              borderRadius: BorderRadius.circular(20)),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(goal.icon, size: 11, color: Colors.white),
-              const SizedBox(width: 5),
-              Text(goal.label, style: GoogleFonts.inter(
-                fontSize: 10, fontWeight: FontWeight.w700,
-                color: Colors.white)),
-            ]),
-          )),
-
-        // Kcal badge top-right
-        Positioned(top: 14, right: 14,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                  color: Colors.white.withOpacity(0.30))),
+              color: Colors.black.withOpacity(0.35),
+              borderRadius: BorderRadius.circular(8)),
             child: Text('${meal.kcal} kcal', style: GoogleFonts.inter(
-              fontSize: 10, fontWeight: FontWeight.w700,
-              color: Colors.white)),
-          )),
+              fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)))),
 
         // Bottom info
         Positioned(bottom: 14, left: 14, right: 14,
@@ -495,142 +377,108 @@ class _FeaturedCard extends StatelessWidget {
             children: [
               // Tag
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: goal.primary.withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(10)),
+                  color: goal.color.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(6)),
                 child: Text(meal.tag, style: GoogleFonts.inter(
                   fontSize: 9, fontWeight: FontWeight.w700,
-                  color: Colors.white, letterSpacing: 0.3))),
+                  color: Colors.white))),
               const SizedBox(height: 6),
 
-              // Name
               Text(meal.name, style: GoogleFonts.outfit(
-                fontSize: 18, fontWeight: FontWeight.w800,
-                color: Colors.white, letterSpacing: -0.3)),
+                fontSize: 17, fontWeight: FontWeight.w800,
+                color: Colors.white, height: 1.2)),
               const SizedBox(height: 4),
 
-              // Description
               Text(meal.description,
                 maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  color: Colors.white.withOpacity(0.75))),
+                style: GoogleFonts.inter(fontSize: 11,
+                  color: Colors.white.withOpacity(0.7))),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
-              // Macro row
+              // Macros
               Row(children: [
-                _MacroPill('P · ${meal.protein}g',
-                    Colors.white, Colors.white.withOpacity(0.18)),
-                const SizedBox(width: 6),
-                _MacroPill('G · ${meal.carbs}g',
-                    Colors.white, Colors.white.withOpacity(0.18)),
-                const SizedBox(width: 6),
-                _MacroPill('L · ${meal.fat}g',
-                    Colors.white, Colors.white.withOpacity(0.18)),
+                _MacroDot('P ${meal.protein}g', Colors.white),
+                const SizedBox(width: 10),
+                _MacroDot('G ${meal.carbs}g', Colors.white.withOpacity(0.7)),
+                const SizedBox(width: 10),
+                _MacroDot('L ${meal.fat}g', Colors.white.withOpacity(0.7)),
               ]),
-            ],
-          )),
+            ])),
       ]),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  COMPACT CARD  (petites cartes horizontales)
+//  COMPACT CARD
 // ─────────────────────────────────────────────────────────────────────────────
 class _CompactCard extends StatelessWidget {
   final _RecoMeal meal;
   final _Goal goal;
-  final double width;
-  final double imageHeight;
-
-  const _CompactCard({
-    required this.meal,
-    required this.goal,
-    required this.width,
-    required this.imageHeight,
-  });
+  const _CompactCard({required this.meal, required this.goal});
 
   @override
   Widget build(BuildContext context) {
-    final nc = NutritionColors.of(context);
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      width: width,
+      width: 150,
       decoration: BoxDecoration(
-        color: nc.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: nc.border),
-        boxShadow: nc.isDark ? [] : [BoxShadow(
-          color: Colors.black.withOpacity(0.04),
-          blurRadius: 10, offset: const Offset(0, 3))],
-      ),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.outline.withOpacity(0.08))),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           // Image
           SizedBox(
-            height: imageHeight,
+            height: 85,
             child: Stack(fit: StackFit.expand, children: [
               Image.network(meal.imageUrl, fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  color: goal.light,
-                  child: Center(child: Icon(
-                      LucideIcons.salad, color: goal.primary, size: 22)))),
+                  color: goal.color.withOpacity(0.06))),
               Positioned(bottom: 6, right: 6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.55),
-                    borderRadius: BorderRadius.circular(6)),
-                  child: Text('${meal.kcal} kcal',
-                    style: GoogleFonts.inter(
-                      fontSize: 9, fontWeight: FontWeight.w700,
-                      color: Colors.white)))),
+                    color: Colors.black.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(5)),
+                  child: Text('${meal.kcal} kcal', style: GoogleFonts.inter(
+                    fontSize: 9, fontWeight: FontWeight.w700,
+                    color: Colors.white)))),
             ]),
           ),
 
-          // Content — flexible height, no fixed constraint
+          // Content
           Padding(
-            padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
+            padding: const EdgeInsets.fromLTRB(9, 8, 9, 9),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Tag pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: goal.light,
-                      borderRadius: BorderRadius.circular(6)),
-                    child: Text(meal.tag.split(' · ').first,
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontSize: 9, fontWeight: FontWeight.w700,
-                        color: goal.text))),
-
-                  // Name
-                  Text(meal.name,
-                    maxLines: 2, overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 11, fontWeight: FontWeight.w700,
-                      color: nc.text1, height: 1.25)),
-
-                  const SizedBox(height: 6),
-                  // Macro dots
-                  Row(children: [
-                    _DotMacro('P ${meal.protein}g', goal.primary),
-                    const SizedBox(width: 5),
-                    _DotMacro('G ${meal.carbs}g',
-                        goal.primary.withOpacity(0.55)),
-                  ]),
-                ],
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: goal.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(5)),
+                  child: Text(meal.tag, style: GoogleFonts.inter(
+                    fontSize: 9, fontWeight: FontWeight.w700,
+                    color: goal.color))),
+                const SizedBox(height: 4),
+                Text(meal.name,
+                  maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5, fontWeight: FontWeight.w700,
+                    color: cs.onSurface, height: 1.2)),
+                const SizedBox(height: 4),
+                Row(children: [
+                  _MacroDot('P ${meal.protein}g', goal.color),
+                  const SizedBox(width: 6),
+                  _MacroDot('G ${meal.carbs}g', cs.onSurface.withOpacity(0.3)),
+                ]),
+              ],
             ),
           ),
         ],
@@ -639,39 +487,21 @@ class _CompactCard extends StatelessWidget {
   }
 }
 
-// ── Small helpers ─────────────────────────────────────────────────────────────
-class _MacroPill extends StatelessWidget {
-  final String label;
-  final Color color, bg;
-  const _MacroPill(this.label, this.color, this.bg);
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-    child: Text(label, style: GoogleFonts.inter(
-      fontSize: 10, fontWeight: FontWeight.w600, color: color)),
-  );
-}
-
-class _DotMacro extends StatelessWidget {
+// ── Helper ───────────────────────────────────────────────────────────────────
+class _MacroDot extends StatelessWidget {
   final String label;
   final Color color;
-  const _DotMacro(this.label, this.color);
+  const _MacroDot(this.label, this.color);
 
   @override
-  Widget build(BuildContext context) {
-    final nc = NutritionColors.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(width: 5, height: 5,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
-        Text(label, style: GoogleFonts.inter(
-          fontSize: 9, fontWeight: FontWeight.w600,
-          color: nc.text2)),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(width: 4, height: 4,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 3),
+      Text(label, style: GoogleFonts.inter(
+        fontSize: 9, fontWeight: FontWeight.w600, color: color)),
+    ],
+  );
 }

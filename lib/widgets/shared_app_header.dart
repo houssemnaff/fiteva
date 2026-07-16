@@ -135,7 +135,7 @@ class _HeaderContent extends ConsumerWidget {
     final mascot = ref.watch(mascotProvider);
     return Container(
       color: resolvedBg,
-      padding: EdgeInsets.fromLTRB(20, topPadding + 14, 20, 8),
+      padding: EdgeInsets.fromLTRB(20, topPadding + 10, 20, 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -202,19 +202,11 @@ class _HeaderContent extends ConsumerWidget {
           // ── Mascotte → profil ─────────────────────────────────────────────
           GestureDetector(
             onTap: () => context.push('/profile'),
-            child: Container(
-              width: 42, height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: accentColor.withOpacity(0.12),
-                border: Border.all(color: accentColor.withOpacity(0.4), width: 1.5),
-              ),
-              child: ClipOval(
-                child: MascotWidget(
-                  type: mascot.type,
-                  mood: mascot.mood,
-                  size: 42,
-                ),
+            child: ClipOval(
+              child: MascotWidget(
+                type: mascot.type,
+                mood: mascot.mood,
+                size: 38,
               ),
             ),
           ),
@@ -253,36 +245,18 @@ class _SharedSliverAppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final top    = MediaQuery.of(context).padding.top;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final resolvedBg = isDark ? const Color(0xFF141414) : bgColor;
-    // Hauteur exacte du contenu (padding haut/bas + rangée la plus haute —
-    // la mascotte à 42px) : évite l'espace blanc laissé par une hauteur
-    // fixe plus grande que ce que le header a réellement besoin d'occuper.
-    const contentHeight = 64.0;
-    return SliverAppBar(
-      pinned: true,
-      floating: false,
-      expandedHeight: top + contentHeight,
-      collapsedHeight: top + contentHeight,
-      backgroundColor:      resolvedBg,
-      surfaceTintColor:     Colors.transparent,
-      elevation:            0,
-      scrolledUnderElevation: 0,
-      automaticallyImplyLeading: false,
-      flexibleSpace: LayoutBuilder(builder: (_, constraints) {
-        final collapsed = constraints.maxHeight <= top + 56;
-        return _HeaderContent(
-          eyebrow:       collapsed ? '' : eyebrow,
-          title:         title,
-          accentColor:   accentColor,
-          bgColor:       resolvedBg,
-          actions:       actions,
-          avatarInitial: avatarInitial,
-          topPadding:    top,
-          onAvatarTap:   onAvatarTap,
-        );
-      }),
+    final top = MediaQuery.of(context).padding.top;
+    return SliverToBoxAdapter(
+      child: _HeaderContent(
+        eyebrow:       eyebrow,
+        title:         title,
+        accentColor:   accentColor,
+        bgColor:       bgColor,
+        actions:       actions,
+        avatarInitial: avatarInitial,
+        topPadding:    top,
+        onAvatarTap:   onAvatarTap,
+      ),
     );
   }
 }
