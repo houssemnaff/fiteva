@@ -116,15 +116,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     LucideIcons.heart,
   ];
 
-  static const _chipColors = [
-    WorkoutColors.zone,
-    WorkoutColors.salle,
-    WorkoutColors.maison,
-    WorkoutColors.dance,
-    WorkoutColors.recuperation,
-    WorkoutColors.grossesse,
-  ];
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -247,6 +238,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
   @override
   Widget build(BuildContext context) {
     final cs        = Theme.of(context).colorScheme;
+    final wc        = WorkoutColors.of(context);
     final dark      = Theme.of(context).brightness == Brightness.dark;
     final l10n      = ref.watch(l10nProvider);
     final workouts  = ref.watch(workoutsProvider);
@@ -319,6 +311,15 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
       l10n.workoutChipGrossesse,
     ];
 
+    final chipColors = [
+      wc.zone,
+      wc.salle,
+      wc.maison,
+      wc.dance,
+      wc.recuperation,
+      wc.grossesse,
+    ];
+
     final bg = cs.surface;
 
     return Scaffold(
@@ -333,7 +334,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             SharedAppHeader(
               eyebrow: 'Workout',
               title: l10n.workoutMyTrainings,
-              accentColor: WorkoutColors.salle,
+              accentColor: wc.salle,
               actions: [
                 Stack(clipBehavior: Clip.none, children: [
                   GestureDetector(
@@ -342,11 +343,11 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                     child: Container(
                       width: 40, height: 40,
                       decoration: BoxDecoration(
-                        color: WorkoutColors.grossesse.withValues(alpha: 0.10),
+                        color: wc.grossesse.withValues(alpha: 0.10),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(Icons.favorite_rounded,
-                          size: 18, color: WorkoutColors.grossesse),
+                          size: 18, color: wc.grossesse),
                     ),
                   ),
                   if (favorites.isNotEmpty)
@@ -355,7 +356,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                       child: Container(
                         width: 16, height: 16,
                         decoration: BoxDecoration(
-                          color: WorkoutColors.salle,
+                          color: wc.salle,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -375,11 +376,11 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   child: Container(
                     width: 40, height: 40,
                     decoration: BoxDecoration(
-                      color: WorkoutColors.salle.withValues(alpha: 0.10),
+                      color: wc.salle.withValues(alpha: 0.10),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(LucideIcons.calendarDays,
-                        size: 17, color: WorkoutColors.salle),
+                        size: 17, color: wc.salle),
                   ),
                 ),
               ],
@@ -414,7 +415,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             _CategoryChips(
               chips: chips,
               icons: _chipIcons,
-              colors: _chipColors,
+              colors: chipColors,
               selected: _selectedChip,
               onTap: _onChipTap,
             ),
@@ -441,7 +442,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
                     title: l10n.workoutSalleTitle,
-                    color: WorkoutColors.salle,
+                    color: wc.salle,
                     icon: LucideIcons.dumbbell,
                     programs: filteredSalle,
                     category: 'SALLE',
@@ -460,7 +461,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
                     title: l10n.workoutMaisonTitle,
-                    color: WorkoutColors.maison,
+                    color: wc.maison,
                     icon: LucideIcons.house,
                     programs: filteredMaison,
                     category: 'MAISON',
@@ -479,7 +480,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showVideosSheet(
                     title: l10n.workoutDanceTitle,
-                    color: WorkoutColors.dance,
+                    color: wc.dance,
                     icon: LucideIcons.music,
                     videos: filteredDanceVideos,
                   ),
@@ -497,7 +498,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showVideosSheet(
                     title: l10n.workoutRecupTitle,
-                    color: WorkoutColors.recuperation,
+                    color: wc.recuperation,
                     icon: LucideIcons.wind,
                     videos: filteredRecuperationVideos,
                   ),
@@ -515,7 +516,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
                     title: l10n.workoutGrossesseTitle,
-                    color: WorkoutColors.grossesse,
+                    color: wc.grossesse,
                     icon: LucideIcons.heart,
                     programs: filteredGrossesse,
                     category: 'GROSSESSE',
@@ -691,7 +692,7 @@ class _RecommendedSheet extends StatelessWidget {
 // Carte photo pleine largeur (au lieu d'une rangée avec petite vignette) —
 // plus proche visuellement des cartes de programme déjà utilisées ailleurs
 // dans l'app, pour donner plus de présence aux recommandations.
-class _RecommendedCard extends StatelessWidget {
+class _RecommendedCard extends ConsumerWidget {
   final HomeProgramModel program;
   final bool isFav;
   final VoidCallback onToggleFav;
@@ -702,8 +703,14 @@ class _RecommendedCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final completed = ref
+            .watch(programStatusProvider(program))
+            .asData
+            ?.value
+            .isCompleted ??
+        false;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -726,6 +733,25 @@ class _RecommendedCard extends StatelessWidget {
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
             stops: [0.0, 0.5, 1.0],
             colors: [Color(0x00000000), Color(0x33000000), Color(0xCC000000)]))),
+
+          if (completed)
+            Positioned(top: 10, left: 10, child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(LucideIcons.checkCircle, color: Colors.white, size: 10),
+                const SizedBox(width: 4),
+                Text('Terminé',
+                    style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6)),
+              ]),
+            )),
 
           Positioned(top: 10, right: 10, child: GestureDetector(
             onTap: onToggleFav,
@@ -1021,6 +1047,13 @@ class _ProgramsFilterSheetState
   Widget build(BuildContext context) {
     final cs   = Theme.of(context).colorScheme;
     final l10n = ref.watch(l10nProvider);
+    // Programmes déjà terminés — même source que le badge des sections.
+    final completedIds = {
+      for (final p in widget.programs)
+        if (ref.watch(programStatusProvider(p)).asData?.value.isCompleted ??
+            false)
+          p.id
+    };
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -1057,6 +1090,7 @@ class _ProgramsFilterSheetState
                         phases: p.phases,
                         color: widget.color,
                         isFav: widget.favorites.contains('prog:${p.id}'),
+                        completed: completedIds.contains(p.id),
                         onToggleFav: () => widget.onToggleFav('prog:${p.id}'),
                         onTap: () => widget.onSelectProgram(p),
                       );
@@ -1119,6 +1153,8 @@ class _WorkoutsFilterSheetState
   Widget build(BuildContext context) {
     final cs   = Theme.of(context).colorScheme;
     final l10n = ref.watch(l10nProvider);
+    final completedWorkouts =
+        ref.watch(completedWorkoutsProvider).asData?.value ?? const <String>{};
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -1155,6 +1191,7 @@ class _WorkoutsFilterSheetState
                         phases: w.phases,
                         color: widget.color,
                         isFav: widget.favorites.contains(w.id),
+                        completed: completedWorkouts.contains(w.id),
                         onToggleFav: () => widget.onToggleFav(w.id),
                         onTap: () => widget.onSelectWorkout(w),
                       );
@@ -1216,6 +1253,8 @@ class _VideosFilterSheetState extends ConsumerState<_VideosFilterSheet> {
   Widget build(BuildContext context) {
     final cs   = Theme.of(context).colorScheme;
     final l10n = ref.watch(l10nProvider);
+    final completedVideos =
+        ref.watch(completedVideosProvider).asData?.value ?? const <String>{};
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -1252,6 +1291,7 @@ class _VideosFilterSheetState extends ConsumerState<_VideosFilterSheet> {
                         phases: v.phases,
                         color: widget.color,
                         isFav: widget.favorites.contains('video:${v.id}'),
+                        completed: completedVideos.contains(v.id),
                         onToggleFav: () => widget.onToggleFav('video:${v.id}'),
                         onTap: () => widget.onSelectVideo(v),
                       );
@@ -1397,6 +1437,7 @@ class _ProgramTile extends StatelessWidget {
   final String phases;
   final Color color;
   final bool isFav;
+  final bool completed;
   final VoidCallback onToggleFav;
   final VoidCallback onTap;
 
@@ -1407,6 +1448,7 @@ class _ProgramTile extends StatelessWidget {
     required this.phases,
     required this.color,
     required this.isFav,
+    this.completed = false,
     required this.onToggleFav,
     required this.onTap,
   });
@@ -1462,29 +1504,58 @@ class _ProgramTile extends StatelessWidget {
                       style: GoogleFonts.inter(
                           fontSize: 11,
                           color: cs.onSurface.withValues(alpha: 0.50))),
-                  if (phases.isNotEmpty) ...[
+                  if (completed || phases.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Text(phases,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: color)),
-                    ),
+                    Row(children: [
+                      if (completed)
+                        Container(
+                          margin: EdgeInsets.only(
+                              right: phases.isNotEmpty ? 6 : 0),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20)),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(LucideIcons.checkCircle,
+                                size: 9, color: Colors.green),
+                            const SizedBox(width: 3),
+                            Text('Terminé',
+                                style: GoogleFonts.inter(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.green)),
+                          ]),
+                        ),
+                      if (phases.isNotEmpty)
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(20)),
+                            child: Text(phases,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: color)),
+                          ),
+                        ),
+                    ]),
                   ],
                 ]),
           )),
           Padding(
             padding: const EdgeInsets.only(right: 14),
-            child: Icon(LucideIcons.chevronRight,
-                size: 16, color: color.withValues(alpha: 0.70)),
+            child: Icon(
+                completed ? LucideIcons.checkCircle : LucideIcons.chevronRight,
+                size: 16,
+                color: completed
+                    ? Colors.green
+                    : color.withValues(alpha: 0.70)),
           ),
         ]),
       ),

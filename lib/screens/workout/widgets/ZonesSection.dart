@@ -6,22 +6,22 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ── Zone definitions ──────────────────────────────────────────────────────────
+// Les couleurs ne sont plus stockées ici : chaque tuile reprend un des 6 tons
+// de WorkoutColors (voir _ZoneTile) pour suivre la palette choisie par le user.
 class _ZoneDef {
   final String label;
   final String sublabel;
   final IconData icon;
-  final Color base;
-  final Color dark;
-  const _ZoneDef(this.label, this.sublabel, this.icon, this.base, this.dark);
+  const _ZoneDef(this.label, this.sublabel, this.icon);
 }
 
 const _zones = [
-  _ZoneDef('Abdos',          'Gainage · Crunch',     LucideIcons.zap,        Color(0xFF1C4D30), Color(0xFF0E2B1A)),
-  _ZoneDef('Haut du corps',  'Épaules · Dos · Bras', LucideIcons.dumbbell,   Color(0xFF4F7D66), Color(0xFF2A4A3A)),
-  _ZoneDef('Bas du corps',   'Fessiers · Cuisses',   LucideIcons.activity,   Color(0xFF2E6F5E), Color(0xFF173D33)),
-  _ZoneDef('Full body',      'Cardio · Force',       LucideIcons.target,     Color(0xFF2F3E46), Color(0xFF161E22)),
-  _ZoneDef('Yoga',           'Souplesse · Équilibre',LucideIcons.sparkles,   Color(0xFF7ABB98), Color(0xFF3D6E54)),
-  _ZoneDef('Méditation',     'Respiration · Calme',  LucideIcons.sun,        Color(0xFFA7B8AD), Color(0xFF5A7268)),
+  _ZoneDef('Abdos',          'Gainage · Crunch',     LucideIcons.zap),
+  _ZoneDef('Haut du corps',  'Épaules · Dos · Bras', LucideIcons.dumbbell),
+  _ZoneDef('Bas du corps',   'Fessiers · Cuisses',   LucideIcons.activity),
+  _ZoneDef('Full body',      'Cardio · Force',       LucideIcons.target),
+  _ZoneDef('Yoga',           'Souplesse · Équilibre',LucideIcons.sparkles),
+  _ZoneDef('Méditation',     'Respiration · Calme',  LucideIcons.sun),
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -102,7 +102,7 @@ class ZonesSection extends StatelessWidget {
 class _ZonesHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    const color = WorkoutColors.zone;
+    final color = WorkoutColors.of(context).zone;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -207,6 +207,19 @@ class _ZoneTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final num = (index + 1).toString().padLeft(2, '0');
 
+    // Un ton de la palette par tuile (mêmes couleurs qu'avant avec Forêt) ;
+    // le dégradé descend vers une version assombrie du même ton.
+    final wc = WorkoutColors.of(context);
+    final base = [
+      wc.salle,        // Abdos
+      wc.maison,       // Haut du corps
+      wc.dance,        // Bas du corps
+      wc.zone,         // Full body
+      wc.recuperation, // Yoga
+      wc.grossesse,    // Méditation
+    ][index];
+    final dark = Color.lerp(base, Colors.black, 0.45)!;
+
     return GestureDetector(
       onTap: () => _navigate(context),
       child: Container(
@@ -215,11 +228,11 @@ class _ZoneTile extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [zone.base, zone.dark],
+            colors: [base, dark],
           ),
           boxShadow: [
             BoxShadow(
-                color: zone.base.withValues(alpha: 0.40),
+                color: base.withValues(alpha: 0.40),
                 blurRadius: 16,
                 offset: const Offset(0, 6))
           ],

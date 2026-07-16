@@ -155,6 +155,36 @@ CREATE TABLE programs (
 -- base fraîche, la colonne est déjà dans le CREATE TABLE ci-dessus).
 ALTER TABLE programs ADD COLUMN IF NOT EXISTS goals TEXT[] NOT NULL DEFAULT '{}';
 
+-- ── 4.1b  MIGRATION — Coachs ─────────────────────────────────────────────────
+-- Un coach crée 1..n programmes : table de référence + FK sur programs.
+-- Alimente la carte "Coach" de programme_detail_screen.dart ; si un programme
+-- n'a pas de coach_id, l'app retombe sur le coach générique (l10n).
+CREATE TABLE IF NOT EXISTS coaches (
+  id             TEXT          PRIMARY KEY,               -- ex : 'coach_sarah'
+  name           TEXT          NOT NULL,
+  title          TEXT          NOT NULL DEFAULT '',       -- ex : 'Coach certifiée · Fitness féminin'
+  avatar_url     TEXT          NOT NULL DEFAULT '',
+  rating         NUMERIC(2,1)  NOT NULL DEFAULT 5.0 CHECK (rating BETWEEN 0 AND 5),
+  reviews_count  INTEGER       NOT NULL DEFAULT 0   CHECK (reviews_count >= 0),
+  bio            TEXT          NOT NULL DEFAULT '',
+  instagram      TEXT          NOT NULL DEFAULT '',
+  created_at     TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+
+-- Lecture publique (données de référence, comme programs/workouts/videos)
+ALTER TABLE coaches ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "ref_coaches" ON coaches FOR SELECT USING (true);
+
+ALTER TABLE programs
+  ADD COLUMN IF NOT EXISTS coach_id TEXT REFERENCES coaches(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_programs_coach ON programs(coach_id);
+
+-- Seed d'exemple + rattachement (adapter les ids) :
+-- INSERT INTO coaches (id, name, title, avatar_url, rating, reviews_count) VALUES
+--   ('coach_sarah', 'Sarah M.', 'Coach certifiée · Fitness féminin', '', 4.9, 127)
+-- ON CONFLICT (id) DO NOTHING;
+-- UPDATE programs SET coach_id = 'coach_sarah' WHERE id = 'prog_home_glow';
+
 -- ── 4.2  Workouts ─────────────────────────────────────────────────────────────
 CREATE TABLE workouts (
   id          TEXT        PRIMARY KEY,

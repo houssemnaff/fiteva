@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'coach_model.dart';
 import 'program_week_model.dart';
 import 'workout_model.dart';
 
@@ -25,6 +26,10 @@ class HomeProgramModel {
   final String category; // 'home' | 'salle' | 'dance' | 'recuperation' | 'grossesse'
   final bool isPremium;
 
+  /// Coach créateur du programme — null si non renseigné en base
+  /// (l'UI retombe alors sur le coach générique l10n).
+  final CoachModel? coach;
+
   HomeProgramModel({
     required this.id,
     required this.name,
@@ -42,5 +47,6 @@ class HomeProgramModel {
     this.equipment = const [],
     this.category = 'home',
     this.isPremium = false,
+    this.coach,
   });
 }
