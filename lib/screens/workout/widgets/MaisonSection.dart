@@ -38,7 +38,7 @@ class MaisonSection extends StatelessWidget {
               ? Center(
                   child: SectionEmptyState(
                     icon: LucideIcons.house,
-                    color: WorkoutColors.maison,
+                    color: WorkoutColors.of(context).maison,
                     message: 'Aucun programme disponible pour le moment',
                   ),
                 )
@@ -78,7 +78,7 @@ class _MaisonHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(l10nProvider);
-    const color = WorkoutColors.maison;
+    final color = WorkoutColors.of(context).maison;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -186,7 +186,14 @@ class _MaisonProgramCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(l10nProvider);
-    const color = WorkoutColors.maison;
+    final color = WorkoutColors.of(context).maison;
+    final completed = ref
+            .watch(programStatusProvider(program))
+            .asData
+            ?.value
+            .isCompleted ??
+        false;
+    final btnColor = completed ? Colors.green : color;
 
     return GestureDetector(
       onTap: onTap,
@@ -303,11 +310,11 @@ class _MaisonProgramCard extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 11),
                       decoration: BoxDecoration(
-                        color: color,
+                        color: btnColor,
                         borderRadius: BorderRadius.circular(50),
                         boxShadow: [
                           BoxShadow(
-                              color: color.withValues(alpha: 0.45),
+                              color: btnColor.withValues(alpha: 0.45),
                               blurRadius: 14,
                               offset: const Offset(0, 5))
                         ],
@@ -315,11 +322,13 @@ class _MaisonProgramCard extends ConsumerWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(LucideIcons.play,
+                          Icon(completed ? LucideIcons.check : LucideIcons.play,
                               color: Colors.white, size: 13),
                           const SizedBox(width: 8),
                           Text(
-                            l10n.progcardCommencer,
+                            completed
+                                ? l10n.workoutDone
+                                : l10n.progcardCommencer,
                             style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 13,
@@ -389,11 +398,11 @@ class _ProgramStatusBadge extends ConsumerWidget {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: WorkoutColors.maison.withValues(alpha: 0.75),
+              color: WorkoutColors.of(context).maison.withValues(alpha: 0.75),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                    color: WorkoutColors.maison.withValues(alpha: 0.45),
+                    color: WorkoutColors.of(context).maison.withValues(alpha: 0.45),
                     blurRadius: 8,
                     offset: const Offset(0, 3))
               ],

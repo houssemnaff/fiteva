@@ -1,4 +1,5 @@
 import 'package:fiteva/screens/cycle/pregnancy/pregnancy_colors.dart';
+import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -193,7 +194,7 @@ static ThemeMode themeMode = ThemeMode.system;
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
-      extensions: const [PgColors.light],
+      extensions: const [PgColors.light, WorkoutColors.forest],
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: surfaceColor,
         selectedItemColor: primaryColor,
@@ -322,7 +323,7 @@ static ThemeMode themeMode = ThemeMode.system;
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
-      extensions: const [PgColors.dark],
+      extensions: const [PgColors.dark, WorkoutColors.forest],
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Color(0xFF141414),
         selectedItemColor: accentColor,
@@ -426,7 +427,16 @@ static ThemeMode themeMode = ThemeMode.system;
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
-      extensions: [isLight ? PgColors.light : PgColors.dark],
+      extensions: [
+        isLight ? PgColors.light : PgColors.dark,
+        // Le dark scheme des palettes inverse primary/accent — on remet les
+        // couleurs canoniques de la palette pour garder les mêmes tons workout
+        // en light et en dark.
+        WorkoutColors.fromPalette(
+          isLight ? cs.primary : cs.secondary,
+          isLight ? cs.secondary : cs.primary,
+        ),
+      ],
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: cardBg,
         selectedItemColor: cs.primary,

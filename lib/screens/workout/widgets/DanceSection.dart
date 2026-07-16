@@ -3,6 +3,7 @@ import 'package:fiteva/screens/workout/exercise_player_screen.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/theme/cycle_theme.dart';
 import 'package:fiteva/screens/workout/widgets/section_empty_state.dart';
+import 'package:fiteva/screens/workout/widgets/watched_badge.dart';
 import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,7 +39,7 @@ class DanceSection extends StatelessWidget {
               ? Center(
                   child: SectionEmptyState(
                     icon: LucideIcons.music,
-                    color: WorkoutColors.dance,
+                    color: WorkoutColors.of(context).dance,
                     message: 'Aucune vidéo disponible pour le moment',
                   ),
                 )
@@ -70,7 +71,7 @@ class _DanceHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(l10nProvider);
-    const color = WorkoutColors.dance;
+    final color = WorkoutColors.of(context).dance;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -176,7 +177,14 @@ class _DanceVideoCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(l10nProvider);
-    const color = WorkoutColors.dance;
+    final color = WorkoutColors.of(context).dance;
+    final completed = ref
+            .watch(completedVideosProvider)
+            .asData
+            ?.value
+            .contains(video.id) ??
+        false;
+    final btnColor = completed ? Colors.green : color;
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -251,7 +259,8 @@ class _DanceVideoCard extends ConsumerWidget {
                 right: 14,
                 child: Row(
                   children: [
-                    Expanded(child: _WatchedBadge(videoId: video.id)),
+                    Expanded(
+                        child: WatchedBadge(videoId: video.id, color: color)),
                     GestureDetector(
                       onTap: onToggleFav,
                       child: AnimatedContainer(
@@ -317,11 +326,11 @@ class _DanceVideoCard extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 11),
                       decoration: BoxDecoration(
-                        color: color,
+                        color: btnColor,
                         borderRadius: BorderRadius.circular(50),
                         boxShadow: [
                           BoxShadow(
-                              color: color.withValues(alpha: 0.45),
+                              color: btnColor.withValues(alpha: 0.45),
                               blurRadius: 14,
                               offset: const Offset(0, 5))
                         ],
@@ -329,11 +338,13 @@ class _DanceVideoCard extends ConsumerWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(LucideIcons.play,
+                          Icon(completed ? LucideIcons.check : LucideIcons.play,
                               color: Colors.white, size: 13),
                           const SizedBox(width: 8),
                           Text(
-                            l10n.progcardCommencer,
+                            completed
+                                ? l10n.workoutDone
+                                : l10n.progcardCommencer,
                             style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 13,
@@ -349,47 +360,6 @@ class _DanceVideoCard extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ── Badge "vu" (si vidéo déjà complétée à 80 %) ─────────────────────────────────
-class _WatchedBadge extends ConsumerWidget {
-  final String videoId;
-  const _WatchedBadge({required this.videoId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final done = ref.watch(completedVideosProvider).asData?.value.contains(videoId) ?? false;
-    if (!done) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.green.withValues(alpha: 0.80),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.green.withValues(alpha: 0.45),
-              blurRadius: 8,
-              offset: const Offset(0, 3))
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(LucideIcons.checkCircle, color: Colors.white, size: 10),
-          const SizedBox(width: 4),
-          Text(
-            'Vu',
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 8,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-            ),
-          ),
-        ],
       ),
     );
   }

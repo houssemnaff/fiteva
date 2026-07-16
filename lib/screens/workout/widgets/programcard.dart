@@ -92,7 +92,7 @@ Widget buildProgramCard({
                         blurRadius: 6)]),
                     child: Icon(
                       isFav ? LucideIcons.heart : LucideIcons.heart,
-                      color: isFav ? WorkoutColors.grossesse : _kText2,
+                      color: isFav ? WorkoutColors.of(context).grossesse : _kText2,
                       size: 14)))),
             ]),
           ),

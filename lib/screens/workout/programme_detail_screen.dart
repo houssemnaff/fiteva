@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/coach_model.dart';
 import '../../models/home_program_model.dart';
 import '../../models/program_week_model.dart';
 import '../../models/workout_model.dart';
@@ -613,7 +614,7 @@ class _AboutSliver extends StatelessWidget {
               // ── Coach ──────────────────────────────────────────────────
               _SectionTitle(label: l10n.progCoach),
               const SizedBox(height: 12),
-              _CoachCard(dark: dark, cs: cs, l10n: l10n),
+              _CoachCard(dark: dark, cs: cs, l10n: l10n, coach: program.coach),
               const SizedBox(height: 28),
 
               // ── Objectifs ──────────────────────────────────────────────
@@ -722,13 +723,30 @@ class _CoachCard extends StatelessWidget {
   final bool dark;
   final ColorScheme cs;
   final AppL10n l10n;
-  const _CoachCard({required this.dark, required this.cs, required this.l10n});
+
+  /// Coach réel du programme (programs.coach_id → coaches) — null si non
+  /// renseigné en base : la carte retombe sur le coach générique l10n.
+  final CoachModel? coach;
+
+  const _CoachCard(
+      {required this.dark, required this.cs, required this.l10n, this.coach});
 
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
     const gold = Color(0xFFD4A853);
     final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
+
+    final name = (coach?.name.isNotEmpty ?? false)
+        ? coach!.name
+        : l10n.progCoachName;
+    final title = (coach?.title.isNotEmpty ?? false)
+        ? coach!.title
+        : l10n.progCoachTitle;
+    final rating = coach != null
+        ? '${coach!.rating} · ${coach!.reviewsCount} avis'
+        : l10n.progCoachRating;
+    final avatarUrl = coach?.avatarUrl ?? '';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -754,23 +772,27 @@ class _CoachCard extends StatelessWidget {
           child: CircleAvatar(
             radius: 26,
             backgroundColor: accent,
-            child: const Text('S',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800)),
+            backgroundImage:
+                avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+            child: avatarUrl.isEmpty
+                ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'C',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800))
+                : null,
           ),
         ),
         const SizedBox(width: 14),
         Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(l10n.progCoachName,
+          Text(name,
               style: GoogleFonts.outfit(
                   color: cs.onSurface,
                   fontSize: 15,
                   fontWeight: FontWeight.w800)),
           const SizedBox(height: 3),
-          Text(l10n.progCoachTitle,
+          Text(title,
               style: GoogleFonts.inter(
                   color: cs.onSurface.withValues(alpha: 0.50),
                   fontSize: 12,
@@ -780,7 +802,7 @@ class _CoachCard extends StatelessWidget {
             Icon(LucideIcons.star,
                 size: 11, color: gold),
             const SizedBox(width: 4),
-            Text(l10n.progCoachRating,
+            Text(rating,
                 style: GoogleFonts.inter(
                     color: cs.onSurface.withValues(alpha: 0.50),
                     fontSize: 11,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/coach_model.dart';
 import '../models/home_program_model.dart';
 import '../models/program_week_model.dart';
 import '../models/workout_model.dart';
@@ -10,7 +11,7 @@ class ProgramService {
   /// L'embed `workouts` direct (via program_id) sert de fallback pour les
   /// programmes dont les workouts ne sont pas encore rattachés à une semaine.
   static const _select =
-      '*, program_weeks(*, workouts(*, videos(*))), workouts(*, videos(*))';
+      '*, coaches(*), program_weeks(*, workouts(*, videos(*))), workouts(*, videos(*))';
 
   /// Charge tous les programmes depuis Supabase avec leurs semaines,
   /// workouts et vidéos.
@@ -86,6 +87,10 @@ class ProgramService {
       weeks:            weeks,
       workouts:         workouts,
       isPremium:        r['is_premium']     as bool? ?? false,
+      // Embed to-one via programs.coach_id → null si pas de coach rattaché
+      coach:            r['coaches'] == null
+          ? null
+          : CoachModel.fromRow(r['coaches'] as Map<String, dynamic>),
     );
   }
 

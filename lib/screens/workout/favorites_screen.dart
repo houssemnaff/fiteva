@@ -107,7 +107,7 @@ class FavoritesScreen extends ConsumerWidget {
               _GroupHeader(
                   label: 'Programmes Salle',
                   icon: LucideIcons.dumbbell,
-                  color: WorkoutColors.salle,
+                  color: WorkoutColors.of(context).salle,
                   isDark: isDark),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -116,7 +116,7 @@ class FavoritesScreen extends ConsumerWidget {
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (_, i) => _ProgramFavCard(
                     program: favSalle[i],
-                    sectionColor: WorkoutColors.salle,
+                    sectionColor: WorkoutColors.of(context).salle,
                     sectionLabel: 'SALLE',
                     isFav: true,
                     onToggleFav: () => ref.read(favoritesProvider.notifier).toggleFavorite('prog:${favSalle[i].id}'),
@@ -139,7 +139,7 @@ class FavoritesScreen extends ConsumerWidget {
               _GroupHeader(
                   label: 'Programmes Maison',
                   icon: LucideIcons.house,
-                  color: WorkoutColors.maison,
+                  color: WorkoutColors.of(context).maison,
                   isDark: isDark),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -148,7 +148,7 @@ class FavoritesScreen extends ConsumerWidget {
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (_, i) => _ProgramFavCard(
                     program: favMaison[i],
-                    sectionColor: WorkoutColors.maison,
+                    sectionColor: WorkoutColors.of(context).maison,
                     sectionLabel: 'MAISON',
                     isFav: true,
                     onToggleFav: () => ref.read(favoritesProvider.notifier).toggleFavorite('prog:${favMaison[i].id}'),
@@ -171,7 +171,7 @@ class FavoritesScreen extends ConsumerWidget {
               _GroupHeader(
                   label: 'Séances',
                   icon: LucideIcons.play,
-                  color: WorkoutColors.zone,
+                  color: WorkoutColors.of(context).zone,
                   isDark: isDark),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -206,7 +206,7 @@ class FavoritesScreen extends ConsumerWidget {
               _GroupHeader(
                   label: 'Vidéos Dance & Récupération',
                   icon: LucideIcons.playCircle,
-                  color: WorkoutColors.dance,
+                  color: WorkoutColors.of(context).dance,
                   isDark: isDark),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
@@ -459,20 +459,20 @@ class _WorkoutFavCard extends StatelessWidget {
     required this.isDark,
   });
 
-  Color get _catColor {
+  Color _catColor(BuildContext context) {
     switch (workout.category.toUpperCase()) {
-      case 'DANCE': return WorkoutColors.dance;
-      case 'RECUPERATION': return WorkoutColors.recuperation;
-      case 'GROSSESSE': return WorkoutColors.grossesse;
-      case 'SALLE': return WorkoutColors.salle;
-      case 'MAISON': return WorkoutColors.maison;
-      default: return WorkoutColors.zone;
+      case 'DANCE': return WorkoutColors.of(context).dance;
+      case 'RECUPERATION': return WorkoutColors.of(context).recuperation;
+      case 'GROSSESSE': return WorkoutColors.of(context).grossesse;
+      case 'SALLE': return WorkoutColors.of(context).salle;
+      case 'MAISON': return WorkoutColors.of(context).maison;
+      default: return WorkoutColors.of(context).zone;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = _catColor;
+    final color = _catColor(context);
     final cardBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
 
     return GestureDetector(
@@ -615,18 +615,18 @@ class _VideoFavCard extends StatelessWidget {
     required this.isDark,
   });
 
-  Color get _catColor {
+  Color _catColor(BuildContext context) {
     switch (video.category) {
-      case 'recuperation': return WorkoutColors.recuperation;
+      case 'recuperation': return WorkoutColors.of(context).recuperation;
       case 'dance':
       case 'cardio':
-      default: return WorkoutColors.dance;
+      default: return WorkoutColors.of(context).dance;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = _catColor;
+    final color = _catColor(context);
     final cardBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
 
     return GestureDetector(

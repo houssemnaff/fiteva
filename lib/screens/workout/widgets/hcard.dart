@@ -75,7 +75,7 @@ Widget buildHCard({
                       color: Colors.white.withValues(alpha: 0.20))),
                   child: Icon(
                     isFav ? LucideIcons.heart : LucideIcons.heart,
-                    color: isFav ? WorkoutColors.grossesse : Colors.white,
+                    color: isFav ? WorkoutColors.of(context).grossesse : Colors.white,
                     size: 14))),
             ])),
 

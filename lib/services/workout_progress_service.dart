@@ -263,9 +263,22 @@ class WorkoutProgressService {
 
   static Future<ProgramProgressStatus> getProgramStatus(HomeProgramModel program) async {
     final percentage       = await getProgramCompletionPercentage(program);
-    final isCompleted      = await isProgramCompleted(program.id);
     final completedWorkouts = await getCompletedWorkouts();
     final done = program.workouts.where((w) => completedWorkouts.contains(w.id)).length;
+    // Même règle que le CTA du détail programme (_allDone) : tous les
+    // workouts terminés (ou toutes les vidéos → percentage 1.0) = programme
+    // terminé. La table user_program_completions n'est pas toujours remplie
+    // (markProgramComplete n'est pas appelé dans tous les flux), donc on ne
+    // s'y fie qu'en complément.
+    final allWorkoutsDone =
+        program.workouts.isNotEmpty && done == program.workouts.length;
+    bool isCompleted = allWorkoutsDone || percentage >= 1.0;
+    if (isCompleted) {
+      // Auto-répare la table pour les autres lecteurs (completedProgramsProvider…)
+      markProgramComplete(program.id);
+    } else {
+      isCompleted = await isProgramCompleted(program.id);
+    }
     return ProgramProgressStatus(
       programId:             program.id,
       completionPercentage:  percentage,
