@@ -1,18 +1,13 @@
 // ignore_for_file: deprecated_member_use
 import 'package:fiteva/core/nutrition/favorites_provider.dart';
-import 'package:fiteva/screens/nutrition/nutrition_colors.dart';
 import 'package:fiteva/screens/nutrition/recipe_author_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:fiteva/core/nutrition/models.dart' as core;
-import 'package:fiteva/core/nutrition/nutrition_provider.dart';
 import 'models/models.dart';
 import 'recette_detail_screen.dart';
-import 'widgets/recommended_meals_section.dart';
 import 'recipe_video_screen.dart';
 import '../../services/recipe_service.dart';
 
@@ -118,6 +113,14 @@ final videoRecipesProvider = FutureProvider<List<VideoRecipe>>((ref) async {
 // ── Filter tabs ───────────────────────────────────────────────────────────────
 const _tabs = ['Tout', 'Petit-dej', 'Protéiné', 'Végé', 'Vegan', 'Sans Gluten'];
 
+const _phases = [
+  ('all',        'Tout',         Color(0xFF78909C)),
+  ('menstrual',  'Règles',       Color(0xFFE03050)),
+  ('follicular', 'Folliculaire', Color(0xFF4CAF50)),
+  ('ovulation',  'Ovulation',    Color(0xFFF59E0B)),
+  ('luteal',     'Lutéale',      Color(0xFF8B5CF6)),
+];
+
 // ══════════════════════════════════════════════════════════════════════════════
 // SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
@@ -129,6 +132,7 @@ class RecipesListScreen extends ConsumerStatefulWidget {
 
 class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
   int _tab = 0;
+  int _phase = 0;
   String _q = '';
   final _ctrl = TextEditingController();
 
@@ -141,6 +145,10 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
       final cat = _tabs[_tab];
       list = list.where((r) => r.tags.any((t) =>
         t.toLowerCase() == cat.toLowerCase())).toList();
+    }
+    if (_phase > 0) {
+      final phaseId = _phases[_phase].$1;
+      list = list.where((r) => r.phase == phaseId).toList();
     }
     if (_q.isNotEmpty) {
       final q = _q.toLowerCase();
@@ -177,96 +185,83 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
           physics: const BouncingScrollPhysics(),
           slivers: [
             // ── Header ────────────────────────────────────────────────
-            SliverToBoxAdapter(child: Padding(
-              padding: EdgeInsets.fromLTRB(20, top + 14, 20, 0),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SliverToBoxAdapter(child: Container(
+              padding: EdgeInsets.fromLTRB(20, top + 14, 20, 14),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                boxShadow: [BoxShadow(
+                  color: cs.onSurface.withOpacity(0.04),
+                  blurRadius: 8, offset: const Offset(0, 2))]),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Row(children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
-                      width: 40, height: 40,
+                      width: 36, height: 36,
                       decoration: BoxDecoration(
-                        color: cs.primary.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(12)),
+                        color: cs.outline.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(10)),
                       child: Icon(LucideIcons.chevronLeft,
-                        color: cs.onSurface, size: 20))),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => HapticFeedback.selectionClick(),
-                    child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        color: favs.isNotEmpty
-                            ? const Color(0xFFE03050).withOpacity(0.08)
-                            : cs.surfaceContainerHighest.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(12)),
-                      child: Stack(clipBehavior: Clip.none, children: [
-                        Center(child: Icon(LucideIcons.heart, size: 18,
-                          color: favs.isNotEmpty
-                              ? const Color(0xFFE03050)
-                              : cs.onSurface.withOpacity(0.4))),
-                        if (favs.isNotEmpty) Positioned(
-                          top: 4, right: 4,
-                          child: Container(
-                            width: 16, height: 16,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFE03050), shape: BoxShape.circle),
-                            child: Center(child: Text('${favs.length}',
-                              style: GoogleFonts.inter(fontSize: 8,
-                                fontWeight: FontWeight.w800, color: Colors.white))))),
-                      ]))),
+                        color: cs.onSurface, size: 18))),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('Recettes', style: GoogleFonts.outfit(
+                    fontSize: 20, fontWeight: FontWeight.w800,
+                    color: cs.onSurface, letterSpacing: -0.3))),
+                  if (favs.isNotEmpty)
+                    GestureDetector(
+                      onTap: () => HapticFeedback.selectionClick(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(10)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(LucideIcons.heart, size: 13, color: cs.primary),
+                          const SizedBox(width: 5),
+                          Text('${favs.length}', style: GoogleFonts.inter(
+                            fontSize: 13, fontWeight: FontWeight.w800,
+                            color: cs.primary)),
+                        ]))),
                 ]),
-                const SizedBox(height: 20),
-                Text('RECETTES', style: GoogleFonts.inter(
-                  fontSize: 10, fontWeight: FontWeight.w700,
-                  color: cs.primary, letterSpacing: 2.5)),
-                const SizedBox(height: 2),
-                Text('Explorer', style: GoogleFonts.outfit(
-                  fontSize: 28, fontWeight: FontWeight.w800,
-                  color: cs.onSurface, letterSpacing: -0.5)),
+                const SizedBox(height: 12),
+                Container(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: cs.outline.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12)),
+                  child: Row(children: [
+                    Icon(LucideIcons.search, size: 15,
+                      color: cs.onSurface.withOpacity(0.3)),
+                    const SizedBox(width: 10),
+                    Expanded(child: TextField(
+                      controller: _ctrl,
+                      onChanged: (v) => setState(() => _q = v),
+                      style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
+                      decoration: InputDecoration(
+                        hintText: 'Rechercher…',
+                        hintStyle: GoogleFonts.inter(fontSize: 14,
+                          color: cs.onSurface.withOpacity(0.3)),
+                        border: InputBorder.none, isDense: true,
+                        contentPadding: EdgeInsets.zero))),
+                    if (_q.isNotEmpty) GestureDetector(
+                      onTap: () { _ctrl.clear(); setState(() => _q = ''); },
+                      child: Icon(LucideIcons.x, size: 15,
+                        color: cs.onSurface.withOpacity(0.3))),
+                  ])),
               ]),
             )),
 
-            // ── Search ────────────────────────────────────────────────
+            // ── Category tabs ─────────────────────────────────────────
             SliverToBoxAdapter(child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-              child: Container(
-                height: 46,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withOpacity(0.35),
-                  borderRadius: BorderRadius.circular(14)),
-                child: Row(children: [
-                  Icon(LucideIcons.search, size: 16,
-                    color: cs.onSurface.withOpacity(0.35)),
-                  const SizedBox(width: 10),
-                  Expanded(child: TextField(
-                    controller: _ctrl,
-                    onChanged: (v) => setState(() => _q = v),
-                    style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
-                    decoration: InputDecoration(
-                      hintText: 'Rechercher une recette…',
-                      hintStyle: GoogleFonts.inter(fontSize: 14,
-                        color: cs.onSurface.withOpacity(0.3)),
-                      border: InputBorder.none, isDense: true,
-                      contentPadding: EdgeInsets.zero))),
-                  if (_q.isNotEmpty) GestureDetector(
-                    onTap: () { _ctrl.clear(); setState(() => _q = ''); },
-                    child: Icon(LucideIcons.x, size: 16,
-                      color: cs.onSurface.withOpacity(0.35))),
-                ])),
-            )),
-
-            // ── Tabs ──────────────────────────────────────────────────
-            SliverToBoxAdapter(child: Padding(
-              padding: const EdgeInsets.only(top: 16),
+              padding: const EdgeInsets.only(top: 14),
               child: SizedBox(
-                height: 36,
+                height: 34,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   physics: const BouncingScrollPhysics(),
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
                   itemCount: _tabs.length,
                   itemBuilder: (_, i) {
                     final sel = _tab == i;
@@ -277,88 +272,91 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: sel ? cs.primary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: sel ? cs.primary : cs.outline.withOpacity(0.15))),
+                            color: sel ? cs.primary : cs.outline.withOpacity(0.12))),
                         child: Text(_tabs[i], style: GoogleFonts.inter(
-                          fontSize: 12.5,
+                          fontSize: 12,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                          color: sel ? Colors.white : cs.onSurface.withOpacity(0.5)))));
+                          color: sel ? Colors.white : cs.onSurface.withOpacity(0.45)))));
                   }),
               ),
             )),
 
-            // ── Recommended meals ────────────────────────────────────
-            if (_tab == 0 && _q.isEmpty)
-              SliverToBoxAdapter(child: Padding(
-                padding: const EdgeInsets.only(top: 24),
-                child: Builder(builder: (ctx) {
-                  final profile = ref.watch(userProfileProvider);
-                  final goalId = switch (profile.goal) {
-                    core.NutritionGoal.loss     => 'loss',
-                    core.NutritionGoal.maintain => 'maintain',
-                    core.NutritionGoal.gain     => 'muscle',
-                  };
-                  return RecommendedMealsSection(initialGoalId: goalId);
-                }))),
-
-            // ── Video section ─────────────────────────────────────────
-            if (videos.isNotEmpty && _tab == 0 && _q.isEmpty) ...[
-              SliverToBoxAdapter(child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 28, 20, 14),
-                child: Row(children: [
-                  Container(
-                    width: 28, height: 28,
-                    decoration: BoxDecoration(
-                      color: cs.primary.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8)),
-                    child: Icon(LucideIcons.play, size: 12, color: cs.primary)),
-                  const SizedBox(width: 10),
-                  Text('Vidéos', style: GoogleFonts.outfit(
-                    fontSize: 17, fontWeight: FontWeight.w800, color: cs.onSurface)),
-                  const Spacer(),
-                  Text('${videos.length} recette${videos.length > 1 ? 's' : ''}',
-                    style: GoogleFonts.inter(fontSize: 11,
-                      color: cs.onSurface.withOpacity(0.35))),
-                ]))),
-              SliverToBoxAdapter(child: SizedBox(
-                height: 200,
+            // ── Cycle phase pills ────────────────────────────────────
+            SliverToBoxAdapter(child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: SizedBox(
+                height: 30,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   physics: const BouncingScrollPhysics(),
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemCount: videos.length,
-                  itemBuilder: (_, i) => _VideoTile(
-                    recipe: videos[i],
-                    onTap: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => RecipeVideoPlayerScreen(recipe: videos[i])))),
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemCount: _phases.length,
+                  itemBuilder: (_, i) {
+                    final sel = _phase == i;
+                    final color = _phases[i].$3;
+                    return GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _phase = i);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: sel ? color.withOpacity(0.12) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: sel ? color : cs.outline.withOpacity(0.08))),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Container(width: 6, height: 6,
+                            decoration: BoxDecoration(
+                              color: color, shape: BoxShape.circle)),
+                          const SizedBox(width: 5),
+                          Text(_phases[i].$2, style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                            color: sel ? color : cs.onSurface.withOpacity(0.4))),
+                        ])));
+                  }),
+              ),
+            )),
+
+            // ── Videos strip (Tout tab, no search) ───────────────────
+            if (videos.isNotEmpty && _tab == 0 && _q.isEmpty && _phase == 0)
+              SliverToBoxAdapter(child: Padding(
+                padding: const EdgeInsets.only(top: 14),
+                child: SizedBox(
+                  height: 155,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    physics: const BouncingScrollPhysics(),
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemCount: videos.length,
+                    itemBuilder: (_, i) => _VideoTile(
+                      recipe: videos[i],
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => RecipeVideoPlayerScreen(recipe: videos[i])))),
+                  ),
                 ),
               )),
-            ],
 
-            // ── Recipe grid header ────────────────────────────────────
+            // ── Count ─────────────────────────────────────────────────
             SliverToBoxAdapter(child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 14),
-              child: Row(children: [
-                Container(
-                  width: 28, height: 28,
-                  decoration: BoxDecoration(
-                    color: cs.primary.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8)),
-                  child: Icon(LucideIcons.chefHat, size: 12, color: cs.primary)),
-                const SizedBox(width: 10),
-                Text('Toutes les recettes', style: GoogleFonts.outfit(
-                  fontSize: 17, fontWeight: FontWeight.w800, color: cs.onSurface)),
-                const Spacer(),
-                Text('${filtered.length} résultat${filtered.length != 1 ? 's' : ''}',
-                  style: GoogleFonts.inter(fontSize: 11,
-                    color: cs.onSurface.withOpacity(0.35))),
-              ]))),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+              child: Text(
+                '${filtered.length} recette${filtered.length != 1 ? 's' : ''}',
+                style: GoogleFonts.inter(
+                  fontSize: 12, fontWeight: FontWeight.w600,
+                  color: cs.onSurface.withOpacity(0.3))))),
 
             // ── Loading ───────────────────────────────────────────────
             if (recipesAsync.isLoading)
@@ -367,20 +365,11 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                 child: Center(child: CircularProgressIndicator(
                   strokeWidth: 2, color: cs.primary)))),
 
-            // ── Empty ─────────────────────────────────────────────────
+            // ── Empty ────────────────────────────────────────────────
             if (!recipesAsync.isLoading && filtered.isEmpty)
-              SliverToBoxAdapter(child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 60),
-                child: Center(child: Column(children: [
-                  Icon(LucideIcons.searchX, size: 32,
-                    color: cs.onSurface.withOpacity(0.12)),
-                  const SizedBox(height: 14),
-                  Text('Aucune recette trouvée', style: GoogleFonts.outfit(
-                    fontSize: 16, fontWeight: FontWeight.w700,
-                    color: cs.onSurface.withOpacity(0.4))),
-                ])))),
+              SliverToBoxAdapter(child: _buildEmpty(cs)),
 
-            // ── Recipe grid (2 columns) ───────────────────────────────
+            // ── Recipe grid ──────────────────────────────────────────
             if (!recipesAsync.isLoading && filtered.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
@@ -397,18 +386,29 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                     childCount: filtered.length),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.62,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12))),
+                    childAspectRatio: 0.68,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10))),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildEmpty(ColorScheme cs) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 60),
+    child: Center(child: Column(children: [
+      Icon(LucideIcons.searchX, size: 28,
+        color: cs.onSurface.withOpacity(0.12)),
+      const SizedBox(height: 12),
+      Text('Aucun résultat', style: GoogleFonts.outfit(
+        fontSize: 15, fontWeight: FontWeight.w700,
+        color: cs.onSurface.withOpacity(0.35))),
+    ])));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// VIDEO TILE (horizontal scroll)
+// VIDEO TILE (compact horizontal scroll card)
 // ══════════════════════════════════════════════════════════════════════════════
 class _VideoTile extends StatelessWidget {
   final VideoRecipe recipe;
@@ -418,101 +418,51 @@ class _VideoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final pi = PhaseInfo.from(recipe.phase);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 160,
+        width: 200,
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cs.outline.withOpacity(0.1)),
-          boxShadow: [BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8, offset: const Offset(0, 3))]),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cs.outline.withOpacity(0.08))),
         clipBehavior: Clip.antiAlias,
         child: Column(children: [
           Expanded(
-            flex: 3,
             child: Stack(fit: StackFit.expand, children: [
               Image.network(recipe.imageUrl, fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  color: cs.primary.withOpacity(0.06))),
+                  color: cs.primary.withOpacity(0.04))),
               Container(decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.5)]))),
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.35)]))),
               Center(child: Container(
-                width: 36, height: 36,
+                width: 32, height: 32,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.9), shape: BoxShape.circle),
-                child: Icon(LucideIcons.play, color: cs.primary, size: 14))),
-              Positioned(bottom: 8, right: 8,
+                child: Icon(LucideIcons.play, color: cs.primary, size: 12))),
+              Positioned(bottom: 6, left: 6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(6)),
+                    color: Colors.black.withOpacity(0.45),
+                    borderRadius: BorderRadius.circular(5)),
                   child: Text(recipe.duration, style: GoogleFonts.inter(
                     fontSize: 9, color: Colors.white, fontWeight: FontWeight.w600)))),
-              // Phase badge
-              Positioned(top: 8, left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: pi.color.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(8)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Container(width: 5, height: 5,
-                      decoration: const BoxDecoration(
-                        color: Colors.white, shape: BoxShape.circle)),
-                    const SizedBox(width: 4),
-                    Text(pi.label, style: GoogleFonts.inter(
-                      fontSize: 8, fontWeight: FontWeight.w700, color: Colors.white)),
-                  ]))),
             ])),
-          // Info
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(recipe.name, maxLines: 2, overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.w700,
-                      color: cs.onSurface, height: 1.3)),
-                  // Author
-                  if (recipe.authorName != null) ...[
-                    GestureDetector(
-                      onTap: recipe.authorId != null ? () {
-                        HapticFeedback.lightImpact();
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => RecipeAuthorScreen(
-                            userId: recipe.authorId!, username: recipe.authorName!)));
-                      } : null,
-                      child: Row(children: [
-                        Container(width: 14, height: 14,
-                          decoration: BoxDecoration(
-                            color: cs.primary.withOpacity(0.1), shape: BoxShape.circle),
-                          child: Center(child: Text(recipe.authorName![0].toUpperCase(),
-                            style: GoogleFonts.outfit(fontSize: 7,
-                              fontWeight: FontWeight.w800, color: cs.primary)))),
-                        const SizedBox(width: 4),
-                        Text(recipe.authorName!, style: GoogleFonts.inter(
-                          fontSize: 9.5, fontWeight: FontWeight.w600, color: cs.primary)),
-                      ])),
-                  ],
-                  Row(children: [
-                    Icon(LucideIcons.flame, size: 10, color: cs.primary),
-                    const SizedBox(width: 3),
-                    Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
-                      fontSize: 10.5, fontWeight: FontWeight.w600, color: cs.primary)),
-                  ]),
-                ])),
-          ),
-          Container(height: 3, color: pi.color),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(9, 7, 9, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(recipe.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700,
+                    color: cs.onSurface, height: 1.2)),
+                const SizedBox(height: 3),
+                Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
+                  fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary)),
+              ])),
         ]),
       ),
     );
@@ -541,121 +491,104 @@ class _RecipeTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cs.outline.withOpacity(0.1)),
-          boxShadow: [BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8, offset: const Offset(0, 3))]),
+          border: Border.all(color: cs.outline.withOpacity(0.08))),
         clipBehavior: Clip.antiAlias,
         child: Column(children: [
-          // Image
           Expanded(
-            flex: 3,
+            flex: 5,
             child: Stack(fit: StackFit.expand, children: [
               Image.network(recipe.imageUrl, fit: BoxFit.cover,
                 loadingBuilder: (_, child, p) => p == null ? child
-                    : Container(color: cs.primary.withOpacity(0.05)),
+                    : Container(color: cs.primary.withOpacity(0.04)),
                 errorBuilder: (_, __, ___) => Container(
-                  color: cs.primary.withOpacity(0.06),
-                  child: Icon(LucideIcons.chefHat, size: 28,
-                    color: cs.primary.withOpacity(0.2)))),
+                  color: cs.primary.withOpacity(0.04),
+                  child: Icon(LucideIcons.chefHat, size: 24,
+                    color: cs.primary.withOpacity(0.15)))),
 
-              // Fav button
+              Positioned(bottom: 0, left: 0, right: 0,
+                child: Container(height: 40,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black.withOpacity(0.35)])))),
+
               Positioned(top: 8, right: 8,
                 child: GestureDetector(
                   onTap: onFav,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 30, height: 30,
+                  child: Container(
+                    width: 28, height: 28,
                     decoration: BoxDecoration(
                       color: isFav
-                          ? const Color(0xFFE03050)
-                          : Colors.black.withOpacity(0.3),
+                          ? cs.primary
+                          : Colors.black.withOpacity(0.25),
                       shape: BoxShape.circle),
-                    child: Icon(LucideIcons.heart, size: 13,
+                    child: Icon(LucideIcons.heart, size: 12,
                       color: Colors.white)))),
 
-              // Phase badge
-              Positioned(top: 8, left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: pi.color.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(8)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Container(width: 5, height: 5,
-                      decoration: const BoxDecoration(
-                        color: Colors.white, shape: BoxShape.circle)),
-                    const SizedBox(width: 4),
-                    Text(pi.label, style: GoogleFonts.inter(
-                      fontSize: 8, fontWeight: FontWeight.w700, color: Colors.white)),
-                  ]))),
-
-              // Duration badge
-              Positioned(bottom: 8, right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(6)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(LucideIcons.clock, size: 9, color: Colors.white),
-                    const SizedBox(width: 3),
-                    Text(recipe.duration, style: GoogleFonts.inter(
-                      fontSize: 9, color: Colors.white, fontWeight: FontWeight.w600)),
-                  ]))),
+              Positioned(bottom: 7, left: 7, right: 7,
+                child: Row(children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(6)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(LucideIcons.clock, size: 9, color: Colors.white70),
+                      const SizedBox(width: 3),
+                      Text(recipe.duration, style: GoogleFonts.inter(
+                        fontSize: 9, color: Colors.white, fontWeight: FontWeight.w600)),
+                    ])),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: pi.color.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(5)),
+                    child: Text(pi.label, style: GoogleFonts.inter(
+                      fontSize: 8, fontWeight: FontWeight.w700,
+                      color: Colors.white))),
+                ])),
             ])),
 
-          // Info
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 9, 10, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(recipe.name, maxLines: 2, overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700,
-                      color: cs.onSurface, height: 1.25)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(recipe.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700,
+                    color: cs.onSurface, height: 1.2)),
+                const SizedBox(height: 6),
 
-                  const Spacer(),
+                Row(children: [
+                  Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
+                    fontSize: 10.5, fontWeight: FontWeight.w700,
+                    color: cs.primary)),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    width: 3, height: 3,
+                    decoration: BoxDecoration(
+                      color: cs.onSurface.withOpacity(0.15),
+                      shape: BoxShape.circle)),
+                  Text(recipe.difficulty, style: GoogleFonts.inter(
+                    fontSize: 10, color: cs.onSurface.withOpacity(0.35))),
+                ]),
 
-                  // Author row
-                  if (recipe.authorName != null) ...[
-                    GestureDetector(
-                      onTap: recipe.authorId != null ? () {
-                        HapticFeedback.lightImpact();
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => RecipeAuthorScreen(
-                            userId: recipe.authorId!, username: recipe.authorName!)));
-                      } : null,
-                      child: Row(children: [
-                        Container(width: 18, height: 18,
-                          decoration: BoxDecoration(
-                            color: cs.primary.withOpacity(0.1), shape: BoxShape.circle),
-                          child: Center(child: Text(recipe.authorName![0].toUpperCase(),
-                            style: GoogleFonts.outfit(fontSize: 8,
-                              fontWeight: FontWeight.w800, color: cs.primary)))),
-                        const SizedBox(width: 5),
-                        Expanded(child: Text(recipe.authorName!, overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(fontSize: 10.5,
-                            fontWeight: FontWeight.w600, color: cs.primary))),
-                      ])),
-                    const SizedBox(height: 6),
-                  ],
-
-                  // Kcal + difficulty
-                  Row(children: [
-                    Icon(LucideIcons.flame, size: 10, color: cs.primary),
-                    const SizedBox(width: 3),
-                    Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
-                      fontSize: 10.5, fontWeight: FontWeight.w600, color: cs.primary)),
-                    const Spacer(),
-                    Text(recipe.difficulty, style: GoogleFonts.inter(
-                      fontSize: 9.5, color: cs.onSurface.withOpacity(0.35))),
-                  ]),
-                ])),
-          ),
-          Container(height: 3, color: pi.color),
+                if (recipe.authorName != null) ...[
+                  const SizedBox(height: 5),
+                  GestureDetector(
+                    onTap: recipe.authorId != null ? () {
+                      HapticFeedback.lightImpact();
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => RecipeAuthorScreen(
+                          userId: recipe.authorId!, username: recipe.authorName!)));
+                    } : null,
+                    child: Text('par ${recipe.authorName}',
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(fontSize: 10,
+                        color: cs.onSurface.withOpacity(0.3)))),
+                ],
+              ])),
         ]),
       ),
     );
