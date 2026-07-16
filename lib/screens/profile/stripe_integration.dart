@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../services/stripe_config.dart';
@@ -27,70 +28,65 @@ class SubscriptionButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final plan   = ref.watch(currentPlanProvider);
-    final isPro  = plan != SubscriptionPlan.free;
+    final d    = Theme.of(context).brightness == Brightness.dark;
+    final plan = ref.watch(currentPlanProvider);
+    final isPro = plan != SubscriptionPlan.free;
 
-    final surf  = isDark ? const Color(0xFF1A1A1A) : Colors.white;
-    final ink   = isDark ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
-    final muted = isDark ? const Color(0xFF888886) : const Color(0xFF6B6B68);
-    final gold  = const Color(0xFFF59E0B);
-    final green = const Color(0xFF22C55E);
+    const main = Color(0xFF1C4D30);
+    const sage = Color(0xFF7ABB98);
+    final surf = d ? const Color(0xFF162119) : Colors.white;
+    final ink  = d ? const Color(0xFFF0F0EE) : const Color(0xFF1A1A1A);
+    final muted = d ? const Color(0xFF8A9B92) : const Color(0xFF6B7B73);
+    final bdr  = d ? const Color(0xFF253D2E) : const Color(0xFFE8ECE9);
 
     return GestureDetector(
       onTap: () => showSubscriptionPlans(context, ref),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: surf,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: gold.withValues(alpha: 0.35), width: 1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isPro ? sage.withValues(alpha: 0.3) : bdr, width: 0.5),
           boxShadow: [BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 8, offset: const Offset(0, 2))],
+            color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
+            blurRadius: 12, offset: const Offset(0, 3))],
         ),
-        child: Row(
-          children: [
+        child: Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                colors: [main, sage]),
+              borderRadius: BorderRadius.circular(12)),
+            child: const Icon(LucideIcons.sparkles, size: 18, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(isPro ? 'Abonnement ${plan.label}' : 'Passer Pro',
+                style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700,
+                  color: ink)),
+              const SizedBox(height: 2),
+              Text(isPro ? 'Gérer mon abonnement'
+                  : 'Débloque tous les programmes & fonctionnalités',
+                style: GoogleFonts.inter(fontSize: 11.5, color: muted)),
+            ],
+          )),
+          if (isPro)
             Container(
-              width: 34, height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: gold.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(LucideIcons.crown, size: 16, color: gold),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(isPro ? 'Abonnement ${plan.label}' : 'Passer Pro',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-                      color: ink)),
-                  const SizedBox(height: 2),
-                  Text(
-                    isPro
-                        ? 'Gérer mon abonnement'
-                        : 'Débloque tous les programmes & fonctionnalités',
-                    style: TextStyle(fontSize: 11, color: muted)),
-                ],
-              ),
-            ),
-            if (isPro)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: green.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('PRO',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
-                    color: green, letterSpacing: 0.5)),
-              )
-            else
-              Icon(LucideIcons.chevronRight, size: 16, color: muted),
-          ],
-        ),
+                gradient: const LinearGradient(colors: [main, sage]),
+                borderRadius: BorderRadius.circular(8)),
+              child: Text('PRO',
+                style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800,
+                  color: Colors.white, letterSpacing: 0.5)),
+            )
+          else
+            Icon(LucideIcons.chevronRight, size: 16, color: muted.withValues(alpha: 0.5)),
+        ]),
       ),
     );
   }
@@ -205,19 +201,19 @@ class _PlansSheetState extends ConsumerState<_PlansSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final dark  = Theme.of(context).brightness == Brightness.dark;
-    final green = const Color(0xFF22C55E);
-    final gold  = const Color(0xFFF59E0B);
-    final surf  = dark ? const Color(0xFF1A1A1A) : Colors.white;
-    final ink   = dark ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
-    final muted = dark ? const Color(0xFF888886) : const Color(0xFF6B6B68);
-    final div   = dark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0EE);
+    final d     = Theme.of(context).brightness == Brightness.dark;
+    const main  = Color(0xFF1C4D30);
+    const sage  = Color(0xFF7ABB98);
+    final surf  = d ? const Color(0xFF162119) : Colors.white;
+    final ink   = d ? const Color(0xFFF0F0EE) : const Color(0xFF1A1A1A);
+    final muted = d ? const Color(0xFF8A9B92) : const Color(0xFF6B7B73);
+    final bdr   = d ? const Color(0xFF253D2E) : const Color(0xFFE8ECE9);
     final currentPlan = ref.watch(currentPlanProvider);
 
     return Container(
       decoration: BoxDecoration(
         color: surf,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
         top: false,
@@ -227,33 +223,31 @@ class _PlansSheetState extends ConsumerState<_PlansSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Handle ────────────────────────────────────────────────
-              Center(child: Container(
-                width: 36, height: 4,
-                decoration: BoxDecoration(color: div,
+              Center(child: Container(width: 36, height: 4,
+                decoration: BoxDecoration(color: bdr,
                   borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
 
-              // ── Header ────────────────────────────────────────────────
               Row(children: [
                 Container(
-                  width: 40, height: 40,
+                  width: 42, height: 42,
                   decoration: BoxDecoration(
-                    color: gold.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12)),
-                  child: Icon(LucideIcons.crown, size: 18, color: gold)),
-                const SizedBox(width: 12),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      colors: [main, sage]),
+                    borderRadius: BorderRadius.circular(13)),
+                  child: const Icon(LucideIcons.sparkles, size: 19, color: Colors.white)),
+                const SizedBox(width: 14),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Choisis ton offre',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
-                      color: ink, letterSpacing: -0.4)),
+                    style: GoogleFonts.outfit(fontSize: 19, fontWeight: FontWeight.w700,
+                      color: ink, letterSpacing: -0.3)),
                   Text('Annulable à tout moment',
-                    style: TextStyle(fontSize: 12, color: muted)),
+                    style: GoogleFonts.inter(fontSize: 12, color: muted)),
                 ]),
               ]),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
 
-              // ── Les 3 offres ──────────────────────────────────────────
               for (final plan in SubscriptionPlan.values) ...[
                 _PlanCard(
                   plan: plan,
@@ -261,17 +255,20 @@ class _PlansSheetState extends ConsumerState<_PlansSheet> {
                   isCurrent: plan == currentPlan,
                   isLoading: _processing == plan,
                   highlighted: plan == SubscriptionPlan.proAnnual,
-                  green: green, gold: gold, ink: ink,
-                  muted: muted, div: div, dark: dark,
+                  green: main, gold: sage, ink: ink,
+                  muted: muted, div: bdr, dark: d,
                   onTap: () => _choosePlan(plan),
                 ),
                 const SizedBox(height: 12),
               ],
 
-              // ── Note test ─────────────────────────────────────────────
-              Center(child: Text(
-                'Paiement sécurisé par Stripe',
-                style: TextStyle(fontSize: 11, color: muted))),
+              const SizedBox(height: 4),
+              Center(child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(LucideIcons.shieldCheck, size: 13, color: muted),
+                const SizedBox(width: 5),
+                Text('Paiement sécurisé par Stripe',
+                  style: GoogleFonts.inter(fontSize: 11, color: muted)),
+              ])),
             ],
           ),
         ),

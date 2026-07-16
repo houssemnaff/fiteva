@@ -12,6 +12,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/sante_service.dart';
 import '../../providers/points_provider.dart';
 import '../../widgets/points_toast.dart';
+import 'qr_screen.dart';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 
@@ -67,14 +68,14 @@ class _Question {
 }
 
 class _Article {
-  final String title, author, excerpt, category;
+  final String title, author, excerpt, category, body;
   final int readMin;
   final Color color;
   final String? photoAsset;
   const _Article({
     required this.title, required this.author, required this.excerpt,
     required this.category, required this.readMin, required this.color,
-    this.photoAsset,
+    required this.body, this.photoAsset,
   });
 }
 
@@ -177,15 +178,57 @@ const _articles = [
   _Article(title: 'Le microbiome intestinal féminin', author: 'Dr. Amine Chokri',
     excerpt: 'Les recherches récentes montrent un lien direct entre la composition du microbiome et les fluctuations hormonales.',
     category: 'Nutrition', readMin: 8, color: Color(0xFFB45309),
-    photoAsset: 'assets/images/microbiomee.jpg'),
+    photoAsset: 'assets/images/microbiomee.jpg',
+    body: 'Le microbiome intestinal joue un rôle central dans la santé féminine. Des études récentes révèlent que la composition bactérienne de l\'intestin est directement influencée par les hormones sexuelles — œstrogènes, progestérone et testostérone — et que cette relation est bidirectionnelle.\n\n'
+      'L\'estrobolome, un sous-ensemble du microbiome, est responsable de la métabolisation des œstrogènes. Lorsque cet équilibre est perturbé (dysbiose), les niveaux d\'œstrogènes circulants peuvent augmenter ou diminuer de manière significative, contribuant à des conditions telles que l\'endométriose, le SOPK ou le syndrome prémenstruel sévère.\n\n'
+      'Au cours du cycle menstruel, la diversité bactérienne fluctue. Pendant la phase folliculaire, lorsque les œstrogènes augmentent, on observe une plus grande diversité microbienne et une meilleure perméabilité intestinale. En revanche, la phase lutéale, dominée par la progestérone, peut ralentir le transit et modifier la composition bactérienne.\n\n'
+      'Pour soutenir un microbiome sain :\n'
+      '• Consommez des aliments fermentés (kéfir, kimchi, choucroute)\n'
+      '• Augmentez les fibres prébiotiques (ail, oignon, asperges, bananes vertes)\n'
+      '• Limitez les sucres raffinés et les aliments ultra-transformés\n'
+      '• Gérez votre stress — le cortisol altère directement la flore intestinale\n\n'
+      'La recherche sur le microbiome féminin est encore jeune, mais les résultats sont prometteurs. En prenant soin de votre intestin, vous prenez soin de votre équilibre hormonal global.'),
   _Article(title: 'Anxiété prémenstruelle : comprendre le PMDD', author: 'Dr. Leila Gharbi',
     excerpt: 'Le trouble dysphorique prémenstruel touche 3 à 8% des femmes et est souvent confondu avec une dépression.',
     category: 'Mental', readMin: 11, color: Color(0xFF0369A1),
-    photoAsset: 'assets/images/pmdd.png'),
+    photoAsset: 'assets/images/pmdd.png',
+    body: 'Le trouble dysphorique prémenstruel (PMDD) est une forme sévère du syndrome prémenstruel qui affecte 3 à 8% des femmes en âge de procréer. Contrairement au SPM classique, le PMDD provoque des symptômes émotionnels intenses qui peuvent sérieusement impacter la vie quotidienne.\n\n'
+      'Les symptômes apparaissent typiquement 7 à 10 jours avant les règles et disparaissent dans les premiers jours du cycle. Ils incluent :\n'
+      '• Anxiété sévère ou crises de panique\n'
+      '• Tristesse profonde, sentiment de désespoir\n'
+      '• Irritabilité extrême, colère disproportionnée\n'
+      '• Difficulté de concentration\n'
+      '• Fatigue intense, troubles du sommeil\n'
+      '• Sensation de perte de contrôle\n\n'
+      'Le PMDD est causé par une sensibilité anormale du cerveau aux fluctuations normales de progestérone et d\'œstrogènes. Ce n\'est pas un manque de volonté ni un trouble psychologique — c\'est une réponse neurobiologique.\n\n'
+      'Le diagnostic repose sur un suivi quotidien des symptômes sur au moins deux cycles consécutifs. Les traitements incluent :\n'
+      '• Les ISRS (inhibiteurs sélectifs de la recapture de la sérotonine), efficaces même en prise intermittente\n'
+      '• La thérapie cognitivo-comportementale (TCC)\n'
+      '• Les modifications du mode de vie : exercice régulier, réduction de la caféine, supplémentation en calcium et magnésium\n'
+      '• Dans les cas sévères, les agonistes de la GnRH pour supprimer temporairement l\'ovulation\n\n'
+      'Si vous vous reconnaissez dans ces symptômes, consultez un professionnel de santé. Le PMDD est une condition médicale reconnue qui mérite une prise en charge adaptée.'),
   _Article(title: 'Périménopause et sport : adapter sa pratique', author: 'Dr. Nadia Trabelsi',
     excerpt: 'La musculation devient essentielle pendant la périménopause pour préserver la densité osseuse et le métabolisme.',
     category: 'Sport', readMin: 9, color: Color(0xFF7C3AED),
-    photoAsset: 'assets/images/perimenopause.png'),
+    photoAsset: 'assets/images/perimenopause.png',
+    body: 'La périménopause, qui débute généralement entre 40 et 45 ans, marque une transition hormonale majeure. Les fluctuations d\'œstrogènes et de progestérone modifient la composition corporelle, la récupération et les capacités physiques. Adapter sa pratique sportive devient alors essentiel.\n\n'
+      'Pourquoi la musculation est cruciale :\n'
+      'La baisse des œstrogènes accélère la perte de masse osseuse (ostéopénie) et musculaire (sarcopénie). La musculation avec charges est le moyen le plus efficace de contrer ces deux phénomènes.\n'
+      '• Visez 2 à 3 séances par semaine avec des charges progressives\n'
+      '• Privilégiez les mouvements composés : squats, soulevés de terre, développés, tractions\n'
+      '• N\'ayez pas peur des charges lourdes — c\'est la stimulation mécanique qui renforce les os\n\n'
+      'L\'entraînement par intervalles (HIIT) :\n'
+      'Les séances courtes et intenses améliorent la sensibilité à l\'insuline, souvent altérée pendant la périménopause. 2 séances de 20-30 minutes par semaine suffisent. Écoutez votre corps — la récupération peut être plus longue qu\'avant.\n\n'
+      'Mobilité et récupération :\n'
+      'La diminution des œstrogènes affecte la qualité du collagène et donc la souplesse articulaire. Intégrez :\n'
+      '• 10-15 minutes de mobilité quotidienne\n'
+      '• Du yoga ou du Pilates 1 à 2 fois par semaine\n'
+      '• Un sommeil de qualité (7-8h) — la récupération se fait principalement la nuit\n\n'
+      'Ce qu\'il faut éviter :\n'
+      '• Le cardio excessif à intensité modérée (peut augmenter le cortisol)\n'
+      '• Les régimes très restrictifs (aggravent la perte musculaire)\n'
+      '• Ignorer les signaux de fatigue — le surentraînement est plus fréquent à cette période\n\n'
+      'La périménopause n\'est pas une fin, c\'est une adaptation. Avec une approche intelligente, vous pouvez maintenir — et même améliorer — votre forme physique.'),
 ];
 
 const _lexique = [
@@ -268,6 +311,7 @@ _Article _articleFromRow(Map<String, dynamic> r) {
     title: r['title'] as String? ?? '',
     author: r['author'] as String? ?? '',
     excerpt: r['excerpt'] as String? ?? '',
+    body: r['body'] as String? ?? '',
     category: cat,
     readMin: (r['read_min'] as num? ?? 5).toInt(),
     color: color,
@@ -372,24 +416,34 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
             eyebrow: l10n.santeSanteEyebrow,
             title: l10n.santeMySpace,
             accentColor: _T.accent(context),
-            bgColor: Colors.white,
+            bgColor: _T.bg(context),
+            actions: [
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: _T.accent(context).withOpacity(0.10),
+                    shape: BoxShape.circle),
+                  child: Icon(LucideIcons.bookmark, size: 17, color: _T.accent(context)))),
+            ],
           ),
 
           SliverToBoxAdapter(
             child: Container(
-              color: _T.card(context),
+              color: _T.bg(context),
               child: TabBar(
                 controller: _tab,
                 isScrollable: false,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                 labelStyle: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600),
                 unselectedLabelStyle: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w400),
-                labelColor: _T.t1(context),
+                labelColor: _T.accent(context),
                 unselectedLabelColor: _T.t3(context),
                 indicatorColor: _T.accent(context),
                 indicatorSize: TabBarIndicatorSize.tab,
                 indicatorWeight: 2,
-                dividerColor: _T.border(context),
+                dividerColor: Colors.transparent,
                 tabs: const [
                   Tab(icon: Icon(LucideIcons.stethoscope, size: 14), text: 'Conseils'),
                   Tab(icon: Icon(LucideIcons.video, size: 14), text: 'Ressources'),
@@ -409,13 +463,29 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
               onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark, l10n: l10n))),
             _RessourcesTab(dark: dark, lex: _lex, l10n: l10n, articles: articles,
               onLex: (s) => setState(() => _lex = s),
-              onArticleTap: () {
+              onArticleTap: (article) {
                 ref.read(pointsProvider.notifier).rewardHealthTipRead().then((_) {
                   if (context.mounted) maybeShowLevelUpToast(context, ref);
                 });
                 PointsToast.show(context, PointsAmounts.healthTipRead, label: 'Article lu !');
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => _ArticleDetailScreen(article: article),
+                ));
               }),
-            _QRTab(dark: dark, l10n: l10n, questions: questions),
+            QrFeedTab(
+              questions: questions.map((q) => QrQuestion(
+                question: q.question,
+                postedAgo: q.postedAgo,
+                votes: q.votes,
+                category: 'Cycle',
+                answers: q.doctorAnswer != null ? [QrAnswer(
+                  doctorName: q.answerDoctor ?? '',
+                  specialty: 'Médecin',
+                  answer: q.doctorAnswer!,
+                )] : [],
+              )).toList(),
+              onSubmit: (text) => SanteService.submitQuestion(text),
+            ),
             _DoctorsTab(
               dark: dark, spec: _spec, marker: _marker, l10n: l10n,
               doctors: doctors,
@@ -476,6 +546,51 @@ class _ConseisTab extends StatelessWidget {
   List<_Conseil> get _list => cat == 'Tout'
       ? _conseils : _conseils.where((c) => c.category == cat).toList();
 
+  void _showFilterSheet(BuildContext context, Color accent) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: _T.bg(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 8),
+          Container(width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: _T.t3(context), borderRadius: BorderRadius.circular(2))),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Row(children: [
+              Text('Filtrer par catégorie', style: GoogleFonts.outfit(
+                fontSize: 17, fontWeight: FontWeight.w700, color: _T.t1(context))),
+            ])),
+          ...List.generate(_cats.length, (i) {
+            final c = _cats[i];
+            final active = c == cat;
+            final color = c == 'Tout' ? accent : _catColor(c);
+            return ListTile(
+              leading: Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(active ? 0.15 : 0.08),
+                  shape: BoxShape.circle),
+                child: Icon(_catIcon(c), size: 15, color: color)),
+              title: Text(c, style: GoogleFonts.inter(
+                fontSize: 14, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                color: active ? color : _T.t1(context))),
+              trailing: active
+                ? Icon(LucideIcons.check, size: 16, color: color)
+                : null,
+              onTap: () { onCat(c); Navigator.pop(context); },
+            );
+          }),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
+        ]),
+      ),
+    );
+  }
+
   static Color _catColor(String c) => switch (c) {
     'Sport'    => const Color(0xFF4A6FA5),
     'Nutrition'=> const Color(0xFFB8860B),
@@ -496,42 +611,41 @@ class _ConseisTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _T.accent(context);
     return CustomScrollView(
       slivers: [
-        // ── Filter chips ──
+        // ── Filter button ──
         SliverToBoxAdapter(
-          child: SizedBox(
-            height: 48,
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
-              scrollDirection: Axis.horizontal,
-              itemCount: _cats.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, i) {
-                final c = _cats[i]; final active = c == cat;
-                final color = c == 'Tout' ? _T.accent(context) : _catColor(c);
-                return GestureDetector(
-                  onTap: () => onCat(c),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: active ? color : (dark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5)),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: active ? color : Colors.transparent, width: 1.5)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(_catIcon(c), size: 12,
-                        color: active ? Colors.white : _T.t2(context)),
-                      const SizedBox(width: 5),
-                      Text(c, style: GoogleFonts.inter(
-                        fontSize: 13, fontWeight: FontWeight.w600,
-                        color: active ? Colors.white : _T.t2(context))),
-                    ]),
-                  ),
-                );
-              },
-            ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+            child: Row(children: [
+              GestureDetector(
+                onTap: () => _showFilterSheet(context, accent),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: cat != 'Tout' ? accent : accent.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(LucideIcons.slidersHorizontal, size: 13,
+                      color: cat != 'Tout' ? Colors.white : accent),
+                    const SizedBox(width: 6),
+                    Text(cat == 'Tout' ? 'Filtres' : cat,
+                      style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600,
+                        color: cat != 'Tout' ? Colors.white : accent)),
+                    if (cat != 'Tout') ...[
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () => onCat('Tout'),
+                        child: const Icon(LucideIcons.x, size: 12, color: Colors.white)),
+                    ],
+                  ])),
+              ),
+              const Spacer(),
+              Text('${_list.length} conseil${_list.length != 1 ? 's' : ''}',
+                style: GoogleFonts.inter(fontSize: 11,
+                  color: _T.t3(context), fontWeight: FontWeight.w500)),
+            ]),
           ),
         ),
         SliverPadding(
@@ -698,7 +812,7 @@ class _RessourcesTab extends StatelessWidget {
   final AppL10n l10n;
   final List<_Article> articles;
   final ValueChanged<String> onLex;
-  final VoidCallback? onArticleTap;
+  final ValueChanged<_Article>? onArticleTap;
   const _RessourcesTab({required this.dark, required this.lex, required this.l10n,
     required this.articles, required this.onLex, this.onArticleTap});
 
@@ -753,7 +867,7 @@ class _RessourcesTab extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.only(bottom: e.key < articles.length - 1 ? 10 : 0),
                 child: GestureDetector(
-                  onTap: onArticleTap,
+                  onTap: () => onArticleTap?.call(e.value),
                   child: _ArticleCard(article: e.value, dark: dark),
                 ),
               )
@@ -1084,166 +1198,6 @@ class _LexCardState extends State<_LexCard> {
           ]),
         ),
       ),
-    );
-  }
-}
-
-// ─── Tab 3 · Q & R ───────────────────────────────────────────────────────────
-
-class _QRTab extends ConsumerStatefulWidget {
-  final bool dark;
-  final AppL10n l10n;
-  final List<_Question> questions;
-  const _QRTab({required this.dark, required this.l10n, required this.questions});
-  @override
-  ConsumerState<_QRTab> createState() => _QRTabState();
-}
-
-class _QRTabState extends ConsumerState<_QRTab> {
-  final Set<int> _voted = {};
-  bool _open = false;
-  final _ctrl = TextEditingController();
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = widget.l10n;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 110),
-      children: [
-        // Ask box
-        GestureDetector(
-          onTap: () => setState(() => _open = !_open),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _T.card(context),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _open ? _T.accent(context).withOpacity(0.4) : _T.border(context))),
-            child: _open
-                ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(l10n.santeYourQuestion, style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600, color: _T.t1(context))),
-                    const SizedBox(height: 10),
-                    TextField(controller: _ctrl, maxLines: 3,
-                      style: GoogleFonts.inter(fontSize: 14, color: _T.t1(context)),
-                      decoration: InputDecoration(
-                        hintText: l10n.santeDecrire,
-                        hintStyle: GoogleFonts.inter(color: _T.t3(context)),
-                        border: InputBorder.none, contentPadding: EdgeInsets.zero)),
-                    const SizedBox(height: 14),
-                    Row(children: [
-                      Icon(LucideIcons.lockKeyhole, size: 12, color: _T.t3(context)),
-                      const SizedBox(width: 5),
-                      Text(l10n.santeAnonPost, style: GoogleFonts.inter(
-                        fontSize: 12, color: _T.t3(context))),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () async {
-                          final text = _ctrl.text.trim();
-                          if (text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Veuillez écrire votre question.')));
-                            return;
-                          }
-                          await SanteService.submitQuestion(text);
-                          _ctrl.clear();
-                          setState(() => _open = false);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Question envoyée !')));
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                          decoration: BoxDecoration(
-                            color: _T.accent(context), borderRadius: BorderRadius.circular(10)),
-                          child: Text(l10n.santeSendBtn, style: GoogleFonts.inter(
-                            fontSize: 13, fontWeight: FontWeight.w600,
-                            color: _T.onAccent(context))))),
-                    ]),
-                  ])
-                : Row(children: [
-                    Icon(LucideIcons.pencil, size: 16, color: _T.t3(context)),
-                    const SizedBox(width: 12),
-                    Text(l10n.santeAskDoctorHint,
-                      style: GoogleFonts.inter(fontSize: 14, color: _T.t2(context))),
-                  ]),
-          ),
-        ),
-        const SizedBox(height: 28),
-        ...widget.questions.asMap().entries.map((e) {
-          final i = e.key; final q = e.value; final voted = _voted.contains(i);
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 24),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Question
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Container(
-                  width: 28, height: 28,
-                  decoration: BoxDecoration(color: _T.border(context), shape: BoxShape.circle),
-                  child: Icon(LucideIcons.userRound, size: 14, color: _T.t3(context))),
-                const SizedBox(width: 10),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('${l10n.santeAnonyme} · ${q.postedAgo}', style: GoogleFonts.inter(
-                    fontSize: 12, color: _T.t3(context))),
-                  const SizedBox(height: 6),
-                  Text(q.question, style: GoogleFonts.outfit(
-                    fontSize: 15, fontWeight: FontWeight.w600,
-                    color: _T.t1(context), height: 1.4)),
-                ])),
-              ]),
-              // Answer
-              if (q.doctorAnswer != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  margin: const EdgeInsets.only(left: 38),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: _T.card(context),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _T.border(context))),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Icon(LucideIcons.badgeCheck, size: 13, color: _T.accent(context)),
-                      const SizedBox(width: 6),
-                      Text(q.answerDoctor ?? '', style: GoogleFonts.inter(
-                        fontSize: 12, fontWeight: FontWeight.w600, color: _T.accent(context))),
-                    ]),
-                    const SizedBox(height: 8),
-                    Text(q.doctorAnswer!, style: GoogleFonts.inter(
-                      fontSize: 13, color: _T.t2(context), height: 1.6)),
-                  ]),
-                ),
-              ] else ...[
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 38),
-                  child: Text(l10n.santeEnAttente, style: GoogleFonts.inter(
-                    fontSize: 12, color: _T.t3(context), fontStyle: FontStyle.italic))),
-              ],
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.only(left: 38),
-                child: GestureDetector(
-                  onTap: () => setState(() { if (voted) _voted.remove(i); else _voted.add(i); }),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(LucideIcons.thumbsUp, size: 14,
-                      color: voted ? _T.accent(context) : _T.t3(context)),
-                    const SizedBox(width: 5),
-                    Text('${q.votes + (voted ? 1 : 0)} ${l10n.santeVotesUtiles}',
-                      style: GoogleFonts.inter(fontSize: 12,
-                        color: voted ? _T.accent(context) : _T.t3(context))),
-                  ]),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Divider(height: 1, color: _T.border(context)),
-            ]),
-          );
-        }),
-      ],
     );
   }
 }
@@ -2069,4 +2023,372 @@ class _InputBox extends StatelessWidget {
           border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero)),
     ]),
   );
+}
+
+// ─── Article Detail Screen ───────────────────────────────────────────────────
+
+class _ArticleDetailScreen extends StatefulWidget {
+  final _Article article;
+  const _ArticleDetailScreen({required this.article});
+  @override
+  State<_ArticleDetailScreen> createState() => _ArticleDetailScreenState();
+}
+
+class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
+  final _scrollController = ScrollController();
+  double _progress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final max = _scrollController.position.maxScrollExtent;
+    if (max <= 0) return;
+    setState(() => _progress = (_scrollController.offset / max).clamp(0.0, 1.0));
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = widget.article;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final top = MediaQuery.of(context).padding.top;
+    final bot = MediaQuery.of(context).padding.bottom;
+    final bg = dark ? const Color(0xFF0A0A0A) : Colors.white;
+
+    final paragraphs = a.body.split('\n\n').where((p) => p.trim().isNotEmpty).toList();
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: Stack(children: [
+        CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            // ── Hero image with overlay ──
+            SliverToBoxAdapter(
+              child: Stack(children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: 300,
+                  child: a.photoAsset != null
+                    ? Image.asset(a.photoAsset!, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _coloredFallback(a, dark))
+                    : _coloredFallback(a, dark),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.15),
+                          Colors.black.withOpacity(0.02),
+                          bg.withOpacity(0.6),
+                          bg,
+                        ],
+                        stops: const [0.0, 0.35, 0.8, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+
+            // ── Title block ──
+            SliverToBoxAdapter(
+              child: Transform.translate(
+                offset: const Offset(0, -32),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    // Category pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: a.color,
+                        borderRadius: BorderRadius.circular(20)),
+                      child: Text(a.category, style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w700,
+                        color: Colors.white, letterSpacing: 0.3)),
+                    ),
+                    const SizedBox(height: 16),
+                    // Title
+                    Text(a.title, style: GoogleFonts.outfit(
+                      fontSize: 26, fontWeight: FontWeight.w800,
+                      color: _T.t1(context), height: 1.2, letterSpacing: -0.5)),
+                    const SizedBox(height: 16),
+                    // Excerpt / lede
+                    Text(a.excerpt, style: GoogleFonts.inter(
+                      fontSize: 15, fontWeight: FontWeight.w400,
+                      color: _T.t2(context), height: 1.55)),
+                    const SizedBox(height: 20),
+                    // Author row
+                    Row(children: [
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: a.color.withOpacity(dark ? 0.25 : 0.10),
+                          borderRadius: BorderRadius.circular(12)),
+                        child: Center(
+                          child: Text(
+                            a.author.split(' ').last[0].toUpperCase(),
+                            style: GoogleFonts.outfit(
+                              fontSize: 16, fontWeight: FontWeight.w700, color: a.color)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(a.author, style: GoogleFonts.inter(
+                            fontSize: 13, fontWeight: FontWeight.w600,
+                            color: _T.t1(context))),
+                          const SizedBox(height: 2),
+                          Row(children: [
+                            Icon(LucideIcons.clock, size: 11,
+                              color: _T.t2(context)),
+                            const SizedBox(width: 4),
+                            Text('${a.readMin} min de lecture', style: GoogleFonts.inter(
+                              fontSize: 11, color: _T.t2(context))),
+                          ]),
+                        ]),
+                      ),
+                      // Bookmark button
+                      Container(
+                        width: 38, height: 38,
+                        decoration: BoxDecoration(
+                          color: _T.t1(context).withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(12)),
+                        child: Icon(LucideIcons.bookmark, size: 18,
+                          color: _T.t2(context)),
+                      ),
+                    ]),
+                    const SizedBox(height: 20),
+                    // Thin accent divider
+                    Container(
+                      height: 3, width: 40,
+                      decoration: BoxDecoration(
+                        color: a.color,
+                        borderRadius: BorderRadius.circular(2)),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+
+            // ── Body paragraphs ──
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(24, 0, 24, bot + 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: paragraphs.asMap().entries.map((entry) {
+                    final text = entry.value.trim();
+                    final isBullet = text.startsWith('•');
+                    final isHeading = !isBullet
+                        && text.length < 80
+                        && !text.endsWith('.')
+                        && !text.contains('•');
+
+                    if (isBullet) {
+                      final bullets = text.split('\n').where((l) => l.trim().isNotEmpty).toList();
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: a.color.withOpacity(dark ? 0.08 : 0.04),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border(left: BorderSide(
+                              color: a.color.withOpacity(0.4), width: 3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: bullets.map((b) {
+                              final clean = b.replaceFirst('• ', '').trim();
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: b != bullets.last ? 10 : 0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: Container(
+                                        width: 5, height: 5,
+                                        decoration: BoxDecoration(
+                                          color: a.color,
+                                          shape: BoxShape.circle)),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(clean, style: GoogleFonts.inter(
+                                        fontSize: 14, color: _T.t1(context),
+                                        height: 1.6, fontWeight: FontWeight.w400)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      );
+                    }
+
+                    if (isHeading) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 10),
+                        child: Text(text, style: GoogleFonts.outfit(
+                          fontSize: 18, fontWeight: FontWeight.w700,
+                          color: _T.t1(context), height: 1.3)),
+                      );
+                    }
+
+                    // Mixed paragraph (text + inline bullets)
+                    if (text.contains('\n•')) {
+                      final lines = text.split('\n');
+                      final lead = <String>[];
+                      final bullets = <String>[];
+                      for (final line in lines) {
+                        if (line.trimLeft().startsWith('•')) {
+                          bullets.add(line.replaceFirst('•', '').trim());
+                        } else {
+                          if (bullets.isEmpty) {
+                            lead.add(line);
+                          }
+                        }
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          if (lead.isNotEmpty) ...[
+                            Text(lead.join('\n'), style: GoogleFonts.inter(
+                              fontSize: 15, color: _T.t1(context),
+                              height: 1.7, fontWeight: FontWeight.w400)),
+                            const SizedBox(height: 12),
+                          ],
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: a.color.withOpacity(dark ? 0.08 : 0.04),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border(left: BorderSide(
+                                color: a.color.withOpacity(0.4), width: 3)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: bullets.map((b) => Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: b != bullets.last ? 10 : 0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: Container(
+                                        width: 5, height: 5,
+                                        decoration: BoxDecoration(
+                                          color: a.color,
+                                          shape: BoxShape.circle)),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(b, style: GoogleFonts.inter(
+                                        fontSize: 14, color: _T.t1(context),
+                                        height: 1.6, fontWeight: FontWeight.w400)),
+                                    ),
+                                  ],
+                                ),
+                              )).toList(),
+                            ),
+                          ),
+                        ]),
+                      );
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: Text(text, style: GoogleFonts.inter(
+                        fontSize: 15, color: _T.t1(context),
+                        height: 1.7, fontWeight: FontWeight.w400)),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        // ── Top bar: back + share + progress ──
+        Positioned(
+          top: 0, left: 0, right: 0,
+          child: Container(
+            padding: EdgeInsets.fromLTRB(16, top + 8, 16, 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                colors: [
+                  bg.withOpacity(0.95),
+                  bg.withOpacity(0.0),
+                ]),
+            ),
+            child: Column(children: [
+              Row(children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(
+                      color: _T.t1(context).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12)),
+                    child: Icon(LucideIcons.chevronLeft,
+                      size: 20, color: _T.t1(context)),
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  child: Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(
+                      color: _T.t1(context).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12)),
+                    child: Icon(LucideIcons.share2,
+                      size: 17, color: _T.t1(context)),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              // Reading progress bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: _progress,
+                  minHeight: 2.5,
+                  backgroundColor: _T.t1(context).withOpacity(0.06),
+                  valueColor: AlwaysStoppedAnimation(a.color),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _coloredFallback(_Article a, bool dark) {
+    return Container(
+      color: a.color.withOpacity(dark ? 0.20 : 0.10),
+      child: Center(child: Icon(LucideIcons.fileText,
+        size: 48, color: a.color.withOpacity(0.5))),
+    );
+  }
 }

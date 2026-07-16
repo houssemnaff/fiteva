@@ -7,10 +7,11 @@ import 'package:fiteva/services/storage_service.dart';
 import 'package:fiteva/services/local_reminder_service.dart';
 import 'package:fiteva/services/privacy_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData, HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -25,6 +26,28 @@ import 'stripe_integration.dart';
 import 'theme_screen.dart';
 import 'trends_screen.dart';
 import 'workout_history_screen.dart';
+
+class _P {
+  _P._();
+  static const main   = Color(0xFF1C4D30);
+  static const sage   = Color(0xFF7ABB98);
+  static const bgL    = Color(0xFFF7F8F6);
+  static const cardL  = Colors.white;
+  static const borderL = Color(0xFFE8ECE9);
+  static const t1L    = Color(0xFF1A1A1A);
+  static const t2L    = Color(0xFF6B7B73);
+  static const bgD    = Color(0xFF0F1A14);
+  static const cardD  = Color(0xFF162119);
+  static const borderD = Color(0xFF253D2E);
+  static const t1D    = Color(0xFFF0F0EE);
+  static const t2D    = Color(0xFF8A9B92);
+  static Color bg(bool d)     => d ? bgD : bgL;
+  static Color card(bool d)   => d ? cardD : cardL;
+  static Color border(bool d) => d ? borderD : borderL;
+  static Color t1(bool d)     => d ? t1D : t1L;
+  static Color t2(bool d)     => d ? t2D : t2L;
+  static Color accent(bool d) => d ? sage : main;
+}
 
 const _days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -73,703 +96,534 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final diamonds   = ref.watch(diamondsProvider);
     final xp         = ref.watch(pointsProvider);
     final mascot     = ref.watch(mascotProvider);
+    final d          = isDarkMode;
 
-    final displayName = profile.username.isNotEmpty ? profile.username : user.username;
+    final displayName  = profile.username.isNotEmpty ? profile.username : user.username;
     final displayEmail = profile.email.isNotEmpty ? profile.email : '';
 
-    final bg     = isDarkMode ? const Color(0xFF0D0D0D) : const Color(0xFFF6F7F5);
-    final ink    = isDarkMode ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
-    final muted  = isDarkMode ? const Color(0xFF888886) : const Color(0xFF6B6B68);
-    final surf   = isDarkMode ? const Color(0xFF1A1A1A) : Colors.white;
-    final green  = const Color(0xFF22C55E);
+    final bg    = _P.bg(d);
+    final ink   = _P.t1(d);
+    final muted = _P.t2(d);
+    final surf  = _P.card(d);
+    final bdr   = _P.border(d);
+    final accent = _P.accent(d);
+
+    Widget buildToggle(bool on, VoidCallback onTap) => GestureDetector(
+      onTap: () { HapticFeedback.selectionClick(); onTap(); },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 44, height: 26,
+        decoration: BoxDecoration(
+          color: on ? _P.main : (d ? const Color(0xFF2A3A30) : const Color(0xFFD4DDD8)),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 200),
+          alignment: on ? Alignment.centerRight : Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Container(width: 22, height: 22,
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
+          ),
+        ),
+      ),
+    );
+
+    Widget groupedSection(List<Widget> rows) => Container(
+      decoration: BoxDecoration(
+        color: surf,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: bdr, width: 0.5),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
+          blurRadius: 12, offset: const Offset(0, 3))],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(children: [
+          for (int i = 0; i < rows.length; i++) ...[
+            rows[i],
+            if (i < rows.length - 1)
+              Divider(height: 0.5, thickness: 0.5, color: bdr, indent: 56, endIndent: 16),
+          ],
+        ]),
+      ),
+    );
+
+    Widget buildRow({
+      required IconData icon,
+      required String label,
+      Widget? trailing,
+      VoidCallback? onTap,
+    }) => GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(9)),
+            child: Icon(icon, size: 15, color: accent)),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label,
+            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ink))),
+          if (trailing != null) trailing
+          else Icon(LucideIcons.chevronRight, size: 15, color: muted.withValues(alpha: 0.5)),
+        ]),
+      ),
+    );
 
     return Scaffold(
       backgroundColor: bg,
       body: CustomScrollView(
         slivers: [
-          // ── Header ──────────────────────────────────────────────────────
+          // ── Top bar ─────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () => context.go('/'),
-                      child: Container(
-                        width: 38, height: 38,
-                        decoration: BoxDecoration(
-                          color: surf,
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(
-                            color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.06),
-                            blurRadius: 8, offset: const Offset(0, 2))],
-                        ),
-                        child: Icon(LucideIcons.chevronLeft, size: 20, color: ink),
-                      ),
-                    ),
-                    Text(l10n.profileTitle,
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
-                        color: ink, letterSpacing: -0.5)),
-                    GestureDetector(
-                      onTap: () => _showEditProfile(context, ref, profile, cs),
-                      child: Container(
-                        width: 38, height: 38,
-                        decoration: BoxDecoration(
-                          color: surf,
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(
-                            color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.06),
-                            blurRadius: 8, offset: const Offset(0, 2))],
-                        ),
-                        child: Icon(LucideIcons.settings, size: 18, color: muted),
-                      ),
-                    ),
-                  ],
-                ),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: Row(children: [
+                  GestureDetector(
+                    onTap: () => context.go('/'),
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: surf, shape: BoxShape.circle,
+                        border: Border.all(color: bdr, width: 0.5)),
+                      child: Icon(LucideIcons.arrowLeft, size: 18, color: ink)),
+                  ),
+                  const Spacer(),
+                  Text(l10n.profileTitle,
+                    style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700,
+                      color: ink, letterSpacing: -0.3)),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => _showEditProfile(context, ref, profile, cs),
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: surf, shape: BoxShape.circle,
+                        border: Border.all(color: bdr, width: 0.5)),
+                      child: Icon(LucideIcons.penLine, size: 16, color: muted)),
+                  ),
+                ]),
               ),
             ),
           ),
 
-          // ── Avatar hero ─────────────────────────────────────────────────
+          // ── Avatar + identity ────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+              child: Column(children: [
+                Stack(clipBehavior: Clip.none, children: [
+                  Container(
+                    width: 88, height: 88,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _P.sage.withValues(alpha: d ? 0.15 : 0.12),
+                      border: Border.all(color: _P.sage.withValues(alpha: 0.3), width: 2.5)),
+                    child: ClipOval(child: MascotWidget(
+                      type: mascot.type, mood: mascot.mood, size: 84)),
+                  ),
+                  Positioned(bottom: -2, right: -2,
+                    child: GestureDetector(
+                      onTap: () => context.push('/edit-avatar'),
+                      child: Container(
+                        width: 30, height: 30,
+                        decoration: BoxDecoration(
+                          color: _P.main, shape: BoxShape.circle,
+                          border: Border.all(color: bg, width: 2.5)),
+                        child: const Icon(LucideIcons.camera, size: 13, color: Colors.white)),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 14),
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  Flexible(
+                    child: Text(
+                      displayName.isNotEmpty ? displayName : l10n.profileUser,
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w700,
+                        color: ink, letterSpacing: -0.4)),
+                  ),
+                  Consumer(builder: (_, ref2, __) {
+                    if (!ref2.watch(isProProvider)) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF1C4D30), Color(0xFF7ABB98)]),
+                          borderRadius: BorderRadius.circular(8)),
+                        child: Text('PRO',
+                          style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800,
+                            color: Colors.white, letterSpacing: 0.6)),
+                      ),
+                    );
+                  }),
+                ]),
+                if (displayEmail.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(displayEmail, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(fontSize: 13, color: muted)),
+                ],
+              ]),
+            ),
+          ),
+
+          // ── Stats ────────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-              child: Column(
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: 100, height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDarkMode ? const Color(0xFF1E2A1E) : const Color(0xFFE8F5E9),
-                          boxShadow: [BoxShadow(
-                            color: green.withValues(alpha: 0.25),
-                            blurRadius: 20, spreadRadius: 2)],
-                        ),
-                        child: ClipOval(
-                          child: MascotWidget(
-                            type: mascot.type,
-                            mood: mascot.mood,
-                            size: 100,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0, right: 0,
-                        child: GestureDetector(
-                          onTap: () => context.push('/edit-avatar'),
-                          child: Container(
-                            width: 28, height: 28,
-                            decoration: BoxDecoration(
-                              color: green, shape: BoxShape.circle,
-                              border: Border.all(color: bg, width: 2.5),
-                              boxShadow: [BoxShadow(
-                                color: green.withValues(alpha: 0.4),
-                                blurRadius: 6, offset: const Offset(0, 2))],
-                            ),
-                            child: const Icon(LucideIcons.edit3, size: 12, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(displayName.isNotEmpty ? displayName : l10n.profileUser,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
-                            color: ink, letterSpacing: -0.4)),
-                      ),
-                      Consumer(builder: (_, ref2, __) {
-                        if (!ref2.watch(isProProvider)) return const SizedBox.shrink();
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 6),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(LucideIcons.crown, size: 11, color: Color(0xFFF59E0B)),
-                                SizedBox(width: 3),
-                                Text('PRO', style: TextStyle(fontSize: 10,
-                                    fontWeight: FontWeight.w800, color: Color(0xFFF59E0B),
-                                    letterSpacing: 0.4)),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                  if (displayEmail.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(displayEmail,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13, color: muted)),
-                  ],
-                 
-              
-                ],
-              ),
+              child: Row(children: [
+                Expanded(child: _StatChip(icon: LucideIcons.flame,
+                  value: '${xp.streak}', label: l10n.profileStreak,
+                  color: const Color(0xFFE8734A), d: d)),
+                const SizedBox(width: 10),
+                Expanded(child: _StatChip(icon: LucideIcons.dumbbell,
+                  value: '48', label: l10n.profileSessions,
+                  color: _P.sage, d: d)),
+                const SizedBox(width: 10),
+                Expanded(child: _StatChip(icon: LucideIcons.gem,
+                  value: '$diamonds', label: l10n.profileDiamonds,
+                  color: const Color(0xFF6BA3D6), d: d)),
+              ]),
             ),
           ),
 
-          // ── Stats chips ─────────────────────────────────────────────────
+          // ── Level progress ──────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: LayoutBuilder(
-                builder: (_, constraints) {
-                  final itemWidth = (constraints.maxWidth - 20) / 3;
-                  return Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      SizedBox(
-                        width: itemWidth,
-                        child: _StatChip(
-                          icon: LucideIcons.flame,
-                          value: '${xp.streak}',
-                          label: l10n.profileStreak,
-                          color: const Color(0xFFFF6B35),
-                          bg: surf, ink: ink, muted: muted,
-                        ),
-                      ),
-                      SizedBox(
-                        width: itemWidth,
-                        child: _StatChip(
-                          icon: LucideIcons.dumbbell,
-                          value: '48',
-                          label: l10n.profileSessions,
-                          color: const Color(0xFF6366F1),
-                          bg: surf, ink: ink, muted: muted,
-                        ),
-                      ),
-                      SizedBox(
-                        width: itemWidth,
-                        child: _StatChip(
-                          icon: LucideIcons.gem,
-                          value: '$diamonds',
-                          label: l10n.profileDiamonds,
-                          color: const Color(0xFF60A5FA),
-                          bg: surf, ink: ink, muted: muted,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-
-          // ── XP bar ──────────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: surf,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [BoxShadow(
-                    color: Colors.black.withValues(alpha: isDarkMode ? 0.2 : 0.04),
-                    blurRadius: 8, offset: const Offset(0, 2))],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(PointsModel.levelEmojis[xp.level],
-                          style: const TextStyle(fontSize: 14)),
-                        const SizedBox(width: 6),
-                        Text('Level ${xp.level} · ${PointsModel.levelTitles[xp.level]}',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                            color: green)),
-                        const Spacer(),
-                        GestureDetector(
-                          onTap: () => _showLevelsSheet(context, xp),
-                          behavior: HitTestBehavior.opaque,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('Voir tout',
-                                style: TextStyle(fontSize: 11.5,
-                                  fontWeight: FontWeight.w700, color: green)),
-                              const SizedBox(width: 2),
-                              Icon(LucideIcons.chevronRight, size: 13, color: green),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: GestureDetector(
+                onTap: () => _showLevelsSheet(context, xp),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: surf,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: bdr, width: 0.5),
+                    boxShadow: [BoxShadow(
+                      color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
+                      blurRadius: 12, offset: const Offset(0, 3))],
+                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Text(PointsModel.levelEmojis[xp.level],
+                        style: const TextStyle(fontSize: 16)),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(
+                        'Niveau ${xp.level} · ${PointsModel.levelTitles[xp.level]}',
+                        style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700,
+                          color: _P.main))),
+                      Icon(LucideIcons.chevronRight, size: 14, color: muted.withValues(alpha: 0.5)),
+                    ]),
+                    const SizedBox(height: 12),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
                         value: xp.levelProgress.clamp(0.0, 1.0),
                         minHeight: 6,
-                        backgroundColor: isDarkMode
-                            ? const Color(0xFF2A2A2A) : const Color(0xFFE8F5E9),
-                        valueColor: AlwaysStoppedAnimation<Color>(green),
-                      ),
+                        backgroundColor: _P.sage.withValues(alpha: d ? 0.15 : 0.12),
+                        valueColor: const AlwaysStoppedAnimation<Color>(_P.main)),
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (xp.pointsForNextLevel - xp.totalPoints > 0)
-                          Expanded(
-                            child: Text(
-                              l10n.profileXpToNext(xp.pointsForNextLevel - xp.totalPoints),
-                              style: TextStyle(fontSize: 11, color: muted)),
-                          )
-                        else
-                          Text('Niveau maximum atteint 👑',
-                            style: TextStyle(fontSize: 11, color: muted)),
-                        Text('${xp.totalPoints} / ${xp.pointsForNextLevel} pts',
-                          style: TextStyle(fontSize: 11, color: muted)),
-                      ],
-                    ),
-                  ],
+                    const SizedBox(height: 8),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      if (xp.pointsForNextLevel - xp.totalPoints > 0)
+                        Expanded(child: Text(
+                          l10n.profileXpToNext(xp.pointsForNextLevel - xp.totalPoints),
+                          style: GoogleFonts.inter(fontSize: 11, color: muted)))
+                      else
+                        Text('Niveau maximum atteint',
+                          style: GoogleFonts.inter(fontSize: 11, color: _P.sage)),
+                      Text('${xp.totalPoints} / ${xp.pointsForNextLevel} pts',
+                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                          color: muted)),
+                    ]),
+                  ]),
                 ),
               ),
-            ),
-          ),
-
-          // ── Abonnement (Stripe) ─────────────────────────────────────────
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: SubscriptionButton(),
             ),
           ),
 
           // ── Weekly tracker ──────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: surf,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: bdr, width: 0.5),
                   boxShadow: [BoxShadow(
-                    color: Colors.black.withValues(alpha: isDarkMode ? 0.2 : 0.04),
-                    blurRadius: 8, offset: const Offset(0, 2))],
+                    color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
+                    blurRadius: 12, offset: const Offset(0, 3))],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            l10n.profileWeeklyGoal,
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: ink),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            l10n.profileWeeklyDays(5),
-                            textAlign: TextAlign.right,
-                            style: TextStyle(fontSize: 12, color: muted),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    LayoutBuilder(
-                      builder: (_, constraints) {
-                        final itemWidth = constraints.maxWidth / 7;
-                        return Row(
-                          children: List.generate(7, (i) {
-                            final done = i < 5;
-                            final today = i == 4;
-                            return SizedBox(
-                              width: itemWidth,
-                              child: Column(
-                                children: [
-                                  LayoutBuilder(builder: (_, c) {
-                                    final size = (c.maxWidth * 0.72).clamp(24.0, 38.0);
-                                    return AnimatedContainer(
-                                      duration: const Duration(milliseconds: 300),
-                                      width: size,
-                                      height: size,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: done
-                                            ? green
-                                            : (isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0EE)),
-                                        border: today ? Border.all(color: green, width: 2.5) : null,
-                                        boxShadow: done ? [BoxShadow(
-                                          color: green.withValues(alpha: 0.3),
-                                          blurRadius: 6, offset: const Offset(0, 2))] : [],
-                                      ),
-                                      child: Center(
-                                        child: done
-                                            ? Icon(Icons.check_rounded, color: Colors.white,
-                                                size: size * 0.4)
-                                            : null,
-                                      ),
-                                    );
-                                  }),
-                                  const SizedBox(height: 5),
-                                  Text(_days[i],
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                                      color: done ? green : muted)),
-                                ],
-                              ),
-                            );
-                          }),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // ── Dark mode toggle ────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: _SettingsTile(
-                icon: LucideIcons.moon,
-                label: l10n.darkMode,
-                color: const Color(0xFF6366F1),
-                surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
-                trailing: GestureDetector(
-                  onTap: () => ref.read(themeModeProvider.notifier).toggleThemeMode(),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 42, height: 24,
-                    decoration: BoxDecoration(
-                      color: isDarkMode
-                          ? const Color(0xFF22C55E)
-                          : const Color(0xFFD0D0CE),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: AnimatedAlign(
-                      duration: const Duration(milliseconds: 200),
-                      alignment: isDarkMode ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Container(
-                          width: 20, height: 20,
-                          decoration: const BoxDecoration(
-                            color: Colors.white, shape: BoxShape.circle),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // ── Themes ───────────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: GestureDetector(
-                onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const ThemeScreen())),
-                child: _SettingsTile(
-                  icon: LucideIcons.palette,
-                  label: 'Thèmes',
-                  color: const Color(0xFFE91E63),
-                  surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
-                  trailing: Consumer(builder: (_, ref2, __) {
-                    final palette = ref2.watch(colorPaletteProvider);
-                    return Row(mainAxisSize: MainAxisSize.min, children: [
-                      Container(
-                        width: 18, height: 18,
-                        decoration: BoxDecoration(
-                          color: palette.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(LucideIcons.chevronRight, size: 14,
-                        color: cs.onSurface.withValues(alpha: 0.3)),
-                    ]);
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(child: Text(l10n.profileWeeklyGoal,
+                      style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700,
+                        color: ink), overflow: TextOverflow.ellipsis)),
+                    const SizedBox(width: 8),
+                    Text(l10n.profileWeeklyDays(5), textAlign: TextAlign.right,
+                      style: GoogleFonts.inter(fontSize: 12, color: muted)),
+                  ]),
+                  const SizedBox(height: 14),
+                  LayoutBuilder(builder: (_, constraints) {
+                    final itemW = constraints.maxWidth / 7;
+                    return Row(children: List.generate(7, (i) {
+                      final done = i < 5;
+                      final today = i == 4;
+                      return SizedBox(width: itemW, child: Column(children: [
+                        LayoutBuilder(builder: (_, c) {
+                          final sz = (c.maxWidth * 0.68).clamp(24.0, 36.0);
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            width: sz, height: sz,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: done ? _P.main
+                                  : (d ? const Color(0xFF1E2D23) : const Color(0xFFEDF1EE)),
+                              border: today && !done
+                                  ? Border.all(color: _P.sage, width: 2) : null),
+                            child: done
+                              ? Icon(Icons.check_rounded, color: Colors.white, size: sz * 0.42)
+                              : null,
+                          );
+                        }),
+                        const SizedBox(height: 5),
+                        Text(_days[i], textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600,
+                            color: done ? _P.main : muted)),
+                      ]));
+                    }));
                   }),
-                ),
+                ]),
               ),
             ),
           ),
 
-          // ── Language toggle ─────────────────────────────────────────────
-          SliverToBoxAdapter(
+          // ── Subscription ────────────────────────────────────────────────
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: Consumer(builder: (_, ref2, __) {
-                final isFr = ref2.watch(localeProvider).languageCode == 'fr';
-                return _SettingsTile(
-                  icon: LucideIcons.globe,
-                  label: isFr ? 'Langue : Français' : 'Language: English',
-                  color: const Color(0xFF0EA5E9),
-                  surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
-                  trailing: GestureDetector(
-                    onTap: () => ref2.read(localeProvider.notifier)
-                        .setLocale(isFr ? const Locale('en') : const Locale('fr')),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0EA5E9).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF0EA5E9).withValues(alpha: 0.3)),
-                      ),
-                      child: Text(
-                        isFr ? 'FR → EN' : 'EN → FR',
-                        style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0EA5E9)),
-                      ),
-                    ),
-                  ),
-                );
-              }),
+              padding: EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: SubscriptionButton(),
             ),
           ),
 
-          // ── AI Assistant toggle ─────────────────────────────────────────
+          // ── Section: Préférences ────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: _SettingsTile(
-                icon: LucideIcons.bot,
-                label: l10n.profileAiAssistant,
-                color: const Color(0xFF5B5FEF),
-                surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
-                trailing: Consumer(builder: (_, ref2, __) {
-                  final visible = ref2.watch(chatbotVisibilityProvider);
-                  return GestureDetector(
-                    onTap: () {
-                      final next = !visible;
-                      ref2.read(chatbotVisibilityProvider.notifier).state = next;
-                      StorageService.setChatbotVisible(next);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 42, height: 24,
-                      decoration: BoxDecoration(
-                        color: visible ? green : (isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFD0D0CE)),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: AnimatedAlign(
-                        duration: const Duration(milliseconds: 200),
-                        alignment: visible ? Alignment.centerRight : Alignment.centerLeft,
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 10),
+                  child: Text('PRÉFÉRENCES',
+                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                      color: muted, letterSpacing: 0.8)),
+                ),
+                groupedSection([
+                  buildRow(
+                    icon: LucideIcons.moon, label: l10n.darkMode,
+                    trailing: buildToggle(isDarkMode,
+                      () => ref.read(themeModeProvider.notifier).toggleThemeMode())),
+                  buildRow(
+                    icon: LucideIcons.palette, label: 'Thèmes',
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const ThemeScreen())),
+                    trailing: Consumer(builder: (_, ref2, __) {
+                      final palette = ref2.watch(colorPaletteProvider);
+                      return Row(mainAxisSize: MainAxisSize.min, children: [
+                        Container(width: 16, height: 16,
+                          decoration: BoxDecoration(
+                            color: palette.primary, shape: BoxShape.circle,
+                            border: Border.all(color: bdr, width: 1.5))),
+                        const SizedBox(width: 6),
+                        Icon(LucideIcons.chevronRight, size: 14,
+                          color: muted.withValues(alpha: 0.5)),
+                      ]);
+                    })),
+                  Consumer(builder: (_, ref2, __) {
+                    final isFr = ref2.watch(localeProvider).languageCode == 'fr';
+                    return buildRow(
+                      icon: LucideIcons.globe,
+                      label: isFr ? 'Langue' : 'Language',
+                      onTap: () => ref2.read(localeProvider.notifier)
+                          .setLocale(isFr ? const Locale('en') : const Locale('fr')),
+                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(isFr ? 'Français' : 'English',
+                          style: GoogleFonts.inter(fontSize: 13, color: muted)),
+                        const SizedBox(width: 6),
+                        Icon(LucideIcons.chevronRight, size: 14,
+                          color: muted.withValues(alpha: 0.5)),
+                      ]));
+                  }),
+                  buildRow(
+                    icon: LucideIcons.bot, label: l10n.profileAiAssistant,
+                    trailing: Consumer(builder: (_, ref2, __) {
+                      final visible = ref2.watch(chatbotVisibilityProvider);
+                      return buildToggle(visible, () {
+                        final next = !visible;
+                        ref2.read(chatbotVisibilityProvider.notifier).state = next;
+                        StorageService.setChatbotVisible(next);
+                      });
+                    })),
+                ]),
+              ]),
+            ),
+          ),
+
+          // ── Section: Activité ───────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 10),
+                  child: Text('ACTIVITÉ',
+                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                      color: muted, letterSpacing: 0.8)),
+                ),
+                groupedSection([
+                  buildRow(icon: LucideIcons.calendarDays, label: 'Historique',
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen()))),
+                  buildRow(icon: LucideIcons.bellRing,
+                    label: l10n.isFrench ? 'Notifications' : 'Notifications',
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()))),
+                  Consumer(builder: (_, ref2, __) {
+                    final isPro = ref2.watch(isProProvider);
+                    return buildRow(
+                      icon: LucideIcons.trendingUp,
+                      label: l10n.isFrench ? 'Mes tendances' : 'My trends',
+                      onTap: () {
+                        if (isPro) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const TrendsScreen()));
+                        } else {
+                          showPaywallSheet(context,
+                            feature: l10n.isFrench ? 'Mes tendances' : 'My trends',
+                            description: l10n.isFrench
+                              ? 'Visualise tes calories, ton eau et ton humeur sur 14 jours.'
+                              : 'Visualize your calories, water and mood over 14 days.');
+                        }
+                      },
+                      trailing: isPro
+                        ? Icon(LucideIcons.chevronRight, size: 15,
+                            color: muted.withValues(alpha: 0.5))
+                        : Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: _P.sage.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6)),
+                            child: Text('PRO',
+                              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700,
+                                color: _P.main, letterSpacing: 0.4))),
+                    );
+                  }),
+                ]),
+              ]),
+            ),
+          ),
+
+          // ── Section: Données & confidentialité ──────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 10),
+                  child: Text('DONNÉES',
+                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                      color: muted, letterSpacing: 0.8)),
+                ),
+                groupedSection([
+                  buildRow(icon: LucideIcons.download,
+                    label: l10n.isFrench ? 'Exporter mes données' : 'Export my data',
+                    onTap: () => _exportData(context, ref)),
+                ]),
+              ]),
+            ),
+          ),
+
+          // ── Danger zone ─────────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 10),
+                  child: Text('COMPTE',
+                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                      color: muted, letterSpacing: 0.8)),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: surf,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE53935).withValues(alpha: 0.15)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Column(children: [
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _confirmDeleteAccount(context, ref),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: Container(
-                            width: 20, height: 20,
-                            decoration: const BoxDecoration(
-                              color: Colors.white, shape: BoxShape.circle),
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          child: Row(children: [
+                            Container(width: 32, height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE53935).withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(9)),
+                              child: const Icon(LucideIcons.trash2, size: 15,
+                                color: Color(0xFFE53935))),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(
+                              l10n.isFrench ? 'Supprimer mon compte' : 'Delete my account',
+                              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500,
+                                color: const Color(0xFFE53935)))),
+                          ]),
                         ),
                       ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ),
-
-          // ── Historique d'entraînement ─────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: GestureDetector(
-                onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen())),
-                child: _SettingsTile(
-                  icon: LucideIcons.calendarDays,
-                  label: 'Historique',
-                  color: const Color(0xFF8B5CF6),
-                  surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
-                  trailing: Icon(LucideIcons.chevronRight, size: 14,
-                    color: cs.onSurface.withValues(alpha: 0.3)),
-                ),
-              ),
-            ),
-          ),
-
-          // ── Notifications / Rappels ─────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: GestureDetector(
-                onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const NotificationSettingsScreen())),
-                child: _SettingsTile(
-                  icon: LucideIcons.bellRing,
-                  label: l10n.isFrench ? 'Notifications' : 'Notifications',
-                  color: const Color(0xFFF4A940),
-                  surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
-                  trailing: Icon(LucideIcons.chevronRight, size: 14,
-                    color: cs.onSurface.withValues(alpha: 0.3)),
-                ),
-              ),
-            ),
-          ),
-
-          // ── Tendances / analytics (Pro) ─────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: Consumer(builder: (_, ref2, __) {
-                final isPro = ref2.watch(isProProvider);
-                return GestureDetector(
-                  onTap: () {
-                    if (isPro) {
-                      Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const TrendsScreen()));
-                    } else {
-                      showPaywallSheet(
-                        context,
-                        feature: l10n.isFrench ? 'Mes tendances' : 'My trends',
-                        description: l10n.isFrench
-                            ? 'Visualise tes calories, ton eau et ton humeur sur 14 jours.'
-                            : 'Visualize your calories, water and mood over 14 days.',
-                      );
-                    }
-                  },
-                  child: _SettingsTile(
-                    icon: LucideIcons.trendingUp,
-                    label: l10n.isFrench ? 'Mes tendances' : 'My trends',
-                    color: const Color(0xFF22C55E),
-                    surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
-                    trailing: isPro
-                        ? Icon(LucideIcons.chevronRight, size: 16, color: muted)
-                        : const Icon(LucideIcons.crown, size: 16, color: Color(0xFFF4A940)),
-                  ),
-                );
-              }),
-            ),
-          ),
-
-          // ── Confidentialité (RGPD) ─────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: GestureDetector(
-                onTap: () => _exportData(context, ref),
-                child: _SettingsTile(
-                  icon: LucideIcons.download,
-                  label: l10n.isFrench ? 'Exporter mes données' : 'Export my data',
-                  color: const Color(0xFF3B7FD4),
-                  surf: surf, ink: ink, muted: muted, isDark: isDarkMode,
-                  trailing: Icon(LucideIcons.chevronRight, size: 16, color: muted),
-                ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              child: GestureDetector(
-                onTap: () => _confirmDeleteAccount(context, ref),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? const Color(0xFF1E0A0A)
-                        : const Color(0xFFFFF0F0),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFFE53935).withValues(alpha: 0.30),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(LucideIcons.trash2,
-                          color: Color(0xFFE53935), size: 18),
-                      const SizedBox(width: 10),
-                      Text(
-                        l10n.isFrench ? 'Supprimer mon compte' : 'Delete my account',
-                        style: const TextStyle(
-                          color: Color(0xFFE53935),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                      Divider(height: 0.5, thickness: 0.5,
+                        color: const Color(0xFFE53935).withValues(alpha: 0.1),
+                        indent: 56, endIndent: 16),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _confirmSignOut(context, ref),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          child: Row(children: [
+                            Container(width: 32, height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE53935).withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(9)),
+                              child: const Icon(LucideIcons.logOut, size: 15,
+                                color: Color(0xFFE53935))),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text('Se déconnecter',
+                              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500,
+                                color: const Color(0xFFE53935)))),
+                          ]),
                         ),
                       ),
-                    ],
+                    ]),
                   ),
                 ),
-              ),
+              ]),
             ),
           ),
 
-          // ── Déconnexion ──────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              child: GestureDetector(
-                onTap: () => _confirmSignOut(context, ref),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? const Color(0xFF1E0A0A)
-                        : const Color(0xFFFFF0F0),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFFE53935).withValues(alpha: 0.30),
-                      width: 1,
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(LucideIcons.logOut,
-                          color: Color(0xFFE53935), size: 18),
-                      SizedBox(width: 10),
-                      Text(
-                        'Se déconnecter',
-                        style: TextStyle(
-                          color: Color(0xFFE53935),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // ── Bottom padding ───────────────────────────────────────────────
-          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          const SliverToBoxAdapter(child: SizedBox(height: 48)),
         ],
       ),
     );
@@ -893,45 +747,42 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-// ── Stat chip ────────────────────────────────────────────────────────────────
 class _StatChip extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
   final Color color;
-  final Color bg, ink, muted;
+  final bool d;
   const _StatChip({required this.icon, required this.value, required this.label,
-    required this.color, required this.bg, required this.ink, required this.muted});
+    required this.color, required this.d});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6, offset: const Offset(0, 2))],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 32, height: 32,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 15, color: color),
-            ),
-            const SizedBox(height: 6),
-            Text(value, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: ink)),
-            Text(label, style: TextStyle(fontSize: 10, color: muted, fontWeight: FontWeight.w500)),
-          ],
-        ),
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: _P.card(d),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _P.border(d), width: 0.5),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
+          blurRadius: 12, offset: const Offset(0, 3))],
       ),
+      child: Column(children: [
+        Container(
+          width: 34, height: 34,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, size: 16, color: color),
+        ),
+        const SizedBox(height: 8),
+        Text(value, style: GoogleFonts.outfit(
+          fontSize: 18, fontWeight: FontWeight.w700, color: _P.t1(d))),
+        const SizedBox(height: 1),
+        Text(label, style: GoogleFonts.inter(
+          fontSize: 10, color: _P.t2(d), fontWeight: FontWeight.w500)),
+      ]),
     );
   }
 }

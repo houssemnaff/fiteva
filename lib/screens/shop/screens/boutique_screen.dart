@@ -261,14 +261,14 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
               const SizedBox(width: 8),
               _CircleIconButton(
                 c: c,
-                icon: CupertinoIcons.heart,
+                icon: LucideIcons.heart,
                 count: wishlist.length,
                 onTap: _openFavorites,
               ),
               const SizedBox(width: 8),
               _CircleIconButton(
                 c: c,
-                icon: CupertinoIcons.ellipsis,
+                icon: LucideIcons.moreHorizontal,
                 count: 0,
                 onTap: _showMoreMenu,
               ),
@@ -446,18 +446,17 @@ class _CircleIconButton extends StatelessWidget {
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
-              color: c.surface,
+              color: c.accent.withOpacity(0.10),
               shape: BoxShape.circle,
-              border: Border.all(color: c.divider, width: 1),
             ),
-            child: Icon(icon, size: 17, color: c.ink),
+            child: Icon(icon, size: 17, color: c.accent),
           ),
           if (count > 0)
             Positioned(
               top: -2, right: -2,
               child: Container(
                 width: 16, height: 16,
-                decoration: const BoxDecoration(color: _C.wishRed, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle),
                 child: Center(
                   child: Text('$count',
                       style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800)),
