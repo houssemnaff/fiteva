@@ -342,6 +342,8 @@ final _videoSeries = [
       _VideoEpisode(episode: 1, title: 'Carences & SPM : ce que ton assiette dit de toi', duration: '4:32', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 2, title: 'Carence en fer : reconnaître les signes', duration: '5:10', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 3, title: 'Alimentation anti-inflammatoire', duration: '6:15', asset: 'assets/videos/sante.mov'),
+      _VideoEpisode(episode: 4, title: 'Envies de sucre avant les règles : pourquoi et comment gérer', duration: '5:20', asset: 'https://res.cloudinary.com/dmzvbqocs/video/upload/v1784400265/IMG_3454_pedwzm.mov'),
+      _VideoEpisode(episode: 5, title: 'Ballonnements : causes et solutions naturelles', duration: '4:50', asset: 'https://res.cloudinary.com/dmzvbqocs/video/upload/v1784388477/copy_4EA7AC78-599E-4E74-8C80-C42DA9CA3A59_pjfeln.mov'),
     ]),
   _VideoSeries(doctor: _doctors[0], title: 'Comprendre ton corps',
     color: const Color(0xFF1C4D30), coverAsset: 'assets/images/gynecologue.jpg', episodes: const [
@@ -1674,7 +1676,10 @@ class _PlayerPageState extends ConsumerState<_PlayerPage> {
   @override
   void initState() {
     super.initState();
-    _vpc = VideoPlayerController.asset(widget.episode.asset);
+    final src = widget.episode.asset;
+    _vpc = src.startsWith('http://') || src.startsWith('https://')
+        ? VideoPlayerController.networkUrl(Uri.parse(src))
+        : VideoPlayerController.asset(src);
     _vpc.initialize().then((_) {
       _chewie = ChewieController(
         videoPlayerController: _vpc,
