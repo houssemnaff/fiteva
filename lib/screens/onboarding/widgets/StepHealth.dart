@@ -2,30 +2,94 @@ import 'dart:math';
 
 import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:fiteva/services/tick_sound_service.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'shared_onboarding_widgets.dart';
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 6 — StepHealthProfile (fond mint, sliders conservés)
-// ══════════════════════════════════════════════════════════════════════════════
 class StepHealthProfile extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
-  const StepHealthProfile({super.key, required this.onNext, this.onBack});
+  final int initialHeightCm;
+  final double initialWeightKg;
+  final int initialAge;
+  final ValueChanged<int> onHeightChanged;
+  final ValueChanged<double> onWeightChanged;
+  final ValueChanged<int> onAgeChanged;
+
+  const StepHealthProfile({
+    super.key,
+    required this.onNext,
+    this.onBack,
+    this.initialHeightCm = 165,
+    this.initialWeightKg = 60.0,
+    this.initialAge = 25,
+    required this.onHeightChanged,
+    required this.onWeightChanged,
+    required this.onAgeChanged,
+  });
 
   @override
   ConsumerState<StepHealthProfile> createState() => _StepHealthProfileState();
 }
 
 class _StepHealthProfileState extends ConsumerState<StepHealthProfile> {
-  double _heightCm = 165;
-  double _weightKg = 60;
+  static const int _minH = 140, _maxH = 210;
+  static const int _minA = 14, _maxA = 70;
+  static final List<double> _wList =
+      List.generate(231, (i) => 35.0 + i * 0.5);
 
-  bool get canContinue =>
-      _heightCm >= 140 && _heightCm <= 210 &&
-      _weightKg >= 35 && _weightKg <= 150;
+  late final FixedExtentScrollController _hCtrl;
+  late final FixedExtentScrollController _wCtrl;
+  late final FixedExtentScrollController _aCtrl;
+
+  late int _hIdx;
+  late int _wIdx;
+  late int _aIdx;
+
+  int get _heightCm => _minH + _hIdx;
+  double get _weightKg => _wList[_wIdx];
+  int get _age => _minA + _aIdx;
 
   double get _bmi => _weightKg / pow(_heightCm / 100, 2);
+
+  String get _bmiLabel {
+    if (_bmi < 18.5) return 'Insuffisant';
+    if (_bmi < 25.0) return 'Normal';
+    if (_bmi < 30.0) return 'Surpoids';
+    return 'Obésité';
+  }
+
+  Color get _bmiColor {
+    if (_bmi < 18.5) return const Color(0xFF5B9BD9);
+    if (_bmi < 25.0) return kGreenMid;
+    if (_bmi < 30.0) return const Color(0xFFE8A040);
+    return const Color(0xFFD94A4A);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _hIdx = (widget.initialHeightCm - _minH).clamp(0, _maxH - _minH);
+    final wNearest = _wList.indexWhere((w) => w >= widget.initialWeightKg);
+    _wIdx = wNearest < 0 ? 50 : wNearest;
+    _aIdx = (widget.initialAge - _minA).clamp(0, _maxA - _minA);
+
+    _hCtrl = FixedExtentScrollController(initialItem: _hIdx);
+    _wCtrl = FixedExtentScrollController(initialItem: _wIdx);
+    _aCtrl = FixedExtentScrollController(initialItem: _aIdx);
+
+    TickSoundService.instance.init();
+  }
+
+  @override
+  void dispose() {
+    _hCtrl.dispose();
+    _wCtrl.dispose();
+    _aCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,127 +97,290 @@ class _StepHealthProfileState extends ConsumerState<StepHealthProfile> {
     return mintScaffold(
       child: Column(
         children: [
-          OnboardingTopBar(step: 6, total: 7, title: 'Profil santé', onBack: widget.onBack),
+          OnboardingTopBar(step: 6, total: 7, onBack: widget.onBack),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-              child: Column(
-                children: [
-                  const StepIcon(Icons.monitor_weight_outlined),
-                  const SizedBox(height: 20),
-                  const StepHeader(
-                    title: 'Profil santé',
-                    subtitle: 'Taille & poids pour personnaliser ton plan',
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    height: 310,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(child: _avatarPanel()),
-                        const SizedBox(width: 16),
-                        SizedBox(width: 84, child: _heightPanel(l10n)),
+                        const SizedBox(height: 8),
+                        const StepIcon(Icons.straighten_rounded),
+                        const SizedBox(height: 16),
+                        const StepHeader(
+                          title: 'Profil santé',
+                          subtitle:
+                              'Taille & poids pour personnaliser ton plan',
+                        ),
+                        const SizedBox(height: 28),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _DrumPicker(
+                                label: l10n.oboHealthHeight,
+                                unit: 'cm',
+                                selectedIndex: _hIdx,
+                                controller: _hCtrl,
+                                itemCount: _maxH - _minH + 1,
+                                labelFor: (i) => '${_minH + i}',
+                                onChanged: (i) {
+                                  setState(() => _hIdx = i);
+                                  widget.onHeightChanged(_heightCm);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _DrumPicker(
+                                label: l10n.oboHealthWeight,
+                                unit: 'kg',
+                                selectedIndex: _wIdx,
+                                controller: _wCtrl,
+                                itemCount: _wList.length,
+                                labelFor: (i) {
+                                  final w = _wList[i];
+                                  return w % 1 == 0
+                                      ? '${w.toInt()}'
+                                      : w.toStringAsFixed(1);
+                                },
+                                onChanged: (i) {
+                                  setState(() => _wIdx = i);
+                                  widget.onWeightChanged(_weightKg);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _DrumPicker(
+                                label: 'ÂGE',
+                                unit: 'ans',
+                                selectedIndex: _aIdx,
+                                controller: _aCtrl,
+                                itemCount: _maxA - _minA + 1,
+                                labelFor: (i) => '${_minA + i}',
+                                onChanged: (i) {
+                                  setState(() => _aIdx = i);
+                                  widget.onAgeChanged(_age);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        _BmiCard(
+                            bmi: _bmi,
+                            label: _bmiLabel,
+                            color: _bmiColor),
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _weightPanel(l10n),
-                  const SizedBox(height: 16),
-                  // IMC pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.55),
-                      borderRadius: BorderRadius.circular(40),
-                      border: Border.all(color: Colors.white.withOpacity(0.8)),
-                    ),
-                    child: Text('IMC : ${_bmi.toStringAsFixed(1)}',
-                      style: const TextStyle(fontSize: 13,
-                          fontWeight: FontWeight.w600, color: kTextDark)),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
           CtaButton(
             label: l10n.oboHealthContinue,
-            onPressed: canContinue ? widget.onNext : null,
+            onPressed: widget.onNext,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _avatarPanel() {
-    return Center(
-      child: Image.asset(
-        _weightKg < 55 ? 'assets/images/slim1.png'
-            : _weightKg < 75 ? 'assets/images/average1.png'
-            : 'assets/images/chubby1.png',
-        fit: BoxFit.contain, width: 190, height: 250,
-        errorBuilder: (_, __, ___) =>
-            const Icon(Icons.person, size: 90, color: kGreenDark),
-      ),
-    );
-  }
+class _DrumPicker extends StatelessWidget {
+  final String label;
+  final String unit;
+  final int selectedIndex;
+  final FixedExtentScrollController controller;
+  final int itemCount;
+  final String Function(int) labelFor;
+  final ValueChanged<int> onChanged;
 
-  Widget _heightPanel(AppL10n l10n) {
+  const _DrumPicker({
+    required this.label,
+    required this.unit,
+    required this.selectedIndex,
+    required this.controller,
+    required this.itemCount,
+    required this.labelFor,
+    required this.onChanged,
+  });
+
+  static const double _kItemH = 52.0;
+  static const int _kVisible = 5;
+  static const Color _kBg = Color(0xFF0F1A14);
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.55),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.8)),
+        color: kGlassFill,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: kGlassBorder, width: 0.5),
       ),
-      child: Column(children: [
-        Text(l10n.oboHealthHeight, style: const TextStyle(fontSize: 12,
-            fontWeight: FontWeight.w600, color: kTextMuted)),
-        const SizedBox(height: 8),
-        Text('${_heightCm.round()} cm', style: const TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w700, color: kTextDark)),
-        const SizedBox(height: 6),
-        Expanded(child: RotatedBox(quarterTurns: 3,
-          child: SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: kGreenDark,
-              inactiveTrackColor: Colors.white.withOpacity(0.5),
-              thumbColor: kGreenDark,
-              overlayColor: kGreenDark.withOpacity(0.15),
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          Text(label,
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                letterSpacing: 2.2,
+                fontWeight: FontWeight.w700,
+                color: kTextMuted,
+              )),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: _kItemH * _kVisible,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Center(
+                  child: Container(
+                    height: _kItemH,
+                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: kGreenDark.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                          color: kGreenMid.withValues(alpha: 0.3), width: 1),
+                    ),
+                  ),
+                ),
+                ListWheelScrollView.useDelegate(
+                  controller: controller,
+                  itemExtent: _kItemH,
+                  perspective: 0.002,
+                  diameterRatio: 1.8,
+                  squeeze: 1.1,
+                  physics: const FixedExtentScrollPhysics(),
+                  onSelectedItemChanged: (i) {
+                    HapticFeedback.selectionClick();
+                    TickSoundService.instance.tick();
+                    onChanged(i);
+                  },
+                  childDelegate: ListWheelChildBuilderDelegate(
+                    childCount: itemCount,
+                    builder: (_, i) {
+                      final sel = i == selectedIndex;
+                      return Center(
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 180),
+                          style: GoogleFonts.outfit(
+                            fontSize: sel ? 24 : 16,
+                            fontWeight:
+                                sel ? FontWeight.w800 : FontWeight.w400,
+                            color: sel ? kGreenBright : kTextMuted,
+                          ),
+                          child: Text(labelFor(i)),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Positioned(
+                  top: 0, left: 0, right: 0,
+                  height: _kItemH * 1.6,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [_kBg, _kBg.withValues(alpha: 0)],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0, left: 0, right: 0,
+                  height: _kItemH * 1.6,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [_kBg, _kBg.withValues(alpha: 0)],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: Slider(value: _heightCm, min: 140, max: 210,
-                onChanged: (v) => setState(() => _heightCm = v)),
           ),
-        )),
-      ]),
+          const SizedBox(height: 6),
+          Text(unit,
+              style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: kTextMuted)),
+          const SizedBox(height: 14),
+        ],
+      ),
     );
   }
+}
 
-  Widget _weightPanel(AppL10n l10n) {
+class _BmiCard extends StatelessWidget {
+  final double bmi;
+  final String label;
+  final Color color;
+
+  const _BmiCard({required this.bmi, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.55),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.8)),
+        color: kGlassFill,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: kGlassBorder, width: 0.5),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l10n.oboHealthWeight, style: const TextStyle(fontSize: 13,
-            color: kTextMuted, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 6),
-        Text('${_weightKg.round()} kg', style: const TextStyle(
-            fontSize: 22, fontWeight: FontWeight.w700, color: kTextDark)),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: kGreenDark,
-            inactiveTrackColor: Colors.white.withOpacity(0.5),
-            thumbColor: kGreenDark,
-            overlayColor: kGreenDark.withOpacity(0.15),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('IMC',
+                  style: GoogleFonts.inter(
+                      fontSize: 10,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.w700,
+                      color: kTextMuted)),
+              const SizedBox(height: 4),
+              Text(bmi.toStringAsFixed(1),
+                  style: GoogleFonts.outfit(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: kTextDark)),
+            ],
           ),
-          child: Slider(value: _weightKg, min: 35, max: 150,
-              onChanged: (v) => setState(() => _weightKg = v)),
-        ),
-      ]),
+          const Spacer(),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Text(label,
+                style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: color)),
+          ),
+        ],
+      ),
     );
   }
 }

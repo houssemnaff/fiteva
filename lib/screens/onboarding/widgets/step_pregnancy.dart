@@ -1,11 +1,10 @@
 import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'shared_onboarding_widgets.dart';
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 8 — StepPregnancy (fond mint + pills Oui/Non)
-// ══════════════════════════════════════════════════════════════════════════════
 class StepPregnancy extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
@@ -53,6 +52,14 @@ class _StepPregnancyState extends ConsumerState<StepPregnancy> {
     }
   }
 
+  Color get _trimesterColor {
+    switch (_trimester) {
+      case 1: return kGreenBright;
+      case 2: return const Color(0xFFE8A040);
+      default: return const Color(0xFFE87070);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = ref.watch(l10nProvider);
@@ -62,106 +69,143 @@ class _StepPregnancyState extends ConsumerState<StepPregnancy> {
           OnboardingTopBar(step: 8, total: 8, title: 'Grossesse', onBack: widget.onBack),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const StepIcon(Icons.pregnant_woman),
-                  const SizedBox(height: 20),
                   const StepHeader(
                     title: 'Grossesse',
-                    subtitle: 'On adapte ton programme selon ton état de santé',
+                    subtitle: 'On adapte ton programme pour ta sécurité.',
                   ),
-                  const SizedBox(height: 28),
-                  // Oui / Non en pills pleine largeur
+                  const SizedBox(height: 32),
+                  // Yes / No cards
                   Row(children: [
-                    Expanded(child: _pregnancyPill(false, l10n.oboPregnancyNo,
-                        l10n.oboPregnancyNoSub, Icons.do_not_disturb_alt_outlined)),
+                    Expanded(child: _ChoiceCard(
+                      selected: _isPregnant == false,
+                      icon: Icons.do_not_disturb_alt_outlined,
+                      label: l10n.oboPregnancyNo,
+                      sub: l10n.oboPregnancyNoSub,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _isPregnant = false);
+                      },
+                    )),
                     const SizedBox(width: 12),
-                    Expanded(child: _pregnancyPill(true, l10n.oboPregnancyYes,
-                        l10n.oboPregnancyYesSub, Icons.pregnant_woman)),
+                    Expanded(child: _ChoiceCard(
+                      selected: _isPregnant == true,
+                      icon: Icons.pregnant_woman,
+                      label: l10n.oboPregnancyYes,
+                      sub: l10n.oboPregnancyYesSub,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _isPregnant = true);
+                      },
+                    )),
                   ]),
 
                   if (_isPregnant == true) ...[
-                    const SizedBox(height: 24),
-                    // Semaines
+                    const SizedBox(height: 28),
+                    // Week slider card
                     Container(
-                      padding: const EdgeInsets.all(18),
+                      padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.55),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white.withOpacity(0.8)),
+                        color: kGlassFill,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: kGlassBorder, width: 0.5),
                       ),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(l10n.oboPregnancyWeek,
-                            style: const TextStyle(fontSize: 13,
-                                fontWeight: FontWeight.w600, color: kTextMuted)),
-                          const SizedBox(height: 10),
+                            style: GoogleFonts.inter(fontSize: 13,
+                                fontWeight: FontWeight.w500, color: kTextMuted)),
+                          const SizedBox(height: 12),
                           Row(crossAxisAlignment: CrossAxisAlignment.baseline,
                             textBaseline: TextBaseline.alphabetic,
                             children: [
-                              Text('${_week.round()}', style: const TextStyle(
-                                  fontSize: 40, fontWeight: FontWeight.w800,
-                                  color: kGreenDark)),
+                              Text('${_week.round()}', style: GoogleFonts.outfit(
+                                  fontSize: 48, fontWeight: FontWeight.w800,
+                                  color: kTextDark, letterSpacing: -2)),
                               const SizedBox(width: 6),
-                              Text(l10n.oboPregnancySA, style: const TextStyle(fontSize: 18,
-                                  color: kTextMuted, fontWeight: FontWeight.w500)),
+                              Text(l10n.oboPregnancySA, style: GoogleFonts.inter(
+                                  fontSize: 18, color: kTextMuted,
+                                  fontWeight: FontWeight.w400)),
                             ]),
+                          const SizedBox(height: 8),
                           SliderTheme(
                             data: SliderTheme.of(context).copyWith(
-                              activeTrackColor: kGreenDark,
-                              inactiveTrackColor: Colors.white.withOpacity(0.5),
-                              thumbColor: kGreenDark,
-                              overlayColor: kGreenDark.withOpacity(0.15),
+                              activeTrackColor: _trimesterColor,
+                              inactiveTrackColor: kWhite.withValues(alpha: 0.06),
+                              thumbColor: kTextDark,
+                              overlayColor: _trimesterColor.withValues(alpha: 0.12),
+                              trackHeight: 4,
+                              thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 8),
                             ),
                             child: Slider(value: _week, min: 1, max: 42,
                                 divisions: 41,
-                                onChanged: (v) => setState(() => _week = v)),
+                                onChanged: (v) {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _week = v);
+                                }),
                           ),
                           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: const [
-                              Text('1 SA', style: TextStyle(fontSize: 11, color: kTextMuted)),
-                              Text('42 SA', style: TextStyle(fontSize: 11, color: kTextMuted)),
+                            children: [
+                              Text('1 SA', style: GoogleFonts.inter(
+                                  fontSize: 11, color: kTextMuted)),
+                              Text('42 SA', style: GoogleFonts.inter(
+                                  fontSize: 11, color: kTextMuted)),
                             ]),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    // Trimestre pill
+                    const SizedBox(height: 14),
+                    // Trimester badge
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
+                          horizontal: 20, vertical: 13),
                       decoration: BoxDecoration(
-                        color: kGreenDark,
-                        borderRadius: BorderRadius.circular(40),
+                        color: _trimesterColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: _trimesterColor.withValues(alpha: 0.25),
+                          width: 0.5),
                       ),
-                      child: Text(_trimesterLabel(l10n), textAlign: TextAlign.center,
-                        style: const TextStyle(fontWeight: FontWeight.w700,
-                            fontSize: 13.5, color: Colors.white)),
+                      child: Text(_trimesterLabel(l10n),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700, fontSize: 14,
+                            color: _trimesterColor)),
                     ),
-                    const SizedBox(height: 12),
-                    // Advice
+                    const SizedBox(height: 14),
+                    // Advice card
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.55),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.8)),
+                        color: kGlassFill,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: kGlassBorder, width: 0.5),
                       ),
                       child: Row(crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.info_outline,
-                              color: kGreenDark, size: 18),
-                          const SizedBox(width: 10),
+                          Container(
+                            width: 32, height: 32,
+                            decoration: BoxDecoration(
+                              color: kGreenBright.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.tips_and_updates_outlined,
+                                color: kGreenMid, size: 16),
+                          ),
+                          const SizedBox(width: 12),
                           Expanded(child: Text(_trimesterAdvice,
-                            style: const TextStyle(fontSize: 13.5,
-                                color: kTextMuted, height: 1.5))),
+                            style: GoogleFonts.inter(fontSize: 13.5,
+                                color: kTextMuted, height: 1.55))),
                         ]),
                     ),
                   ],
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -174,36 +218,115 @@ class _StepPregnancyState extends ConsumerState<StepPregnancy> {
       ),
     );
   }
+}
 
-  Widget _pregnancyPill(bool value, String label, String sub, IconData icon) {
-    final selected = _isPregnant == value;
+class _ChoiceCard extends StatefulWidget {
+  final bool selected;
+  final IconData icon;
+  final String label;
+  final String sub;
+  final VoidCallback onTap;
+
+  const _ChoiceCard({
+    required this.selected,
+    required this.icon,
+    required this.label,
+    required this.sub,
+    required this.onTap,
+  });
+
+  @override
+  State<_ChoiceCard> createState() => _ChoiceCardState();
+}
+
+class _ChoiceCardState extends State<_ChoiceCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 80),
+      reverseDuration: const Duration(milliseconds: 200),
+    );
+    _scale = Tween(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sel = widget.selected;
     return GestureDetector(
-      onTap: () => setState(() => _isPregnant = value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        decoration: BoxDecoration(
-          color: selected ? kCardSel : Colors.white.withOpacity(0.55),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: selected ? kCardSel : Colors.white.withOpacity(0.8),
-            width: 1.5,
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) { _ctrl.reverse(); widget.onTap(); },
+      onTapCancel: () => _ctrl.reverse(),
+      child: ScaleTransition(
+        scale: _scale,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+          decoration: BoxDecoration(
+            color: sel ? kGreenDark.withValues(alpha: 0.35) : kGlassFill,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: sel ? kGreenBright.withValues(alpha: 0.5) : kGlassBorder,
+              width: sel ? 1.2 : 0.5,
+            ),
+            boxShadow: sel
+                ? [BoxShadow(
+                    color: kGreenBright.withValues(alpha: 0.08),
+                    blurRadius: 20, offset: const Offset(0, 6))]
+                : [],
           ),
-          boxShadow: selected
-              ? [BoxShadow(color: kGreenDark.withOpacity(0.25),
-                  blurRadius: 16, offset: const Offset(0, 6))]
-              : [],
+          child: Column(children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: 48, height: 48,
+              decoration: BoxDecoration(
+                color: sel
+                    ? kGreenBright.withValues(alpha: 0.12)
+                    : kWhite.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(widget.icon,
+                  color: sel ? kGreenBright : kTextMuted, size: 24),
+            ),
+            const SizedBox(height: 14),
+            Text(widget.label, style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w700, fontSize: 17,
+                color: sel ? kWhite : kTextDark)),
+            const SizedBox(height: 4),
+            Text(widget.sub, textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 12,
+                  color: sel ? kGreenMid : kTextMuted)),
+            const SizedBox(height: 12),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: 22, height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: sel ? kGreenBright : Colors.transparent,
+                border: Border.all(
+                  color: sel ? kGreenBright : kWhite.withValues(alpha: 0.15),
+                  width: sel ? 0 : 1.5),
+              ),
+              child: sel
+                  ? const Icon(Icons.check_rounded, size: 13, color: kBgDark)
+                  : null,
+            ),
+          ]),
         ),
-        child: Column(children: [
-          Icon(icon, color: selected ? Colors.white : kGreenMid, size: 30),
-          const SizedBox(height: 10),
-          Text(label, style: TextStyle(fontWeight: FontWeight.w800,
-              fontSize: 16, color: selected ? Colors.white : kTextDark)),
-          const SizedBox(height: 4),
-          Text(sub, textAlign: TextAlign.center, style: TextStyle(
-              fontSize: 11.5,
-              color: selected ? Colors.white70 : kTextMuted)),
-        ]),
       ),
     );
   }

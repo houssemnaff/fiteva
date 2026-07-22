@@ -21,7 +21,9 @@ import 'workout/workout_screen.dart';
 import 'nutrition/nutrition_screen.dart';
 import 'community/community_screen.dart';
 import 'profile/profile_screen.dart';
+import 'walkthrough/app_walkthrough_screen.dart';
 import '../l10n/app_localizations.dart';
+import '../services/storage_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  NAV CONFIG
@@ -106,6 +108,21 @@ class _MainLayoutState extends ConsumerState<MainLayout>
         vsync: this, duration: const Duration(milliseconds: 280));
     _plusScale     = CurvedAnimation(parent: _plusAnim, curve: Curves.easeOutCubic);
     _pageController = PageController(initialPage: 0);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowWalkthrough());
+  }
+
+  void _maybeShowWalkthrough() {
+    if (!StorageService.getBool('walkthrough_completed')) {
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          opaque: false,
+          pageBuilder: (_, __, ___) => const AppWalkthroughScreen(),
+          transitionsBuilder: (_, anim, __, child) =>
+              FadeTransition(opacity: anim, child: child),
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+    }
   }
 
   @override

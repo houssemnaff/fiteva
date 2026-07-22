@@ -51,9 +51,13 @@ Widget buildProgramCard({
           SizedBox(
             height: 150,
             child: Stack(fit: StackFit.expand, children: [
-              Image.asset(imageUrl, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: color.withValues(alpha: 0.12))),
+              imageUrl.startsWith('http')
+                ? Image.network(imageUrl, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: color.withValues(alpha: 0.12)))
+                : Image.asset(imageUrl, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: color.withValues(alpha: 0.12))),
 
               // Subtle top-left gradient tint
               Positioned.fill(

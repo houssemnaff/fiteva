@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:math' as math;
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_insight_repository.dart';
@@ -41,15 +42,6 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
   late final Animation<double> _scaleDown =
       Tween<double>(begin: 1, end: 0.94).animate(
           CurvedAnimation(parent: _switchAnim, curve: Curves.easeInCubic));
-
-  static const _moodLabels = ['Difficile', 'Neutre', 'Bien', 'Tres bien', 'Rayonnante'];
-  static const _moodIcons  = [
-    LucideIcons.cloudRain,
-    LucideIcons.minus,
-    LucideIcons.smile,
-    LucideIcons.sun,
-    LucideIcons.sparkles,
-  ];
 
   @override
   void initState() {
@@ -281,8 +273,8 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
-                // ── Hero ─────────────────────────────────────────────────
-                _HeroCard(
+                // ── Hero ring ────────────────────────────────────────────
+                _RingHero(
                   weeks: _weeks,
                   rem: _rem,
                   phaseName: _phaseName,
@@ -290,7 +282,23 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                   phaseColor: _phaseColor,
                   progress: _isBeyondFourthTrimester ? _longTermProgress : _progress,
                   p: p,
-                  l10n: l10n,
+                ),
+
+                // ── Countdown numbers ────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _CountdownRow(
+                    weeks: _weeks, days: _days,
+                    phaseName: _phaseName, p: p,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ── Recovery timeline ────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _RecoveryTimeline(weeks: _weeks, p: p),
                 ),
 
                 const SizedBox(height: 16),
@@ -309,10 +317,10 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
 
                 const SizedBox(height: 16),
 
-                // ── Mood ─────────────────────────────────────────────────
+                // ── Mood (emoji) ─────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _MoodCard(
+                  child: _EmojiMoodCard(
                     selected: _mood,
                     onSelect: (i) {
                       HapticFeedback.selectionClick();
@@ -324,26 +332,22 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                // ── Cette semaine ────────────────────────────────────────
+                // ── Week insight (3 separate cards) ──────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _WeekInsight(insight: insight, weeks: _weeks, p: p, l10n: l10n),
+                  child: _SplitInsights(
+                    insight: insight, weeks: _weeks, p: p, l10n: l10n,
+                  ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                // ── Progression ──────────────────────────────────────────
+                // ── Recovery tips carousel ───────────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _ProgressCard(
-                    weeks: _weeks,
-                    progress: _progress,
-                    phaseColor: _phaseColor,
-                    p: p,
-                    l10n: l10n,
-                  ),
+                  child: _RecoveryTipsCarousel(weeks: _weeks, p: p),
                 ),
 
                 const SizedBox(height: 40),
@@ -358,120 +362,238 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Switch to cycle button (header action)
+//  RING HERO  (centered circular recovery ring)
 // ─────────────────────────────────────────────────────────────────────────────
-class _CycleSwitchButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _CycleSwitchButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFFD94F6B).withOpacity(0.10),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: const Color(0xFFD94F6B).withOpacity(0.35), width: 1),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(LucideIcons.droplets, size: 13, color: Color(0xFFD94F6B)),
-          const SizedBox(width: 5),
-          Text('Mes règles',
-            style: GoogleFonts.inter(
-              fontSize: 11, fontWeight: FontWeight.w700,
-              color: const Color(0xFFD94F6B))),
-        ]),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Hero card
-// ─────────────────────────────────────────────────────────────────────────────
-class _HeroCard extends StatelessWidget {
+class _RingHero extends StatelessWidget {
   final int weeks, rem;
   final String phaseName, phaseDesc;
   final Color phaseColor;
   final double progress;
   final PgColors p;
 
-  final AppL10n l10n;
-  const _HeroCard({
+  const _RingHero({
     required this.weeks, required this.rem,
     required this.phaseName, required this.phaseDesc,
     required this.phaseColor, required this.progress, required this.p,
-    required this.l10n,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: p.green,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: p.green.withOpacity(0.25),
-              blurRadius: 20, offset: const Offset(0, 8)),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Anneau semaines
-          Stack(alignment: Alignment.center, children: [
-            SizedBox(
-              width: 84, height: 84,
-              child: CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 4,
-                backgroundColor: Colors.white.withOpacity(0.18),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeCap: StrokeCap.round,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Column(children: [
+        SizedBox(
+          width: 160, height: 160,
+          child: CustomPaint(
+            painter: _RecoveryRingPainter(
+              progress: progress,
+              trackColor: p.green.withOpacity(0.12),
+              fillColor: p.green,
+              dotColor: phaseColor,
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('🌿', style: const TextStyle(fontSize: 32)),
+                  const SizedBox(height: 2),
+                  Text('S$weeks', style: GoogleFonts.outfit(
+                    fontSize: 26, fontWeight: FontWeight.w900,
+                    color: p.textDark)),
+                  Text('+$rem j', style: GoogleFonts.inter(
+                    fontSize: 12, color: p.textMid,
+                    fontWeight: FontWeight.w500)),
+                ],
               ),
             ),
-            Column(mainAxisSize: MainAxisSize.min, children: [
-              Text('S$weeks', style: GoogleFonts.outfit(
-                fontSize: 22, fontWeight: FontWeight.w800,
-                color: Colors.white, height: 1.1)),
-              Text('$rem j', style: GoogleFonts.inter(
-                fontSize: 11, color: Colors.white60,
-                fontWeight: FontWeight.w500)),
-            ]),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: phaseColor.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: phaseColor.withOpacity(0.25)),
+          ),
+          child: Text(phaseName.toUpperCase(), style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: FontWeight.w700,
+            color: phaseColor, letterSpacing: 2)),
+        ),
+        const SizedBox(height: 8),
+        Text(phaseDesc, style: GoogleFonts.inter(
+          fontSize: 13, color: p.textMid, height: 1.5),
+          textAlign: TextAlign.center),
+      ]),
+    );
+  }
+}
+
+class _RecoveryRingPainter extends CustomPainter {
+  final double progress;
+  final Color trackColor, fillColor, dotColor;
+
+  _RecoveryRingPainter({
+    required this.progress, required this.trackColor,
+    required this.fillColor, required this.dotColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 10;
+    const strokeWidth = 9.0;
+    const startAngle = -math.pi / 2;
+
+    canvas.drawCircle(center, radius, Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round);
+
+    final sweepAngle = 2 * math.pi * progress;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle, sweepAngle, false,
+      Paint()
+        ..color = fillColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round,
+    );
+
+    final dotAngle = startAngle + sweepAngle;
+    final dx = center.dx + radius * math.cos(dotAngle);
+    final dy = center.dy + radius * math.sin(dotAngle);
+    canvas.drawCircle(Offset(dx, dy), 6,
+      Paint()..color = Colors.white);
+    canvas.drawCircle(Offset(dx, dy), 4,
+      Paint()..color = dotColor);
+  }
+
+  @override
+  bool shouldRepaint(_RecoveryRingPainter old) =>
+      old.progress != progress || old.fillColor != fillColor;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  COUNTDOWN ROW  (3 key numbers)
+// ─────────────────────────────────────────────────────────────────────────────
+class _CountdownRow extends StatelessWidget {
+  final int weeks, days;
+  final String phaseName;
+  final PgColors p;
+
+  const _CountdownRow({
+    required this.weeks, required this.days,
+    required this.phaseName, required this.p,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      ('$weeks', 'Semaines', p.green),
+      ('$days', 'Jours', p.mint),
+      (phaseName, 'Phase', p.textMid),
+    ];
+
+    return Row(children: List.generate(items.length, (i) {
+      final (value, label, color) = items[i];
+      return Expanded(
+        child: Container(
+          margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: p.border),
+          ),
+          child: Column(children: [
+            Text(value, style: GoogleFonts.outfit(
+              fontSize: value.length > 6 ? 11 : 24,
+              fontWeight: FontWeight.w800,
+              color: color),
+              textAlign: TextAlign.center,
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 3),
+            Text(label, style: GoogleFonts.inter(
+              fontSize: 10, color: p.textSoft),
+              textAlign: TextAlign.center),
           ]),
+        ),
+      );
+    }));
+  }
+}
 
-          const SizedBox(width: 20),
+// ─────────────────────────────────────────────────────────────────────────────
+//  RECOVERY TIMELINE  (visual phase segments with marker)
+// ─────────────────────────────────────────────────────────────────────────────
+class _RecoveryTimeline extends StatelessWidget {
+  final int weeks;
+  final PgColors p;
 
-          Expanded(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(phaseName, style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w700,
-                  color: Colors.white, letterSpacing: 0.3)),
-              ),
-              const SizedBox(height: 10),
-              Text(phaseDesc, style: GoogleFonts.inter(
-                fontSize: 13, color: Colors.white.withOpacity(0.80),
-                height: 1.5)),
-              const SizedBox(height: 12),
-              Text(l10n.ppTrim4, style: GoogleFonts.inter(
-                fontSize: 10, fontWeight: FontWeight.w600,
-                color: Colors.white.withOpacity(0.55),
-                letterSpacing: 1.4)),
-            ],
-          )),
-        ],
+  const _RecoveryTimeline({required this.weeks, required this.p});
+
+  static const _phases = [
+    ('Repos', 0, 2, Color(0xFFE58F8A)),
+    ('Reconstruction', 2, 6, Color(0xFFF4A940)),
+    ('Renforcement', 6, 12, Color(0xFF7ABB98)),
+    ('Retour actif', 12, 26, Color(0xFF1C4D30)),
+    ('Stabilisation', 26, 52, Color(0xFF5A7A9E)),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    int activeIdx = 0;
+    for (int i = 0; i < _phases.length; i++) {
+      if (weeks >= _phases[i].$2) activeIdx = i;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: p.border),
       ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('PARCOURS DE RÉCUPÉRATION', style: GoogleFonts.inter(
+          fontSize: 9, fontWeight: FontWeight.w700,
+          color: p.textSoft, letterSpacing: 1.8)),
+        const SizedBox(height: 14),
+        Row(children: List.generate(_phases.length, (i) {
+          final (_, start, end, color) = _phases[i];
+          final isActive = i == activeIdx;
+          final isPast = i < activeIdx;
+          return Expanded(
+            flex: end - start,
+            child: Container(
+              margin: EdgeInsets.only(right: i < _phases.length - 1 ? 3 : 0),
+              height: isActive ? 8 : 5,
+              decoration: BoxDecoration(
+                color: isPast || isActive
+                    ? color
+                    : color.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          );
+        })),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('S0', style: GoogleFonts.inter(
+              fontSize: 9, color: p.textSoft)),
+            Text('S$weeks', style: GoogleFonts.inter(
+              fontSize: 9, fontWeight: FontWeight.w700,
+              color: _phases[activeIdx].$4)),
+            Text('S52', style: GoogleFonts.inter(
+              fontSize: 9, color: p.textSoft)),
+          ],
+        ),
+      ]),
     );
   }
 }
@@ -540,21 +662,21 @@ class _DateCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Mood card
+//  EMOJI MOOD CARD
 // ─────────────────────────────────────────────────────────────────────────────
-class _MoodCard extends StatelessWidget {
+class _EmojiMoodCard extends StatelessWidget {
   final int? selected;
   final ValueChanged<int> onSelect;
   final PgColors p;
-
-  static const _labels = ['Difficile', 'Neutre', 'Bien', 'Tres bien', 'Super'];
-  static const _icons  = [
-    LucideIcons.cloudRain, LucideIcons.minus,
-    LucideIcons.smile, LucideIcons.sun, LucideIcons.sparkles,
-  ];
-
   final AppL10n l10n;
-  const _MoodCard({required this.selected, required this.onSelect, required this.p, required this.l10n});
+
+  static const _emojis = ['😣', '😐', '😊', '☀️', '✨'];
+  static const _labels = ['Difficile', 'Neutre', 'Bien', 'Très bien', 'Super'];
+
+  const _EmojiMoodCard({
+    required this.selected, required this.onSelect,
+    required this.p, required this.l10n,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -569,108 +691,125 @@ class _MoodCard extends StatelessWidget {
         Text(l10n.ppCommentSentez, style: GoogleFonts.inter(
           fontSize: 13, fontWeight: FontWeight.w700, color: p.textDark)),
         const SizedBox(height: 14),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(5, (i) {
-            final sel = selected == i;
-            return GestureDetector(
+        Row(children: List.generate(5, (i) {
+          final sel = selected == i;
+          return Expanded(
+            child: GestureDetector(
               onTap: () => onSelect(i),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                duration: const Duration(milliseconds: 200),
+                margin: EdgeInsets.only(right: i < 4 ? 6 : 0),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: sel ? p.green.withOpacity(0.10) : Colors.transparent,
+                  color: sel ? p.green : p.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: sel ? p.green : Colors.transparent, width: 1.5),
+                    color: sel ? p.green : p.border, width: 1),
                 ),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(_icons[i], size: 22,
-                      color: sel ? p.green : p.textSoft),
-                  const SizedBox(height: 5),
+                child: Column(children: [
+                  Text(_emojis[i], style: TextStyle(fontSize: sel ? 24 : 20)),
+                  const SizedBox(height: 4),
                   Text(_labels[i], style: GoogleFonts.inter(
                     fontSize: 9, fontWeight: FontWeight.w600,
-                    color: sel ? p.green : p.textSoft)),
+                    color: sel ? Colors.white : p.textSoft),
+                    textAlign: TextAlign.center),
                 ]),
               ),
-            );
-          }),
-        ),
+            ),
+          );
+        })),
       ]),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Week insight
+//  SPLIT INSIGHTS  (3 separate colored cards)
 // ─────────────────────────────────────────────────────────────────────────────
-class _WeekInsight extends StatelessWidget {
+class _SplitInsights extends StatelessWidget {
   final PostpartumInsight insight;
   final int weeks;
   final PgColors p;
   final AppL10n l10n;
 
-  const _WeekInsight({required this.insight, required this.weeks, required this.p, required this.l10n});
+  const _SplitInsights({
+    required this.insight, required this.weeks,
+    required this.p, required this.l10n,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Text('Semaine $weeks — ${insight.title}',
-          style: GoogleFonts.outfit(
-            fontSize: 17, fontWeight: FontWeight.w700, color: p.textDark)),
-      ),
-      _InsightRow(
+      Text('Semaine $weeks — ${insight.title}',
+        style: GoogleFonts.outfit(
+          fontSize: 17, fontWeight: FontWeight.w700, color: p.textDark)),
+      const SizedBox(height: 12),
+
+      // Baby milestone (mint)
+      _ColoredInsightCard(
         icon: LucideIcons.baby,
-        color: p.mint,
-        title: l10n.ppVotreBebe,
+        label: l10n.ppVotreBebe,
         text: insight.babyMilestone,
-        p: p,
-      ),
-      const SizedBox(height: 10),
-      _InsightRow(
-        icon: LucideIcons.heartPulse,
-        color: p.warmPink,
-        title: l10n.ppVotreCorps,
-        text: insight.momRecovery,
-        p: p,
-      ),
-      const SizedBox(height: 10),
-      _InsightRow(
-        icon: LucideIcons.brain,
         color: p.mint,
-        title: l10n.ppVotreMental,
-        text: insight.mentalHealth,
+        bgColor: p.mintLight,
         p: p,
       ),
-      const SizedBox(height: 14),
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        decoration: BoxDecoration(
-          color: p.mintSoft,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: p.border),
-        ),
-        child: Text('"${insight.poeticLine}"',
-          style: GoogleFonts.inter(
-            fontSize: 13, fontStyle: FontStyle.italic,
-            color: p.textMid, height: 1.7)),
+      const SizedBox(height: 10),
+
+      // Body recovery (pink)
+      _ColoredInsightCard(
+        icon: LucideIcons.heartPulse,
+        label: l10n.ppVotreCorps,
+        text: insight.momRecovery,
+        color: p.warmPink,
+        bgColor: p.pinkSoft,
+        p: p,
       ),
+      const SizedBox(height: 10),
+
+      // Mental health (green)
+      _ColoredInsightCard(
+        icon: LucideIcons.brain,
+        label: l10n.ppVotreMental,
+        text: insight.mentalHealth,
+        color: p.green,
+        bgColor: p.mintSoft,
+        p: p,
+      ),
+
+      if (insight.poeticLine.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: p.border),
+          ),
+          child: Row(children: [
+            const Text('✨', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 12),
+            Expanded(child: Text('"${insight.poeticLine}"',
+              style: GoogleFonts.inter(
+                fontSize: 13, fontStyle: FontStyle.italic,
+                color: p.textMid, height: 1.7))),
+          ]),
+        ),
+      ],
     ]);
   }
 }
 
-class _InsightRow extends StatelessWidget {
+class _ColoredInsightCard extends StatelessWidget {
   final IconData icon;
-  final Color color;
-  final String title, text;
+  final String label, text;
+  final Color color, bgColor;
   final PgColors p;
 
-  const _InsightRow({
-    required this.icon, required this.color,
-    required this.title, required this.text, required this.p,
+  const _ColoredInsightCard({
+    required this.icon, required this.label, required this.text,
+    required this.color, required this.bgColor, required this.p,
   });
 
   @override
@@ -678,25 +817,25 @@ class _InsightRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: p.surface,
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: p.border),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
-          width: 38, height: 38,
+          width: 36, height: 36,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(10)),
           child: Icon(icon, size: 17, color: color),
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: GoogleFonts.inter(
-              fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+            Text(label.toUpperCase(), style: GoogleFonts.inter(
+              fontSize: 9, fontWeight: FontWeight.w700,
+              color: color, letterSpacing: 1.8)),
             const SizedBox(height: 5),
             Text(text, style: GoogleFonts.inter(
               fontSize: 13, color: p.textDark, height: 1.55)),
@@ -708,96 +847,140 @@ class _InsightRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Progress card
+//  RECOVERY TIPS CAROUSEL
 // ─────────────────────────────────────────────────────────────────────────────
-class _ProgressCard extends StatelessWidget {
+class _RecoveryTipsCarousel extends StatefulWidget {
   final int weeks;
-  final double progress;
-  final Color phaseColor;
   final PgColors p;
-  final AppL10n l10n;
+  const _RecoveryTipsCarousel({required this.weeks, required this.p});
 
-  static const _phases = ['0-2 sem.', '2-6 sem.', '6-12 sem.', '3-6 mois', '6+ mois'];
-  static const _maxW   = [2, 6, 12, 26, 999];
+  @override
+  State<_RecoveryTipsCarousel> createState() => _RecoveryTipsCarouselState();
+}
 
-  const _ProgressCard({
-    required this.weeks, required this.progress,
-    required this.phaseColor, required this.p, required this.l10n,
-  });
+class _RecoveryTipsCarouselState extends State<_RecoveryTipsCarousel> {
+  final _controller = PageController();
+  int _page = 0;
 
-  int get _activePhase {
-    for (int i = 0; i < _maxW.length; i++) {
-      if (weeks < _maxW[i]) return i;
-    }
-    return _phases.length - 1;
+  static const _categories = [
+    ('Nutrition', LucideIcons.apple, Color(0xFF7ABB98)),
+    ('Exercice', LucideIcons.dumbbell, Color(0xFF1C4D30)),
+    ('Repos', LucideIcons.moon, Color(0xFFF4A940)),
+    ('Mental', LucideIcons.brain, Color(0xFFE58F8A)),
+  ];
+
+  static const _tipsByPhase = <int, List<String>>{
+    0: [
+      'Hydratez-vous beaucoup, surtout si vous allaitez.',
+      'Repos total — pas de sport, laissez votre corps cicatriser.',
+      'Dormez quand bébé dort, chaque minute compte.',
+      'Acceptez l\'aide. Parler de vos émotions est essentiel.',
+    ],
+    1: [
+      'Fer, protéines et calcium — les bases de la reconstruction.',
+      'Marche douce 15 min par jour, pas plus.',
+      'Siestes courtes et régulières pour restaurer l\'énergie.',
+      'Baby blues ou plus ? N\'hésitez pas à consulter.',
+    ],
+    2: [
+      'Repas équilibrés avec des oméga-3 pour l\'énergie.',
+      'Périnée et gainage doux — posez les bases.',
+      'Établissez une routine de coucher régulière.',
+      'Prenez du temps rien que pour vous, même 10 minutes.',
+    ],
+    3: [
+      'Augmentez les portions si vous êtes active.',
+      'Reprise progressive du sport avec validation médicale.',
+      'Qualité du sommeil > quantité — rituels du soir.',
+      'Reconnectez-vous avec vos passions et vos amies.',
+    ],
+    4: [
+      'Alimentation variée, pas de régime restrictif.',
+      'Votre corps est prêt pour une activité régulière.',
+      'Le sommeil s\'améliore — profitez-en pour récupérer.',
+      'Fierté et bienveillance — regardez tout le chemin parcouru.',
+    ],
+  };
+
+  int get _phaseIdx {
+    if (widget.weeks < 2) return 0;
+    if (widget.weeks < 6) return 1;
+    if (widget.weeks < 12) return 2;
+    if (widget.weeks < 26) return 3;
+    return 4;
   }
 
   @override
+  void dispose() { _controller.dispose(); super.dispose(); }
+
+  @override
   Widget build(BuildContext context) {
-    final active = _activePhase;
-    final remaining = (12 - weeks).clamp(0, 12);
+    final p = widget.p;
+    final tips = _tipsByPhase[_phaseIdx]!;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: p.border),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(l10n.ppTrim4, style: GoogleFonts.outfit(
-            fontSize: 15, fontWeight: FontWeight.w700, color: p.textDark)),
-          Text('$weeks / 12 sem.', style: GoogleFonts.inter(
-            fontSize: 12, color: p.textMid, fontWeight: FontWeight.w600)),
-        ]),
-        const SizedBox(height: 14),
-
-        // Phase segments
-        Row(
-          children: List.generate(_phases.length, (i) {
-            final isActive = i == active;
-            final isPast   = i < active;
-            return Expanded(child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Column(children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  height: isActive ? 6 : 4,
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('CONSEILS RÉCUPÉRATION', style: GoogleFonts.inter(
+        fontSize: 9, fontWeight: FontWeight.w700,
+        color: p.textSoft, letterSpacing: 1.8)),
+      const SizedBox(height: 10),
+      SizedBox(
+        height: 120,
+        child: PageView.builder(
+          controller: _controller,
+          itemCount: _categories.length,
+          onPageChanged: (i) => setState(() => _page = i),
+          itemBuilder: (context, i) {
+            final (name, icon, color) = _categories[i];
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: color.withOpacity(0.2)),
+              ),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                  width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color: isPast || isActive
-                        ? p.green
-                        : p.green.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+                    color: color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12)),
+                  child: Icon(icon, size: 20, color: color),
                 ),
-                const SizedBox(height: 5),
-                Text(_phases[i], style: GoogleFonts.inter(
-                  fontSize: 8.5,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                  color: isActive ? p.green : p.textSoft)),
+                const SizedBox(width: 14),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name.toUpperCase(), style: GoogleFonts.inter(
+                      fontSize: 9, fontWeight: FontWeight.w700,
+                      color: color, letterSpacing: 1.8)),
+                    const SizedBox(height: 6),
+                    Expanded(child: Text(tips[i], style: GoogleFonts.inter(
+                      fontSize: 13, height: 1.5,
+                      color: p.textDark.withOpacity(0.75)),
+                      maxLines: 3, overflow: TextOverflow.ellipsis)),
+                  ],
+                )),
               ]),
-            ));
-          }),
+            );
+          },
         ),
-
-        const SizedBox(height: 16),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 6,
-            backgroundColor: p.mintLight,
-            valueColor: AlwaysStoppedAnimation<Color>(p.green),
+      ),
+      const SizedBox(height: 10),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(_categories.length, (i) =>
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: _page == i ? 18 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: _page == i ? p.green : p.green.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(3)),
           ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          weeks >= 12
-              ? 'Felicitations ! Vous avez traverse le 4e trimestre.'
-              : l10n.ppSemainesRestantes(remaining),
-          style: GoogleFonts.inter(fontSize: 12, color: p.textMid)),
-      ]),
-    );
+      ),
+    ]);
   }
 }

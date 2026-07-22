@@ -214,12 +214,19 @@ class _MaisonProgramCard extends ConsumerWidget {
             fit: StackFit.expand,
             children: [
               // Background image
-              Image.asset(
-                program.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(color: color.withValues(alpha: 0.15)),
-              ),
+              program.imageUrl.startsWith('http')
+                ? Image.network(
+                    program.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: color.withValues(alpha: 0.15)),
+                  )
+                : Image.asset(
+                    program.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: color.withValues(alpha: 0.15)),
+                  ),
 
               // Gradient overlay
               DecoratedBox(

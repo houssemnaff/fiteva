@@ -29,6 +29,16 @@ class RecipeAuthor {
   }
 }
 
+List<Map<String, dynamic>> _parseMapList(dynamic raw) {
+  if (raw is! List) return [];
+  return raw.map((e) {
+    if (e is Map<String, dynamic>) return e;
+    if (e is Map) return Map<String, dynamic>.from(e);
+    if (e is String) return <String, dynamic>{'name': e, 'qty': '', 'kcal': 0};
+    return <String, dynamic>{};
+  }).toList();
+}
+
 // ── Full recipe model from Supabase ─────────────────────────────────────────
 class AppRecipe {
   final String id;
@@ -93,8 +103,8 @@ class AppRecipe {
       category: json['category'] as String? ?? 'general',
       phase: json['phase'] as String? ?? 'all',
       tags: (json['tags'] as List?)?.cast<String>() ?? [],
-      ingredients: (json['ingredients'] as List?)?.cast<Map<String, dynamic>>() ?? [],
-      steps: (json['steps'] as List?)?.cast<Map<String, dynamic>>() ?? [],
+      ingredients: _parseMapList(json['ingredients']),
+      steps: _parseMapList(json['steps']),
       isFeatured: json['is_featured'] as bool? ?? false,
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
       author: authorData != null ? RecipeAuthor.fromJson(authorData) : null,

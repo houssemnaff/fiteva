@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:fiteva/screens/onboarding/widgets/shared_onboarding_widgets.dart';
+import 'package:fiteva/services/tick_sound_service.dart';
 import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:fiteva/widgets/mascot_widget.dart';
 import 'package:flutter/material.dart';
@@ -28,72 +29,74 @@ extension _R on BuildContext {
   bool get isLarge => _h > 900;   // Pro Max, tablets
 }
 
-// ─── Design Tokens — Mint/Sage Palette ────────────────────────────────────
-const _kBgMint       = Color(0xFFB8CFC4); // fond principal mint sauge
-const _kBgLight      = Color(0xFFC8DAD0); // fond légèrement plus clair
-const _kGreenDark    = Color(0xFF2D4A2D); // vert foncé (texte sélectionné, bouton)
-const _kGreenMid     = Color(0xFF4A7A5A); // vert moyen
-const _kCardUnsel    = Color(0xFFD4E4DB); // carte non-sélectionnée
-const _kCardSel      = Color(0xFF2D4A2D); // carte sélectionnée
-const _kTextDark     = Color(0xFF1A2E1A); // texte principal
-const _kTextMuted    = Color(0xFF5A7A65); // texte secondaire
+// ─── Design Tokens — Premium Dark Palette ─────────────────────────────────
+const _kBgDark       = Color(0xFF080E0B);
+const _kBgMid        = Color(0xFF0F1A14);
+const _kBgMint       = Color(0xFF080E0B); // alias for backward compat
+const _kBgLight      = Color(0xFF0F1A14); // alias for backward compat
+const _kGreenDark    = Color(0xFF1C4D30);
+const _kGreenMid     = Color(0xFF7ABB98);
+const _kGreenBright  = Color(0xFF5CD57A);
+const _kCardUnsel    = Color(0xFF1A2A20);
+const _kCardSel      = Color(0xFF1C4D30);
+const _kTextDark     = Color(0xFFF0F0EE);
+const _kTextMuted    = Color(0xFF6B8B78);
 const _kWhite        = Colors.white;
-const _kBorderLight  = Color(0xFFE2EDE7); // bordures claires
+const _kBorderLight  = Color(0xFF2A3D30);
+const _kGlassBorder  = Color(0xFF2A3D30);
+const _kGlassFill    = Color(0x18FFFFFF);
 
-// ─── Shared background widget with mint gradient + decorative orbs ──────────
+// ─── Shared dark premium background with gradient + decorative orbs ─────────
 Widget _stepBackground({required Widget child}) {
   return Scaffold(
-    body: LayoutBuilder(
-      builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        final h = constraints.maxHeight;
-        return Stack(
-          children: [
-            // Mint gradient
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: [0.0, 0.40, 1.0],
-                  colors: [Color(0xFFA8C4B7), Color(0xFFD2E5DB), Color(0xFFF4FAF6)],
-                ),
-              ),
+    backgroundColor: _kBgDark,
+    body: Stack(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.0, 0.4, 1.0],
+              colors: [Color(0xFF0D1F14), Color(0xFF0A130E), Color(0xFF080E0B)],
             ),
-            // Decorative orb top-right
-            Positioned(
-              top: -h * 0.07, right: -w * 0.12,
-              child: Container(
-                width: w * 0.56, height: w * 0.56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF4A7A5A).withOpacity(0.12),
-                ),
-              ),
+          ),
+        ),
+        Positioned(
+          top: -80, right: -60,
+          child: Container(
+            width: 260, height: 260,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(colors: [
+                _kGreenDark.withValues(alpha: 0.15),
+                _kGreenDark.withValues(alpha: 0),
+              ]),
             ),
-            // Decorative orb bottom-left
-            Positioned(
-              bottom: h * 0.05, left: -w * 0.17,
-              child: Container(
-                width: w * 0.66, height: w * 0.66,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF2D4A2D).withOpacity(0.07),
-                ),
-              ),
+          ),
+        ),
+        Positioned(
+          bottom: 100, left: -80,
+          child: Container(
+            width: 220, height: 220,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(colors: [
+                _kGreenMid.withValues(alpha: 0.08),
+                _kGreenMid.withValues(alpha: 0),
+              ]),
             ),
-            // Content
-            child,
-          ],
-        );
-      },
+          ),
+        ),
+        child,
+      ],
     ),
   );
 }
 
 // ─── Shared Widgets ────────────────────────────────────────────────────────
 
-/// Top bar minimaliste avec flèche retour + titre centré
+/// Top bar — glass back button + step counter pill
 class _OnboardingTopBar extends StatelessWidget {
   final int step;
   final int total;
@@ -112,29 +115,42 @@ class _OnboardingTopBar extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: EdgeInsets.symmetric(
-            horizontal: context.rs(24), vertical: context.rv(14)),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
             GestureDetector(
               onTap: onBack ?? () => Navigator.maybePop(context),
-              child: Icon(Icons.arrow_back,
-                  size: context.rs(20), color: _kTextDark),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  title?.toUpperCase() ?? '',
-                  style: TextStyle(
-                    fontSize: context.rs(11),
-                    letterSpacing: 2.5,
-                    fontWeight: FontWeight.w600,
-                    color: _kTextMuted,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(
+                      color: _kGlassFill,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _kGlassBorder, width: 0.5),
+                    ),
+                    child: const Icon(LucideIcons.arrowLeft, size: 18, color: _kTextDark),
                   ),
                 ),
               ),
             ),
-            SizedBox(width: context.rs(20)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                color: _kGlassFill,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _kGlassBorder, width: 0.5),
+              ),
+              child: Text(
+                '$step / $total',
+                style: GoogleFonts.outfit(
+                  fontSize: 12, fontWeight: FontWeight.w600,
+                  color: _kGreenMid, letterSpacing: 0.5),
+              ),
+            ),
           ],
         ),
       ),
@@ -142,28 +158,35 @@ class _OnboardingTopBar extends StatelessWidget {
   }
 }
 
-/// Icône centrale ronde avec fond translucide
+/// Icône — gradient circle with green glow
 class _StepIcon extends StatelessWidget {
   final IconData icon;
   const _StepIcon(this.icon);
 
   @override
   Widget build(BuildContext context) {
-    final sz = context.rs(64);
     return Center(
       child: Container(
-        width: sz, height: sz,
-        decoration: const BoxDecoration(
-          color: Color(0xFFEEF2EE),
+        width: 64, height: 64,
+        decoration: BoxDecoration(
           shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [Color(0xFF1C4D30), Color(0xFF0F3320)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _kGreenMid.withValues(alpha: 0.25),
+              blurRadius: 20, spreadRadius: 2),
+          ],
         ),
-        child: Icon(icon, color: _kGreenDark, size: context.rs(28)),
+        child: Icon(icon, color: _kGreenBright, size: 26),
       ),
     );
   }
 }
 
-/// Titre + sous-titre centré
+/// Titre + sous-titre — left-aligned editorial type
 class _StepHeader extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -172,23 +195,23 @@ class _StepHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: context.rs(24),
-            fontWeight: FontWeight.w700,
+          style: GoogleFonts.outfit(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
             color: _kTextDark,
-            height: 1.2,
+            height: 1.15,
+            letterSpacing: -0.5,
           ),
         ),
-        SizedBox(height: context.rv(8)),
+        const SizedBox(height: 8),
         Text(
           subtitle,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: context.rs(14),
+          style: GoogleFonts.inter(
+            fontSize: 14,
             color: _kTextMuted,
             height: 1.5,
           ),
@@ -198,7 +221,7 @@ class _StepHeader extends StatelessWidget {
   }
 }
 
-/// Pill/Ovale card — style de sélection
+/// Glass pill card — selection with green border glow
 class _PillCard extends StatelessWidget {
   final String label;
   final String? sublabel;
@@ -225,94 +248,72 @@ class _PillCard extends StatelessWidget {
         curve: Curves.easeOut,
         width: fullWidth ? double.infinity : null,
         padding: sublabel != null
-            ? const EdgeInsets.symmetric(horizontal: 24, vertical: 18)
-            : const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+            ? const EdgeInsets.symmetric(horizontal: 20, vertical: 18)
+            : const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: selected ? _kCardSel : const Color(0xFFF3F6F3),
-          borderRadius: BorderRadius.circular(50),
+          color: selected
+              ? _kGreenDark.withValues(alpha: 0.4)
+              : _kGlassFill,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
-                ? _kCardSel
-                : const Color(0xFFD8E5D8),
-            width: 1.5,
+                ? _kGreenMid.withValues(alpha: 0.6)
+                : _kGlassBorder,
+            width: selected ? 1.5 : 0.5,
           ),
           boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: _kGreenDark.withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
+              ? [BoxShadow(
+                  color: _kGreenMid.withValues(alpha: 0.15),
+                  blurRadius: 16, offset: const Offset(0, 4))]
               : [],
         ),
-        child: sublabel != null
-            ? Row(
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon,
-                        color: selected ? _kWhite : _kGreenMid, size: 22),
-                    const SizedBox(width: 14),
-                  ],
-                  Expanded(
-                    child: Column(
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon,
+                  color: selected ? _kGreenBright : _kGreenMid, size: 22),
+              const SizedBox(width: 14),
+            ],
+            Expanded(
+              child: sublabel != null
+                  ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: selected ? _kWhite : _kTextDark,
-                          ),
-                        ),
+                        Text(label, style: GoogleFonts.inter(
+                          fontSize: 15, fontWeight: FontWeight.w700,
+                          color: selected ? _kWhite : _kTextDark)),
                         const SizedBox(height: 2),
-                        Text(
-                          sublabel!,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: selected
-                                ? Colors.white70
-                                : _kTextMuted,
-                          ),
-                        ),
+                        Text(sublabel!, style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          color: selected ? Colors.white70 : _kTextMuted)),
                       ],
-                    ),
-                  ),
-                  if (selected)
-                    const Icon(Icons.check_circle,
-                        color: Colors.white, size: 20),
-                ],
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon,
-                        color: selected ? _kWhite : _kGreenMid, size: 20),
-                    const SizedBox(width: 12),
-                  ],
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: selected ? _kWhite : _kTextDark,
-                      ),
-                    ),
-                  ),
-                  if (selected)
-                    const Icon(Icons.check_circle,
-                        color: Colors.white, size: 18),
-                ],
+                    )
+                  : Text(label, style: GoogleFonts.inter(
+                      fontSize: 15, fontWeight: FontWeight.w600,
+                      color: selected ? _kWhite : _kTextDark)),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 20, height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? _kGreenBright : Colors.transparent,
+                border: Border.all(
+                  color: selected ? _kGreenBright : _kGlassBorder,
+                  width: 1.5),
               ),
+              child: selected
+                  ? const Icon(Icons.check, size: 12, color: _kBgDark)
+                  : null,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Pill compact (sans icône, pour grilles 2-col)
+/// Compact glass tile (for 2-col grids)
 class _CompactPill extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -334,33 +335,33 @@ class _CompactPill extends StatelessWidget {
         duration: const Duration(milliseconds: 220),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? _kCardSel : const Color(0xFFF3F6F3),
-          borderRadius: BorderRadius.circular(40),
+          color: selected
+              ? _kGreenDark.withValues(alpha: 0.4)
+              : _kGlassFill,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected ? _kCardSel : const Color(0xFFD8E5D8),
-            width: 1.5,
+            color: selected
+                ? _kGreenMid.withValues(alpha: 0.6)
+                : _kGlassBorder,
+            width: selected ? 1.5 : 0.5,
           ),
           boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: _kGreenDark.withOpacity(0.25),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
-                  )
-                ]
+              ? [BoxShadow(
+                  color: _kGreenMid.withValues(alpha: 0.15),
+                  blurRadius: 14, offset: const Offset(0, 5))]
               : [],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: selected ? _kWhite : _kGreenMid, size: 18),
+            Icon(icon, color: selected ? _kGreenBright : _kGreenMid, size: 18),
             const SizedBox(width: 8),
             Flexible(
               child: Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w600,
                   color: selected ? _kWhite : _kTextDark,
@@ -374,7 +375,7 @@ class _CompactPill extends StatelessWidget {
   }
 }
 
-/// Bouton CTA principal (bas d'écran)
+/// CTA button — gradient with arrow icon, glass border when disabled
 class _CtaButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -387,38 +388,46 @@ class _CtaButton extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
-            context.rs(24), context.rv(10),
-            context.rs(24), context.rv(18)),
+        padding: const EdgeInsets.fromLTRB(24, 10, 24, 18),
         child: GestureDetector(
           onTap: onPressed,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            height: context.rv(54),
+            height: 54,
             decoration: BoxDecoration(
               gradient: enabled
                   ? const LinearGradient(
-                      colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
+                      colors: [Color(0xFF1C4D30), Color(0xFF0F3320)],
                       begin: Alignment.topLeft, end: Alignment.bottomRight,
                     )
                   : null,
-              color: enabled ? null : const Color(0xFFE8EDE8),
-              borderRadius: BorderRadius.circular(40),
+              color: enabled ? null : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              border: enabled
+                  ? null
+                  : Border.all(color: _kGlassBorder, width: 0.5),
               boxShadow: enabled
-                  ? [BoxShadow(color: _kGreenDark.withOpacity(0.30),
-                      blurRadius: 14, offset: const Offset(0, 5))]
+                  ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.25),
+                      blurRadius: 16, offset: const Offset(0, 5))]
                   : [],
             ),
-            child: Center(
-              child: Text(
-                label.toUpperCase(),
-                style: TextStyle(
-                  fontSize: context.rs(13),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.8,
-                  color: enabled ? _kWhite : _kTextMuted,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                    color: enabled ? _kWhite : _kTextMuted,
+                  ),
                 ),
-              ),
+                if (enabled) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_rounded, color: _kWhite, size: 18),
+                ],
+              ],
             ),
           ),
         ),
@@ -442,21 +451,43 @@ class StepLanguageChoice extends StatefulWidget {
 }
 
 class _StepLanguageChoiceState extends State<StepLanguageChoice>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   String? _selected;
   late final AnimationController _enterCtrl;
   late final Animation<double> _titleFade;
   late final Animation<Offset> _titleSlide;
-  late final Animation<double> _cardsFade;
+  late final Animation<double> _cardFrFade;
+  late final Animation<Offset> _cardFrSlide;
+  late final Animation<double> _cardEnFade;
+  late final Animation<Offset> _cardEnSlide;
+  late final Animation<double> _footerFade;
 
   @override
   void initState() {
     super.initState();
-    _enterCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..forward();
-    _titleFade  = CurvedAnimation(parent: _enterCtrl, curve: const Interval(0.0, 0.55, curve: Curves.easeOut));
-    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _enterCtrl, curve: const Interval(0.0, 0.55, curve: Curves.easeOut)));
-    _cardsFade  = CurvedAnimation(parent: _enterCtrl, curve: const Interval(0.30, 0.85, curve: Curves.easeOut));
+    _enterCtrl = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1100))..forward();
+
+    _titleFade = CurvedAnimation(parent: _enterCtrl,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeOut));
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _enterCtrl,
+            curve: const Interval(0.0, 0.4, curve: Curves.easeOutCubic)));
+
+    _cardFrFade = CurvedAnimation(parent: _enterCtrl,
+        curve: const Interval(0.25, 0.6, curve: Curves.easeOut));
+    _cardFrSlide = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _enterCtrl,
+            curve: const Interval(0.25, 0.6, curve: Curves.easeOutCubic)));
+
+    _cardEnFade = CurvedAnimation(parent: _enterCtrl,
+        curve: const Interval(0.35, 0.7, curve: Curves.easeOut));
+    _cardEnSlide = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _enterCtrl,
+            curve: const Interval(0.35, 0.7, curve: Curves.easeOutCubic)));
+
+    _footerFade = CurvedAnimation(parent: _enterCtrl,
+        curve: const Interval(0.6, 0.9, curve: Curves.easeOut));
   }
 
   @override
@@ -464,8 +495,9 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
 
   void _pick(String lang) {
     if (_selected != null) return;
+    HapticFeedback.mediumImpact();
     setState(() => _selected = lang);
-    Future.delayed(const Duration(milliseconds: 420), () {
+    Future.delayed(const Duration(milliseconds: 500), () {
       widget.onNext(Locale(lang));
     });
   }
@@ -479,8 +511,9 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 48),
+              const SizedBox(height: 60),
 
+              // Title
               FadeTransition(
                 opacity: _titleFade,
                 child: SlideTransition(
@@ -488,43 +521,65 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Language',
-                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: _kTextDark, height: 1.0, letterSpacing: -1.2)),
-                      const Text('Langue',
-                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: _kGreenMid, height: 1.1, letterSpacing: -1.2)),
-                      const SizedBox(height: 14),
-                      Container(width: 32, height: 3,
-                          decoration: BoxDecoration(color: _kGreenDark, borderRadius: BorderRadius.circular(2))),
-                      const SizedBox(height: 10),
-                      const Text('Choose the language for your experience',
-                        style: TextStyle(fontSize: 13, color: _kTextMuted, height: 1.4)),
+                      Text('Choose your',
+                        style: GoogleFonts.outfit(fontSize: 34, fontWeight: FontWeight.w400,
+                            color: _kTextMuted, height: 1.15, letterSpacing: -0.8)),
+                      Text('Language',
+                        style: GoogleFonts.outfit(fontSize: 44, fontWeight: FontWeight.w800,
+                            color: _kTextDark, height: 1.05, letterSpacing: -1.5)),
                     ],
                   ),
                 ),
               ),
 
-              const Spacer(),
+              const Spacer(flex: 2),
 
+              // Language cards — staggered entrance
               FadeTransition(
-                opacity: _cardsFade,
-                child: Column(
-                  children: [
-                    _CleanLangOption(label: 'Français', sublabel: 'French',  isSelected: _selected == 'fr', onTap: () => _pick('fr')),
-                    const SizedBox(height: 14),
-                    _CleanLangOption(label: 'English',  sublabel: 'Anglais', isSelected: _selected == 'en', onTap: () => _pick('en')),
-                  ],
+                opacity: _cardFrFade,
+                child: SlideTransition(
+                  position: _cardFrSlide,
+                  child: _LangCard(
+                    flag: '🇫🇷',
+                    label: 'Français',
+                    sublabel: 'French',
+                    isSelected: _selected == 'fr',
+                    isOtherSelected: _selected == 'en',
+                    onTap: () => _pick('fr'),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              FadeTransition(
+                opacity: _cardEnFade,
+                child: SlideTransition(
+                  position: _cardEnSlide,
+                  child: _LangCard(
+                    flag: '🇬🇧',
+                    label: 'English',
+                    sublabel: 'Anglais',
+                    isSelected: _selected == 'en',
+                    isOtherSelected: _selected == 'fr',
+                    onTap: () => _pick('en'),
+                  ),
                 ),
               ),
 
-              const Spacer(),
+              const Spacer(flex: 3),
 
-              Padding(
-                padding: const EdgeInsets.only(bottom: 32),
-                child: Center(
-                  child: Text(
-                    'Changeable anytime in Settings · Modifiable dans Paramètres',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 10.5, color: _kTextMuted.withOpacity(0.6), height: 1.5),
+              // Footer
+              FadeTransition(
+                opacity: _footerFade,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 36),
+                  child: Center(
+                    child: Text(
+                      'Modifiable à tout moment dans Paramètres',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(fontSize: 12,
+                          color: _kTextMuted.withValues(alpha: 0.5),
+                          fontWeight: FontWeight.w400),
+                    ),
                   ),
                 ),
               ),
@@ -536,57 +591,136 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
   }
 }
 
-class _CleanLangOption extends StatelessWidget {
+class _LangCard extends StatefulWidget {
+  final String flag;
   final String label;
   final String sublabel;
   final bool isSelected;
+  final bool isOtherSelected;
   final VoidCallback onTap;
 
-  const _CleanLangOption({required this.label, required this.sublabel, required this.isSelected, required this.onTap});
+  const _LangCard({
+    required this.flag,
+    required this.label,
+    required this.sublabel,
+    required this.isSelected,
+    required this.isOtherSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_LangCard> createState() => _LangCardState();
+}
+
+class _LangCardState extends State<_LangCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _scaleCtrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 80),
+      reverseDuration: const Duration(milliseconds: 200),
+    );
+    _scale = Tween(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _scaleCtrl, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() { _scaleCtrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
+    final sel = widget.isSelected;
+    final dimmed = widget.isOtherSelected && !sel;
+
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 230),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(colors: [Color(0xFF3D6B40), _kGreenDark], begin: Alignment.topLeft, end: Alignment.bottomRight)
-              : null,
-          color: isSelected ? null : Colors.white.withOpacity(0.72),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? Colors.transparent : const Color(0xFFB8D4C0), width: 1.5),
-          boxShadow: isSelected
-              ? [BoxShadow(color: _kGreenDark.withOpacity(0.28), blurRadius: 18, offset: const Offset(0, 6))]
-              : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
-                      color: isSelected ? Colors.white : _kTextDark, letterSpacing: -0.3)),
-                  const SizedBox(height: 2),
-                  Text(sublabel, style: TextStyle(fontSize: 12,
-                      color: isSelected ? Colors.white.withOpacity(0.55) : _kTextMuted)),
-                ],
-              ),
+      onTapDown: (_) => _scaleCtrl.forward(),
+      onTapUp: (_) { _scaleCtrl.reverse(); widget.onTap(); },
+      onTapCancel: () => _scaleCtrl.reverse(),
+      child: ScaleTransition(
+        scale: _scale,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 300),
+          opacity: dimmed ? 0.35 : 1.0,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
+            decoration: BoxDecoration(
+              color: sel
+                  ? _kGreenDark.withValues(alpha: 0.4)
+                  : _kGlassFill,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: sel
+                    ? _kGreenBright.withValues(alpha: 0.5)
+                    : _kGlassBorder,
+                width: sel ? 1.2 : 0.5),
+              boxShadow: sel
+                  ? [BoxShadow(
+                      color: _kGreenBright.withValues(alpha: 0.1),
+                      blurRadius: 28, offset: const Offset(0, 8))]
+                  : [],
             ),
-            AnimatedOpacity(
-              opacity: isSelected ? 1 : 0,
-              duration: const Duration(milliseconds: 200),
-              child: Container(
-                width: 26, height: 26,
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                child: Icon(Icons.check_rounded, size: 15, color: _kGreenDark),
-              ),
+            child: Row(
+              children: [
+                // Flag
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  width: 52, height: 52,
+                  decoration: BoxDecoration(
+                    color: sel
+                        ? _kGreenBright.withValues(alpha: 0.1)
+                        : _kWhite.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Text(widget.flag, style: const TextStyle(fontSize: 28)),
+                  ),
+                ),
+                const SizedBox(width: 18),
+                // Labels
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.label,
+                        style: GoogleFonts.outfit(
+                          fontSize: 20, fontWeight: FontWeight.w700,
+                          color: sel ? Colors.white : _kTextDark,
+                          letterSpacing: -0.3)),
+                      const SizedBox(height: 3),
+                      Text(widget.sublabel,
+                        style: GoogleFonts.inter(
+                          fontSize: 13, fontWeight: FontWeight.w400,
+                          color: sel ? _kGreenMid : _kTextMuted)),
+                    ],
+                  ),
+                ),
+                // Check indicator
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  width: 26, height: 26,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: sel ? _kGreenBright : Colors.transparent,
+                    border: Border.all(
+                      color: sel ? _kGreenBright : _kWhite.withValues(alpha: 0.12),
+                      width: sel ? 0 : 1.5),
+                  ),
+                  child: sel
+                      ? const Icon(Icons.check_rounded, size: 15, color: _kBgDark)
+                      : null,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1286,8 +1420,8 @@ class _StepWelcomeState extends State<StepWelcome>
                   end: Alignment.bottomCenter,
                   stops: const [0.0, 0.45, 1.0],
                   colors: [
-                    _kDark.withOpacity(0.55),
-                    _kDark.withOpacity(0.15),
+                    _kDark.withValues(alpha:0.55),
+                    _kDark.withValues(alpha:0.15),
                     Colors.transparent,
                   ],
                 ),
@@ -1351,9 +1485,9 @@ class _StepWelcomeState extends State<StepWelcome>
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: _kDark.withOpacity(0.32),
+            color: _kDark.withValues(alpha:0.32),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border(top: BorderSide(color: _kWhite.withOpacity(0.22), width: 1)),
+            border: Border(top: BorderSide(color: _kWhite.withValues(alpha:0.22), width: 1)),
           ),
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -1365,7 +1499,7 @@ class _StepWelcomeState extends State<StepWelcome>
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: _kWhite.withOpacity(0.1),
+                    color: _kWhite.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(50),
                   ),
                   child: Row(children: [
@@ -1402,15 +1536,15 @@ class _StepWelcomeState extends State<StepWelcome>
                 const SizedBox(height: 16),
 
                 Row(children: [
-                  Expanded(child: Divider(color: _kWhite.withOpacity(0.2))),
+                  Expanded(child: Divider(color: _kWhite.withValues(alpha:0.2))),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(l10n.welcomeOrContinueWith.toUpperCase(),
                       style: GoogleFonts.inter(
-                        color: _kWhite.withOpacity(0.5),
+                        color: _kWhite.withValues(alpha:0.5),
                         fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 1)),
                   ),
-                  Expanded(child: Divider(color: _kWhite.withOpacity(0.2))),
+                  Expanded(child: Divider(color: _kWhite.withValues(alpha:0.2))),
                 ]),
                 const SizedBox(height: 14),
 
@@ -1437,7 +1571,7 @@ class _StepWelcomeState extends State<StepWelcome>
                               onTap: () => setState(() => _obscure = !_obscure),
                               child: Icon(
                                 _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                color: _kWhite.withOpacity(0.6), size: 18,
+                                color: _kWhite.withValues(alpha:0.6), size: 18,
                               ),
                             ),
                             onChanged: (_) => setState(() { _error = null; }),
@@ -1454,7 +1588,7 @@ class _StepWelcomeState extends State<StepWelcome>
                                       : (l10n.isFrench ? 'Mot de passe oublié ?' : 'Forgot password?'),
                                   style: GoogleFonts.inter(
                                     fontSize: 12.5, fontWeight: FontWeight.w600,
-                                    color: _kWhite.withOpacity(0.85)),
+                                    color: _kWhite.withValues(alpha:0.85)),
                                 ),
                               ),
                             ),
@@ -1483,10 +1617,10 @@ class _StepWelcomeState extends State<StepWelcome>
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: _kWhite.withOpacity(0.28)),
+                              border: Border.all(color: _kWhite.withValues(alpha:0.28)),
                             ),
                             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Icon(Icons.mail_outline_rounded, size: 16, color: _kWhite.withOpacity(0.85)),
+                              Icon(Icons.mail_outline_rounded, size: 16, color: _kWhite.withValues(alpha:0.85)),
                               const SizedBox(width: 8),
                               Text(
                                 l10n.isFrench ? 'Continuer par email' : 'Continue with email',
@@ -1525,9 +1659,9 @@ class _StepWelcomeState extends State<StepWelcome>
         Container(
           width: 30, height: 30,
           decoration: BoxDecoration(
-            color: _kWhite.withOpacity(0.15),
+            color: _kWhite.withValues(alpha:0.15),
             shape: BoxShape.circle,
-            border: Border.all(color: _kWhite.withOpacity(0.4)),
+            border: Border.all(color: _kWhite.withValues(alpha:0.4)),
           ),
           child: Icon(Icons.water_drop_rounded, color: _kWhite, size: 15),
         ),
@@ -1565,7 +1699,7 @@ class _StepWelcomeState extends State<StepWelcome>
                 height: 1.15,
                 letterSpacing: -0.5,
                 shadows: [
-                  Shadow(color: Colors.black.withOpacity(0.3), blurRadius: 12),
+                  Shadow(color: Colors.black.withValues(alpha:0.3), blurRadius: 12),
                 ],
               ),
             ),
@@ -1575,10 +1709,10 @@ class _StepWelcomeState extends State<StepWelcome>
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 13.5,
-                color: _kWhite.withOpacity(0.88),
+                color: _kWhite.withValues(alpha:0.88),
                 height: 1.5,
                 shadows: [
-                  Shadow(color: Colors.black.withOpacity(0.3), blurRadius: 8),
+                  Shadow(color: Colors.black.withValues(alpha:0.3), blurRadius: 8),
                 ],
               ),
             ),
@@ -1600,7 +1734,7 @@ class _StepWelcomeState extends State<StepWelcome>
           width: active ? 18 : 6,
           height: 6,
           decoration: BoxDecoration(
-            color: active ? _kWhite : _kWhite.withOpacity(0.4),
+            color: active ? _kWhite : _kWhite.withValues(alpha:0.4),
             borderRadius: BorderRadius.circular(3),
           ),
         );
@@ -1626,13 +1760,13 @@ class _ModeTab extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: active ? _kWhite.withOpacity(0.9) : Colors.transparent,
+          color: active ? _kWhite.withValues(alpha:0.9) : Colors.transparent,
           borderRadius: BorderRadius.circular(50),
         ),
         child: Center(
           child: Text(label, style: GoogleFonts.inter(
             fontSize: 13, fontWeight: FontWeight.w700,
-            color: active ? _kTextDark : _kWhite.withOpacity(0.75))),
+            color: active ? _kTextDark : _kWhite.withValues(alpha:0.75))),
         ),
       ),
     );
@@ -1653,15 +1787,15 @@ class _GlassSocialBtn extends StatelessWidget {
       child: Container(
         height: 52,
         decoration: BoxDecoration(
-          color: _kWhite.withOpacity(0.12),
+          color: _kWhite.withValues(alpha:0.12),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _kWhite.withOpacity(0.28)),
+          border: Border.all(color: _kWhite.withValues(alpha:0.28)),
         ),
         child: Center(
           child: loading
               ? SizedBox(
                   width: 18, height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: _kWhite.withOpacity(0.85)),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: _kWhite.withValues(alpha:0.85)),
                 )
               : child,
         ),
@@ -1697,9 +1831,9 @@ class _GlassField extends StatelessWidget {
         // Fond nettement plus sombre que la carte pour garantir le contraste
         // du texte blanc (un simple voile blanc translucide le rendait
         // quasi invisible sur des zones claires de la photo).
-        color: Colors.black.withOpacity(0.28),
+        color: Colors.black.withValues(alpha:0.28),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kWhite.withOpacity(0.25), width: 1.1),
+        border: Border.all(color: _kWhite.withValues(alpha:0.25), width: 1.1),
       ),
       child: TextField(
         controller: controller,
@@ -1710,8 +1844,8 @@ class _GlassField extends StatelessWidget {
         style: GoogleFonts.inter(fontSize: 15, color: _kWhite, fontWeight: FontWeight.w600),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.inter(color: _kWhite.withOpacity(0.55), fontSize: 14),
-          prefixIcon: Icon(icon, color: _kWhite.withOpacity(0.8), size: 19),
+          hintStyle: GoogleFonts.inter(color: _kWhite.withValues(alpha:0.55), fontSize: 14),
+          prefixIcon: Icon(icon, color: _kWhite.withValues(alpha:0.8), size: 19),
           suffixIcon: suffix != null
               ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix)
               : null,
@@ -1760,7 +1894,7 @@ class _AuthCtaButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: enabled
               ? [BoxShadow(
-                  color: _kPrimary.withOpacity(0.35),
+                  color: _kPrimary.withValues(alpha:0.35),
                   blurRadius: 16, offset: const Offset(0, 6))]
               : [],
         ),
@@ -1871,84 +2005,23 @@ class _StepGoalsState extends State<StepGoals>
       child: SafeArea(
         child: Column(
           children: [
-            // ── Top bar ──────────────────────────────────────────
-            Padding(
-              padding: EdgeInsets.symmetric(
-                  horizontal: context.rs(24), vertical: context.rv(14)),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: widget.onBack ?? () => Navigator.maybePop(context),
-                    child: Container(
-                      width: context.rs(36), height: context.rs(36),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.arrow_back,
-                          size: context.rs(18), color: _kGreenDark),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        AppL10n(Lang.code).goalsTopBarTitle,
-                        style: TextStyle(
-                          fontSize: context.rs(11),
-                          letterSpacing: 3.5,
-                          fontWeight: FontWeight.w700,
-                          color: _kGreenDark,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: context.rs(36)),
-                ],
-              ),
-            ),
+            _OnboardingTopBar(step: 2, total: 7, onBack: widget.onBack),
 
-            SizedBox(height: context.rv(8)),
+            const SizedBox(height: 8),
 
-            // ── Icon + title block ───────────────────────────────
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
-              child: Column(children: [
-                Container(
-                  width: context.rs(56), height: context.rs(56),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
-                      begin: Alignment.topLeft, end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3),
-                        blurRadius: 12, offset: const Offset(0, 4))],
-                  ),
-                  child: Icon(Icons.track_changes_rounded,
-                      size: context.rs(26), color: Colors.white),
-                ),
-                SizedBox(height: context.rv(12)),
-                Text(
-                  AppL10n(Lang.code).goalsTitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: context.rs(20),
-                    fontWeight: FontWeight.w800,
-                    color: _kTextDark,
-                    height: 1.25,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                SizedBox(height: context.rv(5)),
-                Text(
-                  AppL10n(Lang.code).goalsHint,
-                  style: TextStyle(
-                      fontSize: context.rs(12.5), color: _kTextMuted),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const _StepIcon(Icons.track_changes_rounded),
+                const SizedBox(height: 12),
+                _StepHeader(
+                  title: AppL10n(Lang.code).goalsTitle,
+                  subtitle: AppL10n(Lang.code).goalsHint,
                 ),
               ]),
             ),
 
-            SizedBox(height: context.rv(24)),
+            const SizedBox(height: 24),
 
             // ── Circle cluster — 3 objectifs de poids, une seule colonne ──
             Padding(
@@ -2068,21 +2141,18 @@ class _CircleGoalState extends State<_CircleGoal>
           height: d,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: sel
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
-                  )
-                : null,
-            color: sel ? null : const Color(0xFFE8F2EC),
+            color: sel
+                ? _kGreenDark.withValues(alpha: 0.5)
+                : _kGlassFill,
             border: Border.all(
-              color: sel ? Colors.transparent : const Color(0xFFB8D4C0),
-              width: 1.5,
+              color: sel
+                  ? _kGreenMid.withValues(alpha: 0.6)
+                  : _kGlassBorder,
+              width: sel ? 1.5 : 0.5,
             ),
             boxShadow: sel
-                ? [BoxShadow(color: const Color(0xFF2D4A2D).withOpacity(0.38), blurRadius: 22, offset: const Offset(0, 8))]
-                : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 2))],
+                ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.2), blurRadius: 22, offset: const Offset(0, 8))]
+                : [],
           ),
           child: Center(
             child: Padding(
@@ -2170,83 +2240,23 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
       child: SafeArea(
         child: Column(
           children: [
-            // ── Top bar ──────────────────────────────────────────
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: context.rs(24), vertical: context.rv(14)),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: widget.onBack ?? () => Navigator.maybePop(context),
-                    child: Container(
-                      width: context.rs(36), height: context.rs(36),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.arrow_back,
-                        size: context.rs(18), color: _kGreenDark),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        AppL10n(Lang.code).fitnessTopBarTitle,
-                        style: TextStyle(
-                          fontSize: context.rs(11),
-                          letterSpacing: 3.5,
-                          fontWeight: FontWeight.w700,
-                          color: _kGreenDark,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: context.rs(36)),
-                ],
-              ),
-            ),
+            _OnboardingTopBar(step: 3, total: 7, onBack: widget.onBack),
 
-            SizedBox(height: context.rv(12)),
+            const SizedBox(height: 12),
 
-            // ── Icon + title block ───────────────────────────────
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
-              child: Column(children: [
-                Container(
-                  width: context.rs(56), height: context.rs(56),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
-                      begin: Alignment.topLeft, end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3),
-                      blurRadius: 12, offset: const Offset(0, 4))],
-                  ),
-                  child: Icon(Icons.show_chart_rounded,
-                    size: context.rs(26), color: Colors.white),
-                ),
-                SizedBox(height: context.rv(12)),
-                Text(
-                  AppL10n(Lang.code).fitnessTitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: context.rs(20),
-                    fontWeight: FontWeight.w800,
-                    color: _kTextDark,
-                    height: 1.25,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                SizedBox(height: context.rv(5)),
-                Text(
-                  AppL10n(Lang.code).fitnessHint,
-                  style: TextStyle(fontSize: context.rs(12.5), color: _kTextMuted),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const _StepIcon(Icons.show_chart_rounded),
+                const SizedBox(height: 12),
+                _StepHeader(
+                  title: AppL10n(Lang.code).fitnessTitle,
+                  subtitle: AppL10n(Lang.code).fitnessHint,
                 ),
               ]),
             ),
 
-            SizedBox(height: context.rv(24)),
+            const SizedBox(height: 24),
 
             // ── Triangle circle layout ────────────────────────────
             Padding(
@@ -2372,26 +2382,24 @@ class equipmentIcon extends StatelessWidget {
         height: diameter,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: selected
-              ? const LinearGradient(
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
-                  colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
-                )
-              : null,
-          color: selected ? null : const Color(0xFFE8F2EC),
+          color: selected
+              ? _kGreenDark.withValues(alpha: 0.5)
+              : _kGlassFill,
           border: Border.all(
-            color: selected ? Colors.transparent : const Color(0xFFB8D4C0),
-            width: 1.5,
+            color: selected
+                ? _kGreenMid.withValues(alpha: 0.6)
+                : _kGlassBorder,
+            width: selected ? 1.5 : 0.5,
           ),
           boxShadow: selected
-              ? [BoxShadow(color: _kGreenDark.withOpacity(0.35), blurRadius: 18, offset: const Offset(0, 6))]
-              : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 5, offset: const Offset(0, 2))],
+              ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.2), blurRadius: 18, offset: const Offset(0, 6))]
+              : [],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon,
-                color: selected ? Colors.white : _kGreenDark, size: 28),
+                color: selected ? _kGreenBright : _kGreenMid, size: 28),
             const SizedBox(height: 6),
             Text(
               label,
@@ -2399,7 +2407,7 @@ class equipmentIcon extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : _kTextDark,
+                color: selected ? _kWhite : _kTextDark,
               ),
             ),
           ],
@@ -2468,77 +2476,18 @@ class _StepEquipmentState extends State<StepEquipment>
       child: SafeArea(
         child: Column(
           children: [
-              // ── Top bar ──────────────────────────────────────────
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: context.rs(24), vertical: context.rv(14)),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: widget.onBack ?? () => Navigator.maybePop(context),
-                      child: Container(
-                        width: context.rs(36), height: context.rs(36),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.arrow_back,
-                          size: context.rs(18), color: _kGreenDark),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          AppL10n(Lang.code).equipmentTopBarTitle,
-                          style: TextStyle(
-                            fontSize: context.rs(11),
-                            letterSpacing: 3.5,
-                            fontWeight: FontWeight.w700,
-                            color: _kGreenDark,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: context.rs(36)),
-                  ],
-                ),
-              ),
+              _OnboardingTopBar(step: 4, total: 7, onBack: widget.onBack),
 
-              SizedBox(height: context.rv(10)),
+              const SizedBox(height: 10),
 
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
-                child: Column(children: [
-                  Container(
-                    width: context.rs(56), height: context.rs(56),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
-                        begin: Alignment.topLeft, end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3),
-                        blurRadius: 12, offset: const Offset(0, 4))],
-                    ),
-                    child: Icon(Icons.sports_gymnastics,
-                      size: context.rs(26), color: Colors.white),
-                  ),
-                  SizedBox(height: context.rv(12)),
-                  Text(
-                    AppL10n(Lang.code).equipmentTitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: context.rs(20),
-                      fontWeight: FontWeight.w800,
-                      color: _kTextDark,
-                      height: 1.25,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  SizedBox(height: context.rv(5)),
-                  Text(
-                    AppL10n(Lang.code).equipmentHint,
-                    style: TextStyle(fontSize: context.rs(12.5), color: _kTextMuted),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const _StepIcon(Icons.sports_gymnastics),
+                  const SizedBox(height: 12),
+                  _StepHeader(
+                    title: AppL10n(Lang.code).equipmentTitle,
+                    subtitle: AppL10n(Lang.code).equipmentHint,
                   ),
                 ]),
               ),
@@ -2607,36 +2556,9 @@ class _StepEquipmentState extends State<StepEquipment>
               ),
             ),
 
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
-              child: GestureDetector(
-                onTap: count > 0 ? widget.onNext : null,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 54,
-                  decoration: BoxDecoration(
-                    gradient: count > 0
-                        ? const LinearGradient(colors: [Color(0xFF3D6B40), Color(0xFF1A3318)])
-                        : null,
-                    color: count > 0 ? null : const Color(0xFFE8EDE8),
-                    borderRadius: BorderRadius.circular(40),
-                    boxShadow: count > 0
-                        ? [BoxShadow(color: _kGreenDark.withOpacity(0.30), blurRadius: 12, offset: const Offset(0, 4))]
-                        : [],
-                  ),
-                  child: Center(
-                    child: Text(
-                      count > 0 ? '${AppL10n(Lang.code).equipmentContinue} ($count)' : AppL10n(Lang.code).equipmentSelectAtLeastOne,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.8,
-                        color: count > 0 ? Colors.white : _kTextMuted,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            _CtaButton(
+              label: count > 0 ? '${AppL10n(Lang.code).equipmentContinue} ($count)' : AppL10n(Lang.code).equipmentSelectAtLeastOne,
+              onPressed: count > 0 ? widget.onNext : null,
             ),
           ],
         ),
@@ -2695,78 +2617,18 @@ class _StepFrequencyState extends State<StepFrequency> {
       child: SafeArea(
         child: Column(
           children: [
-            // ── Top bar ──────────────────────────────────────────
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: context.rs(24), vertical: context.rv(14)),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: widget.onBack ?? () => Navigator.maybePop(context),
-                    child: Container(
-                      width: context.rs(36), height: context.rs(36),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.arrow_back,
-                        size: context.rs(18), color: _kGreenDark),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        AppL10n(Lang.code).frequencyTopBarTitle,
-                        style: TextStyle(
-                          fontSize: context.rs(11),
-                          letterSpacing: 3.5,
-                          fontWeight: FontWeight.w700,
-                          color: _kGreenDark,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: context.rs(36)),
-                ],
-              ),
-            ),
+            _OnboardingTopBar(step: 5, total: 7, onBack: widget.onBack),
 
-            SizedBox(height: context.rv(10)),
+            const SizedBox(height: 10),
 
-            // ── Header card ─────────────────────────────────────
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
-              child: Column(children: [
-                Container(
-                  width: context.rs(56), height: context.rs(56),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
-                      begin: Alignment.topLeft, end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3),
-                      blurRadius: 12, offset: const Offset(0, 4))],
-                  ),
-                  child: Icon(Icons.timer_outlined,
-                    size: context.rs(26), color: Colors.white),
-                ),
-                SizedBox(height: context.rv(12)),
-                Text(
-                  AppL10n(Lang.code).frequencyTitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: context.rs(20),
-                    fontWeight: FontWeight.w800,
-                    color: _kTextDark,
-                    height: 1.25,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                SizedBox(height: context.rv(5)),
-                Text(
-                  AppL10n(Lang.code).frequencyHint,
-                  style: TextStyle(fontSize: context.rs(12.5), color: _kTextMuted),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const _StepIcon(Icons.timer_outlined),
+                const SizedBox(height: 12),
+                _StepHeader(
+                  title: AppL10n(Lang.code).frequencyTitle,
+                  subtitle: AppL10n(Lang.code).frequencyHint,
                 ),
               ]),
             ),
@@ -2823,7 +2685,7 @@ class _CalloutPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFE4E8E6)
+      ..color = _kGlassFill
       ..style = PaintingStyle.fill;
 
     const r      = 20.0;
@@ -2927,12 +2789,12 @@ final String label;
               child: Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: _kGreenBright,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: _kGreenDark.withValues(alpha: 0.12),
-                      blurRadius: 8,
+                      color: _kGreenMid.withValues(alpha: 0.3),
+                      blurRadius: 12,
                       offset: const Offset(0, 2),
                     ),
                   ],
@@ -2941,7 +2803,7 @@ final String label;
                   child: Container(
                     width: 8, height: 8,
                     decoration: const BoxDecoration(
-                      color: _kGreenDark,
+                      color: _kBgDark,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -2980,13 +2842,13 @@ class _DialPainter extends CustomPainter {
       Rect.fromCircle(center: center, radius: r),
       start, sweep, false,
       Paint()
-        ..color       = const Color(0xFFCCCCCC)
+        ..color       = _kGlassBorder
         ..style       = PaintingStyle.stroke
         ..strokeWidth = 1.5
         ..strokeCap   = StrokeCap.round,
     );
 
-    final dot = Paint()..color = const Color(0xFFBBBBBB)..style = PaintingStyle.fill;
+    final dot = Paint()..color = _kGlassBorder..style = PaintingStyle.fill;
     for (int i = 0; i < count; i++) {
       if (i == selected) continue;
       final a = _angle(i);
@@ -3077,6 +2939,8 @@ class _StepHealthProfileState extends State<StepHealthProfile> {
     _hCtrl = FixedExtentScrollController(initialItem: _hIdx);
     _wCtrl = FixedExtentScrollController(initialItem: _wIdx);
     _aCtrl = FixedExtentScrollController(initialItem: _aIdx);
+
+    TickSoundService.instance.init();
   }
 
   @override
@@ -3204,15 +3068,15 @@ class _DrumPicker extends StatelessWidget {
 
   static const double _kItemH = 52.0;
   static const int _kVisible = 5;
-  static const Color _kBg = Color(0xFFF3F6F3);
+  static const Color _kBg = Color(0xFF0F1A14);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: _kBg,
+        color: _kGlassFill,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFD8E5D8), width: 1.5),
+        border: Border.all(color: _kGlassBorder, width: 0.5),
       ),
       child: Column(
         children: [
@@ -3236,10 +3100,10 @@ class _DrumPicker extends StatelessWidget {
                     height: _kItemH,
                     margin: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
-                      color: _kGreenDark.withValues(alpha: 0.09),
+                      color: _kGreenDark.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                          color: _kGreenDark.withValues(alpha: 0.22), width: 1),
+                          color: _kGreenMid.withValues(alpha: 0.3), width: 1),
                     ),
                   ),
                 ),
@@ -3251,7 +3115,11 @@ class _DrumPicker extends StatelessWidget {
                   diameterRatio: 1.8,
                   squeeze: 1.1,
                   physics: const FixedExtentScrollPhysics(),
-                  onSelectedItemChanged: onChanged,
+                  onSelectedItemChanged: (i) {
+                    HapticFeedback.selectionClick();
+                    TickSoundService.instance.tick();
+                    onChanged(i);
+                  },
                   childDelegate: ListWheelChildBuilderDelegate(
                     childCount: itemCount,
                     builder: (_, i) {
@@ -3263,7 +3131,7 @@ class _DrumPicker extends StatelessWidget {
                             fontSize: sel ? 24 : 16,
                             fontWeight:
                                 sel ? FontWeight.w800 : FontWeight.w400,
-                            color: sel ? _kGreenDark : _kTextMuted,
+                            color: sel ? _kGreenBright : _kTextMuted,
                           ),
                           child: Text(labelFor(i)),
                         ),
@@ -3333,9 +3201,9 @@ class _BmiCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F6F3),
+        color: _kGlassFill,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFD8E5D8)),
+        border: Border.all(color: _kGlassBorder, width: 0.5),
       ),
       child: Row(
         children: [
@@ -3618,10 +3486,10 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
         duration: const Duration(milliseconds: 220),
         padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 14),
         decoration: BoxDecoration(
-          color: sel ? _kGreenDark : const Color(0xFFF3F6F3),
+          color: sel ? _kGreenDark : _kGlassFill,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: sel ? _kGreenDark : const Color(0xFFD8E5D8),
+            color: sel ? _kGreenDark : _kGlassBorder,
             width: 1.5,
           ),
           boxShadow: sel
@@ -3636,7 +3504,7 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
             decoration: BoxDecoration(
               color: sel
                   ? Colors.white.withValues(alpha: 0.15)
-                  : const Color(0xFFE4EEE4),
+                  : _kGlassFill,
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 22,
@@ -3666,9 +3534,9 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
       key: const ValueKey('hint'),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F6F3),
+        color: _kGlassFill,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD8E5D8)),
+        border: Border.all(color: _kGlassBorder),
       ),
       child: Row(children: [
         const Icon(Icons.touch_app_outlined, color: _kTextMuted, size: 20),
@@ -3708,10 +3576,10 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20, vertical: 11),
                 decoration: BoxDecoration(
-                  color: sel ? _kGreenDark : const Color(0xFFF3F6F3),
+                  color: sel ? _kGreenDark : _kGlassFill,
                   borderRadius: BorderRadius.circular(40),
                   border: Border.all(
-                    color: sel ? _kGreenDark : const Color(0xFFD8E5D8),
+                    color: sel ? _kGreenDark : _kGlassBorder,
                   ),
                 ),
                 child: Text(d, style: TextStyle(
@@ -3732,9 +3600,9 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
             padding: const EdgeInsets.symmetric(
                 horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F6F3),
+              color: _kGlassFill,
               borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: const Color(0xFFD8E5D8)),
+              border: Border.all(color: _kGlassBorder),
             ),
             child: Row(children: [
               const Icon(LucideIcons.calendarDays,
@@ -3771,9 +3639,9 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F6F3),
+        color: _kGlassFill,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD8E5D8)),
+        border: Border.all(color: _kGlassBorder),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(AppL10n(Lang.code).cycleAtAGlance,
@@ -3820,9 +3688,9 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEF3EE),
+        color: _kGlassFill,
         borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: const Color(0xFFD4E4D4)),
+        border: Border.all(color: _kGlassBorder),
       ),
       child: Row(children: [
         const Icon(LucideIcons.moon, size: 13, color: _kGreenMid),
@@ -3865,9 +3733,9 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F6F3),
+        color: _kGlassFill,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD8E5D8)),
+        border: Border.all(color: _kGlassBorder),
       ),
       child: Column(children: [
         ClipRRect(
@@ -3883,7 +3751,7 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
                     ? _kGreenDark
                     : passed
                         ? _kGreenMid.withValues(alpha: 0.45)
-                        : const Color(0xFFD8E5D8),
+                        : _kGlassBorder,
               ));
             }),
           ),
@@ -3924,9 +3792,9 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F6F3),
+        color: _kGlassFill,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD8E5D8)),
+        border: Border.all(color: _kGlassBorder),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
@@ -4004,11 +3872,11 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             decoration: BoxDecoration(
               color: _birthDate != null
-                  ? const Color(0xFFE8F2EC)
-                  : const Color(0xFFF3F6F3),
+                  ? _kGlassFill
+                  : _kGlassFill,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: _birthDate != null ? _kGreenDark : const Color(0xFFD8E5D8),
+                color: _birthDate != null ? _kGreenDark : _kGlassBorder,
                 width: 1.5),
               boxShadow: _birthDate != null
                   ? [BoxShadow(color: _kGreenDark.withValues(alpha: 0.12),
@@ -4021,7 +3889,7 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
                 decoration: BoxDecoration(
                   color: _birthDate != null
                       ? _kGreenDark.withValues(alpha: 0.12)
-                      : const Color(0xFFE8EDE8),
+                      : _kGlassFill,
                   shape: BoxShape.circle),
                 child: Icon(Icons.calendar_today_rounded,
                   size: 19,
@@ -4240,21 +4108,21 @@ class _PpPhaseCard extends StatelessWidget {
                     color: isCurrent
                         ? null
                         : isNext
-                            ? Colors.white.withOpacity(0.60)
-                            : const Color(0xFFEEF5EE),
+                            ? Colors.white.withValues(alpha:0.60)
+                            : _kGlassFill,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: isCurrent
                           ? Colors.transparent
                           : isNext
-                              ? const Color(0xFFB8D4C0)
-                              : const Color(0xFFD4E6D6),
+                              ? _kGlassBorder
+                              : _kGlassBorder,
                       width: 1.5,
                     ),
                     boxShadow: isCurrent
-                        ? [BoxShadow(color: _kGreenDark.withOpacity(0.30), blurRadius: 16, offset: const Offset(0, 5))]
+                        ? [BoxShadow(color: _kGreenDark.withValues(alpha:0.30), blurRadius: 16, offset: const Offset(0, 5))]
                         : isNext
-                            ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]
+                            ? [BoxShadow(color: Colors.black.withValues(alpha:0.05), blurRadius: 8)]
                             : [],
                   ),
                   child: Row(
@@ -4264,8 +4132,8 @@ class _PpPhaseCard extends StatelessWidget {
                         width: 46, height: 46,
                         decoration: BoxDecoration(
                           color: isCurrent
-                              ? Colors.white.withOpacity(0.18)
-                              : const Color(0xFFD6EBE0),
+                              ? Colors.white.withValues(alpha:0.18)
+                              : _kGlassFill,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
@@ -4294,7 +4162,7 @@ class _PpPhaseCard extends StatelessWidget {
                                 fontSize: 11.5,
                                 height: 1.4,
                                 color: isCurrent
-                                    ? Colors.white.withOpacity(0.70)
+                                    ? Colors.white.withValues(alpha:0.70)
                                     : _kTextMuted,
                               ),
                             ),
@@ -4309,7 +4177,7 @@ class _PpPhaseCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.22),
+                            color: Colors.white.withValues(alpha:0.22),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Row(mainAxisSize: MainAxisSize.min, children: [
@@ -4324,7 +4192,7 @@ class _PpPhaseCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD6EBE0),
+                            color: _kGlassFill,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Row(mainAxisSize: MainAxisSize.min, children: [
@@ -4396,27 +4264,7 @@ class _StepAvatarState extends State<StepAvatar> {
       child: SafeArea(
         child: Column(
           children: [
-              // ── Top bar ──────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                child: Row(children: [
-                GestureDetector(
-                  onTap: widget.onBack,
-                  child: Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.arrow_back, size: 18, color: _kGreenDark),
-                  ),
-                ),
-                Expanded(child: Center(child: Text(AppL10n(Lang.code).avatarTopBarTitle,
-                  style: const TextStyle(fontSize: 11, letterSpacing: 3.0,
-                    fontWeight: FontWeight.w700, color: _kGreenDark)))),
-                const SizedBox(width: 36),
-              ]),
-            ),
+              _OnboardingTopBar(step: 9, total: 11, onBack: widget.onBack),
 
             const SizedBox(height: 16),
 
@@ -4432,10 +4280,10 @@ class _StepAvatarState extends State<StepAvatar> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.55),
+                          color: _kGlassFill,
                           borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
-                          boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 6))],
+                          border: Border.all(color: _kGlassBorder, width: 0.5),
+                          boxShadow: [BoxShadow(color: _kGreenMid.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 6))],
                         ),
                         child: Column(children: [
                           // Mascot with glow ring
@@ -4443,11 +4291,11 @@ class _StepAvatarState extends State<StepAvatar> {
                             width: 140, height: 140,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: const RadialGradient(
-                                colors: [Color(0xFFD6EBE0), Color(0xFFB8CFC4)],
+                              gradient: RadialGradient(
+                                colors: [_kGreenDark.withValues(alpha: 0.4), _kGreenDark.withValues(alpha: 0.15)],
                               ),
                               boxShadow: [
-                                BoxShadow(color: _kGreenDark.withOpacity(0.20), blurRadius: 24, spreadRadius: 2),
+                                BoxShadow(color: _kGreenDark.withValues(alpha:0.20), blurRadius: 24, spreadRadius: 2),
                               ],
                             ),
                             child: Center(child: MascotWidget(type: _type, mood: _mood, size: 110)),
@@ -4498,20 +4346,19 @@ class _StepAvatarState extends State<StepAvatar> {
                               duration: const Duration(milliseconds: 200),
                               width: 82,
                               decoration: BoxDecoration(
-                                gradient: selected
-                                    ? const LinearGradient(
-                                        colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
-                                        begin: Alignment.topLeft, end: Alignment.bottomRight)
-                                    : null,
-                                color: selected ? null : Colors.white.withOpacity(0.6),
+                                color: selected
+                                    ? _kGreenDark.withValues(alpha: 0.4)
+                                    : _kGlassFill,
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
-                                  color: selected ? Colors.transparent : const Color(0xFFB8D4C0),
-                                  width: 1.5,
+                                  color: selected
+                                      ? _kGreenMid.withValues(alpha: 0.6)
+                                      : _kGlassBorder,
+                                  width: selected ? 1.5 : 0.5,
                                 ),
                                 boxShadow: selected
-                                    ? [BoxShadow(color: _kGreenDark.withOpacity(0.32), blurRadius: 14, offset: const Offset(0, 5))]
-                                    : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
+                                    ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.15), blurRadius: 14, offset: const Offset(0, 5))]
+                                    : [],
                               ),
                               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                                 MascotWidget(type: type, mood: MascotMood.happy, size: 48),
@@ -4563,19 +4410,18 @@ class _StepAvatarState extends State<StepAvatar> {
                               duration: const Duration(milliseconds: 180),
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
-                                gradient: selected
-                                    ? const LinearGradient(
-                                        colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
-                                        begin: Alignment.topLeft, end: Alignment.bottomRight)
-                                    : null,
-                                color: selected ? null : Colors.white.withOpacity(0.6),
+                                color: selected
+                                    ? _kGreenDark.withValues(alpha: 0.4)
+                                    : _kGlassFill,
                                 borderRadius: BorderRadius.circular(40),
                                 border: Border.all(
-                                  color: selected ? Colors.transparent : const Color(0xFFB8D4C0),
-                                  width: 1.2,
+                                  color: selected
+                                      ? _kGreenMid.withValues(alpha: 0.6)
+                                      : _kGlassBorder,
+                                  width: selected ? 1.5 : 0.5,
                                 ),
                                 boxShadow: selected
-                                    ? [BoxShadow(color: _kGreenDark.withOpacity(0.28), blurRadius: 10, offset: const Offset(0, 3))]
+                                    ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 3))]
                                     : [],
                               ),
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -4596,33 +4442,9 @@ class _StepAvatarState extends State<StepAvatar> {
               ),
             ),
 
-            // ── CTA ──────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
-              child: GestureDetector(
-                onTap: widget.onNext,
-                child: Container(
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
-                      begin: Alignment.topLeft, end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(40),
-                    boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(AppL10n(Lang.code).avatarCta,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
-                          color: Colors.white, letterSpacing: 1.5)),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
-                    ],
-                  ),
-                ),
-              ),
+            _CtaButton(
+              label: AppL10n(Lang.code).avatarCta,
+              onPressed: widget.onNext,
             ),
           ],
         ),
@@ -4696,79 +4518,18 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
       child: SafeArea(
         child: Column(
           children: [
-              // ── Top bar ──────────────────────────────────────────────────
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: context.rs(24), vertical: context.rv(14)),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: widget.onBack ?? () => Navigator.maybePop(context),
-                      child: Container(
-                        width: context.rs(36), height: context.rs(36),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.arrow_back,
-                          size: context.rs(18), color: _kGreenDark),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          AppL10n(Lang.code).locationTopBarTitle,
-                          style: TextStyle(
-                            fontSize: context.rs(11),
-                            letterSpacing: 3.0,
-                            fontWeight: FontWeight.w700,
-                            color: _kGreenDark,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: context.rs(36)),
-                  ],
-                ),
-              ),
+              _OnboardingTopBar(step: 8, total: 11, onBack: widget.onBack),
 
-              SizedBox(height: context.rv(10)),
+              const SizedBox(height: 10),
 
-              // ── Header card ─────────────────────────────────────────────
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
-                child: Column(children: [
-                  Container(
-                    width: context.rs(56), height: context.rs(56),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF4A7A5A), Color(0xFF2D4A2D)],
-                        begin: Alignment.topLeft, end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [BoxShadow(color: _kGreenDark.withOpacity(0.3),
-                        blurRadius: 12, offset: const Offset(0, 4))],
-                    ),
-                    child: Icon(Icons.location_on_outlined,
-                      size: context.rs(26), color: Colors.white),
-                  ),
-                  SizedBox(height: context.rv(12)),
-                  Text(
-                    AppL10n(Lang.code).locationTitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: context.rs(20),
-                      fontWeight: FontWeight.w800,
-                      color: _kTextDark,
-                      height: 1.25,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  SizedBox(height: context.rv(5)),
-                  Text(
-                    AppL10n(Lang.code).locationSubtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: context.rs(12.5), color: _kTextMuted),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const _StepIcon(Icons.location_on_outlined),
+                  const SizedBox(height: 12),
+                  _StepHeader(
+                    title: AppL10n(Lang.code).locationTitle,
+                    subtitle: AppL10n(Lang.code).locationSubtitle,
                   ),
                 ]),
               ),
@@ -4800,28 +4561,26 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                             horizontal: context.rs(18),
                             vertical: context.rv(14)),
                           decoration: BoxDecoration(
-                            gradient: sel
-                                ? const LinearGradient(
-                                    colors: [Color(0xFF3D6B40), Color(0xFF1A3318)],
-                                    begin: Alignment.topLeft, end: Alignment.bottomRight,
-                                  )
-                                : null,
-                            color: sel ? null : Colors.white.withOpacity(0.75),
+                            color: sel
+                                ? _kGreenDark.withValues(alpha: 0.4)
+                                : _kGlassFill,
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                              color: sel ? Colors.transparent : const Color(0xFFB8D4C0),
-                              width: 1.8,
+                              color: sel
+                                  ? _kGreenMid.withValues(alpha: 0.6)
+                                  : _kGlassBorder,
+                              width: sel ? 1.5 : 0.5,
                             ),
                             boxShadow: sel
-                                ? [BoxShadow(color: _kGreenDark.withOpacity(0.32), blurRadius: 18, offset: const Offset(0, 6))]
-                                : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                                ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.15), blurRadius: 18, offset: const Offset(0, 6))]
+                                : [],
                           ),
                           child: Row(
                             children: [
                               Container(
                                 width: context.rs(48), height: context.rs(48),
                                 decoration: BoxDecoration(
-                                  color: sel ? Colors.white.withOpacity(0.2) : const Color(0xFFD6EBE0),
+                                  color: sel ? Colors.white.withValues(alpha:0.2) : _kGlassFill,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Center(
@@ -4848,7 +4607,7 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
                                       style: TextStyle(
                                         fontSize: context.rs(12),
                                         height: 1.4,
-                                        color: sel ? Colors.white.withOpacity(0.75) : _kTextMuted,
+                                        color: sel ? Colors.white.withValues(alpha: 0.75) : _kTextMuted,
                                       ),
                                     ),
                                   ],
