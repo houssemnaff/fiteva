@@ -471,45 +471,47 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Progress bar widget — custom (pas de shader GPU)
+// Segmented progress strip — premium step indicator
 // ─────────────────────────────────────────────────────────────────────────────
 class _ProgressBar extends StatelessWidget {
   final double progress;
   const _ProgressBar({required this.progress});
 
+  static const _totalSteps = 11;
+
   @override
   Widget build(BuildContext context) {
+    final currentStep = (progress * (_totalSteps - 1)).round();
     return Positioned(
       top: 0, left: 0, right: 0,
       child: SafeArea(
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
-          child: LayoutBuilder(
-            builder: (_, constraints) {
-              final totalW = constraints.maxWidth;
-              return Container(
-                height: 3,
-                width: totalW,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0EBE0),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    width: totalW * progress,
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2D4A2D),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+          child: Row(
+            children: List.generate(_totalSteps, (i) {
+              final done = i <= currentStep;
+              final isCurrent = i == currentStep;
+              return Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  height: isCurrent ? 4 : 2.5,
+                  margin: EdgeInsets.only(right: i < _totalSteps - 1 ? 3 : 0),
+                  decoration: BoxDecoration(
+                    color: done
+                        ? const Color(0xFF7ABB98)
+                        : const Color(0xFF2A3D30),
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: isCurrent
+                        ? [BoxShadow(
+                            color: const Color(0xFF7ABB98).withValues(alpha: 0.5),
+                            blurRadius: 6)]
+                        : [],
                   ),
                 ),
               );
-            },
+            }),
           ),
         ),
       ),

@@ -286,6 +286,40 @@ final _santeQuestionsProvider = FutureProvider<List<_Question>>((ref) async {
   }
 });
 
+final _santeVideosProvider = FutureProvider<List<_VideoSeries>>((ref) async {
+  try {
+    final rows = await SanteService.fetchSanteVideos();
+    if (rows.isEmpty) return _videoSeries;
+
+    final Map<String, List<_VideoEpisode>> supaEpisodes = {};
+    for (final r in rows) {
+      final series = r['series_title'] as String;
+      supaEpisodes.putIfAbsent(series, () => []);
+      supaEpisodes[series]!.add(_VideoEpisode(
+        episode: (r['episode'] as num).toInt(),
+        title: r['title'] as String,
+        duration: r['duration'] as String,
+        asset: r['video_url'] as String,
+      ));
+    }
+
+    return _videoSeries.map((s) {
+      final extra = supaEpisodes[s.title];
+      if (extra == null) return s;
+      final existing = s.episodes.map((e) => e.episode).toSet();
+      final newEps = extra.where((e) => !existing.contains(e.episode)).toList();
+      if (newEps.isEmpty) return s;
+      return _VideoSeries(
+        doctor: s.doctor, title: s.title, color: s.color,
+        coverAsset: s.coverAsset,
+        episodes: [...s.episodes, ...newEps]..sort((a, b) => a.episode.compareTo(b.episode)),
+      );
+    }).toList();
+  } catch (_) {
+    return _videoSeries;
+  }
+});
+
 _Doctor _doctorFromRow(Map<String, dynamic> r) {
   final hex = (r['color_hex'] as String? ?? '#1C4D30').replaceFirst('#', '');
   final colorVal = int.tryParse('0xFF$hex') ?? 0xFF1C4D30;
@@ -344,6 +378,7 @@ final _videoSeries = [
       _VideoEpisode(episode: 3, title: 'Alimentation anti-inflammatoire', duration: '6:15', asset: 'assets/videos/sante.mov'),
       _VideoEpisode(episode: 4, title: 'Envies de sucre avant les règles : pourquoi et comment gérer', duration: '5:20', asset: 'https://res.cloudinary.com/dmzvbqocs/video/upload/v1784400265/IMG_3454_pedwzm.mov'),
       _VideoEpisode(episode: 5, title: 'Ballonnements : causes et solutions naturelles', duration: '4:50', asset: 'https://res.cloudinary.com/dmzvbqocs/video/upload/v1784388477/copy_4EA7AC78-599E-4E74-8C80-C42DA9CA3A59_pjfeln.mov'),
+      _VideoEpisode(episode: 6, title: 'Cycle et protéines : combien et quand en consommer', duration: '5:30', asset: 'https://res.cloudinary.com/dmzvbqocs/video/upload/v1784407262/IMG_3449_pliy1d.mov'),
     ]),
   _VideoSeries(doctor: _doctors[0], title: 'Comprendre ton corps',
     color: const Color(0xFF1C4D30), coverAsset: 'assets/images/gynecologue.jpg', episodes: const [
@@ -406,9 +441,10 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
     final dark = Theme.of(context).brightness == Brightness.dark;
     final l10n = ref.watch(l10nProvider);
 
-    final doctors   = ref.watch(_santeDoctorsProvider).asData?.value   ?? _doctors;
-    final articles  = ref.watch(_santeArticlesProvider).asData?.value  ?? _articles;
-    final questions = ref.watch(_santeQuestionsProvider).asData?.value ?? _questions;
+    final doctors      = ref.watch(_santeDoctorsProvider).asData?.value   ?? _doctors;
+    final articles     = ref.watch(_santeArticlesProvider).asData?.value  ?? _articles;
+    final questions    = ref.watch(_santeQuestionsProvider).asData?.value ?? _questions;
+    final videoSeries  = ref.watch(_santeVideosProvider).asData?.value    ?? _videoSeries;
 
     return Scaffold(
       backgroundColor: _T.bg(context),
@@ -463,7 +499,7 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
               onCat: (c) => setState(() => _cat = c),
               onLike: (i) => setState(() { if (_liked.contains(i)) _liked.remove(i); else _liked.add(i); }),
               onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark, l10n: l10n))),
-            _RessourcesTab(dark: dark, lex: _lex, l10n: l10n, articles: articles,
+            _RessourcesTab(dark: dark, lex: _lex, l10n: l10n, articles: articles, videoSeries: videoSeries,
               onLex: (s) => setState(() => _lex = s),
               onArticleTap: (article) {
                 ref.read(pointsProvider.notifier).rewardHealthTipRead().then((_) {
@@ -813,10 +849,11 @@ class _RessourcesTab extends StatelessWidget {
   final String lex;
   final AppL10n l10n;
   final List<_Article> articles;
+  final List<_VideoSeries> videoSeries;
   final ValueChanged<String> onLex;
   final ValueChanged<_Article>? onArticleTap;
   const _RessourcesTab({required this.dark, required this.lex, required this.l10n,
-    required this.articles, required this.onLex, this.onArticleTap});
+    required this.articles, required this.videoSeries, required this.onLex, this.onArticleTap});
 
   List<_LexiqueEntry> get _lexFiltered {
     if (lex.isEmpty) return _lexique;
@@ -833,18 +870,18 @@ class _RessourcesTab extends StatelessWidget {
         // ── Section header: Séries vidéo ──
         const SizedBox(height: 24),
         _SectionHeader(title: l10n.santeSeriesSection, icon: LucideIcons.playCircle,
-          subtitle: l10n.santeSeriesCount(_videoSeries.length), dark: dark),
+          subtitle: l10n.santeSeriesCount(videoSeries.length), dark: dark),
         const SizedBox(height: 16),
         SizedBox(
           height: 230,
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             scrollDirection: Axis.horizontal,
-            itemCount: _videoSeries.length,
+            itemCount: videoSeries.length,
             itemBuilder: (ctx, i) {
-              final s = _videoSeries[i];
+              final s = videoSeries[i];
               return Padding(
-                padding: EdgeInsets.only(right: i < _videoSeries.length - 1 ? 14 : 0),
+                padding: EdgeInsets.only(right: i < videoSeries.length - 1 ? 14 : 0),
                 child: GestureDetector(
                   onTap: () => showModalBottomSheet(
                     context: ctx, isScrollControlled: true,

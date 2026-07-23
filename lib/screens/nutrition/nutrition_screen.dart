@@ -372,7 +372,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
             // Videos
             if (dbVideos.isNotEmpty)
               SliverToBoxAdapter(child: SizedBox(
-                height: 200,
+                height: 230,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -911,7 +911,7 @@ class _MealChip extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// VIDEO CARD (discover section)
+// VIDEO CARD (discover section) — same style as Santé _SeriesCard
 // ══════════════════════════════════════════════════════════════════════════════
 class _VideoCard extends StatelessWidget {
   final VideoRecipe recipe;
@@ -921,86 +921,103 @@ class _VideoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final pi = PhaseInfo.from(recipe.phase);
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 260,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20, offset: const Offset(0, 6))]),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(fit: StackFit.expand, children: [
-          Image.network(recipe.imageUrl, fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: cs.primary.withOpacity(0.06))),
-          const DecoratedBox(decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              stops: [0.0, 0.4, 1.0],
-              colors: [Color(0x00000000), Color(0x33000000), Color(0xCC000000)]))),
-          // Play
-          Center(child: Container(
-            width: 48, height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.92), shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 12)]),
-            child: Icon(LucideIcons.play, color: cs.primary, size: 20))),
-          // Phase
-          Positioned(top: 12, left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: SizedBox(
+          width: 180,
+          child: Stack(fit: StackFit.expand, children: [
+            // Background image
+            Image.network(recipe.imageUrl, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(color: cs.primary.withOpacity(0.15))),
+
+            // Gradient overlay
+            DecoratedBox(
               decoration: BoxDecoration(
-                color: pi.color.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(8)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Container(width: 5, height: 5,
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
-                const SizedBox(width: 4),
-                Text(pi.label, style: GoogleFonts.inter(
-                  fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
-              ]))),
-          // Duration
-          Positioned(top: 12, right: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.45),
-                borderRadius: BorderRadius.circular(8)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(LucideIcons.clock, size: 9, color: Colors.white70),
-                const SizedBox(width: 3),
-                Text(recipe.duration, style: GoogleFonts.inter(
-                  fontSize: 9, fontWeight: FontWeight.w600, color: Colors.white)),
-              ]))),
-          // Bottom
-          Positioned(bottom: 14, left: 14, right: 14,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(recipe.name, maxLines: 2, overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700,
-                  color: Colors.white, height: 1.2, letterSpacing: -0.2)),
-              const SizedBox(height: 6),
-              Row(children: [
-                const Icon(LucideIcons.flame, size: 10, color: Colors.white60),
-                const SizedBox(width: 3),
-                Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
-                  fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.white70)),
-                const SizedBox(width: 12),
-                Text(recipe.difficulty, style: GoogleFonts.inter(
-                  fontSize: 10, color: Colors.white.withOpacity(0.45))),
-              ]),
-              if (recipe.authorName != null) ...[
-                const SizedBox(height: 5),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  stops: const [0.0, 0.4, 1.0],
+                  colors: [
+                    Colors.black.withOpacity(0.08),
+                    Colors.black.withOpacity(0.25),
+                    Colors.black.withOpacity(0.88),
+                  ],
+                ),
+              ),
+            ),
+
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Top row: category pill + duration badge
                 Row(children: [
-                  const Icon(LucideIcons.user, size: 9, color: Colors.white54),
-                  const SizedBox(width: 4),
-                  Text(recipe.authorName!, style: GoogleFonts.inter(
-                    fontSize: 9.5, fontWeight: FontWeight.w500, color: Colors.white60)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(20)),
+                    child: Text(recipe.difficulty, style: GoogleFonts.inter(
+                      color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.35),
+                      borderRadius: BorderRadius.circular(20)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(LucideIcons.clock, size: 9, color: Colors.white),
+                      const SizedBox(width: 4),
+                      Text(recipe.duration, style: GoogleFonts.inter(
+                        color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                    ]),
+                  ),
                 ]),
-              ],
-            ])),
-        ])));
+                const Spacer(),
+
+                // Macros row
+                Row(children: [
+                  Icon(LucideIcons.flame, size: 11, color: Colors.white.withOpacity(0.8)),
+                  const SizedBox(width: 3),
+                  Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
+                    color: Colors.white.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 10),
+                  Icon(LucideIcons.beef, size: 11, color: Colors.white.withOpacity(0.8)),
+                  const SizedBox(width: 3),
+                  Text('${recipe.proteins}g prot', style: GoogleFonts.inter(
+                    color: Colors.white.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.w600)),
+                ]),
+                const SizedBox(height: 8),
+
+                // Title
+                Text(recipe.name, style: GoogleFonts.outfit(
+                  color: Colors.white, fontSize: 15,
+                  fontWeight: FontWeight.w800, height: 1.2),
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 10),
+
+                // Watch button
+                Container(
+                  height: 32,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(LucideIcons.play, size: 11, color: cs.primary),
+                    const SizedBox(width: 6),
+                    Text('Regarder', style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w700, color: cs.primary)),
+                  ]),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
   }
 }
 

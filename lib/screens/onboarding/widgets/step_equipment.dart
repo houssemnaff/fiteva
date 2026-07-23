@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'shared_onboarding_widgets.dart';
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 4 — StepEquipment (fond mint + grille pills)
-// ══════════════════════════════════════════════════════════════════════════════
 class StepEquipment extends StatelessWidget {
   final List<String> selectedEquipment;
   final VoidCallback? onBack;
@@ -21,38 +18,38 @@ class StepEquipment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final options = [
-      _EquipItem('Aucun matériel', Icons.self_improvement),
-      _EquipItem('Haltères',       Icons.fitness_center),
-      _EquipItem('Barre & poids',  Icons.sports_gymnastics),
-      _EquipItem('Machines',       Icons.precision_manufacturing),
-      _EquipItem('Résistances',    Icons.timeline),
-      _EquipItem('Tapis de yoga',  Icons.spa),
+      GoalItem('Aucun matériel', Icons.self_improvement),
+      GoalItem('Haltères',       Icons.fitness_center),
+      GoalItem('Barre & poids',  Icons.sports_gymnastics),
+      GoalItem('Machines',       Icons.precision_manufacturing),
+      GoalItem('Résistances',    Icons.timeline),
+      GoalItem('Tapis de yoga',  Icons.spa),
     ];
 
     return mintScaffold(
       child: Column(
         children: [
-          OnboardingTopBar(step: 4, total: 7, title: 'Equipment', onBack: onBack),
+          OnboardingTopBar(step: 4, total: 7, onBack: onBack),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const StepIcon(Icons.sports_gymnastics),
-                  const SizedBox(height: 20),
                   const StepHeader(
                     title: 'Ton équipement',
-                    subtitle: 'On adapte tes workouts',
+                    subtitle: 'On adapte tes workouts à ce que tu as.',
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 32),
                   Expanded(
                     child: GridView.builder(
+                      padding: EdgeInsets.zero,
                       itemCount: options.length,
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         mainAxisSpacing: 12,
                         crossAxisSpacing: 12,
-                        childAspectRatio: 2.8,
+                        childAspectRatio: 0.95,
                       ),
                       itemBuilder: (_, i) {
                         final item = options[i];
@@ -71,17 +68,11 @@ class StepEquipment extends StatelessWidget {
             ),
           ),
           CtaButton(
-            label: 'Next',
+            label: 'Continuer',
             onPressed: selectedEquipment.isNotEmpty ? onNext : null,
           ),
         ],
       ),
     );
   }
-}
-
-class _EquipItem {
-  final String label;
-  final IconData icon;
-  _EquipItem(this.label, this.icon);
 }

@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'shared_onboarding_widgets.dart';
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 2 — StepGoals  (fond mint + pills)
-// ══════════════════════════════════════════════════════════════════════════════
 class StepGoals extends StatelessWidget {
   final List<String> selectedGoals;
   final VoidCallback? onBack;
@@ -32,28 +29,27 @@ class StepGoals extends StatelessWidget {
     return mintScaffold(
       child: Column(
         children: [
-          OnboardingTopBar(step: 2, total: 7, title: 'Goals', onBack: onBack),
+          OnboardingTopBar(step: 2, total: 7, onBack: onBack),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const StepIcon(Icons.track_changes_rounded),
-                  const SizedBox(height: 20),
                   const StepHeader(
                     title: 'Tes objectifs',
-                    subtitle: 'Choisis ce qui te correspond',
+                    subtitle: 'Sélectionne tout ce qui te correspond.',
                   ),
-                  const SizedBox(height: 28),
-                  // Grille 2 colonnes de pills
+                  const SizedBox(height: 32),
                   Expanded(
                     child: GridView.builder(
+                      padding: EdgeInsets.zero,
                       itemCount: options.length,
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         mainAxisSpacing: 12,
                         crossAxisSpacing: 12,
-                        childAspectRatio: 2.8,
+                        childAspectRatio: 0.95,
                       ),
                       itemBuilder: (_, i) {
                         final item = options[i];
@@ -72,7 +68,7 @@ class StepGoals extends StatelessWidget {
             ),
           ),
           CtaButton(
-            label: 'Next',
+            label: 'Continuer',
             onPressed: selectedGoals.isNotEmpty ? onNext : null,
           ),
         ],

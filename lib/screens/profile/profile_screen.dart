@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:fiteva/models/points_model.dart';
 import 'package:fiteva/providers/diamonds_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
@@ -31,7 +32,7 @@ class _P {
   _P._();
   static const main   = Color(0xFF1C4D30);
   static const sage   = Color(0xFF7ABB98);
-  static const bgL    = Color(0xFFF7F8F6);
+  static const bgL    = Colors.white;
   static const cardL  = Colors.white;
   static const borderL = Color(0xFFE8ECE9);
   static const t1L    = Color(0xFF1A1A1A);
@@ -215,136 +216,224 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
 
-          // ── Avatar + identity ────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
-              child: Column(children: [
-                Stack(clipBehavior: Clip.none, children: [
-                  Container(
-                    width: 88, height: 88,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _P.sage.withValues(alpha: d ? 0.15 : 0.12),
-                      border: Border.all(color: _P.sage.withValues(alpha: 0.3), width: 2.5)),
-                    child: ClipOval(child: MascotWidget(
-                      type: mascot.type, mood: mascot.mood, size: 84)),
-                  ),
-                  Positioned(bottom: -2, right: -2,
-                    child: GestureDetector(
-                      onTap: () => context.push('/edit-avatar'),
-                      child: Container(
-                        width: 30, height: 30,
-                        decoration: BoxDecoration(
-                          color: _P.main, shape: BoxShape.circle,
-                          border: Border.all(color: bg, width: 2.5)),
-                        child: const Icon(LucideIcons.camera, size: 13, color: Colors.white)),
-                    ),
-                  ),
-                ]),
-                const SizedBox(height: 14),
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  Flexible(
-                    child: Text(
-                      displayName.isNotEmpty ? displayName : l10n.profileUser,
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w700,
-                        color: ink, letterSpacing: -0.4)),
-                  ),
-                  Consumer(builder: (_, ref2, __) {
-                    if (!ref2.watch(isProProvider)) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF1C4D30), Color(0xFF7ABB98)]),
-                          borderRadius: BorderRadius.circular(8)),
-                        child: Text('PRO',
-                          style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800,
-                            color: Colors.white, letterSpacing: 0.6)),
-                      ),
-                    );
-                  }),
-                ]),
-                if (displayEmail.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(displayEmail, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: 13, color: muted)),
-                ],
-              ]),
-            ),
-          ),
-
-          // ── Stats ────────────────────────────────────────────────────────
+          // ── Profile hero card ─────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-              child: Row(children: [
-                Expanded(child: _StatChip(icon: LucideIcons.flame,
-                  value: '${xp.streak}', label: l10n.profileStreak,
-                  color: const Color(0xFFE8734A), d: d)),
-                const SizedBox(width: 10),
-                Expanded(child: _StatChip(icon: LucideIcons.dumbbell,
-                  value: '48', label: l10n.profileSessions,
-                  color: _P.sage, d: d)),
-                const SizedBox(width: 10),
-                Expanded(child: _StatChip(icon: LucideIcons.gem,
-                  value: '$diamonds', label: l10n.profileDiamonds,
-                  color: const Color(0xFF6BA3D6), d: d)),
-              ]),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: surf,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: accent.withValues(alpha: 0.15)),
+                  boxShadow: [BoxShadow(
+                    color: accent.withValues(alpha: d ? 0.08 : 0.06),
+                    blurRadius: 24, offset: const Offset(0, 8))],
+                ),
+                child: Column(children: [
+                  Stack(clipBehavior: Clip.none, children: [
+                    Container(
+                      width: 80, height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft, end: Alignment.bottomRight,
+                          colors: [accent.withValues(alpha: 0.15), accent.withValues(alpha: 0.05)]),
+                        border: Border.all(color: accent.withValues(alpha: 0.3), width: 2.5)),
+                      child: ClipOval(child: MascotWidget(
+                        type: mascot.type, mood: mascot.mood, size: 76)),
+                    ),
+                    Positioned(bottom: -2, right: -2,
+                      child: GestureDetector(
+                        onTap: () => context.push('/edit-avatar'),
+                        child: Container(
+                          width: 28, height: 28,
+                          decoration: BoxDecoration(
+                            color: _P.main, shape: BoxShape.circle,
+                            border: Border.all(color: surf, width: 2.5)),
+                          child: const Icon(LucideIcons.camera, size: 12, color: Colors.white)),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 14),
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    Flexible(
+                      child: Text(
+                        displayName.isNotEmpty ? displayName : l10n.profileUser,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w700,
+                          color: ink, letterSpacing: -0.4)),
+                    ),
+                    Consumer(builder: (_, ref2, __) {
+                      if (!ref2.watch(isProProvider)) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF1C4D30), Color(0xFF7ABB98)]),
+                            borderRadius: BorderRadius.circular(8)),
+                          child: Text('PRO',
+                            style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800,
+                              color: Colors.white, letterSpacing: 0.6)),
+                        ),
+                      );
+                    }),
+                  ]),
+                  if (displayEmail.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(displayEmail, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(fontSize: 13, color: muted)),
+                  ],
+                ]),
+              ),
             ),
           ),
 
-          // ── Level progress ──────────────────────────────────────────────
+          // ── Stats bar (unified) ───────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: surf,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: bdr, width: 0.5),
+                  boxShadow: [BoxShadow(
+                    color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
+                    blurRadius: 12, offset: const Offset(0, 3))],
+                ),
+                child: IntrinsicHeight(
+                  child: Row(children: [
+                    _UnifiedStat(icon: LucideIcons.flame, value: '${xp.streak}',
+                      label: l10n.profileStreak, color: const Color(0xFFE8734A), d: d),
+                    VerticalDivider(width: 1, thickness: 1,
+                      color: bdr, indent: 8, endIndent: 8),
+                    _UnifiedStat(icon: LucideIcons.dumbbell, value: '48',
+                      label: l10n.profileSessions, color: _P.sage, d: d),
+                    VerticalDivider(width: 1, thickness: 1,
+                      color: bdr, indent: 8, endIndent: 8),
+                    _UnifiedStat(icon: LucideIcons.gem, value: '$diamonds',
+                      label: l10n.profileDiamonds, color: const Color(0xFF6BA3D6), d: d),
+                  ]),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Level hero (gradient ring + diamond wallet) ──────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
               child: GestureDetector(
                 onTap: () => _showLevelsSheet(context, xp),
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: surf,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: bdr, width: 0.5),
-                    boxShadow: [BoxShadow(
-                      color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
-                      blurRadius: 12, offset: const Offset(0, 3))],
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      colors: d
+                        ? [const Color(0xFF152A1D), const Color(0xFF0F1A14)]
+                        : [const Color(0xFFF0F7F2), const Color(0xFFFFFFFF)]),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: accent.withValues(alpha: 0.15), width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withValues(alpha: d ? 0.12 : 0.08),
+                        blurRadius: 20, offset: const Offset(0, 6)),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: d ? 0.2 : 0.04),
+                        blurRadius: 10, offset: const Offset(0, 3)),
+                    ],
                   ),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  child: Column(children: [
                     Row(children: [
-                      Text(PointsModel.levelEmojis[xp.level],
-                        style: const TextStyle(fontSize: 16)),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(
-                        'Niveau ${xp.level} · ${PointsModel.levelTitles[xp.level]}',
-                        style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700,
-                          color: _P.main))),
-                      Icon(LucideIcons.chevronRight, size: 14, color: muted.withValues(alpha: 0.5)),
+                      SizedBox(
+                        width: 80, height: 80,
+                        child: CustomPaint(
+                          painter: _LevelRingPainter(
+                            progress: xp.levelProgress.clamp(0.0, 1.0),
+                            trackColor: accent.withValues(alpha: d ? 0.12 : 0.10),
+                            ringColor: accent,
+                            glowColor: accent.withValues(alpha: 0.3),
+                          ),
+                          child: Center(
+                            child: Text(PointsModel.levelEmojis[xp.level],
+                              style: const TextStyle(fontSize: 30)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          Expanded(child: Text(
+                            'Niveau ${xp.level}',
+                            style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800,
+                              color: ink, letterSpacing: -0.3))),
+                          // diamond wallet pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF60A5FA).withValues(alpha: d ? 0.15 : 0.10),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.2)),
+                            ),
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              const Text('💎', style: TextStyle(fontSize: 12)),
+                              const SizedBox(width: 4),
+                              Text('$diamonds', style: GoogleFonts.outfit(
+                                fontSize: 13, fontWeight: FontWeight.w800,
+                                color: const Color(0xFF3B82F6))),
+                            ]),
+                          ),
+                        ]),
+                        const SizedBox(height: 2),
+                        Text(PointsModel.levelTitles[xp.level],
+                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500,
+                            color: accent)),
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: LinearProgressIndicator(
+                            value: xp.levelProgress.clamp(0.0, 1.0),
+                            minHeight: 7,
+                            backgroundColor: accent.withValues(alpha: d ? 0.12 : 0.10),
+                            valueColor: AlwaysStoppedAnimation<Color>(accent)),
+                        ),
+                        const SizedBox(height: 6),
+                        if (xp.pointsForNextLevel - xp.totalPoints > 0)
+                          Text(
+                            '${xp.totalPoints} / ${xp.pointsForNextLevel} pts',
+                            style: GoogleFonts.inter(fontSize: 11, color: muted, fontWeight: FontWeight.w500),
+                            maxLines: 1, overflow: TextOverflow.ellipsis)
+                        else
+                          Text('Niveau maximum atteint ✨',
+                            style: GoogleFonts.inter(fontSize: 11, color: _P.sage, fontWeight: FontWeight.w600)),
+                      ])),
                     ]),
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: xp.levelProgress.clamp(0.0, 1.0),
-                        minHeight: 6,
-                        backgroundColor: _P.sage.withValues(alpha: d ? 0.15 : 0.12),
-                        valueColor: const AlwaysStoppedAnimation<Color>(_P.main)),
+                    // XP breakdown strip
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: (d ? Colors.white : Colors.black).withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(14)),
+                      child: Row(children: [
+                        _XpSource(icon: LucideIcons.dumbbell, label: 'Entraînements', color: const Color(0xFFE8734A), d: d),
+                        Container(width: 1, height: 20, color: _P.border(d)),
+                        _XpSource(icon: LucideIcons.flame, label: 'Séries', color: const Color(0xFFF59E0B), d: d),
+                        Container(width: 1, height: 20, color: _P.border(d)),
+                        _XpSource(icon: LucideIcons.userCheck, label: 'Profil', color: const Color(0xFF6BA3D6), d: d),
+                      ]),
                     ),
                     const SizedBox(height: 8),
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      if (xp.pointsForNextLevel - xp.totalPoints > 0)
-                        Expanded(child: Text(
-                          l10n.profileXpToNext(xp.pointsForNextLevel - xp.totalPoints),
-                          style: GoogleFonts.inter(fontSize: 11, color: muted)))
-                      else
-                        Text('Niveau maximum atteint',
-                          style: GoogleFonts.inter(fontSize: 11, color: _P.sage)),
-                      Text('${xp.totalPoints} / ${xp.pointsForNextLevel} pts',
-                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
-                          color: muted)),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Text('Voir tous les niveaux', style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w600, color: accent)),
+                      const SizedBox(width: 4),
+                      Icon(LucideIcons.chevronRight, size: 12, color: accent),
                     ]),
                   ]),
                 ),
@@ -352,7 +441,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
 
-          // ── Weekly tracker ──────────────────────────────────────────────
+          // ── Weekly tracker (pill style) ──────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
@@ -368,43 +457,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
+                    Container(
+                      width: 28, height: 28,
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(8)),
+                      child: Icon(LucideIcons.calendarCheck, size: 14, color: accent)),
+                    const SizedBox(width: 10),
                     Expanded(child: Text(l10n.profileWeeklyGoal,
                       style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700,
                         color: ink), overflow: TextOverflow.ellipsis)),
-                    const SizedBox(width: 8),
-                    Text(l10n.profileWeeklyDays(5), textAlign: TextAlign.right,
-                      style: GoogleFonts.inter(fontSize: 12, color: muted)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(12)),
+                      child: Text('5/7',
+                        style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w800,
+                          color: accent)),
+                    ),
                   ]),
-                  const SizedBox(height: 14),
-                  LayoutBuilder(builder: (_, constraints) {
-                    final itemW = constraints.maxWidth / 7;
-                    return Row(children: List.generate(7, (i) {
-                      final done = i < 5;
-                      final today = i == 4;
-                      return SizedBox(width: itemW, child: Column(children: [
-                        LayoutBuilder(builder: (_, c) {
-                          final sz = (c.maxWidth * 0.68).clamp(24.0, 36.0);
-                          return AnimatedContainer(
+                  const SizedBox(height: 16),
+                  Row(children: List.generate(7, (i) {
+                    final done = i < 5;
+                    final today = i == 4;
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(right: i < 6 ? 6 : 0),
+                        child: Column(children: [
+                          AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
-                            width: sz, height: sz,
+                            height: 38,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: done ? _P.main
+                              color: done
+                                  ? accent
                                   : (d ? const Color(0xFF1E2D23) : const Color(0xFFEDF1EE)),
+                              borderRadius: BorderRadius.circular(12),
                               border: today && !done
-                                  ? Border.all(color: _P.sage, width: 2) : null),
-                            child: done
-                              ? Icon(Icons.check_rounded, color: Colors.white, size: sz * 0.42)
-                              : null,
-                          );
-                        }),
-                        const SizedBox(height: 5),
-                        Text(_days[i], textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600,
-                            color: done ? _P.main : muted)),
-                      ]));
-                    }));
-                  }),
+                                  ? Border.all(color: accent, width: 2) : null),
+                            child: Center(child: done
+                              ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
+                              : null),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(_days[i], textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(fontSize: 10,
+                              fontWeight: done || today ? FontWeight.w700 : FontWeight.w500,
+                              color: done ? accent : muted)),
+                        ]),
+                      ),
+                    );
+                  })),
                 ]),
               ),
             ),
@@ -418,17 +521,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
 
+          // ── Trophy case grid ──────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: _TrophyCase(xp: xp, d: d, accent: accent),
+            ),
+          ),
+
           // ── Section: Préférences ────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 10),
-                  child: Text('PRÉFÉRENCES',
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
-                      color: muted, letterSpacing: 0.8)),
-                ),
+                _SectionHeader(icon: LucideIcons.settings, label: 'PRÉFÉRENCES',
+                  color: _P.sage, d: d),
+                const SizedBox(height: 10),
                 groupedSection([
                   buildRow(
                     icon: LucideIcons.moon, label: l10n.darkMode,
@@ -485,12 +593,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 10),
-                  child: Text('ACTIVITÉ',
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
-                      color: muted, letterSpacing: 0.8)),
-                ),
+                _SectionHeader(icon: LucideIcons.activity, label: 'ACTIVITÉ',
+                  color: const Color(0xFFE8734A), d: d),
+                const SizedBox(height: 10),
                 groupedSection([
                   buildRow(icon: LucideIcons.calendarDays, label: 'Historique',
                     onTap: () => Navigator.push(context,
@@ -539,12 +644,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 10),
-                  child: Text('DONNÉES',
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
-                      color: muted, letterSpacing: 0.8)),
-                ),
+                _SectionHeader(icon: LucideIcons.shield, label: 'DONNÉES',
+                  color: const Color(0xFF6BA3D6), d: d),
+                const SizedBox(height: 10),
                 groupedSection([
                   buildRow(icon: LucideIcons.download,
                     label: l10n.isFrench ? 'Exporter mes données' : 'Export my data',
@@ -559,12 +661,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 10),
-                  child: Text('COMPTE',
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
-                      color: muted, letterSpacing: 0.8)),
-                ),
+                _SectionHeader(icon: LucideIcons.userCog, label: 'COMPTE',
+                  color: const Color(0xFFE53935), d: d),
+                const SizedBox(height: 10),
                 Container(
                   decoration: BoxDecoration(
                     color: surf,
@@ -747,38 +846,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-class _StatChip extends StatelessWidget {
+// ── Unified stat (inside single bar) ─────────────────────────────────────────
+class _UnifiedStat extends StatelessWidget {
   final IconData icon;
-  final String value;
-  final String label;
+  final String value, label;
   final Color color;
   final bool d;
-  const _StatChip({required this.icon, required this.value, required this.label,
+  const _UnifiedStat({required this.icon, required this.value, required this.label,
     required this.color, required this.d});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: _P.card(d),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _P.border(d), width: 0.5),
-        boxShadow: [BoxShadow(
-          color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
-          blurRadius: 12, offset: const Offset(0, 3))],
-      ),
+    return Expanded(
       child: Column(children: [
-        Container(
-          width: 34, height: 34,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, size: 16, color: color),
-        ),
-        const SizedBox(height: 8),
+        Icon(icon, size: 16, color: color),
+        const SizedBox(height: 6),
         Text(value, style: GoogleFonts.outfit(
-          fontSize: 18, fontWeight: FontWeight.w700, color: _P.t1(d))),
+          fontSize: 20, fontWeight: FontWeight.w800, color: _P.t1(d))),
         const SizedBox(height: 1),
         Text(label, style: GoogleFonts.inter(
           fontSize: 10, color: _P.t2(d), fontWeight: FontWeight.w500)),
@@ -787,84 +871,207 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// ── Settings tile (for AI toggle standalone card) ────────────────────────────
-class _SettingsTile extends StatelessWidget {
+// ── Section header with colored icon ─────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Widget trailing;
-  final Color color, surf, ink, muted;
-  final bool isDark;
-  const _SettingsTile({required this.icon, required this.label, required this.trailing,
-    required this.color, required this.surf, required this.ink, required this.muted,
-    required this.isDark});
+  final Color color;
+  final bool d;
+  const _SectionHeader({required this.icon, required this.label,
+    required this.color, required this.d});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: surf,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-          blurRadius: 8, offset: const Offset(0, 2))],
+    return Row(children: [
+      Container(
+        width: 24, height: 24,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(6)),
+        child: Icon(icon, size: 12, color: color),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 16, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(label,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ink))),
-          trailing,
-        ],
-      ),
+      const SizedBox(width: 8),
+      Text(label, style: GoogleFonts.inter(
+        fontSize: 11, fontWeight: FontWeight.w600,
+        color: _P.t2(d), letterSpacing: 0.8)),
+    ]);
+  }
+}
+
+// ── XP source chip (inside breakdown strip) ─────────────────────────────────
+class _XpSource extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool d;
+  const _XpSource({required this.icon, required this.label, required this.color, required this.d});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(icon, size: 13, color: color),
+        const SizedBox(width: 5),
+        Text(label, style: GoogleFonts.inter(
+          fontSize: 10, fontWeight: FontWeight.w600, color: _P.t2(d)),
+          maxLines: 1, overflow: TextOverflow.ellipsis),
+      ]),
     );
   }
 }
 
-// ── Settings row (inside grouped card) ───────────────────────────────────────
-class _SettingsRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Widget trailing;
-  final Color color, ink, muted;
-  final bool isFirst, isLast, isDark;
-  final VoidCallback? onTap;
-  const _SettingsRow({required this.icon, required this.label, required this.trailing,
-    required this.color, required this.ink, required this.muted,
-    required this.isFirst, required this.isLast, required this.isDark, this.onTap});
+// ── Level ring painter with glow ─────────────────────────────────────────────
+class _LevelRingPainter extends CustomPainter {
+  final double progress;
+  final Color trackColor, ringColor, glowColor;
+  _LevelRingPainter({required this.progress, required this.trackColor,
+    required this.ringColor, required this.glowColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.shortestSide - 10) / 2;
+    const stroke = 6.0;
+    const start = -math.pi / 2;
+    final sweep = 2 * math.pi * progress;
+
+    final trackPaint = Paint()
+      ..color = trackColor ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(center, radius, trackPaint);
+
+    if (progress > 0) {
+      final glowPaint = Paint()
+        ..color = glowColor ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke + 6 ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+      canvas.drawArc(Rect.fromCircle(center: center, radius: radius),
+        start, sweep, false, glowPaint);
+
+      final ringPaint = Paint()
+        ..color = ringColor ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke ..strokeCap = StrokeCap.round;
+      canvas.drawArc(Rect.fromCircle(center: center, radius: radius),
+        start, sweep, false, ringPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LevelRingPainter old) =>
+      old.progress != progress || old.ringColor != ringColor;
+}
+
+// ── Trophy case grid ─────────────────────────────────────────────────────────
+class _TrophyCase extends StatelessWidget {
+  final PointsModel xp;
+  final bool d;
+  final Color accent;
+  const _TrophyCase({required this.xp, required this.d, required this.accent});
+
+  static const _badges = [
+    ('🏋️', 'Premier entraînement', 1, 'workout'),
+    ('🔥', 'Série de 7 jours', 7, 'streak'),
+    ('👤', 'Profil complété', 1, 'profile'),
+    ('⭐', '100 points', 100, 'points'),
+    ('💎', 'Niveau 5', 5, 'level'),
+    ('🏆', 'Niveau 10', 10, 'level'),
+  ];
+
+  static const _badgeColors = [
+    Color(0xFFE8734A), Color(0xFFF59E0B), Color(0xFF6BA3D6),
+    Color(0xFF22C55E), Color(0xFF60A5FA), Color(0xFFA855F7),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 34, height: 34,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 16, color: color),
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(label,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ink))),
-            trailing,
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _P.card(d),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _P.border(d), width: 0.5),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
+          blurRadius: 12, offset: const Offset(0, 3))],
       ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 24, height: 24,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(6)),
+            child: Icon(LucideIcons.trophy, size: 12, color: accent),
+          ),
+          const SizedBox(width: 8),
+          Text('TROPHÉES', style: GoogleFonts.inter(
+            fontSize: 11, fontWeight: FontWeight.w600,
+            color: _P.t2(d), letterSpacing: 0.8)),
+          const Spacer(),
+          Text('${_badges.where((b) {
+            final i = _badges.indexOf(b);
+            return _isUnlocked(i, b.$3, b.$4);
+          }).length}/${_badges.length}', style: GoogleFonts.outfit(
+            fontSize: 12, fontWeight: FontWeight.w700, color: accent)),
+        ]),
+        const SizedBox(height: 14),
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 0.85,
+          children: List.generate(_badges.length, (i) {
+            final (emoji, label, threshold, type) = _badges[i];
+            final unlocked = _isUnlocked(i, threshold, type);
+            final color = _badgeColors[i];
+            return Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: unlocked
+                    ? color.withValues(alpha: d ? 0.10 : 0.06)
+                    : (d ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5)),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: unlocked
+                      ? color.withValues(alpha: 0.25)
+                      : _P.border(d)),
+                boxShadow: unlocked ? [BoxShadow(
+                  color: color.withValues(alpha: 0.15),
+                  blurRadius: 12, offset: const Offset(0, 3))] : [],
+              ),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 300),
+                opacity: unlocked ? 1.0 : 0.4,
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text(emoji, style: const TextStyle(fontSize: 28)),
+                  const SizedBox(height: 6),
+                  Text(label, style: GoogleFonts.inter(
+                    fontSize: 9, fontWeight: FontWeight.w600,
+                    color: unlocked ? _P.t1(d) : _P.t2(d),
+                    height: 1.2),
+                    textAlign: TextAlign.center,
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                  if (!unlocked) ...[
+                    const SizedBox(height: 4),
+                    Icon(LucideIcons.lock, size: 10,
+                      color: _P.t2(d).withValues(alpha: 0.5)),
+                  ],
+                ]),
+              ),
+            );
+          }),
+        ),
+      ]),
     );
+  }
+
+  bool _isUnlocked(int i, int threshold, String type) {
+    if (i < 3) return true;
+    if (type == 'points') return xp.totalPoints >= threshold;
+    if (type == 'level') return xp.level >= threshold;
+    return false;
   }
 }
 
@@ -1233,45 +1440,6 @@ class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       Divider(height: 1, thickness: 1, color: color, indent: 16, endIndent: 16);
-}
-
-class _Field extends StatelessWidget {
-  final String label;
-  final TextEditingController ctrl;
-  final IconData icon;
-  final ColorScheme cs;
-  final TextInputType keyboardType;
-  const _Field({required this.label, required this.ctrl, required this.icon,
-      required this.cs, required this.keyboardType});
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: ctrl,
-      keyboardType: keyboardType,
-      style: TextStyle(fontSize: 15, color: cs.onSurface, fontWeight: FontWeight.w500),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.55)),
-        prefixIcon: Icon(icon, size: 18, color: cs.primary.withValues(alpha: 0.7)),
-        filled: true,
-        fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: cs.outline),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.5)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: cs.primary, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      ),
-    );
-  }
 }
 
 // ─── Advanced Edit Sheet ─────────────────────────────────────────────────────
@@ -1737,297 +1905,252 @@ class _StepBtn extends StatelessWidget {
       child: Icon(icon, size: 18, color: green)));
 }
 
-// ── Legacy helpers kept for _StepperBtn references ────────────────────────────
-class _SectionTitle extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final ColorScheme cs;
-  const _SectionTitle({required this.label, required this.icon, required this.cs});
-
-  @override
-  Widget build(BuildContext context) => Row(children: [
-    Container(
-      width: 28, height: 28,
-      decoration: BoxDecoration(
-        color: cs.primary.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, size: 14, color: cs.primary),
-    ),
-    const SizedBox(width: 10),
-    Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cs.onSurface)),
-  ]);
-}
-
-class _Chip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final ColorScheme cs;
-  const _Chip({required this.label, required this.selected, required this.cs});
-
-  @override
-  Widget build(BuildContext context) => AnimatedContainer(
-    duration: const Duration(milliseconds: 160),
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-    decoration: BoxDecoration(
-      color: selected ? cs.primary : cs.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(50),
-      border: Border.all(color: selected ? cs.primary : cs.outline),
-    ),
-    child: Text(label, style: TextStyle(
-      fontSize: 12, fontWeight: FontWeight.w600,
-      color: selected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.7),
-    )),
-  );
-}
-
-class _CsDivider extends StatelessWidget {
-  final ColorScheme cs;
-  const _CsDivider({required this.cs});
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 20),
-    child: Divider(color: cs.outlineVariant.withValues(alpha: 0.5), height: 1),
-  );
-}
-
-class _StepperBtn extends StatelessWidget {
-  final IconData icon;
-  final ColorScheme cs;
-  const _StepperBtn({required this.icon, required this.cs});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 42, height: 42,
-    decoration: BoxDecoration(
-      color: cs.primary.withValues(alpha: 0.10),
-      shape: BoxShape.circle,
-      border: Border.all(color: cs.primary.withValues(alpha: 0.25)),
-    ),
-    child: Icon(icon, size: 18, color: cs.primary),
-  );
-}
-
-// ── Bottom sheet : tous les niveaux + récompense diamants de chaque palier ──
+// ── Bottom sheet : niveaux & récompenses (timeline style) ───────────────────
 class _LevelsSheet extends StatelessWidget {
   final PointsModel xp;
   const _LevelsSheet({required this.xp});
 
   @override
   Widget build(BuildContext context) {
-    final cs    = Theme.of(context).colorScheme;
-    final dark  = Theme.of(context).brightness == Brightness.dark;
-    final green = const Color(0xFF22C55E);
-    final muted = dark ? const Color(0xFF888886) : const Color(0xFF6B6B68);
+    final d     = Theme.of(context).brightness == Brightness.dark;
+    final bg    = _P.bg(d);
+    final ink   = _P.t1(d);
+    final muted = _P.t2(d);
+    final accent = _P.accent(d);
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.72,
+      initialChildSize: 0.78,
       minChildSize: 0.45,
       maxChildSize: 0.92,
       builder: (_, ctrl) => Container(
         decoration: BoxDecoration(
-          color: cs.surface,
+          color: bg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: cs.onSurface.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(2)),
+        child: Column(children: [
+          const SizedBox(height: 12),
+          Container(width: 40, height: 4,
+            decoration: BoxDecoration(
+              color: ink.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(2))),
+
+          // gradient trophy banner
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                colors: d
+                  ? [const Color(0xFF152A1D), const Color(0xFF0F1A14)]
+                  : [const Color(0xFFEEF6F0), const Color(0xFFFFFFFF)]),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: accent.withValues(alpha: 0.15)),
+              boxShadow: [BoxShadow(
+                color: accent.withValues(alpha: d ? 0.12 : 0.06),
+                blurRadius: 16, offset: const Offset(0, 4))],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40, height: 40,
-                    decoration: BoxDecoration(
-                      color: green.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12)),
-                    child: Icon(LucideIcons.trophy, size: 18, color: green),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Niveaux & récompenses',
-                          style: TextStyle(fontSize: 18,
-                            fontWeight: FontWeight.w800, color: cs.onSurface,
-                            letterSpacing: -0.3)),
-                        Text('Gagne des points, passe des niveaux, reçois des 💎',
-                          style: TextStyle(fontSize: 11.5, color: muted)),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: cs.onSurface.withValues(alpha: 0.08),
-                        shape: BoxShape.circle),
-                      child: Icon(LucideIcons.x, size: 16,
-                        color: cs.onSurface.withValues(alpha: 0.55)),
-                    ),
-                  ),
-                ],
+            child: Row(children: [
+              SizedBox(
+                width: 64, height: 64,
+                child: CustomPaint(
+                  painter: _LevelRingPainter(
+                    progress: xp.levelProgress.clamp(0.0, 1.0),
+                    trackColor: accent.withValues(alpha: 0.12),
+                    ringColor: accent,
+                    glowColor: accent.withValues(alpha: 0.3)),
+                  child: Center(
+                    child: Text(PointsModel.levelEmojis[xp.level],
+                      style: const TextStyle(fontSize: 26))),
+                ),
               ),
-            ),
-            Divider(height: 20, color: cs.onSurface.withValues(alpha: 0.08)),
-            Expanded(
-              child: ListView.separated(
-                controller: ctrl,
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
-                itemCount: PointsModel.maxLevel,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) {
-                  final level     = i + 1;
-                  final threshold = PointsModel.thresholdForLevel(level);
-                  final diamonds  = PointsModel.diamondsForLevel(level);
-                  final isCurrent = level == xp.level;
-                  final isDone    = level < xp.level;
-                  final isLocked  = level > xp.level;
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Niveaux & Récompenses', style: GoogleFonts.outfit(
+                  fontSize: 17, fontWeight: FontWeight.w800, color: ink, letterSpacing: -0.3)),
+                const SizedBox(height: 3),
+                Text('Niveau ${xp.level} · ${xp.totalPoints} pts', style: GoogleFonts.inter(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: accent)),
+                const SizedBox(height: 2),
+                Text('Gagne des points, passe des niveaux, reçois des 💎',
+                  style: GoogleFonts.inter(fontSize: 10.5, color: muted)),
+              ])),
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: ink.withValues(alpha: 0.08),
+                    shape: BoxShape.circle),
+                  child: Icon(LucideIcons.x, size: 16,
+                    color: ink.withValues(alpha: 0.55)),
+                ),
+              ),
+            ]),
+          ),
 
-                  final accent = isCurrent
-                      ? green
-                      : isDone
-                          ? green.withValues(alpha: 0.7)
-                          : muted;
+          const SizedBox(height: 12),
+          // timeline list
+          Expanded(
+            child: ListView.builder(
+              controller: ctrl,
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+              itemCount: PointsModel.maxLevel,
+              itemBuilder: (_, i) {
+                final level     = i + 1;
+                final threshold = PointsModel.thresholdForLevel(level);
+                final lvlDiamonds = PointsModel.diamondsForLevel(level);
+                final isCurrent = level == xp.level;
+                final isDone    = level < xp.level;
+                final isLocked  = level > xp.level;
+                final isLast    = level == PointsModel.maxLevel;
 
-                  return Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: isCurrent
-                          ? green.withValues(alpha: dark ? 0.10 : 0.07)
-                          : cs.surfaceContainerHighest.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isCurrent
-                            ? green.withValues(alpha: 0.45)
-                            : cs.onSurface.withValues(alpha: 0.06)),
-                    ),
-                    child: Row(
-                      children: [
-                        // Emoji du niveau
-                        Opacity(
-                          opacity: isLocked ? 0.45 : 1,
-                          child: Container(
-                            width: 42, height: 42,
-                            decoration: BoxDecoration(
-                              color: accent.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12)),
-                            child: Center(
-                              child: Text(PointsModel.levelEmojis[level],
-                                style: const TextStyle(fontSize: 20)),
-                            ),
+                return IntrinsicHeight(
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    // timeline connector
+                    SizedBox(
+                      width: 32,
+                      child: Column(children: [
+                        if (i > 0)
+                          Expanded(child: Container(width: 2,
+                            color: isDone || isCurrent
+                                ? accent.withValues(alpha: 0.4)
+                                : _P.border(d))),
+                        Container(
+                          width: isCurrent ? 18 : 12, height: isCurrent ? 18 : 12,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDone ? accent
+                                : isCurrent ? accent
+                                : _P.border(d),
+                            border: isCurrent ? Border.all(
+                              color: accent.withValues(alpha: 0.3), width: 3) : null,
+                            boxShadow: isCurrent ? [BoxShadow(
+                              color: accent.withValues(alpha: 0.3),
+                              blurRadius: 8)] : [],
                           ),
+                          child: isDone
+                              ? const Icon(LucideIcons.check, size: 8, color: Colors.white)
+                              : null,
                         ),
-                        const SizedBox(width: 12),
-                        // Titre + seuil
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      'Niveau $level · ${PointsModel.levelTitles[level]}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(fontSize: 13.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: isLocked
-                                            ? cs.onSurface.withValues(alpha: 0.45)
-                                            : cs.onSurface),
-                                    ),
-                                  ),
+                        if (!isLast)
+                          Expanded(child: Container(width: 2,
+                            color: isDone
+                                ? accent.withValues(alpha: 0.4)
+                                : _P.border(d))),
+                      ]),
+                    ),
+                    const SizedBox(width: 10),
+                    // card
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: EdgeInsets.all(isCurrent ? 16 : 12),
+                        decoration: BoxDecoration(
+                          color: isCurrent
+                              ? accent.withValues(alpha: d ? 0.10 : 0.06)
+                              : _P.card(d),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isCurrent
+                                ? accent.withValues(alpha: 0.3)
+                                : _P.border(d), width: isCurrent ? 1.5 : 0.5),
+                          boxShadow: isCurrent ? [BoxShadow(
+                            color: accent.withValues(alpha: d ? 0.12 : 0.06),
+                            blurRadius: 12, offset: const Offset(0, 3))] : [],
+                        ),
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 200),
+                          opacity: isLocked ? 0.55 : 1.0,
+                          child: Row(children: [
+                            Container(
+                              width: isCurrent ? 48 : 40,
+                              height: isCurrent ? 48 : 40,
+                              decoration: BoxDecoration(
+                                color: (isDone || isCurrent ? accent : muted)
+                                    .withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(12)),
+                              child: Center(
+                                child: Text(PointsModel.levelEmojis[level],
+                                  style: TextStyle(fontSize: isCurrent ? 24 : 18))),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  Flexible(child: Text(
+                                    PointsModel.levelTitles[level],
+                                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: isCurrent ? 15 : 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: isLocked ? ink.withValues(alpha: 0.45) : ink))),
                                   if (isCurrent) ...[
                                     const SizedBox(width: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 7, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: green,
+                                        color: accent,
                                         borderRadius: BorderRadius.circular(20)),
-                                      child: const Text('EN COURS',
-                                        style: TextStyle(fontSize: 8,
+                                      child: Text('LV.${xp.level}',
+                                        style: GoogleFonts.outfit(fontSize: 9,
                                           fontWeight: FontWeight.w800,
-                                          color: Colors.white,
-                                          letterSpacing: 0.4)),
+                                          color: Colors.white, letterSpacing: 0.3)),
                                     ),
                                   ],
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                level == 1 ? 'Départ' : 'dès $threshold pts',
-                                style: TextStyle(fontSize: 11, color: muted)),
-                              if (isCurrent) ...[
-                                const SizedBox(height: 7),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(3),
-                                  child: LinearProgressIndicator(
-                                    value: xp.levelProgress.clamp(0.0, 1.0),
-                                    minHeight: 4,
-                                    backgroundColor:
-                                        green.withValues(alpha: 0.15),
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(green),
+                                ]),
+                                const SizedBox(height: 2),
+                                Text(level == 1 ? 'Départ' : 'dès $threshold pts',
+                                  style: GoogleFonts.inter(fontSize: 10.5, color: muted)),
+                                if (isCurrent) ...[
+                                  const SizedBox(height: 8),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: xp.levelProgress.clamp(0.0, 1.0),
+                                      minHeight: 5,
+                                      backgroundColor: accent.withValues(alpha: 0.15),
+                                      valueColor: AlwaysStoppedAnimation<Color>(accent)),
                                   ),
-                                ),
+                                  const SizedBox(height: 4),
+                                  Text('${xp.totalPoints} / ${xp.pointsForNextLevel} pts',
+                                    style: GoogleFonts.inter(fontSize: 10, color: muted,
+                                      fontWeight: FontWeight.w500)),
+                                ],
                               ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        // Récompense / statut
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            if (diamonds > 0)
+                            )),
+                            const SizedBox(width: 8),
+                            if (lvlDiamonds > 0)
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 9, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF60A5FA)
-                                      .withValues(alpha: isLocked ? 0.08 : 0.14),
-                                  borderRadius: BorderRadius.circular(20)),
-                                child: Text('+$diamonds 💎',
-                                  style: TextStyle(fontSize: 11.5,
+                                      .withValues(alpha: isLocked ? 0.06 : 0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFF60A5FA)
+                                      .withValues(alpha: isLocked ? 0.1 : 0.2))),
+                                child: Text('+$lvlDiamonds 💎',
+                                  style: GoogleFonts.outfit(fontSize: 11,
                                     fontWeight: FontWeight.w800,
                                     color: const Color(0xFF3B82F6)
-                                        .withValues(alpha: isLocked ? 0.55 : 1)),
-                                ),
+                                        .withValues(alpha: isLocked ? 0.5 : 1))),
                               )
-                            else
-                              Text('—',
-                                style: TextStyle(fontSize: 12, color: muted)),
-                            if (isDone) ...[
-                              const SizedBox(height: 5),
-                              Icon(LucideIcons.checkCircle,
-                                size: 14, color: green),
-                            ] else if (isLocked) ...[
-                              const SizedBox(height: 5),
-                              Icon(LucideIcons.lock,
-                                size: 12,
-                                color: cs.onSurface.withValues(alpha: 0.3)),
-                            ],
-                          ],
+                            else if (isDone)
+                              Icon(LucideIcons.checkCircle, size: 16, color: accent)
+                            else if (isLocked)
+                              Icon(LucideIcons.lock, size: 13,
+                                color: ink.withValues(alpha: 0.2)),
+                          ]),
                         ),
-                      ],
+                      ),
                     ),
-                  );
-                },
-              ),
+                  ]),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
   }

@@ -12,8 +12,10 @@ import '../../models/workout_model.dart';
 import '../../providers/workout_progress_provider.dart';
 import '../../providers/subscription_provider.dart';
 import '../../services/workout_progress_service.dart';
+import '../../services/program_service.dart';
 import '../../widgets/paywall_sheet.dart';
 import 'active_workout_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class WorkoutDetailScreen extends ConsumerStatefulWidget {
   final HomeProgramModel program;
@@ -260,12 +262,19 @@ class _HeroBg extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         // ── Photo ──────────────────────────────────────────────────────────
-        Image.asset(
-          program.imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              Container(color: const Color(0xFF1A2E1A)),
-        ),
+        program.imageUrl.startsWith('http')
+          ? Image.network(
+              program.imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Container(color: const Color(0xFF1A2E1A)),
+            )
+          : Image.asset(
+              program.imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Container(color: const Color(0xFF1A2E1A)),
+            ),
 
         // ── Gradient overlay ───────────────────────────────────────────────
         DecoratedBox(
@@ -555,7 +564,7 @@ class _AboutSliver extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final bg = dark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F5);
+    final bg = dark ? const Color(0xFF0D0D0D) : const Color.fromARGB(255, 255, 255, 255);
 
     return SliverToBoxAdapter(
       child: Container(
@@ -748,92 +757,84 @@ class _CoachCard extends StatelessWidget {
         : l10n.progCoachRating;
     final avatarUrl = coach?.avatarUrl ?? '';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: dark ? 0.25 : 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.all(2.5),
-          decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                  colors: [gold, Color(0xFFB8833A)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight)),
-          child: CircleAvatar(
-            radius: 26,
-            backgroundColor: accent,
-            backgroundImage:
-                avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-            child: avatarUrl.isEmpty
-                ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'C',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800))
-                : null,
-          ),
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        if (coach != null) {
+          showCoachProfileSheet(context, coach: coach!, dark: dark);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: dark ? 0.25 : 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 4))
+          ],
         ),
-        const SizedBox(width: 14),
-        Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(name,
-              style: GoogleFonts.outfit(
-                  color: cs.onSurface,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800)),
-          const SizedBox(height: 3),
-          Text(title,
-              style: GoogleFonts.inter(
-                  color: cs.onSurface.withValues(alpha: 0.50),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500)),
-          const SizedBox(height: 6),
-          Row(children: [
-            Icon(LucideIcons.star,
-                size: 11, color: gold),
-            const SizedBox(width: 4),
-            Text(rating,
+        child: Row(children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: accent.withValues(alpha: 0.3), width: 2),
+            ),
+            child: ClipOval(
+              child: avatarUrl.isNotEmpty
+                  ? Image.network(avatarUrl, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: accent,
+                        child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'C',
+                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800))),
+                      ))
+                  : Container(
+                      color: accent,
+                      child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'C',
+                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800))),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(name,
+                style: GoogleFonts.outfit(
+                    color: cs.onSurface,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(height: 3),
+            Text(title,
                 style: GoogleFonts.inter(
                     color: cs.onSurface.withValues(alpha: 0.50),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500)),
-          ]),
-        ])),
-        GestureDetector(
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Suivi coach bientôt disponible'), duration: Duration(seconds: 2)),
-          ),
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                    color: accent.withValues(alpha: 0.30),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4))
-              ],
-            ),
-            child: Text(l10n.progFollow,
-                style: GoogleFonts.inter(
-                    color: Colors.white,
                     fontSize: 12,
-                    fontWeight: FontWeight.w700)),
+                    fontWeight: FontWeight.w500)),
+            const SizedBox(height: 6),
+            Row(children: [
+              Icon(LucideIcons.star,
+                  size: 11, color: gold),
+              const SizedBox(width: 4),
+              Text(rating,
+                  style: GoogleFonts.inter(
+                      color: cs.onSurface.withValues(alpha: 0.50),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500)),
+            ]),
+          ])),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(LucideIcons.chevronRight, size: 16, color: accent),
           ),
-        ),
-      ]),
+        ]),
+      ),
     );
   }
 }
@@ -915,7 +916,11 @@ class _PhaseList extends StatelessWidget {
             for (final w in weeks)
               (
                 week: 'Semaine ${w.weekNumber}',
-                title: w.title.isNotEmpty ? w.title : 'Semaine ${w.weekNumber}',
+                title: w.title.isNotEmpty && w.title != 'Semaine ${w.weekNumber}'
+                    ? w.title
+                    : _fallbackPhases.length >= w.weekNumber
+                        ? _fallbackPhases[w.weekNumber - 1].title
+                        : 'Phase ${w.weekNumber}',
                 tag: '${w.workouts.length} séance${w.workouts.length > 1 ? 's' : ''}',
               ),
           ];
@@ -1378,10 +1383,15 @@ class _SessionCard extends StatelessWidget {
                     SizedBox(
                       width: 68,
                       height: 68,
-                      child: Image.asset(workout.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              Container(color: accent.withValues(alpha: 0.12))),
+                      child: workout.imageUrl.startsWith('http')
+                          ? Image.network(workout.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  Container(color: accent.withValues(alpha: 0.12)))
+                          : Image.asset(workout.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  Container(color: accent.withValues(alpha: 0.12))),
                     ),
                     if (isDone)
                       Positioned.fill(
@@ -1582,6 +1592,426 @@ class _BottomCta extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Coach Profile Bottom Sheet
+// ══════════════════════════════════════════════════════════════════════════════
+
+void showCoachProfileSheet(BuildContext context, {required CoachModel coach, required bool dark}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _CoachProfileSheet(coach: coach, dark: dark),
+  );
+}
+
+class _CoachProfileSheet extends StatefulWidget {
+  final CoachModel coach;
+  final bool dark;
+  const _CoachProfileSheet({required this.coach, required this.dark});
+
+  @override
+  State<_CoachProfileSheet> createState() => _CoachProfileSheetState();
+}
+
+class _CoachProfileSheetState extends State<_CoachProfileSheet>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _fadeIn;
+  late final Animation<Offset> _slideUp;
+  List<HomeProgramModel> _coachPrograms = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..forward();
+    _fadeIn = CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.5, curve: Curves.easeOut));
+    _slideUp = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _ctrl, curve: const Interval(0.1, 0.6, curve: Curves.easeOutCubic)));
+    _loadCoachPrograms();
+  }
+
+  Future<void> _loadCoachPrograms() async {
+    final all = await ProgramService.fetchAll();
+    setState(() {
+      _coachPrograms = all.where((p) => p.coach?.id == widget.coach.id).toList();
+      _loading = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    final dark = widget.dark;
+    final coach = widget.coach;
+    final bg = dark ? const Color(0xFF0D0D0D) : Colors.white;
+    final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
+    final t1 = dark ? Colors.white : const Color(0xFF1A1A1A);
+    final t2 = dark ? Colors.white.withValues(alpha: 0.55) : const Color(0xFF6B7280);
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.88,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(children: [
+        // Drag handle
+        Container(
+          margin: const EdgeInsets.only(top: 12, bottom: 8),
+          width: 40, height: 4,
+          decoration: BoxDecoration(
+            color: t2.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(children: [
+              const SizedBox(height: 12),
+
+              // ── Hero section ──
+              FadeTransition(
+                opacity: _fadeIn,
+                child: SlideTransition(
+                  position: _slideUp,
+                  child: Column(children: [
+                    // Avatar with glow
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: accent.withValues(alpha: 0.25),
+                            blurRadius: 30,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        width: 110, height: 110,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: accent.withValues(alpha: 0.4), width: 3),
+                        ),
+                        child: ClipOval(
+                          child: coach.avatarUrl.isNotEmpty
+                              ? Image.network(coach.avatarUrl, fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => _avatarFallback(coach, accent))
+                              : _avatarFallback(coach, accent),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Name
+                    Text(coach.name,
+                        style: GoogleFonts.outfit(
+                            color: t1,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5)),
+                    const SizedBox(height: 6),
+
+                    // Title
+                    Text(coach.title,
+                        style: GoogleFonts.inter(
+                            color: t2,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 20),
+
+                    // Stats row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _CoachStatPill(icon: LucideIcons.star, value: '${coach.rating}', label: 'Note', accent: accent, dark: dark),
+                        const SizedBox(width: 12),
+                        _CoachStatPill(icon: LucideIcons.messageCircle, value: '${coach.reviewsCount}', label: 'Avis', accent: accent, dark: dark),
+                        const SizedBox(width: 12),
+                        _CoachStatPill(icon: LucideIcons.dumbbell, value: _loading ? '...' : '${_coachPrograms.length}', label: 'Programmes', accent: accent, dark: dark),
+                      ],
+                    ),
+                  ]),
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ── Bio section ──
+              if (coach.bio.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: dark ? 0.2 : 0.05),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Icon(LucideIcons.quote, size: 16, color: accent),
+                          const SizedBox(width: 8),
+                          Text('À propos',
+                              style: GoogleFonts.outfit(
+                                  color: t1,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700)),
+                        ]),
+                        const SizedBox(height: 12),
+                        Text(coach.bio,
+                            style: GoogleFonts.inter(
+                                color: t2,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w400,
+                                height: 1.6)),
+                      ],
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 20),
+
+              // ── Programs by this coach ──
+              if (!_loading && _coachPrograms.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(children: [
+                    Container(
+                      width: 3, height: 20,
+                      decoration: BoxDecoration(
+                        color: accent,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text('Ses programmes',
+                        style: GoogleFonts.outfit(
+                            color: t1,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3)),
+                  ]),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 180,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemCount: _coachPrograms.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, i) {
+                      final prog = _coachPrograms[i];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => WorkoutDetailScreen(program: prog)));
+                        },
+                        child: Container(
+                          width: 150,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 14,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: Stack(fit: StackFit.expand, children: [
+                              prog.imageUrl.startsWith('http')
+                                  ? Image.network(prog.imageUrl, fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(color: accent.withValues(alpha: 0.15)))
+                                  : Image.asset(prog.imageUrl, fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(color: accent.withValues(alpha: 0.15))),
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withValues(alpha: 0.85),
+                                    ],
+                                    stops: const [0.4, 1.0],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 12, right: 12, bottom: 12,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(prog.name,
+                                        maxLines: 2,
+                                        style: GoogleFonts.outfit(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            height: 1.2)),
+                                    const SizedBox(height: 4),
+                                    Text(prog.duration,
+                                        style: GoogleFonts.inter(
+                                            color: Colors.white.withValues(alpha: 0.7),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ),
+                            ]),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 24),
+
+              // ── Instagram button ──
+              if (coach.instagram.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: GestureDetector(
+                    onTap: () {
+                      final handle = coach.instagram.replaceAll('@', '');
+                      launchUrl(Uri.parse('https://instagram.com/$handle'),
+                          mode: LaunchMode.externalApplication);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFE1306C),
+                            const Color(0xFFC13584),
+                            const Color(0xFF833AB4),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFC13584).withValues(alpha: 0.35),
+                            blurRadius: 14,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(LucideIcons.camera, color: Colors.white, size: 18),
+                          const SizedBox(width: 10),
+                          Text('Suivre @${coach.instagram.replaceAll('@', '')}',
+                              style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 40),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _avatarFallback(CoachModel coach, Color accent) => Container(
+    color: accent,
+    child: Center(child: Text(
+      coach.name.isNotEmpty ? coach.name[0].toUpperCase() : 'C',
+      style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w800),
+    )),
+  );
+}
+
+class _CoachStatPill extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color accent;
+  final bool dark;
+
+  const _CoachStatPill({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.accent,
+    required this.dark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
+    final t1 = dark ? Colors.white : const Color(0xFF1A1A1A);
+    final t2 = dark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF6B7280);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: dark ? 0.2 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(children: [
+        Icon(icon, size: 16, color: accent),
+        const SizedBox(height: 6),
+        Text(value,
+            style: GoogleFonts.outfit(
+                color: t1,
+                fontSize: 17,
+                fontWeight: FontWeight.w800)),
+        const SizedBox(height: 2),
+        Text(label,
+            style: GoogleFonts.inter(
+                color: t2,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w500)),
+      ]),
     );
   }
 }

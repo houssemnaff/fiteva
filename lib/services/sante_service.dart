@@ -23,6 +23,14 @@ class SanteService {
     return rows.cast<Map<String, dynamic>>();
   }
 
+  static Future<List<Map<String, dynamic>>> fetchSanteVideos() async {
+    final rows = await SupabaseConfig.table('sante_videos')
+        .select()
+        .order('series_title')
+        .order('episode') as List;
+    return rows.cast<Map<String, dynamic>>();
+  }
+
   static Future<void> submitQuestion(String questionText) async {
     final uid = SupabaseConfig.userId;
     await SupabaseConfig.table('health_questions').insert({

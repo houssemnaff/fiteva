@@ -54,6 +54,7 @@ dependencies:
   flutter_stripe: ^11.5.0
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
+  audioplayers: ^6.7.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -69,6 +70,7 @@ flutter:
     - assets/videos/
     - assets/fetus_sheet.png
     - assets/fetus/
+    - assets/audio/
 
 
 flutter_launcher_icons:
