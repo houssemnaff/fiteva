@@ -11,6 +11,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../providers/mascot_provider.dart';
 import '../../../../widgets/mascot_widget.dart';
+import '../community_avatar.dart';
 
 class CommentSheet extends ConsumerStatefulWidget {
   final String postId;
@@ -21,7 +22,13 @@ class CommentSheet extends ConsumerStatefulWidget {
   ConsumerState<CommentSheet> createState() => _CommentSheetState();
 }
 
-typedef _Comment = ({String text, String author, DateTime createdAt});
+typedef _Comment = ({
+  String text,
+  String author,
+  DateTime createdAt,
+  String mascotType,
+  String mascotMood,
+});
 
 class _CommentSheetState extends ConsumerState<CommentSheet> {
   final _ctrl = TextEditingController();
@@ -51,6 +58,8 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
         text: comment.text,
         author: comment.author,
         createdAt: comment.createdAt,
+        mascotType: comment.mascotType,
+        mascotMood: comment.mascotMood,
       )).toList();
       _loading = false;
     });
@@ -65,6 +74,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
     await ref.read(postsNotifierProvider.notifier).incrementComments(widget.postId);
     _ctrl.clear();
     if (mounted) {
+      final myMascot = ref.read(mascotProvider);
       setState(() {
         _comments = [
           ..._comments,
@@ -72,6 +82,8 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
             text: createdComment?.text ?? text,
             author: createdComment?.author ?? 'Vous',
             createdAt: createdComment?.createdAt ?? DateTime.now(),
+            mascotType: createdComment?.mascotType ?? myMascot.type.name,
+            mascotMood: createdComment?.mascotMood ?? myMascot.mood.name,
           ),
         ];
         _sending = false;
@@ -175,6 +187,8 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                           text: _comments[i].text,
                           author: _comments[i].author,
                           createdAt: _comments[i].createdAt,
+                          mascotType: _comments[i].mascotType,
+                          mascotMood: _comments[i].mascotMood,
                           cs: cs,
                           isLast: i == _comments.length - 1,
                         ),
@@ -330,11 +344,14 @@ class _CommentRow extends ConsumerWidget {
   final String text;
   final String author;
   final DateTime createdAt;
+  final String mascotType;
+  final String mascotMood;
   final ColorScheme cs;
   final bool isLast;
   const _CommentRow({
     required this.text, required this.author,
     required this.createdAt, required this.cs,
+    this.mascotType = 'blob', this.mascotMood = 'happy',
     this.isLast = false,
   });
 
@@ -349,24 +366,18 @@ class _CommentRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mascot = ref.watch(mascotProvider);
-
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Mascot avatar
-          Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: cs.primary.withValues(alpha: 0.10),
-            ),
-            child: ClipOval(
-              child: MascotWidget(
-                type: mascot.type, mood: mascot.mood, size: 34),
-            ),
+          // Author's mascot avatar
+          CommunityAvatar(
+            avatarUrl: '',
+            name: author,
+            radius: 17,
+            mascotType: mascotType,
+            mascotMood: mascotMood,
           ),
           const SizedBox(width: 12),
 

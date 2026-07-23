@@ -15,6 +15,8 @@ class CommunityComment {
   final String author;
   final DateTime createdAt;
   final String userId;
+  final String mascotType;
+  final String mascotMood;
 
   const CommunityComment({
     required this.id,
@@ -22,6 +24,8 @@ class CommunityComment {
     required this.author,
     required this.createdAt,
     required this.userId,
+    this.mascotType = 'blob',
+    this.mascotMood = 'happy',
   });
 }
 
@@ -223,12 +227,20 @@ class CommunityService {
       final profileRows = userIds.isEmpty
           ? <Map<String, dynamic>>[]
           : await SupabaseConfig.table('public_profiles')
-              .select('id, username')
+              .select('id, username, mascot_type, mascot_mood')
               .inFilter('id', userIds) as List;
 
       final usernameMap = <String, String>{
         for (final p in profileRows)
           p['id'] as String: (p['username'] as String? ?? '').trim(),
+      };
+      final mascotTypeMap = <String, String>{
+        for (final p in profileRows)
+          p['id'] as String: (p['mascot_type'] as String? ?? 'blob'),
+      };
+      final mascotMoodMap = <String, String>{
+        for (final p in profileRows)
+          p['id'] as String: (p['mascot_mood'] as String? ?? 'happy'),
       };
 
       return rows.map((r) {
@@ -241,6 +253,8 @@ class CommunityService {
           author: username.isNotEmpty ? username : 'User',
           createdAt: createdAt,
           userId: userId,
+          mascotType: mascotTypeMap[userId] ?? 'blob',
+          mascotMood: mascotMoodMap[userId] ?? 'happy',
         );
       }).toList();
     } catch (_) {
@@ -259,30 +273,39 @@ class CommunityService {
         'created_at': createdAt.toIso8601String(),
       }).select('id, content, user_id, created_at').single();
 
-      final username = await _currentUsername();
+      final profile = await _currentUserCommentProfile();
       return CommunityComment(
         id: row['id'] as String? ?? '',
         text: row['content'] as String? ?? text,
-        author: username.isNotEmpty ? username : 'Vous',
+        author: profile.username,
         createdAt: DateTime.tryParse((row['created_at'] as String? ?? '')) ?? createdAt,
         userId: _uid!,
+        mascotType: profile.mascotType,
+        mascotMood: profile.mascotMood,
       );
     } catch (_) {
       return null;
     }
   }
 
-  static Future<String> _currentUsername() async {
-    if (_uid == null) return 'Vous';
+  static Future<({String username, String mascotType, String mascotMood})>
+      _currentUserCommentProfile() async {
+    if (_uid == null) return (username: 'Vous', mascotType: 'blob', mascotMood: 'happy');
     try {
       final rows = await SupabaseConfig.table('user_profiles')
-          .select('username')
+          .select('username, mascot_type, mascot_mood')
           .eq('id', _uid!)
           .limit(1) as List;
-      final username = rows.isNotEmpty ? (rows.first['username'] as String? ?? '').trim() : '';
-      return username.isNotEmpty ? username : 'Vous';
+      if (rows.isEmpty) return (username: 'Vous', mascotType: 'blob', mascotMood: 'happy');
+      final row = rows.first as Map<String, dynamic>;
+      final username = (row['username'] as String? ?? '').trim();
+      return (
+        username: username.isNotEmpty ? username : 'Vous',
+        mascotType: row['mascot_type'] as String? ?? 'blob',
+        mascotMood: row['mascot_mood'] as String? ?? 'happy',
+      );
     } catch (_) {
-      return 'Vous';
+      return (username: 'Vous', mascotType: 'blob', mascotMood: 'happy');
     }
   }
 
