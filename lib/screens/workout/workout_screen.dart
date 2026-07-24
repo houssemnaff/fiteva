@@ -96,7 +96,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
   @override
   void initState() {
     super.initState();
-    // Recharge les favoris depuis Supabase (le build initial peut précéder l'auth)
     Future.microtask(() => ref.read(favoritesProvider.notifier).reload());
   }
 

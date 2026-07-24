@@ -46,7 +46,6 @@ class HomeScreen extends ConsumerWidget {
     final recuperationPrograms = ref.watch(recuperationProgramsProvider);
     final grossessePrograms = ref.watch(grossesseProgramsProvider);
 
-    // Combine all programs from all sources
     final allPrograms = [
       ...homePrograms,
       ...sallePrograms,
@@ -61,16 +60,10 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: cs.surface,
       body: CustomScrollView(
         slivers: [
-          // ── 1. Hero — featured pick ────────────────────
           SliverToBoxAdapter(child: _HeroSection(user: user)),
 
-
-        
-
-          // ── 3. Today at a glance — cycle / calories / workout ─
           const SliverToBoxAdapter(child: _StatBar()),
 
-          // ── 4. Steps ────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -78,16 +71,11 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
 
-          // ── 5. This week's plan ─────────────────────────
           SliverToBoxAdapter(child: _WeeklyPlanSection()),
 
-          // ── 6. Continue where you left off ─────────────
           SliverToBoxAdapter(child: _ContinueWorkoutsSection(programs: allPrograms)),
 
-          // ── 7. Invite a friend ──────────────────────────
-          const SliverToBoxAdapter(
-            child: ReferralCard(),
-          ),
+          const SliverToBoxAdapter(child: ReferralCard()),
 
           const SliverToBoxAdapter(child: SizedBox(height: 110)),
         ],
@@ -166,8 +154,17 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
               duration: const Duration(milliseconds: 800),
               child: SizedBox.expand(
                 key: ValueKey(_currentIndex),
-                child: Image.asset(
-                  program!.imageUrl,
+                child: program!.imageUrl.startsWith('http')
+                    ? Image.network(
+                        program.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/images/workout.jpeg',
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Image.asset(
+                  program.imageUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Image.asset(
                     'assets/images/workout.jpeg',

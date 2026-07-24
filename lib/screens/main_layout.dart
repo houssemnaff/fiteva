@@ -24,6 +24,7 @@ import 'profile/profile_screen.dart';
 import 'walkthrough/app_walkthrough_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../services/storage_service.dart';
+import '../services/app_tour_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  NAV CONFIG
@@ -62,7 +63,8 @@ class _MainLayoutState extends ConsumerState<MainLayout>
 
   int  _currentIndex = 0;
   bool _plusOpen     = false;
-  double _x = -1; // -1 = not yet initialized
+  bool _showTour    = false;
+  double _x = -1;
   double _y = -1;
 
   late final AnimationController _plusAnim;
@@ -108,21 +110,16 @@ class _MainLayoutState extends ConsumerState<MainLayout>
         vsync: this, duration: const Duration(milliseconds: 280));
     _plusScale     = CurvedAnimation(parent: _plusAnim, curve: Curves.easeOutCubic);
     _pageController = PageController(initialPage: 0);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowWalkthrough());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowTour());
   }
 
-  void _maybeShowWalkthrough() {
-    if (!StorageService.getBool('walkthrough_completed')) {
-      Navigator.of(context).push(
-        PageRouteBuilder(
-          opaque: false,
-          pageBuilder: (_, __, ___) => const AppWalkthroughScreen(),
-          transitionsBuilder: (_, anim, __, child) =>
-              FadeTransition(opacity: anim, child: child),
-          transitionDuration: const Duration(milliseconds: 400),
-        ),
-      );
-    }
+  Future<void> _maybeShowTour() async {
+    if (!mounted) return;
+    final show = await AppTourService.shouldShowTour();
+    if (!show || !mounted) return;
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) setState(() => _showTour = false);
+    if (mounted) setState(() => _showTour = true);
   }
 
   @override
@@ -226,6 +223,17 @@ class _MainLayoutState extends ConsumerState<MainLayout>
 
     return Scaffold(
       extendBody: true,
+      floatingActionButton: FloatingActionButton.small(
+        heroTag: 'tour_test',
+        backgroundColor: const Color(0xFF5CD57A),
+        onPressed: () async {
+          await AppTourService.resetTour();
+          _selectMain(0);
+          await Future.delayed(const Duration(milliseconds: 300));
+          if (mounted) setState(() => _showTour = true);
+        },
+        child: const Icon(Icons.help_outline, color: Colors.white, size: 20),
+      ),
       body: Stack(
         children: [
           // ── Swipeable main tabs (0-3) ──────────────────────────
@@ -276,6 +284,58 @@ class _MainLayoutState extends ConsumerState<MainLayout>
                     child: const _AiChatButton())),
               );
             }),
+
+          // ── Guided tour overlay ───────────────────────────────
+          if (_showTour)
+            GuidedTourOverlay(
+              steps: const [
+                GuidedTourStep(
+                  tabIndex: 0,
+                  title: 'Bienvenue sur FitEva !',
+                  description: 'Ton programme personnalisé selon ton cycle, tes objectifs et ton niveau. C\'est ici que tout commence.',
+                  icon: Icons.home_rounded,
+                ),
+                GuidedTourStep(
+                  tabIndex: 2,
+                  title: 'Tes workouts',
+                  description: 'Salle, maison, danse, récupération… explore les catégories et trouve le workout parfait pour toi.',
+                  icon: Icons.fitness_center_rounded,
+                ),
+                GuidedTourStep(
+                  tabIndex: 3,
+                  title: 'Ta nutrition',
+                  description: 'Ajoute tes repas, scanne un produit ou cherche un aliment. Suis tes calories et macros au quotidien.',
+                  icon: Icons.restaurant_rounded,
+                ),
+                GuidedTourStep(
+                  tabIndex: -1,
+                  title: 'Boutique, Santé & Communauté',
+                  description: 'Appuie sur le bouton + en bas pour découvrir la boutique, ton espace santé et la communauté FitEva.',
+                  icon: Icons.add_circle_rounded,
+                ),
+              ],
+              onNavigateToTab: (tabIndex) {
+                if (tabIndex == -1) {
+                  return;
+                }
+                _closePlus();
+                setState(() => _currentIndex = tabIndex);
+                if (tabIndex < 4) {
+                  _pageController.animateToPage(
+                    tabIndex,
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeInOutCubic,
+                  );
+                }
+              },
+              onFinish: () {
+                setState(() => _showTour = false);
+                _selectMain(0);
+                Future.delayed(const Duration(milliseconds: 400), () {
+                  if (mounted) _togglePlus();
+                });
+              },
+            ),
         ],
       ),
       bottomNavigationBar: _GlassNavBar(
