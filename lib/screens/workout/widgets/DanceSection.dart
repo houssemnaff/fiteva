@@ -2,8 +2,9 @@ import 'package:fiteva/models/video_model.dart';
 import 'package:fiteva/screens/workout/exercise_player_screen.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/theme/cycle_theme.dart';
+import 'package:fiteva/screens/workout/widgets/progress_start_button.dart';
 import 'package:fiteva/screens/workout/widgets/section_empty_state.dart';
-import 'package:fiteva/screens/workout/widgets/watched_badge.dart';
+// import 'package:fiteva/screens/workout/widgets/watched_badge.dart'; // badge désactivé, voir plus bas
 import 'package:fiteva/providers/workout_progress_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -184,7 +185,6 @@ class _DanceVideoCard extends ConsumerWidget {
             ?.value
             .contains(video.id) ??
         false;
-    final btnColor = completed ? Colors.green : color;
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -259,8 +259,10 @@ class _DanceVideoCard extends ConsumerWidget {
                 right: 14,
                 child: Row(
                   children: [
-                    Expanded(
-                        child: WatchedBadge(videoId: video.id, color: color)),
+                    // Badge "Vu" désactivé — la progression est maintenant
+                    // affichée directement dans le bouton ci-dessous.
+                    // Expanded(child: WatchedBadge(videoId: video.id, color: color)),
+                    const Spacer(),
                     GestureDetector(
                       onTap: onToggleFav,
                       child: AnimatedContainer(
@@ -322,37 +324,14 @@ class _DanceVideoCard extends ConsumerWidget {
                       CycleBadgeRow(phases: video.phases),
                     ],
                     const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      decoration: BoxDecoration(
-                        color: btnColor,
-                        borderRadius: BorderRadius.circular(50),
-                        boxShadow: [
-                          BoxShadow(
-                              color: btnColor.withValues(alpha: 0.45),
-                              blurRadius: 14,
-                              offset: const Offset(0, 5))
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(completed ? LucideIcons.check : LucideIcons.play,
-                              color: Colors.white, size: 13),
-                          const SizedBox(width: 8),
-                          Text(
-                            completed
-                                ? l10n.workoutDone
-                                : l10n.progcardCommencer,
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
+                    ProgressStartButton(
+                      // Une vidéo n'a pas de progression partielle — juste
+                      // vue/pas vue — d'où un remplissage 0% ou 100%.
+                      progress: completed ? 1.0 : 0.0,
+                      completed: completed,
+                      color: color,
+                      label: l10n.progcardCommencer,
+                      completedLabel: l10n.workoutDone,
                     ),
                   ],
                 ),

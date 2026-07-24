@@ -1,4 +1,6 @@
 import 'package:fiteva/models/post_model.dart';
+import 'package:fiteva/providers/mascot_provider.dart';
+import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:fiteva/services/comuniter_service.dart';
@@ -6,6 +8,22 @@ import 'package:fiteva/services/supabase_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgresChangeEvent, RealtimeChannel;
+
+// ─── Live profile sync ────────────────────────────────────────────────────────
+// Les posts/événements/partenaires sont des instantanés chargés une seule
+// fois depuis Supabase : chaque modèle embarque le nom + la mascotte de son
+// auteur au moment du chargement. Si l'utilisateur change son avatar ou son
+// nom dans son profil, ce helper patche en direct les entrées qui lui
+// appartiennent déjà en mémoire (sinon il faudrait un pull-to-refresh dans
+// chaque onglet pour voir le changement).
+void _listenOwnProfile(Ref ref, void Function({String? username, String? mascotType, String? mascotMood}) patch) {
+  ref.listen<MascotState>(mascotProvider, (_, next) {
+    patch(mascotType: next.type.name, mascotMood: next.mood.name);
+  });
+  ref.listen<UserProfile>(userProfileProvider, (_, next) {
+    if (next.username.isNotEmpty) patch(username: next.username);
+  });
+}
 
 // ─── Tab index ───────────────────────────────────────────────────────────────
 final communityTabProvider = StateProvider<int>((ref) => 0);
@@ -29,6 +47,22 @@ class PostsNotifier extends StateNotifier<List<PostModel>> {
     _liked.addAll(await CommunityService.loadLikedPosts());
     state = posts;
     _ref.read(postsLoadingProvider.notifier).state = false;
+
+    _listenOwnProfile(_ref, ({username, mascotType, mascotMood}) {
+      final uid = SupabaseConfig.userId;
+      if (uid == null) return;
+      state = [
+        for (final p in state)
+          if (p.userId == uid)
+            p.copyWith(
+              username: username,
+              mascotType: mascotType,
+              mascotMood: mascotMood,
+            )
+          else
+            p,
+      ];
+    });
   }
 
   /// Recharge les posts depuis Supabase
@@ -107,10 +141,11 @@ final postsNotifierProvider =
 // ─── Events Notifier ─────────────────────────────────────────────────────────
 
 class EventsNotifier extends StateNotifier<List<EventModel>> {
-  EventsNotifier() : super([]) {
+  EventsNotifier(this._ref) : super([]) {
     _init();
   }
 
+  final Ref _ref;
   final Set<String> _joined = {};
 
   Future<void> _init() async {
@@ -119,6 +154,22 @@ class EventsNotifier extends StateNotifier<List<EventModel>> {
     state = [
       for (final e in events) e.copyWith(isJoined: _joined.contains(e.id)),
     ];
+
+    _listenOwnProfile(_ref, ({username, mascotType, mascotMood}) {
+      final uid = SupabaseConfig.userId;
+      if (uid == null) return;
+      state = [
+        for (final e in state)
+          if (e.organizerId == uid)
+            e.copyWith(
+              organizer: username,
+              organizerMascotType: mascotType,
+              organizerMascotMood: mascotMood,
+            )
+          else
+            e,
+      ];
+    });
   }
 
   /// Recharge les événements depuis Supabase (pull-to-refresh).
@@ -189,7 +240,7 @@ class EventsNotifier extends StateNotifier<List<EventModel>> {
 
 final eventsNotifierProvider =
     StateNotifierProvider<EventsNotifier, List<EventModel>>(
-        (_) => EventsNotifier());
+        (ref) => EventsNotifier(ref));
 
 // Alias utilisé dans les widgets existants
 final eventsProvider = eventsNotifierProvider;
@@ -225,6 +276,22 @@ class PartnersNotifier extends StateNotifier<List<PartnerModel>> {
           },
         )
         .subscribe();
+
+    _listenOwnProfile(_ref, ({username, mascotType, mascotMood}) {
+      final uid = SupabaseConfig.userId;
+      if (uid == null) return;
+      state = [
+        for (final p in state)
+          if (p.userId == uid)
+            p.copyWith(
+              name: username,
+              mascotType: mascotType,
+              mascotMood: mascotMood,
+            )
+          else
+            p,
+      ];
+    });
   }
 
   Future<void> refresh() async {

@@ -72,6 +72,43 @@ class PartnerModel {
     contactFacebook: j['contactFacebook'] as String? ?? '',
     isPro: j['isPro'] as bool? ?? false,
   );
+
+  PartnerModel copyWith({
+    String? id,
+    String? userId,
+    String? name,
+    String? avatar,
+    String? mascotType,
+    String? mascotMood,
+    String? goal,
+    String? level,
+    String? region,
+    String? frequency,
+    String? description,
+    List<String>? tags,
+    String? contactWhatsapp,
+    String? contactInstagram,
+    String? contactFacebook,
+    bool? isPro,
+  }) =>
+      PartnerModel(
+        id: id ?? this.id,
+        userId: userId ?? this.userId,
+        name: name ?? this.name,
+        avatar: avatar ?? this.avatar,
+        mascotType: mascotType ?? this.mascotType,
+        mascotMood: mascotMood ?? this.mascotMood,
+        goal: goal ?? this.goal,
+        level: level ?? this.level,
+        region: region ?? this.region,
+        frequency: frequency ?? this.frequency,
+        description: description ?? this.description,
+        tags: tags ?? this.tags,
+        contactWhatsapp: contactWhatsapp ?? this.contactWhatsapp,
+        contactInstagram: contactInstagram ?? this.contactInstagram,
+        contactFacebook: contactFacebook ?? this.contactFacebook,
+        isPro: isPro ?? this.isPro,
+      );
 }
 
 /// Demande de mise en relation reçue par le propriétaire d'un post partenaire.

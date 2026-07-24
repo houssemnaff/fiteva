@@ -3,6 +3,7 @@ import 'package:fiteva/screens/workout/programme_detail_screen.dart';
 import 'package:fiteva/screens/workout/theme/color.dart';
 import 'package:fiteva/screens/workout/theme/cycle_theme.dart';
 import 'package:fiteva/providers/workout_progress_provider.dart';
+import 'package:fiteva/screens/workout/widgets/progress_start_button.dart';
 import 'package:fiteva/screens/workout/widgets/section_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -183,13 +184,9 @@ class _GrossesseProgramCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(l10nProvider);
     final color = WorkoutColors.of(context).grossesse;
-    final completed = ref
-            .watch(programStatusProvider(program))
-            .asData
-            ?.value
-            .isCompleted ??
-        false;
-    final btnColor = completed ? Colors.green : color;
+    final status = ref.watch(programStatusProvider(program)).asData?.value;
+    final completed = status?.isCompleted ?? false;
+    final progress = status?.completionPercentage ?? 0.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -237,9 +234,10 @@ class _GrossesseProgramCard extends ConsumerWidget {
                 right: 14,
                 child: Row(
                   children: [
-                    Expanded(
-                      child: _ProgramStatusBadge(program: program),
-                    ),
+                    // Badge de pourcentage désactivé — la progression est
+                    // maintenant affichée directement dans le bouton ci-dessous.
+                    // Expanded(child: _ProgramStatusBadge(program: program)),
+                    const Spacer(),
                     GestureDetector(
                       onTap: onToggleFav,
                       child: AnimatedContainer(
@@ -298,37 +296,12 @@ class _GrossesseProgramCard extends ConsumerWidget {
                     const SizedBox(height: 8),
                     CycleBadgeRow(phases: program.phases),
                     const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      decoration: BoxDecoration(
-                        color: btnColor,
-                        borderRadius: BorderRadius.circular(50),
-                        boxShadow: [
-                          BoxShadow(
-                              color: btnColor.withValues(alpha: 0.45),
-                              blurRadius: 14,
-                              offset: const Offset(0, 5))
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(completed ? LucideIcons.check : LucideIcons.play,
-                              color: Colors.white, size: 13),
-                          const SizedBox(width: 8),
-                          Text(
-                            completed
-                                ? l10n.workoutDone
-                                : l10n.progcardCommencer,
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
+                    ProgressStartButton(
+                      progress: progress,
+                      completed: completed,
+                      color: color,
+                      label: l10n.progcardCommencer,
+                      completedLabel: l10n.workoutDone,
                     ),
                   ],
                 ),
@@ -342,80 +315,82 @@ class _GrossesseProgramCard extends ConsumerWidget {
 }
 
 // ── Program status badge
-class _ProgramStatusBadge extends ConsumerWidget {
-  final HomeProgramModel program;
-
-  const _ProgramStatusBadge({required this.program});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statusAsync = ref.watch(programStatusProvider(program));
-
-    return statusAsync.when(
-      data: (status) {
-        if (status.isCompleted) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.80),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.green.withValues(alpha: 0.45),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3))
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(LucideIcons.checkCircle,
-                    color: Colors.white, size: 10),
-                const SizedBox(width: 4),
-                Text(
-                  'Complété',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        if (status.isStarted) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: WorkoutColors.of(context).grossesse.withValues(alpha: 0.75),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                    color: WorkoutColors.of(context).grossesse.withValues(alpha: 0.45),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3))
-              ],
-            ),
-            child: Text(
-              '${(status.completionPercentage * 100).toInt()}%',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 8,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-              ),
-            ),
-          );
-        }
-
-        return const SizedBox.shrink();
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-}
+// Désactivé — la progression est désormais affichée dans ProgressStartButton
+// ci-dessus (portion du bouton remplie proportionnellement au % complété).
+// class _ProgramStatusBadge extends ConsumerWidget {
+//   final HomeProgramModel program;
+//
+//   const _ProgramStatusBadge({required this.program});
+//
+//   @override
+//   Widget build(BuildContext context, WidgetRef ref) {
+//     final statusAsync = ref.watch(programStatusProvider(program));
+//
+//     return statusAsync.when(
+//       data: (status) {
+//         if (status.isCompleted) {
+//           return Container(
+//             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+//             decoration: BoxDecoration(
+//               color: Colors.green.withValues(alpha: 0.80),
+//               borderRadius: BorderRadius.circular(20),
+//               boxShadow: [
+//                 BoxShadow(
+//                     color: Colors.green.withValues(alpha: 0.45),
+//                     blurRadius: 8,
+//                     offset: const Offset(0, 3))
+//               ],
+//             ),
+//             child: Row(
+//               mainAxisSize: MainAxisSize.min,
+//               children: [
+//                 const Icon(LucideIcons.checkCircle,
+//                     color: Colors.white, size: 10),
+//                 const SizedBox(width: 4),
+//                 Text(
+//                   'Complété',
+//                   style: GoogleFonts.inter(
+//                     color: Colors.white,
+//                     fontSize: 8,
+//                     fontWeight: FontWeight.w800,
+//                     letterSpacing: 0.8,
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           );
+//         }
+//
+//         if (status.isStarted) {
+//           return Container(
+//             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+//             decoration: BoxDecoration(
+//               color: WorkoutColors.of(context).grossesse.withValues(alpha: 0.75),
+//               borderRadius: BorderRadius.circular(20),
+//               boxShadow: [
+//                 BoxShadow(
+//                     color: WorkoutColors.of(context).grossesse.withValues(alpha: 0.45),
+//                     blurRadius: 8,
+//                     offset: const Offset(0, 3))
+//               ],
+//             ),
+//             child: Text(
+//               '${(status.completionPercentage * 100).toInt()}%',
+//               style: GoogleFonts.inter(
+//                 color: Colors.white,
+//                 fontSize: 8,
+//                 fontWeight: FontWeight.w800,
+//                 letterSpacing: 0.8,
+//               ),
+//             ),
+//           );
+//         }
+//
+//         return const SizedBox.shrink();
+//       },
+//       loading: () => const SizedBox.shrink(),
+//       error: (_, __) => const SizedBox.shrink(),
+//     );
+//   }
+// }
 
