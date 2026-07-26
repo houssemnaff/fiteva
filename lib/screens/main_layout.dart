@@ -25,6 +25,7 @@ import 'walkthrough/app_walkthrough_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../services/app_tour_service.dart';
+import 'paywall/paywall_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  NAV CONFIG
@@ -332,7 +333,19 @@ class _MainLayoutState extends ConsumerState<MainLayout>
                 setState(() => _showTour = false);
                 _selectMain(0);
                 Future.delayed(const Duration(milliseconds: 400), () {
-                  if (mounted) _togglePlus();
+                  if (!mounted) return;
+                  final isPro = ref.read(isProProvider);
+                  if (!isPro) {
+                    Navigator.of(context).push(
+                      PageRouteBuilder(
+                        opaque: true,
+                        pageBuilder: (_, __, ___) => const PaywallScreen(),
+                        transitionsBuilder: (_, anim, __, child) =>
+                            FadeTransition(opacity: anim, child: child),
+                        transitionDuration: const Duration(milliseconds: 500),
+                      ),
+                    );
+                  }
                 });
               },
             ),

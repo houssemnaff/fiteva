@@ -132,32 +132,25 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Mascot
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(50),
-                      child: CachedNetworkImage(
-                        imageUrl: _mascotUrl,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(
-                          width: 80, height: 80,
-                          decoration: BoxDecoration(
-                            color: _accent.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
+                    // Mascot — full character, no circle crop
+                    CachedNetworkImage(
+                      imageUrl: _mascotUrl,
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
+                      placeholder: (_, __) => const SizedBox(
+                        width: 120, height: 120,
+                      ),
+                      errorWidget: (_, __, ___) => Container(
+                        width: 80, height: 80,
+                        decoration: const BoxDecoration(
+                          color: _accent, shape: BoxShape.circle,
                         ),
-                        errorWidget: (_, __, ___) => Container(
-                          width: 80, height: 80,
-                          decoration: const BoxDecoration(
-                            color: _accent, shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                              child: Text('💪', style: TextStyle(fontSize: 32))),
-                        ),
+                        child: const Center(
+                            child: Text('💪', style: TextStyle(fontSize: 32))),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
 
                     // Card
                     Container(

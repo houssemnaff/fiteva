@@ -52,6 +52,9 @@ const appCategories = <AiCategory>[
       'Quels programmes sont disponibles ?',
       'Programme maison sans équipement',
       'Programme pour la salle de sport',
+      'Comment bien s\'échauffer avant le sport ?',
+      'Étirements et récupération après le sport',
+      'Combien de fois s\'entraîner par semaine ?',
     ],
   ),
   AiCategory(
@@ -63,6 +66,9 @@ const appCategories = <AiCategory>[
       'Aliments riches en protéines pour se muscler',
       'Repas équilibré avant l\'entraînement',
       'Que manger pendant les règles ?',
+      'Que manger après l\'entraînement ?',
+      'Combien d\'eau boire par jour ?',
+      'Idées de collations saines',
     ],
   ),
   AiCategory(
@@ -71,9 +77,11 @@ const appCategories = <AiCategory>[
     questions: [
       'Explique-moi les 4 phases du cycle',
       'Comment s\'entraîner pendant les règles ?',
-      'Quelle phase booste le plus l\'énergie ?',
+      'Sport en phase folliculaire',
       'Sport conseillé en phase lutéale',
       'Comment suivre mon cycle dans l\'app ?',
+      'Sport pendant l\'ovulation',
+      'Le sommeil et le cycle menstruel',
     ],
   ),
   AiCategory(
@@ -85,6 +93,8 @@ const appCategories = <AiCategory>[
       'Nutrition pendant la grossesse',
       'Quand dois-je arrêter l\'exercice ?',
       'Respiration et périnée en grossesse',
+      'Le sommeil pendant la grossesse',
+      'Gérer les nausées avec l\'alimentation',
     ],
   ),
   AiCategory(
@@ -96,6 +106,8 @@ const appCategories = <AiCategory>[
       'Rééducation du périnée : par où commencer ?',
       'Nutrition pour les mamans allaitantes',
       'Comment regagner de l\'énergie après l\'accouchement ?',
+      'Diastasis des grands droits : que faire ?',
+      'Reprendre confiance en son corps',
     ],
   ),
   AiCategory(
@@ -107,6 +119,8 @@ const appCategories = <AiCategory>[
       'Élastiques de résistance : comment les utiliser ?',
       'Tapis de yoga : lequel choisir ?',
       'Équipement essentiel pour la musculation',
+      'Rouleau de massage : comment l\'utiliser ?',
+      'Bouteille d\'eau ou shaker : lequel choisir ?',
     ],
   ),
 ];
@@ -312,6 +326,24 @@ _Resp _generateResponse(String msg, String? categoryId, List<ChatProgramCard> pr
         final cards = programs.where((p) => p.category == 'SALLE').toList();
         return _Resp('🏋️ **Programmes Salle**\n\nVoici les programmes disponibles pour la salle :', cards: cards);
       }
+      if (m.contains('échauff') || m.contains('warm')) {
+        return const _Resp(
+          '🔥 **Bien s\'échauffer avant le sport**\n\nUn bon échauffement réduit les blessures et améliore les performances.\n\n**5–10 min :**\n• Rotations articulaires (cou, épaules, hanches, chevilles)\n• Marche rapide ou jumping jacks légers — 2 min\n• Squats au poids du corps — 10 rép.\n• Fentes dynamiques — 8 rép. / jambe\n• Circles de bras — 15 sec / sens\n\n💡 Adapte l\'échauffement à ta séance : plus de mobilité basse pour le leg day, plus de mobilité haute pour le upper body.\n\n📍 Chaque programme dans l\'app inclut un échauffement intégré',
+          quickReplies: ['Générer une séance', 'Étirements après le sport'],
+        );
+      }
+      if (m.contains('étirement') || m.contains('récupér') || m.contains('stretching') || m.contains('cool down')) {
+        return const _Resp(
+          '🧘 **Étirements & Récupération**\n\n**Après chaque séance (5–10 min) :**\n• Quadriceps : 30s / jambe\n• Ischio-jambiers : 30s / jambe\n• Piriforme / fessiers : 30s / côté\n• Épaules et triceps : 20s / bras\n• Chat-vache (dos) : 8 rép.\n\n**Pour mieux récupérer :**\n• 💧 Hydrate-toi dès la fin de la séance\n• 🍌 Mange dans les 30 min (protéines + glucides)\n• 😴 Dors 7–9h / nuit\n• 🧊 Bain froid ou rouleau de massage si courbatures\n\n📍 Section **Workout > Récupération** dans l\'app',
+          quickReplies: ['Rouleau de massage', 'Que manger après le sport ?'],
+        );
+      }
+      if (m.contains('combien de fois') || m.contains('fréquence') || m.contains('par semaine')) {
+        return const _Resp(
+          '📅 **Combien de fois s\'entraîner ?**\n\n**Débutante :** 2–3 fois / semaine\n**Intermédiaire :** 3–4 fois / semaine\n**Avancée :** 4–5 fois / semaine\n\n💡 **Règles d\'or :**\n• Minimum 1 jour de repos entre 2 séances du même groupe musculaire\n• Alterne intensité haute et basse dans la semaine\n• Adapte selon ta phase du cycle\n• La régularité compte plus que l\'intensité\n\n📍 Crée ton planning dans **Workout > Mon Programme**',
+          quickReplies: ['Créer mon programme', 'Sport pendant les règles'],
+        );
+      }
       if (m.contains('cycle') || m.contains('phase')) {
         final cards = programs.where((p) =>
             p.compatibleCycles.any((c) => c.contains('Follic') || c.contains('Ovul'))).toList();
@@ -352,6 +384,24 @@ _Resp _generateResponse(String msg, String? categoryId, List<ChatProgramCard> pr
           '⚡ **Repas pré-entraînement**\n\n**2h avant :**\n• Riz + poulet + légumes\n• Pâtes complètes + thon\n\n**30–45 min avant :**\n• Banane + amandes\n• Yaourt grec + miel\n• Flocons d\'avoine + fruits\n\n💡 Évite les aliments gras et très fibreux juste avant le sport',
         );
       }
+      if (m.contains('après') && m.contains('entraîn') || m.contains('post-workout') || m.contains('après le sport') || m.contains('après l\'entraîn')) {
+        return const _Resp(
+          '🍽️ **Que manger après l\'entraînement ?**\n\nLa fenêtre de **30–60 min** après le sport est idéale pour récupérer.\n\n**Protéines + Glucides :**\n• Poulet + riz + légumes\n• Yaourt grec + granola + fruits\n• Smoothie : banane + whey + lait d\'amande\n• Œufs + pain complet + avocat\n\n**Quantités :**\n• 20–30g de protéines\n• 30–50g de glucides\n\n💡 Évite les aliments très gras juste après — ils ralentissent la digestion.\n\n📍 Enregistre ton repas post-training dans **Nutrition > Suivi**',
+          quickReplies: ['Protéines pour se muscler', 'Objectif calorique'],
+        );
+      }
+      if (m.contains('eau') || m.contains('hydrat') || m.contains('boire')) {
+        return const _Resp(
+          '💧 **Hydratation quotidienne**\n\n**Combien boire ?**\n• Minimum : **1.5L / jour** (sédentaire)\n• Active : **2–2.5L / jour**\n• Jour d\'entraînement : **+500ml à 1L** supplémentaire\n• Allaitement : **3L+ / jour**\n\n**Quand boire ?**\n• 🌅 1 grand verre au réveil\n• 💪 200ml toutes les 15 min pendant le sport\n• 🍽️ 1 verre avant chaque repas\n• 😴 Réduire 1h avant le coucher\n\n💡 Signes de déshydratation : fatigue, maux de tête, urine foncée.\n\n📍 Pense à logger ton eau dans **Nutrition > Suivi**',
+          quickReplies: ['Collations saines', 'Objectif calorique'],
+        );
+      }
+      if (m.contains('collation') || m.contains('snack') || m.contains('en-cas') || m.contains('grignoter')) {
+        return const _Resp(
+          '🥜 **Idées de collations saines**\n\n**Avant le sport (30 min) :**\n• Banane + beurre de cacahuète\n• Barre de céréales maison\n• Compote + poignée d\'amandes\n\n**Après le sport :**\n• Yaourt grec + miel + noix\n• Smoothie protéiné\n• Fromage blanc + fruits rouges\n\n**Au quotidien :**\n• 🥕 Bâtonnets de légumes + houmous\n• 🍎 Pomme + amandes (10–15)\n• 🥚 Œuf dur + sel/poivre\n• 🍫 2 carrés de chocolat noir 70%+\n\n💡 Vise 150–250 kcal par collation.\n\n📍 Enregistre tes snacks dans **Nutrition > Suivi**',
+          quickReplies: ['Objectif calorique', 'Protéines pour se muscler'],
+        );
+      }
       return const _Resp(
         '🥗 **Nutrition dans FitEva**\n\nL\'app te permet de :\n• 📊 Suivre tes calories et macros\n• 🍽️ Enregistrer tes repas\n• 📅 Voir ton bilan journalier\n\n📍 Accède à la section **Nutrition** depuis le menu principal',
         quickReplies: ['Objectif calorique', 'Que manger pendant les règles ?', 'Protéines pour se muscler'],
@@ -379,6 +429,18 @@ _Resp _generateResponse(String msg, String? categoryId, List<ChatProgramCard> pr
       if (m.contains('suivre') || m.contains('calendrier') || m.contains('app')) {
         return const _Resp(
           '📅 **Suivi du cycle dans FitEva**\n\nDans la section **Cycle**, tu peux :\n• 📌 Enregistrer le début et la durée de tes règles\n• 📊 Voir ta phase actuelle en temps réel\n• 🏋️ Recevoir des recommandations d\'entraînement par phase\n• 💊 Suivre tes symptômes et ton humeur\n\n📍 Accède via l\'onglet **Cycle** dans le menu bas',
+        );
+      }
+      if (m.contains('ovul')) {
+        return const _Resp(
+          '✨ **Phase d\'Ovulation (J14–16)**\n\nC\'est ton **pic d\'énergie** ! Les œstrogènes sont au max.\n\n✅ **Parfait pour** :\n• HIIT intense\n• Musculation lourde — PR possibles !\n• Running / course à pied\n• Dance cardio\n• CrossFit\n\n⚡ Énergie : **Maximale**\n💡 Profite de cette fenêtre pour repousser tes limites et battre tes records.\n\n⚠️ Attention aux articulations — les ligaments sont plus souples à cause des hormones, échauffe-toi bien.',
+          quickReplies: ['Phase folliculaire', 'Phase lutéale'],
+        );
+      }
+      if (m.contains('sommeil') || m.contains('dormir') || m.contains('sleep')) {
+        return const _Resp(
+          '😴 **Sommeil & Cycle menstruel**\n\nLa qualité du sommeil varie selon ta phase :\n\n🌊 **Règles (J1–5)** : Fatigue accrue, dors plus si besoin\n🌱 **Folliculaire (J6–13)** : Sommeil profond, bonne récupération\n✨ **Ovulation (J14–16)** : Énergie haute, moins besoin de dormir\n🍂 **Lutéale (J17–28)** : Difficulté à s\'endormir, réveil nocturne\n\n💡 **Astuces :**\n• 🌙 Pas d\'écran 1h avant le coucher\n• 🫖 Tisane (camomille, valériane) en phase lutéale\n• 🌡️ Chambre fraîche (18–20°C)\n• 📱 Régularité : couche-toi à la même heure\n\n📍 Suis la qualité de ton sommeil dans **Cycle > Symptômes**',
+          quickReplies: ['Phase lutéale', 'Sport pendant les règles'],
         );
       }
       if (m.contains('follicul')) {
@@ -419,6 +481,18 @@ _Resp _generateResponse(String msg, String? categoryId, List<ChatProgramCard> pr
           '🌸 **Périnée & Respiration en grossesse**\n\n**Exercices de Kegel** (périnée) :\nContracter le périnée 5–10 sec, relâcher. 10 répétitions, 3x/jour.\n\n**Respiration diaphragmatique** :\nInspire par le nez en gonflant le ventre, expire lentement par la bouche. Réduit le stress et prépare à l\'accouchement.\n\n📍 Section **Grossesse > Exercices** dans l\'app',
         );
       }
+      if (m.contains('sommeil') || m.contains('dormir')) {
+        return const _Resp(
+          '😴 **Sommeil pendant la grossesse**\n\n**1er trimestre :**\nFatigue intense — c\'est normal ! Fais des siestes de 20 min.\n\n**2e trimestre :**\nMeilleur sommeil en général. Profite !\n\n**3e trimestre :**\n• Dors sur le **côté gauche** (meilleure circulation)\n• 🛏️ Coussin de grossesse entre les jambes\n• 🚫 Évite de manger 2h avant le coucher\n• 🚶 Marche légère en fin de journée\n\n💡 **Astuces :**\n• Surélève légèrement la tête contre les remontées acides\n• Réduis les liquides le soir (moins d\'allers-retours WC)\n• Tisane de camomille (sans danger)',
+          quickReplies: ['Sport au 3e trimestre', 'Nutrition grossesse'],
+        );
+      }
+      if (m.contains('nausée') || m.contains('vomiss') || m.contains('mal au cœur')) {
+        return const _Resp(
+          '🤢 **Gérer les nausées avec l\'alimentation**\n\nLes nausées touchent 70–80% des femmes, surtout au 1er trimestre.\n\n**Alimentation :**\n• 🍪 Mange un biscuit sec AVANT de te lever\n• 🍽️ Petits repas fréquents (5–6 / jour au lieu de 3)\n• 🍋 Gingembre : thé, bonbon, ou frais râpé\n• 🥒 Aliments froids et neutres (concombre, melon, riz)\n• ❌ Évite : gras, épicé, odeurs fortes\n\n**Astuces :**\n• 💧 Bois entre les repas, pas pendant\n• 🌿 Menthe poivrée en inhalation\n• 🧊 Glaçons au citron à sucer\n\n⚕️ Consulte si nausées sévères (perte de poids, déshydratation).',
+          quickReplies: ['Nutrition grossesse', 'Sport au 1er trimestre'],
+        );
+      }
       return const _Resp(
         '🤰 **Section Grossesse dans FitEva**\n\nL\'app propose des programmes adaptés à chaque trimestre.',
         quickReplies: ['Sport au 1er trimestre', 'Nutrition grossesse', 'Périnée et respiration', 'Quand arrêter l\'exercice ?'],
@@ -450,6 +524,18 @@ _Resp _generateResponse(String msg, String? categoryId, List<ChatProgramCard> pr
       if (m.contains('énergie') || m.contains('fatigue')) {
         return const _Resp(
           '⚡ **Regagner de l\'énergie post-partum**\n\n• 😴 Dors quand bébé dort (priorité absolue)\n• 🥗 Mange des repas riches en fer (lentilles, viande, épinards)\n• 💧 Hydrate-toi bien\n• 🚶 Marche douce : booste l\'énergie sans épuiser\n• 🌞 Expose-toi à la lumière naturelle\n• 🫂 N\'hésite pas à demander de l\'aide\n\n📍 Programmes doux dans **Post-partum** dans l\'app',
+        );
+      }
+      if (m.contains('diastasis') || m.contains('grands droits') || m.contains('abdominaux sépar')) {
+        return const _Resp(
+          '🩺 **Diastasis des grands droits**\n\nC\'est l\'écartement des muscles abdominaux — fréquent après la grossesse (60–70% des femmes).\n\n**Comment vérifier :**\n• Allongée, genoux fléchis\n• Lève la tête et palpe au-dessus du nombril\n• Un écart de +2 doigts = diastasis probable\n\n**Que faire :**\n• ✅ Respiration hypopressive (priorité)\n• ✅ Gainage latéral (plank sur le côté)\n• ✅ Exercices de transverse\n• ❌ PAS de crunchs, sit-ups, ou plank classique\n• ❌ PAS de charges lourdes tant que non résolu\n\n💡 Un kiné spécialisé peut te guider.\n\n📍 Section **Post-partum > Abdominaux** dans l\'app',
+          quickReplies: ['Exercices post-partum', 'Rééducation périnée'],
+        );
+      }
+      if (m.contains('confiance') || m.contains('corps') || m.contains('image') || m.contains('mental')) {
+        return const _Resp(
+          '💜 **Reprendre confiance en son corps**\n\nTon corps a fait quelque chose d\'incroyable. La récupération prend du temps — sois patiente avec toi-même.\n\n**Mindset :**\n• 🪞 Célèbre ce que ton corps FAIT, pas juste son apparence\n• 📝 Note 3 choses positives chaque jour\n• 📵 Réduis la comparaison sur les réseaux\n• 🧘 Méditation et gratitude — même 5 min\n\n**Action :**\n• 🚶 Commence par des marches — chaque mouvement compte\n• 🎯 Fixe-toi des objectifs de forme, pas de poids\n• 👗 Porte des vêtements dans lesquels tu te sens bien\n• 🫂 Parle à d\'autres mamans (communauté FitEva !)\n\n📍 Rejoins la communauté dans **Communauté > Feed**',
+          quickReplies: ['Exercices doux', 'Nutrition allaitement'],
         );
       }
       return const _Resp(
@@ -484,6 +570,18 @@ _Resp _generateResponse(String msg, String? categoryId, List<ChatProgramCard> pr
           '💪 **Équipement pour la musculation**\n\n**Indispensables :**\n• Haltères 2×(2–12 kg)\n• Barre + disques (si espace)\n• Banc de musculation pliable\n• Élastiques lourds\n\n**En plus :**\n• Ceinture lumbaire (charges lourdes)\n• Gants de musculation\n• Straps de poignet\n\n📍 Retrouve ces produits dans la **Boutique** de l\'app',
         );
       }
+      if (m.contains('rouleau') || m.contains('foam roller') || m.contains('massage')) {
+        return const _Resp(
+          '🧴 **Rouleau de massage (Foam Roller)**\n\nIdéal pour l\'auto-massage et la récupération musculaire.\n\n**Comment l\'utiliser :**\n• Roule lentement sur le muscle (30–60s par zone)\n• Insiste sur les points douloureux (trigger points)\n• Respire profondément — ne bloque pas ta respiration\n\n**Zones clés :**\n• 🦵 Quadriceps et ischio-jambiers\n• 🍑 Fessiers et IT band (extérieur cuisse)\n• 🔙 Haut du dos (entre les omoplates)\n• 🦶 Voûte plantaire (avec une balle de tennis)\n\n**Quel rouleau ?**\n• Lisse : débutante — moins intense\n• Texturé : intermédiaire — massage profond\n• Budget : 15–35€\n\n📍 Disponible dans la **Boutique** de l\'app',
+          quickReplies: ['Étirements après le sport', 'Équipements pour débuter'],
+        );
+      }
+      if (m.contains('bouteille') || m.contains('shaker') || m.contains('gourde')) {
+        return const _Resp(
+          '💧 **Bouteille d\'eau ou Shaker ?**\n\n**Bouteille d\'eau :**\n• 💧 Pour l\'hydratation au quotidien et pendant le sport\n• Choisis **750ml–1L** en inox ou tritan (sans BPA)\n• Avec graduation pour suivre ta consommation\n• Budget : 10–25€\n\n**Shaker :**\n• 🥤 Pour les protéines en poudre / smoothies post-training\n• Avec boule mélangeuse (pas de grumeaux)\n• 500–700ml suffit\n• Budget : 8–15€\n\n💡 **Notre conseil :** Prends les deux !\n• Bouteille pour le quotidien + pendant le sport\n• Shaker pour les protéines après la séance\n\n📍 Disponibles dans la **Boutique**',
+          quickReplies: ['Combien d\'eau boire ?', 'Que manger après le sport ?'],
+        );
+      }
       return const _Resp(
         '🛍️ **Boutique FitEva**\n\nTrouve tous les équipements dont tu as besoin pour t\'entraîner.',
         quickReplies: ['Équipements pour débuter', 'Quel poids d\'haltères ?', 'Élastiques de résistance', 'Choisir un tapis de yoga'],
@@ -497,12 +595,12 @@ _Resp _generateResponse(String msg, String? categoryId, List<ChatProgramCard> pr
 }
 
 String _guessCategory(String m) {
-  if (m.contains('grossesse') || m.contains('enceinte') || m.contains('trimestre') || m.contains('prénatal')) return 'grossesse';
-  if (m.contains('post-partum') || m.contains('accouchement') || m.contains('périnée') || m.contains('allaitement')) return 'postpartum';
+  if (m.contains('grossesse') || m.contains('enceinte') || m.contains('trimestre') || m.contains('prénatal') || m.contains('nausée')) return 'grossesse';
+  if (m.contains('post-partum') || m.contains('accouchement') || m.contains('périnée') || m.contains('allaitement') || m.contains('diastasis')) return 'postpartum';
   if (m.contains('cycle') || m.contains('règles') || m.contains('lutéal') || m.contains('follicul') || m.contains('ovul')) return 'cycle';
-  if (m.contains('nutrition') || m.contains('calorie') || m.contains('manger') || m.contains('repas') || m.contains('protéine')) return 'nutrition';
-  if (m.contains('boutique') || m.contains('haltère') || m.contains('élastique') || m.contains('tapis') || m.contains('équipement')) return 'boutique';
-  if (m.contains('workout') || m.contains('programme') || m.contains('séance') || m.contains('entraîn') || m.contains('exercice')) return 'workout';
+  if (m.contains('nutrition') || m.contains('calorie') || m.contains('manger') || m.contains('repas') || m.contains('protéine') || m.contains('eau') || m.contains('hydrat') || m.contains('collation') || m.contains('snack')) return 'nutrition';
+  if (m.contains('boutique') || m.contains('haltère') || m.contains('élastique') || m.contains('tapis') || m.contains('équipement') || m.contains('rouleau') || m.contains('shaker') || m.contains('gourde')) return 'boutique';
+  if (m.contains('workout') || m.contains('programme') || m.contains('séance') || m.contains('entraîn') || m.contains('exercice') || m.contains('échauff') || m.contains('étirement') || m.contains('récupér') || m.contains('fréquence')) return 'workout';
   return 'workout';
 }
 

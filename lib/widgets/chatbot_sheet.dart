@@ -8,19 +8,16 @@ import '../providers/mock_data_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/workout/programme_detail_screen.dart';
 
-// ── Adaptive theme ────────────────────────────────────────────────────────────
-
-const _accent = Color(0xFF3DA85A); // FitEva green — same both modes
+const _green = Color(0xFF5CD57A);
 
 class _T {
   final bool dark;
-  final Color bg, surface, card, border, text1, text2, accentBg, aiBubble;
+  final Color bg, surface, text1, text2, subtle, divider;
 
   const _T._({
     required this.dark, required this.bg, required this.surface,
-    required this.card, required this.border,
     required this.text1, required this.text2,
-    required this.accentBg, required this.aiBubble,
+    required this.subtle, required this.divider,
   });
 
   factory _T.of(BuildContext ctx) =>
@@ -28,30 +25,26 @@ class _T {
 
   static const _light = _T._(
     dark: false,
-    bg:       Color.fromARGB(255, 255, 255, 255),
-    surface:  Colors.white,
-    card:     Color(0xFFEEF0F8),
-    border:   Color(0xFFE0E3EF),
-    text1:    Color(0xFF0E1117),
-    text2:    Color(0xFF6B7280),
-    accentBg: Color(0xFFE8F5EC),
-    aiBubble: Colors.white,
+    bg:      Colors.white,
+    surface: Color(0xFFF5F6F8),
+    text1:   Color(0xFF111318),
+    text2:   Color(0xFF8B92A5),
+    subtle:  Color(0xFFEEF0F4),
+    divider: Color(0xFFEBEDF2),
   );
 
   static const _dark = _T._(
     dark: true,
-    bg:       Color(0xFF0D0F15),
-    surface:  Color(0xFF161A24),
-    card:     Color(0xFF1E2334),
-    border:   Color(0xFF252D42),
-    text1:    Colors.white,
-    text2:    Color(0xFF8A96B0),
-    accentBg: Color(0xFF0D2018),
-    aiBubble: Color(0xFF1E2334),
+    bg:      Color(0xFF0E1015),
+    surface: Color(0xFF181C24),
+    text1:   Color(0xFFF0F2F5),
+    text2:   Color(0xFF6B7590),
+    subtle:  Color(0xFF1E2330),
+    divider: Color(0xFF1E2330),
   );
 }
 
-// ── Bold parser ───────────────────────────────────────────────────────────────
+// ── Bold + emoji-safe parser ─────────────────────────────────────────────────
 
 InlineSpan _parseBold(String text, TextStyle base) {
   final spans = <InlineSpan>[];
@@ -72,7 +65,9 @@ InlineSpan _parseBold(String text, TextStyle base) {
   return TextSpan(children: spans);
 }
 
-// ── ChatbotSheet ──────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ChatbotSheet
+// ═══════════════════════════════════════════════════════════════════════════════
 
 class ChatbotSheet extends ConsumerStatefulWidget {
   const ChatbotSheet({super.key});
@@ -121,7 +116,6 @@ class _State extends ConsumerState<ChatbotSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n     = ref.watch(l10nProvider);
     final t        = _T.of(context);
     final messages = ref.watch(chatProvider);
     final kbBottom = MediaQuery.of(context).viewInsets.bottom;
@@ -134,188 +128,147 @@ class _State extends ConsumerState<ChatbotSheet> {
     });
 
     return Container(
-      margin: const EdgeInsets.only(top: 56),
+      margin: const EdgeInsets.only(top: 48),
       decoration: BoxDecoration(
         color: t.bg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(children: [
-
-        // Handle
-        Center(
-          child: Container(
-            margin: const EdgeInsets.only(top: 10, bottom: 4),
-            width: 34, height: 3,
-            decoration: BoxDecoration(
-              color: t.border, borderRadius: BorderRadius.circular(2)),
-          ),
-        ),
-
-        // Header
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 16, 14),
-          child: Row(children: [
-            // Icon
-            Container(
-              width: 42, height: 42,
-              decoration: BoxDecoration(
-                color: t.accentBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _accent.withOpacity(0.35))),
-              child: const Icon(LucideIcons.wand, color: _accent, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.chatFitEvaAI, style: GoogleFonts.outfit(
-                  fontSize: 17, fontWeight: FontWeight.w800,
-                  color: t.text1, letterSpacing: -0.4)),
-                Row(children: [
-                  Container(width: 6, height: 6,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4ADE80), shape: BoxShape.circle)),
-                  const SizedBox(width: 5),
-                  Text(l10n.chatAssistante, style: GoogleFonts.inter(
-                    fontSize: 11, color: t.text2)),
-                ]),
-              ],
-            )),
-            // Back to categories
-            if (_activeCat != null)
-              GestureDetector(
-                onTap: () {
-                  if (!isEmpty) {
-                    ref.read(chatProvider.notifier).clearChat();
-                    setState(() { _typing = false; });
-                  }
-                  setState(() => _activeCat = null);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: t.card,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: t.border)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(LucideIcons.chevronLeft, size: 13, color: t.text2),
-                    const SizedBox(width: 3),
-                    Text(_activeCat!.emoji,
-                        style: const TextStyle(fontSize: 13)),
-                  ]),
-                ),
-              ),
-            // Clear
-            if (messages.isNotEmpty)
-              GestureDetector(
-                onTap: () {
-                  ref.read(chatProvider.notifier).clearChat();
-                  setState(() { _typing = false; _activeCat = null; });
-                },
-                child: Container(
-                  width: 34, height: 34,
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: t.card, borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: t.border)),
-                  child: Icon(LucideIcons.rotateCcw, size: 15, color: t.text2)),
-              ),
-            // Close
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 34, height: 34,
-                decoration: BoxDecoration(
-                  color: t.card, borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: t.border)),
-                child: Icon(LucideIcons.x, size: 16, color: t.text2)),
-            ),
-          ]),
-        ),
-
-        Container(height: 0.5, color: t.border),
+        _buildHandle(t),
+        _buildHeader(t),
 
         // Body
         Expanded(
           child: isEmpty
               ? (_activeCat == null
-                  ? _CategoryGrid(t: t, onSelect: (c) => setState(() => _activeCat = c))
-                  : _QuestionList(
-                      t: t, category: _activeCat!,
-                      onTap: (q) => _send(q, cat: _activeCat),
-                    ))
+                  ? _WelcomeView(t: t, onSelectCat: (c) => setState(() => _activeCat = c),
+                      onTapQuestion: (q, c) => _send(q, cat: c))
+                  : _QuestionList(t: t, category: _activeCat!,
+                      onTap: (q) => _send(q, cat: _activeCat)))
               : ListView.builder(
                   controller: _scroll,
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
                   itemCount: messages.length + (_typing ? 1 : 0),
                   itemBuilder: (_, i) {
-                    if (_typing && i == messages.length) {
-                      return _TypingRow(t: t);
-                    }
-                    return _Bubble(
-                      t: t,
-                      msg: messages[i],
-                      onQuickReply: _send,
-                      onProgramTap: _navToProgram,
-                    );
+                    if (_typing && i == messages.length) return _TypingRow(t: t);
+                    return _Bubble(t: t, msg: messages[i],
+                      onQuickReply: _send, onProgramTap: _navToProgram);
                   },
                 ),
         ),
 
-        // Input
+        _buildInput(t, kbBottom),
+      ]),
+    );
+  }
+
+  // ── Handle ────────────────────────────────────────────────────
+  Widget _buildHandle(_T t) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: 10, bottom: 4),
+        width: 36, height: 4,
+        decoration: BoxDecoration(
+          color: t.divider, borderRadius: BorderRadius.circular(2)),
+      ),
+    );
+  }
+
+  // ── Header ────────────────────────────────────────────────────
+  Widget _buildHeader(_T t) {
+    final l10n = ref.watch(l10nProvider);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 6, 14, 12),
+      child: Row(children: [
+        // AI logo
         Container(
-          padding: EdgeInsets.fromLTRB(16, 10, 16, kbBottom > 0 ? kbBottom + 8 : 26),
+          width: 40, height: 40,
           decoration: BoxDecoration(
-            color: t.bg,
-            border: Border(top: BorderSide(color: t.border, width: 0.5))),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 46),
-                decoration: BoxDecoration(
-                  color: t.card,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: t.border)),
-                child: TextField(
-                  controller: _ctrl,
-                  onSubmitted: (_) => _send(_ctrl.text),
-                  maxLines: 5, minLines: 1,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: GoogleFonts.inter(fontSize: 14, color: t.text1),
-                  decoration: InputDecoration(
-                    hintText: 'Pose ta question…',
-                    hintStyle: GoogleFonts.inter(fontSize: 14, color: t.text2),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 12),
-                    border: InputBorder.none,
-                  ),
-                ),
+            color: _green.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12)),
+          child: const Center(
+            child: Text('✦', style: TextStyle(fontSize: 20, color: _green))),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.chatFitEvaAI, style: GoogleFonts.outfit(
+              fontSize: 17, fontWeight: FontWeight.w800,
+              color: t.text1, letterSpacing: -0.4)),
+            Row(children: [
+              Container(width: 5, height: 5,
+                decoration: const BoxDecoration(
+                  color: _green, shape: BoxShape.circle)),
+              const SizedBox(width: 5),
+              Text('En ligne', style: GoogleFonts.inter(
+                fontSize: 11, color: _green, fontWeight: FontWeight.w600)),
+            ]),
+          ],
+        )),
+        // Actions
+        if (_activeCat != null || ref.watch(chatProvider).isNotEmpty)
+          _IconBtn(t: t, icon: LucideIcons.rotateCcw, onTap: () {
+            ref.read(chatProvider.notifier).clearChat();
+            setState(() { _typing = false; _activeCat = null; });
+          }),
+        const SizedBox(width: 6),
+        _IconBtn(t: t, icon: LucideIcons.x, onTap: () => Navigator.pop(context)),
+      ]),
+    );
+  }
+
+  // ── Input ─────────────────────────────────────────────────────
+  Widget _buildInput(_T t, double kbBottom) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, 10, 16, kbBottom > 0 ? kbBottom + 8 : 28),
+      decoration: BoxDecoration(
+        color: t.bg,
+        border: Border(top: BorderSide(color: t.divider, width: 0.5))),
+      child: Container(
+        decoration: BoxDecoration(
+          color: t.surface,
+          borderRadius: BorderRadius.circular(26),
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Expanded(
+            child: TextField(
+              controller: _ctrl,
+              onSubmitted: (_) => _send(_ctrl.text),
+              maxLines: 4, minLines: 1,
+              textCapitalization: TextCapitalization.sentences,
+              style: GoogleFonts.inter(fontSize: 14, color: t.text1),
+              decoration: InputDecoration(
+                hintText: 'Demande-moi n\'importe quoi…',
+                hintStyle: GoogleFonts.inter(fontSize: 14, color: t.text2),
+                contentPadding: const EdgeInsets.fromLTRB(20, 14, 8, 14),
+                border: InputBorder.none,
               ),
             ),
-            const SizedBox(width: 10),
-            ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _ctrl,
-              builder: (_, val, __) {
-                final active = val.text.trim().isNotEmpty;
-                return GestureDetector(
+          ),
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _ctrl,
+            builder: (_, val, __) {
+              final active = val.text.trim().isNotEmpty;
+              return Padding(
+                padding: const EdgeInsets.only(right: 5, bottom: 5),
+                child: GestureDetector(
                   onTap: active ? () => _send(_ctrl.text) : null,
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 46, height: 46,
+                    duration: const Duration(milliseconds: 200),
+                    width: 42, height: 42,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: active ? _accent : t.card,
-                      border: Border.all(color: t.border)),
+                      color: active ? _green : Colors.transparent,
+                      borderRadius: BorderRadius.circular(21)),
                     child: Icon(LucideIcons.arrowUp, size: 18,
                       color: active ? Colors.white : t.text2),
                   ),
-                );
-              },
-            ),
-          ]),
-        ),
-      ]),
+                ),
+              );
+            },
+          ),
+        ]),
+      ),
     );
   }
 
@@ -339,151 +292,204 @@ class _State extends ConsumerState<ChatbotSheet> {
   }
 }
 
-// ── Category Grid ─────────────────────────────────────────────────────────────
+// ── Small icon button ────────────────────────────────────────────────────────
 
-class _CategoryGrid extends StatelessWidget {
+class _IconBtn extends StatelessWidget {
   final _T t;
-  final void Function(AiCategory) onSelect;
-  const _CategoryGrid({required this.t, required this.onSelect});
+  final IconData icon;
+  final VoidCallback onTap;
+  const _IconBtn({required this.t, required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36, height: 36,
+        decoration: BoxDecoration(
+          color: t.surface,
+          borderRadius: BorderRadius.circular(12)),
+        child: Icon(icon, size: 16, color: t.text2),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Welcome View — greeting + horizontal category chips + top questions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _WelcomeView extends StatefulWidget {
+  final _T t;
+  final void Function(AiCategory) onSelectCat;
+  final void Function(String, AiCategory) onTapQuestion;
+  const _WelcomeView({required this.t, required this.onSelectCat,
+      required this.onTapQuestion});
+
+  @override
+  State<_WelcomeView> createState() => _WelcomeViewState();
+}
+
+class _WelcomeViewState extends State<_WelcomeView> {
+  int _selectedChip = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.t;
+    final cat = appCategories[_selectedChip];
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // ── Greeting ────────────────────────────────────────────
+        const SizedBox(height: 12),
+        Center(
+          child: Container(
+            width: 56, height: 56,
+            decoration: BoxDecoration(
+              color: _green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(18)),
+            child: const Center(
+              child: Text('✦', style: TextStyle(fontSize: 28, color: _green))),
+          ),
+        ),
+        const SizedBox(height: 16),
         Consumer(builder: (context, ref, _) {
           final l10n = ref.watch(l10nProvider);
-          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l10n.chatComment, style: GoogleFonts.outfit(
-              fontSize: 20, fontWeight: FontWeight.w800,
-              color: t.text1, letterSpacing: -0.5)),
+          return Column(children: [
+            Center(child: Text(l10n.chatComment, style: GoogleFonts.outfit(
+              fontSize: 24, fontWeight: FontWeight.w800,
+              color: t.text1, letterSpacing: -0.6))),
             const SizedBox(height: 4),
-            Text(l10n.chatChoisir,
-              style: GoogleFonts.inter(fontSize: 13, color: t.text2)),
+            Center(child: Text(l10n.chatChoisir,
+              style: GoogleFonts.inter(fontSize: 13, color: t.text2))),
           ]);
         }),
-        const SizedBox(height: 20),
-        LayoutBuilder(builder: (context, constraints) {
-          final w = constraints.maxWidth;
-          final cardW = (w - 14) / 2;
-          final cardH = cardW * 0.85;
-          return Wrap(
-            spacing: 14, runSpacing: 14,
-            children: appCategories.map((cat) => GestureDetector(
-              onTap: () => onSelect(cat),
-              child: SizedBox(
-                width: cardW, height: cardH,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
+        const SizedBox(height: 28),
+
+        // ── Category chips (horizontal scroll) ──────────────────
+        SizedBox(
+          height: 38,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: appCategories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              final c = appCategories[i];
+              final selected = i == _selectedChip;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedChip = i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
-                    color: t.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: t.border),
-                    boxShadow: [
-                      BoxShadow(
-                        color: cat.color.withOpacity(0.07),
-                        blurRadius: 10, offset: const Offset(0, 4)),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 42, height: 42,
-                        decoration: BoxDecoration(
-                          color: cat.color.withOpacity(0.13),
-                          borderRadius: BorderRadius.circular(14)),
-                        child: Center(child: Text(cat.emoji,
-                            style: const TextStyle(fontSize: 22)))),
-                      const Spacer(),
-                      Text(cat.label, style: GoogleFonts.outfit(
-                        fontSize: 15, fontWeight: FontWeight.w700,
-                        color: t.text1, letterSpacing: -0.2)),
-                      const SizedBox(height: 3),
-                      Row(children: [
-                        Container(
-                          width: 5, height: 5,
-                          margin: const EdgeInsets.only(right: 5),
-                          decoration: BoxDecoration(
-                            color: cat.color, shape: BoxShape.circle)),
-                        Text('${cat.questions.length} questions',
-                          style: GoogleFonts.inter(
-                            fontSize: 11, color: t.text2)),
-                      ]),
-                    ],
-                  ),
+                    color: selected ? _green : t.surface,
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(c.emoji, style: const TextStyle(fontSize: 15)),
+                    const SizedBox(width: 6),
+                    Text(c.label, style: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w600,
+                      color: selected ? Colors.white : t.text1)),
+                  ]),
                 ),
-              ),
-            )).toList(),
-          );
-        }),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // ── Questions for selected category ─────────────────────
+        ...cat.questions.take(4).map((q) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: GestureDetector(
+            onTap: () => widget.onTapQuestion(q, cat),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: t.surface,
+                borderRadius: BorderRadius.circular(14)),
+              child: Row(children: [
+                Expanded(child: Text(q, style: GoogleFonts.inter(
+                  fontSize: 13.5, color: t.text1,
+                  fontWeight: FontWeight.w500, height: 1.35))),
+                const SizedBox(width: 8),
+                Icon(LucideIcons.arrowRight, size: 15, color: t.text2),
+              ]),
+            ),
+          ),
+        )),
+
+        // "See all" link
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () => widget.onSelectCat(cat),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Text('Voir toutes les questions', style: GoogleFonts.inter(
+              fontSize: 12, fontWeight: FontWeight.w600, color: _green)),
+            const SizedBox(width: 4),
+            const Icon(LucideIcons.arrowRight, size: 12, color: _green),
+          ]),
+        ),
       ]),
     );
   }
 }
 
-// ── Question List ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Question List (full list for a category)
+// ═══════════════════════════════════════════════════════════════════════════════
 
 class _QuestionList extends StatelessWidget {
   final _T t;
   final AiCategory category;
   final void Function(String) onTap;
-  const _QuestionList({required this.t, required this.category, required this.onTap});
+  const _QuestionList({required this.t, required this.category,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Category header
         Row(children: [
           Container(
-            width: 42, height: 42,
+            width: 40, height: 40,
             decoration: BoxDecoration(
-              color: category.color.withOpacity(0.14),
-              borderRadius: BorderRadius.circular(14)),
+              color: category.color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12)),
             child: Center(child: Text(category.emoji,
                 style: const TextStyle(fontSize: 20)))),
           const SizedBox(width: 12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(category.label, style: GoogleFonts.outfit(
-              fontSize: 18, fontWeight: FontWeight.w800, color: t.text1)),
-            Consumer(builder: (ctx, ref, _) => Text(
-              ref.watch(l10nProvider).chatSelectionner,
-              style: GoogleFonts.inter(fontSize: 11, color: t.text2))),
-          ]),
+          Text(category.label, style: GoogleFonts.outfit(
+            fontSize: 20, fontWeight: FontWeight.w800, color: t.text1,
+            letterSpacing: -0.4)),
         ]),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+
         ...category.questions.asMap().entries.map((e) {
           final i = e.key;
           final q = e.value;
           return Padding(
             padding: EdgeInsets.only(
-                bottom: i < category.questions.length - 1 ? 10 : 0),
+                bottom: i < category.questions.length - 1 ? 8 : 0),
             child: GestureDetector(
               onTap: () => onTap(q),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: t.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: t.border)),
+                  borderRadius: BorderRadius.circular(14)),
                 child: Row(children: [
-                  Container(
-                    width: 28, height: 28,
-                    decoration: BoxDecoration(
-                      color: category.color.withOpacity(0.14),
-                      borderRadius: BorderRadius.circular(8)),
-                    child: Center(child: Text('${i + 1}',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12, fontWeight: FontWeight.w800,
-                        color: category.color)))),
-                  const SizedBox(width: 12),
                   Expanded(child: Text(q, style: GoogleFonts.inter(
-                    fontSize: 13, color: t.text1,
-                    fontWeight: FontWeight.w500, height: 1.4))),
-                  Icon(LucideIcons.chevronRight, size: 14, color: t.text2),
+                    fontSize: 13.5, color: t.text1,
+                    fontWeight: FontWeight.w500, height: 1.35))),
+                  const SizedBox(width: 8),
+                  Icon(LucideIcons.arrowRight, size: 15, color: t.text2),
                 ]),
               ),
             ),
@@ -494,7 +500,9 @@ class _QuestionList extends StatelessWidget {
   }
 }
 
-// ── Message Bubble ────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Message Bubble — AI uses left accent bar, user gets green pill
+// ═══════════════════════════════════════════════════════════════════════════════
 
 class _Bubble extends StatelessWidget {
   final _T t;
@@ -506,69 +514,59 @@ class _Bubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isUser = msg.isUser;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Column(
-        crossAxisAlignment: msg.isUser
+        crossAxisAlignment: isUser
             ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: msg.isUser
-                ? MainAxisAlignment.end : MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (!msg.isUser) ...[
-                Container(
-                  width: 28, height: 28,
-                  margin: const EdgeInsets.only(right: 8, bottom: 2),
-                  decoration: BoxDecoration(
-                    color: t.accentBg,
-                    borderRadius: BorderRadius.circular(9),
-                    border: Border.all(color: _accent.withOpacity(0.3))),
-                  child: const Icon(LucideIcons.wand,
-                      color: _accent, size: 13),
-                ),
-              ],
-              Flexible(
-                child: Container(
-                  constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.76),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: msg.isUser ? _accent : t.aiBubble,
-                    borderRadius: BorderRadius.only(
-                      topLeft:     const Radius.circular(20),
-                      topRight:    const Radius.circular(20),
-                      bottomLeft:  Radius.circular(msg.isUser ? 20 : 4),
-                      bottomRight: Radius.circular(msg.isUser ? 4 : 20),
-                    ),
-                    border: msg.isUser ? null
-                        : Border.all(color: t.border, width: 0.8),
-                    boxShadow: msg.isUser ? null : [
-                      BoxShadow(color: Colors.black.withOpacity(
-                          t.dark ? 0.15 : 0.05),
-                        blurRadius: 8, offset: const Offset(0, 2))
-                    ],
-                  ),
-                  child: RichText(
-                    text: _parseBold(msg.text, GoogleFonts.inter(
-                      fontSize: 14, height: 1.55,
-                      color: msg.isUser ? Colors.white : t.text1)),
-                  ),
+          if (isUser)
+            // ── User bubble ─────────────────────────────────────
+            Container(
+              constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.75),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+              decoration: BoxDecoration(
+                color: _green,
+                borderRadius: const BorderRadius.only(
+                  topLeft:     Radius.circular(20),
+                  topRight:    Radius.circular(20),
+                  bottomLeft:  Radius.circular(20),
+                  bottomRight: Radius.circular(6)),
+              ),
+              child: Text(msg.text, style: GoogleFonts.inter(
+                fontSize: 14, height: 1.5, color: Colors.white)),
+            )
+          else
+            // ── AI message — accent bar on left ─────────────────
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                width: 3,
+                margin: const EdgeInsets.only(top: 4),
+                constraints: const BoxConstraints(minHeight: 20),
+                decoration: BoxDecoration(
+                  color: _green,
+                  borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: RichText(
+                  text: _parseBold(msg.text, GoogleFonts.inter(
+                    fontSize: 14, height: 1.6, color: t.text1)),
                 ),
               ),
-            ],
-          ),
+            ]),
 
-          // Quick replies — horizontal scroll
-          if (!msg.isUser && msg.quickReplies.isNotEmpty) ...[
-            const SizedBox(height: 10),
+          // Quick replies
+          if (!isUser && msg.quickReplies.isNotEmpty) ...[
+            const SizedBox(height: 12),
             SizedBox(
               height: 36,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(left: 36, right: 16),
+                padding: const EdgeInsets.only(left: 17),
                 itemCount: msg.quickReplies.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (_, i) {
@@ -577,15 +575,13 @@ class _Bubble extends StatelessWidget {
                     onTap: () => onQuickReply(r),
                     child: Container(
                       alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: t.accentBg,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _accent.withOpacity(0.35))),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: _green.withOpacity(0.4))),
                       child: Text(r, style: GoogleFonts.inter(
                         fontSize: 12, fontWeight: FontWeight.w600,
-                        color: _accent)),
+                        color: _green)),
                     ),
                   );
                 },
@@ -594,13 +590,13 @@ class _Bubble extends StatelessWidget {
           ],
 
           // Program cards
-          if (!msg.isUser && msg.programCards.isNotEmpty) ...[
-            const SizedBox(height: 10),
+          if (!isUser && msg.programCards.isNotEmpty) ...[
+            const SizedBox(height: 12),
             SizedBox(
               height: 155,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(left: 36),
+                padding: const EdgeInsets.only(left: 17),
                 separatorBuilder: (_, __) => const SizedBox(width: 10),
                 itemCount: msg.programCards.length,
                 itemBuilder: (_, i) => _ProgramCard(
@@ -611,10 +607,10 @@ class _Bubble extends StatelessWidget {
           ],
 
           // Workout card
-          if (!msg.isUser && msg.workout != null) ...[
-            const SizedBox(height: 10),
+          if (!isUser && msg.workout != null) ...[
+            const SizedBox(height: 12),
             Padding(
-              padding: const EdgeInsets.only(left: 36),
+              padding: const EdgeInsets.only(left: 17),
               child: _WorkoutCard(t: t, workout: msg.workout!),
             ),
           ],
@@ -624,7 +620,9 @@ class _Bubble extends StatelessWidget {
   }
 }
 
-// ── Generated Workout Card ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Workout Card
+// ═══════════════════════════════════════════════════════════════════════════════
 
 class _WorkoutCard extends StatefulWidget {
   final _T t;
@@ -644,38 +642,30 @@ class _WorkoutCardState extends State<_WorkoutCard> {
     return Container(
       decoration: BoxDecoration(
         color: t.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: t.border)),
+        borderRadius: BorderRadius.circular(16)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Header
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: t.accentBg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
+            color: _green.withOpacity(0.08),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
           child: Row(children: [
-            const Icon(LucideIcons.dumbbell, color: _accent, size: 18),
+            const Icon(LucideIcons.dumbbell, color: _green, size: 18),
             const SizedBox(width: 10),
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(w.title, style: GoogleFonts.outfit(
-                fontSize: 15, fontWeight: FontWeight.w800,
+                fontSize: 14, fontWeight: FontWeight.w800,
                 color: t.text1, letterSpacing: -0.3)),
               Text(w.subtitle, style: GoogleFonts.inter(
                 fontSize: 11, color: t.text2)),
             ])),
             GestureDetector(
               onTap: () => setState(() => _expanded = !_expanded),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _accent.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(10)),
-                child: Text(_expanded ? 'Réduire' : 'Voir tout',
-                  style: GoogleFonts.inter(
-                    fontSize: 11, fontWeight: FontWeight.w700,
-                    color: _accent)),
-              ),
+              child: Text(_expanded ? 'Réduire' : 'Voir tout',
+                style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w700, color: _green)),
             ),
           ]),
         ),
@@ -690,7 +680,7 @@ class _WorkoutCardState extends State<_WorkoutCard> {
                   ? s.exercises : s.exercises.take(2).toList();
               return Padding(
                 padding: EdgeInsets.only(
-                    bottom: i < w.sections.length - 1 ? 14 : 0),
+                    bottom: i < w.sections.length - 1 ? 12 : 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
@@ -698,27 +688,20 @@ class _WorkoutCardState extends State<_WorkoutCard> {
                       fontSize: 13, fontWeight: FontWeight.w700,
                       color: t.text1)),
                     const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: t.accentBg,
-                        borderRadius: BorderRadius.circular(8)),
-                      child: Text(s.duration, style: GoogleFonts.inter(
-                        fontSize: 10, fontWeight: FontWeight.w600,
-                        color: _accent)),
-                    ),
+                    Text(s.duration, style: GoogleFonts.inter(
+                      fontSize: 10, fontWeight: FontWeight.w600,
+                      color: _green)),
                   ]),
                   const SizedBox(height: 8),
                   ...exercises.map((ex) => Padding(
-                    padding: const EdgeInsets.only(bottom: 5),
+                    padding: const EdgeInsets.only(bottom: 4),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(width: 5, height: 5,
-                          margin: const EdgeInsets.only(top: 5, right: 8),
+                        Container(width: 4, height: 4,
+                          margin: const EdgeInsets.only(top: 6, right: 8),
                           decoration: const BoxDecoration(
-                            color: _accent, shape: BoxShape.circle)),
+                            color: _green, shape: BoxShape.circle)),
                         Expanded(child: Text(ex, style: GoogleFonts.inter(
                           fontSize: 12, color: t.text1, height: 1.4))),
                       ]),
@@ -738,7 +721,9 @@ class _WorkoutCardState extends State<_WorkoutCard> {
   }
 }
 
-// ── Program Card ──────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Program Card
+// ═══════════════════════════════════════════════════════════════════════════════
 
 class _ProgramCard extends StatelessWidget {
   final ChatProgramCard card;
@@ -750,15 +735,15 @@ class _ProgramCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 160,
+        width: 150,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: [BoxShadow(
-            color: Colors.black.withOpacity(0.20),
-            blurRadius: 12, offset: const Offset(0, 4))],
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           child: Stack(fit: StackFit.expand, children: [
             Image.asset(card.imageUrl, fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(color: card.color)),
@@ -771,19 +756,18 @@ class _ProgramCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
-                    borderRadius: BorderRadius.circular(7)),
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6)),
                   child: Text(card.category, style: const TextStyle(
                     color: Colors.white, fontSize: 9,
                     fontWeight: FontWeight.w700))),
                 const Spacer(),
-                Text(card.name, style: const TextStyle(
+                Text(card.name, style: GoogleFonts.outfit(
                   color: Colors.white, fontSize: 13,
                   fontWeight: FontWeight.w800)),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(card.duration, style: const TextStyle(
                   color: Colors.white70, fontSize: 10)),
                 const SizedBox(height: 8),
@@ -792,7 +776,7 @@ class _ProgramCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(9)),
+                    borderRadius: BorderRadius.circular(8)),
                   child: Text('Voir', textAlign: TextAlign.center,
                     style: TextStyle(color: card.color, fontSize: 11,
                       fontWeight: FontWeight.w700))),
@@ -804,7 +788,9 @@ class _ProgramCard extends StatelessWidget {
   }
 }
 
-// ── Typing indicator ──────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Typing indicator
+// ═══════════════════════════════════════════════════════════════════════════════
 
 class _TypingRow extends StatelessWidget {
   final _T t;
@@ -813,35 +799,24 @@ class _TypingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
-          width: 28, height: 28,
-          margin: const EdgeInsets.only(right: 8, bottom: 2),
+          width: 3,
+          height: 24,
+          margin: const EdgeInsets.only(top: 4),
           decoration: BoxDecoration(
-            color: t.accentBg,
-            borderRadius: BorderRadius.circular(9),
-            border: Border.all(color: _accent.withOpacity(0.3))),
-          child: const Icon(LucideIcons.wand, color: _accent, size: 13),
+            color: _green,
+            borderRadius: BorderRadius.circular(2)),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          decoration: BoxDecoration(
-            color: t.aiBubble,
-            border: Border.all(color: t.border, width: 0.8),
-            borderRadius: const BorderRadius.only(
-              topLeft:     Radius.circular(20),
-              topRight:    Radius.circular(20),
-              bottomLeft:  Radius.circular(4),
-              bottomRight: Radius.circular(20))),
-          child: const _Dots(),
-        ),
+        const SizedBox(width: 14),
+        const _Dots(),
       ]),
     );
   }
 }
 
-// ── Animated dots ─────────────────────────────────────────────────────────────
+// ── Animated dots ────────────────────────────────────────────────────────────
 
 class _Dots extends StatefulWidget {
   const _Dots();
@@ -869,7 +844,9 @@ class _DotsState extends State<_Dots> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    for (final c in _ctrls) c.dispose();
+    for (final c in _ctrls) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -885,7 +862,7 @@ class _DotsState extends State<_Dots> with TickerProviderStateMixin {
               width: 6, height: 6,
               margin: EdgeInsets.only(right: i < 2 ? 5 : 0),
               decoration: const BoxDecoration(
-                color: _accent, shape: BoxShape.circle)),
+                color: _green, shape: BoxShape.circle)),
           ),
         ),
     ]);
