@@ -71,13 +71,10 @@ enum OStep {
   languageChoice,
   intro,
   welcome,
-  goals,
-  fitnessLevel,
-  equipment,
-  trainingLocation,
-  frequency,
+  coachChat,
   healthProfile,
   cycleAndPregnancy,
+  buildingPlan,
   avatar,
 }
 
@@ -112,36 +109,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     OStep.intro,
     OStep.welcome,
     OStep.languageChoice,
-    OStep.goals,
-    OStep.fitnessLevel,
-    OStep.equipment,
-    OStep.trainingLocation,
-    OStep.frequency,
+    OStep.coachChat,
     OStep.healthProfile,
     OStep.cycleAndPregnancy,
+    OStep.buildingPlan,
     OStep.avatar,
   ];
 
-  // Sous-ensemble linéaire utilisé pour calculer la fraction de la progress bar.
   static const List<OStep> _progressSteps = [
     OStep.intro,
     OStep.welcome,
     OStep.languageChoice,
-    OStep.goals,
-    OStep.fitnessLevel,
-    OStep.equipment,
-    OStep.trainingLocation,
-    OStep.frequency,
+    OStep.coachChat,
     OStep.healthProfile,
     OStep.cycleAndPregnancy,
+    OStep.buildingPlan,
     OStep.avatar,
   ];
-
-  double get _progress {
-    final idx = _progressSteps.indexOf(_current);
-    if (idx <= 0) return 0.0;
-    return idx / (_progressSteps.length - 1);
-  }
 
   // ── Navigation ────────────────────────────────────────────────────────────
 
@@ -149,15 +133,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     switch (current) {
       case OStep.intro:             return OStep.welcome;
       case OStep.welcome:           return OStep.languageChoice;
-      case OStep.languageChoice:    return OStep.goals;
-      case OStep.goals:             return OStep.fitnessLevel;
-      case OStep.fitnessLevel:      return OStep.equipment;
-      case OStep.equipment:         return OStep.trainingLocation;
-      case OStep.trainingLocation:  return OStep.frequency;
-      case OStep.frequency:         return OStep.healthProfile;
+      case OStep.languageChoice:    return OStep.coachChat;
+      case OStep.coachChat:         return OStep.healthProfile;
       case OStep.healthProfile:     return OStep.cycleAndPregnancy;
-      case OStep.cycleAndPregnancy: return OStep.avatar;
-      case OStep.avatar:            return OStep.avatar; // finish
+      case OStep.cycleAndPregnancy: return OStep.buildingPlan;
+      case OStep.buildingPlan:      return OStep.avatar;
+      case OStep.avatar:            return OStep.avatar;
     }
   }
 
@@ -355,9 +336,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             children:     _buildPages(),
           ),
 
-          // ── Progress bar — cachée sur l'intro ─────────────────────────────
-          if (_current != OStep.intro)
-            _ProgressBar(progress: _progress),
+          // ── Progress bar — cachée sur l'intro et buildingPlan ────────────
+          if (_current != OStep.intro && _current != OStep.buildingPlan)
+            _ProgressBar(
+              currentStep: _progressSteps.indexOf(_current) + 1,
+              totalSteps: _progressSteps.length,
+            ),
         ],
       ),
     );
@@ -387,51 +371,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       },
     ),
 
-    // 3 — Goals
-    StepGoals(
-      selectedGoals:  _data.goals,
-      onBack:         _goBack,
-      onToggleGoal:   (g) => setState(() =>
-        _data.goals.contains(g) ? _data.goals.remove(g) : _data.goals.add(g)),
-      onNext:         _goNext,
+    // 3 — Coach Chat (goals + fitness + equipment + location + frequency)
+    StepCoachChat(
+      data: _data,
+      onBack: _goBack,
+      onGoalSelected: (g) => setState(() {
+        _data.goals.clear();
+        _data.goals.add(g);
+      }),
+      onFitnessChanged: (v) => setState(() => _data.fitnessLevel = v),
+      onEquipmentToggled: (item) => setState(() {
+        if (item == 'Aucun matériel') {
+          _data.equipment.clear();
+          _data.equipment.add(item);
+        } else {
+          _data.equipment.remove('Aucun matériel');
+          _data.equipment.contains(item)
+              ? _data.equipment.remove(item)
+              : _data.equipment.add(item);
+        }
+      }),
+      onLocationChanged: (v) => setState(() => _data.trainingLocation = v),
+      onFrequencyChanged: (v) => setState(() => _data.frequency = v),
+      onDone: _goNext,
     ),
 
-    // 3 — Fitness level
-    StepFitnessLevel(
-      selectedLevel: _data.fitnessLevel,
-      onBack:        _goBack,
-      onChanged:     (v) => setState(() => _data.fitnessLevel = v),
-      onNext:        _goNext,
-    ),
-
-    // 4 — Equipment
-    StepEquipment(
-      selectedEquipment:  _data.equipment,
-      onBack:             _goBack,
-      onToggleEquipment:  (item) => setState(() =>
-        _data.equipment.contains(item)
-            ? _data.equipment.remove(item)
-            : _data.equipment.add(item)),
-      onNext:             _goNext,
-    ),
-
-    // 5 — Training location
-    StepTrainingLocation(
-      selectedLocation: _data.trainingLocation,
-      onBack:           _goBack,
-      onChanged:        (v) => setState(() => _data.trainingLocation = v),
-      onNext:           _goNext,
-    ),
-
-    // 6 — Frequency
-    StepFrequency(
-      selectedFrequency: _data.frequency,
-      onBack:            _goBack,
-      onChanged:         (v) => setState(() => _data.frequency = v),
-      onNext:            _goNext,
-    ),
-
-    // 7 — Health profile (height / weight / age)
+    // 4 — Health profile (height / weight / age)
     StepHealthProfile(
       onNext:            _goNext,
       onBack:            _goBack,
@@ -455,7 +420,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onPpDurationChanged:    (v) => setState(() => _data.ppDuration    = v),
     ),
 
-    // 9 — Mascotte
+    // 9 — Building plan animation
+    StepBuildingPlan(
+      data: _data,
+      onDone: _goNext,
+    ),
+
+    // 10 — Mascotte
     StepAvatar(
       userName: _data.username.isNotEmpty ? _data.username : 'fiteva',
       onBack:   _goBack,
@@ -471,47 +442,43 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Segmented progress strip — premium step indicator
+// Quick Setup progress bar — smooth animated bar + branding
 // ─────────────────────────────────────────────────────────────────────────────
 class _ProgressBar extends StatelessWidget {
-  final double progress;
-  const _ProgressBar({required this.progress});
-
-  static const _totalSteps = 11;
+  final int currentStep;
+  final int totalSteps;
+  const _ProgressBar({required this.currentStep, required this.totalSteps});
 
   @override
   Widget build(BuildContext context) {
-    final currentStep = (progress * (_totalSteps - 1)).round();
     return Positioned(
       top: 0, left: 0, right: 0,
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
           child: Row(
-            children: List.generate(_totalSteps, (i) {
-              final done = i <= currentStep;
-              final isCurrent = i == currentStep;
-              return Expanded(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  height: isCurrent ? 4 : 2.5,
-                  margin: EdgeInsets.only(right: i < _totalSteps - 1 ? 3 : 0),
-                  decoration: BoxDecoration(
-                    color: done
-                        ? const Color(0xFF7ABB98)
-                        : const Color(0xFF2A3D30),
-                    borderRadius: BorderRadius.circular(2),
-                    boxShadow: isCurrent
-                        ? [BoxShadow(
-                            color: const Color(0xFF7ABB98).withValues(alpha: 0.5),
-                            blurRadius: 6)]
-                        : [],
-                  ),
+            children: [
+              const Text(
+                'Quick setup',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF8E8E93),
                 ),
-              );
-            }),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$currentStep / $totalSteps',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2D8B55),
+                ),
+              ),
+            ],
           ),
         ),
       ),
