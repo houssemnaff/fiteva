@@ -129,9 +129,10 @@ class _HeaderContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark   = Theme.of(context).brightness == Brightness.dark;
-    final resolvedBg    = isDark ? const Color.fromARGB(255, 0, 0, 0) : bgColor;
-    final resolvedText1 = isDark ? Colors.white : const Color.fromARGB(255, 0, 0, 0);
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final resolvedBg    = isDark ? cs.surface : bgColor;
+    final resolvedText1 = cs.onSurface;
     final mascot = ref.watch(mascotProvider);
     return Container(
       color: resolvedBg,

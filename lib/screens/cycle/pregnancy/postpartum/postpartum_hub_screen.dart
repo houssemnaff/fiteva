@@ -94,7 +94,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
   Color get _phaseColor {
     if (_weeks < 2)  return const Color(0xFFE58F8A);
     if (_weeks < 6)  return const Color(0xFFF4A940);
-    if (_weeks < 12) return const Color(0xFF7ABB98);
+    if (_weeks < 12) return Theme.of(context).colorScheme.primary;
     if (_weeks < 26) return Theme.of(context).colorScheme.primary;
     if (_weeks < 52) return Theme.of(context).colorScheme.primary;
     return const Color(0xFF5A7A9E);
@@ -535,19 +535,20 @@ class _RecoveryTimeline extends StatelessWidget {
 
   const _RecoveryTimeline({required this.weeks, required this.p});
 
-  static const _phases = [
-    ('Repos', 0, 2, Color(0xFFE58F8A)),
-    ('Reconstruction', 2, 6, Color(0xFFF4A940)),
-    ('Renforcement', 6, 12, Color(0xFF7ABB98)),
-    ('Retour actif', 12, 26, Color(0xFF1C4D30)),
-    ('Stabilisation', 26, 52, Color(0xFF5A7A9E)),
+  static List<(String, int, int, Color)> _phasesOf(Color accent) => [
+    ('Repos', 0, 2, const Color(0xFFE58F8A)),
+    ('Reconstruction', 2, 6, const Color(0xFFF4A940)),
+    ('Renforcement', 6, 12, accent),
+    ('Retour actif', 12, 26, Color.lerp(accent, Colors.black, 0.35)!),
+    ('Stabilisation', 26, 52, const Color(0xFF5A7A9E)),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final phases = _phasesOf(Theme.of(context).colorScheme.primary);
     int activeIdx = 0;
-    for (int i = 0; i < _phases.length; i++) {
-      if (weeks >= _phases[i].$2) activeIdx = i;
+    for (int i = 0; i < phases.length; i++) {
+      if (weeks >= phases[i].$2) activeIdx = i;
     }
 
     return Container(
@@ -562,14 +563,14 @@ class _RecoveryTimeline extends StatelessWidget {
           fontSize: 9, fontWeight: FontWeight.w700,
           color: p.textSoft, letterSpacing: 1.8)),
         const SizedBox(height: 14),
-        Row(children: List.generate(_phases.length, (i) {
-          final (_, start, end, color) = _phases[i];
+        Row(children: List.generate(phases.length, (i) {
+          final (_, start, end, color) = phases[i];
           final isActive = i == activeIdx;
           final isPast = i < activeIdx;
           return Expanded(
             flex: end - start,
             child: Container(
-              margin: EdgeInsets.only(right: i < _phases.length - 1 ? 3 : 0),
+              margin: EdgeInsets.only(right: i < phases.length - 1 ? 3 : 0),
               height: isActive ? 8 : 5,
               decoration: BoxDecoration(
                 color: isPast || isActive
@@ -588,7 +589,7 @@ class _RecoveryTimeline extends StatelessWidget {
               fontSize: 9, color: p.textSoft)),
             Text('S$weeks', style: GoogleFonts.inter(
               fontSize: 9, fontWeight: FontWeight.w700,
-              color: _phases[activeIdx].$4)),
+              color: phases[activeIdx].$4)),
             Text('S52', style: GoogleFonts.inter(
               fontSize: 9, color: p.textSoft)),
           ],
@@ -862,11 +863,11 @@ class _RecoveryTipsCarouselState extends State<_RecoveryTipsCarousel> {
   final _controller = PageController();
   int _page = 0;
 
-  static const _categories = [
-    ('Nutrition', LucideIcons.apple, Color(0xFF7ABB98)),
-    ('Exercice', LucideIcons.dumbbell, Color(0xFF1C4D30)),
-    ('Repos', LucideIcons.moon, Color(0xFFF4A940)),
-    ('Mental', LucideIcons.brain, Color(0xFFE58F8A)),
+  static List<(String, IconData, Color)> _categoriesOf(Color accent) => [
+    ('Nutrition', LucideIcons.apple, accent),
+    ('Exercice', LucideIcons.dumbbell, Color.lerp(accent, Colors.black, 0.35)!),
+    ('Repos', LucideIcons.moon, const Color(0xFFF4A940)),
+    ('Mental', LucideIcons.brain, const Color(0xFFE58F8A)),
   ];
 
   static const _tipsByPhase = <int, List<String>>{
@@ -916,6 +917,7 @@ class _RecoveryTipsCarouselState extends State<_RecoveryTipsCarousel> {
   @override
   Widget build(BuildContext context) {
     final p = widget.p;
+    final categories = _categoriesOf(Theme.of(context).colorScheme.primary);
     final tips = _tipsByPhase[_phaseIdx]!;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -927,10 +929,10 @@ class _RecoveryTipsCarouselState extends State<_RecoveryTipsCarousel> {
         height: 120,
         child: PageView.builder(
           controller: _controller,
-          itemCount: _categories.length,
+          itemCount: categories.length,
           onPageChanged: (i) => setState(() => _page = i),
           itemBuilder: (context, i) {
-            final (name, icon, color) = _categories[i];
+            final (name, icon, color) = categories[i];
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.all(16),
@@ -969,7 +971,7 @@ class _RecoveryTipsCarouselState extends State<_RecoveryTipsCarousel> {
       const SizedBox(height: 10),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(_categories.length, (i) =>
+        children: List.generate(categories.length, (i) =>
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.symmetric(horizontal: 3),

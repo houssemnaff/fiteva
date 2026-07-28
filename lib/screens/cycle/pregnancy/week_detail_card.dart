@@ -19,7 +19,7 @@ class WeekDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = data.threadColor;
+    final color = data.threadColorOf(context);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),

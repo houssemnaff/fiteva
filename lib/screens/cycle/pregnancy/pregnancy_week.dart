@@ -29,35 +29,19 @@ class PregnancyWeekData {
   }
 
   String get sizeLabel => '${lengthCm.toStringAsFixed(1)} cm · $weightLabel';
-Color get threadColor {
-  if (week <= 13) {
-    final t = (week - 1) / 12.0;
-
-    return Color.lerp(
-      const Color(0xFF1C4D30), // deep primary green
-      const Color(0xFF4F7D66), // balanced forest green
-      t,
-    )!;
-  } else if (week <= 27) {
-    final t = (week - 14) / 13.0;
-
-    return Color.lerp(
-      const Color(0xFF1C4D30), // deep primary green
-      const Color(0xFF4F7D66), // balanced forest green
-      t,
-    )!;
-  } else {
-    final t = (week - 28) / 12.0;
-
-    return Color.lerp(
-        const Color(0xFF1C4D30), // deep primary green
-      const Color(0xFF4F7D66), // balanced forest green
-      t,
-    )!;
-  }
+Color threadColorOf(BuildContext c) {
+  final accent = Theme.of(c).colorScheme.primary;
+  final deep = Color.lerp(accent, Colors.black, 0.35)!;
+  final mid  = Color.lerp(accent, Colors.grey, 0.25)!;
+  final progress = week <= 13
+      ? (week - 1) / 12.0
+      : week <= 27
+          ? (week - 14) / 13.0
+          : (week - 28) / 12.0;
+  return Color.lerp(deep, mid, progress)!;
 }
 
-  Color get glowColor => threadColor.withOpacity(0.4);
+  Color glowColorOf(BuildContext c) => threadColorOf(c).withValues(alpha: 0.4);
 }
 
 class PregnancyDataRepository {

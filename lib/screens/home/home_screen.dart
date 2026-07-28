@@ -75,8 +75,6 @@ class HomeScreen extends ConsumerWidget {
 
           SliverToBoxAdapter(child: _ContinueWorkoutsSection(programs: allPrograms)),
 
-          const SliverToBoxAdapter(child: ReferralCard()),
-
           const SliverToBoxAdapter(child: SizedBox(height: 110)),
         ],
       ),
@@ -533,82 +531,68 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
 
           const SizedBox(height: 20),
 
-          // Day pills — clean segmented control
+          // Day pills — individual ovals in a flat row
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: List.generate(plans.length, (i) {
-                  final plan = plans[i];
-                  final isSel = _selectedDay == i;
-                  final isPast = plan.isPast;
-                  final dotColor = plan.isMissed
-                      ? const Color(0xFFE0703C)
-                      : isPast
-                          ? cs.onSurface.withValues(alpha: 0.15)
-                          : _statusColor(plan, cs);
-                  final hasProgram = plan.program != null;
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(plans.length, (i) {
+                final plan = plans[i];
+                final isSel = _selectedDay == i;
+                final hasProgram = plan.program != null;
+                final dotColor = plan.isMissed
+                    ? const Color(0xFFE0703C)
+                    : plan.isPast
+                        ? cs.onSurface.withValues(alpha: 0.15)
+                        : _statusColor(plan, cs);
 
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedDay = i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSel ? cs.surface : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: isSel
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.06),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  )
-                                ]
-                              : [],
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              plan.dayShort,
-                              style: GoogleFonts.inter(
-                                color: isSel ? cs.primary : cs.onSurfaceVariant,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${plan.date.day}',
-                              style: GoogleFonts.outfit(
-                                color: isSel ? cs.onSurface : cs.onSurfaceVariant,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Container(
-                              width: 5, height: 5,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: hasProgram ? dotColor : Colors.transparent,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                const _tinyLabels = ['L', 'Ma', 'Me', 'J', 'V', 'S', 'D'];
+                final label = _tinyLabels[plan.weekdayIndex];
+
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedDay = i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 44, height: 70,
+                    decoration: BoxDecoration(
+                      color: isSel ? cs.primary : cs.surfaceContainerHighest.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(22),
                     ),
-                  );
-                }),
-              ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          label,
+                          style: GoogleFonts.inter(
+                            color: isSel ? cs.surface : cs.onSurfaceVariant,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${plan.date.day}',
+                          style: GoogleFonts.outfit(
+                            color: isSel ? cs.surface : cs.onSurface,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          width: 5, height: 5,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSel
+                                ? (hasProgram ? cs.surface : Colors.transparent)
+                                : (hasProgram ? dotColor : Colors.transparent),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             ),
           ),
 

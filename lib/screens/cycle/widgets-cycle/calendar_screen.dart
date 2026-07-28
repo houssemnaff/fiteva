@@ -11,7 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 // ── Couleurs fixes (identiques light/dark) ────────────────────────────────────
 Color _kGreen(BuildContext c) => Theme.of(c).colorScheme.primary;
 const _kRed       = Color(0xFFD94F6B);
-const _kOvulation = Color(0xFF7ABB98);
+Color _kOvulation(BuildContext c) => Theme.of(c).colorScheme.primary;
 
 const _weekDays   = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const _monthNames = [
@@ -329,7 +329,7 @@ class _CycleCalendarState extends ConsumerState<CycleCalendar> {
           Row(children: [
             _legendChip(cc, color: _kRed,       label: l10n.calRegles,    filled: true),
             const SizedBox(width: 8),
-            _legendChip(cc, color: _kOvulation, label: l10n.calOvulation, filled: false),
+            _legendChip(cc, color: _kOvulation(context), label: l10n.calOvulation, filled: false),
           ]),
         ],
       ),
@@ -757,9 +757,9 @@ class _DayCircle extends StatelessWidget {
       return Container(
         width: 38, height: 38,
         decoration: BoxDecoration(
-          color: _kOvulation.withOpacity(cc.isDark ? 0.18 : 0.13),
+          color: _kOvulation(context).withOpacity(cc.isDark ? 0.18 : 0.13),
           shape: BoxShape.circle,
-          border: Border.all(color: _kOvulation, width: 1.8),
+          border: Border.all(color: _kOvulation(context), width: 1.8),
         ),
         child: Center(child: Text(label, style: GoogleFonts.inter(
           fontSize: 13, fontWeight: FontWeight.w600,

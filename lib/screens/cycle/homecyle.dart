@@ -76,7 +76,8 @@ class CycleTheme {
   const CycleTheme({required this.gradient, required this.primary, required this.glow});
 }
 
-CycleTheme getTheme(int day, {int cycleDays = 28}) {
+CycleTheme getTheme(int day, {int cycleDays = 28, Color? accent}) {
+  final a = accent ?? const Color(0xFF7ABB98);
   final phase = phaseForDay(day, cycleDays: cycleDays);
   switch (phase.name) {
     case 'Règles':
@@ -86,22 +87,24 @@ CycleTheme getTheme(int day, {int cycleDays = 28}) {
         glow: Color(0x55E58F8A),
       );
     case 'Folliculaire':
-      return const CycleTheme(
-        gradient: [Color(0xFF7ABB98), Color(0xFF5FAE87), Color(0xFFBFE6D2)],
-        primary: Color(0xFF7ABB98),
-        glow: Color(0x557ABB98),
+      return CycleTheme(
+        gradient: [a, a.withValues(alpha: 0.75), a.withValues(alpha: 0.45)],
+        primary: a,
+        glow: a.withValues(alpha: 0.33),
       );
     case 'Ovulation':
-      return const CycleTheme(
-        gradient: [Color(0xFF1C4D30), Color(0xFF2E6B45), Color(0xFF4A8F66)],
-        primary: Color(0xFF1C4D30),
-        glow: Color(0x551C4D30),
+      final deep = Color.lerp(a, Colors.black, 0.35)!;
+      return CycleTheme(
+        gradient: [deep, Color.lerp(a, Colors.black, 0.2)!, a],
+        primary: deep,
+        glow: deep.withValues(alpha: 0.33),
       );
     default:
-      return const CycleTheme(
-        gradient: [Color(0xFFA7B8AD), Color(0xFF8FA79A), Color(0xFFD6E2DB)],
-        primary: Color(0xFFA7B8AD),
-        glow: Color(0x55A7B8AD),
+      final muted = Color.lerp(a, Colors.grey, 0.5)!;
+      return CycleTheme(
+        gradient: [muted, muted.withValues(alpha: 0.75), muted.withValues(alpha: 0.45)],
+        primary: muted,
+        glow: muted.withValues(alpha: 0.33),
       );
   }
 }
@@ -318,7 +321,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
     // les plages de phases — sinon les phases affichées sont fausses pour
     // tout cycle qui n'est pas exactement 28 jours.
     final cycleDays = ref.watch(userProfileProvider).cycleDays;
-    final theme = getTheme(_currentDay, cycleDays: cycleDays);
+    final theme = getTheme(_currentDay, cycleDays: cycleDays, accent: Theme.of(context).colorScheme.primary);
     final phase = phaseForDay(_currentDay, cycleDays: cycleDays);
 
     return Scaffold(
@@ -943,6 +946,7 @@ class _CircularRing extends StatelessWidget {
         painter: _RingPainter(
           day: day, total: total,
           colors: ringColors, primary: ringPrimary,
+          accent: Theme.of(context).colorScheme.primary,
         ),
         child: Center(
           child: isLate
@@ -1003,10 +1007,12 @@ class _RingPainter extends CustomPainter {
   final int day, total;
   final List<Color> colors;
   final Color primary;
+  final Color accent;
 
   const _RingPainter({
     required this.day, required this.total,
     required this.colors, required this.primary,
+    required this.accent,
   });
 
   @override
@@ -1018,13 +1024,7 @@ class _RingPainter extends CustomPainter {
     const gap = 0.04; // gap between phase arcs in radians
     final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r);
 
-    final phases = phasesForCycleDays(total);
-    final phaseColors = {
-      'Règles': const Color(0xFFE58F8A),
-      'Folliculaire': const Color(0xFF7ABB98),
-      'Ovulation': const Color(0xFF1C4D30),
-      'Lutéale': const Color(0xFFA7B8AD),
-    };
+    final phases = phasesForCycleDays(total, accent: accent);
 
     // Draw phase arcs as background
     for (final phase in phases) {
@@ -1033,7 +1033,7 @@ class _RingPainter extends CustomPainter {
       final endDay = phase.days.last;
       final startAngle = -pi / 2 + ((startDay - 1) / total) * 2 * pi + gap / 2;
       final sweepAngle = ((endDay - startDay + 1) / total) * 2 * pi - gap;
-      final color = phaseColors[phase.name] ?? primary;
+      final color = phase.color;
 
       canvas.drawArc(rect, startAngle, sweepAngle, false, Paint()
         ..style = PaintingStyle.stroke
@@ -1052,7 +1052,7 @@ class _RingPainter extends CustomPainter {
       final clampedEnd = day < endDay ? day : endDay;
       final startAngle = -pi / 2 + ((startDay - 1) / total) * 2 * pi + gap / 2;
       final sweepAngle = ((clampedEnd - startDay + 1) / total) * 2 * pi - gap;
-      final color = phaseColors[phase.name] ?? primary;
+      final color = phase.color;
 
       canvas.drawArc(rect, startAngle, sweepAngle.clamp(0.01, 2 * pi), false, Paint()
         ..style = PaintingStyle.stroke
@@ -1490,13 +1490,8 @@ class _CycleTimelineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final phases = phasesForCycleDays(cycleDays);
-    final phaseColors = {
-      'Règles': const Color(0xFFE58F8A),
-      'Folliculaire': const Color(0xFF7ABB98),
-      'Ovulation': const Color(0xFF1C4D30),
-      'Lutéale': const Color(0xFFA7B8AD),
-    };
+    final accent = Theme.of(context).colorScheme.primary;
+    final phases = phasesForCycleDays(cycleDays, accent: accent);
 
     final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     String periodLabel = '—';
@@ -1533,7 +1528,7 @@ class _CycleTimelineBanner extends StatelessWidget {
             child: Row(
               children: phases.map((p) {
                 final fraction = p.days.length / cycleDays;
-                final color = phaseColors[p.name] ?? theme.primary;
+                final color = p.color;
                 final isCurrent = p.days.contains(currentDay);
                 return Expanded(
                   flex: (fraction * 100).round().clamp(1, 100),
@@ -1554,7 +1549,7 @@ class _CycleTimelineBanner extends StatelessWidget {
         Row(
           children: phases.map((p) {
             final fraction = p.days.length / cycleDays;
-            final color = phaseColors[p.name] ?? theme.primary;
+            final color = p.color;
             final isCurrent = p.days.contains(currentDay);
             return Expanded(
               flex: (fraction * 100).round().clamp(1, 100),

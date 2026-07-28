@@ -104,6 +104,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passCtrl  = TextEditingController();
 
+  bool _welcomeLoginMode = false;
+
   // Ordre réel des pages dans le PageView — utilisé pour animateToPage.
   static const List<OStep> _pageOrder = [
     OStep.intro,
@@ -337,7 +339,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
 
           // ── Progress bar — cachée sur l'intro et buildingPlan ────────────
-          if (_current != OStep.intro && _current != OStep.buildingPlan)
+          if (_current != OStep.intro &&
+              _current != OStep.welcome &&
+              _current != OStep.buildingPlan)
             _ProgressBar(
               currentStep: _progressSteps.indexOf(_current) + 1,
               totalSteps: _progressSteps.length,
@@ -351,7 +355,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   List<Widget> _buildPages() => [
     // 0 — Intro
-    StepIntro(onNext: _goNext),
+    StepIntro(
+      onNext: () {
+        _welcomeLoginMode = false;
+        _goNext();
+      },
+      onSignIn: () {
+        _welcomeLoginMode = true;
+        _goNext();
+      },
+    ),
 
     // 1 — Welcome (toggle Inscription/Connexion, Google/Apple, champs à la demande)
     StepWelcome(
@@ -361,6 +374,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onAppleSignIn:      _appleSignIn,
       emailController:    _emailCtrl,
       passwordController: _passCtrl,
+      nameController:     _nameCtrl,
+      onBack:             _goBack,
+      initialLoginMode:   _welcomeLoginMode,
     ),
 
     // 2 — Language choice

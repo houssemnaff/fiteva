@@ -264,11 +264,14 @@ class _MoodCorrelationChart extends StatelessWidget {
         style: GoogleFonts.inter(fontSize: 12.5, color: cc.muted));
     }
 
+    final accent = Theme.of(context).colorScheme.primary;
+    final deep = Color.lerp(accent, Colors.black, 0.35)!;
+    final muted = Color.lerp(accent, Colors.grey, 0.5)!;
     final phaseColors = {
       'Règles':      const Color(0xFFE58F8A),
-      'Folliculaire': const Color(0xFF7ABB98),
-      'Ovulation':   Theme.of(context).colorScheme.primary,
-      'Lutéale':     const Color(0xFFA7B8AD),
+      'Folliculaire': accent,
+      'Ovulation':   deep,
+      'Lutéale':     muted,
     };
 
     return Column(children: [

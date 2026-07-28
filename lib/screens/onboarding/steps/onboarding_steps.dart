@@ -34,11 +34,11 @@ const _kBgDark       = Color(0xFFF8F8F8);
 const _kBgMid        = Color(0xFFF2F2F2);
 const _kBgMint       = Color(0xFFF8F8F8);
 const _kBgLight      = Color(0xFFF2F2F2);
-const _kGreenDark    = Color(0xFF2D8B55);
-const _kGreenMid     = Color(0xFF3DA06A);
-const _kGreenBright  = Color(0xFF2D8B55);
+const _kGreenDark    = Color(0xFF1B5E3B);
+const _kGreenMid     = Color(0xFF276E4A);
+const _kGreenBright  = Color(0xFF1B5E3B);
 const _kCardUnsel    = Color(0xFFF2F2F2);
-const _kCardSel      = Color(0xFF2D8B55);
+const _kCardSel      = Color(0xFF1B5E3B);
 const _kTextDark     = Color(0xFF1A1A1A);
 const _kTextMuted    = Color(0xFF8E8E93);
 const _kWhite        = Colors.white;
@@ -361,7 +361,7 @@ class _CtaButton extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: enabled
                   ? const LinearGradient(
-                      colors: [Color(0xFF2D8B55), Color(0xFF3DA06A)])
+                      colors: [Color(0xFF1B5E3B), Color(0xFF276E4A)])
                   : null,
               color: enabled ? null : Colors.white.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(14),
@@ -370,7 +370,7 @@ class _CtaButton extends StatelessWidget {
                   : Border.all(color: const Color(0xFFCCDDD3), width: 1),
               boxShadow: enabled
                   ? [BoxShadow(
-                      color: const Color(0xFF2D8B55).withValues(alpha: 0.3),
+                      color: const Color(0xFF1B5E3B).withValues(alpha: 0.3),
                       blurRadius: 16, offset: const Offset(0, 6))]
                   : null,
             ),
@@ -473,7 +473,7 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
                   width: 160, height: 160,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF2D8B55).withValues(alpha: 0.07),
+                    color: const Color(0xFF1B5E3B).withValues(alpha: 0.07),
                   ),
                 ),
               ),
@@ -499,7 +499,7 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
                   width: 120, height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF2D8B55).withValues(alpha: 0.05),
+                    color: const Color(0xFF1B5E3B).withValues(alpha: 0.05),
                   ),
                 ),
               ),
@@ -523,7 +523,7 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
                             child: Container(
                               width: 64, height: 64,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF2D8B55).withValues(alpha: 0.12),
+                                color: const Color(0xFF1B5E3B).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Center(
@@ -625,12 +625,12 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
                             height: 54,
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF2D8B55), Color(0xFF3DA06A)],
+                                colors: [Color(0xFF1B5E3B), Color(0xFF276E4A)],
                               ),
                               borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF2D8B55).withValues(alpha: 0.3),
+                                  color: const Color(0xFF1B5E3B).withValues(alpha: 0.3),
                                   blurRadius: 16,
                                   offset: const Offset(0, 6),
                                 ),
@@ -729,7 +729,7 @@ class _LangOptionState extends State<_LangOption>
             boxShadow: [
               BoxShadow(
                 color: sel
-                    ? const Color(0xFF2D8B55).withValues(alpha: 0.12)
+                    ? const Color(0xFF1B5E3B).withValues(alpha: 0.12)
                     : const Color(0xFF000000).withValues(alpha: 0.04),
                 blurRadius: sel ? 12 : 8,
                 offset: const Offset(0, 3),
@@ -768,346 +768,320 @@ class _LangOptionState extends State<_LangOption>
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// STEP 0 — StepIntro  (cinematic hero screen)
+// STEP 0 — StepIntro  (cinematic dark hero screen — MOTRA-inspired)
 // ══════════════════════════════════════════════════════════════════════════════
 class StepIntro extends StatefulWidget {
   final VoidCallback onNext;
-  const StepIntro({super.key, required this.onNext});
+  final VoidCallback? onSignIn;
+  const StepIntro({super.key, required this.onNext, this.onSignIn});
 
   @override
   State<StepIntro> createState() => _StepIntroState();
 }
 
-class _StepIntroState extends State<StepIntro> with SingleTickerProviderStateMixin {
+class _StepIntroState extends State<StepIntro>
+    with TickerProviderStateMixin {
   late final AnimationController _ctrl;
+  late final AnimationController _bgCtrl;
 
   late final Animation<double> _logoFade;
-  late final Animation<double> _headFade;
-  late final Animation<Offset> _headSlide;
   late final Animation<double> _tagFade;
   late final Animation<double> _chipsFade;
   late final Animation<double> _btnFade;
   late final Animation<Offset> _btnSlide;
+
+  // Background image crossfade
+  int _bgIndex = 0;
+  Timer? _bgTimer;
+
+  static const _bgImages = [
+    'assets/images/slide_gym1.jpg',
+    'assets/images/slide_gym2.jpg',
+    'assets/images/slide_gym3.jpg',
+    'assets/images/slide_gym4.jpg',
+  ];
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 1800),
     )..forward();
+
+    _bgCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
 
     Animation<double> iv(double s, double e) => CurvedAnimation(
           parent: _ctrl, curve: Interval(s, e, curve: Curves.easeOut));
 
-    Animation<Offset> sl(double s, double e) =>
-        Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero)
-            .animate(CurvedAnimation(
-                parent: _ctrl,
-                curve: Interval(s, e, curve: Curves.easeOutCubic)));
+    _logoFade  = iv(0.0, 0.35);
+    _tagFade   = iv(0.2, 0.5);
+    _chipsFade = iv(0.35, 0.6);
+    _btnFade   = iv(0.5, 0.8);
+    _btnSlide  = Tween<Offset>(
+            begin: const Offset(0, 0.25), end: Offset.zero)
+        .animate(CurvedAnimation(
+            parent: _ctrl,
+            curve: const Interval(0.5, 0.8, curve: Curves.easeOutCubic)));
 
-    _logoFade  = iv(0.0, 0.3);
-    _headFade  = iv(0.15, 0.42);
-    _headSlide = sl(0.15, 0.42);
-    _tagFade   = iv(0.28, 0.52);
-    _chipsFade = iv(0.40, 0.62);
-    _btnFade   = iv(0.55, 0.85);
-    _btnSlide  = sl(0.55, 0.85);
+    _bgTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      setState(() => _bgIndex = (_bgIndex + 1) % _bgImages.length);
+    });
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    _bgCtrl.dispose();
+    _bgTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final sh = MediaQuery.of(context).size.height;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFE0F2E5),
-              Color(0xFFEFF7F1),
-              Color(0xFFF8FCF9),
-              Color(0xFFFCFDFC),
-            ],
-            stops: [0.0, 0.3, 0.6, 1.0],
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background image with crossfade
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 1200),
+            child: SizedBox.expand(
+              key: ValueKey(_bgIndex),
+              child: Image.asset(
+                _bgImages[_bgIndex],
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    const ColoredBox(color: Color(0xFF0A0A0A)),
+              ),
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            // Decorative blobs
-            Positioned(
-              top: -60, right: -40,
-              child: FadeTransition(
-                opacity: _logoFade,
-                child: Container(
-                  width: 200, height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF2D8B55).withValues(alpha: 0.06),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 120, left: -60,
-              child: FadeTransition(
-                opacity: _chipsFade,
-                child: Container(
-                  width: 140, height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF6DC88F).withValues(alpha: 0.07),
-                  ),
-                ),
-              ),
-            ),
 
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Column(
-                  children: [
-                    SizedBox(height: sh * 0.06),
-
-                    FadeTransition(
-                      opacity: _logoFade,
-                      child: _buildLogo(sh),
-                    ),
-
-                    const Spacer(flex: 2),
-
-                    FadeTransition(
-                      opacity: _headFade,
-                      child: SlideTransition(
-                        position: _headSlide,
-                        child: _buildHeadline(sh),
-                      ),
-                    ),
-
-                    SizedBox(height: sh * 0.014),
-
-                    FadeTransition(
-                      opacity: _tagFade,
-                      child: Text(
-                        "Fitness, cycle & nutrition —\ntout ce dont une femme a besoin.",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: const Color(0xFF5A7A66),
-                          height: 1.6,
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: sh * 0.035),
-
-                    FadeTransition(opacity: _chipsFade, child: _buildChips()),
-
-                    const Spacer(flex: 3),
-
-                    FadeTransition(
-                      opacity: _btnFade,
-                      child: SlideTransition(
-                        position: _btnSlide,
-                        child: _buildCTA(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    FadeTransition(
-                      opacity: _btnFade,
-                      child: Text(
-                        "En continuant, tu acceptes nos Conditions d'utilisation",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: const Color(0xFF5A7A66).withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: sh * 0.025),
+          // Dark cinematic overlay
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.0, 0.3, 0.55, 0.85, 1.0],
+                  colors: [
+                    const Color(0xFF0A0A0A).withValues(alpha: 0.7),
+                    const Color(0xFF0A0A0A).withValues(alpha: 0.25),
+                    Colors.transparent,
+                    const Color(0xFF0A0A0A).withValues(alpha: 0.5),
+                    const Color(0xFF0A0A0A).withValues(alpha: 0.92),
                   ],
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
+          ),
 
-  Widget _buildLogo(double sh) {
-    final logoSz = sh < 700 ? 48.0 : 56.0;
-    return Column(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF2D8B55).withValues(alpha: 0.2),
-                blurRadius: 20, offset: const Offset(0, 6),
+          // Content
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Column(
+                children: [
+                  SizedBox(height: sh * 0.08),
+
+                  // App name
+                  FadeTransition(
+                    opacity: _logoFade,
+                    child: Text(
+                      "FITEVA",
+                      style: GoogleFonts.outfit(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white.withValues(alpha: 0.9),
+                        letterSpacing: 6,
+                      ),
+                    ),
+                  ),
+
+                  const Spacer(flex: 3),
+
+                  // Tagline
+                  FadeTransition(
+                    opacity: _tagFade,
+                    child: Text(
+                      "Train smarter.\nLive stronger.",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                        fontSize: (sh * 0.035).clamp(24.0, 32.0),
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.92),
+                        height: 1.25,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: sh * 0.03),
+
+                  // Feature badges
+                  FadeTransition(opacity: _chipsFade, child: _buildBadges()),
+
+                  const Spacer(flex: 2),
+
+                  // Get Started button
+                  FadeTransition(
+                    opacity: _btnFade,
+                    child: SlideTransition(
+                      position: _btnSlide,
+                      child: _buildGetStartedBtn(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // "Already have an account? Sign in"
+                  FadeTransition(
+                    opacity: _btnFade,
+                    child: _buildLoginLink(),
+                  ),
+
+                  SizedBox(height: bottomPad + 20),
+                ],
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Image.asset('assets/images/logfiteva.jpeg',
-                width: logoSz, height: logoSz, fit: BoxFit.cover),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Text(
-          "FITEVA",
-          style: GoogleFonts.outfit(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF1A3C2A),
-            letterSpacing: 5,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeadline(double sh) {
-    final headFs = (sh * 0.048).clamp(28.0, 42.0);
-    return RichText(
-      textAlign: TextAlign.center,
-      text: TextSpan(
-        style: GoogleFonts.outfit(
-          fontSize: headFs,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF1A3C2A),
-          height: 1.12,
-          letterSpacing: -1.0,
-        ),
-        children: const [
-          TextSpan(text: "Transforme\nton corps,\n"),
-          TextSpan(
-            text: "libère ta force.",
-            style: TextStyle(color: Color(0xFF2D8B55)),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildChips() {
-    const features = [
-      "Workouts", "Cycle", "Nutrition", "Communauté",
-    ];
+  Widget _buildBadges() {
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: 8,
       runSpacing: 8,
-      children: features.map((f) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(40),
-          border: Border.all(color: const Color(0xFFCCDDD3), width: 1),
-        ),
-        child: Text(f, style: GoogleFonts.inter(
-          fontSize: 13, color: const Color(0xFF3D6B4F),
-          fontWeight: FontWeight.w500)),
-      )).toList(),
+      children: const [
+        _IntroBadge(icon: LucideIcons.dumbbell, label: 'Workouts'),
+        _IntroBadge(icon: LucideIcons.heart, label: 'Cycle'),
+        _IntroBadge(icon: LucideIcons.apple, label: 'Nutrition'),
+        _IntroBadge(icon: LucideIcons.users, label: 'Community'),
+        _IntroBadge(icon: LucideIcons.activity, label: 'Health'),
+        _IntroBadge(icon: LucideIcons.shoppingBag, label: 'Shop'),
+      ],
     );
   }
 
-  Widget _buildCTA() => GestureDetector(
+  Widget _buildGetStartedBtn() => GestureDetector(
         onTap: widget.onNext,
         child: Container(
           width: double.infinity,
           height: 56,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF2D8B55), Color(0xFF3DA06A)]),
-            borderRadius: BorderRadius.circular(14),
+              colors: [Color(0xFF1B5E3B), Color(0xFF276E4A)]),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2D8B55).withValues(alpha: 0.3),
-                blurRadius: 16, offset: const Offset(0, 6)),
+                color: const Color(0xFF1B5E3B).withValues(alpha: 0.35),
+                blurRadius: 20, offset: const Offset(0, 6)),
             ],
           ),
           child: Center(
             child: Text(
-              "Commencer",
+              "Get Started",
               style: GoogleFonts.inter(
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
             ),
           ),
         ),
       );
+
+  Widget _buildLoginLink() {
+    return GestureDetector(
+      onTap: widget.onSignIn ?? widget.onNext,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: RichText(
+          text: TextSpan(
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.5),
+            ),
+            children: [
+              const TextSpan(text: 'Already have an account? '),
+              TextSpan(
+                text: 'Sign in',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IntroBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _IntroBadge({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(40),
+        border: Border.all(
+            color: Colors.white.withValues(alpha: 0.15), width: 0.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.7)),
+          const SizedBox(width: 6),
+          Text(label,
+              style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withValues(alpha: 0.8))),
+        ],
+      ),
+    );
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// STEP 1 — StepWelcome (inchangé visuellement, mais fond mint)
+// STEP 1 — StepWelcome (dark cinematic auth — MOTRA-inspired)
 // ══════════════════════════════════════════════════════════════════════════════
 
-// ─── Colors ───────────────────────────────────────────────────────────────────
-const _kPrimary     = Color(0xFF2D8B55);
-const _kDark        = Color(0xFF1A1A1A);
+const _kPrimary     = Color(0xFF1B5E3B);
+const _kDark        = Color(0xFF0A0A0A);
 const _kGrey        = Color(0xFF8E8E93);
 const _kSurface     = Color(0xFFF5F5F5);
 
-// ─── Slide data ───────────────────────────────────────────────────────────────
-class _SlideData {
-  final String imagePath;
-  final String title;
-  final String subtitle;
-  const _SlideData({
-    required this.imagePath,
-    required this.title,
-    required this.subtitle,
-  });
-}
-
-const _slides = [
-  _SlideData(
-    imagePath: 'assets/images/slide_gym1.jpg',
-    title: 'Welcome to FitEva!',
-    subtitle: 'With support from millions, tap into our motivation and find your strength.',
-  ),
-  _SlideData(
-    imagePath: 'assets/images/slide_gym2.jpg',
-    title: 'Workouts',
-    subtitle: 'Resistance, cardio and recovery workouts. Anytime, anywhere.',
-  ),
- _SlideData(
-  imagePath: 'assets/images/slide_gym3.jpg',
-  title: 'cycle',
-  subtitle: 'Track your menstrual cycle, understand your body better, and stay informed about your health and well-being.',
-),
-  _SlideData(
-    imagePath: 'assets/images/slide_gym4.jpg',
-    title: 'nutrition',
-  subtitle: 'Build healthy habits with personalized nutrition guidance to support your fitness goals.',
-  ),
-];
-
-// ─── Widget ───────────────────────────────────────────────────────────────────
 class StepWelcome extends StatefulWidget {
-  /// Crée un nouveau compte. Retourne un message d'erreur, ou null si ok
-  /// (l'appelant enchaîne alors sur la suite de l'onboarding).
   final Future<String?> Function(String email, String password) onSignUp;
-  /// Connecte un compte existant. Retourne un message d'erreur, ou null si ok
-  /// (l'appelant saute alors directement dans l'app).
   final Future<String?> Function(String email, String password) onLogin;
   final Future<void> Function()? onGoogleSignIn;
   final Future<void> Function()? onAppleSignIn;
   final TextEditingController emailController;
   final TextEditingController passwordController;
+  final TextEditingController? nameController;
+  final VoidCallback? onBack;
+  final bool initialLoginMode;
 
   const StepWelcome({
     super.key,
@@ -1117,6 +1091,9 @@ class StepWelcome extends StatefulWidget {
     this.onAppleSignIn,
     required this.emailController,
     required this.passwordController,
+    this.nameController,
+    this.onBack,
+    this.initialLoginMode = false,
   });
 
   @override
@@ -1126,18 +1103,17 @@ class StepWelcome extends StatefulWidget {
 class _StepWelcomeState extends State<StepWelcome>
     with TickerProviderStateMixin {
 
-  final PageController _pageCtrl = PageController();
-  int _currentPage = 0;
-  Timer? _autoSlideTimer;
-
-  bool _isLoginMode  = false; // false = inscription, true = connexion
-  bool _emailFieldsOpen = false; // les 2 champs n'apparaissent qu'à la demande
+  late bool _isLoginMode;
+  bool _emailFormOpen = false;
   bool _obscure      = true;
   String? _error;
   bool _submitting   = false;
   bool _resetSubmitting = false;
   bool _googleSubmitting = false;
   bool _appleSubmitting  = false;
+
+  late final TextEditingController _nameCtrl;
+  bool _ownsNameCtrl = false;
 
   static final RegExp _emailRegex =
       RegExp(r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$');
@@ -1149,7 +1125,7 @@ class _StepWelcomeState extends State<StepWelcome>
   Future<void> _submit() async {
     final email = widget.emailController.text.trim();
     if (!_emailRegex.hasMatch(email)) {
-      setState(() => _error = 'Adresse email invalide.');
+      setState(() => _error = 'Invalid email address.');
       return;
     }
     setState(() { _error = null; _submitting = true; });
@@ -1161,12 +1137,10 @@ class _StepWelcomeState extends State<StepWelcome>
     setState(() { _error = error; _submitting = false; });
   }
 
-  /// Envoie l'email de réinitialisation via Supabase, à partir de l'email
-  /// déjà saisi dans le champ du formulaire de connexion.
   Future<void> _forgotPassword() async {
     final email = widget.emailController.text.trim();
     if (!_emailRegex.hasMatch(email)) {
-      setState(() => _error = 'Entre ton email ci-dessus pour recevoir le lien de réinitialisation.');
+      setState(() => _error = 'Enter your email above to receive a reset link.');
       return;
     }
     setState(() { _resetSubmitting = true; _error = null; });
@@ -1175,8 +1149,8 @@ class _StepWelcomeState extends State<StepWelcome>
     setState(() => _resetSubmitting = false);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(result.isSuccess
-          ? 'Email de réinitialisation envoyé à $email.'
-          : (result.error ?? 'Erreur lors de l\'envoi de l\'email.')),
+          ? 'Reset email sent to $email.'
+          : (result.error ?? 'Failed to send email.')),
       backgroundColor: result.isSuccess ? const Color(0xFF2E7D32) : const Color(0xFFB00020),
       behavior: SnackBarBehavior.floating,
     ));
@@ -1208,113 +1182,72 @@ class _StepWelcomeState extends State<StepWelcome>
   @override
   void initState() {
     super.initState();
+    _isLoginMode = widget.initialLoginMode;
+    if (widget.nameController != null) {
+      _nameCtrl = widget.nameController!;
+    } else {
+      _nameCtrl = TextEditingController();
+      _ownsNameCtrl = true;
+    }
     _fadeCtrl = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 600),
+      vsync: this, duration: const Duration(milliseconds: 700),
     )..forward();
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
-    _startAutoSlide();
-  }
-
-  void _startAutoSlide() {
-    _autoSlideTimer?.cancel();
-    _autoSlideTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      final next = (_currentPage + 1) % _slides.length;
-      _pageCtrl.animateToPage(
-        next,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOut,
-      );
-    });
   }
 
   @override
   void dispose() {
-    _autoSlideTimer?.cancel();
-    _pageCtrl.dispose();
     _fadeCtrl.dispose();
+    if (_ownsNameCtrl) _nameCtrl.dispose();
     super.dispose();
   }
 
-  // ─── Build ─────────────────────────────────────────────────────────────────
-  // Écran scindé en deux : visuel plein cadre en haut (photo + accroche
-  // marketing), carte blanche arrondie en bas pour Google/Apple + liens.
   @override
   Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       backgroundColor: _kDark,
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // ── Background image carousel ──────────────────────────────────────
+          // Background image (blurred via dark overlay)
           Positioned.fill(
-            child: PageView.builder(
-              controller: _pageCtrl,
-              physics: const PageScrollPhysics(),
-              itemCount: _slides.length,
-              onPageChanged: (i) {
-                setState(() => _currentPage = i);
-                _startAutoSlide(); // reset timer after manual swipe
-              },
-              itemBuilder: (_, i) => _buildSlideBackground(_slides[i]),
+            child: Image.asset(
+              'assets/images/slide_gym1.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  const ColoredBox(color: Color(0xFF0A0A0A)),
             ),
           ),
 
-          // ── Dark gradient overlay — pour la lisibilité du logo/accroche ────
+          // Dark frosted overlay
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.45, 1.0],
+                  stops: const [0.0, 0.35, 0.65, 1.0],
                   colors: [
-                    _kDark.withValues(alpha:0.55),
-                    _kDark.withValues(alpha:0.15),
-                    Colors.transparent,
+                    _kDark.withValues(alpha: 0.75),
+                    _kDark.withValues(alpha: 0.45),
+                    _kDark.withValues(alpha: 0.55),
+                    _kDark.withValues(alpha: 0.88),
                   ],
                 ),
               ),
             ),
           ),
 
-          // ── Contenu : logo + accroche sur la photo, carte en bas ───────────
+          // Content
           SafeArea(
             bottom: false,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  physics: const ClampingScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(height: 20),
-                            _buildLogo(),
-                          ],
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildSlideText(),
-                            const SizedBox(height: 14),
-                            _buildDots(),
-                            const SizedBox(height: 22),
-                            FadeTransition(
-                              opacity: _fadeAnim,
-                              child: _buildAuthCard(),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: _emailFormOpen
+                  ? _buildEmailFormView(bottomPad)
+                  : _buildAuthOptionsView(bottomPad),
             ),
           ),
         ],
@@ -1322,326 +1255,421 @@ class _StepWelcomeState extends State<StepWelcome>
     );
   }
 
-  // ─── Carte "verre dépoli" — toggle Inscription/Connexion, Google/Apple,
-  // et les 2 champs email/mot de passe qui n'apparaissent qu'à la demande. ──
-  Widget _buildAuthCard() {
-    final l10n = AppL10n(Lang.code);
-    return Container(
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border(top: BorderSide(color: Color(0xFFE8E8E8), width: 1)),
-          ),
+  // ─── Main auth options view (Apple / Google / Email buttons) ───────────────
+  Widget _buildAuthOptionsView(double bottomPad) {
+    return Column(
+      children: [
+        // Close button → back to intro
+        Align(
+          alignment: Alignment.centerLeft,
           child: Padding(
-            padding: EdgeInsets.fromLTRB(
-                24, 22, 24, 20 + MediaQuery.of(context).padding.bottom),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ── Toggle Inscription / Connexion ──────────────────────
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F2F2),
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Row(children: [
-                    Expanded(child: _ModeTab(
-                      label: l10n.welcomeCreateAccount, active: !_isLoginMode,
-                      onTap: () => setState(() { _isLoginMode = false; _error = null; }),
-                    )),
-                    Expanded(child: _ModeTab(
-                      label: l10n.welcomeLogIn, active: _isLoginMode,
-                      onTap: () => setState(() { _isLoginMode = true; _error = null; }),
-                    )),
-                  ]),
+            padding: const EdgeInsets.only(left: 16, top: 8),
+            child: GestureDetector(
+              onTap: widget.onBack ?? () => Navigator.maybePop(context),
+              child: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
-                const SizedBox(height: 18),
+                child: Icon(Icons.close_rounded, size: 20,
+                    color: Colors.white.withValues(alpha: 0.7)),
+              ),
+            ),
+          ),
+        ),
 
-                // ── Google / Apple ───────────────────────────────────────
-                Row(children: [
-                  Expanded(
-                    child: _GlassSocialBtn(
-                      onTap: _handleGoogleSignIn,
-                      loading: _googleSubmitting,
-                      child: SvgPicture.asset('assets/images/google-color.svg', width: 20, height: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _GlassSocialBtn(
-                      onTap: _handleAppleSignIn,
-                      loading: _appleSubmitting,
-                      child: Icon(Icons.apple_rounded, color: _kTextDark, size: 22),
-                    ),
-                  ),
-                ]),
-                const SizedBox(height: 16),
+        const Spacer(flex: 2),
 
-                Row(children: [
-                  Expanded(child: Divider(color: const Color(0xFFE5E5E5))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(l10n.welcomeOrContinueWith.toUpperCase(),
-                      style: GoogleFonts.inter(
-                        color: _kTextMuted,
-                        fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 1)),
-                  ),
-                  Expanded(child: Divider(color: const Color(0xFFE5E5E5))),
-                ]),
-                const SizedBox(height: 14),
+        // App name
+        Text(
+          'FITEVA',
+          style: GoogleFonts.outfit(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withValues(alpha: 0.85),
+            letterSpacing: 6,
+          ),
+        ),
 
-                // ── Email/mot de passe — n'apparaissent qu'à la demande ──
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  child: _emailFieldsOpen
-                      ? Column(children: [
-                          _GlassField(
-                            controller: widget.emailController,
-                            hint: l10n.welcomeEmail,
-                            icon: Icons.mail_outline_rounded,
-                            keyboardType: TextInputType.emailAddress,
-                            onChanged: (_) => setState(() { _error = null; }),
-                          ),
-                          const SizedBox(height: 10),
-                          _GlassField(
-                            controller: widget.passwordController,
-                            hint: l10n.welcomePassword,
-                            icon: Icons.lock_outline_rounded,
-                            obscure: _obscure,
-                            suffix: GestureDetector(
-                              onTap: () => setState(() => _obscure = !_obscure),
-                              child: Icon(
-                                _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                color: _kTextMuted, size: 18,
-                              ),
-                            ),
-                            onChanged: (_) => setState(() { _error = null; }),
-                          ),
-                          if (_isLoginMode) ...[
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: GestureDetector(
-                                onTap: _resetSubmitting ? null : _forgotPassword,
-                                child: Text(
-                                  _resetSubmitting
-                                      ? (l10n.isFrench ? 'Envoi en cours...' : 'Sending...')
-                                      : (l10n.isFrench ? 'Mot de passe oublié ?' : 'Forgot password?'),
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12.5, fontWeight: FontWeight.w600,
-                                    color: _kGreenBright),
-                                ),
-                              ),
-                            ),
-                          ],
-                          if (_error != null) ...[
-                            const SizedBox(height: 6),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(_error!,
-                                style: GoogleFonts.inter(
-                                  color: const Color(0xFFFF8A80), fontSize: 12, fontWeight: FontWeight.w500)),
-                            ),
-                          ],
-                          const SizedBox(height: 14),
-                          _AuthCtaButton(
-                            label: _isLoginMode ? l10n.welcomeLogIn : l10n.welcomeContinue,
-                            enabled: _canSubmit && !_submitting,
-                            loading: _submitting,
-                            onTap: _submit,
-                          ),
-                        ])
-                      : GestureDetector(
-                          onTap: () => setState(() => _emailFieldsOpen = true),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFE5E5E5)),
-                            ),
-                            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Icon(Icons.mail_outline_rounded, size: 16, color: _kTextDark),
-                              const SizedBox(width: 8),
-                              Text(
-                                l10n.isFrench ? 'Continuer par email' : 'Continue with email',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13.5, fontWeight: FontWeight.w700, color: _kTextDark),
-                              ),
-                            ]),
-                          ),
-                        ),
+        const SizedBox(height: 16),
+
+        // Headline
+        Text(
+          _isLoginMode ? 'Welcome Back.' : 'Your fitness,\nyour way.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.outfit(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withValues(alpha: 0.7),
+            height: 1.3,
+          ),
+        ),
+
+        const Spacer(flex: 3),
+
+        // Terms
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.4),
+                height: 1.5,
+              ),
+              children: [
+                const TextSpan(text: 'By continuing, you agree to FitEva\'s\n'),
+                TextSpan(
+                  text: 'Terms of Service',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+                const TextSpan(text: ' and '),
+                TextSpan(
+                  text: 'Privacy Policy',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ],
             ),
           ),
-    );
-  }
+        ),
 
-  // ─── Slide background ──────────────────────────────────────────────────────
-  Widget _buildSlideBackground(_SlideData slide) {
-    return Image.asset(
-      slide.imagePath,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Container(
-        color: const Color(0xFF1A1A1A),
-        child: const Icon(Icons.fitness_center, color: Colors.white12, size: 80),
-      ),
-    );
-  }
+        const SizedBox(height: 24),
 
-  // ─── Logo ──────────────────────────────────────────────────────────────────
-  Widget _buildLogo() {
-    return Text(
-      'FitEva',
-      style: GoogleFonts.outfit(
-        fontSize: 22,
-        fontWeight: FontWeight.w700,
-        color: _kWhite,
-        letterSpacing: 1,
-      ),
-    );
-  }
+        // Auth buttons
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              // Continue with Apple
+              _DarkAuthBtn(
+                icon: Icons.apple_rounded,
+                label: 'Continue with Apple',
+                style: _DarkAuthBtnStyle.white,
+                loading: _appleSubmitting,
+                onTap: _handleAppleSignIn,
+              ),
 
-  // ─── Slide text ────────────────────────────────────────────────────────────
-  Widget _buildSlideText() {
-    final slide = _slides[_currentPage];
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
-      child: Padding(
-        key: ValueKey(_currentPage),
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          children: [
-            Text(
-              slide.title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-                color: _kWhite,
-                height: 1.15,
-                letterSpacing: -0.5,
+              const SizedBox(height: 10),
+
+              // Continue with Google
+              _DarkAuthBtn(
+                svgIcon: 'assets/images/google-color.svg',
+                label: 'Continue with Google',
+                style: _DarkAuthBtnStyle.frosted,
+                loading: _googleSubmitting,
+                onTap: _handleGoogleSignIn,
+              ),
+
+              const SizedBox(height: 10),
+
+              // Continue with Email
+              _DarkAuthBtn(
+                icon: Icons.mail_outline_rounded,
+                label: 'Continue with Email',
+                style: _DarkAuthBtnStyle.frosted,
+                onTap: () => setState(() => _emailFormOpen = true),
+              ),
+            ],
+          ),
+        ),
+
+        // Toggle login/signup
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: () => setState(() {
+            _isLoginMode = !_isLoginMode;
+            _error = null;
+          }),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              _isLoginMode
+                  ? "Don't have an account? Sign up"
+                  : 'Already have an account? Sign in',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: Colors.white.withValues(alpha: 0.5),
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              slide.subtitle,
-              textAlign: TextAlign.center,
+          ),
+        ),
+
+        SizedBox(height: bottomPad + 16),
+      ],
+    );
+  }
+
+  // ─── Email form view (full-screen dark form) ──────────────────────────────
+  Widget _buildEmailFormView(double bottomPad) {
+    return SingleChildScrollView(
+      physics: const ClampingScrollPhysics(),
+      padding: EdgeInsets.only(bottom: bottomPad + 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Back button
+          Padding(
+            padding: const EdgeInsets.only(left: 16, top: 8),
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _emailFormOpen = false;
+                _error = null;
+              }),
+              child: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+                child: Icon(LucideIcons.arrowLeft, size: 18,
+                    color: Colors.white.withValues(alpha: 0.7)),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Text(
+              _isLoginMode ? 'Welcome back' : 'Sign up with email',
+              style: GoogleFonts.outfit(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                height: 1.2,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Text(
+              _isLoginMode
+                  ? 'Enter your email and password to continue.'
+                  : 'Enter your name, email, and a password to start training.',
               style: GoogleFonts.inter(
-                fontSize: 13.5,
-                color: _kWhite.withValues(alpha:0.88),
+                fontSize: 14,
+                color: Colors.white.withValues(alpha: 0.5),
                 height: 1.5,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ─── Dots ──────────────────────────────────────────────────────────────────
-  Widget _buildDots() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_slides.length, (i) {
-        final active = i == _currentPage;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: active ? 18 : 6,
-          height: 6,
-          decoration: BoxDecoration(
-            color: active ? _kWhite : _kWhite.withValues(alpha:0.4),
-            borderRadius: BorderRadius.circular(3),
           ),
-        );
-      }),
-    );
-  }
 
-}
+          const SizedBox(height: 32),
 
+          // Form fields
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Column(
+              children: [
+                if (!_isLoginMode) ...[
+                  _DarkField(
+                    controller: _nameCtrl,
+                    hint: 'Full name',
+                    keyboardType: TextInputType.name,
+                    onChanged: (_) {},
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
-// ─── Onglet de bascule Inscription/Connexion ────────────────────────────────
-class _ModeTab extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _ModeTab({required this.label, required this.active, required this.onTap});
+                _DarkField(
+                  controller: widget.emailController,
+                  hint: 'you@example.com',
+                  keyboardType: TextInputType.emailAddress,
+                  onChanged: (_) => setState(() => _error = null),
+                ),
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: active ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(50),
-          boxShadow: active ? [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 1)),
-          ] : null,
-        ),
-        child: Center(
-          child: Text(label, style: GoogleFonts.inter(
-            fontSize: 13, fontWeight: FontWeight.w700,
-            color: active ? _kTextDark : _kTextMuted)),
-        ),
+                const SizedBox(height: 12),
+
+                _DarkField(
+                  controller: widget.passwordController,
+                  hint: 'Password',
+                  obscure: _obscure,
+                  suffix: GestureDetector(
+                    onTap: () => setState(() => _obscure = !_obscure),
+                    child: Icon(
+                      _obscure ? Icons.visibility_off_outlined
+                               : Icons.visibility_outlined,
+                      color: Colors.white.withValues(alpha: 0.3), size: 18),
+                  ),
+                  onChanged: (_) => setState(() => _error = null),
+                ),
+
+                if (_isLoginMode) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: _resetSubmitting ? null : _forgotPassword,
+                      child: Text(
+                        _resetSubmitting ? 'Sending...' : 'Forgot password?',
+                        style: GoogleFonts.inter(
+                          fontSize: 13, fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.5)),
+                      ),
+                    ),
+                  ),
+                ],
+
+                if (_error != null) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(_error!,
+                        style: GoogleFonts.inter(
+                            color: const Color(0xFFFF6B6B),
+                            fontSize: 13, fontWeight: FontWeight.w500)),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+
+                // Continue button
+                GestureDetector(
+                  onTap: (_canSubmit && !_submitting) ? _submit : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    height: 54,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: _canSubmit
+                          ? const LinearGradient(
+                              colors: [Color(0xFF1B5E3B), Color(0xFF276E4A)])
+                          : null,
+                      color: _canSubmit
+                          ? null
+                          : Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: _canSubmit
+                          ? [BoxShadow(
+                              color: const Color(0xFF1B5E3B).withValues(alpha: 0.35),
+                              blurRadius: 16, offset: const Offset(0, 6))]
+                          : null,
+                    ),
+                    child: Center(
+                      child: _submitting
+                          ? const SizedBox(width: 20, height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : Text(
+                              'Continue',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: _canSubmit
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.3),
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─── Bouton social translucide (verre) ──────────────────────────────────────
-class _GlassSocialBtn extends StatelessWidget {
-  final Widget child;
-  final VoidCallback onTap;
+// ─── Dark auth button (white / frosted variants) ────────────────────────────
+enum _DarkAuthBtnStyle { white, frosted }
+
+class _DarkAuthBtn extends StatelessWidget {
+  final IconData? icon;
+  final String? svgIcon;
+  final String label;
+  final _DarkAuthBtnStyle style;
   final bool loading;
-  const _GlassSocialBtn({required this.child, required this.onTap, this.loading = false});
+  final VoidCallback onTap;
+
+  const _DarkAuthBtn({
+    this.icon,
+    this.svgIcon,
+    required this.label,
+    required this.style,
+    this.loading = false,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isWhite = style == _DarkAuthBtnStyle.white;
     return GestureDetector(
       onTap: loading ? null : onTap,
       child: Container(
-        height: 52,
+        height: 54,
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE5E5E5)),
+          color: isWhite
+              ? Colors.white
+              : Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: isWhite
+              ? null
+              : Border.all(
+                  color: Colors.white.withValues(alpha: 0.12), width: 0.5),
         ),
         child: Center(
           child: loading
               ? SizedBox(
                   width: 18, height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: _kTextMuted),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: isWhite ? _kDark : Colors.white54),
                 )
-              : child,
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (icon != null)
+                      Icon(icon, size: 20,
+                          color: isWhite ? _kDark : Colors.white.withValues(alpha: 0.8)),
+                    if (svgIcon != null)
+                      SvgPicture.asset(svgIcon!, width: 18, height: 18),
+                    const SizedBox(width: 10),
+                    Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: isWhite
+                            ? _kDark
+                            : Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
   }
 }
 
-// ─── Champ de formulaire style "verre" (fond translucide, texte clair) ──────
-class _GlassField extends StatelessWidget {
+// ─── Dark form field ────────────────────────────────────────────────────────
+class _DarkField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
-  final IconData icon;
   final bool obscure;
   final TextInputType? keyboardType;
   final Widget? suffix;
   final ValueChanged<String> onChanged;
 
-  const _GlassField({
+  const _DarkField({
     required this.controller,
     required this.hint,
-    required this.icon,
     this.obscure = false,
     this.keyboardType,
     this.suffix,
@@ -1652,9 +1680,10 @@ class _GlassField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E5E5), width: 1),
+        border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1), width: 0.5),
       ),
       child: TextField(
         controller: controller,
@@ -1662,17 +1691,19 @@ class _GlassField extends StatelessWidget {
         keyboardType: keyboardType,
         onChanged: onChanged,
         autofillHints: const [],
-        style: GoogleFonts.inter(fontSize: 15, color: _kTextDark, fontWeight: FontWeight.w500),
+        style: GoogleFonts.inter(
+            fontSize: 15,
+            color: Colors.white,
+            fontWeight: FontWeight.w500),
+        cursorColor: Colors.white54,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.inter(color: _kTextMuted, fontSize: 14),
-          prefixIcon: Icon(icon, color: _kTextMuted, size: 19),
+          hintStyle: GoogleFonts.inter(
+              color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
           suffixIcon: suffix != null
-              ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix)
+              ? Padding(
+                  padding: const EdgeInsets.only(right: 12), child: suffix)
               : null,
-          // Le thème global de l'app force `filled: true` + un fond clair sur
-          // tous les champs — on neutralise explicitement chaque propriété
-          // pour empêcher ce style d'écraser le fond "verre" du champ.
           filled: false,
           fillColor: Colors.transparent,
           border: InputBorder.none,
@@ -1681,52 +1712,8 @@ class _GlassField extends StatelessWidget {
           disabledBorder: InputBorder.none,
           errorBorder: InputBorder.none,
           focusedErrorBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 4),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Bouton CTA partagé (login/signup) ──────────────────────────────────────
-class _AuthCtaButton extends StatelessWidget {
-  final String label;
-  final bool enabled;
-  final bool loading;
-  final VoidCallback onTap;
-
-  const _AuthCtaButton({
-    required this.label,
-    required this.enabled,
-    this.loading = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        height: 54,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: enabled ? _kGreenBright : const Color(0xFFF2F2F2),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Center(
-          child: loading
-              ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(
-                  strokeWidth: 2, color: enabled ? _kWhite : _kGrey))
-              : Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w700,
-                    color: enabled ? _kWhite : _kGrey,
-                    letterSpacing: 0.1,
-                  ),
-                ),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
         ),
       ),
     );
@@ -2828,7 +2815,7 @@ class _DrumPicker extends StatelessWidget {
         border: Border.all(color: const Color(0xFFCCDDD3), width: 1),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2D8B55).withValues(alpha: 0.06),
+            color: const Color(0xFF1B5E3B).withValues(alpha: 0.06),
             blurRadius: 16, offset: const Offset(0, 4),
           ),
         ],
@@ -4046,7 +4033,7 @@ class _StepAvatarState extends State<StepAvatar> {
                           color: Colors.white.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(28),
                           border: Border.all(color: const Color(0xFFCCDDD3), width: 1),
-                          boxShadow: [BoxShadow(color: const Color(0xFF2D8B55).withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 6))],
+                          boxShadow: [BoxShadow(color: const Color(0xFF1B5E3B).withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 6))],
                         ),
                         child: Column(children: [
                           // Mascot with glow ring
@@ -4089,7 +4076,7 @@ class _StepAvatarState extends State<StepAvatar> {
                         alignment: Alignment.centerLeft,
                         child: Text(AppL10n(Lang.code).avatarShapeLabel, style: const TextStyle(
                           fontSize: 10, fontWeight: FontWeight.w800,
-                          color: Color(0xFF2D8B55), letterSpacing: 2.5)),
+                          color: Color(0xFF1B5E3B), letterSpacing: 2.5)),
                       ),
                     ),
                     SizedBox(
@@ -4150,7 +4137,7 @@ class _StepAvatarState extends State<StepAvatar> {
                         alignment: Alignment.centerLeft,
                         child: Text(AppL10n(Lang.code).avatarMoodLabel, style: const TextStyle(
                           fontSize: 10, fontWeight: FontWeight.w800,
-                          color: Color(0xFF2D8B55), letterSpacing: 2.5)),
+                          color: Color(0xFF1B5E3B), letterSpacing: 2.5)),
                       ),
                     ),
                     Padding(
@@ -4737,11 +4724,11 @@ class _StepCoachChatState extends State<StepCoachChat>
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF2D8B55), Color(0xFF3DA06A)]),
+                      colors: [Color(0xFF1B5E3B), Color(0xFF276E4A)]),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF2D8B55).withValues(alpha: 0.3),
+                        color: const Color(0xFF1B5E3B).withValues(alpha: 0.3),
                         blurRadius: 12, offset: const Offset(0, 4)),
                     ],
                   ),
@@ -4878,7 +4865,7 @@ class _ReplyChip extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: selected
-                  ? const Color(0xFF2D8B55).withValues(alpha: 0.1)
+                  ? const Color(0xFF1B5E3B).withValues(alpha: 0.1)
                   : const Color(0xFF000000).withValues(alpha: 0.03),
               blurRadius: 8, offset: const Offset(0, 2),
             ),
