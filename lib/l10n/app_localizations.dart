@@ -412,6 +412,7 @@ class AppL10n {
   String get goal1                  => _fr ? '🔥 Perdre\ndu poids'      : '🔥 Lose\nweight';
   String get goal2                  => _fr ? '⚖️ Maintenir\nle poids'   : '⚖️ Maintain\nweight';
   String get goal3                  => _fr ? '💪 Prendre du poids\n/ muscle' : '💪 Gain weight\n/ muscle';
+  String get goalsChatConfirm       => _fr ? 'Super, on continue ! 💪' : 'Great, let\'s continue! 💪';
 
   // StepFitnessLevel
   String get fitnessTopBarTitle     => _fr ? 'NIVEAU'                   : 'LEVEL';
@@ -420,6 +421,7 @@ class AppL10n {
   String get fitnessLevelBeginner   => _fr ? 'Débutant'                : 'Beginner';
   String get fitnessLevelIntermediate => _fr ? 'Intermédiaire'         : 'Intermediate';
   String get fitnessLevelAdvanced   => _fr ? 'Avancé'                  : 'Advanced';
+  String get fitnessChatConfirm     => _fr ? 'Parfait, c\'est noté ! ✨' : 'Perfect, got it! ✨';
 
   // StepEquipment
   String get equipmentTopBarTitle   => _fr ? 'ÉQUIPEMENT'              : 'EQUIPMENT';
@@ -433,6 +435,7 @@ class AppL10n {
   String get equipmentYogaMat       => _fr ? 'Tapis de yoga'           : 'Yoga mat';
   String get equipmentContinue      => _fr ? 'CONTINUER'               : 'CONTINUE';
   String get equipmentSelectAtLeastOne => _fr ? 'SÉLECTIONNE AU MOINS UN' : 'SELECT AT LEAST ONE';
+  String get equipmentChatConfirm   => _fr ? 'Top, je garde ça en tête ! 🏋️' : 'Great, I\'ll keep that in mind! 🏋️';
 
   // StepTrainingLocation
   String get locationTopBarTitle    => _fr ? "LIEU D'ENTRAÎNEMENT"     : 'TRAINING LOCATION';
@@ -444,12 +447,14 @@ class AppL10n {
   String get locationHomeDetail     => _fr ? 'Poids du corps'          : 'Bodyweight';
   String get locationBoth           => _fr ? 'Les deux'                : 'Both';
   String get locationBothDetail     => _fr ? 'Flexibilité totale'      : 'Total flexibility';
+  String get locationChatConfirm    => _fr ? 'Bien noté, on adapte le programme ! 📍' : 'Noted, we\'ll adapt the program! 📍';
 
   // StepFrequency
   String get frequencyTopBarTitle   => _fr ? 'FRÉQUENCE'               : 'FREQUENCY';
   String get frequencyTitle         => _fr ? 'Combien de jours par\nsemaine veux-tu t\'entraîner ?' : 'How many days per\nweek do you want to train?';
   String get frequencyHint          => _fr ? 'Fais glisser le curseur pour choisir' : 'Drag the slider to choose';
   String get frequencyNext          => _fr ? 'Suivant'                 : 'Next';
+  String get frequencyChatConfirm   => _fr ? 'Bien reçu, un rythme sur-mesure ! ⏱️' : 'Got it, a tailored pace! ⏱️';
   String get frequencyDay2          => _fr ? '2 jours'                 : '2 days';
   String get frequencyDay3          => _fr ? '3 jours'                 : '3 days';
   String get frequencyDay4          => _fr ? '4 jours'                 : '4 days';
@@ -474,6 +479,9 @@ class AppL10n {
   String get healthProfileHeight    => _fr ? 'TAILLE'                  : 'HEIGHT';
   String get healthProfileWeight    => _fr ? 'POIDS'                   : 'WEIGHT';
   String get healthProfileAge       => _fr ? 'ÂGE'                    : 'AGE';
+  String get healthProfileHeightQuestion => _fr ? 'Quelle est ta taille ?' : "What's your height?";
+  String get healthProfileWeightQuestion => _fr ? 'Et ton poids ?'     : 'And your weight?';
+  String get healthProfileAgeQuestion    => _fr ? 'Pour finir, quel âge as-tu ?' : 'Lastly, how old are you?';
   String get healthProfileAgeUnit   => _fr ? 'ans'                     : 'yrs';
   String get healthProfileBmi       => _fr ? 'IMC'                     : 'BMI';
   String get healthProfileBmiThin   => _fr ? 'Mince'                   : 'Underweight';
@@ -481,6 +489,7 @@ class AppL10n {
   String get healthProfileBmiOver   => _fr ? 'Surpoids'                : 'Overweight';
   String get healthProfileBmiObese  => _fr ? 'Obésité'                 : 'Obese';
   String get healthProfileContinue  => _fr ? 'Continuer'               : 'Continue';
+  String get healthProfileChatConfirm => _fr ? 'Merci, j\'ajuste ton programme à ça ! 📏' : 'Thanks, I\'ll tailor your program to that! 📏';
 
   // StepCycleAndPregnancy
   String get cycleStepTopBarTitle   => _fr ? 'Santé féminine'          : 'Women\'s health';
@@ -515,6 +524,7 @@ class AppL10n {
   String get ppProgramLabel         => _fr ? 'Programme'               : 'Program';
   String get ppPhaseLabel           => _fr ? 'Phase'                   : 'Phase';
   String get cycleCtaStart          => _fr ? 'Commencer FITEVA'        : 'Start FITEVA';
+  String get cycleChatConfirm       => _fr ? 'Merci pour ta confiance, on prend soin de toi ! 💚' : 'Thanks for trusting us, we\'ve got you! 💚';
   String get ppPpProgDesc0_2        => _fr ? '0–2 sem. · récupération douce, périnée & repos absolu' : '0–2 wks · gentle recovery, perineum & absolute rest';
   String get ppPpProgDesc2_6        => _fr ? '2–6 sem. · mobilité progressive & renforcement léger' : '2–6 wks · progressive mobility & light strengthening';
   String get ppPpProgDesc6_12       => _fr ? '6–12 sem. · reprise légère & consolidation posturale' : '6–12 wks · light resumption & postural consolidation';
@@ -533,6 +543,11 @@ class AppL10n {
   String get avatarMoodCelebrating  => _fr ? 'En fête'                 : 'Celebrating';
   String get avatarMoodSleepy       => _fr ? 'Fatiguée'                : 'Tired';
   String get avatarCta              => _fr ? 'COMMENCER !'             : 'GET STARTED!';
+  String get avatarChatConfirm      => _fr ? 'Trop mignon, allons-y ensemble ! 🎉' : 'So cute, let\'s go together! 🎉';
+
+  // Fil de chat unique — édition d'une réponse déjà donnée
+  String get chatEditPrompt         => _fr ? 'Bien sûr, modifie ta réponse ci-dessous :' : 'Sure, update your answer below:';
+  String get chatAnswerUpdated      => _fr ? 'Mis à jour ! ✅'          : 'Updated! ✅';
 
   // Cycle phase names (used in cycle strip)
   String get cyclePhaseMenstruation => _fr ? 'Menstruation'            : 'Menstruation';

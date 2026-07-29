@@ -912,9 +912,11 @@ class _XpSource extends StatelessWidget {
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         Icon(icon, size: 13, color: color),
         const SizedBox(width: 5),
-        Text(label, style: GoogleFonts.inter(
-          fontSize: 10, fontWeight: FontWeight.w600, color: _P.t2(d)),
-          maxLines: 1, overflow: TextOverflow.ellipsis),
+        Flexible(
+          child: Text(label, style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: FontWeight.w600, color: _P.t2(d)),
+            maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
       ]),
     );
   }

@@ -1,8 +1,7 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'package:fiteva/screens/onboarding/widgets/shared_onboarding_widgets.dart';
 import 'package:fiteva/services/tick_sound_service.dart';
 import 'package:fiteva/widgets/custom_date_picker.dart';
 import 'package:fiteva/widgets/mascot_widget.dart';
@@ -16,15 +15,62 @@ import '../../../l10n/lang.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/auth_service.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Onboarding Data — état centralisé transmis entre les steps
+// ─────────────────────────────────────────────────────────────────────────────
+class OnboardingData {
+  String username       = '';
+  String email          = '';
+  String password       = '';
+  List<String> goals    = [];
+  String? fitnessLevel;
+  List<String> equipment = [];
+  String? frequency;
+  int    heightCm       = 165;
+  double weightKg       = 60.0;
+  int    age            = 25;
+  // Santé féminine
+  String? healthStatus;     // 'cycle' | 'pregnant' | 'postpartum'
+  int?    pregnancyWeekSA;
+  String? ppRecovery;       // 'recent' | 'slowly' | 'active'
+  String? ppDuration;       // '0-2' | '2-6' | '6-12' | '3-6m' | '6m+'
+  String? cycleDuration;
+  DateTime? lastPeriod = DateTime.now().subtract(const Duration(days: 14));
+  String avatarSeed  = 'fiteva';
+  String avatarStyle = 'lorelei';
+  String avatarBg    = 'b6e3f4';
+  String mascotType  = 'blob';
+  String? trainingLocation;
+
+  Map<String, dynamic> toMap() => {
+    'username':           username,
+    'email':              email,
+    'goals':              goals,
+    'fitness_level':      fitnessLevel,
+    'equipment':          equipment,
+    'frequency':          frequency,
+    'training_location':  trainingLocation,
+    'height_cm':          heightCm,
+    'weight_kg':          weightKg,
+    'age':                age,
+    'health_status':      healthStatus,
+    'pregnancy_week':     pregnancyWeekSA,
+    'pp_recovery':        ppRecovery,
+    'pp_duration':        ppDuration,
+    'cycle_duration':     cycleDuration,
+    'last_period':        lastPeriod?.toIso8601String(),
+    'mascot_type':        mascotType,
+    'mascot_mood':        'happy',
+    'avatar_seed':        avatarSeed,
+    'avatar_style':       avatarStyle,
+  };
+}
+
 // ─── Responsive helpers ────────────────────────────────────────────────────
 // Reference device: 390 × 844 (iPhone 14)
 extension _R on BuildContext {
   double get _w => MediaQuery.of(this).size.width;
   double get _h => MediaQuery.of(this).size.height;
-  /// Scale a horizontal/font value relative to reference width 390
-  double rs(double v) => (v * _w / 390).clamp(v * 0.78, v * 1.28);
-  /// Scale a vertical spacing relative to reference height 844
-  double rv(double v) => (v * _h / 844).clamp(v * 0.68, v * 1.22);
   bool get isSmall => _h < 700;   // SE, Fold outer, older Androids
   bool get isLarge => _h > 900;   // Pro Max, tablets
 }
@@ -154,69 +200,6 @@ class _OnboardingTopBar extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Icône — gradient circle with green glow
-class _StepIcon extends StatelessWidget {
-  final IconData icon;
-  const _StepIcon(this.icon);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 64, height: 64,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [Color(0xFF1C4D30), Color(0xFF0F3320)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: _kGreenMid.withValues(alpha: 0.25),
-              blurRadius: 20, spreadRadius: 2),
-          ],
-        ),
-        child: Icon(icon, color: _kGreenBright, size: 26),
-      ),
-    );
-  }
-}
-
-/// Titre + sous-titre — left-aligned editorial type
-class _StepHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  const _StepHeader({required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.outfit(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: _kTextDark,
-            height: 1.15,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          subtitle,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: _kTextMuted,
-            height: 1.5,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -374,70 +357,6 @@ class _CompactPill extends StatelessWidget {
     );
   }
 }
-
-/// CTA button — gradient with arrow icon, glass border when disabled
-class _CtaButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-
-  const _CtaButton({required this.label, this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 10, 24, 18),
-        child: GestureDetector(
-          onTap: onPressed,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 54,
-            decoration: BoxDecoration(
-              gradient: enabled
-                  ? const LinearGradient(
-                      colors: [Color(0xFF1C4D30), Color(0xFF0F3320)],
-                      begin: Alignment.topLeft, end: Alignment.bottomRight,
-                    )
-                  : null,
-              color: enabled ? null : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              border: enabled
-                  ? null
-                  : Border.all(color: _kGlassBorder, width: 0.5),
-              boxShadow: enabled
-                  ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.25),
-                      blurRadius: 16, offset: const Offset(0, 5))]
-                  : [],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                    color: enabled ? _kWhite : _kTextMuted,
-                  ),
-                ),
-                if (enabled) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward_rounded, color: _kWhite, size: 18),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Scaffold mint de base ─────────────────────────────────────────────────
-Widget _mintScaffold({required Widget child}) => _stepBackground(child: child);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // STEP — StepLanguageChoice  (FR / EN — shown after login)
@@ -1919,11 +1838,12 @@ class _AuthCtaButton extends StatelessWidget {
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-// STEP 2 — StepGoals  (objectif de poids — choix unique, pilote le calcul
-// des calories : perte/maintien/prise. Les clés ci-dessous sont volontairement
-// distinctes ("poids" seulement pour la perte, "masse" pour la prise) pour ne
-// pas se faire mal-classer par la détection par mot-clé dans
-// UserProfile.fromOnboardingData et NutritionTargets.compute()).
+// Données partagées — objectifs de poids + niveaux de forme, utilisées par
+// OnboardingChatFlow (phases "objectif" et "niveau" du fil de chat unique).
+// Les clés de stockage ci-dessous sont volontairement distinctes ("poids"
+// seulement pour la perte, "masse" pour la prise) pour ne pas se faire
+// mal-classer par la détection par mot-clé dans UserProfile.fromOnboardingData
+// et NutritionTargets.compute()).
 // ══════════════════════════════════════════════════════════════════════════════
 
 class _GoalData {
@@ -1937,380 +1857,1678 @@ const _goals = [
   _GoalData('Prise de masse'),
 ];
 
-class StepGoals extends StatefulWidget {
-  final List<String> selectedGoals;
-  final VoidCallback? onBack;
-  final ValueChanged<String> onToggleGoal;
-  final VoidCallback onNext;
-
-  const StepGoals({
-    super.key,
-    required this.selectedGoals,
-    this.onBack,
-    required this.onToggleGoal,
-    required this.onNext,
-  });
-
-  @override
-  State<StepGoals> createState() => _StepGoalsState();
-}
-
-class _StepGoalsState extends State<StepGoals>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _entranceCtrl;
-  late final List<Animation<double>> _fades;
-
-  @override
-  void initState() {
-    super.initState();
-    _entranceCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..forward();
-
-    _fades = List.generate(_goals.length, (i) {
-      final s = 0.08 + i * 0.12;
-      final e = (s + 0.45).clamp(0.0, 1.0);
-      return CurvedAnimation(
-        parent: _entranceCtrl,
-        curve: Interval(s, e, curve: Curves.easeOut),
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _entranceCtrl.dispose();
-    super.dispose();
-  }
-
-  // Choix unique : on retire l'ancienne sélection avant d'ajouter la nouvelle
-  // (le parent n'expose qu'un toggle add/remove générique, partagé avec
-  // d'autres steps — on garde donc cette logique côté widget).
-  void _select(String label) {
-    for (final g in _goals) {
-      if (g.label != label && widget.selectedGoals.contains(g.label)) {
-        widget.onToggleGoal(g.label);
-      }
-    }
-    if (!widget.selectedGoals.contains(label)) {
-      widget.onToggleGoal(label);
-    }
-    Future.delayed(const Duration(milliseconds: 300), widget.onNext);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _stepBackground(
-      child: SafeArea(
-        child: Column(
-          children: [
-            _OnboardingTopBar(step: 2, total: 7, onBack: widget.onBack),
-
-            const SizedBox(height: 8),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const _StepIcon(Icons.track_changes_rounded),
-                const SizedBox(height: 12),
-                _StepHeader(
-                  title: AppL10n(Lang.code).goalsTitle,
-                  subtitle: AppL10n(Lang.code).goalsHint,
-                ),
-              ]),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ── Circle cluster — 3 objectifs de poids, une seule colonne ──
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.rs(20)),
-              child: LayoutBuilder(
-                builder: (_, constraints) {
-                  final double d     = context.rs(150);
-                  final double vStep = context.rv(122);
-                  final double w     = constraints.maxWidth;
-                  final double cx    = w / 2;
-
-                  final offsets = [
-                    Offset(cx, 0),
-                    Offset(cx, vStep),
-                    Offset(cx, vStep * 2),
-                  ];
-
-                  final l10n = AppL10n(Lang.code);
-                  final _goalDisplayLabels = [
-                    l10n.goal1, l10n.goal2, l10n.goal3,
-                  ];
-                  return SizedBox(
-                    height: vStep * 2 + d,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: List.generate(_goals.length, (i) {
-                        final key = _goals[i].label; // clé de stockage (objectif)
-                        final displayLabel = _goalDisplayLabels[i];
-                        final isSel = widget.selectedGoals.contains(key);
-                        return Positioned(
-                          left: offsets[i].dx - d / 2,
-                          top: offsets[i].dy,
-                          child: FadeTransition(
-                            opacity: _fades[i],
-                            child: _CircleGoal(
-                              label: displayLabel,
-                              diameter: d,
-                              selected: isSel,
-                              onTap: () => _select(key),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            const Spacer(flex: 1),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Circle goal button ────────────────────────────────────────────────────────
-class _CircleGoal extends StatefulWidget {
-  final String label;
-  final double diameter;
-  final bool selected;
-  final VoidCallback onTap;
-  final Color accentColor;
-
-  const _CircleGoal({
-    required this.label,
-    required this.diameter,
-    required this.selected,
-    required this.onTap,
-    this.accentColor = _kGreenDark,
-  });
-
-  @override
-  State<_CircleGoal> createState() => _CircleGoalState();
-}
-
-class _CircleGoalState extends State<_CircleGoal>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _press;
-  late final Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _press = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 120),
-    );
-    _scale = Tween<double>(begin: 1.0, end: 0.93)
-        .animate(CurvedAnimation(parent: _press, curve: Curves.easeOut));
-  }
-
-  @override
-  void dispose() {
-    _press.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final d   = widget.diameter;
-    final sel = widget.selected;
-
-    return GestureDetector(
-      onTapDown:   (_) => _press.forward(),
-      onTapUp:     (_) { _press.reverse(); widget.onTap(); },
-      onTapCancel: () => _press.reverse(),
-      child: AnimatedBuilder(
-        animation: _scale,
-        builder: (_, child) =>
-            Transform.scale(scale: _scale.value, child: child),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          width: d,
-          height: d,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: sel
-                ? _kGreenDark.withValues(alpha: 0.5)
-                : _kGlassFill,
-            border: Border.all(
-              color: sel
-                  ? _kGreenMid.withValues(alpha: 0.6)
-                  : _kGlassBorder,
-              width: sel ? 1.5 : 0.5,
-            ),
-            boxShadow: sel
-                ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.2), blurRadius: 22, offset: const Offset(0, 8))]
-                : [],
-          ),
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(context.rs(12)),
-              child: Text(
-                widget.label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: context.rs(12.5),
-                  fontWeight: FontWeight.w600,
-                  color: sel ? Colors.white : _kTextDark,
-                  height: 1.4,
-                  letterSpacing: -0.1,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 3 — StepFitnessLevel  (minimalist B&W circle selector)
-// ══════════════════════════════════════════════════════════════════════════════
-
 const _levels = ['Débutant', 'Intermédiaire', 'Avancé'];
 
-class StepFitnessLevel extends StatefulWidget {
-  final String? selectedLevel;
-  final VoidCallback? onBack;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onNext;
+// ── Chat message model ─────────────────────────────────────────────────────
+enum _ChatSender { mascot, user }
 
-  const StepFitnessLevel({
-    super.key,
-    required this.selectedLevel,
-    this.onBack,
-    required this.onChanged,
-    required this.onNext,
+class _ChatMessage {
+  final _ChatSender sender;
+  final String? text;
+  final WidgetBuilder? inline;
+  final bool isTyping;
+  final VoidCallback? onEdit;
+
+  const _ChatMessage._({
+    required this.sender,
+    this.text,
+    this.inline,
+    this.isTyping = false,
+    this.onEdit,
   });
 
-  @override
-  State<StepFitnessLevel> createState() => _StepFitnessLevelState();
+  factory _ChatMessage.mascot(String text) =>
+      _ChatMessage._(sender: _ChatSender.mascot, text: text);
+  factory _ChatMessage.mascotInline(WidgetBuilder inline) =>
+      _ChatMessage._(sender: _ChatSender.mascot, inline: inline);
+  factory _ChatMessage.user(String text, {VoidCallback? onEdit}) =>
+      _ChatMessage._(sender: _ChatSender.user, text: text, onEdit: onEdit);
+  factory _ChatMessage.typing() =>
+      const _ChatMessage._(sender: _ChatSender.mascot, isTyping: true);
 }
 
-class _StepFitnessLevelState extends State<StepFitnessLevel>
+// ── Chat bubble — mascotte (gauche, avatar) ou utilisateur (droite) ────────
+// `inline` permet d'intégrer un composant complexe existant (drum picker,
+// cadran, cartes de choix) directement dans la bulle mascotte, pour les
+// steps où un simple quick-reply ne suffit pas.
+// `onTap` (bulles utilisateur uniquement) permet de rouvrir et modifier une
+// réponse déjà donnée — un petit crayon signale que la bulle est modifiable.
+class _ChatBubble extends StatelessWidget {
+  final _ChatSender sender;
+  final String? text;
+  final WidgetBuilder? inline;
+  final MascotType mascotType;
+  final VoidCallback? onTap;
+  const _ChatBubble({required this.sender, this.text, this.inline, required this.mascotType, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isMascot = sender == _ChatSender.mascot;
+    final isInline = inline != null;
+    final bubble = Container(
+      constraints: BoxConstraints(maxWidth: context._w * (isInline ? 0.88 : 0.72)),
+      padding: EdgeInsets.symmetric(
+        horizontal: isInline ? 12 : 16,
+        vertical: isInline ? 12 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: isMascot ? _kGlassFill : _kGreenDark.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+          bottomLeft: Radius.circular(isMascot ? 4 : 18),
+          bottomRight: Radius.circular(isMascot ? 18 : 4),
+        ),
+        border: Border.all(
+          color: isMascot ? _kGlassBorder : _kGreenMid.withValues(alpha: 0.4),
+          width: 0.6,
+        ),
+      ),
+      child: isInline
+          ? inline!(context)
+          : onTap == null
+              ? Text(
+                  text ?? '',
+                  style: GoogleFonts.inter(
+                    fontSize: 14.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                    color: isMascot ? _kTextDark : _kWhite,
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        text ?? '',
+                        style: GoogleFonts.inter(
+                          fontSize: 14.5,
+                          height: 1.4,
+                          fontWeight: FontWeight.w500,
+                          color: isMascot ? _kTextDark : _kWhite,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.edit_rounded, size: 13,
+                        color: (isMascot ? _kTextMuted : _kWhite).withValues(alpha: 0.6)),
+                  ],
+                ),
+    );
+
+    final tappableBubble = onTap != null
+        ? GestureDetector(onTap: onTap, child: bubble)
+        : bubble;
+
+    if (isMascot) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          MascotWidget(type: mascotType, size: 34, mood: MascotMood.happy),
+          const SizedBox(width: 8),
+          Flexible(child: tappableBubble),
+        ],
+      );
+    }
+    return Row(mainAxisAlignment: MainAxisAlignment.end, children: [Flexible(child: tappableBubble)]);
+  }
+}
+
+// ── Bulle "en train d'écrire..." — 3 points qui rebondissent ───────────────
+class _TypingBubble extends StatefulWidget {
+  final MascotType mascotType;
+  const _TypingBubble({required this.mascotType});
+
+  @override
+  State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _entranceCtrl;
-  late final List<Animation<double>> _fades;
+  late final AnimationController _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _entranceCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..forward();
-
-    _fades = List.generate(_levels.length, (i) {
-      final s = 0.10 + i * 0.18;
-      final e = (s + 0.45).clamp(0.0, 1.0);
-      return CurvedAnimation(
-        parent: _entranceCtrl,
-        curve: Interval(s, e, curve: Curves.easeOut),
-      );
-    });
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+      ..repeat();
   }
 
   @override
   void dispose() {
-    _entranceCtrl.dispose();
+    _ctrl.dispose();
     super.dispose();
-  }
-
-  void _select(String label) {
-    widget.onChanged(label);
-    Future.delayed(const Duration(milliseconds: 300), widget.onNext);
   }
 
   @override
   Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        MascotWidget(type: widget.mascotType, size: 34, mood: MascotMood.happy),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            color: _kGlassFill,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(18),
+              topRight: Radius.circular(18),
+              bottomLeft: Radius.circular(4),
+              bottomRight: Radius.circular(18),
+            ),
+            border: Border.all(color: _kGlassBorder, width: 0.6),
+          ),
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, __) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(3, (i) {
+                final t = (_ctrl.value + i * 0.2) % 1.0;
+                final bounce = sin(t * pi).abs();
+                return Padding(
+                  padding: EdgeInsets.only(left: i == 0 ? 0 : 4),
+                  child: Transform.translate(
+                    offset: Offset(0, -bounce * 4),
+                    child: Container(
+                      width: 6, height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _kTextMuted.withValues(alpha: 0.5 + bounce * 0.5),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Quick-reply — pills affichées sous la dernière bulle mascotte ──────────
+class _QuickReplyRow extends StatelessWidget {
+  final List<(String key, String label)> options;
+  final void Function(String key, String label) onPicked;
+  const _QuickReplyRow({required this.options, required this.onPicked});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: options.map((o) => GestureDetector(
+        onTap: () => onPicked(o.$1, o.$2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: _kGlassFill,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _kGreenMid.withValues(alpha: 0.5), width: 1),
+          ),
+          child: Text(
+            o.$2,
+            style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600, color: _kTextDark),
+          ),
+        ),
+      )).toList(),
+    );
+  }
+}
+
+// ── Multi quick-reply — chips à toggle (multi-sélection) + bouton confirmer ──
+// Pour les steps où plusieurs choix sont possibles (ex: équipement) : chaque
+// chip peut être activée/désactivée indépendamment, un bouton "Continuer"
+// valide la sélection et fait avancer la conversation.
+class _MultiQuickReplyPanel extends StatelessWidget {
+  final List<(String key, String label, IconData icon)> options;
+  final List<String> selected;
+  final void Function(String key) onToggle;
+  final String confirmLabel;
+  final VoidCallback? onConfirm;
+
+  const _MultiQuickReplyPanel({
+    required this.options,
+    required this.selected,
+    required this.onToggle,
+    required this.confirmLabel,
+    this.onConfirm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((o) {
+            final isSel = selected.contains(o.$1);
+            return GestureDetector(
+              onTap: () => onToggle(o.$1),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSel ? _kGreenDark.withValues(alpha: 0.45) : _kGlassFill,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSel ? _kGreenBright.withValues(alpha: 0.7) : _kGreenMid.withValues(alpha: 0.5),
+                    width: isSel ? 1.4 : 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(o.$3, size: 14, color: isSel ? _kGreenBright : _kGreenMid),
+                    const SizedBox(width: 6),
+                    Text(
+                      o.$2,
+                      style: GoogleFonts.inter(
+                        fontSize: 13.5, fontWeight: FontWeight.w600,
+                        color: isSel ? _kWhite : _kTextDark),
+                    ),
+                    if (isSel) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.check_rounded, size: 14, color: _kGreenBright),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        _ChatConfirmButton(label: confirmLabel, onTap: onConfirm),
+      ],
+    );
+  }
+}
+
+// ── Bouton "Continuer" — utilisé après une interaction inline (dial, drum
+// picker, cartes...) qui ne peut pas s'auto-valider comme un quick-reply. ──
+class _ChatConfirmButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
+  const _ChatConfirmButton({required this.label, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: enabled ? 1 : 0.4,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+          decoration: BoxDecoration(
+            gradient: enabled
+                ? const LinearGradient(colors: [_kGreenDark, _kGreenBright])
+                : null,
+            color: enabled ? null : _kGlassFill,
+            borderRadius: BorderRadius.circular(20),
+            border: enabled ? null : Border.all(color: _kGlassBorder, width: 0.6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.3,
+                  color: enabled ? _kWhite : _kTextMuted),
+              ),
+              if (enabled) ...[
+                const SizedBox(width: 6),
+                const Icon(Icons.arrow_forward_rounded, size: 15, color: _kWhite),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// OnboardingChatFlow — tout l'onboarding (mascotte → objectifs → niveau →
+// équipement → lieu → fréquence → taille/poids/âge → cycle) dans UN SEUL fil
+// de chat continu, un seul scroll — plus de découpage en pages séparées.
+// Chaque réponse déjà donnée reste modifiable : taper sur sa bulle (icône
+// crayon) rouvre la question correspondante et met simplement à jour la
+// donnée, sans rejouer les questions suivantes déjà répondues.
+// ══════════════════════════════════════════════════════════════════════════════
+class OnboardingChatFlow extends StatefulWidget {
+  final OnboardingData data;
+  final VoidCallback? onBack;
+  final VoidCallback onDataChanged;
+  final VoidCallback onFinish;
+
+  const OnboardingChatFlow({
+    super.key,
+    required this.data,
+    this.onBack,
+    required this.onDataChanged,
+    required this.onFinish,
+  });
+
+  @override
+  State<OnboardingChatFlow> createState() => _OnboardingChatFlowState();
+}
+
+class _OnboardingChatFlowState extends State<OnboardingChatFlow> {
+  OnboardingData get _data => widget.data;
+
+  MascotType get _mascotType {
+    for (final t in MascotType.values) {
+      if (t.name == _data.mascotType) return t;
+    }
+    return MascotType.blob;
+  }
+
+  // ── Chat plumbing ────────────────────────────────────────────────────────
+  final List<_ChatMessage> _messages = [];
+  final ScrollController _scrollCtrl = ScrollController();
+  final _rng = Random();
+  // Contrôle actif prioritaire — non nul quand l'utilisateur modifie une
+  // réponse déjà donnée. Le flux principal (ses propres booléens `_showingX`)
+  // n'est jamais touché par une édition : une fois l'édition confirmée, le
+  // flux principal réapparaît naturellement tel qu'il était.
+  Widget Function(BuildContext)? _editingControl;
+  int _completedPhases = 0;
+  static const _totalPhases = 10;
+
+  // ── Mascotte ─────────────────────────────────────────────────────────────
+  bool _showingMascotOptions = false;
+  static const _mascotTypes = [
+    (MascotType.blob,  'Blobby',  '🟢'),
+    (MascotType.sun,   'Sunny',   '☀️'),
+    (MascotType.star,  'Starlet', '⭐'),
+    (MascotType.cloud, 'Cloudie', '☁️'),
+    (MascotType.leaf,  'Leafy',   '🍃'),
+  ];
+
+  // ── Objectif / niveau ────────────────────────────────────────────────────
+  bool _showingGoalOptions = false;
+  bool _showingFitnessOptions = false;
+
+  // ── Équipement ───────────────────────────────────────────────────────────
+  bool _showingEquipmentOptions = false;
+
+  // ── Lieu d'entraînement ──────────────────────────────────────────────────
+  bool _showingLocationOptions = false;
+  static const _locationValues = ['gym', 'home', 'both'];
+  static const _locationEmojis = ['🏋️', '🏠', '💪'];
+
+  // ── Fréquence ────────────────────────────────────────────────────────────
+  bool _showingFrequencyOptions = false;
+  static const _freqLabels = ['2 jours', '3 jours', '4 jours', '5 jours', '6 jours'];
+
+  // ── Taille / poids / âge ─────────────────────────────────────────────────
+  static const int _minH = 140, _maxH = 210;
+  static const int _minA = 15,  _maxA = 70;
+  static final List<double> _wList = List.generate(231, (i) => 35.0 + i * 0.5);
+  late final FixedExtentScrollController _hCtrl;
+  late final FixedExtentScrollController _wCtrl;
+  late final FixedExtentScrollController _aCtrl;
+  late int _hIdx;
+  late int _wIdx;
+  late int _aIdx;
+  bool _showingHeightConfirm = false;
+  bool _showingWeightConfirm = false;
+  bool _showingAgeConfirm = false;
+
+  int get _heightCm => _minH + _hIdx;
+  double get _weightKg => _wList[_wIdx];
+  int get _age => _minA + _aIdx;
+  double get _bmi => _weightKg / pow(_heightCm / 100, 2);
+
+  String get _bmiLabel {
+    final l10n = AppL10n(Lang.code);
+    if (_bmi < 18.5) return l10n.healthProfileBmiThin;
+    if (_bmi < 25.0) return l10n.healthProfileBmiNormal;
+    if (_bmi < 30.0) return l10n.healthProfileBmiOver;
+    return l10n.healthProfileBmiObese;
+  }
+
+  Color get _bmiColor {
+    if (_bmi < 18.5) return const Color(0xFF5B9BD9);
+    if (_bmi < 25.0) return _kGreenMid;
+    if (_bmi < 30.0) return const Color(0xFFE8A040);
+    return const Color(0xFFD94A4A);
+  }
+
+  // ── Cycle / grossesse / post-partum ──────────────────────────────────────
+  // 'cycle' | 'pregnant' | 'postpartum' | null
+  String? _status;
+  String _cycleDuration = '28 jours';
+  DateTime _lastPeriod = DateTime.now().subtract(const Duration(days: 14));
+  static const List<String> _cycleDurations = [
+    '24 jours', '26 jours', '28 jours', '30 jours', '32 jours',
+  ];
+  String? _ppDuration;   // '0-2', '2-6', '6-12', '3-6m', '6m+'
+  DateTime? _birthDate;
+  int _weekIdx = 11; // default SA 12 (index 0-based)
+  late final FixedExtentScrollController _weekCtrl;
+  bool _showingCycleStatusOptions = false;
+  bool _showingCycleConfirm = false;
+
+  String get _ppProgram {
+    switch (_ppDuration) {
+      case '0-2':  return 'Reborn';
+      case '2-6':  return 'Rise';
+      case '6-12': return 'Rise+';
+      case '3-6m': return 'Reclaim';
+      case '6m+':  return 'Reclaim+';
+      default: return '';
+    }
+  }
+
+  String get _ppProgramDesc {
+    final l10n = AppL10n(Lang.code);
+    switch (_ppDuration) {
+      case '0-2':  return l10n.ppPpProgDesc0_2;
+      case '2-6':  return l10n.ppPpProgDesc2_6;
+      case '6-12': return l10n.ppPpProgDesc6_12;
+      case '3-6m': return l10n.ppPpProgDesc3_6m;
+      case '6m+':  return l10n.ppPpProgDesc6mPlus;
+      default: return '';
+    }
+  }
+
+  Color get _ppProgramColor {
+    switch (_ppDuration) {
+      case '0-2':  return const Color(0xFFE53935);
+      case '2-6':  return const Color(0xFFFB8C00);
+      case '6-12': return const Color(0xFFFB8C00);
+      case '3-6m': return const Color(0xFF2E7D32);
+      case '6m+':  return const Color(0xFF2E7D32);
+      default: return _kGreenDark;
+    }
+  }
+
+  DateTime get _nextPeriod {
+    final d = int.tryParse(_cycleDuration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 28;
+    return _lastPeriod.add(Duration(days: d));
+  }
+
+  int get _weekSA => _weekIdx + 1;
+
+  int get _trimester {
+    if (_weekSA <= 13) return 1;
+    if (_weekSA <= 27) return 2;
+    return 3;
+  }
+
+  String get _trimesterAdvice {
+    final l10n = AppL10n(Lang.code);
+    switch (_trimester) {
+      case 1: return l10n.cycleAdviceT1;
+      case 2: return l10n.cycleAdviceT2;
+      default: return l10n.cycleAdviceT3;
+    }
+  }
+
+  bool get _canConfirmCycle =>
+      _status == 'postpartum' ? _ppDuration != null : _status != null;
+
+  String _fmt(DateTime d) {
+    const m = [
+      'Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin',
+      'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.',
+    ];
+    return '${d.day} ${m[d.month - 1]}';
+  }
+
+  Future<void> _pickLastPeriodDate() async {
+    final p = await showCustomDatePicker(
+      context: context,
+      initialDate: _lastPeriod,
+      firstDate: DateTime(2024),
+      lastDate: DateTime.now(),
+      title: AppL10n(Lang.code).datePickerLastPeriodTitle,
+      subtitle: AppL10n(Lang.code).datePickerLastPeriodSub,
+      icon: Icons.water_drop_rounded,
+      accentColor: const Color(0xFFD94F6B),
+    );
+    if (p != null) {
+      setState(() => _lastPeriod = p);
+      _data.lastPeriod = p;
+      widget.onDataChanged();
+    }
+  }
+
+  // ── Init / Dispose ──────────────────────────────────────────────────────
+  @override
+  void initState() {
+    super.initState();
+    _hIdx = (_data.heightCm - _minH).clamp(0, _maxH - _minH);
+    final wNearest = _wList.indexWhere((w) => w >= _data.weightKg);
+    _wIdx = wNearest < 0 ? 50 : wNearest;
+    _aIdx = (_data.age - _minA).clamp(0, _maxA - _minA);
+    _hCtrl = FixedExtentScrollController(initialItem: _hIdx);
+    _wCtrl = FixedExtentScrollController(initialItem: _wIdx);
+    _aCtrl = FixedExtentScrollController(initialItem: _aIdx);
+    _weekCtrl = FixedExtentScrollController(initialItem: _weekIdx);
+    TickSoundService.instance.init();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _askMascot());
+  }
+
+  @override
+  void dispose() {
+    _hCtrl.dispose();
+    _wCtrl.dispose();
+    _aCtrl.dispose();
+    _weekCtrl.dispose();
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  // ── Chat plumbing helpers ───────────────────────────────────────────────
+  Future<void> _sayMascot(String text) async {
+    setState(() => _messages.add(_ChatMessage.typing()));
+    _scrollToBottom();
+    await Future.delayed(Duration(milliseconds: 400 + _rng.nextInt(200)));
+    if (!mounted) return;
+    setState(() {
+      _messages.removeLast();
+      _messages.add(_ChatMessage.mascot(text));
+    });
+    _scrollToBottom();
+  }
+
+  void _sayUser(String text, {VoidCallback? onEdit}) {
+    setState(() => _messages.add(_ChatMessage.user(text, onEdit: onEdit)));
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollCtrl.hasClients) return;
+      _scrollCtrl.animateTo(
+        _scrollCtrl.position.maxScrollExtent + 140,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  Future<void> _ackEdit() async {
+    await _sayMascot(AppL10n(Lang.code).chatAnswerUpdated);
+    if (!mounted) return;
+    setState(() => _editingControl = null);
+  }
+
+  // ══ PHASE 1 — Mascotte ══════════════════════════════════════════════════
+  Future<void> _askMascot() async {
+    await _sayMascot(AppL10n(Lang.code).avatarChooseTitle);
+    if (!mounted) return;
+    setState(() => _showingMascotOptions = true);
+  }
+
+  Widget _mascotControl({required bool editing}) {
+    return SizedBox(
+      height: 84,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _mascotTypes.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final (type, name, emoji) = _mascotTypes[i];
+          final selected = _mascotType == type;
+          return GestureDetector(
+            onTap: () => _commitMascot(type, name, emoji, editing: editing),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 72,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: selected ? _kGreenDark.withValues(alpha: 0.4) : _kGlassFill,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: selected ? _kGreenMid.withValues(alpha: 0.6) : _kGlassBorder,
+                  width: selected ? 1.4 : 0.6),
+              ),
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                MascotWidget(type: type, mood: MascotMood.happy, size: 40),
+                const SizedBox(height: 4),
+                Text(name, style: GoogleFonts.inter(
+                  fontSize: 9.5, fontWeight: FontWeight.w700,
+                  color: selected ? _kWhite : _kTextMuted)),
+              ]),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _commitMascot(MascotType type, String name, String emoji, {required bool editing}) async {
+    HapticFeedback.selectionClick();
+    if (editing) {
+      setState(() => _editingControl = null);
+    } else {
+      setState(() => _showingMascotOptions = false);
+    }
+    _data.mascotType = type.name;
+    widget.onDataChanged();
+
+    _sayUser('$emoji $name', onEdit: () => _reopenMascot());
+    if (editing) {
+      await _ackEdit();
+      return;
+    }
+    _completedPhases = 1;
+    await _sayMascot(AppL10n(Lang.code).avatarChatConfirm);
+    if (!mounted) return;
+    await _askGoal();
+  }
+
+  void _reopenMascot() {
+    setState(() => _editingControl = (ctx) => _mascotControl(editing: true));
+    _scrollToBottom();
+  }
+
+  // ══ PHASE 2 — Objectif ══════════════════════════════════════════════════
+  Future<void> _askGoal() async {
+    final l10n = AppL10n(Lang.code);
+    await _sayMascot(l10n.goalsTitle.replaceAll('\n', ' '));
+    if (!mounted) return;
+    setState(() => _showingGoalOptions = true);
+  }
+
+  Widget _goalControl({required bool editing}) {
+    final l10n = AppL10n(Lang.code);
+    return _QuickReplyRow(
+      options: [
+        (_goals[0].label, l10n.goal1.replaceAll('\n', ' ')),
+        (_goals[1].label, l10n.goal2.replaceAll('\n', ' ')),
+        (_goals[2].label, l10n.goal3.replaceAll('\n', ' ')),
+      ],
+      onPicked: (key, label) => _commitGoal(key, label, editing: editing),
+    );
+  }
+
+  // Choix unique : on retire l'ancienne sélection avant d'ajouter la nouvelle.
+  Future<void> _commitGoal(String key, String label, {required bool editing}) async {
+    HapticFeedback.selectionClick();
+    if (editing) {
+      setState(() => _editingControl = null);
+    } else {
+      setState(() => _showingGoalOptions = false);
+    }
+    for (final g in _goals) {
+      if (g.label != key) _data.goals.remove(g.label);
+    }
+    if (!_data.goals.contains(key)) _data.goals.add(key);
+    widget.onDataChanged();
+
+    _sayUser(label, onEdit: () => _reopenGoal());
+    if (editing) {
+      await _ackEdit();
+      return;
+    }
+    _completedPhases = 2;
+    await _sayMascot(AppL10n(Lang.code).goalsChatConfirm);
+    if (!mounted) return;
+    await _askFitness();
+  }
+
+  void _reopenGoal() {
+    setState(() => _editingControl = (ctx) => _goalControl(editing: true));
+    _scrollToBottom();
+  }
+
+  // ══ PHASE 3 — Niveau fitness ════════════════════════════════════════════
+  Future<void> _askFitness() async {
+    final l10n = AppL10n(Lang.code);
+    await _sayMascot(l10n.fitnessTitle.replaceAll('\n', ' '));
+    if (!mounted) return;
+    setState(() => _showingFitnessOptions = true);
+  }
+
+  Widget _fitnessControl({required bool editing}) {
+    final l10n = AppL10n(Lang.code);
+    return _QuickReplyRow(
+      options: [
+        (_levels[0], l10n.fitnessLevelBeginner),
+        (_levels[1], l10n.fitnessLevelIntermediate),
+        (_levels[2], l10n.fitnessLevelAdvanced),
+      ],
+      onPicked: (key, label) => _commitFitness(key, label, editing: editing),
+    );
+  }
+
+  Future<void> _commitFitness(String key, String label, {required bool editing}) async {
+    HapticFeedback.selectionClick();
+    if (editing) {
+      setState(() => _editingControl = null);
+    } else {
+      setState(() => _showingFitnessOptions = false);
+    }
+    _data.fitnessLevel = key;
+    widget.onDataChanged();
+
+    _sayUser(label, onEdit: () => _reopenFitness());
+    if (editing) {
+      await _ackEdit();
+      return;
+    }
+    _completedPhases = 3;
+    await _sayMascot(AppL10n(Lang.code).fitnessChatConfirm);
+    if (!mounted) return;
+    await _askEquipment();
+  }
+
+  void _reopenFitness() {
+    setState(() => _editingControl = (ctx) => _fitnessControl(editing: true));
+    _scrollToBottom();
+  }
+
+  // ══ PHASE 4 — Équipement (multi-sélection) ══════════════════════════════
+  Future<void> _askEquipment() async {
+    final l10n = AppL10n(Lang.code);
+    await _sayMascot(l10n.equipmentTitle.replaceAll('\n', ' '));
+    if (!mounted) return;
+    setState(() => _showingEquipmentOptions = true);
+  }
+
+  Map<String, String> _equipmentLabels(AppL10n l10n) => {
+    'Aucun matériel': l10n.equipmentNone,
+    'Haltères': l10n.equipmentDumbbells,
+    'Barre & poids': l10n.equipmentBarbell,
+    'Machines': l10n.equipmentMachines,
+    'Résistances': l10n.equipmentBands,
+    'Tapis de yoga': l10n.equipmentYogaMat,
+  };
+
+  // Logique métier inchangée — gère l'exclusivité de "Aucun matériel" via un
+  // toggle générique add/remove (comme l'ancien callback partagé du parent).
+  void _toggleEquipmentRaw(String item) {
+    if (_data.equipment.contains(item)) {
+      _data.equipment.remove(item);
+    } else {
+      _data.equipment.add(item);
+    }
+  }
+
+  void _handleEquipmentTap(String label) {
+    final selected = List<String>.from(_data.equipment);
+    if (label == 'Aucun matériel') {
+      for (final item in selected) {
+        _toggleEquipmentRaw(item);
+      }
+      if (!selected.contains('Aucun matériel')) _toggleEquipmentRaw('Aucun matériel');
+    } else {
+      if (selected.contains('Aucun matériel')) _toggleEquipmentRaw('Aucun matériel');
+      _toggleEquipmentRaw(label);
+    }
+    widget.onDataChanged();
+    setState(() {});
+  }
+
+  Widget _equipmentControl({required bool editing}) {
+    final l10n = AppL10n(Lang.code);
+    final labels = _equipmentLabels(l10n);
+    return _MultiQuickReplyPanel(
+      options: _equipments.map((k) => (k, labels[k]!, equipmentIcons[k]!)).toList(),
+      selected: _data.equipment,
+      onToggle: _handleEquipmentTap,
+      confirmLabel: _data.equipment.isNotEmpty
+          ? '${l10n.equipmentContinue} (${_data.equipment.length})'
+          : l10n.equipmentSelectAtLeastOne,
+      onConfirm: _data.equipment.isNotEmpty ? () => _confirmEquipment(editing: editing) : null,
+    );
+  }
+
+  Future<void> _confirmEquipment({required bool editing}) async {
+    if (_data.equipment.isEmpty) return;
+    HapticFeedback.selectionClick();
+    if (editing) {
+      setState(() => _editingControl = null);
+    } else {
+      setState(() => _showingEquipmentOptions = false);
+    }
+
+    final l10n = AppL10n(Lang.code);
+    final labels = _equipmentLabels(l10n);
+    _sayUser(_data.equipment.map((k) => labels[k] ?? k).join(', '), onEdit: () => _reopenEquipment());
+    if (editing) {
+      await _ackEdit();
+      return;
+    }
+    _completedPhases = 4;
+    await _sayMascot(l10n.equipmentChatConfirm);
+    if (!mounted) return;
+    await _askLocation();
+  }
+
+  void _reopenEquipment() {
+    setState(() => _editingControl = (ctx) => _equipmentControl(editing: true));
+    _scrollToBottom();
+  }
+
+  // ══ PHASE 5 — Lieu d'entraînement ═══════════════════════════════════════
+  Future<void> _askLocation() async {
+    final l10n = AppL10n(Lang.code);
+    await _sayMascot(l10n.locationTitle);
+    if (!mounted) return;
+    setState(() => _showingLocationOptions = true);
+  }
+
+  Widget _locationControl({required bool editing}) {
+    final l10n = AppL10n(Lang.code);
+    final labels = [l10n.locationGym, l10n.locationHome, l10n.locationBoth];
+    return _QuickReplyRow(
+      options: List.generate(_locationValues.length,
+          (i) => (_locationValues[i], '${_locationEmojis[i]} ${labels[i]}')),
+      onPicked: (key, label) => _commitLocation(key, label, editing: editing),
+    );
+  }
+
+  Future<void> _commitLocation(String key, String label, {required bool editing}) async {
+    HapticFeedback.selectionClick();
+    if (editing) {
+      setState(() => _editingControl = null);
+    } else {
+      setState(() => _showingLocationOptions = false);
+    }
+    _data.trainingLocation = key;
+    widget.onDataChanged();
+
+    _sayUser(label, onEdit: () => _reopenLocation());
+    if (editing) {
+      await _ackEdit();
+      return;
+    }
+    _completedPhases = 5;
+    await _sayMascot(AppL10n(Lang.code).locationChatConfirm);
+    if (!mounted) return;
+    await _askFrequency();
+  }
+
+  void _reopenLocation() {
+    setState(() => _editingControl = (ctx) => _locationControl(editing: true));
+    _scrollToBottom();
+  }
+
+  // ══ PHASE 6 — Fréquence ═════════════════════════════════════════════════
+  Future<void> _askFrequency() async {
+    final l10n = AppL10n(Lang.code);
+    await _sayMascot(l10n.frequencyTitle.replaceAll('\n', ' '));
+    if (!mounted) return;
+    setState(() => _showingFrequencyOptions = true);
+  }
+
+  Widget _frequencyControl({required bool editing}) {
+    return _QuickReplyRow(
+      options: List.generate(_freqLabels.length, (i) => (_freqLabels[i], '${i + 2}')),
+      onPicked: (key, label) => _commitFrequency(key, label, editing: editing),
+    );
+  }
+
+  Future<void> _commitFrequency(String key, String label, {required bool editing}) async {
+    HapticFeedback.selectionClick();
+    if (editing) {
+      setState(() => _editingControl = null);
+    } else {
+      setState(() => _showingFrequencyOptions = false);
+    }
+    _data.frequency = key;
+    widget.onDataChanged();
+
+    _sayUser(label, onEdit: () => _reopenFrequency());
+    if (editing) {
+      await _ackEdit();
+      return;
+    }
+    _completedPhases = 6;
+    await _sayMascot(AppL10n(Lang.code).frequencyChatConfirm);
+    if (!mounted) return;
+    await _askHeight();
+  }
+
+  void _reopenFrequency() {
+    setState(() => _editingControl = (ctx) => _frequencyControl(editing: true));
+    _scrollToBottom();
+  }
+
+  // ══ PHASE 7-9 — Taille / poids / âge (question par question) ═══════════
+  Widget _heightPicker() {
+    return Center(
+      child: _ChatDrumPicker(
+        label: AppL10n(Lang.code).healthProfileHeight,
+        unit: 'cm',
+        selectedIndex: _hIdx,
+        controller: _hCtrl,
+        itemCount: _maxH - _minH + 1,
+        labelFor: (i) => '${_minH + i}',
+        onChanged: (i) {
+          setState(() => _hIdx = i);
+          _data.heightCm = _heightCm;
+          widget.onDataChanged();
+        },
+      ),
+    );
+  }
+
+  Future<void> _askHeight() async {
+    final l10n = AppL10n(Lang.code);
+    await _sayMascot(l10n.healthProfileHeightQuestion);
+    if (!mounted) return;
+    setState(() {
+      _messages.add(_ChatMessage.mascotInline((ctx) => _heightPicker()));
+      _showingHeightConfirm = true;
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _confirmHeight({required bool editing}) async {
+    HapticFeedback.selectionClick();
+    if (editing) {
+      setState(() => _editingControl = null);
+    } else {
+      setState(() => _showingHeightConfirm = false);
+    }
+    _sayUser('$_heightCm cm', onEdit: () => _reopenHeight());
+    if (editing) {
+      await _ackEdit();
+      return;
+    }
+    _completedPhases = 7;
+    await _askWeight();
+  }
+
+  void _reopenHeight() {
+    setState(() {
+      _messages.add(_ChatMessage.mascotInline((ctx) => _heightPicker()));
+      _editingControl = (ctx) => _ChatConfirmButton(
+        label: AppL10n(Lang.code).frequencyNext,
+        onTap: () => _confirmHeight(editing: true));
+    });
+    _scrollToBottom();
+  }
+
+  Widget _weightPicker() {
+    return Center(
+      child: _ChatDrumPicker(
+        label: AppL10n(Lang.code).healthProfileWeight,
+        unit: 'kg',
+        selectedIndex: _wIdx,
+        controller: _wCtrl,
+        itemCount: _wList.length,
+        labelFor: (i) {
+          final w = _wList[i];
+          return w % 1 == 0 ? '${w.toInt()}' : w.toStringAsFixed(1);
+        },
+        onChanged: (i) {
+          setState(() => _wIdx = i);
+          _data.weightKg = _weightKg;
+          widget.onDataChanged();
+        },
+      ),
+    );
+  }
+
+  Future<void> _askWeight() async {
+    final l10n = AppL10n(Lang.code);
+    await _sayMascot(l10n.healthProfileWeightQuestion);
+    if (!mounted) return;
+    setState(() {
+      _messages.add(_ChatMessage.mascotInline((ctx) => _weightPicker()));
+      _showingWeightConfirm = true;
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _confirmWeight({required bool editing}) async {
+    HapticFeedback.selectionClick();
+    if (editing) {
+      setState(() => _editingControl = null);
+    } else {
+      setState(() => _showingWeightConfirm = false);
+    }
+    final weightLabel = _weightKg % 1 == 0 ? '${_weightKg.toInt()}' : _weightKg.toStringAsFixed(1);
+    _sayUser('$weightLabel kg', onEdit: () => _reopenWeight());
+    if (editing) {
+      await _ackEdit();
+      return;
+    }
+    _completedPhases = 8;
+    await _askAge();
+  }
+
+  void _reopenWeight() {
+    setState(() {
+      _messages.add(_ChatMessage.mascotInline((ctx) => _weightPicker()));
+      _editingControl = (ctx) => _ChatConfirmButton(
+        label: AppL10n(Lang.code).frequencyNext,
+        onTap: () => _confirmWeight(editing: true));
+    });
+    _scrollToBottom();
+  }
+
+  Widget _agePicker() {
+    return Center(
+      child: _ChatDrumPicker(
+        label: AppL10n(Lang.code).healthProfileAge,
+        unit: AppL10n(Lang.code).healthProfileAgeUnit,
+        selectedIndex: _aIdx,
+        controller: _aCtrl,
+        itemCount: _maxA - _minA + 1,
+        labelFor: (i) => '${_minA + i}',
+        onChanged: (i) {
+          setState(() => _aIdx = i);
+          _data.age = _age;
+          widget.onDataChanged();
+        },
+      ),
+    );
+  }
+
+  Future<void> _askAge() async {
+    final l10n = AppL10n(Lang.code);
+    await _sayMascot(l10n.healthProfileAgeQuestion);
+    if (!mounted) return;
+    setState(() {
+      _messages.add(_ChatMessage.mascotInline((ctx) => _agePicker()));
+      _showingAgeConfirm = true;
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _confirmAge({required bool editing}) async {
+    HapticFeedback.selectionClick();
+    if (editing) {
+      setState(() => _editingControl = null);
+    } else {
+      setState(() => _showingAgeConfirm = false);
+    }
+    final l10n = AppL10n(Lang.code);
+    _sayUser('$_age ${l10n.healthProfileAgeUnit}', onEdit: () => _reopenAge());
+    if (editing) {
+      await _ackEdit();
+      return;
+    }
+    _completedPhases = 9;
+    await _sayMascot(l10n.healthProfileChatConfirm);
+    if (!mounted) return;
+    setState(() => _messages.add(
+        _ChatMessage.mascotInline((ctx) => _BmiCard(bmi: _bmi, label: _bmiLabel, color: _bmiColor))));
+    _scrollToBottom();
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    await _askCycleStatus();
+  }
+
+  void _reopenAge() {
+    setState(() {
+      _messages.add(_ChatMessage.mascotInline((ctx) => _agePicker()));
+      _editingControl = (ctx) => _ChatConfirmButton(
+        label: AppL10n(Lang.code).healthProfileContinue,
+        onTap: () => _confirmAge(editing: true));
+    });
+    _scrollToBottom();
+  }
+
+  // ══ PHASE 10 — Cycle / grossesse / post-partum ══════════════════════════
+  Future<void> _askCycleStatus() async {
+    final l10n = AppL10n(Lang.code);
+    await _sayMascot(l10n.cycleStepTitle);
+    if (!mounted) return;
+    setState(() => _showingCycleStatusOptions = true);
+  }
+
+  Widget _cycleStatusControl({required bool editing}) {
+    final l10n = AppL10n(Lang.code);
+    return _QuickReplyRow(
+      options: [
+        ('cycle', l10n.cycleStatusRegular.replaceAll('\n', ' ')),
+        ('pregnant', l10n.cycleStatusPregnant.replaceAll('\n', ' ')),
+        ('postpartum', l10n.cycleStatusPostpartum.replaceAll('\n', ' ')),
+      ],
+      onPicked: (key, label) => _pickCycleStatus(key, label, editing: editing),
+    );
+  }
+
+  void _pickCycleStatus(String value, String displayLabel, {required bool editing}) {
+    HapticFeedback.selectionClick();
+    if (!editing) setState(() => _showingCycleStatusOptions = false);
+    setState(() => _status = value);
+    _data.healthStatus = value;
+    widget.onDataChanged();
+
+    _sayUser(displayLabel, onEdit: () => _reopenCycleStatus());
+    final inlineBuilder = value == 'cycle'
+        ? _cycleWidget
+        : value == 'pregnant'
+            ? _pregnancyWidget
+            : _postpartumWidget;
+    setState(() {
+      _messages.add(_ChatMessage.mascotInline((ctx) => inlineBuilder()));
+      _editingControl = (ctx) => _ChatConfirmButton(
+        label: _status == 'cycle' ? AppL10n(Lang.code).cycleCtaStart : AppL10n(Lang.code).continueBtn,
+        onTap: _canConfirmCycle ? () => _confirmCycleDetails(editing: true) : null,
+      );
+      if (!editing) _showingCycleConfirm = true;
+    });
+    _scrollToBottom();
+  }
+
+  void _reopenCycleStatus() {
+    setState(() => _editingControl = (ctx) => _cycleStatusControl(editing: true));
+    _scrollToBottom();
+  }
+
+  void _reopenCycleDetails() {
+    if (_status == null) return;
+    final inlineBuilder = _status == 'cycle'
+        ? _cycleWidget
+        : _status == 'pregnant'
+            ? _pregnancyWidget
+            : _postpartumWidget;
+    setState(() {
+      _messages.add(_ChatMessage.mascotInline((ctx) => inlineBuilder()));
+      _editingControl = (ctx) => _ChatConfirmButton(
+        label: _status == 'cycle' ? AppL10n(Lang.code).cycleCtaStart : AppL10n(Lang.code).continueBtn,
+        onTap: _canConfirmCycle ? () => _confirmCycleDetails(editing: true) : null,
+      );
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _confirmCycleDetails({required bool editing}) async {
+    if (!_canConfirmCycle) return;
+    HapticFeedback.selectionClick();
+    if (editing) {
+      setState(() => _editingControl = null);
+    } else {
+      setState(() => _showingCycleConfirm = false);
+    }
+
+    final l10n = AppL10n(Lang.code);
+    final summary = _status == 'cycle'
+        ? '${l10n.cycleStatusRegular.replaceAll('\n', ' ')} · $_cycleDuration · ${_fmt(_lastPeriod)}'
+        : _status == 'pregnant'
+            ? '${l10n.cycleStatusPregnant.replaceAll('\n', ' ')} · SA $_weekSA'
+            : '${l10n.cycleStatusPostpartum.replaceAll('\n', ' ')} · ${_fmt(_birthDate!)}';
+    _sayUser(summary, onEdit: () => _reopenCycleDetails());
+    if (editing) {
+      await _ackEdit();
+      return;
+    }
+    _completedPhases = 10;
+    await _sayMascot(l10n.cycleChatConfirm);
+    if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+    widget.onFinish();
+  }
+
+  // ── CYCLE content ──────────────────────────────────────────────────────────
+  Widget _cycleWidget() {
+    return Column(
+      key: const ValueKey('cycle'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _phaseStrip(),
+        const SizedBox(height: 20),
+        Text(AppL10n(Lang.code).cycleDurationLabel,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                color: _kTextDark)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8, runSpacing: 8,
+          children: _cycleDurations.map((d) {
+            final sel = _cycleDuration == d;
+            return GestureDetector(
+              onTap: () {
+                setState(() => _cycleDuration = d);
+                _data.cycleDuration = d;
+                widget.onDataChanged();
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 11),
+                decoration: BoxDecoration(
+                  color: sel ? _kGreenDark : _kGlassFill,
+                  borderRadius: BorderRadius.circular(40),
+                  border: Border.all(
+                    color: sel ? _kGreenDark : _kGlassBorder,
+                  ),
+                ),
+                child: Text(d, style: TextStyle(
+                    color: sel ? Colors.white : _kTextDark,
+                    fontWeight: FontWeight.w600, fontSize: 13.5)),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+        Text(AppL10n(Lang.code).cycleLastPeriod,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                color: _kTextDark)),
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: _pickLastPeriodDate,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: _kGlassFill,
+              borderRadius: BorderRadius.circular(40),
+              border: Border.all(color: _kGlassBorder),
+            ),
+            child: Row(children: [
+              const Icon(LucideIcons.calendarDays,
+                  size: 18, color: _kTextMuted),
+              const SizedBox(width: 12),
+              Text(_fmt(_lastPeriod),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16, color: _kTextDark)),
+              const Spacer(),
+              const Icon(Icons.chevron_right,
+                  color: _kTextMuted, size: 18),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _nextPeriodPill(),
+      ],
+    );
+  }
+
+  Widget _phaseStrip() {
+    final days =
+        int.tryParse(_cycleDuration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 28;
+    final follDays = max(1, (days * 0.32).round() - 2);
+    final lutDays = max(1, days - 5 - follDays - 2);
+    final l10n = AppL10n(Lang.code);
+    final phases = [
+      _CyclePhase(l10n.cyclePhaseMenstruation, 5, const Color(0xFFE8A0A0)),
+      _CyclePhase(l10n.cyclePhaseFollicular, follDays, const Color(0xFFEDD07A)),
+      _CyclePhase(l10n.cyclePhaseOvulation, 2, const Color(0xFF7AC998)),
+      _CyclePhase(l10n.cyclePhaseLuteal, lutDays, const Color(0xFFB8A8D4)),
+    ];
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(AppL10n(Lang.code).cycleAtAGlance,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+              color: _kTextMuted, letterSpacing: 0.4)),
+      const SizedBox(height: 10),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Row(
+          children: phases.map((p) => Expanded(
+            flex: p.days,
+            child: Container(height: 10, color: p.color),
+          )).toList(),
+        ),
+      ),
+      const SizedBox(height: 8),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: phases.map((p) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 6, height: 6,
+                decoration: BoxDecoration(
+                    color: p.color, shape: BoxShape.circle)),
+            const SizedBox(width: 3),
+            Text(p.name, style: const TextStyle(
+                fontSize: 9.5, color: _kTextMuted,
+                fontWeight: FontWeight.w500)),
+          ],
+        )).toList(),
+      ),
+    ]);
+  }
+
+  Widget _nextPeriodPill() {
+    final diff = _nextPeriod.difference(DateTime.now()).inDays;
+    final l10n = AppL10n(Lang.code);
+    final label = diff > 0
+        ? '${l10n.cycleNextPeriodIn} $diff ${l10n.cycleNextPeriodDays} · ${_fmt(_nextPeriod)}'
+        : diff == 0
+            ? '${l10n.cycleNextPeriodToday} · ${_fmt(_nextPeriod)}'
+            : '${l10n.cycleNextPeriodExpected} · ${_fmt(_nextPeriod)}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: _kGlassFill,
+        borderRadius: BorderRadius.circular(40),
+        border: Border.all(color: _kGlassBorder),
+      ),
+      child: Row(children: [
+        const Icon(LucideIcons.moon, size: 13, color: _kGreenMid),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(label, style: const TextStyle(
+              fontSize: 12, color: _kTextMuted,
+              fontWeight: FontWeight.w500)),
+        ),
+      ]),
+    );
+  }
+
+  // ── PREGNANCY content ──────────────────────────────────────────────────────
+  Widget _pregnancyWidget() {
+    return Column(
+      key: const ValueKey('pregnancy'),
+      children: [
+        Center(
+          child: _ChatDrumPicker(
+            label: AppL10n(Lang.code).cyclePregnancyWeeksLabel,
+            unit: 'SA',
+            selectedIndex: _weekIdx,
+            controller: _weekCtrl,
+            itemCount: 42,
+            labelFor: (i) => '${i + 1}',
+            onChanged: (i) {
+              setState(() => _weekIdx = i);
+              _data.pregnancyWeekSA = i + 1;
+              widget.onDataChanged();
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+        _trimesterBar(),
+        const SizedBox(height: 12),
+        _adviceCard(),
+      ],
+    );
+  }
+
+  Widget _trimesterBar() {
+    return Column(children: [
+      ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Row(
+          children: List.generate(3, (i) {
+            final t = i + 1;
+            final active = _trimester == t;
+            final passed = _trimester > t;
+            return Expanded(child: Container(
+              height: 8,
+              color: active
+                  ? _kGreenDark
+                  : passed
+                      ? _kGreenMid.withValues(alpha: 0.45)
+                      : _kGlassBorder,
+            ));
+          }),
+        ),
+      ),
+      const SizedBox(height: 10),
+      Row(children: List.generate(3, (i) {
+        final t = i + 1;
+        final active = _trimester == t;
+        return Expanded(child: Column(children: [
+          Text(
+            t == 1 ? 'S1–S13' : t == 2 ? 'S14–S27' : 'S28–S42',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10.5,
+              color: active ? _kGreenDark : _kTextMuted,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+          Text('T$t', textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: active ? _kTextDark : _kTextMuted,
+              fontWeight: active ? FontWeight.w800 : FontWeight.w400,
+            )),
+        ]));
+      })),
+    ]);
+  }
+
+  Widget _adviceCard() {
+    final l10n = AppL10n(Lang.code);
+    final label = _trimester == 1
+        ? l10n.cycleTrimester1Label
+        : _trimester == 2
+            ? l10n.cycleTrimester2Label
+            : l10n.cycleTrimester3Label;
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(
+        width: 30, height: 30,
+        decoration: BoxDecoration(
+          color: _kGreenDark.withValues(alpha: 0.15),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.favorite_outline,
+            size: 14, color: _kGreenBright),
+      ),
+      const SizedBox(width: 12),
+      Expanded(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w700, color: _kTextDark)),
+          const SizedBox(height: 4),
+          Text(_trimesterAdvice, style: const TextStyle(
+              fontSize: 12.5, color: _kTextMuted, height: 1.5)),
+        ],
+      )),
+    ]);
+  }
+
+  // ── POST-PARTUM content ────────────────────────────────────────────────────
+  Widget _postpartumWidget() {
+    final weeks = _birthDate != null
+        ? DateTime.now().difference(_birthDate!).inDays ~/ 7
+        : null;
+
+    return Column(
+      key: const ValueKey('postpartum'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        const SizedBox(height: 4),
+
+        // ── Titre + sous-titre ────────────────────────────────────────────
+        Text(AppL10n(Lang.code).ppWhenDidYouGiveBirth,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextDark)),
+        const SizedBox(height: 4),
+        Text(AppL10n(Lang.code).ppAutoCalculate,
+          style: const TextStyle(fontSize: 12, color: _kTextMuted)),
+        const SizedBox(height: 14),
+
+        // ── Date picker card ──────────────────────────────────────────────
+        GestureDetector(
+          onTap: () async {
+            final picked = await showCustomDatePicker(
+              context: context,
+              initialDate: _birthDate ?? DateTime.now(),
+              firstDate: DateTime.now().subtract(const Duration(days: 365 * 2)),
+              lastDate: DateTime.now(),
+              title: AppL10n(Lang.code).datePickerBirthTitle,
+              subtitle: AppL10n(Lang.code).datePickerBirthSub,
+              icon: Icons.child_care_rounded,
+              accentColor: const Color(0xFF2D4A2D),
+            );
+            if (picked != null && mounted) {
+              final w = DateTime.now().difference(picked).inDays ~/ 7;
+              final String dur;
+              if (w < 2)       dur = '0-2';
+              else if (w < 6)  dur = '2-6';
+              else if (w < 12) dur = '6-12';
+              else if (w < 26) dur = '3-6m';
+              else             dur = '6m+';
+              setState(() { _birthDate = picked; _ppDuration = dur; });
+              _data.ppDuration = dur;
+              widget.onDataChanged();
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _birthDate != null
+                    ? _kGreenMid.withValues(alpha: 0.6)
+                    : _kGlassBorder,
+                width: _birthDate != null ? 1.2 : 0.8),
+            ),
+            child: Row(children: [
+              Container(
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  color: _birthDate != null
+                      ? _kGreenDark.withValues(alpha: 0.15)
+                      : _kGlassFill,
+                  shape: BoxShape.circle),
+                child: Icon(Icons.calendar_today_rounded,
+                  size: 15,
+                  color: _birthDate != null ? _kGreenBright : _kTextMuted),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _birthDate == null
+                  ? Text(AppL10n(Lang.code).ppSelectBirthDate,
+                      style: const TextStyle(fontSize: 13.5, color: _kTextMuted))
+                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(
+                        '${_birthDate!.day.toString().padLeft(2,'0')} / '
+                        '${_birthDate!.month.toString().padLeft(2,'0')} / '
+                        '${_birthDate!.year}',
+                        style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700, color: _kTextDark)),
+                      const SizedBox(height: 2),
+                      Text(
+                        weeks == 0
+                          ? AppL10n(Lang.code).ppLessThanOneWeek
+                          : '$weeks ${weeks == 1 ? (AppL10n(Lang.code).isFrench ? 'semaine' : 'week') : (AppL10n(Lang.code).isFrench ? 'semaines' : 'weeks')} ${AppL10n(Lang.code).ppWeeksSince}',
+                        style: TextStyle(fontSize: 12, color: _kGreenDark.withValues(alpha: 0.75))),
+                    ]),
+              ),
+              if (_birthDate != null)
+                const Icon(Icons.edit_calendar_rounded, color: _kGreenDark, size: 18)
+              else
+                Icon(Icons.chevron_right_rounded, color: _kTextMuted, size: 22),
+            ]),
+          ),
+        ),
+
+        // ── Barre de progression semaines ─────────────────────────────────
+        if (_birthDate != null && weeks != null) ...[
+          const SizedBox(height: 18),
+          _BirthWeekBar(weeks: weeks),
+        ],
+
+        // ── Programme assigné ─────────────────────────────────────────────
+        if (_ppProgram.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Row(children: [
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: _ppProgramColor.withValues(alpha: 0.15),
+                shape: BoxShape.circle),
+              child: Icon(LucideIcons.heartPulse, size: 15, color: _ppProgramColor),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Text('${AppL10n(Lang.code).ppProgramLabel} ', style: TextStyle(
+                    fontSize: 11.5, color: _ppProgramColor, fontWeight: FontWeight.w500)),
+                  Text(_ppProgram, style: TextStyle(
+                    fontSize: 15, color: _ppProgramColor, fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3)),
+                ]),
+                const SizedBox(height: 3),
+                Text(_ppProgramDesc, style: const TextStyle(
+                  fontSize: 11.5, color: _kTextMuted, height: 1.4)),
+              ],
+            )),
+          ]),
+        ],
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  // ── BUILD ────────────────────────────────────────────────────────────────
+  Widget? _mainTrailing() {
+    if (_showingMascotOptions) return _mascotControl(editing: false);
+    if (_showingGoalOptions) return _goalControl(editing: false);
+    if (_showingFitnessOptions) return _fitnessControl(editing: false);
+    if (_showingEquipmentOptions) return _equipmentControl(editing: false);
+    if (_showingLocationOptions) return _locationControl(editing: false);
+    if (_showingFrequencyOptions) return _frequencyControl(editing: false);
+    if (_showingHeightConfirm) {
+      return _ChatConfirmButton(
+        label: AppL10n(Lang.code).frequencyNext,
+        onTap: () => _confirmHeight(editing: false));
+    }
+    if (_showingWeightConfirm) {
+      return _ChatConfirmButton(
+        label: AppL10n(Lang.code).frequencyNext,
+        onTap: () => _confirmWeight(editing: false));
+    }
+    if (_showingAgeConfirm) {
+      return _ChatConfirmButton(
+        label: AppL10n(Lang.code).healthProfileContinue,
+        onTap: () => _confirmAge(editing: false));
+    }
+    if (_showingCycleStatusOptions) return _cycleStatusControl(editing: false);
+    if (_showingCycleConfirm) {
+      final l10n = AppL10n(Lang.code);
+      return _ChatConfirmButton(
+        label: _status == 'cycle' ? l10n.cycleCtaStart : l10n.continueBtn,
+        onTap: _canConfirmCycle ? () => _confirmCycleDetails(editing: false) : null,
+      );
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rawTrailing = _editingControl != null ? _editingControl!(context) : _mainTrailing();
+    final trailing = rawTrailing == null
+        ? null
+        : Padding(
+            padding: const EdgeInsets.only(left: 42, top: 4, bottom: 8),
+            child: rawTrailing,
+          );
+
     return _stepBackground(
       child: SafeArea(
         child: Column(
           children: [
-            _OnboardingTopBar(step: 3, total: 7, onBack: widget.onBack),
-
-            const SizedBox(height: 12),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const _StepIcon(Icons.show_chart_rounded),
-                const SizedBox(height: 12),
-                _StepHeader(
-                  title: AppL10n(Lang.code).fitnessTitle,
-                  subtitle: AppL10n(Lang.code).fitnessHint,
-                ),
-              ]),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ── Triangle circle layout ────────────────────────────
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.rs(20)),
-              child: LayoutBuilder(
-                builder: (_, constraints) {
-                  final double d     = context.rs(138);
-                  final double vStep = context.rv(110);
-                  final double w     = constraints.maxWidth;
-                  final double lx    = d / 2 + context.rs(10);
-                  final double rx    = w - d / 2 - context.rs(10);
-                  final double cx    = w / 2;
-
-                  final offsets = [
-                    Offset(lx, 0),
-                    Offset(rx, 0),
-                    Offset(cx, vStep),
-                  ];
-
-                  final l10n = AppL10n(Lang.code);
-                  final _levelDisplayLabels = [
-                    l10n.fitnessLevelBeginner,
-                    l10n.fitnessLevelIntermediate,
-                    l10n.fitnessLevelAdvanced,
-                  ];
-                  return SizedBox(
-                    height: vStep + d,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: List.generate(_levels.length, (i) {
-                        final key = _levels[i]; // French key for selection
-                        final displayLabel = _levelDisplayLabels[i];
-                        final isSel = widget.selectedLevel == key;
-                        return Positioned(
-                          left: offsets[i].dx - d / 2,
-                          top: offsets[i].dy,
-                          child: FadeTransition(
-                            opacity: _fades[i],
-                            child: _CircleGoal(
-                              label: displayLabel,
-                              diameter: d,
-                              selected: isSel,
-                              onTap: () => _select(key),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                  );
+            _OnboardingTopBar(step: _completedPhases, total: _totalPhases, onBack: widget.onBack),
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollCtrl,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                itemCount: _messages.length + (trailing != null ? 1 : 0),
+                itemBuilder: (context, i) {
+                  if (i < _messages.length) {
+                    final m = _messages[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: m.isTyping
+                          ? _TypingBubble(mascotType: _mascotType)
+                          : _ChatBubble(sender: m.sender, text: m.text, inline: m.inline,
+                              mascotType: _mascotType, onTap: m.onEdit),
+                    );
+                  }
+                  return trailing!;
                 },
               ),
             ),
-
-            const Spacer(flex: 1),
           ],
         ),
       ),
@@ -2319,7 +3537,8 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// STEP 4 — StepEquipment  (minimalist B&W circle selector)
+// Données partagées — équipement disponible, utilisées par la phase
+// "équipement" du fil de chat unique (OnboardingChatFlow).
 final Map<String, IconData> equipmentIcons = {
   'Aucun matériel': LucideIcons.circleOff,
   'Haltères': LucideIcons.dumbbell,
@@ -2339,320 +3558,6 @@ final List<String> _equipments = [
   'Tapis de yoga',
 ];
 
-class StepEquipment extends StatefulWidget {
-  final List<String> selectedEquipment;
-  final VoidCallback? onBack;
-  final ValueChanged<String> onToggleEquipment;
-  final VoidCallback onNext;
-
-  const StepEquipment({
-    super.key,
-    required this.selectedEquipment,
-    this.onBack,
-    required this.onToggleEquipment,
-    required this.onNext,
-  });
-
-  @override
-  State<StepEquipment> createState() => _StepEquipmentState();
-}
-class equipmentIcon extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final double diameter;
-  final bool selected;
-  final VoidCallback onTap;
-  final Color accentColor;
-
-  const equipmentIcon({
-    required this.label,
-    required this.icon,
-    required this.diameter,
-    required this.selected,
-    required this.onTap,
-    this.accentColor = _kGreenDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: diameter,
-        height: diameter,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: selected
-              ? _kGreenDark.withValues(alpha: 0.5)
-              : _kGlassFill,
-          border: Border.all(
-            color: selected
-                ? _kGreenMid.withValues(alpha: 0.6)
-                : _kGlassBorder,
-            width: selected ? 1.5 : 0.5,
-          ),
-          boxShadow: selected
-              ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.2), blurRadius: 18, offset: const Offset(0, 6))]
-              : [],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon,
-                color: selected ? _kGreenBright : _kGreenMid, size: 28),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: selected ? _kWhite : _kTextDark,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-class _StepEquipmentState extends State<StepEquipment>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _entranceCtrl;
-  late final List<Animation<double>> _fades;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _entranceCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..forward();
-
-    _fades = List.generate(_equipments.length, (i) {
-      final s = 0.05 + i * 0.10;
-      final e = (s + 0.40).clamp(0.0, 1.0);
-
-      return CurvedAnimation(
-        parent: _entranceCtrl,
-        curve: Interval(s, e, curve: Curves.easeOut),
-      );
-    });
-  }
-
-  void _handleEquipmentTap(String label) {
-    final selected = List<String>.from(widget.selectedEquipment);
-
-    if (label == 'Aucun matériel') {
-      for (final item in selected) {
-        widget.onToggleEquipment(item);
-      }
-
-      if (!selected.contains('Aucun matériel')) {
-        widget.onToggleEquipment('Aucun matériel');
-      }
-      return;
-    }
-
-    if (selected.contains('Aucun matériel')) {
-      widget.onToggleEquipment('Aucun matériel');
-    }
-
-    widget.onToggleEquipment(label);
-  }
-
-  @override
-  void dispose() {
-    _entranceCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final count = widget.selectedEquipment.length;
-
-    return _stepBackground(
-      child: SafeArea(
-        child: Column(
-          children: [
-              _OnboardingTopBar(step: 4, total: 7, onBack: widget.onBack),
-
-              const SizedBox(height: 10),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const _StepIcon(Icons.sports_gymnastics),
-                  const SizedBox(height: 12),
-                  _StepHeader(
-                    title: AppL10n(Lang.code).equipmentTitle,
-                    subtitle: AppL10n(Lang.code).equipmentHint,
-                  ),
-                ]),
-              ),
-
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: context.rs(20)),
-                  child: LayoutBuilder(
-                    builder: (_, constraints) {
-                      final double d    = context.rs(126);
-                      final double vStep = context.rv(98);
-
-                      final w = constraints.maxWidth;
-                      final lx = d / 2 + context.rs(8);
-                      final rx = w - d / 2 - context.rs(8);
-                      final cx = w / 2;
-
-                      final offsets = [
-                        Offset(lx, 0),
-                        Offset(rx, 0),
-                        Offset(cx, vStep),
-                        Offset(lx, vStep * 2),
-                        Offset(rx, vStep * 2),
-                        Offset(cx, vStep * 3),
-                      ];
-
-                      final l10n = AppL10n(Lang.code);
-                      final _equipDisplayLabels = [
-                        l10n.equipmentNone,
-                        l10n.equipmentDumbbells,
-                        l10n.equipmentBarbell,
-                        l10n.equipmentMachines,
-                        l10n.equipmentBands,
-                        l10n.equipmentYogaMat,
-                      ];
-                      return SizedBox(
-                        height: vStep * 3 + d,
-                        child: Stack(
-                          children: List.generate(_equipments.length, (i) {
-                            final key = _equipments[i]; // French key
-                            final displayLabel = _equipDisplayLabels[i];
-                            final isSel = widget.selectedEquipment.contains(key);
-
-                            return Positioned(
-                              left: offsets[i].dx - d / 2,
-                              top: offsets[i].dy,
-                              child: FadeTransition(
-                                opacity: _fades[i],
-                                child: equipmentIcon(
-                                  label: displayLabel,
-                                  icon: equipmentIcons[key]!,
-                                  diameter: d,
-                                  selected: isSel,
-                                  onTap: () => _handleEquipmentTap(key),
-                                  accentColor: _kGreenDark,
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-
-            _CtaButton(
-              label: count > 0 ? '${AppL10n(Lang.code).equipmentContinue} ($count)' : AppL10n(Lang.code).equipmentSelectAtLeastOne,
-              onPressed: count > 0 ? widget.onNext : null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 5 — StepFrequency (fond blanc + cadran circulaire)
-// ══════════════════════════════════════════════════════════════════════════════
-class StepFrequency extends StatefulWidget {
-  final String? selectedFrequency;
-  final VoidCallback? onBack;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onNext;
-
-  const StepFrequency({
-    super.key,
-    required this.selectedFrequency,
-    this.onBack,
-    required this.onChanged,
-    required this.onNext,
-  });
-
-  @override
-  State<StepFrequency> createState() => _StepFrequencyState();
-}
-
-class _StepFrequencyState extends State<StepFrequency> {
-  static const _labels = ['2 jours', '3 jours', '4 jours', '5 jours', '6 jours'];
-  late int _index;
-  bool _hasInteracted = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final idx = widget.selectedFrequency != null
-        ? _labels.indexOf(widget.selectedFrequency!)
-        : -1;
-    _index = idx >= 0 ? idx : 0;
-    _hasInteracted = idx >= 0;
-  }
-
-  void _select(int i) {
-    setState(() {
-      _index = i;
-      _hasInteracted = true;
-    });
-    widget.onChanged(_labels[i]);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _mintScaffold(
-      child: SafeArea(
-        child: Column(
-          children: [
-            _OnboardingTopBar(step: 5, total: 7, onBack: widget.onBack),
-
-            const SizedBox(height: 10),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const _StepIcon(Icons.timer_outlined),
-                const SizedBox(height: 12),
-                _StepHeader(
-                  title: AppL10n(Lang.code).frequencyTitle,
-                  subtitle: AppL10n(Lang.code).frequencyHint,
-                ),
-              ]),
-            ),
-
-            const Spacer(flex: 1),
-            Center(
-              child: _FreqDial(
-                count: _labels.length,
-                index: _index,
-                onChanged: _select,
-                label: AppL10n(Lang.code).freqLabel(_index),
-              ),
-            ),
-            const Spacer(flex: 1),
-            _CtaButton(
-              label: AppL10n(Lang.code).frequencyNext,
-              onPressed: _hasInteracted ? widget.onNext : null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ── Callout bubble (fixed, full-width, arrow at bottom-center) ───────────────
 
@@ -2710,344 +3615,12 @@ class _CalloutPainter extends CustomPainter {
   bool shouldRepaint(_) => false;
 }
 
-// ── Circular dial ─────────────────────────────────────────────────────────────
 
-class _FreqDial extends StatelessWidget {
-  final int count;
-  final int index;
-  final ValueChanged<int> onChanged;
-final String label;
- const _FreqDial({
-  required this.count,
-  required this.index,
-  required this.onChanged,
-  required this.label,
-});
-
-  static const double _r     = 105.0;
-  static const double _start = -pi / 6;   // -30° → 2 o'clock
-  static const double _sweep = pi * 1.5;  // 270°
-  static const double _size  = (_r + 44) * 2;
-
-  double _angle(int i) => _start + (i / (count - 1)) * _sweep;
-
-  Offset _pos(int i) {
-    final a = _angle(i);
-    return Offset(_size / 2 + _r * cos(a), _size / 2 + _r * sin(a));
-  }
-
-  int _nearest(Offset local) {
-    final dx = local.dx - _size / 2;
-    final dy = local.dy - _size / 2;
-    double a = atan2(dy, dx);
-    while (a < _start) { a += 2 * pi; }
-    final diff = a - _start;
-    if (diff <= _sweep) {
-      return (diff / (_sweep / (count - 1))).round().clamp(0, count - 1);
-    }
-    return diff < _sweep + (2 * pi - _sweep) / 2 ? count - 1 : 0;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final hp = _pos(index);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onPanUpdate: (d) => onChanged(_nearest(d.localPosition)),
-      onTapDown:   (d) => onChanged(_nearest(d.localPosition)),
-      child: SizedBox(
-        width: _size, height: _size,
-        child: Stack(
-          children: [
-            // Arc track + dots
-            CustomPaint(
-              size: const Size(_size, _size),
-              painter: _DialPainter(
-                count: count, selected: index,
-                r: _r, start: _start, sweep: _sweep,
-              ),
-            ),
-
-            // Play button — center
- Center(
-  child: Text(
-    label,
-    style: const TextStyle(
-      fontSize: 22,
-      fontWeight: FontWeight.w700,
-      color: kGreenDark,
-    ),
-  ),
-),
-
-            // Handle at current position
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              left: hp.dx - 18, top: hp.dy - 18,
-              child: Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  color: _kGreenBright,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: _kGreenMid.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Container(
-                    width: 8, height: 8,
-                    decoration: const BoxDecoration(
-                      color: _kBgDark,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DialPainter extends CustomPainter {
-  final int count;
-  final int selected;
-  final double r;
-  final double start;
-  final double sweep;
-
-  const _DialPainter({
-    required this.count,
-    required this.selected,
-    required this.r,
-    required this.start,
-    required this.sweep,
-  });
-
-  double _angle(int i) => start + (i / (count - 1)) * sweep;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: r),
-      start, sweep, false,
-      Paint()
-        ..color       = _kGlassBorder
-        ..style       = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..strokeCap   = StrokeCap.round,
-    );
-
-    final dot = Paint()..color = _kGlassBorder..style = PaintingStyle.fill;
-    for (int i = 0; i < count; i++) {
-      if (i == selected) continue;
-      final a = _angle(i);
-      canvas.drawCircle(
-        Offset(center.dx + r * cos(a), center.dy + r * sin(a)), 5, dot,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DialPainter o) => o.selected != selected || o.count != count;
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 6 — StepHealthProfile — Drum-wheel picker
-// ══════════════════════════════════════════════════════════════════════════════
-class StepHealthProfile extends StatefulWidget {
-  final VoidCallback onNext;
-  final VoidCallback? onBack;
-  final int initialHeightCm;
-  final double initialWeightKg;
-  final int initialAge;
-  final ValueChanged<int>? onHeightChanged;
-  final ValueChanged<double>? onWeightChanged;
-  final ValueChanged<int>? onAgeChanged;
-
-  const StepHealthProfile({
-    super.key,
-    required this.onNext,
-    this.onBack,
-    this.initialHeightCm  = 165,
-    this.initialWeightKg  = 60.0,
-    this.initialAge       = 25,
-    this.onHeightChanged,
-    this.onWeightChanged,
-    this.onAgeChanged,
-  });
-
-  @override
-  State<StepHealthProfile> createState() => _StepHealthProfileState();
-}
-
-class _StepHealthProfileState extends State<StepHealthProfile> {
-  static const int _minH = 140, _maxH = 210;
-  static const int _minA = 15,  _maxA = 70;
-
-  // Weight list: 35.0 → 150.0, step 0.5 → 231 items
-  static final List<double> _wList =
-      List.generate(231, (i) => 35.0 + i * 0.5);
-
-  late final FixedExtentScrollController _hCtrl;
-  late final FixedExtentScrollController _wCtrl;
-  late final FixedExtentScrollController _aCtrl;
-
-  late int _hIdx;
-  late int _wIdx;
-  late int _aIdx;
-
-  int get _heightCm => _minH + _hIdx;
-  double get _weightKg => _wList[_wIdx];
-  int get _age => _minA + _aIdx;
-
-  double get _bmi => _weightKg / pow(_heightCm / 100, 2);
-
-  String get _bmiLabel {
-    final l10n = AppL10n(Lang.code);
-    if (_bmi < 18.5) return l10n.healthProfileBmiThin;
-    if (_bmi < 25.0) return l10n.healthProfileBmiNormal;
-    if (_bmi < 30.0) return l10n.healthProfileBmiOver;
-    return l10n.healthProfileBmiObese;
-  }
-
-  Color get _bmiColor {
-    if (_bmi < 18.5) return const Color(0xFF5B9BD9);
-    if (_bmi < 25.0) return _kGreenMid;
-    if (_bmi < 30.0) return const Color(0xFFE8A040);
-    return const Color(0xFFD94A4A);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _hIdx = (widget.initialHeightCm - _minH).clamp(0, _maxH - _minH);
-    final wNearest = _wList.indexWhere((w) => w >= widget.initialWeightKg);
-    _wIdx = wNearest < 0 ? 50 : wNearest;
-    _aIdx = (widget.initialAge - _minA).clamp(0, _maxA - _minA);
-
-    _hCtrl = FixedExtentScrollController(initialItem: _hIdx);
-    _wCtrl = FixedExtentScrollController(initialItem: _wIdx);
-    _aCtrl = FixedExtentScrollController(initialItem: _aIdx);
-
-    TickSoundService.instance.init();
-  }
-
-  @override
-  void dispose() {
-    _hCtrl.dispose();
-    _wCtrl.dispose();
-    _aCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _mintScaffold(
-      child: Column(
-        children: [
-          _OnboardingTopBar(
-              step: 6, total: 7, title: AppL10n(Lang.code).healthProfileTopBarTitle, onBack: widget.onBack),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 8),
-                        const _StepIcon(Icons.straighten_rounded),
-                        const SizedBox(height: 16),
-                        _StepHeader(
-                          title: AppL10n(Lang.code).healthProfileTitle,
-                          subtitle: AppL10n(Lang.code).healthProfileSubtitle,
-                        ),
-                        const SizedBox(height: 28),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _DrumPicker(
-                                label: AppL10n(Lang.code).healthProfileHeight,
-                                unit: 'cm',
-                                selectedIndex: _hIdx,
-                                controller: _hCtrl,
-                                itemCount: _maxH - _minH + 1,
-                                labelFor: (i) => '${_minH + i}',
-                                onChanged: (i) {
-                                  setState(() => _hIdx = i);
-                                  widget.onHeightChanged?.call(_heightCm);
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _DrumPicker(
-                                label: AppL10n(Lang.code).healthProfileWeight,
-                                unit: 'kg',
-                                selectedIndex: _wIdx,
-                                controller: _wCtrl,
-                                itemCount: _wList.length,
-                                labelFor: (i) {
-                                  final w = _wList[i];
-                                  return w % 1 == 0
-                                      ? '${w.toInt()}'
-                                      : w.toStringAsFixed(1);
-                                },
-                                onChanged: (i) {
-                                  setState(() => _wIdx = i);
-                                  widget.onWeightChanged?.call(_weightKg);
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _DrumPicker(
-                                label: AppL10n(Lang.code).healthProfileAge,
-                                unit: AppL10n(Lang.code).healthProfileAgeUnit,
-                                selectedIndex: _aIdx,
-                                controller: _aCtrl,
-                                itemCount: _maxA - _minA + 1,
-                                labelFor: (i) => '${_minA + i}',
-                                onChanged: (i) {
-                                  setState(() => _aIdx = i);
-                                  widget.onAgeChanged?.call(_age);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        _BmiCard(bmi: _bmi, label: _bmiLabel, color: _bmiColor),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          _CtaButton(label: AppL10n(Lang.code).healthProfileContinue, onPressed: widget.onNext),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Drum-wheel picker ────────────────────────────────────────────────────────
-class _DrumPicker extends StatelessWidget {
+// ─── Compact drum-wheel picker — habillage natif pour bulle de chat ───────────
+// Pas de carte/bordure propre (on est déjà dans une _ChatBubble), pas de fondu
+// de bord (sa couleur fixe jurait avec le fond translucide de la bulle) : juste
+// le libellé, la roue et l'unité, posés directement sur le fond de la bulle.
+class _ChatDrumPicker extends StatelessWidget {
   final String label;
   final String unit;
   final int selectedIndex;
@@ -3056,7 +3629,7 @@ class _DrumPicker extends StatelessWidget {
   final String Function(int) labelFor;
   final ValueChanged<int> onChanged;
 
-  const _DrumPicker({
+  const _ChatDrumPicker({
     required this.label,
     required this.unit,
     required this.selectedIndex,
@@ -3066,123 +3639,76 @@ class _DrumPicker extends StatelessWidget {
     required this.onChanged,
   });
 
-  static const double _kItemH = 52.0;
-  static const int _kVisible = 5;
-  static const Color _kBg = Color(0xFF0F1A14);
+  static const double _kItemH = 38.0;
+  static const int _kVisible = 3;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: _kGlassBorder, width: 0.5),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          Text(label,
-              style: const TextStyle(
-                fontSize: 10,
-                letterSpacing: 2.2,
-                fontWeight: FontWeight.w700,
-                color: _kTextMuted,
-              )),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: _kItemH * _kVisible,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Selection highlight band
-                Center(
-                  child: Container(
-                    height: _kItemH,
-                    margin: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: _kGreenDark.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: _kGreenMid.withValues(alpha: 0.3), width: 1),
-                    ),
-                  ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w700,
+              color: _kGreenMid,
+            )),
+        const SizedBox(height: 6),
+        SizedBox(
+          width: 120,
+          height: _kItemH * _kVisible,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Selection highlight band
+              Container(
+                height: _kItemH,
+                decoration: BoxDecoration(
+                  color: _kGreenDark.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _kGreenMid.withValues(alpha: 0.4), width: 1),
                 ),
-                // Scroll wheel
-                ListWheelScrollView.useDelegate(
-                  controller: controller,
-                  itemExtent: _kItemH,
-                  perspective: 0.002,
-                  diameterRatio: 1.8,
-                  squeeze: 1.1,
-                  physics: const FixedExtentScrollPhysics(),
-                  onSelectedItemChanged: (i) {
-                    HapticFeedback.selectionClick();
-                    TickSoundService.instance.tick();
-                    onChanged(i);
+              ),
+              // Scroll wheel
+              ListWheelScrollView.useDelegate(
+                controller: controller,
+                itemExtent: _kItemH,
+                perspective: 0.003,
+                diameterRatio: 1.4,
+                squeeze: 1.1,
+                physics: const FixedExtentScrollPhysics(),
+                onSelectedItemChanged: (i) {
+                  HapticFeedback.selectionClick();
+                  TickSoundService.instance.tick();
+                  onChanged(i);
+                },
+                childDelegate: ListWheelChildBuilderDelegate(
+                  childCount: itemCount,
+                  builder: (_, i) {
+                    final sel = i == selectedIndex;
+                    return Center(
+                      child: AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 180),
+                        style: TextStyle(
+                          fontSize: sel ? 19 : 14,
+                          fontWeight: sel ? FontWeight.w800 : FontWeight.w400,
+                          color: sel ? _kGreenBright : _kTextMuted.withValues(alpha: 0.65),
+                        ),
+                        child: Text(labelFor(i)),
+                      ),
+                    );
                   },
-                  childDelegate: ListWheelChildBuilderDelegate(
-                    childCount: itemCount,
-                    builder: (_, i) {
-                      final sel = i == selectedIndex;
-                      return Center(
-                        child: AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 180),
-                          style: TextStyle(
-                            fontSize: sel ? 24 : 16,
-                            fontWeight:
-                                sel ? FontWeight.w800 : FontWeight.w400,
-                            color: sel ? _kGreenBright : _kTextMuted,
-                          ),
-                          child: Text(labelFor(i)),
-                        ),
-                      );
-                    },
-                  ),
                 ),
-                // Top fade overlay
-                Positioned(
-                  top: 0, left: 0, right: 0,
-                  height: _kItemH * 1.6,
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [_kBg, _kBg.withValues(alpha: 0)],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                // Bottom fade overlay
-                Positioned(
-                  bottom: 0, left: 0, right: 0,
-                  height: _kItemH * 1.6,
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [_kBg, _kBg.withValues(alpha: 0)],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(unit,
-              style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _kTextMuted)),
-          const SizedBox(height: 14),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        Text(unit,
+            style: GoogleFonts.inter(
+              fontSize: 11, fontWeight: FontWeight.w600, color: _kTextMuted)),
+      ],
     );
   }
 }
@@ -3240,740 +3766,6 @@ class _BmiCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 7 — StepCycleAndPregnancy  (santé féminine — cycle + grossesse mergés)
-// ══════════════════════════════════════════════════════════════════════════════
-class StepCycleAndPregnancy extends StatefulWidget {
-  final VoidCallback onNext;
-  final VoidCallback? onBack;
-  final ValueChanged<DateTime>? onLastPeriodChanged;
-  final ValueChanged<String>? onCycleDurationChanged;
-  final ValueChanged<String>? onHealthStatusChanged;
-  final ValueChanged<int>? onPregnancyWeekChanged;
-  final ValueChanged<String>? onPpRecoveryChanged;
-  final ValueChanged<String>? onPpDurationChanged;
-
-  const StepCycleAndPregnancy({
-    super.key,
-    required this.onNext,
-    this.onBack,
-    this.onLastPeriodChanged,
-    this.onCycleDurationChanged,
-    this.onHealthStatusChanged,
-    this.onPregnancyWeekChanged,
-    this.onPpRecoveryChanged,
-    this.onPpDurationChanged,
-  });
-
-  @override
-  State<StepCycleAndPregnancy> createState() => _StepCycleAndPregnancyState();
-}
-
-class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
-  // 'cycle' | 'pregnant' | 'postpartum' | null
-  String? _status;
-
-  // ── Cycle ──────────────────────────────────────────────────────────────────
-  String _cycleDuration = '28 jours';
-  DateTime _lastPeriod = DateTime.now().subtract(const Duration(days: 14));
-
-  static const List<String> _durations = [
-    '24 jours', '26 jours', '28 jours', '30 jours', '32 jours',
-  ];
-
-  // ── Post-partum ────────────────────────────────────────────────────────────
-  String? _ppRecovery;   // 'recent' | 'slowly' | 'active'
-  String? _ppDuration;   // '0-2', '2-6', '6-12', '3-6m', '6m+'
-  DateTime? _birthDate;
-
-  String get _ppProgram {
-    switch (_ppDuration) {
-      case '0-2':  return 'Reborn';
-      case '2-6':  return 'Rise';
-      case '6-12': return 'Rise+';
-      case '3-6m': return 'Reclaim';
-      case '6m+':  return 'Reclaim+';
-      default: return '';
-    }
-  }
-
-  String get _ppProgramDesc {
-    final l10n = AppL10n(Lang.code);
-    switch (_ppDuration) {
-      case '0-2':  return l10n.ppPpProgDesc0_2;
-      case '2-6':  return l10n.ppPpProgDesc2_6;
-      case '6-12': return l10n.ppPpProgDesc6_12;
-      case '3-6m': return l10n.ppPpProgDesc3_6m;
-      case '6m+':  return l10n.ppPpProgDesc6mPlus;
-      default: return '';
-    }
-  }
-
-  Color get _ppProgramColor {
-    switch (_ppDuration) {
-      case '0-2':  return const Color(0xFFE53935);
-      case '2-6':  return const Color(0xFFFB8C00);
-      case '6-12': return const Color(0xFFFB8C00);
-      case '3-6m': return const Color(0xFF2E7D32);
-      case '6m+':  return const Color(0xFF2E7D32);
-      default: return _kGreenDark;
-    }
-  }
-
-  DateTime get _nextPeriod {
-    final d =
-        int.tryParse(_cycleDuration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 28;
-    return _lastPeriod.add(Duration(days: d));
-  }
-
-  // ── Pregnancy ──────────────────────────────────────────────────────────────
-  int _weekIdx = 11; // default SA 12 (index 0-based)
-  late final FixedExtentScrollController _weekCtrl;
-
-  int get _weekSA => _weekIdx + 1;
-
-  int get _trimester {
-    if (_weekSA <= 13) return 1;
-    if (_weekSA <= 27) return 2;
-    return 3;
-  }
-
-  String get _trimesterAdvice {
-    final l10n = AppL10n(Lang.code);
-    switch (_trimester) {
-      case 1: return l10n.cycleAdviceT1;
-      case 2: return l10n.cycleAdviceT2;
-      default: return l10n.cycleAdviceT3;
-    }
-  }
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
-  String _fmt(DateTime d) {
-    const m = [
-      'Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin',
-      'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.',
-    ];
-    return '${d.day} ${m[d.month - 1]}';
-  }
-
-  Future<void> _pickDate() async {
-    final p = await showCustomDatePicker(
-      context: context,
-      initialDate: _lastPeriod,
-      firstDate: DateTime(2024),
-      lastDate: DateTime.now(),
-      title: AppL10n(Lang.code).datePickerLastPeriodTitle,
-      subtitle: AppL10n(Lang.code).datePickerLastPeriodSub,
-      icon: Icons.water_drop_rounded,
-      accentColor: const Color(0xFFD94F6B),
-    );
-    if (p != null) {
-      setState(() => _lastPeriod = p);
-      widget.onLastPeriodChanged?.call(p);
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _weekCtrl = FixedExtentScrollController(initialItem: _weekIdx);
-  }
-
-  @override
-  void dispose() {
-    _weekCtrl.dispose();
-    super.dispose();
-  }
-
-  // ── BUILD ──────────────────────────────────────────────────────────────────
-  @override
-  Widget build(BuildContext context) {
-    return _mintScaffold(
-      child: Column(
-        children: [
-          _OnboardingTopBar(
-              step: 7, total: 7, title: AppL10n(Lang.code).cycleStepTopBarTitle,
-              onBack: widget.onBack),
-          const SizedBox(height: 20),
-          const _StepIcon(Icons.favorite_border_rounded),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: _StepHeader(
-              title: AppL10n(Lang.code).cycleStepTitle,
-              subtitle: AppL10n(Lang.code).cycleStepSubtitle,
-            ),
-          ),
-          const SizedBox(height: 28),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // ── Toggle cards — 3 options ──
-                  Row(children: [
-                    Expanded(child: _statusCard(
-                      'cycle', LucideIcons.moon,
-                      AppL10n(Lang.code).cycleStatusRegular,
-                      AppL10n(Lang.code).cycleStatusRegularSub,
-                    )),
-                    const SizedBox(width: 10),
-                    Expanded(child: _statusCard(
-                      'pregnant', LucideIcons.sparkles,
-                      AppL10n(Lang.code).cycleStatusPregnant,
-                      AppL10n(Lang.code).cycleStatusPregnantSub,
-                    )),
-                    const SizedBox(width: 10),
-                    Expanded(child: _statusCard(
-                      'postpartum', LucideIcons.baby,
-                      AppL10n(Lang.code).cycleStatusPostpartum,
-                      AppL10n(Lang.code).cycleStatusPostpartumSub,
-                    )),
-                  ]),
-                  const SizedBox(height: 24),
-                  // ── Conditional content ──
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    transitionBuilder: (child, anim) => FadeTransition(
-                      opacity: anim,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.05),
-                          end: Offset.zero,
-                        ).animate(anim),
-                        child: child,
-                      ),
-                    ),
-                    child: _status == null
-                        ? _hintWidget()
-                        : _status == 'cycle'
-                            ? _cycleWidget()
-                            : _status == 'pregnant'
-                                ? _pregnancyWidget()
-                                : _postpartumWidget(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          _CtaButton(
-            label: _status == 'cycle' ? AppL10n(Lang.code).cycleCtaStart : AppL10n(Lang.code).continueBtn,
-            onPressed: _status != null
-                ? (_status == 'postpartum'
-                    ? (_ppDuration != null ? widget.onNext : null)
-                    : widget.onNext)
-                : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Status toggle cards ────────────────────────────────────────────────────
-  Widget _statusCard(String value, IconData icon, String label, String sub) {
-    final sel = _status == value;
-    return GestureDetector(
-      onTap: () {
-        setState(() => _status = value);
-        widget.onHealthStatusChanged?.call(value);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 14),
-        decoration: BoxDecoration(
-          color: sel ? _kGreenDark : _kGlassFill,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: sel ? _kGreenDark : _kGlassBorder,
-            width: 1.5,
-          ),
-          boxShadow: sel
-              ? [BoxShadow(
-                  color: _kGreenDark.withValues(alpha: 0.25),
-                  blurRadius: 18, offset: const Offset(0, 7))]
-              : [],
-        ),
-        child: Column(children: [
-          Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              color: sel
-                  ? Colors.white.withValues(alpha: 0.15)
-                  : _kGlassFill,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 22,
-                color: sel ? Colors.white : _kGreenMid),
-          ),
-          const SizedBox(height: 12),
-          Text(label, textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontWeight: FontWeight.w800, fontSize: 15,
-                  color: sel ? Colors.white : _kTextDark,
-                  height: 1.3)),
-          const SizedBox(height: 4),
-          Text(sub, textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 10.5,
-                  color: sel
-                      ? Colors.white.withValues(alpha: 0.72)
-                      : _kTextMuted)),
-        ]),
-      ),
-    );
-  }
-
-  // ── Nothing selected hint ──────────────────────────────────────────────────
-  Widget _hintWidget() {
-    return Container(
-      key: const ValueKey('hint'),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kGlassBorder),
-      ),
-      child: Row(children: [
-        const Icon(Icons.touch_app_outlined, color: _kTextMuted, size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(AppL10n(Lang.code).cycleSelectSituation,
-              style: const TextStyle(
-                  fontSize: 13, color: _kTextMuted, height: 1.4)),
-        ),
-      ]),
-    );
-  }
-
-  // ── CYCLE content ──────────────────────────────────────────────────────────
-  Widget _cycleWidget() {
-    return Column(
-      key: const ValueKey('cycle'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _phaseStrip(),
-        const SizedBox(height: 20),
-        Text(AppL10n(Lang.code).cycleDurationLabel,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                color: _kTextDark)),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8, runSpacing: 8,
-          children: _durations.map((d) {
-            final sel = _cycleDuration == d;
-            return GestureDetector(
-              onTap: () {
-                setState(() => _cycleDuration = d);
-                widget.onCycleDurationChanged?.call(d);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 11),
-                decoration: BoxDecoration(
-                  color: sel ? _kGreenDark : _kGlassFill,
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(
-                    color: sel ? _kGreenDark : _kGlassBorder,
-                  ),
-                ),
-                child: Text(d, style: TextStyle(
-                    color: sel ? Colors.white : _kTextDark,
-                    fontWeight: FontWeight.w600, fontSize: 13.5)),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 20),
-        Text(AppL10n(Lang.code).cycleLastPeriod,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                color: _kTextDark)),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: _pickDate,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: _kGlassFill,
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: _kGlassBorder),
-            ),
-            child: Row(children: [
-              const Icon(LucideIcons.calendarDays,
-                  size: 18, color: _kTextMuted),
-              const SizedBox(width: 12),
-              Text(_fmt(_lastPeriod),
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16, color: _kTextDark)),
-              const Spacer(),
-              const Icon(Icons.chevron_right,
-                  color: _kTextMuted, size: 18),
-            ]),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _nextPeriodPill(),
-      ],
-    );
-  }
-
-  Widget _phaseStrip() {
-    final days =
-        int.tryParse(_cycleDuration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 28;
-    final follDays = max(1, (days * 0.32).round() - 2);
-    final lutDays = max(1, days - 5 - follDays - 2);
-    final l10n = AppL10n(Lang.code);
-    final phases = [
-      _CyclePhase(l10n.cyclePhaseMenstruation, 5, const Color(0xFFE8A0A0)),
-      _CyclePhase(l10n.cyclePhaseFollicular, follDays, const Color(0xFFEDD07A)),
-      _CyclePhase(l10n.cyclePhaseOvulation, 2, const Color(0xFF7AC998)),
-      _CyclePhase(l10n.cyclePhaseLuteal, lutDays, const Color(0xFFB8A8D4)),
-    ];
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kGlassBorder),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(AppL10n(Lang.code).cycleAtAGlance,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                color: _kTextMuted, letterSpacing: 0.4)),
-        const SizedBox(height: 10),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Row(
-            children: phases.map((p) => Expanded(
-              flex: p.days,
-              child: Container(height: 10, color: p.color),
-            )).toList(),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: phases.map((p) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 6, height: 6,
-                  decoration: BoxDecoration(
-                      color: p.color, shape: BoxShape.circle)),
-              const SizedBox(width: 3),
-              Text(p.name, style: const TextStyle(
-                  fontSize: 9.5, color: _kTextMuted,
-                  fontWeight: FontWeight.w500)),
-            ],
-          )).toList(),
-        ),
-      ]),
-    );
-  }
-
-  Widget _nextPeriodPill() {
-    final diff = _nextPeriod.difference(DateTime.now()).inDays;
-    final l10n = AppL10n(Lang.code);
-    final label = diff > 0
-        ? '${l10n.cycleNextPeriodIn} $diff ${l10n.cycleNextPeriodDays} · ${_fmt(_nextPeriod)}'
-        : diff == 0
-            ? '${l10n.cycleNextPeriodToday} · ${_fmt(_nextPeriod)}'
-            : '${l10n.cycleNextPeriodExpected} · ${_fmt(_nextPeriod)}';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: _kGlassBorder),
-      ),
-      child: Row(children: [
-        const Icon(LucideIcons.moon, size: 13, color: _kGreenMid),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(label, style: const TextStyle(
-              fontSize: 12, color: _kTextMuted,
-              fontWeight: FontWeight.w500)),
-        ),
-      ]),
-    );
-  }
-
-  // ── PREGNANCY content ──────────────────────────────────────────────────────
-  Widget _pregnancyWidget() {
-    return Column(
-      key: const ValueKey('pregnancy'),
-      children: [
-        _DrumPicker(
-          label: AppL10n(Lang.code).cyclePregnancyWeeksLabel,
-          unit: 'SA',
-          selectedIndex: _weekIdx,
-          controller: _weekCtrl,
-          itemCount: 42,
-          labelFor: (i) => '${i + 1}',
-          onChanged: (i) {
-            setState(() => _weekIdx = i);
-            widget.onPregnancyWeekChanged?.call(i + 1);
-          },
-        ),
-        const SizedBox(height: 16),
-        _trimesterBar(),
-        const SizedBox(height: 12),
-        _adviceCard(),
-      ],
-    );
-  }
-
-  Widget _trimesterBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kGlassBorder),
-      ),
-      child: Column(children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Row(
-            children: List.generate(3, (i) {
-              final t = i + 1;
-              final active = _trimester == t;
-              final passed = _trimester > t;
-              return Expanded(child: Container(
-                height: 8,
-                color: active
-                    ? _kGreenDark
-                    : passed
-                        ? _kGreenMid.withValues(alpha: 0.45)
-                        : _kGlassBorder,
-              ));
-            }),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(children: List.generate(3, (i) {
-          final t = i + 1;
-          final active = _trimester == t;
-          return Expanded(child: Column(children: [
-            Text(
-              t == 1 ? 'S1–S13' : t == 2 ? 'S14–S27' : 'S28–S42',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 10.5,
-                color: active ? _kGreenDark : _kTextMuted,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-              ),
-            ),
-            Text('T$t', textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: active ? _kTextDark : _kTextMuted,
-                fontWeight: active ? FontWeight.w800 : FontWeight.w400,
-              )),
-          ]));
-        })),
-      ]),
-    );
-  }
-
-  Widget _adviceCard() {
-    final l10n = AppL10n(Lang.code);
-    final label = _trimester == 1
-        ? l10n.cycleTrimester1Label
-        : _trimester == 2
-            ? l10n.cycleTrimester2Label
-            : l10n.cycleTrimester3Label;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kGlassBorder),
-      ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 34, height: 34,
-          decoration: BoxDecoration(
-            color: _kGreenDark.withValues(alpha: 0.09),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.favorite_outline,
-              size: 16, color: _kGreenDark),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w700, color: _kTextDark)),
-            const SizedBox(height: 4),
-            Text(_trimesterAdvice, style: const TextStyle(
-                fontSize: 12.5, color: _kTextMuted, height: 1.5)),
-          ],
-        )),
-      ]),
-    );
-  }
-
-  // ── POST-PARTUM content ────────────────────────────────────────────────────
-  Widget _postpartumWidget() {
-    final weeks = _birthDate != null
-        ? DateTime.now().difference(_birthDate!).inDays ~/ 7
-        : null;
-
-    return Column(
-      key: const ValueKey('postpartum'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-
-        const SizedBox(height: 4),
-
-        // ── Titre + sous-titre ────────────────────────────────────────────
-        Text(AppL10n(Lang.code).ppWhenDidYouGiveBirth,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextDark)),
-        const SizedBox(height: 4),
-        Text(AppL10n(Lang.code).ppAutoCalculate,
-          style: const TextStyle(fontSize: 12, color: _kTextMuted)),
-        const SizedBox(height: 14),
-
-        // ── Date picker card ──────────────────────────────────────────────
-        GestureDetector(
-          onTap: () async {
-            final picked = await showCustomDatePicker(
-              context: context,
-              initialDate: _birthDate ?? DateTime.now(),
-              firstDate: DateTime.now().subtract(const Duration(days: 365 * 2)),
-              lastDate: DateTime.now(),
-              title: AppL10n(Lang.code).datePickerBirthTitle,
-              subtitle: AppL10n(Lang.code).datePickerBirthSub,
-              icon: Icons.child_care_rounded,
-              accentColor: const Color(0xFF2D4A2D),
-            );
-            if (picked != null && mounted) {
-              final w = DateTime.now().difference(picked).inDays ~/ 7;
-              final String dur;
-              if (w < 2)       dur = '0-2';
-              else if (w < 6)  dur = '2-6';
-              else if (w < 12) dur = '6-12';
-              else if (w < 26) dur = '3-6m';
-              else             dur = '6m+';
-              setState(() { _birthDate = picked; _ppDuration = dur; });
-              widget.onPpDurationChanged?.call(dur);
-            }
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            decoration: BoxDecoration(
-              color: _birthDate != null
-                  ? _kGlassFill
-                  : _kGlassFill,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: _birthDate != null ? _kGreenDark : _kGlassBorder,
-                width: 1.5),
-              boxShadow: _birthDate != null
-                  ? [BoxShadow(color: _kGreenDark.withValues(alpha: 0.12),
-                      blurRadius: 14, offset: const Offset(0, 4))]
-                  : [],
-            ),
-            child: Row(children: [
-              Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(
-                  color: _birthDate != null
-                      ? _kGreenDark.withValues(alpha: 0.12)
-                      : _kGlassFill,
-                  shape: BoxShape.circle),
-                child: Icon(Icons.calendar_today_rounded,
-                  size: 19,
-                  color: _birthDate != null ? _kGreenDark : _kTextMuted),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _birthDate == null
-                  ? Text(AppL10n(Lang.code).ppSelectBirthDate,
-                      style: const TextStyle(fontSize: 13.5, color: _kTextMuted))
-                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(
-                        '${_birthDate!.day.toString().padLeft(2,'0')} / '
-                        '${_birthDate!.month.toString().padLeft(2,'0')} / '
-                        '${_birthDate!.year}',
-                        style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700, color: _kTextDark)),
-                      const SizedBox(height: 2),
-                      Text(
-                        weeks == 0
-                          ? AppL10n(Lang.code).ppLessThanOneWeek
-                          : '$weeks ${weeks == 1 ? (AppL10n(Lang.code).isFrench ? 'semaine' : 'week') : (AppL10n(Lang.code).isFrench ? 'semaines' : 'weeks')} ${AppL10n(Lang.code).ppWeeksSince}',
-                        style: TextStyle(fontSize: 12, color: _kGreenDark.withValues(alpha: 0.75))),
-                    ]),
-              ),
-              if (_birthDate != null)
-                const Icon(Icons.edit_calendar_rounded, color: _kGreenDark, size: 18)
-              else
-                Icon(Icons.chevron_right_rounded, color: _kTextMuted, size: 22),
-            ]),
-          ),
-        ),
-
-        // ── Barre de progression semaines ─────────────────────────────────
-        if (_birthDate != null && weeks != null) ...[
-          const SizedBox(height: 18),
-          _BirthWeekBar(weeks: weeks),
-        ],
-
-        // ── Programme assigné ─────────────────────────────────────────────
-        if (_ppProgram.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  _ppProgramColor.withValues(alpha: 0.08),
-                  _ppProgramColor.withValues(alpha: 0.04),
-                ],
-                begin: Alignment.topLeft, end: Alignment.bottomRight),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: _ppProgramColor.withValues(alpha: 0.30)),
-            ),
-            child: Row(children: [
-              Container(
-                width: 42, height: 42,
-                decoration: BoxDecoration(
-                  color: _ppProgramColor.withValues(alpha: 0.14),
-                  shape: BoxShape.circle),
-                child: Icon(LucideIcons.heartPulse, size: 20, color: _ppProgramColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    Text('${AppL10n(Lang.code).ppProgramLabel} ', style: TextStyle(
-                      fontSize: 11.5, color: _ppProgramColor, fontWeight: FontWeight.w500)),
-                    Text(_ppProgram, style: TextStyle(
-                      fontSize: 15, color: _ppProgramColor, fontWeight: FontWeight.w800,
-                      letterSpacing: 0.3)),
-                  ]),
-                  const SizedBox(height: 3),
-                  Text(_ppProgramDesc, style: const TextStyle(
-                    fontSize: 11.5, color: _kTextMuted, height: 1.4)),
-                ],
-              )),
-            ]),
-          ),
-        ],
-        const SizedBox(height: 8),
-      ],
     );
   }
 }
@@ -4215,422 +4007,3 @@ class _PpPhaseCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Step 8 — Mascotte
-// ─────────────────────────────────────────────────────────────────────────────
-class StepAvatar extends StatefulWidget {
-  final String   userName;
-  final VoidCallback onNext;
-  final VoidCallback onBack;
-  final void Function(String seed, String style, String bg) onAvatarChanged;
-
-  const StepAvatar({
-    super.key,
-    required this.userName,
-    required this.onNext,
-    required this.onBack,
-    required this.onAvatarChanged,
-  });
-
-  @override
-  State<StepAvatar> createState() => _StepAvatarState();
-}
-
-class _StepAvatarState extends State<StepAvatar> {
-  MascotType _type = MascotType.blob;
-  MascotMood _mood = MascotMood.happy;
-
-  static const _accent = Color(0xFF2D4A2D);
-
-  static const _types = [
-    (MascotType.blob,  'Blobby',  '🟢'),
-    (MascotType.sun,   'Sunny',   '☀️'),
-    (MascotType.star,  'Starlet', '⭐'),
-    (MascotType.cloud, 'Cloudie', '☁️'),
-    (MascotType.leaf,  'Leafy',   '🍃'),
-  ];
-
-  static const _moodTypes = [
-    (MascotMood.happy,       '😊'),
-    (MascotMood.excited,     '🤩'),
-    (MascotMood.proud,       '💪'),
-    (MascotMood.celebrating, '🎉'),
-    (MascotMood.sleepy,      '😴'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return _stepBackground(
-      child: SafeArea(
-        child: Column(
-          children: [
-              _OnboardingTopBar(step: 9, total: 11, onBack: widget.onBack),
-
-            const SizedBox(height: 16),
-
-            // ── Scrollable content ────────────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // ── Mascot preview card ───────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: _kGlassFill,
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: _kGlassBorder, width: 0.5),
-                          boxShadow: [BoxShadow(color: _kGreenMid.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 6))],
-                        ),
-                        child: Column(children: [
-                          // Mascot with glow ring
-                          Container(
-                            width: 140, height: 140,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [_kGreenDark.withValues(alpha: 0.4), _kGreenDark.withValues(alpha: 0.15)],
-                              ),
-                              boxShadow: [
-                                BoxShadow(color: _kGreenDark.withValues(alpha:0.20), blurRadius: 24, spreadRadius: 2),
-                              ],
-                            ),
-                            child: Center(child: MascotWidget(type: _type, mood: _mood, size: 110)),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(AppL10n(Lang.code).avatarChooseTitle,
-                            style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800,
-                              color: _kTextDark, letterSpacing: -0.3)),
-                          const SizedBox(height: 4),
-                          Text(
-                            AppL10n(Lang.code).avatarSubtitle,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 12.5, color: _kTextMuted, height: 1.5),
-                          ),
-                        ]),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Choix mascotte (horizontal scroll) ─────────────────
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24, bottom: 10),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(AppL10n(Lang.code).avatarShapeLabel, style: const TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w800,
-                          color: _kGreenMid, letterSpacing: 2.5)),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 96,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        itemCount: _types.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
-                        itemBuilder: (_, i) {
-                          final (type, name, _) = _types[i];
-                          final selected = _type == type;
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() => _type = type);
-                              HapticFeedback.selectionClick();
-                              widget.onAvatarChanged(type.name, type.name, '');
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 82,
-                              decoration: BoxDecoration(
-                                color: selected
-                                    ? _kGreenDark.withValues(alpha: 0.4)
-                                    : _kGlassFill,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: selected
-                                      ? _kGreenMid.withValues(alpha: 0.6)
-                                      : _kGlassBorder,
-                                  width: selected ? 1.5 : 0.5,
-                                ),
-                                boxShadow: selected
-                                    ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.15), blurRadius: 14, offset: const Offset(0, 5))]
-                                    : [],
-                              ),
-                              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                MascotWidget(type: type, mood: MascotMood.happy, size: 48),
-                                const SizedBox(height: 4),
-                                Text(name, style: TextStyle(
-                                  fontSize: 10, fontWeight: FontWeight.w700,
-                                  color: selected ? Colors.white : _kTextMuted)),
-                              ]),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // ── Humeur ───────────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24, bottom: 10),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(AppL10n(Lang.code).avatarMoodLabel, style: const TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w800,
-                          color: _kGreenMid, letterSpacing: 2.5)),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Wrap(
-                        spacing: 8, runSpacing: 8,
-                        children: (() {
-                          final l10n = AppL10n(Lang.code);
-                          final _moodLabels = [
-                            l10n.avatarMoodHappy, l10n.avatarMoodExcited,
-                            l10n.avatarMoodProud, l10n.avatarMoodCelebrating, l10n.avatarMoodSleepy,
-                          ];
-                          return _moodTypes.asMap().entries.map((entry) {
-                          final i = entry.key;
-                          final m = entry.value;
-                          final (mood, emoji) = m;
-                          final label = _moodLabels[i];
-                          final selected = _mood == mood;
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() => _mood = mood);
-                              HapticFeedback.selectionClick();
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: selected
-                                    ? _kGreenDark.withValues(alpha: 0.4)
-                                    : _kGlassFill,
-                                borderRadius: BorderRadius.circular(40),
-                                border: Border.all(
-                                  color: selected
-                                      ? _kGreenMid.withValues(alpha: 0.6)
-                                      : _kGlassBorder,
-                                  width: selected ? 1.5 : 0.5,
-                                ),
-                                boxShadow: selected
-                                    ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 3))]
-                                    : [],
-                              ),
-                              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                Text(emoji, style: const TextStyle(fontSize: 16)),
-                                const SizedBox(width: 6),
-                                Text(label, style: TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w600,
-                                  color: selected ? Colors.white : _kTextDark)),
-                              ]),
-                            ),
-                          );
-                        }).toList();
-                        })(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            _CtaButton(
-              label: AppL10n(Lang.code).avatarCta,
-              onPressed: widget.onNext,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP — StepTrainingLocation  (Salle / Maison / Les deux)
-// ══════════════════════════════════════════════════════════════════════════════
-class StepTrainingLocation extends StatefulWidget {
-  final String? selectedLocation;
-  final VoidCallback? onBack;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onNext;
-
-  const StepTrainingLocation({
-    super.key,
-    required this.selectedLocation,
-    this.onBack,
-    required this.onChanged,
-    required this.onNext,
-  });
-
-  @override
-  State<StepTrainingLocation> createState() => _StepTrainingLocationState();
-}
-
-class _StepTrainingLocationState extends State<StepTrainingLocation>
-    with SingleTickerProviderStateMixin {
-  static const _accent = _kGreenDark;
-  String? _selected;
-
-  late final AnimationController _ctrl;
-  late final List<Animation<double>> _fades;
-
-  static const _optionValues = ['gym', 'home', 'both'];
-  static const _optionEmojis = ['🏋️', '🏠', '💪'];
-
-  @override
-  void initState() {
-    super.initState();
-    _selected = widget.selectedLocation;
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 750),
-    )..forward();
-    _fades = List.generate(_optionValues.length, (i) {
-      final s = 0.10 + i * 0.22;
-      final e = (s + 0.50).clamp(0.0, 1.0);
-      return CurvedAnimation(parent: _ctrl, curve: Interval(s, e, curve: Curves.easeOut));
-    });
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _select(String value) {
-    setState(() => _selected = value);
-    widget.onChanged(value);
-    Future.delayed(const Duration(milliseconds: 320), widget.onNext);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _stepBackground(
-      child: SafeArea(
-        child: Column(
-          children: [
-              _OnboardingTopBar(step: 8, total: 11, onBack: widget.onBack),
-
-              const SizedBox(height: 10),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const _StepIcon(Icons.location_on_outlined),
-                  const SizedBox(height: 12),
-                  _StepHeader(
-                    title: AppL10n(Lang.code).locationTitle,
-                    subtitle: AppL10n(Lang.code).locationSubtitle,
-                  ),
-                ]),
-              ),
-
-              const Spacer(flex: 1),
-
-              // ── Cards ─────────────────────────────────────────────────────
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
-                child: Column(
-                  children: List.generate(_optionValues.length, (i) {
-                    final l10n = AppL10n(Lang.code);
-                    final _locLabels = [l10n.locationGym, l10n.locationHome, l10n.locationBoth];
-                    final _locSubs = [l10n.locationGymDetail, l10n.locationHomeDetail, l10n.locationBothDetail];
-                    final value = _optionValues[i];
-                    final emoji = _optionEmojis[i];
-                    final label = _locLabels[i];
-                    final sub = _locSubs[i];
-                    final sel = _selected == value;
-                    return FadeTransition(
-                      opacity: _fades[i],
-                      child: GestureDetector(
-                        onTap: () => _select(value),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOut,
-                          margin: EdgeInsets.only(bottom: context.rv(12)),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: context.rs(18),
-                            vertical: context.rv(14)),
-                          decoration: BoxDecoration(
-                            color: sel
-                                ? _kGreenDark.withValues(alpha: 0.4)
-                                : _kGlassFill,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: sel
-                                  ? _kGreenMid.withValues(alpha: 0.6)
-                                  : _kGlassBorder,
-                              width: sel ? 1.5 : 0.5,
-                            ),
-                            boxShadow: sel
-                                ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.15), blurRadius: 18, offset: const Offset(0, 6))]
-                                : [],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: context.rs(48), height: context.rs(48),
-                                decoration: BoxDecoration(
-                                  color: sel ? Colors.white.withValues(alpha:0.2) : _kGlassFill,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Center(
-                                  child: Text(emoji,
-                                    style: TextStyle(fontSize: context.rs(24))),
-                                ),
-                              ),
-                              SizedBox(width: context.rs(14)),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      label,
-                                      style: TextStyle(
-                                        fontSize: context.rs(15),
-                                        fontWeight: FontWeight.w700,
-                                        color: sel ? Colors.white : _kTextDark,
-                                      ),
-                                    ),
-                                    SizedBox(height: context.rv(3)),
-                                    Text(
-                                      sub,
-                                      style: TextStyle(
-                                        fontSize: context.rs(12),
-                                        height: 1.4,
-                                        color: sel ? Colors.white.withValues(alpha: 0.75) : _kTextMuted,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              AnimatedOpacity(
-                                opacity: sel ? 1 : 0,
-                                duration: const Duration(milliseconds: 200),
-                                child: const Icon(Icons.check_circle, color: Colors.white, size: 22),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-
-              const Spacer(),
-            ],
-          ),
-        ),
-    );
-  }
-}

@@ -14,71 +14,17 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatf
 import 'steps/onboarding_steps.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Onboarding Data — état centralisé transmis entre les steps
-// ─────────────────────────────────────────────────────────────────────────────
-class OnboardingData {
-  String username       = '';
-  String email          = '';
-  String password       = '';
-  List<String> goals    = [];
-  String? fitnessLevel;
-  List<String> equipment = [];
-  String? frequency;
-  int    heightCm       = 165;
-  double weightKg       = 60.0;
-  int    age            = 25;
-  // Santé féminine
-  String? healthStatus;     // 'cycle' | 'pregnant' | 'postpartum'
-  int?    pregnancyWeekSA;
-  String? ppRecovery;       // 'recent' | 'slowly' | 'active'
-  String? ppDuration;       // '0-2' | '2-6' | '6-12' | '3-6m' | '6m+'
-  String? cycleDuration;
-  DateTime? lastPeriod = DateTime.now().subtract(const Duration(days: 14));
-  String avatarSeed  = 'fiteva';
-  String avatarStyle = 'lorelei';
-  String avatarBg    = 'b6e3f4';
-  String mascotType  = 'blob';
-  String? trainingLocation;
-
-  Map<String, dynamic> toMap() => {
-    'username':           username,
-    'email':              email,
-    'goals':              goals,
-    'fitness_level':      fitnessLevel,
-    'equipment':          equipment,
-    'frequency':          frequency,
-    'training_location':  trainingLocation,
-    'height_cm':          heightCm,
-    'weight_kg':          weightKg,
-    'age':                age,
-    'health_status':      healthStatus,
-    'pregnancy_week':     pregnancyWeekSA,
-    'pp_recovery':        ppRecovery,
-    'pp_duration':        ppDuration,
-    'cycle_duration':     cycleDuration,
-    'last_period':        lastPeriod?.toIso8601String(),
-    'mascot_type':        mascotType,
-    'mascot_mood':        'happy',
-    'avatar_seed':        avatarSeed,
-    'avatar_style':       avatarStyle,
-  };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Onboarding Steps — enum définissant chaque step
+// (OnboardingData est défini dans steps/onboarding_steps.dart. Tout ce qui
+// suit la langue — mascotte, objectifs, équipement, cycle, etc. — vit dans
+// UN SEUL step `chat`, piloté par OnboardingChatFlow : un fil de chat continu
+// avec un seul scroll, plutôt que des pages séparées par sujet.)
 // ─────────────────────────────────────────────────────────────────────────────
 enum OStep {
   languageChoice,
   intro,
   welcome,
-  goals,
-  fitnessLevel,
-  equipment,
-  trainingLocation,
-  frequency,
-  healthProfile,
-  cycleAndPregnancy,
-  avatar,
+  chat,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -112,14 +58,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     OStep.intro,
     OStep.welcome,
     OStep.languageChoice,
-    OStep.goals,
-    OStep.fitnessLevel,
-    OStep.equipment,
-    OStep.trainingLocation,
-    OStep.frequency,
-    OStep.healthProfile,
-    OStep.cycleAndPregnancy,
-    OStep.avatar,
+    OStep.chat,
   ];
 
   // Sous-ensemble linéaire utilisé pour calculer la fraction de la progress bar.
@@ -127,14 +66,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     OStep.intro,
     OStep.welcome,
     OStep.languageChoice,
-    OStep.goals,
-    OStep.fitnessLevel,
-    OStep.equipment,
-    OStep.trainingLocation,
-    OStep.frequency,
-    OStep.healthProfile,
-    OStep.cycleAndPregnancy,
-    OStep.avatar,
+    OStep.chat,
   ];
 
   double get _progress {
@@ -144,31 +76,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────
+  // Le step `chat` gère lui-même toute sa séquence interne (mascotte →
+  // objectifs → ... → cycle) ; il n'appelle plus `_goNext()` mais `_finish()`
+  // directement via son callback `onFinish` une fois le fil de chat terminé.
 
   OStep _nextStepFor(OStep current) {
     switch (current) {
-      case OStep.intro:             return OStep.welcome;
-      case OStep.welcome:           return OStep.languageChoice;
-      case OStep.languageChoice:    return OStep.goals;
-      case OStep.goals:             return OStep.fitnessLevel;
-      case OStep.fitnessLevel:      return OStep.equipment;
-      case OStep.equipment:         return OStep.trainingLocation;
-      case OStep.trainingLocation:  return OStep.frequency;
-      case OStep.frequency:         return OStep.healthProfile;
-      case OStep.healthProfile:     return OStep.cycleAndPregnancy;
-      case OStep.cycleAndPregnancy: return OStep.avatar;
-      case OStep.avatar:            return OStep.avatar; // finish
+      case OStep.intro:          return OStep.welcome;
+      case OStep.welcome:        return OStep.languageChoice;
+      case OStep.languageChoice: return OStep.chat;
+      case OStep.chat:           return OStep.chat;
     }
   }
 
   Future<void> _goNext() async {
     _syncDataFromControllers();
     await StorageService.saveOnboardingData(_data.toMap());
-
-    if (_current == OStep.avatar) {
-      await _finish();
-      return;
-    }
 
     final next = _nextStepFor(_current);
     setState(() => _history.add(next));
@@ -247,9 +170,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     context.go('/');
   }
 
-  /// Renseigne nom/email à partir du compte OAuth pour que les steps suivants
-  /// (avatar, sync Supabase à la fin) disposent des bonnes valeurs — sinon
-  /// `_finish()` écraserait le profil déjà créé avec des champs vides.
+  /// Renseigne nom/email à partir du compte OAuth pour que le fil de chat
+  /// suivant (et la sync Supabase à la fin) dispose des bonnes valeurs —
+  /// sinon `_finish()` écraserait le profil déjà créé avec des champs vides.
   void _prefillFromOAuthUser(User? user) {
     if (user == null) return;
     final meta = user.userMetadata;
@@ -357,7 +280,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
           // ── Progress bar — cachée sur l'intro ─────────────────────────────
           if (_current != OStep.intro)
-            _ProgressBar(progress: _progress),
+            _ProgressBar(progress: _progress, totalSteps: _progressSteps.length),
         ],
       ),
     );
@@ -387,85 +310,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       },
     ),
 
-    // 3 — Goals
-    StepGoals(
-      selectedGoals:  _data.goals,
-      onBack:         _goBack,
-      onToggleGoal:   (g) => setState(() =>
-        _data.goals.contains(g) ? _data.goals.remove(g) : _data.goals.add(g)),
-      onNext:         _goNext,
-    ),
-
-    // 3 — Fitness level
-    StepFitnessLevel(
-      selectedLevel: _data.fitnessLevel,
-      onBack:        _goBack,
-      onChanged:     (v) => setState(() => _data.fitnessLevel = v),
-      onNext:        _goNext,
-    ),
-
-    // 4 — Equipment
-    StepEquipment(
-      selectedEquipment:  _data.equipment,
-      onBack:             _goBack,
-      onToggleEquipment:  (item) => setState(() =>
-        _data.equipment.contains(item)
-            ? _data.equipment.remove(item)
-            : _data.equipment.add(item)),
-      onNext:             _goNext,
-    ),
-
-    // 5 — Training location
-    StepTrainingLocation(
-      selectedLocation: _data.trainingLocation,
-      onBack:           _goBack,
-      onChanged:        (v) => setState(() => _data.trainingLocation = v),
-      onNext:           _goNext,
-    ),
-
-    // 6 — Frequency
-    StepFrequency(
-      selectedFrequency: _data.frequency,
-      onBack:            _goBack,
-      onChanged:         (v) => setState(() => _data.frequency = v),
-      onNext:            _goNext,
-    ),
-
-    // 7 — Health profile (height / weight / age)
-    StepHealthProfile(
-      onNext:            _goNext,
-      onBack:            _goBack,
-      initialHeightCm:   _data.heightCm,
-      initialWeightKg:   _data.weightKg,
-      initialAge:        _data.age,
-      onHeightChanged:   (v) => setState(() => _data.heightCm = v),
-      onWeightChanged:   (v) => setState(() => _data.weightKg = v),
-      onAgeChanged:      (v) => setState(() => _data.age = v),
-    ),
-
-    // 8 — Cycle & pregnancy
-    StepCycleAndPregnancy(
-      onNext:  _goNext,
-      onBack:  _goBack,
-      onHealthStatusChanged:  (v) => setState(() => _data.healthStatus  = v),
-      onLastPeriodChanged:    (v) => setState(() => _data.lastPeriod    = v),
-      onCycleDurationChanged: (v) => setState(() => _data.cycleDuration = v),
-      onPregnancyWeekChanged: (v) => setState(() => _data.pregnancyWeekSA = v),
-      onPpRecoveryChanged:    (v) => setState(() => _data.ppRecovery    = v),
-      onPpDurationChanged:    (v) => setState(() => _data.ppDuration    = v),
-    ),
-
-    // 9 — Mascotte
-    StepAvatar(
-      userName: _data.username.isNotEmpty ? _data.username : 'fiteva',
-      onBack:   _goBack,
-      onNext:   _goNext,
-      onAvatarChanged: (seed, style, bg) => setState(() {
-        _data.avatarSeed  = seed;
-        _data.avatarStyle = style;
-        _data.avatarBg    = bg;
-        _data.mascotType  = seed; // seed = type.name from StepAvatar
-      }),
+    // 3 — Tout l'onboarding restant (mascotte → objectifs → ... → cycle),
+    // un seul fil de chat continu. `onFinish` est appelé une fois seulement,
+    // à la toute fin de la conversation.
+    OnboardingChatFlow(
+      data: _data,
+      onBack: _goBack,
+      onDataChanged: () {
+        setState(() {});
+        StorageService.saveOnboardingData(_data.toMap());
+      },
+      onFinish: _finish,
     ),
   ];
 }
@@ -475,13 +330,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _ProgressBar extends StatelessWidget {
   final double progress;
-  const _ProgressBar({required this.progress});
-
-  static const _totalSteps = 11;
+  final int totalSteps;
+  const _ProgressBar({required this.progress, required this.totalSteps});
 
   @override
   Widget build(BuildContext context) {
-    final currentStep = (progress * (_totalSteps - 1)).round();
+    final currentStep = (progress * (totalSteps - 1)).round();
     return Positioned(
       top: 0, left: 0, right: 0,
       child: SafeArea(
@@ -489,7 +343,7 @@ class _ProgressBar extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
           child: Row(
-            children: List.generate(_totalSteps, (i) {
+            children: List.generate(totalSteps, (i) {
               final done = i <= currentStep;
               final isCurrent = i == currentStep;
               return Expanded(
@@ -497,7 +351,7 @@ class _ProgressBar extends StatelessWidget {
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                   height: isCurrent ? 4 : 2.5,
-                  margin: EdgeInsets.only(right: i < _totalSteps - 1 ? 3 : 0),
+                  margin: EdgeInsets.only(right: i < totalSteps - 1 ? 3 : 0),
                   decoration: BoxDecoration(
                     color: done
                         ? const Color(0xFF7ABB98)
