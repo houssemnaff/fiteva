@@ -339,9 +339,12 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
           'weight_kg':    bio['weight_kg'],
           'age':          bio['age'],
           'fitness_level': bio['fitness_level'],
+          'frequency':    bio['frequency_days'] != null ? '${bio['frequency_days']} jours' : null,
           'goals':        bio['goals'] ?? [],
+          'equipment':    bio['equipment'] ?? [],
+          'training_location': bio['training_location'],
           'health_status': cycle?['health_status'],
-          'cycle_duration': cycle?['cycle_duration']?.toString(),
+          'cycle_duration': cycle?['cycle_duration'] != null ? '${cycle?['cycle_duration']} jours' : null,
           'last_period':   cycle?['last_period_date'],
           'streak':        cycle?['streak'],
           'level':           cycle?['level'],
@@ -444,6 +447,7 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
     if (data['goals']        != null) bio['goals']             = data['goals'];
     if (data['equipment']    != null) bio['equipment']         = data['equipment'];
     if (data['frequency']    != null) bio['frequency_days']    = _freqToDays(data['frequency']);
+    if (data['training_location'] != null) bio['training_location'] = data['training_location'];
     if (bio.length > 2) {
       SupabaseConfig.table('user_biometrics')
           .upsert(bio, onConflict: 'user_id')
@@ -486,7 +490,7 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
   // ── Helpers de mapping clés locales → colonnes Supabase ──────────────────
 
   static const _profileKeys = {'username', 'email'};
-  static const _bioKeys     = {'height_cm', 'weight_kg', 'age', 'fitness_level', 'goals', 'equipment', 'frequency'};
+  static const _bioKeys     = {'height_cm', 'weight_kg', 'age', 'fitness_level', 'goals', 'equipment', 'frequency', 'training_location'};
   // pregnancy_week/pp_recovery/pp_duration manquaient ici : updateField()
   // les enregistrait bien en local (StorageService) mais _syncFieldToSupabase
   // les ignorait silencieusement (aucun des 3 ensembles de clés ne les

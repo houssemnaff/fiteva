@@ -2,6 +2,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:fiteva/providers/user_profile_provider.dart';
+import 'package:fiteva/providers/main_tab_provider.dart';
 import 'package:fiteva/screens/cycle/homecyle.dart';
 import 'package:fiteva/screens/cycle/pregnancy/PregnancyHubScreen.dart';
 import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_hub_screen.dart';
@@ -25,6 +26,7 @@ import 'walkthrough/app_walkthrough_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../services/app_tour_service.dart';
+import 'paywall/paywall_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  NAV CONFIG
@@ -61,7 +63,6 @@ class MainLayout extends ConsumerStatefulWidget {
 class _MainLayoutState extends ConsumerState<MainLayout>
     with SingleTickerProviderStateMixin {
 
-  int  _currentIndex = 0;
   bool _plusOpen     = false;
   bool _showTour    = false;
   double _x = -1;
@@ -144,22 +145,13 @@ class _MainLayoutState extends ConsumerState<MainLayout>
 
   void _selectMain(int i) {
     _closePlus();
-    setState(() => _currentIndex = i);
-    if (i < 4) {
-      _pageController.animateToPage(
-        i,
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeInOutCubic,
-      );
-    }
+    ref.read(mainTabIndexProvider.notifier).set(i);
   }
 
   void _selectSecondary(int i) {
     HapticFeedback.selectionClick();
-    setState(() {
-      _currentIndex = i + 4;
-      _plusOpen = false;
-    });
+    ref.read(mainTabIndexProvider.notifier).set(i + 4);
+    setState(() => _plusOpen = false);
     _plusAnim.reverse();
   }
 
@@ -179,10 +171,19 @@ class _MainLayoutState extends ConsumerState<MainLayout>
       builder: (_) => const ChatbotSheet());
   }
 
-  bool get _isSecondary => _currentIndex >= 4;
-
   @override
   Widget build(BuildContext context) {
+    final currentIndex = ref.watch(mainTabIndexProvider);
+    final isSecondary = currentIndex >= 4;
+    ref.listen<int>(mainTabIndexProvider, (prev, next) {
+      if (next < 4 && _pageController.hasClients) {
+        _pageController.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    });
     final profile = ref.watch(userProfileProvider);
     final l10n    = ref.watch(l10nProvider);
     final chatbotVisible = ref.watch(chatbotVisibilityProvider);
@@ -242,14 +243,14 @@ class _MainLayoutState extends ConsumerState<MainLayout>
             physics: const BouncingScrollPhysics(),
             onPageChanged: (i) {
               _closePlus();
-              setState(() => _currentIndex = i);
+              ref.read(mainTabIndexProvider.notifier).set(i);
             },
             children: mainScreens,
           ),
 
           // ── Secondary screen overlay (boutique, community, santé) ─
-          if (_isSecondary)
-            secondaryScreens[_currentIndex - 4],
+          if (isSecondary)
+            secondaryScreens[currentIndex - 4],
 
           // ── Secondary menu — ALWAYS in tree, never removed ─────
           // (removing BackdropFilter mid-animation causes mouse_tracker crash)
@@ -257,7 +258,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
             animation: _plusScale,
             onCloseTap: _closePlus,
             items: secondaryItemsL10n,
-            activeIndex: _isSecondary ? _currentIndex - 4 : -1,
+            activeIndex: isSecondary ? currentIndex - 4 : -1,
             onTap: _selectSecondary,
             bottomPadding: padding.bottom + navH + 8,
           ),
@@ -318,29 +319,33 @@ class _MainLayoutState extends ConsumerState<MainLayout>
                 if (tabIndex == -1) {
                   return;
                 }
-                _closePlus();
-                setState(() => _currentIndex = tabIndex);
-                if (tabIndex < 4) {
-                  _pageController.animateToPage(
-                    tabIndex,
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeInOutCubic,
-                  );
-                }
+                _selectMain(tabIndex);
               },
               onFinish: () {
                 setState(() => _showTour = false);
                 _selectMain(0);
                 Future.delayed(const Duration(milliseconds: 400), () {
-                  if (mounted) _togglePlus();
+                  if (!mounted) return;
+                  final isPro = ref.read(isProProvider);
+                  if (!isPro) {
+                    Navigator.of(context).push(
+                      PageRouteBuilder(
+                        opaque: true,
+                        pageBuilder: (_, __, ___) => const PaywallScreen(),
+                        transitionsBuilder: (_, anim, __, child) =>
+                            FadeTransition(opacity: anim, child: child),
+                        transitionDuration: const Duration(milliseconds: 500),
+                      ),
+                    );
+                  }
                 });
               },
             ),
         ],
       ),
       bottomNavigationBar: _GlassNavBar(
-        currentIndex: _currentIndex,
-        isSecondary: _isSecondary,
+        currentIndex: currentIndex,
+        isSecondary: isSecondary,
         navItems: mainNavItems,
         onTap: _selectMain,
         plusOpen: _plusOpen,

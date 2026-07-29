@@ -22,6 +22,7 @@ import '../../providers/subscription_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/mascot_widget.dart';
 import '../../widgets/paywall_sheet.dart';
+import 'rewards_screen.dart';
 import 'notification_settings_screen.dart';
 import 'stripe_integration.dart';
 import 'theme_screen.dart';
@@ -30,8 +31,6 @@ import 'workout_history_screen.dart';
 
 class _P {
   _P._();
-  static const main   = Color(0xFF1C4D30);
-  static const sage   = Color(0xFF7ABB98);
   static const bgL    = Colors.white;
   static const cardL  = Colors.white;
   static const borderL = Color(0xFFE8ECE9);
@@ -47,20 +46,16 @@ class _P {
   static Color border(bool d) => d ? borderD : borderL;
   static Color t1(bool d)     => d ? t1D : t1L;
   static Color t2(bool d)     => d ? t2D : t2L;
-  static Color accent(bool d) => d ? sage : main;
 }
-
-const _days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 final expandBadgesProvider  = StateProvider<bool>((ref) => false);
 final chatbotVisibilityProvider = StateProvider<bool>(
   (ref) => StorageService.getChatbotVisible(),
 );
-final remindersEnabledProvider = StateProvider<bool>( // kept for backward compat
+final remindersEnabledProvider = StateProvider<bool>(
   (ref) => LocalReminderService.remindersEnabled,
 );
 
-// ─── ProfileScreen ──────────────────────────────────────────────────────────
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -89,42 +84,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user       = ref.watch(userProfileProvider);
     final profile    = ref.watch(userProfileProvider);
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
     final cs         = Theme.of(context).colorScheme;
     final l10n       = ref.watch(l10nProvider);
     final diamonds   = ref.watch(diamondsProvider);
     final xp         = ref.watch(pointsProvider);
-    final mascot     = ref.watch(mascotProvider);
     final d          = isDarkMode;
 
-    final displayName  = profile.username.isNotEmpty ? profile.username : user.username;
+    final displayName  = profile.username.isNotEmpty ? profile.username : 'User';
     final displayEmail = profile.email.isNotEmpty ? profile.email : '';
+    final initials = displayName.isNotEmpty
+        ? displayName.trim().split(' ').map((w) => w.isNotEmpty ? w[0].toUpperCase() : '').take(2).join()
+        : 'U';
 
     final bg    = _P.bg(d);
     final ink   = _P.t1(d);
     final muted = _P.t2(d);
     final surf  = _P.card(d);
     final bdr   = _P.border(d);
-    final accent = _P.accent(d);
+    final accent = cs.primary;
 
     Widget buildToggle(bool on, VoidCallback onTap) => GestureDetector(
       onTap: () { HapticFeedback.selectionClick(); onTap(); },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 44, height: 26,
+        width: 51, height: 31,
         decoration: BoxDecoration(
-          color: on ? _P.main : (d ? const Color(0xFF2A3A30) : const Color(0xFFD4DDD8)),
-          borderRadius: BorderRadius.circular(13),
+          color: on ? accent : (d ? const Color(0xFF39393D) : const Color(0xFFE9E9EB)),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: AnimatedAlign(
           duration: const Duration(milliseconds: 200),
           alignment: on ? Alignment.centerRight : Alignment.centerLeft,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Container(width: 22, height: 22,
-              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
+            padding: const EdgeInsets.all(2),
+            child: Container(width: 27, height: 27,
+              decoration: BoxDecoration(
+                color: Colors.white, shape: BoxShape.circle,
+                boxShadow: [BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 4, offset: const Offset(0, 2))])),
           ),
         ),
       ),
@@ -133,46 +133,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     Widget groupedSection(List<Widget> rows) => Container(
       decoration: BoxDecoration(
         color: surf,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: bdr, width: 0.5),
-        boxShadow: [BoxShadow(
-          color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
-          blurRadius: 12, offset: const Offset(0, 3))],
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Column(children: [
-          for (int i = 0; i < rows.length; i++) ...[
-            rows[i],
-            if (i < rows.length - 1)
-              Divider(height: 0.5, thickness: 0.5, color: bdr, indent: 56, endIndent: 16),
-          ],
-        ]),
-      ),
+      child: Column(children: [
+        for (int i = 0; i < rows.length; i++) ...[
+          rows[i],
+          if (i < rows.length - 1)
+            Divider(height: 0.5, thickness: 0.5, color: bdr, indent: 52, endIndent: 0),
+        ],
+      ]),
     );
 
     Widget buildRow({
       required IconData icon,
       required String label,
+      Color? iconBg,
+      Color? iconColor,
       Widget? trailing,
       VoidCallback? onTap,
     }) => GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         child: Row(children: [
           Container(
-            width: 32, height: 32,
+            width: 29, height: 29,
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(9)),
-            child: Icon(icon, size: 15, color: accent)),
+              color: iconBg ?? accent,
+              borderRadius: BorderRadius.circular(7)),
+            child: Icon(icon, size: 16, color: iconColor ?? Colors.white)),
           const SizedBox(width: 12),
           Expanded(child: Text(label,
-            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: ink))),
+            style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w400, color: ink))),
           if (trailing != null) trailing
-          else Icon(LucideIcons.chevronRight, size: 15, color: muted.withValues(alpha: 0.5)),
+          else Icon(LucideIcons.chevronRight, size: 16, color: muted.withValues(alpha: 0.6)),
         ]),
       ),
     );
@@ -186,429 +181,147 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                padding: const EdgeInsets.fromLTRB(8, 4, 20, 0),
                 child: Row(children: [
                   GestureDetector(
                     onTap: () => context.go('/'),
-                    child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        color: surf, shape: BoxShape.circle,
-                        border: Border.all(color: bdr, width: 0.5)),
-                      child: Icon(LucideIcons.arrowLeft, size: 18, color: ink)),
-                  ),
-                  const Spacer(),
-                  Text(l10n.profileTitle,
-                    style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700,
-                      color: ink, letterSpacing: -0.3)),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => _showEditProfile(context, ref, profile, cs),
-                    child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        color: surf, shape: BoxShape.circle,
-                        border: Border.all(color: bdr, width: 0.5)),
-                      child: Icon(LucideIcons.penLine, size: 16, color: muted)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(LucideIcons.chevronLeft, size: 22, color: accent),
+                        const SizedBox(width: 2),
+                        Text(l10n.isFrench ? 'Retour' : 'Back',
+                          style: GoogleFonts.outfit(fontSize: 17, color: accent)),
+                      ]),
+                    ),
                   ),
                 ]),
               ),
             ),
           ),
 
-          // ── Profile hero card ─────────────────────────────────────────────
+          // ── Profile card (Apple-style) ────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: surf,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: accent.withValues(alpha: 0.15)),
-                  boxShadow: [BoxShadow(
-                    color: accent.withValues(alpha: d ? 0.08 : 0.06),
-                    blurRadius: 24, offset: const Offset(0, 8))],
-                ),
-                child: Column(children: [
-                  Stack(clipBehavior: Clip.none, children: [
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: GestureDetector(
+                onTap: () => _showEditProfile(context, ref, profile, cs),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: surf,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(children: [
                     Container(
-                      width: 80, height: 80,
+                      width: 60, height: 60,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           begin: Alignment.topLeft, end: Alignment.bottomRight,
-                          colors: [accent.withValues(alpha: 0.15), accent.withValues(alpha: 0.05)]),
-                        border: Border.all(color: accent.withValues(alpha: 0.3), width: 2.5)),
-                      child: ClipOval(child: MascotWidget(
-                        type: mascot.type, mood: mascot.mood, size: 76)),
-                    ),
-                    Positioned(bottom: -2, right: -2,
-                      child: GestureDetector(
-                        onTap: () => context.push('/edit-avatar'),
-                        child: Container(
-                          width: 28, height: 28,
-                          decoration: BoxDecoration(
-                            color: _P.main, shape: BoxShape.circle,
-                            border: Border.all(color: surf, width: 2.5)),
-                          child: const Icon(LucideIcons.camera, size: 12, color: Colors.white)),
+                          colors: [accent, accent.withValues(alpha: 0.7)]),
+                      ),
+                      child: Center(
+                        child: Text(initials,
+                          style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w600,
+                            color: Colors.white)),
                       ),
                     ),
-                  ]),
-                  const SizedBox(height: 14),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    Flexible(
-                      child: Text(
-                        displayName.isNotEmpty ? displayName : l10n.profileUser,
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w700,
-                          color: ink, letterSpacing: -0.4)),
-                    ),
-                    Consumer(builder: (_, ref2, __) {
-                      if (!ref2.watch(isProProvider)) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF1C4D30), Color(0xFF7ABB98)]),
-                            borderRadius: BorderRadius.circular(8)),
-                          child: Text('PRO',
-                            style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800,
-                              color: Colors.white, letterSpacing: 0.6)),
-                        ),
-                      );
-                    }),
-                  ]),
-                  if (displayEmail.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(displayEmail, maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: 13, color: muted)),
-                  ],
-                ]),
-              ),
-            ),
-          ),
-
-          // ── Stats bar (unified) ───────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: surf,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: bdr, width: 0.5),
-                  boxShadow: [BoxShadow(
-                    color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
-                    blurRadius: 12, offset: const Offset(0, 3))],
-                ),
-                child: IntrinsicHeight(
-                  child: Row(children: [
-                    _UnifiedStat(icon: LucideIcons.flame, value: '${xp.streak}',
-                      label: l10n.profileStreak, color: const Color(0xFFE8734A), d: d),
-                    VerticalDivider(width: 1, thickness: 1,
-                      color: bdr, indent: 8, endIndent: 8),
-                    _UnifiedStat(icon: LucideIcons.dumbbell, value: '48',
-                      label: l10n.profileSessions, color: _P.sage, d: d),
-                    VerticalDivider(width: 1, thickness: 1,
-                      color: bdr, indent: 8, endIndent: 8),
-                    _UnifiedStat(icon: LucideIcons.gem, value: '$diamonds',
-                      label: l10n.profileDiamonds, color: const Color(0xFF6BA3D6), d: d),
-                  ]),
-                ),
-              ),
-            ),
-          ),
-
-          // ── Level hero (gradient ring + diamond wallet) ──────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: GestureDetector(
-                onTap: () => _showLevelsSheet(context, xp),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft, end: Alignment.bottomRight,
-                      colors: d
-                        ? [const Color(0xFF152A1D), const Color(0xFF0F1A14)]
-                        : [const Color(0xFFF0F7F2), const Color(0xFFFFFFFF)]),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: accent.withValues(alpha: 0.15), width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withValues(alpha: d ? 0.12 : 0.08),
-                        blurRadius: 20, offset: const Offset(0, 6)),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: d ? 0.2 : 0.04),
-                        blurRadius: 10, offset: const Offset(0, 3)),
-                    ],
-                  ),
-                  child: Column(children: [
-                    Row(children: [
-                      SizedBox(
-                        width: 80, height: 80,
-                        child: CustomPaint(
-                          painter: _LevelRingPainter(
-                            progress: xp.levelProgress.clamp(0.0, 1.0),
-                            trackColor: accent.withValues(alpha: d ? 0.12 : 0.10),
-                            ringColor: accent,
-                            glowColor: accent.withValues(alpha: 0.3),
-                          ),
-                          child: Center(
-                            child: Text(PointsModel.levelEmojis[xp.level],
-                              style: const TextStyle(fontSize: 30)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [
-                          Expanded(child: Text(
-                            'Niveau ${xp.level}',
-                            style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800,
-                              color: ink, letterSpacing: -0.3))),
-                          // diamond wallet pill
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF60A5FA).withValues(alpha: d ? 0.15 : 0.10),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.2)),
+                    const SizedBox(width: 14),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Flexible(child: Text(displayName,
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w600,
+                            color: ink))),
+                        Consumer(builder: (_, ref2, __) {
+                          if (!ref2.watch(isProProvider)) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: accent,
+                                borderRadius: BorderRadius.circular(5)),
+                              child: Text('PRO',
+                                style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w700,
+                                  color: Colors.white, letterSpacing: 0.4)),
                             ),
-                            child: Row(mainAxisSize: MainAxisSize.min, children: [
-                              const Text('💎', style: TextStyle(fontSize: 12)),
-                              const SizedBox(width: 4),
-                              Text('$diamonds', style: GoogleFonts.outfit(
-                                fontSize: 13, fontWeight: FontWeight.w800,
-                                color: const Color(0xFF3B82F6))),
-                            ]),
-                          ),
-                        ]),
-                        const SizedBox(height: 2),
-                        Text(PointsModel.levelTitles[xp.level],
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500,
-                            color: accent)),
-                        const SizedBox(height: 10),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(5),
-                          child: LinearProgressIndicator(
-                            value: xp.levelProgress.clamp(0.0, 1.0),
-                            minHeight: 7,
-                            backgroundColor: accent.withValues(alpha: d ? 0.12 : 0.10),
-                            valueColor: AlwaysStoppedAnimation<Color>(accent)),
-                        ),
-                        const SizedBox(height: 6),
-                        if (xp.pointsForNextLevel - xp.totalPoints > 0)
-                          Text(
-                            '${xp.totalPoints} / ${xp.pointsForNextLevel} pts',
-                            style: GoogleFonts.inter(fontSize: 11, color: muted, fontWeight: FontWeight.w500),
-                            maxLines: 1, overflow: TextOverflow.ellipsis)
-                        else
-                          Text('Niveau maximum atteint ✨',
-                            style: GoogleFonts.inter(fontSize: 11, color: _P.sage, fontWeight: FontWeight.w600)),
-                      ])),
-                    ]),
-                    // XP breakdown strip
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: (d ? Colors.white : Colors.black).withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(14)),
-                      child: Row(children: [
-                        _XpSource(icon: LucideIcons.dumbbell, label: 'Entraînements', color: const Color(0xFFE8734A), d: d),
-                        Container(width: 1, height: 20, color: _P.border(d)),
-                        _XpSource(icon: LucideIcons.flame, label: 'Séries', color: const Color(0xFFF59E0B), d: d),
-                        Container(width: 1, height: 20, color: _P.border(d)),
-                        _XpSource(icon: LucideIcons.userCheck, label: 'Profil', color: const Color(0xFF6BA3D6), d: d),
+                          );
+                        }),
                       ]),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text('Voir tous les niveaux', style: GoogleFonts.inter(
-                        fontSize: 11, fontWeight: FontWeight.w600, color: accent)),
-                      const SizedBox(width: 4),
-                      Icon(LucideIcons.chevronRight, size: 12, color: accent),
-                    ]),
+                      if (displayEmail.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(displayEmail, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(fontSize: 13, color: muted)),
+                      ],
+                      const SizedBox(height: 2),
+                      Text(
+                        l10n.isFrench ? 'Profil, niveau & paramètres' : 'Profile, level & settings',
+                        style: GoogleFonts.outfit(fontSize: 13, color: muted)),
+                    ])),
+                    Icon(LucideIcons.chevronRight, size: 18, color: muted.withValues(alpha: 0.5)),
                   ]),
                 ),
               ),
             ),
           ),
 
-          // ── Weekly tracker (pill style) ──────────────────────────────────
+          // ── Stats row ──────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: surf,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: bdr, width: 0.5),
-                  boxShadow: [BoxShadow(
-                    color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
-                    blurRadius: 12, offset: const Offset(0, 3))],
-                ),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Container(
-                      width: 28, height: 28,
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(8)),
-                      child: Icon(LucideIcons.calendarCheck, size: 14, color: accent)),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(l10n.profileWeeklyGoal,
-                      style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700,
-                        color: ink), overflow: TextOverflow.ellipsis)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(12)),
-                      child: Text('5/7',
-                        style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w800,
-                          color: accent)),
-                    ),
-                  ]),
-                  const SizedBox(height: 16),
-                  Row(children: List.generate(7, (i) {
-                    final done = i < 5;
-                    final today = i == 4;
-                    return Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(right: i < 6 ? 6 : 0),
-                        child: Column(children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: done
-                                  ? accent
-                                  : (d ? const Color(0xFF1E2D23) : const Color(0xFFEDF1EE)),
-                              borderRadius: BorderRadius.circular(12),
-                              border: today && !done
-                                  ? Border.all(color: accent, width: 2) : null),
-                            child: Center(child: done
-                              ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
-                              : null),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(_days[i], textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(fontSize: 10,
-                              fontWeight: done || today ? FontWeight.w700 : FontWeight.w500,
-                              color: done ? accent : muted)),
-                        ]),
-                      ),
-                    );
-                  })),
-                ]),
-              ),
-            ),
-          ),
-
-          // ── Subscription ────────────────────────────────────────────────
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: SubscriptionButton(),
-            ),
-          ),
-
-          // ── Trophy case grid ──────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: _TrophyCase(xp: xp, d: d, accent: accent),
-            ),
-          ),
-
-          // ── Section: Préférences ────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _SectionHeader(icon: LucideIcons.settings, label: 'PRÉFÉRENCES',
-                  color: _P.sage, d: d),
-                const SizedBox(height: 10),
-                groupedSection([
-                  buildRow(
-                    icon: LucideIcons.moon, label: l10n.darkMode,
-                    trailing: buildToggle(isDarkMode,
-                      () => ref.read(themeModeProvider.notifier).toggleThemeMode())),
-                  buildRow(
-                    icon: LucideIcons.palette, label: 'Thèmes',
-                    onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const ThemeScreen())),
-                    trailing: Consumer(builder: (_, ref2, __) {
-                      final palette = ref2.watch(colorPaletteProvider);
-                      return Row(mainAxisSize: MainAxisSize.min, children: [
-                        Container(width: 16, height: 16,
-                          decoration: BoxDecoration(
-                            color: palette.primary, shape: BoxShape.circle,
-                            border: Border.all(color: bdr, width: 1.5))),
-                        const SizedBox(width: 6),
-                        Icon(LucideIcons.chevronRight, size: 14,
-                          color: muted.withValues(alpha: 0.5)),
-                      ]);
-                    })),
-                  Consumer(builder: (_, ref2, __) {
-                    final isFr = ref2.watch(localeProvider).languageCode == 'fr';
-                    return buildRow(
-                      icon: LucideIcons.globe,
-                      label: isFr ? 'Langue' : 'Language',
-                      onTap: () => ref2.read(localeProvider.notifier)
-                          .setLocale(isFr ? const Locale('en') : const Locale('fr')),
-                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Text(isFr ? 'Français' : 'English',
-                          style: GoogleFonts.inter(fontSize: 13, color: muted)),
-                        const SizedBox(width: 6),
-                        Icon(LucideIcons.chevronRight, size: 14,
-                          color: muted.withValues(alpha: 0.5)),
-                      ]));
-                  }),
-                  buildRow(
-                    icon: LucideIcons.bot, label: l10n.profileAiAssistant,
-                    trailing: Consumer(builder: (_, ref2, __) {
-                      final visible = ref2.watch(chatbotVisibilityProvider);
-                      return buildToggle(visible, () {
-                        final next = !visible;
-                        ref2.read(chatbotVisibilityProvider.notifier).state = next;
-                        StorageService.setChatbotVisible(next);
-                      });
-                    })),
-                ]),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Row(children: [
+                _StatPill(value: '${xp.streak}', label: l10n.isFrench ? 'Série' : 'Streak',
+                  icon: LucideIcons.flame, d: d),
+                const SizedBox(width: 10),
+                _StatPill(value: 'Lv.${xp.level}', label: PointsModel.levelTitles[xp.level],
+                  icon: LucideIcons.trophy, d: d,
+                  onTap: () => _showLevelsSheet(context, xp)),
+                const SizedBox(width: 10),
+                _StatPill(value: '$diamonds', label: l10n.isFrench ? 'Diamants' : 'Diamonds',
+                  icon: LucideIcons.gem, d: d),
               ]),
             ),
           ),
 
-          // ── Section: Activité ───────────────────────────────────────────
+          // ── Subscription ──────────────────────────────────────────────
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: SubscriptionButton(),
+            ),
+          ),
+
+          // ── General ────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _SectionHeader(icon: LucideIcons.activity, label: 'ACTIVITÉ',
-                  color: const Color(0xFFE8734A), d: d),
-                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, bottom: 6),
+                  child: Text(l10n.isFrench ? 'GÉNÉRAL' : 'GENERAL',
+                    style: GoogleFonts.outfit(fontSize: 13, color: muted)),
+                ),
                 groupedSection([
-                  buildRow(icon: LucideIcons.calendarDays, label: 'Historique',
+                  buildRow(
+                    icon: LucideIcons.gift, label: l10n.isFrench ? 'Récompenses & Parrainage' : 'Rewards & Referrals',
+                    iconBg: const Color(0xFFFF9F0A),
                     onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen()))),
-                  buildRow(icon: LucideIcons.bellRing,
-                    label: l10n.isFrench ? 'Notifications' : 'Notifications',
+                      MaterialPageRoute(builder: (_) => const RewardsScreen())),
+                  ),
+                  buildRow(
+                    icon: LucideIcons.calendarDays, label: l10n.isFrench ? 'Historique' : 'History',
+                    iconBg: const Color(0xFF30D158),
                     onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()))),
+                      MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen())),
+                  ),
                   Consumer(builder: (_, ref2, __) {
                     final isPro = ref2.watch(isProProvider);
                     return buildRow(
                       icon: LucideIcons.trendingUp,
                       label: l10n.isFrench ? 'Mes tendances' : 'My trends',
+                      iconBg: const Color(0xFFBF5AF2),
                       onTap: () {
                         if (isPro) {
                           Navigator.of(context).push(
@@ -622,107 +335,157 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         }
                       },
                       trailing: isPro
-                        ? Icon(LucideIcons.chevronRight, size: 15,
-                            color: muted.withValues(alpha: 0.5))
-                        : Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: _P.sage.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6)),
-                            child: Text('PRO',
-                              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700,
-                                color: _P.main, letterSpacing: 0.4))),
+                        ? Icon(LucideIcons.chevronRight, size: 16,
+                            color: muted.withValues(alpha: 0.6))
+                        : Row(mainAxisSize: MainAxisSize.min, children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4)),
+                              child: Text('PRO',
+                                style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w600,
+                                  color: accent, letterSpacing: 0.3))),
+                            const SizedBox(width: 6),
+                            Icon(LucideIcons.chevronRight, size: 16,
+                              color: muted.withValues(alpha: 0.6)),
+                          ]),
                     );
                   }),
+                  buildRow(
+                    icon: LucideIcons.bellRing, label: 'Notifications',
+                    iconBg: const Color(0xFFFF3B30),
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const NotificationSettingsScreen())),
+                  ),
                 ]),
               ]),
             ),
           ),
 
-          // ── Section: Données & confidentialité ──────────────────────────
+          // ── Preferences ────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _SectionHeader(icon: LucideIcons.shield, label: 'DONNÉES',
-                  color: const Color(0xFF6BA3D6), d: d),
-                const SizedBox(height: 10),
-                groupedSection([
-                  buildRow(icon: LucideIcons.download,
-                    label: l10n.isFrench ? 'Exporter mes données' : 'Export my data',
-                    onTap: () => _exportData(context, ref)),
-                ]),
-              ]),
-            ),
-          ),
-
-          // ── Danger zone ─────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _SectionHeader(icon: LucideIcons.userCog, label: 'COMPTE',
-                  color: const Color(0xFFE53935), d: d),
-                const SizedBox(height: 10),
-                Container(
-                  decoration: BoxDecoration(
-                    color: surf,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFE53935).withValues(alpha: 0.15)),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Column(children: [
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => _confirmDeleteAccount(context, ref),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          child: Row(children: [
-                            Container(width: 32, height: 32,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE53935).withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(9)),
-                              child: const Icon(LucideIcons.trash2, size: 15,
-                                color: Color(0xFFE53935))),
-                            const SizedBox(width: 12),
-                            Expanded(child: Text(
-                              l10n.isFrench ? 'Supprimer mon compte' : 'Delete my account',
-                              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500,
-                                color: const Color(0xFFE53935)))),
-                          ]),
-                        ),
-                      ),
-                      Divider(height: 0.5, thickness: 0.5,
-                        color: const Color(0xFFE53935).withValues(alpha: 0.1),
-                        indent: 56, endIndent: 16),
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => _confirmSignOut(context, ref),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          child: Row(children: [
-                            Container(width: 32, height: 32,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE53935).withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(9)),
-                              child: const Icon(LucideIcons.logOut, size: 15,
-                                color: Color(0xFFE53935))),
-                            const SizedBox(width: 12),
-                            Expanded(child: Text('Se déconnecter',
-                              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500,
-                                color: const Color(0xFFE53935)))),
-                          ]),
-                        ),
-                      ),
-                    ]),
-                  ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, bottom: 6),
+                  child: Text(l10n.isFrench ? 'PRÉFÉRENCES' : 'PREFERENCES',
+                    style: GoogleFonts.outfit(fontSize: 13, color: muted)),
                 ),
+                groupedSection([
+                  buildRow(
+                    icon: LucideIcons.moon, label: l10n.darkMode,
+                    iconBg: const Color(0xFF5E5CE6),
+                    trailing: buildToggle(isDarkMode,
+                      () => ref.read(themeModeProvider.notifier).toggleThemeMode())),
+                  buildRow(
+                    icon: LucideIcons.palette, label: l10n.isFrench ? 'Thèmes' : 'Themes',
+                    iconBg: const Color(0xFFFF375F),
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const ThemeScreen())),
+                    trailing: Consumer(builder: (_, ref2, __) {
+                      final palette = ref2.watch(colorPaletteProvider);
+                      return Row(mainAxisSize: MainAxisSize.min, children: [
+                        Container(width: 14, height: 14,
+                          decoration: BoxDecoration(
+                            color: palette.primary, shape: BoxShape.circle)),
+                        const SizedBox(width: 8),
+                        Icon(LucideIcons.chevronRight, size: 16,
+                          color: muted.withValues(alpha: 0.6)),
+                      ]);
+                    })),
+                  Consumer(builder: (_, ref2, __) {
+                    final isFr = ref2.watch(localeProvider).languageCode == 'fr';
+                    return buildRow(
+                      icon: LucideIcons.globe,
+                      label: isFr ? 'Langue' : 'Language',
+                      iconBg: const Color(0xFF007AFF),
+                      onTap: () => ref2.read(localeProvider.notifier)
+                          .setLocale(isFr ? const Locale('en') : const Locale('fr')),
+                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(isFr ? 'Français' : 'English',
+                          style: GoogleFonts.outfit(fontSize: 15, color: muted)),
+                        const SizedBox(width: 6),
+                        Icon(LucideIcons.chevronRight, size: 16,
+                          color: muted.withValues(alpha: 0.6)),
+                      ]));
+                  }),
+                  buildRow(
+                    icon: LucideIcons.bot, label: l10n.profileAiAssistant,
+                    iconBg: const Color(0xFF64D2FF),
+                    trailing: Consumer(builder: (_, ref2, __) {
+                      final visible = ref2.watch(chatbotVisibilityProvider);
+                      return buildToggle(visible, () {
+                        final next = !visible;
+                        ref2.read(chatbotVisibilityProvider.notifier).state = next;
+                        StorageService.setChatbotVisible(next);
+                      });
+                    })),
+                ]),
               ]),
             ),
           ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 48)),
+          // ── Data & Account ──────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, bottom: 6),
+                  child: Text(l10n.isFrench ? 'DONNÉES & COMPTE' : 'DATA & ACCOUNT',
+                    style: GoogleFonts.outfit(fontSize: 13, color: muted)),
+                ),
+                groupedSection([
+                  buildRow(
+                    icon: LucideIcons.download,
+                    label: l10n.isFrench ? 'Exporter mes données' : 'Export my data',
+                    iconBg: const Color(0xFF30D158),
+                    onTap: () => _exportData(context, ref)),
+                  buildRow(
+                    icon: LucideIcons.logOut,
+                    label: l10n.isFrench ? 'Se déconnecter' : 'Sign out',
+                    iconBg: const Color(0xFF8E8E93),
+                    onTap: () => _confirmSignOut(context, ref)),
+                ]),
+                const SizedBox(height: 12),
+                groupedSection([
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _confirmDeleteAccount(context, ref),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                      child: Row(children: [
+                        Container(
+                          width: 29, height: 29,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF3B30),
+                            borderRadius: BorderRadius.circular(7)),
+                          child: const Icon(LucideIcons.trash2, size: 16, color: Colors.white)),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(
+                          l10n.isFrench ? 'Supprimer mon compte' : 'Delete my account',
+                          style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w400,
+                            color: const Color(0xFFFF3B30)))),
+                      ]),
+                    ),
+                  ),
+                ]),
+              ]),
+            ),
+          ),
+
+          // ── Version footer ──────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 48),
+              child: Center(
+                child: Text('FitEva v1.0.0',
+                  style: GoogleFonts.outfit(fontSize: 13, color: muted)),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -846,78 +609,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-// ── Unified stat (inside single bar) ─────────────────────────────────────────
-class _UnifiedStat extends StatelessWidget {
-  final IconData icon;
+class _StatPill extends StatelessWidget {
   final String value, label;
-  final Color color;
+  final IconData icon;
   final bool d;
-  const _UnifiedStat({required this.icon, required this.value, required this.label,
-    required this.color, required this.d});
+  final VoidCallback? onTap;
+  const _StatPill({required this.value, required this.label,
+    required this.icon, required this.d, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Column(children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(height: 6),
-        Text(value, style: GoogleFonts.outfit(
-          fontSize: 20, fontWeight: FontWeight.w800, color: _P.t1(d))),
-        const SizedBox(height: 1),
-        Text(label, style: GoogleFonts.inter(
-          fontSize: 10, color: _P.t2(d), fontWeight: FontWeight.w500)),
-      ]),
-    );
-  }
-}
-
-// ── Section header with colored icon ─────────────────────────────────────────
-class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool d;
-  const _SectionHeader({required this.icon, required this.label,
-    required this.color, required this.d});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Container(
-        width: 24, height: 24,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(6)),
-        child: Icon(icon, size: 12, color: color),
-      ),
-      const SizedBox(width: 8),
-      Text(label, style: GoogleFonts.inter(
-        fontSize: 11, fontWeight: FontWeight.w600,
-        color: _P.t2(d), letterSpacing: 0.8)),
-    ]);
-  }
-}
-
-// ── XP source chip (inside breakdown strip) ─────────────────────────────────
-class _XpSource extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool d;
-  const _XpSource({required this.icon, required this.label, required this.color, required this.d});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(icon, size: 13, color: color),
-        const SizedBox(width: 5),
-        Flexible(
-          child: Text(label, style: GoogleFonts.inter(
-            fontSize: 10, fontWeight: FontWeight.w600, color: _P.t2(d)),
-            maxLines: 1, overflow: TextOverflow.ellipsis),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: _P.card(d),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(children: [
+            Text(value, style: GoogleFonts.outfit(
+              fontSize: 20, fontWeight: FontWeight.w700, color: _P.t1(d))),
+            const SizedBox(height: 2),
+            Text(label, style: GoogleFonts.outfit(
+              fontSize: 11, color: _P.t2(d)),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+          ]),
         ),
-      ]),
+      ),
     );
   }
 }
@@ -963,119 +683,6 @@ class _LevelRingPainter extends CustomPainter {
       old.progress != progress || old.ringColor != ringColor;
 }
 
-// ── Trophy case grid ─────────────────────────────────────────────────────────
-class _TrophyCase extends StatelessWidget {
-  final PointsModel xp;
-  final bool d;
-  final Color accent;
-  const _TrophyCase({required this.xp, required this.d, required this.accent});
-
-  static const _badges = [
-    ('🏋️', 'Premier entraînement', 1, 'workout'),
-    ('🔥', 'Série de 7 jours', 7, 'streak'),
-    ('👤', 'Profil complété', 1, 'profile'),
-    ('⭐', '100 points', 100, 'points'),
-    ('💎', 'Niveau 5', 5, 'level'),
-    ('🏆', 'Niveau 10', 10, 'level'),
-  ];
-
-  static const _badgeColors = [
-    Color(0xFFE8734A), Color(0xFFF59E0B), Color(0xFF6BA3D6),
-    Color(0xFF22C55E), Color(0xFF60A5FA), Color(0xFFA855F7),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _P.card(d),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _P.border(d), width: 0.5),
-        boxShadow: [BoxShadow(
-          color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
-          blurRadius: 12, offset: const Offset(0, 3))],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            width: 24, height: 24,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(6)),
-            child: Icon(LucideIcons.trophy, size: 12, color: accent),
-          ),
-          const SizedBox(width: 8),
-          Text('TROPHÉES', style: GoogleFonts.inter(
-            fontSize: 11, fontWeight: FontWeight.w600,
-            color: _P.t2(d), letterSpacing: 0.8)),
-          const Spacer(),
-          Text('${_badges.where((b) {
-            final i = _badges.indexOf(b);
-            return _isUnlocked(i, b.$3, b.$4);
-          }).length}/${_badges.length}', style: GoogleFonts.outfit(
-            fontSize: 12, fontWeight: FontWeight.w700, color: accent)),
-        ]),
-        const SizedBox(height: 14),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.85,
-          children: List.generate(_badges.length, (i) {
-            final (emoji, label, threshold, type) = _badges[i];
-            final unlocked = _isUnlocked(i, threshold, type);
-            final color = _badgeColors[i];
-            return Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: unlocked
-                    ? color.withValues(alpha: d ? 0.10 : 0.06)
-                    : (d ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5)),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: unlocked
-                      ? color.withValues(alpha: 0.25)
-                      : _P.border(d)),
-                boxShadow: unlocked ? [BoxShadow(
-                  color: color.withValues(alpha: 0.15),
-                  blurRadius: 12, offset: const Offset(0, 3))] : [],
-              ),
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                opacity: unlocked ? 1.0 : 0.4,
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(emoji, style: const TextStyle(fontSize: 28)),
-                  const SizedBox(height: 6),
-                  Text(label, style: GoogleFonts.inter(
-                    fontSize: 9, fontWeight: FontWeight.w600,
-                    color: unlocked ? _P.t1(d) : _P.t2(d),
-                    height: 1.2),
-                    textAlign: TextAlign.center,
-                    maxLines: 2, overflow: TextOverflow.ellipsis),
-                  if (!unlocked) ...[
-                    const SizedBox(height: 4),
-                    Icon(LucideIcons.lock, size: 10,
-                      color: _P.t2(d).withValues(alpha: 0.5)),
-                  ],
-                ]),
-              ),
-            );
-          }),
-        ),
-      ]),
-    );
-  }
-
-  bool _isUnlocked(int i, int threshold, String type) {
-    if (i < 3) return true;
-    if (type == 'points') return xp.totalPoints >= threshold;
-    if (type == 'level') return xp.level >= threshold;
-    return false;
-  }
-}
 
 // ─── Edit Profile Sheet ──────────────────────────────────────────────────────
 class _EditProfileSheet extends StatefulWidget {
@@ -1158,7 +765,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   @override
   Widget build(BuildContext context) {
     final dark  = Theme.of(context).brightness == Brightness.dark;
-    final green = const Color(0xFF22C55E);
+    final green = Theme.of(context).colorScheme.primary;
     final surf  = dark ? const Color(0xFF1A1A1A) : Colors.white;
     final ink   = dark ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
     final muted = dark ? const Color(0xFF888886) : const Color(0xFF6B6B68);
@@ -1531,7 +1138,7 @@ class _AdvancedEditSheetState extends State<_AdvancedEditSheet> {
   @override
   Widget build(BuildContext context) {
     final dark  = Theme.of(context).brightness == Brightness.dark;
-    final green = const Color(0xFF22C55E);
+    final green = Theme.of(context).colorScheme.primary;
     final surf  = dark ? const Color(0xFF1A1A1A) : Colors.white;
     final ink   = dark ? const Color(0xFFF0F0EE) : const Color(0xFF111110);
     final muted = dark ? const Color(0xFF888886) : const Color(0xFF6B6B68);
@@ -1915,10 +1522,11 @@ class _LevelsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d     = Theme.of(context).brightness == Brightness.dark;
+    final cs    = Theme.of(context).colorScheme;
     final bg    = _P.bg(d);
     final ink   = _P.t1(d);
     final muted = _P.t2(d);
-    final accent = _P.accent(d);
+    final accent = cs.primary;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.78,
@@ -1971,11 +1579,11 @@ class _LevelsSheet extends StatelessWidget {
                 Text('Niveaux & Récompenses', style: GoogleFonts.outfit(
                   fontSize: 17, fontWeight: FontWeight.w800, color: ink, letterSpacing: -0.3)),
                 const SizedBox(height: 3),
-                Text('Niveau ${xp.level} · ${xp.totalPoints} pts', style: GoogleFonts.inter(
+                Text('Niveau ${xp.level} · ${xp.totalPoints} pts', style: GoogleFonts.outfit(
                   fontSize: 12, fontWeight: FontWeight.w600, color: accent)),
                 const SizedBox(height: 2),
                 Text('Gagne des points, passe des niveaux, reçois des 💎',
-                  style: GoogleFonts.inter(fontSize: 10.5, color: muted)),
+                  style: GoogleFonts.outfit(fontSize: 10.5, color: muted)),
               ])),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -2104,7 +1712,7 @@ class _LevelsSheet extends StatelessWidget {
                                 ]),
                                 const SizedBox(height: 2),
                                 Text(level == 1 ? 'Départ' : 'dès $threshold pts',
-                                  style: GoogleFonts.inter(fontSize: 10.5, color: muted)),
+                                  style: GoogleFonts.outfit(fontSize: 10.5, color: muted)),
                                 if (isCurrent) ...[
                                   const SizedBox(height: 8),
                                   ClipRRect(
@@ -2117,7 +1725,7 @@ class _LevelsSheet extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text('${xp.totalPoints} / ${xp.pointsForNextLevel} pts',
-                                    style: GoogleFonts.inter(fontSize: 10, color: muted,
+                                    style: GoogleFonts.outfit(fontSize: 10, color: muted,
                                       fontWeight: FontWeight.w500)),
                                 ],
                               ],

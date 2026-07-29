@@ -973,7 +973,7 @@ class _NavGrid extends StatelessWidget {
         _accent(context),
         () => Navigator.push(context, fadeTo(PregnancyBodyScreen(currentWeek: week)))),
       (l10n.pregMaChecklist, Icons.check_circle_outline_rounded,
-        const Color(0xFFA7B8AD),
+        Color.lerp(_primary(context), Colors.grey, 0.5)!,
         () => Navigator.push(context, fadeTo(PregnancyChecklistScreen(currentWeek: week)))),
     ];
 
@@ -1034,12 +1034,16 @@ class _PregnancyTipsCarouselState extends State<_PregnancyTipsCarousel> {
   final _controller = PageController();
   int _page = 0;
 
-  static const _categories = [
-    ('Nutrition', LucideIcons.apple, Color(0xFF7ABB98)),
-    ('Exercice', LucideIcons.dumbbell, Color(0xFF1C4D30)),
-    ('Bien-être', LucideIcons.heart, Color(0xFFE58F8A)),
-    ('Sommeil', LucideIcons.moon, Color(0xFFA7B8AD)),
-  ];
+  static List<(String, IconData, Color)> _categoriesOf(Color accent) {
+    final deep = Color.lerp(accent, Colors.black, 0.35)!;
+    final muted = Color.lerp(accent, Colors.grey, 0.5)!;
+    return [
+      ('Nutrition', LucideIcons.apple, accent),
+      ('Exercice', LucideIcons.dumbbell, deep),
+      ('Bien-être', LucideIcons.heart, const Color(0xFFE58F8A)),
+      ('Sommeil', LucideIcons.moon, muted),
+    ];
+  }
 
   static const _tips = <int, List<List<String>>>{
     1: [
@@ -1074,16 +1078,17 @@ class _PregnancyTipsCarouselState extends State<_PregnancyTipsCarousel> {
   Widget build(BuildContext context) {
     final cs = widget.cs;
     final tips = _tipsForTrimester();
+    final categories = _categoriesOf(Theme.of(context).colorScheme.primary);
 
     return Column(children: [
       SizedBox(
         height: 120,
         child: PageView.builder(
           controller: _controller,
-          itemCount: _categories.length,
+          itemCount: categories.length,
           onPageChanged: (i) => setState(() => _page = i),
           itemBuilder: (context, i) {
-            final (name, icon, color) = _categories[i];
+            final (name, icon, color) = categories[i];
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.all(16),
@@ -1122,7 +1127,7 @@ class _PregnancyTipsCarouselState extends State<_PregnancyTipsCarousel> {
       const SizedBox(height: 10),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(_categories.length, (i) =>
+        children: List.generate(categories.length, (i) =>
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.symmetric(horizontal: 3),

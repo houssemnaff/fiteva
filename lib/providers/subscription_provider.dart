@@ -58,8 +58,12 @@ final subscriptionProvider =
 /// True si l'utilisateur a un abonnement Pro actif — false pendant le
 /// chargement ou en cas d'erreur (fail-closed : on ne débloque pas le
 /// contenu payant tant qu'on n'a pas confirmé le statut).
+const _adminEmails = ['balkischachia12@gmail.com'];
+
 final isProProvider = Provider<bool>((ref) {
   final uid = SupabaseConfig.userId;
   if (uid == null) return false;
+  final email = SupabaseConfig.userEmail;
+  if (email != null && _adminEmails.contains(email)) return true;
   return ref.watch(subscriptionProvider).value?.isPro ?? false;
 });

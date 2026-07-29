@@ -1,17 +1,13 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
+import 'package:fiteva/providers/main_tab_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/weekly_plan_provider.dart';
 import 'package:fiteva/core/nutrition/nutrition_provider.dart' hide userProfileProvider;
 import 'package:fiteva/screens/cycle/homecyle.dart';
-import 'package:fiteva/screens/cycle/pregnancy/PregnancyHubScreen.dart';
-import 'package:fiteva/screens/cycle/pregnancy/postpartum/postpartum_hub_screen.dart';
 
-import 'package:fiteva/screens/home/referral_card.dart';
 import 'package:fiteva/screens/workout/programme_detail_screen.dart';
-import 'package:fiteva/screens/workout/workout_screen.dart';
-import 'package:fiteva/screens/nutrition/nutrition_screen.dart';
 import 'package:fiteva/widgets/home_header.dart';
 import 'package:fiteva/widgets/messtepcard.dart';
 import 'package:fiteva/providers/program_recommendations_provider.dart';
@@ -74,8 +70,6 @@ class HomeScreen extends ConsumerWidget {
           SliverToBoxAdapter(child: _WeeklyPlanSection()),
 
           SliverToBoxAdapter(child: _ContinueWorkoutsSection(programs: allPrograms)),
-
-          const SliverToBoxAdapter(child: ReferralCard()),
 
           const SliverToBoxAdapter(child: SizedBox(height: 110)),
         ],
@@ -533,82 +527,68 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
 
           const SizedBox(height: 20),
 
-          // Day pills — clean segmented control
+          // Day pills — individual ovals in a flat row
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: List.generate(plans.length, (i) {
-                  final plan = plans[i];
-                  final isSel = _selectedDay == i;
-                  final isPast = plan.isPast;
-                  final dotColor = plan.isMissed
-                      ? const Color(0xFFE0703C)
-                      : isPast
-                          ? cs.onSurface.withValues(alpha: 0.15)
-                          : _statusColor(plan, cs);
-                  final hasProgram = plan.program != null;
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(plans.length, (i) {
+                final plan = plans[i];
+                final isSel = _selectedDay == i;
+                final hasProgram = plan.program != null;
+                final dotColor = plan.isMissed
+                    ? const Color(0xFFE0703C)
+                    : plan.isPast
+                        ? cs.onSurface.withValues(alpha: 0.15)
+                        : _statusColor(plan, cs);
 
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedDay = i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSel ? cs.surface : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: isSel
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.06),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  )
-                                ]
-                              : [],
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              plan.dayShort,
-                              style: GoogleFonts.inter(
-                                color: isSel ? cs.primary : cs.onSurfaceVariant,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${plan.date.day}',
-                              style: GoogleFonts.outfit(
-                                color: isSel ? cs.onSurface : cs.onSurfaceVariant,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Container(
-                              width: 5, height: 5,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: hasProgram ? dotColor : Colors.transparent,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                const _tinyLabels = ['L', 'Ma', 'Me', 'J', 'V', 'S', 'D'];
+                final label = _tinyLabels[plan.weekdayIndex];
+
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedDay = i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 44, height: 70,
+                    decoration: BoxDecoration(
+                      color: isSel ? cs.primary : cs.surfaceContainerHighest.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(22),
                     ),
-                  );
-                }),
-              ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          label,
+                          style: GoogleFonts.inter(
+                            color: isSel ? cs.surface : cs.onSurfaceVariant,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${plan.date.day}',
+                          style: GoogleFonts.outfit(
+                            color: isSel ? cs.surface : cs.onSurface,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          width: 5, height: 5,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSel
+                                ? (hasProgram ? cs.surface : Colors.transparent)
+                                : (hasProgram ? dotColor : Colors.transparent),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             ),
           ),
 
@@ -1502,28 +1482,6 @@ class _StatBar extends ConsumerWidget {
     '3-6m': '3-6 mois', '6m+': '6 mois +',
   };
 
-  Widget _cycleScreen(BuildContext context, UserProfile profile) {
-    if (profile.healthStatus == 'pregnant') return const PregnancyHubScreen();
-    if (profile.healthStatus == 'postpartum') {
-      // Utilise la vraie date de naissance sauvegardée — avant, une fausse
-      // date était reconstituée à partir du bucket ppDuration ('2-6' → "il y
-      // a 4 semaines") à chaque ouverture, ce qui figeait le décompte au
-      // lieu de le faire avancer avec le temps réel.
-      return PostpartumHubScreen(
-        birthDate: profile.ppBirthDate ?? _fallbackBirthDate(profile.ppDuration),
-      );
-    }
-    return const CycleScreen();
-  }
-
-  static DateTime _fallbackBirthDate(String? ppDuration) {
-    const weeksAgoByDuration = {
-      '0-2': 1, '2-6': 4, '6-12': 9, '3-6m': 18, '6m+': 30,
-    };
-    final weeksAgo = weeksAgoByDuration[ppDuration] ?? 4;
-    return DateTime.now().subtract(Duration(days: weeksAgo * 7));
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile  = ref.watch(userProfileProvider);
@@ -1597,20 +1555,17 @@ class _StatBar extends ConsumerWidget {
         Expanded(child: _StatChip(
           icon: cycleIcon, value: cycleValue, label: cycleLabel,
           color: const Color(0xFFB2447A), bg: const Color(0xFFFCEAF3),
-          onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (context) => _cycleScreen(context, profile))))),
+          onTap: () => ref.read(mainTabIndexProvider.notifier).set(1))),
         const SizedBox(width: 10),
         Expanded(child: _StatChip(
           icon: LucideIcons.apple, value: '$remaining', label: 'kcal restants',
           color: Theme.of(context).colorScheme.primary, bg: Theme.of(context).colorScheme.primary.withOpacity(0.08),
-          onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const NutritionHomeScreen())))),
+          onTap: () => ref.read(mainTabIndexProvider.notifier).set(3))),
         const SizedBox(width: 10),
         Expanded(child: _StatChip(
           icon: workoutIcon, value: workoutValue, label: workoutLabel,
           color: const Color(0xFF1A3A6B), bg: const Color(0xFFE8EEF9),
-          onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const WorkoutScreen())))),
+          onTap: () => ref.read(mainTabIndexProvider.notifier).set(2))),
       ]),
     );
   }

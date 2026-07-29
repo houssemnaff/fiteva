@@ -32,8 +32,9 @@ class SubscriptionButton extends ConsumerWidget {
     final plan = ref.watch(currentPlanProvider);
     final isPro = plan != SubscriptionPlan.free;
 
-    const main = Color(0xFF1C4D30);
-    const sage = Color(0xFF7ABB98);
+    final cs = Theme.of(context).colorScheme;
+    final accent = cs.primary;
+    final accentLight = accent.withValues(alpha: 0.7);
     final surf = d ? const Color(0xFF162119) : Colors.white;
     final ink  = d ? const Color(0xFFF0F0EE) : const Color(0xFF1A1A1A);
     final muted = d ? const Color(0xFF8A9B92) : const Color(0xFF6B7B73);
@@ -46,7 +47,7 @@ class SubscriptionButton extends ConsumerWidget {
         decoration: BoxDecoration(
           color: surf,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isPro ? sage.withValues(alpha: 0.3) : bdr, width: 0.5),
+          border: Border.all(color: isPro ? accent.withValues(alpha: 0.3) : bdr, width: 0.5),
           boxShadow: [BoxShadow(
             color: Colors.black.withValues(alpha: d ? 0.18 : 0.04),
             blurRadius: 12, offset: const Offset(0, 3))],
@@ -55,9 +56,9 @@ class SubscriptionButton extends ConsumerWidget {
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft, end: Alignment.bottomRight,
-                colors: [main, sage]),
+                colors: [accent, accentLight]),
               borderRadius: BorderRadius.circular(12)),
             child: const Icon(LucideIcons.sparkles, size: 18, color: Colors.white),
           ),
@@ -78,7 +79,7 @@ class SubscriptionButton extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [main, sage]),
+                gradient: LinearGradient(colors: [accent, accentLight]),
                 borderRadius: BorderRadius.circular(8)),
               child: Text('PRO',
                 style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800,
@@ -202,8 +203,9 @@ class _PlansSheetState extends ConsumerState<_PlansSheet> {
   @override
   Widget build(BuildContext context) {
     final d     = Theme.of(context).brightness == Brightness.dark;
-    const main  = Color(0xFF1C4D30);
-    const sage  = Color(0xFF7ABB98);
+    final cs    = Theme.of(context).colorScheme;
+    final main  = cs.primary;
+    final sage  = cs.primary.withValues(alpha: 0.7);
     final surf  = d ? const Color(0xFF162119) : Colors.white;
     final ink   = d ? const Color(0xFFF0F0EE) : const Color(0xFF1A1A1A);
     final muted = d ? const Color(0xFF8A9B92) : const Color(0xFF6B7B73);
@@ -232,7 +234,7 @@ class _PlansSheetState extends ConsumerState<_PlansSheet> {
                 Container(
                   width: 42, height: 42,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft, end: Alignment.bottomRight,
                       colors: [main, sage]),
                     borderRadius: BorderRadius.circular(13)),

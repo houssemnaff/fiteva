@@ -14,17 +14,68 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatf
 import 'steps/onboarding_steps.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Onboarding Data — état centralisé transmis entre les steps
+// ─────────────────────────────────────────────────────────────────────────────
+class OnboardingData {
+  String username       = '';
+  String email          = '';
+  String password       = '';
+  List<String> goals    = [];
+  String? fitnessLevel;
+  List<String> equipment = [];
+  String? frequency;
+  int    heightCm       = 165;
+  double weightKg       = 60.0;
+  int    age            = 25;
+  // Santé féminine
+  String? healthStatus;     // 'cycle' | 'pregnant' | 'postpartum'
+  int?    pregnancyWeekSA;
+  String? ppRecovery;       // 'recent' | 'slowly' | 'active'
+  String? ppDuration;       // '0-2' | '2-6' | '6-12' | '3-6m' | '6m+'
+  String? cycleDuration;
+  DateTime? lastPeriod = DateTime.now().subtract(const Duration(days: 14));
+  String avatarSeed  = 'fiteva';
+  String avatarStyle = 'lorelei';
+  String avatarBg    = 'b6e3f4';
+  String mascotType  = 'blob';
+  String? trainingLocation;
+
+  Map<String, dynamic> toMap() => {
+    'username':           username,
+    'email':              email,
+    'goals':              goals,
+    'fitness_level':      fitnessLevel,
+    'equipment':          equipment,
+    'frequency':          frequency,
+    'training_location':  trainingLocation,
+    'height_cm':          heightCm,
+    'weight_kg':          weightKg,
+    'age':                age,
+    'health_status':      healthStatus,
+    'pregnancy_week':     pregnancyWeekSA,
+    'pp_recovery':        ppRecovery,
+    'pp_duration':        ppDuration,
+    'cycle_duration':     cycleDuration,
+    'last_period':        lastPeriod?.toIso8601String(),
+    'mascot_type':        mascotType,
+    'mascot_mood':        'happy',
+    'avatar_seed':        avatarSeed,
+    'avatar_style':       avatarStyle,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Onboarding Steps — enum définissant chaque step
-// (OnboardingData est défini dans steps/onboarding_steps.dart. Tout ce qui
-// suit la langue — mascotte, objectifs, équipement, cycle, etc. — vit dans
-// UN SEUL step `chat`, piloté par OnboardingChatFlow : un fil de chat continu
-// avec un seul scroll, plutôt que des pages séparées par sujet.)
 // ─────────────────────────────────────────────────────────────────────────────
 enum OStep {
   languageChoice,
   intro,
   welcome,
-  chat,
+  coachChat,
+  healthProfile,
+  cycleAndPregnancy,
+  buildingPlan,
+  avatar,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,45 +104,54 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passCtrl  = TextEditingController();
 
+  bool _welcomeLoginMode = false;
+
   // Ordre réel des pages dans le PageView — utilisé pour animateToPage.
   static const List<OStep> _pageOrder = [
     OStep.intro,
     OStep.welcome,
     OStep.languageChoice,
-    OStep.chat,
+    OStep.coachChat,
+    OStep.healthProfile,
+    OStep.cycleAndPregnancy,
+    OStep.buildingPlan,
+    OStep.avatar,
   ];
 
-  // Sous-ensemble linéaire utilisé pour calculer la fraction de la progress bar.
   static const List<OStep> _progressSteps = [
     OStep.intro,
     OStep.welcome,
     OStep.languageChoice,
-    OStep.chat,
+    OStep.coachChat,
+    OStep.healthProfile,
+    OStep.cycleAndPregnancy,
+    OStep.buildingPlan,
+    OStep.avatar,
   ];
 
-  double get _progress {
-    final idx = _progressSteps.indexOf(_current);
-    if (idx <= 0) return 0.0;
-    return idx / (_progressSteps.length - 1);
-  }
-
   // ── Navigation ────────────────────────────────────────────────────────────
-  // Le step `chat` gère lui-même toute sa séquence interne (mascotte →
-  // objectifs → ... → cycle) ; il n'appelle plus `_goNext()` mais `_finish()`
-  // directement via son callback `onFinish` une fois le fil de chat terminé.
 
   OStep _nextStepFor(OStep current) {
     switch (current) {
-      case OStep.intro:          return OStep.welcome;
-      case OStep.welcome:        return OStep.languageChoice;
-      case OStep.languageChoice: return OStep.chat;
-      case OStep.chat:           return OStep.chat;
+      case OStep.intro:             return OStep.welcome;
+      case OStep.welcome:           return OStep.languageChoice;
+      case OStep.languageChoice:    return OStep.coachChat;
+      case OStep.coachChat:         return OStep.healthProfile;
+      case OStep.healthProfile:     return OStep.cycleAndPregnancy;
+      case OStep.cycleAndPregnancy: return OStep.buildingPlan;
+      case OStep.buildingPlan:      return OStep.avatar;
+      case OStep.avatar:            return OStep.avatar;
     }
   }
 
   Future<void> _goNext() async {
     _syncDataFromControllers();
     await StorageService.saveOnboardingData(_data.toMap());
+
+    if (_current == OStep.avatar) {
+      await _finish();
+      return;
+    }
 
     final next = _nextStepFor(_current);
     setState(() => _history.add(next));
@@ -170,9 +230,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     context.go('/');
   }
 
-  /// Renseigne nom/email à partir du compte OAuth pour que le fil de chat
-  /// suivant (et la sync Supabase à la fin) dispose des bonnes valeurs —
-  /// sinon `_finish()` écraserait le profil déjà créé avec des champs vides.
+  /// Renseigne nom/email à partir du compte OAuth pour que les steps suivants
+  /// (avatar, sync Supabase à la fin) disposent des bonnes valeurs — sinon
+  /// `_finish()` écraserait le profil déjà créé avec des champs vides.
   void _prefillFromOAuthUser(User? user) {
     if (user == null) return;
     final meta = user.userMetadata;
@@ -278,9 +338,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             children:     _buildPages(),
           ),
 
-          // ── Progress bar — cachée sur l'intro ─────────────────────────────
-          if (_current != OStep.intro)
-            _ProgressBar(progress: _progress, totalSteps: _progressSteps.length),
+          // ── Progress bar — cachée sur l'intro et buildingPlan ────────────
+          if (_current != OStep.intro &&
+              _current != OStep.welcome &&
+              _current != OStep.buildingPlan)
+            _ProgressBar(
+              currentStep: _progressSteps.indexOf(_current) + 1,
+              totalSteps: _progressSteps.length,
+            ),
         ],
       ),
     );
@@ -290,7 +355,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   List<Widget> _buildPages() => [
     // 0 — Intro
-    StepIntro(onNext: _goNext),
+    StepIntro(
+      onNext: () {
+        _welcomeLoginMode = false;
+        _goNext();
+      },
+      onSignIn: () {
+        _welcomeLoginMode = true;
+        _goNext();
+      },
+    ),
 
     // 1 — Welcome (toggle Inscription/Connexion, Google/Apple, champs à la demande)
     StepWelcome(
@@ -300,6 +374,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onAppleSignIn:      _appleSignIn,
       emailController:    _emailCtrl,
       passwordController: _passCtrl,
+      nameController:     _nameCtrl,
+      onBack:             _goBack,
+      initialLoginMode:   _welcomeLoginMode,
     ),
 
     // 2 — Language choice
@@ -310,62 +387,114 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       },
     ),
 
-    // 3 — Tout l'onboarding restant (mascotte → objectifs → ... → cycle),
-    // un seul fil de chat continu. `onFinish` est appelé une fois seulement,
-    // à la toute fin de la conversation.
-    OnboardingChatFlow(
+    // 3 — Coach Chat (goals + fitness + equipment + location + frequency)
+    StepCoachChat(
       data: _data,
       onBack: _goBack,
-      onDataChanged: () {
-        setState(() {});
-        StorageService.saveOnboardingData(_data.toMap());
-      },
-      onFinish: _finish,
+      onGoalSelected: (g) => setState(() {
+        _data.goals.clear();
+        _data.goals.add(g);
+      }),
+      onFitnessChanged: (v) => setState(() => _data.fitnessLevel = v),
+      onEquipmentToggled: (item) => setState(() {
+        if (item == 'Aucun matériel') {
+          _data.equipment.clear();
+          _data.equipment.add(item);
+        } else {
+          _data.equipment.remove('Aucun matériel');
+          _data.equipment.contains(item)
+              ? _data.equipment.remove(item)
+              : _data.equipment.add(item);
+        }
+      }),
+      onLocationChanged: (v) => setState(() => _data.trainingLocation = v),
+      onFrequencyChanged: (v) => setState(() => _data.frequency = v),
+      onDone: _goNext,
+    ),
+
+    // 4 — Health profile (height / weight / age)
+    StepHealthProfile(
+      onNext:            _goNext,
+      onBack:            _goBack,
+      initialHeightCm:   _data.heightCm,
+      initialWeightKg:   _data.weightKg,
+      initialAge:        _data.age,
+      onHeightChanged:   (v) => setState(() => _data.heightCm = v),
+      onWeightChanged:   (v) => setState(() => _data.weightKg = v),
+      onAgeChanged:      (v) => setState(() => _data.age = v),
+    ),
+
+    // 8 — Cycle & pregnancy
+    StepCycleAndPregnancy(
+      onNext:  _goNext,
+      onBack:  _goBack,
+      onHealthStatusChanged:  (v) => setState(() => _data.healthStatus  = v),
+      onLastPeriodChanged:    (v) => setState(() => _data.lastPeriod    = v),
+      onCycleDurationChanged: (v) => setState(() => _data.cycleDuration = v),
+      onPregnancyWeekChanged: (v) => setState(() => _data.pregnancyWeekSA = v),
+      onPpRecoveryChanged:    (v) => setState(() => _data.ppRecovery    = v),
+      onPpDurationChanged:    (v) => setState(() => _data.ppDuration    = v),
+    ),
+
+    // 9 — Building plan animation
+    StepBuildingPlan(
+      data: _data,
+      onDone: _goNext,
+    ),
+
+    // 10 — Mascotte
+    StepAvatar(
+      userName: _data.username.isNotEmpty ? _data.username : 'fiteva',
+      onBack:   _goBack,
+      onNext:   _goNext,
+      onAvatarChanged: (seed, style, bg) => setState(() {
+        _data.avatarSeed  = seed;
+        _data.avatarStyle = style;
+        _data.avatarBg    = bg;
+        _data.mascotType  = seed; // seed = type.name from StepAvatar
+      }),
     ),
   ];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Segmented progress strip — premium step indicator
+// Quick Setup progress bar — smooth animated bar + branding
 // ─────────────────────────────────────────────────────────────────────────────
 class _ProgressBar extends StatelessWidget {
-  final double progress;
+  final int currentStep;
   final int totalSteps;
-  const _ProgressBar({required this.progress, required this.totalSteps});
+  const _ProgressBar({required this.currentStep, required this.totalSteps});
 
   @override
   Widget build(BuildContext context) {
-    final currentStep = (progress * (totalSteps - 1)).round();
     return Positioned(
       top: 0, left: 0, right: 0,
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
           child: Row(
-            children: List.generate(totalSteps, (i) {
-              final done = i <= currentStep;
-              final isCurrent = i == currentStep;
-              return Expanded(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  height: isCurrent ? 4 : 2.5,
-                  margin: EdgeInsets.only(right: i < totalSteps - 1 ? 3 : 0),
-                  decoration: BoxDecoration(
-                    color: done
-                        ? const Color(0xFF7ABB98)
-                        : const Color(0xFF2A3D30),
-                    borderRadius: BorderRadius.circular(2),
-                    boxShadow: isCurrent
-                        ? [BoxShadow(
-                            color: const Color(0xFF7ABB98).withValues(alpha: 0.5),
-                            blurRadius: 6)]
-                        : [],
-                  ),
+            children: [
+              const Text(
+                'Quick setup',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF8E8E93),
                 ),
-              );
-            }),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$currentStep / $totalSteps',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2D8B55),
+                ),
+              ),
+            ],
           ),
         ),
       ),

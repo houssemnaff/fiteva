@@ -68,32 +68,41 @@ class StorageService {
       // Biométrie & objectifs
       final bio = <String, dynamic>{
         'user_id': uid,
-        if (data['height']         != null) 'height_cm':        data['height'],
-        if (data['weight']         != null) 'weight_kg':        data['weight'],
-        if (data['age']            != null) 'age':              data['age'],
-        if (data['isFemale']       != null) 'is_female':        data['isFemale'],
-        if (data['fitnessLevel']   != null) 'fitness_level':    data['fitnessLevel'],
-        if (data['activityLevel']  != null) 'activity_level':   data['activityLevel'],
-        if (data['nutritionGoal']  != null) 'nutrition_goal':   data['nutritionGoal'],
-        if (data['trainingLocation'] != null) 'training_location': data['trainingLocation'],
-        if (data['frequencyDays']  != null) 'frequency_days':   data['frequencyDays'],
-        if (data['goals']          != null) 'goals':            data['goals'],
-        if (data['equipment']      != null) 'equipment':        data['equipment'],
+        if (data['height_cm']         != null) 'height_cm':        data['height_cm'],
+        if (data['weight_kg']         != null) 'weight_kg':        data['weight_kg'],
+        if (data['age']               != null) 'age':              data['age'],
+        if (data['fitness_level']     != null) 'fitness_level':    data['fitness_level'],
+        if (data['training_location'] != null) 'training_location': data['training_location'],
+        if (data['frequency']         != null) 'frequency_days':   _freqToDays(data['frequency']),
+        if (data['goals']             != null) 'goals':            data['goals'],
+        if (data['equipment']         != null) 'equipment':        data['equipment'],
         'updated_at': DateTime.now().toIso8601String(),
       };
-      await SupabaseConfig.table('user_biometrics').upsert(bio);
+      await SupabaseConfig.table('user_biometrics').upsert(bio, onConflict: 'user_id');
 
       // Statut santé (cycle / grossesse / post-partum)
-      if (data['healthStatus'] != null) {
+      if (data['health_status'] != null) {
         await SupabaseConfig.table('user_cycle_settings').upsert({
           'user_id':          uid,
-          'health_status':    data['healthStatus'],
-          'cycle_duration':   data['cycleDuration'] ?? 28,
-          'last_period_date': data['lastPeriodDate'],
+          'health_status':    data['health_status'],
+          'cycle_duration':   _cycleDaysFrom(data['cycle_duration']),
+          'last_period_date': data['last_period'],
           'updated_at':       DateTime.now().toIso8601String(),
-        });
+        }, onConflict: 'user_id');
       }
     } catch (_) {}
+  }
+
+  static int _freqToDays(dynamic freq) {
+    if (freq == null) return 3;
+    final n = int.tryParse(freq.toString().replaceAll(RegExp(r'[^0-9]'), ''));
+    return n ?? 3;
+  }
+
+  static int _cycleDaysFrom(dynamic duration) {
+    if (duration == null) return 28;
+    final n = int.tryParse(duration.toString().replaceAll(RegExp(r'[^0-9]'), ''));
+    return n ?? 28;
   }
 
   // ── Points (délégués à Supabase, gardés pour compatibilité) ──────────────

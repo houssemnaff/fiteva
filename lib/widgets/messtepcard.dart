@@ -15,8 +15,6 @@ import '../l10n/app_localizations.dart';
 
 // ── Design tokens — alignés sur le reste de l'accueil (cartes claires,
 // badges d'icône colorés) plutôt que la carte dégradée sombre précédente.
-const _kGreen   = Color(0xFF1C4D30);
-const _kGreenBg = Color(0xFFEAF3EC);
 const _kGold    = Color(0xFFB8860B);
 const _kGoldBg  = Color(0xFFFFF8E7);
 
@@ -156,7 +154,7 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        backgroundColor: _kGreen,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         duration: const Duration(seconds: 4),
         content: Row(children: [
@@ -234,8 +232,8 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
             children: [
               Container(
                 width: 34, height: 34,
-                decoration: BoxDecoration(color: _kGreenBg, borderRadius: BorderRadius.circular(11)),
-                child: const Icon(LucideIcons.footprints, size: 16, color: _kGreen),
+                decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(11)),
+                child: Icon(LucideIcons.footprints, size: 16, color: cs.primary),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -276,7 +274,7 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
                       ? Padding(
                           padding: const EdgeInsets.all(9),
                           child: CircularProgressIndicator(
-                              color: _kGreen, strokeWidth: 2))
+                              color: cs.primary, strokeWidth: 2))
                       : Icon(LucideIcons.refreshCw,
                           color: cs.onSurfaceVariant, size: 15),
                 ),
@@ -303,12 +301,13 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
                             : _arcAnim.value,
                         goalDone: _isGoalDone,
                         track: cs.surfaceContainerHighest,
+                        accent: cs.primary,
                       ),
                     ),
                   ),
                   if (_isLoading)
                     SizedBox(width: 22, height: 22,
-                      child: CircularProgressIndicator(color: _kGreen, strokeWidth: 2.5))
+                      child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2.5))
                   else if (_errorMessage != null)
                     Icon(LucideIcons.wifiOff, color: cs.onSurfaceVariant.withValues(alpha: 0.5), size: 24)
                   else if (_isGoalDone)
@@ -319,8 +318,8 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
                   else
                     ScaleTransition(scale: _pulseAnim, child: Container(
                       width: 40, height: 40,
-                      decoration: BoxDecoration(color: _kGreenBg, shape: BoxShape.circle),
-                      child: const Icon(LucideIcons.footprints, size: 17, color: _kGreen))),
+                      decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.10), shape: BoxShape.circle),
+                      child: Icon(LucideIcons.footprints, size: 17, color: cs.primary))),
                 ],
               ),
             ),
@@ -346,7 +345,7 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
                       fontSize: 11, fontWeight: FontWeight.w800, color: _kGold)))
                 else
                   Text('${(_progress * 100).toStringAsFixed(0)}% de l\'objectif', style: GoogleFonts.outfit(
-                    fontSize: 12.5, fontWeight: FontWeight.w700, color: _kGreen)),
+                    fontSize: 12.5, fontWeight: FontWeight.w700, color: cs.primary)),
               ],
             ])),
           ]),
@@ -455,7 +454,8 @@ class _ArcPainter extends CustomPainter {
   final double progress;
   final bool goalDone;
   final Color track;
-  const _ArcPainter({required this.progress, this.goalDone = false, required this.track});
+  final Color accent;
+  const _ArcPainter({required this.progress, this.goalDone = false, required this.track, required this.accent});
 
   static const double _startAngle = math.pi * 0.65;
   static const double _sweepFull  = math.pi * 1.70;
@@ -493,7 +493,7 @@ class _ArcPainter extends CustomPainter {
           endAngle: _startAngle + _sweepFull,
           colors: goalDone
               ? const [_kGold, Color(0xFFFFD89B), _kGold]
-              : const [_kGreen, Color(0xFF52B788), _kGreen],
+              : [accent, accent.withValues(alpha: 0.6), accent],
           stops: const [0.0, 0.5, 1.0],
         ).createShader(rect)
         ..style = PaintingStyle.stroke
@@ -504,5 +504,5 @@ class _ArcPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ArcPainter old) =>
-      old.progress != progress || old.goalDone != goalDone || old.track != track;
+      old.progress != progress || old.goalDone != goalDone || old.track != track || old.accent != accent;
 }

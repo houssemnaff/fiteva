@@ -114,42 +114,47 @@ const List<CyclePhase> kPhases = [
 /// l'utilisatrice — avant, ces plages étaient figées sur un cycle de 28
 /// jours et donnaient des phases systématiquement fausses pour tout cycle
 /// plus court (ex. 21j) ou plus long (ex. 35j).
-List<CyclePhase> phasesForCycleDays(int cycleDays) {
-  if (cycleDays == 28) return kPhases;
+List<CyclePhase> phasesForCycleDays(int cycleDays, {Color? accent}) {
+  final a = accent ?? CycleColors.follicular;
+  final deep = Color.lerp(a, Colors.black, 0.35)!;
+  final muted = Color.lerp(a, Colors.grey, 0.5)!;
+
+  if (cycleDays == 28 && accent == null) return kPhases;
   final safeCycle = cycleDays.clamp(15, 45);
 
   const menstrualLen = 5;
-  const lutealLen     = 14; // phase lutéale ~constante cliniquement
+  const lutealLen     = 14;
   final ovulationDay  = (safeCycle - lutealLen).clamp(menstrualLen + 2, safeCycle - 1);
   final ovulationStart = (ovulationDay - 1).clamp(menstrualLen + 1, safeCycle);
   final ovulationEnd   = (ovulationDay + 1).clamp(ovulationStart, safeCycle);
   final follicularEnd  = (ovulationStart - 1).clamp(menstrualLen, ovulationStart);
   final lutealStart    = (ovulationEnd + 1).clamp(ovulationEnd, safeCycle);
 
+  final days28 = cycleDays == 28;
   return [
     CyclePhase(
       name: 'Règles',
       description: 'Corps au repos · Prends soin de toi',
       color: CycleColors.menstrual,
-      days: List.generate(menstrualLen, (i) => i + 1),
+      days: days28 ? const [1, 2, 3, 4, 5] : List.generate(menstrualLen, (i) => i + 1),
     ),
     CyclePhase(
       name: 'Folliculaire',
       description: 'Énergie en hausse · Peau lumineuse',
-      color: CycleColors.follicular,
-      days: [for (var d = menstrualLen + 1; d <= follicularEnd; d++) d],
+      color: a,
+      days: days28 ? const [6, 7, 8, 9, 10, 11, 12, 13] : [for (var d = menstrualLen + 1; d <= follicularEnd; d++) d],
     ),
     CyclePhase(
       name: 'Ovulation',
       description: 'Pic d\'énergie · Clarté mentale',
-      color: CycleColors.ovulation,
-      days: [for (var d = ovulationStart; d <= ovulationEnd; d++) d],
+      color: deep,
+      days: days28 ? const [14, 15, 16] : [for (var d = ovulationStart; d <= ovulationEnd; d++) d],
     ),
     CyclePhase(
       name: 'Lutéale',
       description: 'Corps se prépare · Écoute tes besoins',
-      color: CycleColors.luteal,
-      days: [for (var d = lutealStart; d <= safeCycle; d++) d],
+      color: muted,
+      days: days28 ? const [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30] : [for (var d = lutealStart; d <= safeCycle; d++) d],
     ),
   ];
 }

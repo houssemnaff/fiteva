@@ -20,10 +20,11 @@ class _SymptomsHubCard extends StatelessWidget {
 
   final int currentWeek;
 
-  Color get _accent => ThreadTheme.threadForWeek(currentWeek);
+  Color _accentOf(BuildContext c) => ThreadTheme.threadForWeek(currentWeek, context: c);
 
   @override
   Widget build(BuildContext context) {
+    final _accent = _accentOf(context);
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();

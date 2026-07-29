@@ -9,8 +9,6 @@ import '../../services/local_reminder_service.dart';
 
 class _T {
   _T._();
-  static const main   = Color(0xFF1C4D30);
-  static const sage   = Color(0xFF7ABB98);
   static const bgL    = Color(0xFFF7F8F6);
   static const cardL  = Colors.white;
   static const borderL = Color(0xFFE8ECE9);
@@ -36,11 +34,13 @@ class NotificationSettingsScreen extends ConsumerWidget {
     final d     = Theme.of(context).brightness == Brightness.dark;
     final prefs = ref.watch(notifPrefsProvider);
 
+    final cs    = Theme.of(context).colorScheme;
     final bg    = _T.bg(d);
     final ink   = _T.t1(d);
     final muted = _T.t2(d);
     final surf  = _T.card(d);
     final bdr   = _T.border(d);
+    final accent = cs.primary;
 
     Widget toggle(bool on, ValueChanged<bool> onChanged) => GestureDetector(
       onTap: () { HapticFeedback.selectionClick(); onChanged(!on); },
@@ -48,7 +48,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
         duration: const Duration(milliseconds: 200),
         width: 44, height: 26,
         decoration: BoxDecoration(
-          color: on ? _T.main : (d ? const Color(0xFF2A3A30) : const Color(0xFFD4DDD8)),
+          color: on ? accent : (d ? const Color(0xFF2A3A30) : const Color(0xFFD4DDD8)),
           borderRadius: BorderRadius.circular(13)),
         child: AnimatedAlign(
           duration: const Duration(milliseconds: 200),
@@ -100,11 +100,11 @@ class NotificationSettingsScreen extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _T.sage.withValues(alpha: d ? 0.08 : 0.06),
+                  color: accent.withValues(alpha: d ? 0.08 : 0.06),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _T.sage.withValues(alpha: 0.15))),
+                  border: Border.all(color: accent.withValues(alpha: 0.15))),
                 child: Row(children: [
-                  Icon(LucideIcons.bellRing, size: 18, color: _T.sage),
+                  Icon(LucideIcons.bellRing, size: 18, color: accent),
                   const SizedBox(width: 12),
                   Expanded(child: Text(
                     'Personnalise tes rappels quotidiens pour rester sur la bonne voie.',
@@ -175,7 +175,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               child: _NotifSection(
                 icon: LucideIcons.dumbbell,
                 label: 'Séance d\'entraînement',
-                accentColor: _T.main,
+                accentColor: accent,
                 enabled: prefs.workoutEnabled,
                 d: d,
                 onToggle: toggle,
@@ -378,11 +378,11 @@ class _TimeSlot extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: _T.main.withValues(alpha: 0.08),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8)),
               child: Text(_formatted,
                 style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700,
-                  color: _T.main)),
+                  color: Theme.of(context).colorScheme.primary)),
             ),
           ]),
         ),

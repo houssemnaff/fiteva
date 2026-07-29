@@ -1,71 +1,43 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-// ── Premium dark palette ─────────────────────────────────────────────────────
-const kBgDark      = Color(0xFF080E0B);
-const kBgMid       = Color(0xFF0F1A14);
-const kBgMint      = Color(0xFF080E0B);
-const kBgLight     = Color(0xFF0F1A14);
-const kGreenDark   = Color(0xFF1C4D30);
-const kGreenMid    = Color(0xFF7ABB98);
-const kGreenBright = Color(0xFF5CD57A);
-const kCardUnsel   = Color(0xFF1A2A20);
-const kCardSel     = Color(0xFF1C4D30);
-const kTextDark    = Color(0xFFF0F0EE);
-const kTextMuted   = Color(0xFF6B8B78);
+// ── Clean white palette ──────────────────────────────────────────────────────
+const kBgDark      = Color(0xFFF8F8F8);
+const kBgMid       = Color(0xFFF2F2F2);
+const kBgMint      = Color(0xFFF8F8F8);
+const kBgLight     = Color(0xFFF2F2F2);
+const kGreenDark   = Color(0xFF2D8B55);
+const kGreenMid    = Color(0xFF3DA06A);
+const kGreenBright = Color(0xFF2D8B55);
+const kCardUnsel   = Color(0xFFF2F2F2);
+const kCardSel     = Color(0xFF2D8B55);
+const kTextDark    = Color(0xFF1A1A1A);
+const kTextMuted   = Color(0xFF8E8E93);
 const kWhite       = Colors.white;
-const kGlassBorder = Color(0xFF2A3D30);
-const kGlassFill   = Color(0x18FFFFFF);
+const kGlassBorder = Color(0xFFE5E5E5);
+const kGlassFill   = Color(0xFFF5F5F5);
 
-// ── Premium scaffold ────────────────────────────────────────────────────────
+// ── Clean scaffold with gradient ────────────────────────────────────────────
 Widget mintScaffold({required Widget child}) {
   return Scaffold(
-    backgroundColor: kBgDark,
-    body: Stack(
-      children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              stops: [0.0, 0.35, 1.0],
-              colors: [Color(0xFF0D1F14), Color(0xFF0A130E), Color(0xFF080E0B)],
-            ),
-          ),
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFE8F5EC),
+            Color(0xFFF0FAF3),
+            Color(0xFFFCFDFC),
+          ],
+          stops: [0.0, 0.45, 1.0],
         ),
-        Positioned(
-          top: -100, right: -80,
-          child: Container(
-            width: 300, height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(colors: [
-                kGreenDark.withValues(alpha: 0.18),
-                kGreenDark.withValues(alpha: 0),
-              ]),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 80, left: -100,
-          child: Container(
-            width: 260, height: 260,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(colors: [
-                kGreenMid.withValues(alpha: 0.06),
-                kGreenMid.withValues(alpha: 0),
-              ]),
-            ),
-          ),
-        ),
-        child,
-      ],
+      ),
+      child: child,
     ),
   );
 }
@@ -91,68 +63,46 @@ class OnboardingTopBar extends StatelessWidget {
       bottom: false,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Column(
+        child: Row(
           children: [
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    (onBack ?? () => Navigator.maybePop(context))();
-                  },
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(
-                          color: kGlassFill,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: kGlassBorder, width: 0.5),
-                        ),
-                        child: const Icon(LucideIcons.arrowLeft, size: 18, color: kTextDark),
-                      ),
-                    ),
-                  ),
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                (onBack ?? () => Navigator.maybePop(context))();
+              },
+              child: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.7),
+                  border: Border.all(color: const Color(0xFFCCDDD3), width: 1),
                 ),
-                const Spacer(),
-                Text(
-                  '$step of $total',
-                  style: GoogleFonts.inter(
-                    fontSize: 13, fontWeight: FontWeight.w500,
-                    color: kTextMuted),
-                ),
-              ],
+                child: const Icon(LucideIcons.arrowLeft, size: 18,
+                    color: Color(0xFF1A3C2A)),
+              ),
             ),
-            const SizedBox(height: 16),
-            // Segmented progress bar
-            Row(
-              children: List.generate(total, (i) {
-                final isCompleted = i < step;
-                final isCurrent = i == step - 1;
-                return Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: i < total - 1 ? 4 : 0),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.easeOutCubic,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(2),
-                        color: isCompleted
-                            ? kGreenBright
-                            : kWhite.withValues(alpha: 0.08),
-                        boxShadow: isCurrent
-                            ? [BoxShadow(
-                                color: kGreenBright.withValues(alpha: 0.4),
-                                blurRadius: 8)]
-                            : [],
-                      ),
-                    ),
-                  ),
-                );
-              }),
+            const Spacer(),
+            if (title != null) ...[
+              Text(
+                title!,
+                style: GoogleFonts.inter(
+                  fontSize: 13, fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1A3C2A)),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: kGreenBright.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$step / $total',
+                style: GoogleFonts.inter(
+                  fontSize: 12, fontWeight: FontWeight.w700,
+                  color: kGreenBright),
+              ),
             ),
           ],
         ),
@@ -177,7 +127,7 @@ class StepHeader extends StatelessWidget {
           style: GoogleFonts.outfit(
             fontSize: 32,
             fontWeight: FontWeight.w800,
-            color: kTextDark,
+            color: const Color(0xFF1A3C2A),
             height: 1.1,
             letterSpacing: -0.8,
           ),
@@ -187,7 +137,7 @@ class StepHeader extends StatelessWidget {
           subtitle,
           style: GoogleFonts.inter(
             fontSize: 15,
-            color: kTextMuted,
+            color: const Color(0xFF5A7A66),
             height: 1.5,
             fontWeight: FontWeight.w400,
           ),
@@ -210,14 +160,11 @@ class StepIcon extends StatelessWidget {
         width: 52, height: 52,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [Color(0xFF1C4D30), Color(0xFF0F3320)],
-          ),
+          color: kGreenBright.withValues(alpha: 0.12),
           boxShadow: [
             BoxShadow(
               color: kGreenBright.withValues(alpha: 0.15),
-              blurRadius: 20, spreadRadius: 1),
+              blurRadius: 16, spreadRadius: 1),
           ],
         ),
         child: Icon(icon, color: kGreenBright, size: 22),
@@ -295,17 +242,23 @@ class _PillCardState extends State<PillCard> with SingleTickerProviderStateMixin
           width: widget.fullWidth ? double.infinity : null,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: sel ? kGreenDark.withValues(alpha: 0.35) : kGlassFill,
-            borderRadius: BorderRadius.circular(18),
+            color: sel
+                ? const Color(0xFFE8F5EC)
+                : Colors.white.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: sel ? kGreenBright.withValues(alpha: 0.5) : kGlassBorder,
-              width: sel ? 1.2 : 0.5,
+              color: sel
+                  ? kGreenBright.withValues(alpha: 0.5)
+                  : const Color(0xFFCCDDD3),
+              width: 1,
             ),
-            boxShadow: sel
-                ? [BoxShadow(
-                    color: kGreenBright.withValues(alpha: 0.08),
-                    blurRadius: 24, offset: const Offset(0, 8))]
-                : [],
+            boxShadow: [
+              BoxShadow(
+                color: sel
+                    ? const Color(0xFF2D8B55).withValues(alpha: 0.1)
+                    : const Color(0xFF000000).withValues(alpha: 0.03),
+                blurRadius: 10, offset: const Offset(0, 3)),
+            ],
           ),
           child: Row(children: [
             if (widget.icon != null) ...[
@@ -315,10 +268,10 @@ class _PillCardState extends State<PillCard> with SingleTickerProviderStateMixin
                 decoration: BoxDecoration(
                   color: sel
                       ? kGreenBright.withValues(alpha: 0.12)
-                      : kWhite.withValues(alpha: 0.05),
+                      : Colors.white.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(12)),
                 child: Icon(widget.icon,
-                  color: sel ? kGreenBright : kTextMuted, size: 20),
+                  color: sel ? kGreenBright : const Color(0xFF5A7A66), size: 20),
               ),
               const SizedBox(width: 14),
             ],
@@ -328,11 +281,14 @@ class _PillCardState extends State<PillCard> with SingleTickerProviderStateMixin
               children: [
                 Text(widget.label, style: GoogleFonts.outfit(
                   fontSize: 16, fontWeight: FontWeight.w700,
-                  color: sel ? kWhite : kTextDark)),
+                  color: sel
+                      ? kGreenBright
+                      : const Color(0xFF1A3C2A))),
                 if (widget.sublabel != null) ...[
                   const SizedBox(height: 3),
                   Text(widget.sublabel!, style: GoogleFonts.inter(
-                    fontSize: 13, color: sel ? kGreenMid : kTextMuted,
+                    fontSize: 13,
+                    color: sel ? kGreenMid : const Color(0xFF5A7A66),
                     fontWeight: FontWeight.w400)),
                 ],
               ],
@@ -410,17 +366,23 @@ class _CompactPillState extends State<CompactPill>
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 14),
           decoration: BoxDecoration(
-            color: sel ? kGreenDark.withValues(alpha: 0.35) : kGlassFill,
-            borderRadius: BorderRadius.circular(20),
+            color: sel
+                ? const Color(0xFFE8F5EC)
+                : Colors.white.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: sel ? kGreenBright.withValues(alpha: 0.5) : kGlassBorder,
-              width: sel ? 1.2 : 0.5,
+              color: sel
+                  ? kGreenBright.withValues(alpha: 0.5)
+                  : const Color(0xFFCCDDD3),
+              width: 1,
             ),
-            boxShadow: sel
-                ? [BoxShadow(
-                    color: kGreenBright.withValues(alpha: 0.08),
-                    blurRadius: 20, offset: const Offset(0, 6))]
-                : [],
+            boxShadow: [
+              BoxShadow(
+                color: sel
+                    ? const Color(0xFF2D8B55).withValues(alpha: 0.1)
+                    : const Color(0xFF000000).withValues(alpha: 0.03),
+                blurRadius: 8, offset: const Offset(0, 2)),
+            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -431,11 +393,11 @@ class _CompactPillState extends State<CompactPill>
                 decoration: BoxDecoration(
                   color: sel
                       ? kGreenBright.withValues(alpha: 0.12)
-                      : kWhite.withValues(alpha: 0.05),
+                      : Colors.white.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(widget.icon,
-                  color: sel ? kGreenBright : kTextMuted, size: 22),
+                  color: sel ? kGreenBright : const Color(0xFF5A7A66), size: 22),
               ),
               const SizedBox(height: 10),
               Text(
@@ -445,7 +407,9 @@ class _CompactPillState extends State<CompactPill>
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
                   fontSize: 13, fontWeight: FontWeight.w600,
-                  color: sel ? kWhite : kTextDark,
+                  color: sel
+                      ? const Color(0xFF1A3C2A)
+                      : const Color(0xFF1A3C2A),
                   height: 1.3),
               ),
               const SizedBox(height: 8),
@@ -517,32 +481,27 @@ class _CtaButtonState extends State<CtaButton>
               decoration: BoxDecoration(
                 gradient: enabled
                     ? const LinearGradient(
-                        begin: Alignment.topLeft, end: Alignment.bottomRight,
-                        colors: [Color(0xFF22694A), Color(0xFF1C4D30)])
+                        colors: [Color(0xFF2D8B55), Color(0xFF3DA06A)])
                     : null,
-                color: enabled ? null : kWhite.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(16),
+                color: enabled ? null : Colors.white.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(14),
                 border: enabled
                     ? null
-                    : Border.all(color: kGlassBorder, width: 0.5),
+                    : Border.all(color: const Color(0xFFCCDDD3)),
                 boxShadow: enabled
-                    ? [
-                        BoxShadow(
-                          color: kGreenDark.withValues(alpha: 0.5),
-                          blurRadius: 24, offset: const Offset(0, 8)),
-                        BoxShadow(
-                          color: kGreenBright.withValues(alpha: 0.1),
-                          blurRadius: 40, offset: const Offset(0, 4)),
-                      ]
-                    : [],
+                    ? [BoxShadow(
+                        color: const Color(0xFF2D8B55).withValues(alpha: 0.3),
+                        blurRadius: 16, offset: const Offset(0, 6))]
+                    : null,
               ),
               child: Center(
                 child: Text(
-                  enabled ? widget.label : widget.label,
-                  style: GoogleFonts.outfit(
-                    fontSize: 17, fontWeight: FontWeight.w700,
-                    color: enabled ? kWhite : kTextMuted,
-                    letterSpacing: 0.2),
+                  widget.label,
+                  style: GoogleFonts.inter(
+                    fontSize: 16, fontWeight: FontWeight.w600,
+                    color: enabled
+                        ? Colors.white
+                        : const Color(0xFF5A7A66)),
                 ),
               ),
             ),
@@ -567,13 +526,13 @@ class _CheckIndicator extends StatelessWidget {
       width: size, height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: selected ? kGreenBright : Colors.transparent,
+        color: selected ? kGreenBright : Colors.white.withValues(alpha: 0.6),
         border: Border.all(
-          color: selected ? kGreenBright : kWhite.withValues(alpha: 0.15),
+          color: selected ? kGreenBright : const Color(0xFFCCDDD3),
           width: selected ? 0 : 1.5),
       ),
       child: selected
-          ? Icon(LucideIcons.check, size: size * 0.55, color: kBgDark)
+          ? Icon(LucideIcons.check, size: size * 0.55, color: Colors.white)
           : null,
     );
   }

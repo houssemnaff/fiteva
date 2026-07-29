@@ -22,17 +22,17 @@ class ThreadTheme {
   // Pregnancy progression (natural growth system)
   // ─────────────────────────────
 
-  // T1 — beginning / soft vitality
-  static const Color t1Start = Color(0xFF7ABB98);
-  static const Color t1End   = Color.fromARGB(255, 116, 163, 139);
+  // T1 — beginning / soft vitality (dynamic via accent)
+  static Color t1Start(BuildContext c) => Theme.of(c).colorScheme.primary;
+  static Color t1End(BuildContext c)   => Color.lerp(Theme.of(c).colorScheme.primary, Colors.white, 0.25)!;
 
-  // T2 — strength / stability
-  static const Color t2Start = Color(0xFF1C4D30);
-  static const Color t2End   = Color(0xFF4F7D66);
+  // T2 — strength / stability (dynamic via accent)
+  static Color t2Start(BuildContext c) => Color.lerp(Theme.of(c).colorScheme.primary, Colors.black, 0.35)!;
+  static Color t2End(BuildContext c)   => Color.lerp(Theme.of(c).colorScheme.primary, Colors.grey, 0.25)!;
 
-  // T3 — warmth / nearing birth (soft organic warmth)
-  static const Color t3Start = Color.fromARGB(255, 84, 118, 95);
-  static const Color t3End   = Color.fromARGB(255, 116, 163, 139);
+  // T3 — warmth / nearing birth (dynamic via accent)
+  static Color t3Start(BuildContext c) => Color.lerp(Theme.of(c).colorScheme.primary, Colors.black, 0.2)!;
+  static Color t3End(BuildContext c)   => Color.lerp(Theme.of(c).colorScheme.primary, Colors.white, 0.25)!;
 
   // ─────────────────────────────
   // Text (FIXED — readable & premium)
@@ -44,26 +44,27 @@ class ThreadTheme {
   // ─────────────────────────────
   // Accent (MATCH YOUR BRAND)
   // ─────────────────────────────
-  static const Color accent = Color(0xFF7ABB98);
-  static const Color accentSoft = Color(0x227ABB98);
+  static Color accentFor(BuildContext c) => Theme.of(c).colorScheme.primary;
+  static Color accentSoftFor(BuildContext c) => Theme.of(c).colorScheme.primary.withValues(alpha: 0.13);
 
-  static Color threadColorForWeek(int week) {
+  static Color threadColorForWeek(int week, BuildContext c) {
     if (week <= 13) {
       final t = (week - 1) / 12.0;
-      return Color.lerp(t1Start, t1End, t)!;
+      return Color.lerp(t1Start(c), t1End(c), t)!;
     } else if (week <= 27) {
       final t = (week - 14) / 13.0;
-      return Color.lerp(t2Start, t2End, t)!;
+      return Color.lerp(t2Start(c), t2End(c), t)!;
     } else {
       final t = (week - 28) / 12.0;
-      return Color.lerp(t3Start, t3End, t)!;
+      return Color.lerp(t3Start(c), t3End(c), t)!;
     }
   }
 
 
 
-static Color threadForWeek(int week) {
-    if (week <= 13) return const Color(0xFF7DAF8A);
+static Color threadForWeek(int week, {BuildContext? context}) {
+    final accent = context != null ? Theme.of(context).colorScheme.primary : const Color(0xFF7DAF8A);
+    if (week <= 13) return accent;
     if (week <= 27) return const Color(0xFFB97A8A);
     if (week <= 36) return const Color(0xFF9B7DAF);
     return const Color(0xFFB8916E);
@@ -93,7 +94,7 @@ static Color threadForWeek(int week) {
     colorScheme: const ColorScheme.dark(
       background: bg,
       surface: bgSurface,
-      primary: accent,
+      primary: Color(0xFF7ABB98),
       onPrimary: bg,
       onSurface: textPrimary,
       onBackground: textPrimary,
