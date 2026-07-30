@@ -129,7 +129,7 @@ class _RewardToastWidgetState extends State<_RewardToastWidget>
     final safeBottom = MediaQuery.of(context).padding.bottom;
 
     return Positioned(
-      bottom: safeBottom + 96,
+      bottom: safeBottom + 110,
       left: 0,
       right: 0,
       child: IgnorePointer(

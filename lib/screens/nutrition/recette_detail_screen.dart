@@ -155,6 +155,13 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     return 'Facile';
   }
 
+  Color get _difficultyColor {
+    final d = _difficulty.toLowerCase();
+    if (d.contains('facile')) return const Color(0xFF5BAE8A);
+    if (d.contains('moyen')) return const Color(0xFFF4A940);
+    return const Color(0xFFE03050);
+  }
+
   int get _kcal {
     try {
       final r = widget.recipe;
@@ -339,11 +346,14 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             SliverToBoxAdapter(child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Row(children: [
-                _MacroCard('Protéines', '${_proteins * _portions}g', const Color(0xFF5BAE8A), cs),
+                _MacroCard('Calories', '${_kcal * _portions}', const Color(0xFF6B8FD4), cs,
+                  icon: LucideIcons.flame),
                 const SizedBox(width: 8),
-                _MacroCard('Calories', '${_kcal * _portions}', const Color(0xFF6B8FD4), cs),
+                _MacroCard('Protéines', '${_proteins * _portions}g', const Color(0xFF5BAE8A), cs,
+                  icon: LucideIcons.beef),
                 const SizedBox(width: 8),
-                _MacroCard('Portions', '$_portions', const Color(0xFFF4A940), cs),
+                _MacroCard('Difficulté', _difficulty, _difficultyColor, cs,
+                  icon: LucideIcons.chefHat),
               ]),
             )),
 
@@ -482,15 +492,20 @@ class _MacroCard extends StatelessWidget {
   final String label, value;
   final Color color;
   final ColorScheme cs;
-  const _MacroCard(this.label, this.value, this.color, this.cs);
+  final IconData? icon;
+  const _MacroCard(this.label, this.value, this.color, this.cs, {this.icon});
 
   @override
   Widget build(BuildContext context) => Expanded(child: Container(
-    padding: const EdgeInsets.symmetric(vertical: 10),
+    padding: const EdgeInsets.symmetric(vertical: 12),
     decoration: BoxDecoration(
       color: color.withOpacity(0.08),
       borderRadius: BorderRadius.circular(12)),
     child: Column(children: [
+      if (icon != null) ...[
+        Icon(icon, size: 14, color: color.withOpacity(0.6)),
+        const SizedBox(height: 4),
+      ],
       Text(value, style: GoogleFonts.inter(
         fontSize: 15, fontWeight: FontWeight.w800, color: color)),
       const SizedBox(height: 2),

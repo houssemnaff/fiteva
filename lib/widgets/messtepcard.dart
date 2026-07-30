@@ -213,145 +213,120 @@ class _MesPasCardState extends ConsumerState<MesPasCard>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
-        boxShadow: [BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 10, offset: const Offset(0, 3))],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top row ──────────────────────────────────────────────────
+          // ── Compact header + step count + progress ────────────────────
           Row(
             children: [
               Container(
-                width: 34, height: 34,
-                decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(11)),
-                child: Icon(LucideIcons.footprints, size: 16, color: cs.primary),
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(13)),
+                child: Stack(alignment: Alignment.center, children: [
+                  SizedBox(width: 42, height: 42, child: CircularProgressIndicator(
+                    value: _isLoading || _errorMessage != null ? 0 : _progress,
+                    strokeWidth: 3, strokeCap: StrokeCap.round,
+                    backgroundColor: cs.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation(
+                      _isGoalDone ? _kGold : cs.primary))),
+                  Icon(_isGoalDone ? LucideIcons.trophy : LucideIcons.footprints,
+                    size: 15, color: _isGoalDone ? _kGold : cs.primary),
+                ]),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'MES PAS',
-                      style: GoogleFonts.inter(
-                        color: cs.onSurfaceVariant,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 2,
-                      ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_isLoading)
+                    Text('Chargement…', style: GoogleFonts.inter(
+                      fontSize: 13, color: cs.onSurfaceVariant))
+                  else if (_errorMessage != null)
+                    Text(_errorMessage!, style: GoogleFonts.inter(
+                      fontSize: 13, color: cs.onSurfaceVariant))
+                  else ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(StepService.formatNumber(_stepsToday),
+                          style: GoogleFonts.outfit(
+                            color: cs.onSurface, fontSize: 22,
+                            fontWeight: FontWeight.w900, height: 1,
+                            letterSpacing: -0.5)),
+                        const SizedBox(width: 4),
+                        Text('/ 10 000 pas', style: GoogleFonts.inter(
+                          fontSize: 11, fontWeight: FontWeight.w500,
+                          color: cs.onSurfaceVariant)),
+                      ],
                     ),
-                    Text(
-                      "Aujourd'hui",
-                      style: GoogleFonts.outfit(
-                        color: cs.onSurface,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
+                    const SizedBox(height: 4),
+                    // Slim progress bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: SizedBox(
+                        height: 4,
+                        child: AnimatedBuilder(
+                          animation: _arcAnim,
+                          builder: (_, __) => LinearProgressIndicator(
+                            value: _isLoading ? 0 : _arcAnim.value,
+                            backgroundColor: cs.surfaceContainerHighest,
+                            valueColor: AlwaysStoppedAnimation(
+                              _isGoalDone ? _kGold : cs.primary),
+                          ),
+                        ),
                       ),
                     ),
                   ],
-                ),
-              ),
-              // Sync button
+                ],
+              )),
+              const SizedBox(width: 10),
+              if (_isGoalDone)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _kGoldBg,
+                    borderRadius: BorderRadius.circular(50)),
+                  child: Text(ref.watch(l10nProvider).stepObjectifAtteint,
+                    style: GoogleFonts.outfit(
+                      fontSize: 10, fontWeight: FontWeight.w800, color: _kGold)))
+              else if (!_isLoading && _errorMessage == null)
+                Text('${(_progress * 100).toStringAsFixed(0)}%',
+                  style: GoogleFonts.outfit(
+                    fontSize: 14, fontWeight: FontWeight.w800,
+                    color: cs.primary))
+              else
+                const SizedBox.shrink(),
+              const SizedBox(width: 6),
               GestureDetector(
                 onTap: _isSyncing ? null : _handleSync,
                 child: Container(
-                  width: 34, height: 34,
+                  width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    shape: BoxShape.circle,
-                  ),
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                    shape: BoxShape.circle),
                   child: _isSyncing
-                      ? Padding(
-                          padding: const EdgeInsets.all(9),
+                      ? Padding(padding: const EdgeInsets.all(8),
                           child: CircularProgressIndicator(
-                              color: cs.primary, strokeWidth: 2))
+                            color: cs.primary, strokeWidth: 2))
                       : Icon(LucideIcons.refreshCw,
-                          color: cs.onSurfaceVariant, size: 15),
+                          color: cs.onSurfaceVariant, size: 13),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 18),
-
-          // ── Anneau + infos ──────────────────────────────────────────────
-          Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-            SizedBox(
-              width: 96, height: 96,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  AnimatedBuilder(
-                    animation: _arcAnim,
-                    builder: (_, __) => CustomPaint(
-                      size: const Size(96, 96),
-                      painter: _ArcPainter(
-                        progress: _isLoading || _errorMessage != null
-                            ? 0
-                            : _arcAnim.value,
-                        goalDone: _isGoalDone,
-                        track: cs.surfaceContainerHighest,
-                        accent: cs.primary,
-                      ),
-                    ),
-                  ),
-                  if (_isLoading)
-                    SizedBox(width: 22, height: 22,
-                      child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2.5))
-                  else if (_errorMessage != null)
-                    Icon(LucideIcons.wifiOff, color: cs.onSurfaceVariant.withValues(alpha: 0.5), size: 24)
-                  else if (_isGoalDone)
-                    ScaleTransition(scale: _pulseAnim, child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(color: _kGoldBg, shape: BoxShape.circle),
-                      child: const Icon(LucideIcons.trophy, size: 18, color: _kGold)))
-                  else
-                    ScaleTransition(scale: _pulseAnim, child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.10), shape: BoxShape.circle),
-                      child: Icon(LucideIcons.footprints, size: 17, color: cs.primary))),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (_isLoading)
-                Text('Chargement…', style: GoogleFonts.inter(fontSize: 12.5, color: cs.onSurfaceVariant))
-              else if (_errorMessage != null)
-                Text(_errorMessage!, style: GoogleFonts.inter(fontSize: 12.5, color: cs.onSurfaceVariant))
-              else ...[
-                Text(StepService.formatNumber(_stepsToday), style: GoogleFonts.outfit(
-                  color: cs.onSurface, fontSize: 30, fontWeight: FontWeight.w900,
-                  height: 1, letterSpacing: -1)),
-                const SizedBox(height: 3),
-                Text('/ 10 000 pas', style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w500, color: cs.onSurfaceVariant)),
-                const SizedBox(height: 8),
-                if (_isGoalDone)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: _kGoldBg, borderRadius: BorderRadius.circular(50)),
-                    child: Text(ref.watch(l10nProvider).stepObjectifAtteint, style: GoogleFonts.outfit(
-                      fontSize: 11, fontWeight: FontWeight.w800, color: _kGold)))
-                else
-                  Text('${(_progress * 100).toStringAsFixed(0)}% de l\'objectif', style: GoogleFonts.outfit(
-                    fontSize: 12.5, fontWeight: FontWeight.w700, color: cs.primary)),
-              ],
-            ])),
-          ]),
-
           if (!_isLoading && _errorMessage == null) ...[
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
             _StatRow(steps: _stepsToday),
           ],
         ],
@@ -412,12 +387,19 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tileBg = isDark
+        ? color.withValues(alpha: 0.10)
+        : bg;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
-          color: bg,
+          color: tileBg,
           borderRadius: BorderRadius.circular(14),
+          border: isDark
+              ? Border.all(color: color.withValues(alpha: 0.15))
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,7 +409,7 @@ class _StatTile extends StatelessWidget {
             Text(
               value,
               style: GoogleFonts.outfit(
-                color: cs.onSurfaceVariant,
+                color: cs.onSurface,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.3,

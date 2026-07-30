@@ -899,11 +899,18 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: _canSubmit ? cs.primary : cs.outline.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(14)),
+                  color: _canSubmit ? cs.primary : cs.outline.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(14),
+                  border: _canSubmit ? null : Border.all(
+                    color: cs.outline.withOpacity(0.15)),
+                  boxShadow: _canSubmit ? [BoxShadow(
+                    color: cs.primary.withOpacity(0.3),
+                    blurRadius: 12, offset: const Offset(0, 4))] : []),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(LucideIcons.check, size: 17,
-                    color: _canSubmit ? Colors.white : cs.onSurface.withOpacity(0.3)),
+                  Icon(
+                    _canSubmit ? LucideIcons.check : LucideIcons.shoppingBag,
+                    size: 17,
+                    color: _canSubmit ? Colors.white : cs.onSurface.withOpacity(0.25)),
                   const SizedBox(width: 8),
                   Text(
                     _basket.isEmpty
@@ -911,7 +918,7 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
                         : l10n.addMealConfirm(_basket.length, _basketCalories),
                     style: GoogleFonts.inter(
                       fontSize: 14, fontWeight: FontWeight.w700,
-                      color: _canSubmit ? Colors.white : cs.onSurface.withOpacity(0.3))),
+                      color: _canSubmit ? Colors.white : cs.onSurface.withOpacity(0.25))),
                 ]),
               ),
             ),
@@ -1188,6 +1195,31 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
         const SizedBox(height: 14),
       ],
 
+      // ── Search bar ─────────────────────────────────────────────────────
+      Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: cs.outline.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(14)),
+        child: Row(children: [
+          Icon(LucideIcons.search, size: 16,
+            color: cs.onSurface.withOpacity(0.3)),
+          const SizedBox(width: 10),
+          Expanded(child: TextField(
+            controller: _searchCtrl,
+            onChanged: _onSearchChanged,
+            style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
+            decoration: InputDecoration(
+              hintText: 'Rechercher un aliment…',
+              hintStyle: GoogleFonts.inter(
+                fontSize: 14, color: cs.onSurface.withOpacity(0.3)),
+              border: InputBorder.none, isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 12)))),
+        ])),
+
+      const SizedBox(height: 16),
+
       // ── Category grid (photos + color overlay) ─────────────────────────
       GridView.count(
         crossAxisCount: 2,
@@ -1216,8 +1248,8 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      _catColor(cat).withOpacity(0.92),
-                      _catColor(cat).withOpacity(0.6),
+                      _catColor(cat).withOpacity(0.95),
+                      _catColor(cat).withOpacity(0.7),
                     ])),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Row(children: [
@@ -1232,7 +1264,10 @@ class _AjoutRapideScreenState extends ConsumerState<AjoutRapideScreen> {
                     cat.label.split(' & ').first.split(' (').first,
                     style: GoogleFonts.inter(
                       fontSize: 12, fontWeight: FontWeight.w700,
-                      color: Colors.white, height: 1.2),
+                      color: Colors.white, height: 1.2,
+                      shadows: [Shadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 4)]),
                     maxLines: 2, overflow: TextOverflow.ellipsis)),
                 ]),
               ),

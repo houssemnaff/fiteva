@@ -30,10 +30,10 @@ class CycleColors {
 
   static final _light = CycleColors._(
     isDark:   false,
-    bg:       const Color(0xFFFAF9F8),
-    surface:  Colors.white,
-    surface2: const Color(0xFFF5F0F2),
-    border:   const Color(0xFFF0EBEC),
+    bg:       const Color(0xFFFFFFFF),
+    surface:  const Color(0xFFFFFFFF),
+    surface2: const Color(0xFFF7F5F6),
+    border:   const Color(0xFFEDEAEB),
     text:     const Color(0xFF2D1B20),
     muted:    const Color(0xFF9E8A93),
     body:     const Color(0xFF6B5760),

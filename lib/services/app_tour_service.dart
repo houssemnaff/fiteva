@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 const _mascotUrl =
-    'https://res.cloudinary.com/dmzvbqocs/image/upload/v1784763129/download_sef9bb.jpg';
+    'https://res.cloudinary.com/dmzvbqocs/image/upload/v1785371674/preview-removebg-preview_i39b7w.png';
 const _accent = Color(0xFF5CD57A);
 
 class GuidedTourStep {

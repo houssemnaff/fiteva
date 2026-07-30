@@ -827,15 +827,17 @@ class _CategoryChips extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  color: sel ? color : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: sel ? color : cs.surfaceContainerHighest.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(10),
+                  border: sel ? null : Border.all(
+                    color: cs.onSurface.withValues(alpha: 0.08)),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(icons[i], size: 13, color: sel ? Colors.white : cs.onSurfaceVariant),
                   const SizedBox(width: 7),
                   Text(chips[i],
                       style: GoogleFonts.inter(
-                          color: sel ? Colors.white : cs.onSurfaceVariant,
+                          color: sel ? Colors.white : cs.onSurface.withValues(alpha: 0.65),
                           fontWeight: FontWeight.w600,
                           fontSize: 12.5)),
                 ]),

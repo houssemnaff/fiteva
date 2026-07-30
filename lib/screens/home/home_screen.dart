@@ -172,33 +172,33 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
               ),
             ),
 
-          const DecoratedBox(
+          DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: [0.0, 0.35, 0.75, 1.0],
+                stops: const [0.0, 0.35, 0.75, 1.0],
                 colors: [
-                  Color(0x00000000),
-                  Color(0x33000000),
-                  Color(0x990B1A12),
-                  Color(0xE6000000),
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.2),
+                  cs.surface.withValues(alpha: 0.7),
+                  cs.surface,
                 ],
               ),
             ),
           ),
 
-          const DecoratedBox(
+          DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
-                stops: [0.0, 0.4, 0.75, 1.0],
+                stops: const [0.0, 0.5, 0.85, 1.0],
                 colors: [
-                  Color(0x00000000),
-                  Color(0x33000000),
-                  Color(0x990B1A12),
-                  Color(0xE6000000),
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.15),
+                  Colors.black.withValues(alpha: 0.5),
+                  Colors.black.withValues(alpha: 0.7),
                 ],
               ),
             ),
@@ -499,16 +499,6 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        ref.watch(l10nProvider).homeWeekPlan,
-                        style: GoogleFonts.inter(
-                          color: cs.secondary,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 3,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
                         ref.watch(l10nProvider).homePlanYourWeek,
                         style: GoogleFonts.outfit(
                           color: cs.onSurface,
@@ -516,6 +506,15 @@ class _WeeklyPlanSectionState extends ConsumerState<_WeeklyPlanSection> {
                           fontWeight: FontWeight.w800,
                           height: 1.0,
                           letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$done/${plans.length} séances cette semaine',
+                        style: GoogleFonts.inter(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -683,13 +682,9 @@ class _WeekProgressRing extends StatelessWidget {
             fontSize: 12, fontWeight: FontWeight.w800, color: cs.onSurface)),
         ]),
       ),
-      const SizedBox(height: 6),
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        const Text('🏆', style: TextStyle(fontSize: 10)),
-        const SizedBox(width: 3),
-        Text('$goalLabel $goal', style: GoogleFonts.inter(
-          fontSize: 10.5, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant)),
-      ]),
+      const SizedBox(height: 4),
+      Text('$goalLabel $goal', style: GoogleFonts.inter(
+        fontSize: 10, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
     ]);
   }
 }
@@ -1143,14 +1138,20 @@ class _IconBtnSmall extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
-        decoration:
-            BoxDecoration(color: bg, shape: BoxShape.circle),
-        child: Icon(icon, color: color, size: 15),
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: isDark ? color.withValues(alpha: 0.10) : bg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: color.withValues(alpha: isDark ? 0.2 : 0.12)),
+        ),
+        child: Icon(icon, color: color, size: 16),
       ),
     );
   }
@@ -1600,8 +1601,6 @@ class _StatBar extends ConsumerWidget {
   }
 }
 
-// Chaque stat est sa propre carte (icône dans un badge coloré, valeur,
-// label) au lieu d'un seul bandeau avec des séparateurs verticaux.
 class _StatChip extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -1617,28 +1616,41 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8, offset: const Offset(0, 3))],
+          color: isDark
+              ? cs.surfaceContainerHighest.withValues(alpha: 0.5)
+              : cs.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark
+                ? color.withValues(alpha: 0.15)
+                : cs.outlineVariant.withValues(alpha: 0.2)),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Row(children: [
           Container(
-            width: 30, height: 30,
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, size: 15, color: color)),
-          const SizedBox(height: 8),
-          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: cs.onSurface)),
-          const SizedBox(height: 1),
-          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 9.5, color: cs.onSurfaceVariant)),
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: isDark ? color.withValues(alpha: 0.15) : bg,
+              borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 14, color: color)),
+          const SizedBox(width: 8),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.outfit(
+                  fontSize: 14, fontWeight: FontWeight.w800,
+                  color: cs.onSurface)),
+              Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 9, color: cs.onSurfaceVariant)),
+            ],
+          )),
         ]),
       ),
     );

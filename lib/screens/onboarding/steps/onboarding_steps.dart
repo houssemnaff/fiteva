@@ -29,22 +29,22 @@ extension _R on BuildContext {
   bool get isLarge => _h > 900;   // Pro Max, tablets
 }
 
-// ─── Design Tokens — Clean White Palette ─────────────────────────────────
-const _kBgDark       = Color(0xFFF8F8F8);
-const _kBgMid        = Color(0xFFF2F2F2);
-const _kBgMint       = Color(0xFFF8F8F8);
-const _kBgLight      = Color(0xFFF2F2F2);
+// ─── Design Tokens — WeGLOW-style with Green Palette ─────────────────────
+const _kBgDark       = Color(0xFFEFF7F1);
+const _kBgMid        = Color(0xFFF2F9F4);
+const _kBgMint       = Color(0xFFEFF7F1);
+const _kBgLight      = Color(0xFFF5FAF7);
 const _kGreenDark    = Color(0xFF1B5E3B);
 const _kGreenMid     = Color(0xFF276E4A);
 const _kGreenBright  = Color(0xFF1B5E3B);
-const _kCardUnsel    = Color(0xFFF2F2F2);
+const _kCardUnsel    = Color(0xFFF5FAF7);
 const _kCardSel      = Color(0xFF1B5E3B);
 const _kTextDark     = Color(0xFF1A1A1A);
 const _kTextMuted    = Color(0xFF8E8E93);
 const _kWhite        = Colors.white;
-const _kBorderLight  = Color(0xFFE5E5E5);
-const _kGlassBorder  = Color(0xFFE5E5E5);
-const _kGlassFill    = Color(0xFFF5F5F5);
+const _kBorderLight  = Color(0xFFDAE8DF);
+const _kGlassBorder  = Color(0xFFDAE8DF);
+const _kGlassFill    = Color(0xFFF5FAF7);
 
 // ─── Clean white background ──────────────────────────────────────────────────
 Widget _stepBackground({required Widget child}) {
@@ -55,9 +55,9 @@ Widget _stepBackground({required Widget child}) {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFE8F5EC),
-            Color(0xFFF0FAF3),
-            Color(0xFFFCFDFC),
+            Color(0xFFE6F2EA),
+            Color(0xFFEFF7F1),
+            Color(0xFFF5FAF7),
           ],
           stops: [0.0, 0.45, 1.0],
         ),
@@ -69,7 +69,7 @@ Widget _stepBackground({required Widget child}) {
 
 // ─── Shared Widgets ────────────────────────────────────────────────────────
 
-/// Top bar — minimal back arrow + step counter
+/// Top bar — segmented progress bar (WeGLOW-style) + back chevron
 class _OnboardingTopBar extends StatelessWidget {
   final int step;
   final int total;
@@ -88,79 +88,35 @@ class _OnboardingTopBar extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: onBack ?? () => Navigator.maybePop(context),
-              child: Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.7),
-                  border: Border.all(color: const Color(0xFFCCDDD3), width: 1),
-                ),
-                child: const Icon(LucideIcons.arrowLeft, size: 18,
-                    color: Color(0xFF1A3C2A)),
-              ),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: GestureDetector(
+            onTap: onBack ?? () => Navigator.maybePop(context),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(LucideIcons.chevronLeft, size: 24,
+                  color: Color(0xFF1A3C2A)),
             ),
-            const Spacer(),
-            if (title != null) ...[
-              Text(
-                title!,
-                style: GoogleFonts.inter(
-                  fontSize: 13, fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1A3C2A)),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: _kGreenBright.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '$step / $total',
-                style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w700,
-                  color: _kGreenBright),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Icône — frosted circle with glow
+/// Icône — subtle, no glow (WeGLOW-style clean)
 class _StepIcon extends StatelessWidget {
   final IconData icon;
   const _StepIcon(this.icon);
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 56, height: 56,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: _kGreenBright.withValues(alpha: 0.12),
-          boxShadow: [
-            BoxShadow(
-              color: _kGreenBright.withValues(alpha: 0.15),
-              blurRadius: 20, spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Icon(icon, color: _kGreenBright, size: 24),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 }
 
-/// Titre + sous-titre — left-aligned editorial type
+/// Titre + sous-titre — WeGLOW bold left-aligned
 class _StepHeader extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -174,11 +130,11 @@ class _StepHeader extends StatelessWidget {
         Text(
           title,
           style: GoogleFonts.outfit(
-            fontSize: 28,
+            fontSize: 26,
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF1A3C2A),
-            height: 1.15,
-            letterSpacing: -0.5,
+            color: _kGreenDark,
+            height: 1.2,
+            letterSpacing: -0.3,
           ),
         ),
         const SizedBox(height: 8),
@@ -186,8 +142,9 @@ class _StepHeader extends StatelessWidget {
           subtitle,
           style: GoogleFonts.inter(
             fontSize: 14,
-            color: const Color(0xFF5A7A66),
+            color: _kGreenMid,
             height: 1.5,
+            fontWeight: FontWeight.w400,
           ),
         ),
       ],
@@ -195,7 +152,7 @@ class _StepHeader extends StatelessWidget {
   }
 }
 
-/// Glass pill card — selection with green border glow
+/// WeGLOW-style card — filled primary when selected, white when not
 class _PillCard extends StatelessWidget {
   final String label;
   final String? sublabel;
@@ -218,63 +175,64 @@ class _PillCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
         width: fullWidth ? double.infinity : null,
         padding: sublabel != null
             ? const EdgeInsets.symmetric(horizontal: 20, vertical: 18)
-            : const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            : const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         decoration: BoxDecoration(
-          color: selected
-              ? _kGreenBright.withValues(alpha: 0.08)
-              : const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(14),
+          color: selected ? _kGreenBright : Colors.white,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
-                ? _kGreenBright.withValues(alpha: 0.5)
-                : const Color(0xFFE8E8E8),
-            width: 1,
+                ? _kGreenBright
+                : _kGreenBright.withValues(alpha: 0.12),
+            width: selected ? 2 : 1,
           ),
+          boxShadow: selected
+              ? [BoxShadow(
+                  color: _kGreenBright.withValues(alpha: 0.2),
+                  blurRadius: 12, offset: const Offset(0, 4))]
+              : [BoxShadow(
+                  color: const Color(0xFF000000).withValues(alpha: 0.03),
+                  blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: Row(
           children: [
-            if (icon != null) ...[
-              Icon(icon,
-                  color: selected ? _kGreenBright : _kGreenMid, size: 22),
-              const SizedBox(width: 14),
-            ],
             Expanded(
               child: sublabel != null
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(label, style: GoogleFonts.inter(
-                          fontSize: 15, fontWeight: FontWeight.w700,
-                          color: selected ? _kGreenBright : _kTextDark)),
-                        const SizedBox(height: 2),
+                          fontSize: 16, fontWeight: FontWeight.w700,
+                          color: selected ? Colors.white : _kGreenDark)),
+                        const SizedBox(height: 4),
                         Text(sublabel!, style: GoogleFonts.inter(
-                          fontSize: 12.5,
-                          color: selected ? Colors.white70 : _kTextMuted)),
+                          fontSize: 13,
+                          color: selected
+                              ? Colors.white.withValues(alpha: 0.8)
+                              : _kTextMuted,
+                          height: 1.3)),
                       ],
                     )
                   : Text(label, style: GoogleFonts.inter(
-                      fontSize: 15, fontWeight: FontWeight.w600,
-                      color: selected ? _kGreenBright : _kTextDark)),
+                      fontSize: 16, fontWeight: FontWeight.w600,
+                      color: selected ? Colors.white : _kGreenDark)),
             ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 20, height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected ? _kGreenBright : Colors.transparent,
-                border: Border.all(
-                  color: selected ? _kGreenBright : const Color(0xFFD0D0D0),
-                  width: 1.5),
+            if (icon != null)
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : _kGreenBright.withValues(alpha: 0.08),
+                ),
+                child: Icon(icon, size: 20,
+                    color: selected ? Colors.white.withValues(alpha: 0.9) : _kGreenMid),
               ),
-              child: selected
-                  ? const Icon(Icons.check, size: 12, color: Colors.white)
-                  : null,
-            ),
           ],
         ),
       ),
@@ -339,7 +297,7 @@ class _CompactPill extends StatelessWidget {
   }
 }
 
-/// CTA button — solid green, no shadow
+/// CTA button — WeGLOW solid filled style
 class _CtaButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -352,35 +310,23 @@ class _CtaButton extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 10, 24, 18),
+        padding: const EdgeInsets.fromLTRB(40, 12, 40, 24),
         child: GestureDetector(
           onTap: onPressed,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 54,
+            duration: const Duration(milliseconds: 250),
+            height: 56,
             decoration: BoxDecoration(
-              gradient: enabled
-                  ? const LinearGradient(
-                      colors: [Color(0xFF1B5E3B), Color(0xFF276E4A)])
-                  : null,
-              color: enabled ? null : Colors.white.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(14),
-              border: enabled
-                  ? null
-                  : Border.all(color: const Color(0xFFCCDDD3), width: 1),
-              boxShadow: enabled
-                  ? [BoxShadow(
-                      color: const Color(0xFF1B5E3B).withValues(alpha: 0.3),
-                      blurRadius: 16, offset: const Offset(0, 6))]
-                  : null,
+              color: enabled ? _kGreenBright : _kGreenBright.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(28),
             ),
             child: Center(
               child: Text(
                 label,
                 style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: enabled ? Colors.white : const Color(0xFF5A7A66),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -608,7 +554,7 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
 
                     const Spacer(),
 
-                    // Continue button — fades + slides in when selected
+                    // Continue button — WeGLOW style
                     AnimatedSlide(
                       offset: _selected != null
                           ? Offset.zero
@@ -618,34 +564,22 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
                       child: AnimatedOpacity(
                         opacity: _selected != null ? 1.0 : 0.0,
                         duration: const Duration(milliseconds: 300),
-                        child: GestureDetector(
-                          onTap: _onContinue,
-                          child: Container(
-                            width: double.infinity,
-                            height: 54,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF1B5E3B), Color(0xFF276E4A)],
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: GestureDetector(
+                            onTap: _onContinue,
+                            child: Container(
+                              width: double.infinity,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: _kGreenBright,
+                                borderRadius: BorderRadius.circular(28),
                               ),
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF1B5E3B).withValues(alpha: 0.3),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Continue', style: GoogleFonts.inter(
-                                  fontSize: 16, fontWeight: FontWeight.w600,
+                              child: Center(
+                                child: Text('Continue', style: GoogleFonts.inter(
+                                  fontSize: 17, fontWeight: FontWeight.w700,
                                   color: Colors.white)),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.arrow_forward_rounded,
-                                    color: Colors.white, size: 18),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -717,24 +651,19 @@ class _LangOptionState extends State<_LangOption>
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           decoration: BoxDecoration(
-            color: sel
-                ? const Color(0xFFE8F5EC)
-                : Colors.white.withValues(alpha: 0.85),
+            color: sel ? _kGreenBright : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: sel
-                  ? _kGreenBright.withValues(alpha: 0.5)
-                  : Colors.white.withValues(alpha: 0.6),
-              width: sel ? 1.5 : 1),
-            boxShadow: [
-              BoxShadow(
-                color: sel
-                    ? const Color(0xFF1B5E3B).withValues(alpha: 0.12)
-                    : const Color(0xFF000000).withValues(alpha: 0.04),
-                blurRadius: sel ? 12 : 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
+              color: sel ? _kGreenBright : _kGreenBright.withValues(alpha: 0.12),
+              width: sel ? 2 : 1,
+            ),
+            boxShadow: sel
+                ? [BoxShadow(
+                    color: _kGreenBright.withValues(alpha: 0.2),
+                    blurRadius: 12, offset: const Offset(0, 4))]
+                : [BoxShadow(
+                    color: const Color(0xFF000000).withValues(alpha: 0.03),
+                    blurRadius: 6, offset: const Offset(0, 2))],
           ),
           child: Row(
             children: [
@@ -743,21 +672,7 @@ class _LangOptionState extends State<_LangOption>
               Expanded(
                 child: Text(widget.label, style: GoogleFonts.inter(
                   fontSize: 17, fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1A3C2A))),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                width: 24, height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: sel ? _kGreenBright : Colors.white.withValues(alpha: 0.6),
-                  border: Border.all(
-                    color: sel ? _kGreenBright : const Color(0xFFCCDDD3),
-                    width: sel ? 0 : 1.5),
-                ),
-                child: sel
-                    ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-                    : null,
+                  color: sel ? Colors.white : _kGreenDark)),
               ),
             ],
           ),
@@ -1802,16 +1717,24 @@ class _StepGoalsState extends State<StepGoals>
     Future.delayed(const Duration(milliseconds: 300), widget.onNext);
   }
 
-  static const _goalEmojis = ['🔥', '⚖️', '💪'];
+  static const _goalIcons = [
+    LucideIcons.flame,
+    LucideIcons.scale,
+    LucideIcons.dumbbell,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppL10n(Lang.code);
-    final goalLabels = [l10n.goal1, l10n.goal2, l10n.goal3];
+    final _fr = Lang.code == 'fr';
+    final goalLabels = [
+      _fr ? 'Perte de poids' : 'Lose weight',
+      _fr ? 'Maintien' : 'Maintain weight',
+      _fr ? 'Prise de masse' : 'Gain weight',
+    ];
     final goalSubs = [
-      'Brûle des graisses et sculpte ton corps',
-      'Garde la forme et reste en équilibre',
-      'Construis du muscle et gagne en force',
+      _fr ? 'Brûle des graisses et sculpte ton corps' : 'Burn fat and sculpt your body',
+      _fr ? 'Garde la forme et reste en équilibre' : 'Stay fit and maintain your balance',
+      _fr ? 'Construis du muscle et gagne en force' : 'Build muscle and gain strength',
     ];
 
     return _stepBackground(
@@ -1819,17 +1742,13 @@ class _StepGoalsState extends State<StepGoals>
         child: Column(
           children: [
             _OnboardingTopBar(step: 1, total: 8, onBack: widget.onBack),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const _StepIcon(Icons.track_changes_rounded),
-                const SizedBox(height: 12),
-                _StepHeader(
-                  title: l10n.goalsTitle,
-                  subtitle: l10n.goalsHint,
-                ),
-              ]),
+              child: _StepHeader(
+                title: _fr ? 'Quel est ton objectif\nprincipal ?' : 'What is your main\ngoal?',
+                subtitle: _fr ? 'Choisis ton objectif' : 'Choose your goal',
+              ),
             ),
             const Spacer(flex: 1),
             Padding(
@@ -1843,7 +1762,7 @@ class _StepGoalsState extends State<StepGoals>
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _QuickTapCard(
-                        emoji: _goalEmojis[i],
+                        icon: _goalIcons[i],
                         label: goalLabels[i],
                         sublabel: goalSubs[i],
                         selected: isSel,
@@ -2017,20 +1936,25 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
     Future.delayed(const Duration(milliseconds: 300), widget.onNext);
   }
 
-  static const _levelEmojis = ['🌱', '⚡', '🏆'];
-  static const _levelSubs = [
-    'Commence en douceur, sans pression',
-    'Tu connais les bases, on passe au niveau supérieur',
-    'Prête pour des défis intenses',
+  static const _levelIcons = [
+    LucideIcons.sprout,
+    LucideIcons.zap,
+    LucideIcons.trophy,
   ];
 
   @override
   Widget build(BuildContext context) {
+    final _fr = Lang.code == 'fr';
     final l10n = AppL10n(Lang.code);
     final levelLabels = [
       l10n.fitnessLevelBeginner,
       l10n.fitnessLevelIntermediate,
       l10n.fitnessLevelAdvanced,
+    ];
+    final levelSubs = [
+      _fr ? 'Commence en douceur, sans pression' : 'Start easy, no pressure',
+      _fr ? 'Tu connais les bases, on monte d\'un cran' : 'You know the basics, time to level up',
+      _fr ? 'Prête pour des défis intenses' : 'Ready for intense challenges',
     ];
 
     return _stepBackground(
@@ -2038,17 +1962,13 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
         child: Column(
           children: [
             _OnboardingTopBar(step: 2, total: 8, onBack: widget.onBack),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const _StepIcon(Icons.show_chart_rounded),
-                const SizedBox(height: 12),
-                _StepHeader(
-                  title: l10n.fitnessTitle,
-                  subtitle: l10n.fitnessHint,
-                ),
-              ]),
+              child: _StepHeader(
+                title: _fr ? 'Quel est ton niveau\nde forme actuel ?' : 'What is your current\nfitness level?',
+                subtitle: _fr ? 'Choisis le niveau qui te correspond' : 'Choose the level that fits you',
+              ),
             ),
             const Spacer(flex: 1),
             Padding(
@@ -2062,9 +1982,9 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _QuickTapCard(
-                        emoji: _levelEmojis[i],
+                        icon: _levelIcons[i],
                         label: levelLabels[i],
-                        sublabel: _levelSubs[i],
+                        sublabel: levelSubs[i],
                         selected: isSel,
                         onTap: () => _select(key),
                       ),
@@ -2231,11 +2151,19 @@ class _StepEquipmentState extends State<StepEquipment>
     super.dispose();
   }
 
-  static const _equipEmojis = ['🚫', '🏋️', '🔩', '⚙️', '🪢', '🧘'];
+  static const _equipIcons = [
+    LucideIcons.ban,
+    LucideIcons.dumbbell,
+    LucideIcons.weight,
+    LucideIcons.cog,
+    LucideIcons.cable,
+    LucideIcons.accessibility,
+  ];
 
   @override
   Widget build(BuildContext context) {
     final count = widget.selectedEquipment.length;
+    final _fr = Lang.code == 'fr';
     final l10n = AppL10n(Lang.code);
     final equipLabels = [
       l10n.equipmentNone,
@@ -2245,51 +2173,50 @@ class _StepEquipmentState extends State<StepEquipment>
       l10n.equipmentBands,
       l10n.equipmentYogaMat,
     ];
+    final equipSubs = [
+      _fr ? 'Entraînement au poids du corps' : 'Bodyweight training only',
+      _fr ? 'Haltères classiques' : 'Classic free weights',
+      _fr ? 'Barre olympique et poids' : 'Olympic bar and plates',
+      _fr ? 'Équipement de salle' : 'Gym machines',
+      _fr ? 'Bandes élastiques' : 'Elastic resistance bands',
+      _fr ? 'Tapis et accessoires' : 'Mat and accessories',
+    ];
 
     return _stepBackground(
       child: SafeArea(
         child: Column(
           children: [
             _OnboardingTopBar(step: 3, total: 8, onBack: widget.onBack),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const _StepIcon(Icons.sports_gymnastics),
-                const SizedBox(height: 12),
-                _StepHeader(
-                  title: l10n.equipmentTitle,
-                  subtitle: l10n.equipmentHint,
-                ),
-              ]),
+              child: _StepHeader(
+                title: _fr ? 'Quel matériel\nas-tu ?' : 'What equipment\ndo you have?',
+                subtitle: _fr ? 'Sélectionne tout ce qui te correspond' : 'Select all that apply',
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Expanded(
-              child: Padding(
+              child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: GridView.builder(
-                  padding: EdgeInsets.zero,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.6,
-                  ),
-                  itemCount: _equipments.length,
-                  itemBuilder: (_, i) {
-                    final key = _equipments[i];
-                    final isSel = widget.selectedEquipment.contains(key);
-                    return FadeTransition(
-                      opacity: _fades[i],
-                      child: _QuickTapTile(
-                        emoji: _equipEmojis[i],
+                itemCount: _equipments.length,
+                itemBuilder: (_, i) {
+                  final key = _equipments[i];
+                  final isSel = widget.selectedEquipment.contains(key);
+                  return FadeTransition(
+                    opacity: _fades[i],
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _QuickTapCard(
+                        icon: _equipIcons[i],
                         label: equipLabels[i],
+                        sublabel: equipSubs[i],
                         selected: isSel,
                         onTap: () => _handleEquipmentTap(key),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
             _CtaButton(
@@ -2347,38 +2274,58 @@ class _StepFrequencyState extends State<StepFrequency> {
     widget.onChanged(_labels[i]);
   }
 
+  static const _freqIcons = [
+    LucideIcons.calendar,
+    LucideIcons.calendarDays,
+    LucideIcons.calendarCheck,
+    LucideIcons.calendarClock,
+    LucideIcons.calendarHeart,
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return _mintScaffold(
+    final _fr = Lang.code == 'fr';
+    final freqSubs = [
+      _fr ? 'Idéal pour commencer' : 'Great for getting started',
+      _fr ? 'Bon rythme régulier' : 'Good steady rhythm',
+      _fr ? 'Rythme soutenu et efficace' : 'Consistent and effective',
+      _fr ? 'Engagement sérieux' : 'Serious commitment',
+      _fr ? 'Athlète confirmée' : 'Dedicated athlete',
+    ];
+
+    return _stepBackground(
       child: SafeArea(
         child: Column(
           children: [
             _OnboardingTopBar(step: 5, total: 8, onBack: widget.onBack),
-
-            const SizedBox(height: 10),
-
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const _StepIcon(Icons.timer_outlined),
-                const SizedBox(height: 12),
-                _StepHeader(
-                  title: AppL10n(Lang.code).frequencyTitle,
-                  subtitle: AppL10n(Lang.code).frequencyHint,
-                ),
-              ]),
-            ),
-
-            const Spacer(flex: 1),
-            Center(
-              child: _FreqDial(
-                count: _labels.length,
-                index: _index,
-                onChanged: _select,
-                label: AppL10n(Lang.code).freqLabel(_index),
+              child: _StepHeader(
+                title: _fr ? 'Combien de fois\npar semaine ?' : 'How many times\nper week?',
+                subtitle: _fr ? 'Choisis ta fréquence idéale' : 'Choose your ideal frequency',
               ),
             ),
             const Spacer(flex: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: List.generate(_labels.length, (i) {
+                  final isSel = _index == i && _hasInteracted;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _QuickTapCard(
+                      icon: _freqIcons[i],
+                      label: _labels[i] + (_fr ? ' / semaine' : ' / week'),
+                      sublabel: freqSubs[i],
+                      selected: isSel,
+                      onTap: () => _select(i),
+                    ),
+                  );
+                }),
+              ),
+            ),
+            const Spacer(flex: 2),
             _CtaButton(
               label: AppL10n(Lang.code).frequencyNext,
               onPressed: _hasInteracted ? widget.onNext : null,
@@ -2599,8 +2546,654 @@ class _DialPainter extends CustomPainter {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// STEP 6 — StepHealthProfile — Drum-wheel picker
+// STEP — StepHeight (WeGLOW-style ruler picker)
 // ══════════════════════════════════════════════════════════════════════════════
+class StepHeight extends StatefulWidget {
+  final VoidCallback onNext;
+  final VoidCallback? onBack;
+  final int initialHeightCm;
+  final ValueChanged<int>? onHeightChanged;
+
+  const StepHeight({
+    super.key,
+    required this.onNext,
+    this.onBack,
+    this.initialHeightCm = 165,
+    this.onHeightChanged,
+  });
+
+  @override
+  State<StepHeight> createState() => _StepHeightState();
+}
+
+class _StepHeightState extends State<StepHeight> {
+  static const int _minCm = 130, _maxCm = 220;
+  late final FixedExtentScrollController _ctrl;
+  late int _idx;
+  bool _useMetric = true;
+
+  int get _heightCm => _minCm + _idx;
+
+  @override
+  void initState() {
+    super.initState();
+    _useMetric = Lang.code == 'fr';
+    _idx = (widget.initialHeightCm - _minCm).clamp(0, _maxCm - _minCm);
+    _ctrl = FixedExtentScrollController(initialItem: _idx);
+    TickSoundService.instance.init();
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  String _displayValue() {
+    if (_useMetric) return '$_heightCm';
+    final totalInches = (_heightCm / 2.54).round();
+    final ft = totalInches ~/ 12;
+    final inches = totalInches % 12;
+    return '$ft\'$inches"';
+  }
+
+  String _displayUnit() => _useMetric ? 'CM' : 'FT, IN';
+
+  @override
+  Widget build(BuildContext context) {
+    final _fr = Lang.code == 'fr';
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(
+          children: [
+            _OnboardingTopBar(step: 6, total: 8, onBack: widget.onBack),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _fr ? 'Quelle est ta taille ?' : 'What is your height?',
+                  style: GoogleFonts.outfit(
+                    fontSize: 24, fontWeight: FontWeight.w700, color: _kGreenDark),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    // Ruler picker on left
+                    SizedBox(
+                      width: 160,
+                      child: _RulerPicker(
+                        controller: _ctrl,
+                        selectedIndex: _idx,
+                        itemCount: _maxCm - _minCm + 1,
+                        labelFor: (i) {
+                          final cm = _minCm + i;
+                          if (_useMetric) return '$cm cm';
+                          final totalIn = (cm / 2.54).round();
+                          return '${totalIn ~/ 12}\'${totalIn % 12}"';
+                        },
+                        onChanged: (i) {
+                          setState(() => _idx = i);
+                          widget.onHeightChanged?.call(_heightCm);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Big number display on right
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 12, offset: const Offset(0, 4))],
+                        ),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(_displayValue(), style: GoogleFonts.outfit(
+                                fontSize: 48, fontWeight: FontWeight.w800, color: _kGreenDark)),
+                              const SizedBox(width: 6),
+                              Text(_displayUnit(), style: GoogleFonts.inter(
+                                fontSize: 18, fontWeight: FontWeight.w500, color: _kGreenMid)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Unit toggle
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _UnitToggle(
+                leftLabel: _fr ? 'ft, in' : 'ft, in',
+                rightLabel: 'cm',
+                isRight: _useMetric,
+                onToggle: (v) => setState(() => _useMetric = v),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Privacy notice
+            _PrivacyNotice(isFr: _fr),
+            const SizedBox(height: 12),
+            _CtaButton(
+              label: _fr ? 'Continuer' : 'Continue',
+              onPressed: widget.onNext,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STEP — StepWeight (WeGLOW-style ruler picker)
+// ══════════════════════════════════════════════════════════════════════════════
+class StepWeight extends StatefulWidget {
+  final VoidCallback onNext;
+  final VoidCallback? onBack;
+  final double initialWeightKg;
+  final ValueChanged<double>? onWeightChanged;
+
+  const StepWeight({
+    super.key,
+    required this.onNext,
+    this.onBack,
+    this.initialWeightKg = 60.0,
+    this.onWeightChanged,
+  });
+
+  @override
+  State<StepWeight> createState() => _StepWeightState();
+}
+
+class _StepWeightState extends State<StepWeight> {
+  static final List<double> _kgList = List.generate(231, (i) => 35.0 + i * 0.5);
+  late final FixedExtentScrollController _ctrl;
+  late int _idx;
+  bool _useMetric = true;
+
+  double get _weightKg => _kgList[_idx];
+
+  @override
+  void initState() {
+    super.initState();
+    _useMetric = Lang.code == 'fr';
+    final nearest = _kgList.indexWhere((w) => w >= widget.initialWeightKg);
+    _idx = nearest < 0 ? 50 : nearest;
+    _ctrl = FixedExtentScrollController(initialItem: _idx);
+    TickSoundService.instance.init();
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  String _displayValue() {
+    if (_useMetric) {
+      return _weightKg % 1 == 0 ? '${_weightKg.toInt()}' : _weightKg.toStringAsFixed(1);
+    }
+    return (_weightKg * 2.205).round().toString();
+  }
+
+  String _displayUnit() => _useMetric ? 'KG' : 'LBS';
+
+  @override
+  Widget build(BuildContext context) {
+    final _fr = Lang.code == 'fr';
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(
+          children: [
+            _OnboardingTopBar(step: 7, total: 8, onBack: widget.onBack),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _fr ? 'Quel est ton poids ?' : 'What is your weight?',
+                  style: GoogleFonts.outfit(
+                    fontSize: 24, fontWeight: FontWeight.w700, color: _kGreenDark),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 160,
+                      child: _RulerPicker(
+                        controller: _ctrl,
+                        selectedIndex: _idx,
+                        itemCount: _kgList.length,
+                        labelFor: (i) {
+                          final w = _kgList[i];
+                          if (_useMetric) {
+                            return w % 1 == 0 ? '${w.toInt()} kg' : '${w.toStringAsFixed(1)} kg';
+                          }
+                          return '${(w * 2.205).round()} lbs';
+                        },
+                        onChanged: (i) {
+                          setState(() => _idx = i);
+                          widget.onWeightChanged?.call(_weightKg);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 12, offset: const Offset(0, 4))],
+                        ),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(_displayValue(), style: GoogleFonts.outfit(
+                                fontSize: 48, fontWeight: FontWeight.w800, color: _kGreenDark)),
+                              const SizedBox(width: 6),
+                              Text(_displayUnit(), style: GoogleFonts.inter(
+                                fontSize: 18, fontWeight: FontWeight.w500, color: _kGreenMid)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _UnitToggle(
+                leftLabel: 'lbs',
+                rightLabel: 'kg',
+                isRight: _useMetric,
+                onToggle: (v) => setState(() => _useMetric = v),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _PrivacyNotice(isFr: _fr),
+            const SizedBox(height: 12),
+            _CtaButton(
+              label: _fr ? 'Continuer' : 'Continue',
+              onPressed: widget.onNext,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STEP — StepAge (WeGLOW-style ruler picker)
+// ══════════════════════════════════════════════════════════════════════════════
+class StepAge extends StatefulWidget {
+  final VoidCallback onNext;
+  final VoidCallback? onBack;
+  final int initialAge;
+  final ValueChanged<int>? onAgeChanged;
+
+  const StepAge({
+    super.key,
+    required this.onNext,
+    this.onBack,
+    this.initialAge = 25,
+    this.onAgeChanged,
+  });
+
+  @override
+  State<StepAge> createState() => _StepAgeState();
+}
+
+class _StepAgeState extends State<StepAge> {
+  static const int _minAge = 15, _maxAge = 70;
+  late final FixedExtentScrollController _ctrl;
+  late int _idx;
+
+  int get _age => _minAge + _idx;
+
+  @override
+  void initState() {
+    super.initState();
+    _idx = (widget.initialAge - _minAge).clamp(0, _maxAge - _minAge);
+    _ctrl = FixedExtentScrollController(initialItem: _idx);
+    TickSoundService.instance.init();
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final _fr = Lang.code == 'fr';
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(
+          children: [
+            _OnboardingTopBar(step: 8, total: 10, onBack: widget.onBack),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _fr ? 'Quel est ton âge ?' : 'How old are you?',
+                  style: GoogleFonts.outfit(
+                    fontSize: 24, fontWeight: FontWeight.w700, color: _kGreenDark),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 160,
+                      child: _RulerPicker(
+                        controller: _ctrl,
+                        selectedIndex: _idx,
+                        itemCount: _maxAge - _minAge + 1,
+                        labelFor: (i) {
+                          final age = _minAge + i;
+                          return _fr ? '$age ans' : '$age yrs';
+                        },
+                        onChanged: (i) {
+                          setState(() => _idx = i);
+                          widget.onAgeChanged?.call(_age);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 12, offset: const Offset(0, 4))],
+                        ),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text('$_age', style: GoogleFonts.outfit(
+                                fontSize: 48, fontWeight: FontWeight.w800, color: _kGreenDark)),
+                              const SizedBox(width: 6),
+                              Text(_fr ? 'ANS' : 'YRS', style: GoogleFonts.inter(
+                                fontSize: 18, fontWeight: FontWeight.w500, color: _kGreenMid)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _PrivacyNotice(isFr: _fr),
+            const SizedBox(height: 12),
+            _CtaButton(
+              label: _fr ? 'Continuer' : 'Continue',
+              onPressed: widget.onNext,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Ruler Picker (WeGLOW-style scrollable ruler with indicator line) ────────
+class _RulerPicker extends StatelessWidget {
+  final FixedExtentScrollController controller;
+  final int selectedIndex;
+  final int itemCount;
+  final String Function(int) labelFor;
+  final ValueChanged<int> onChanged;
+
+  const _RulerPicker({
+    required this.controller,
+    required this.selectedIndex,
+    required this.itemCount,
+    required this.labelFor,
+    required this.onChanged,
+  });
+
+  static const double _kItemH = 56.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 12, offset: const Offset(0, 4))],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Selection indicator line
+          Positioned(
+            left: 0, right: 0,
+            child: Container(
+              height: 2,
+              color: _kGreenDark,
+            ),
+          ),
+          // Tick marks on the right
+          Positioned(
+            right: 12, top: 0, bottom: 0,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(9, (i) {
+                final isMajor = i % 2 == 0;
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: isMajor ? 14 : 16),
+                  child: Container(
+                    width: isMajor ? 16 : 10,
+                    height: 1.5,
+                    color: _kGreenDark.withValues(alpha: isMajor ? 0.25 : 0.12),
+                  ),
+                );
+              }),
+            ),
+          ),
+          ListWheelScrollView.useDelegate(
+            controller: controller,
+            itemExtent: _kItemH,
+            perspective: 0.002,
+            diameterRatio: 2.0,
+            squeeze: 1.0,
+            physics: const FixedExtentScrollPhysics(),
+            onSelectedItemChanged: (i) {
+              HapticFeedback.selectionClick();
+              TickSoundService.instance.tick();
+              onChanged(i);
+            },
+            childDelegate: ListWheelChildBuilderDelegate(
+              childCount: itemCount,
+              builder: (_, i) {
+                final sel = i == selectedIndex;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 150),
+                      style: GoogleFonts.outfit(
+                        fontSize: sel ? 20 : 15,
+                        fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
+                        color: sel ? _kGreenDark : _kGreenMid.withValues(alpha: 0.4),
+                      ),
+                      child: Text(labelFor(i)),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          // Top fade
+          Positioned(
+            top: 0, left: 0, right: 0, height: 60,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                    colors: [Colors.white, Colors.white.withValues(alpha: 0)],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Bottom fade
+          Positioned(
+            bottom: 0, left: 0, right: 0, height: 60,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                    colors: [Colors.white, Colors.white.withValues(alpha: 0)],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Unit toggle (lbs/kg, ft/cm) ──────────────────────────────────────────────
+class _UnitToggle extends StatelessWidget {
+  final String leftLabel;
+  final String rightLabel;
+  final bool isRight;
+  final ValueChanged<bool> onToggle;
+
+  const _UnitToggle({
+    required this.leftLabel,
+    required this.rightLabel,
+    required this.isRight,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kGreenBright.withValues(alpha: 0.15)),
+        color: _kGreenBright.withValues(alpha: 0.06),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _toggleBtn(leftLabel, !isRight, () => onToggle(false))),
+          Expanded(child: _toggleBtn(rightLabel, isRight, () => onToggle(true))),
+        ],
+      ),
+    );
+  }
+
+  Widget _toggleBtn(String label, bool active, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: active ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: active ? Border.all(color: _kGreenBright.withValues(alpha: 0.2)) : null,
+          boxShadow: active
+              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]
+              : null,
+        ),
+        child: Center(
+          child: Text(label, style: GoogleFonts.inter(
+            fontSize: 15, fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+            color: active ? _kGreenDark : _kGreenMid.withValues(alpha: 0.5),
+          )),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Privacy notice card ──────────────────────────────────────────────────────
+class _PrivacyNotice extends StatelessWidget {
+  final bool isFr;
+  const _PrivacyNotice({required this.isFr});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _kGreenBright.withValues(alpha: 0.12)),
+          color: _kGreenBright.withValues(alpha: 0.04),
+        ),
+        child: Text.rich(
+          TextSpan(children: [
+            TextSpan(
+              text: isFr ? 'Ta vie privée compte. ' : 'Your privacy matters. ',
+              style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w700, color: _kGreenDark),
+            ),
+            TextSpan(
+              text: isFr
+                  ? 'Nous utilisons ces informations uniquement pour calculer ton métabolisme, recommander des calories et personnaliser ton expérience.'
+                  : 'We only use this information to calculate your BMR, recommend calories and to personalise your experience.',
+              style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w400, color: _kGreenMid, height: 1.4),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// Keep StepHealthProfile as a wrapper for backwards compatibility
 class StepHealthProfile extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
@@ -2628,157 +3221,33 @@ class StepHealthProfile extends StatefulWidget {
 }
 
 class _StepHealthProfileState extends State<StepHealthProfile> {
-  static const int _minH = 140, _maxH = 210;
-  static const int _minA = 15,  _maxA = 70;
-
-  // Weight list: 35.0 → 150.0, step 0.5 → 231 items
-  static final List<double> _wList =
-      List.generate(231, (i) => 35.0 + i * 0.5);
-
-  late final FixedExtentScrollController _hCtrl;
-  late final FixedExtentScrollController _wCtrl;
-  late final FixedExtentScrollController _aCtrl;
-
-  late int _hIdx;
-  late int _wIdx;
-  late int _aIdx;
-
-  int get _heightCm => _minH + _hIdx;
-  double get _weightKg => _wList[_wIdx];
-  int get _age => _minA + _aIdx;
-
-  double get _bmi => _weightKg / pow(_heightCm / 100, 2);
-
-  String get _bmiLabel {
-    final l10n = AppL10n(Lang.code);
-    if (_bmi < 18.5) return l10n.healthProfileBmiThin;
-    if (_bmi < 25.0) return l10n.healthProfileBmiNormal;
-    if (_bmi < 30.0) return l10n.healthProfileBmiOver;
-    return l10n.healthProfileBmiObese;
-  }
-
-  Color get _bmiColor {
-    if (_bmi < 18.5) return const Color(0xFF5B9BD9);
-    if (_bmi < 25.0) return _kGreenMid;
-    if (_bmi < 30.0) return const Color(0xFFE8A040);
-    return const Color(0xFFD94A4A);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _hIdx = (widget.initialHeightCm - _minH).clamp(0, _maxH - _minH);
-    final wNearest = _wList.indexWhere((w) => w >= widget.initialWeightKg);
-    _wIdx = wNearest < 0 ? 50 : wNearest;
-    _aIdx = (widget.initialAge - _minA).clamp(0, _maxA - _minA);
-
-    _hCtrl = FixedExtentScrollController(initialItem: _hIdx);
-    _wCtrl = FixedExtentScrollController(initialItem: _wIdx);
-    _aCtrl = FixedExtentScrollController(initialItem: _aIdx);
-
-    TickSoundService.instance.init();
-  }
-
-  @override
-  void dispose() {
-    _hCtrl.dispose();
-    _wCtrl.dispose();
-    _aCtrl.dispose();
-    super.dispose();
-  }
+  int _subStep = 0;
 
   @override
   Widget build(BuildContext context) {
-    return _mintScaffold(
-      child: Column(
-        children: [
-          _OnboardingTopBar(
-              step: 2, total: 3, title: AppL10n(Lang.code).healthProfileTopBarTitle, onBack: widget.onBack),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 8),
-                        const _StepIcon(Icons.straighten_rounded),
-                        const SizedBox(height: 16),
-                        _StepHeader(
-                          title: AppL10n(Lang.code).healthProfileTitle,
-                          subtitle: AppL10n(Lang.code).healthProfileSubtitle,
-                        ),
-                        const SizedBox(height: 28),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _DrumPicker(
-                                label: AppL10n(Lang.code).healthProfileHeight,
-                                unit: 'cm',
-                                selectedIndex: _hIdx,
-                                controller: _hCtrl,
-                                itemCount: _maxH - _minH + 1,
-                                labelFor: (i) => '${_minH + i}',
-                                onChanged: (i) {
-                                  setState(() => _hIdx = i);
-                                  widget.onHeightChanged?.call(_heightCm);
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _DrumPicker(
-                                label: AppL10n(Lang.code).healthProfileWeight,
-                                unit: 'kg',
-                                selectedIndex: _wIdx,
-                                controller: _wCtrl,
-                                itemCount: _wList.length,
-                                labelFor: (i) {
-                                  final w = _wList[i];
-                                  return w % 1 == 0
-                                      ? '${w.toInt()}'
-                                      : w.toStringAsFixed(1);
-                                },
-                                onChanged: (i) {
-                                  setState(() => _wIdx = i);
-                                  widget.onWeightChanged?.call(_weightKg);
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _DrumPicker(
-                                label: AppL10n(Lang.code).healthProfileAge,
-                                unit: AppL10n(Lang.code).healthProfileAgeUnit,
-                                selectedIndex: _aIdx,
-                                controller: _aCtrl,
-                                itemCount: _maxA - _minA + 1,
-                                labelFor: (i) => '${_minA + i}',
-                                onChanged: (i) {
-                                  setState(() => _aIdx = i);
-                                  widget.onAgeChanged?.call(_age);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        _BmiCard(bmi: _bmi, label: _bmiLabel, color: _bmiColor),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          _CtaButton(label: AppL10n(Lang.code).healthProfileContinue, onPressed: widget.onNext),
-        ],
-      ),
-    );
+    switch (_subStep) {
+      case 0:
+        return StepHeight(
+          onBack: widget.onBack,
+          initialHeightCm: widget.initialHeightCm,
+          onHeightChanged: widget.onHeightChanged,
+          onNext: () => setState(() => _subStep = 1),
+        );
+      case 1:
+        return StepWeight(
+          onBack: () => setState(() => _subStep = 0),
+          initialWeightKg: widget.initialWeightKg,
+          onWeightChanged: widget.onWeightChanged,
+          onNext: () => setState(() => _subStep = 2),
+        );
+      default:
+        return StepAge(
+          onBack: () => setState(() => _subStep = 1),
+          initialAge: widget.initialAge,
+          onAgeChanged: widget.onAgeChanged,
+          onNext: widget.onNext,
+        );
+    }
   }
 }
 
@@ -3142,229 +3611,177 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
   // ── BUILD ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return _mintScaffold(
-      child: Column(
-        children: [
-          _OnboardingTopBar(
-              step: 3, total: 3, title: AppL10n(Lang.code).cycleStepTopBarTitle,
-              onBack: widget.onBack),
-          const SizedBox(height: 20),
-          const _StepIcon(Icons.favorite_border_rounded),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: _StepHeader(
-              title: AppL10n(Lang.code).cycleStepTitle,
-              subtitle: AppL10n(Lang.code).cycleStepSubtitle,
-            ),
-          ),
-          const SizedBox(height: 28),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // ── Toggle cards — 3 options ──
-                  Row(children: [
-                    Expanded(child: _statusCard(
-                      'cycle', LucideIcons.moon,
-                      AppL10n(Lang.code).cycleStatusRegular,
-                      AppL10n(Lang.code).cycleStatusRegularSub,
-                    )),
-                    const SizedBox(width: 10),
-                    Expanded(child: _statusCard(
-                      'pregnant', LucideIcons.sparkles,
-                      AppL10n(Lang.code).cycleStatusPregnant,
-                      AppL10n(Lang.code).cycleStatusPregnantSub,
-                    )),
-                    const SizedBox(width: 10),
-                    Expanded(child: _statusCard(
-                      'postpartum', LucideIcons.baby,
-                      AppL10n(Lang.code).cycleStatusPostpartum,
-                      AppL10n(Lang.code).cycleStatusPostpartumSub,
-                    )),
-                  ]),
-                  const SizedBox(height: 24),
-                  // ── Conditional content ──
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    transitionBuilder: (child, anim) => FadeTransition(
-                      opacity: anim,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.05),
-                          end: Offset.zero,
-                        ).animate(anim),
-                        child: child,
-                      ),
-                    ),
-                    child: _status == null
-                        ? _hintWidget()
-                        : _status == 'cycle'
-                            ? _cycleWidget()
-                            : _status == 'pregnant'
-                                ? _pregnancyWidget()
-                                : _postpartumWidget(),
-                  ),
-                ],
+    final _fr = Lang.code == 'fr';
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(
+          children: [
+            _OnboardingTopBar(step: 7, total: 7, onBack: widget.onBack),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _StepHeader(
+                title: _fr ? 'Santé féminine' : 'Women\'s health',
+                subtitle: _fr
+                    ? 'Pour adapter ton plan à ta réalité du moment'
+                    : 'To adapt your plan to your current reality',
               ),
             ),
-          ),
-          _CtaButton(
-            label: _status == 'cycle' ? AppL10n(Lang.code).cycleCtaStart : AppL10n(Lang.code).continueBtn,
-            onPressed: _status != null
-                ? (_status == 'postpartum'
-                    ? (_ppDuration != null ? widget.onNext : null)
-                    : widget.onNext)
-                : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Status toggle cards ────────────────────────────────────────────────────
-  Widget _statusCard(String value, IconData icon, String label, String sub) {
-    final sel = _status == value;
-    return GestureDetector(
-      onTap: () {
-        setState(() => _status = value);
-        widget.onHealthStatusChanged?.call(value);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 14),
-        decoration: BoxDecoration(
-          color: sel ? _kGreenDark : _kGlassFill,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: sel ? _kGreenDark : _kGlassBorder,
-            width: 1.5,
-          ),
-          boxShadow: sel
-              ? [BoxShadow(
-                  color: _kGreenDark.withValues(alpha: 0.25),
-                  blurRadius: 18, offset: const Offset(0, 7))]
-              : [],
-        ),
-        child: Column(children: [
-          Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              color: sel
-                  ? Colors.white.withValues(alpha: 0.15)
-                  : _kGlassFill,
-              shape: BoxShape.circle,
+            const SizedBox(height: 20),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ── 3 status cards — full-width ──
+                    _QuickTapCard(
+                      icon: LucideIcons.moon,
+                      label: _fr ? 'Cycle régulier' : 'Regular cycle',
+                      sublabel: _fr ? 'Sync ton entraînement avec ton cycle' : 'Sync your training with your cycle',
+                      selected: _status == 'cycle',
+                      onTap: () {
+                        setState(() => _status = 'cycle');
+                        widget.onHealthStatusChanged?.call('cycle');
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _QuickTapCard(
+                      icon: LucideIcons.sparkles,
+                      label: _fr ? 'Je suis enceinte' : 'I\'m pregnant',
+                      sublabel: _fr ? 'Programme prénatal adapté' : 'Adapted prenatal program',
+                      selected: _status == 'pregnant',
+                      onTap: () {
+                        setState(() => _status = 'pregnant');
+                        widget.onHealthStatusChanged?.call('pregnant');
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _QuickTapCard(
+                      icon: LucideIcons.baby,
+                      label: _fr ? 'Après grossesse' : 'Postpartum',
+                      sublabel: _fr ? 'Récupération post-partum' : 'Post-partum recovery',
+                      selected: _status == 'postpartum',
+                      onTap: () {
+                        setState(() => _status = 'postpartum');
+                        widget.onHealthStatusChanged?.call('postpartum');
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    // ── Conditional content ──
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, anim) => FadeTransition(
+                        opacity: anim,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.05),
+                            end: Offset.zero,
+                          ).animate(anim),
+                          child: child,
+                        ),
+                      ),
+                      child: _status == null
+                          ? const SizedBox.shrink(key: ValueKey('empty'))
+                          : _status == 'cycle'
+                              ? _cycleWidget()
+                              : _status == 'pregnant'
+                                  ? _pregnancyWidget()
+                                  : _postpartumWidget(),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            child: Icon(icon, size: 22,
-                color: sel ? Colors.white : _kGreenMid),
-          ),
-          const SizedBox(height: 12),
-          Text(label, textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontWeight: FontWeight.w800, fontSize: 15,
-                  color: sel ? Colors.white : _kTextDark,
-                  height: 1.3)),
-          const SizedBox(height: 4),
-          Text(sub, textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 10.5,
-                  color: sel
-                      ? Colors.white.withValues(alpha: 0.72)
-                      : _kTextMuted)),
-        ]),
-      ),
-    );
-  }
-
-  // ── Nothing selected hint ──────────────────────────────────────────────────
-  Widget _hintWidget() {
-    return Container(
-      key: const ValueKey('hint'),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kGlassBorder),
-      ),
-      child: Row(children: [
-        const Icon(Icons.touch_app_outlined, color: _kTextMuted, size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(AppL10n(Lang.code).cycleSelectSituation,
-              style: const TextStyle(
-                  fontSize: 13, color: _kTextMuted, height: 1.4)),
+            _CtaButton(
+              label: _fr ? 'Continuer' : 'Continue',
+              onPressed: _status != null
+                  ? (_status == 'postpartum'
+                      ? (_ppDuration != null ? widget.onNext : null)
+                      : widget.onNext)
+                  : null,
+            ),
+          ],
         ),
-      ]),
+      ),
     );
   }
 
   // ── CYCLE content ──────────────────────────────────────────────────────────
   Widget _cycleWidget() {
+    final _fr = Lang.code == 'fr';
     return Column(
       key: const ValueKey('cycle'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _phaseStrip(),
         const SizedBox(height: 20),
-        Text(AppL10n(Lang.code).cycleDurationLabel,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                color: _kTextDark)),
-        const SizedBox(height: 10),
+        Text(_fr ? 'Durée du cycle' : 'Cycle duration',
+            style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700,
+                color: _kGreenDark)),
+        const SizedBox(height: 12),
         Wrap(
           spacing: 8, runSpacing: 8,
           children: _durations.map((d) {
             final sel = _cycleDuration == d;
             return GestureDetector(
               onTap: () {
+                HapticFeedback.lightImpact();
                 setState(() => _cycleDuration = d);
                 widget.onCycleDurationChanged?.call(d);
               },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 250),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 11),
+                    horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
-                  color: sel ? _kGreenDark : _kGlassFill,
-                  borderRadius: BorderRadius.circular(40),
+                  color: sel ? _kGreenBright : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: sel ? _kGreenDark : _kGlassBorder,
+                    color: sel ? _kGreenBright : _kGreenBright.withValues(alpha: 0.12),
+                    width: sel ? 2 : 1,
                   ),
+                  boxShadow: sel
+                      ? [BoxShadow(color: _kGreenBright.withValues(alpha: 0.2),
+                          blurRadius: 8, offset: const Offset(0, 3))]
+                      : [],
                 ),
-                child: Text(d, style: TextStyle(
-                    color: sel ? Colors.white : _kTextDark,
-                    fontWeight: FontWeight.w600, fontSize: 13.5)),
+                child: Text(d, style: GoogleFonts.inter(
+                    color: sel ? Colors.white : _kGreenDark,
+                    fontWeight: FontWeight.w600, fontSize: 14)),
               ),
             );
           }).toList(),
         ),
         const SizedBox(height: 20),
-        Text(AppL10n(Lang.code).cycleLastPeriod,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                color: _kTextDark)),
-        const SizedBox(height: 10),
+        Text(_fr ? 'Dernières règles' : 'Last period',
+            style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700,
+                color: _kGreenDark)),
+        const SizedBox(height: 12),
         GestureDetector(
           onTap: _pickDate,
           child: Container(
             padding: const EdgeInsets.symmetric(
                 horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: _kGlassFill,
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: _kGlassBorder),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _kGreenBright.withValues(alpha: 0.12)),
+              boxShadow: [BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6, offset: const Offset(0, 2))],
             ),
             child: Row(children: [
-              const Icon(LucideIcons.calendarDays,
-                  size: 18, color: _kTextMuted),
+              Icon(LucideIcons.calendarDays,
+                  size: 20, color: _kGreenMid),
               const SizedBox(width: 12),
               Text(_fmt(_lastPeriod),
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
-                      fontSize: 16, color: _kTextDark)),
+                      fontSize: 16, color: _kGreenDark)),
               const Spacer(),
-              const Icon(Icons.chevron_right,
-                  color: _kTextMuted, size: 18),
+              Icon(LucideIcons.chevronRight,
+                  color: _kGreenMid, size: 20),
             ]),
           ),
         ),
@@ -3456,20 +3873,55 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
 
   // ── PREGNANCY content ──────────────────────────────────────────────────────
   Widget _pregnancyWidget() {
+    final _fr = Lang.code == 'fr';
     return Column(
       key: const ValueKey('pregnancy'),
       children: [
-        _DrumPicker(
-          label: AppL10n(Lang.code).cyclePregnancyWeeksLabel,
-          unit: 'SA',
-          selectedIndex: _weekIdx,
-          controller: _weekCtrl,
-          itemCount: 42,
-          labelFor: (i) => '${i + 1}',
-          onChanged: (i) {
-            setState(() => _weekIdx = i);
-            widget.onPregnancyWeekChanged?.call(i + 1);
-          },
+        SizedBox(
+          height: 280,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 140,
+                child: _RulerPicker(
+                  controller: _weekCtrl,
+                  selectedIndex: _weekIdx,
+                  itemCount: 42,
+                  labelFor: (i) => _fr ? '${i + 1} SA' : 'W ${i + 1}',
+                  onChanged: (i) {
+                    setState(() => _weekIdx = i);
+                    widget.onPregnancyWeekChanged?.call(i + 1);
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 12, offset: const Offset(0, 4))],
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text('$_weekSA', style: GoogleFonts.outfit(
+                          fontSize: 48, fontWeight: FontWeight.w800, color: _kGreenDark)),
+                        const SizedBox(width: 6),
+                        Text('SA', style: GoogleFonts.inter(
+                          fontSize: 18, fontWeight: FontWeight.w500, color: _kGreenMid)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         _trimesterBar(),
@@ -3990,217 +4442,210 @@ class _StepAvatarState extends State<StepAvatar> {
   MascotType _type = MascotType.blob;
   MascotMood _mood = MascotMood.happy;
 
-  static const _accent = Color(0xFF2D4A2D);
+  static bool get _fr => Lang.code == 'fr';
 
   static const _types = [
-    (MascotType.blob,  'Blobby',  '🟢'),
-    (MascotType.sun,   'Sunny',   '☀️'),
-    (MascotType.star,  'Starlet', '⭐'),
-    (MascotType.cloud, 'Cloudie', '☁️'),
-    (MascotType.leaf,  'Leafy',   '🍃'),
+    (MascotType.blob,  'Blobby'),
+    (MascotType.sun,   'Sunny'),
+    (MascotType.star,  'Starlet'),
+    (MascotType.cloud, 'Cloudie'),
+    (MascotType.leaf,  'Leafy'),
   ];
 
-  static const _moodTypes = [
-    (MascotMood.happy,       '😊'),
-    (MascotMood.excited,     '🤩'),
-    (MascotMood.proud,       '💪'),
-    (MascotMood.celebrating, '🎉'),
-    (MascotMood.sleepy,      '😴'),
+  static const _moodIcons = [
+    LucideIcons.smile,
+    LucideIcons.partyPopper,
+    LucideIcons.trophy,
+    LucideIcons.sparkles,
+    LucideIcons.moonStar,
+  ];
+
+  static const _moods = [
+    MascotMood.happy,
+    MascotMood.excited,
+    MascotMood.proud,
+    MascotMood.celebrating,
+    MascotMood.sleepy,
   ];
 
   @override
   Widget build(BuildContext context) {
+    final moodLabels = [
+      _fr ? 'Heureuse' : 'Happy',
+      _fr ? 'Excitée' : 'Excited',
+      _fr ? 'Fière' : 'Proud',
+      _fr ? 'En fête' : 'Celebrating',
+      _fr ? 'Fatiguée' : 'Sleepy',
+    ];
+
     return _stepBackground(
       child: SafeArea(
         child: Column(
           children: [
-              _OnboardingTopBar(step: 9, total: 11, onBack: widget.onBack),
+            _OnboardingTopBar(step: 1, total: 1, onBack: widget.onBack),
+            const SizedBox(height: 8),
 
-            const SizedBox(height: 16),
-
-            // ── Scrollable content ────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Mascot preview card ───────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                    // ── Mascot preview ────────────────────────────────────
+                    Center(
                       child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+                        width: 130, height: 130,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: const Color(0xFFCCDDD3), width: 1),
-                          boxShadow: [BoxShadow(color: const Color(0xFF1B5E3B).withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 6))],
+                          shape: BoxShape.circle,
+                          color: _kGreenBright.withValues(alpha: 0.06),
                         ),
-                        child: Column(children: [
-                          // Mascot with glow ring
-                          Container(
-                            width: 140, height: 140,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  _kGreenBright.withValues(alpha: 0.15),
-                                  _kGreenBright.withValues(alpha: 0.05),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(color: _kGreenBright.withValues(alpha: 0.15), blurRadius: 24, spreadRadius: 2),
-                              ],
-                            ),
-                            child: Center(child: MascotWidget(type: _type, mood: _mood, size: 110)),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(AppL10n(Lang.code).avatarChooseTitle,
-                            style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800,
-                              color: const Color(0xFF1A3C2A), letterSpacing: -0.3)),
-                          const SizedBox(height: 4),
-                          Text(
-                            AppL10n(Lang.code).avatarSubtitle,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 12.5, color: Color(0xFF5A7A66), height: 1.5),
-                          ),
-                        ]),
+                        child: Center(
+                          child: MascotWidget(type: _type, mood: _mood, size: 100),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: Text(
+                        _fr ? 'Choisis ta mascotte' : 'Choose your mascot',
+                        style: GoogleFonts.outfit(
+                          fontSize: 22, fontWeight: FontWeight.w700, color: _kGreenDark),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Center(
+                      child: Text(
+                        _fr
+                            ? 'Elle t\'accompagnera tout au long de ton aventure'
+                            : 'It will accompany you throughout your journey',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 14, color: _kGreenMid, height: 1.4),
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 28),
 
-                    // ── Choix mascotte (horizontal scroll) ─────────────────
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24, bottom: 10),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(AppL10n(Lang.code).avatarShapeLabel, style: const TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w800,
-                          color: Color(0xFF1B5E3B), letterSpacing: 2.5)),
-                      ),
+                    // ── Mascot type — horizontal scroll ───────────────────
+                    Text(
+                      _fr ? 'Forme' : 'Shape',
+                      style: GoogleFonts.outfit(
+                        fontSize: 16, fontWeight: FontWeight.w700, color: _kGreenDark),
                     ),
+                    const SizedBox(height: 12),
                     SizedBox(
-                      height: 96,
+                      height: 100,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         itemCount: _types.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
                         itemBuilder: (_, i) {
-                          final (type, name, _) = _types[i];
+                          final (type, name) = _types[i];
                           final selected = _type == type;
                           return GestureDetector(
                             onTap: () {
                               setState(() => _type = type);
-                              HapticFeedback.selectionClick();
+                              HapticFeedback.lightImpact();
                               widget.onAvatarChanged(type.name, type.name, '');
                             },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
-                              width: 82,
+                              width: 80,
                               decoration: BoxDecoration(
-                                color: selected
-                                    ? const Color(0xFFE8F5EC)
-                                    : Colors.white.withValues(alpha: 0.7),
-                                borderRadius: BorderRadius.circular(18),
+                                color: selected ? _kGreenBright : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: selected
-                                      ? _kGreenBright.withValues(alpha: 0.5)
-                                      : const Color(0xFFCCDDD3),
-                                  width: selected ? 1.5 : 1,
+                                      ? _kGreenBright
+                                      : _kGreenBright.withValues(alpha: 0.12),
+                                  width: selected ? 2 : 1,
                                 ),
                                 boxShadow: selected
-                                    ? [BoxShadow(color: _kGreenBright.withValues(alpha: 0.12), blurRadius: 14, offset: const Offset(0, 5))]
-                                    : [],
+                                    ? [BoxShadow(
+                                        color: _kGreenBright.withValues(alpha: 0.2),
+                                        blurRadius: 10, offset: const Offset(0, 4))]
+                                    : [BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.03),
+                                        blurRadius: 4, offset: const Offset(0, 2))],
                               ),
-                              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                MascotWidget(type: type, mood: MascotMood.happy, size: 48),
-                                const SizedBox(height: 4),
-                                Text(name, style: TextStyle(
-                                  fontSize: 10, fontWeight: FontWeight.w700,
-                                  color: selected
-                                      ? const Color(0xFF1A3C2A)
-                                      : const Color(0xFF5A7A66))),
-                              ]),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  MascotWidget(type: type, mood: MascotMood.happy, size: 44),
+                                  const SizedBox(height: 6),
+                                  Text(name, style: GoogleFonts.inter(
+                                    fontSize: 11, fontWeight: FontWeight.w600,
+                                    color: selected ? Colors.white : _kGreenDark)),
+                                ],
+                              ),
                             ),
                           );
                         },
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 24),
 
-                    // ── Humeur ───────────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24, bottom: 10),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(AppL10n(Lang.code).avatarMoodLabel, style: const TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w800,
-                          color: Color(0xFF1B5E3B), letterSpacing: 2.5)),
-                      ),
+                    // ── Mood — full-width cards ──────────────────────────
+                    Text(
+                      _fr ? 'Humeur' : 'Mood',
+                      style: GoogleFonts.outfit(
+                        fontSize: 16, fontWeight: FontWeight.w700, color: _kGreenDark),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Wrap(
-                        spacing: 8, runSpacing: 8,
-                        children: (() {
-                          final l10n = AppL10n(Lang.code);
-                          final _moodLabels = [
-                            l10n.avatarMoodHappy, l10n.avatarMoodExcited,
-                            l10n.avatarMoodProud, l10n.avatarMoodCelebrating, l10n.avatarMoodSleepy,
-                          ];
-                          return _moodTypes.asMap().entries.map((entry) {
-                          final i = entry.key;
-                          final m = entry.value;
-                          final (mood, emoji) = m;
-                          final label = _moodLabels[i];
-                          final selected = _mood == mood;
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() => _mood = mood);
-                              HapticFeedback.selectionClick();
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              decoration: BoxDecoration(
+                    const SizedBox(height: 12),
+                    ...List.generate(_moods.length, (i) {
+                      final selected = _mood == _moods[i];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _mood = _moods[i]);
+                            HapticFeedback.lightImpact();
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: selected ? _kGreenBright : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
                                 color: selected
-                                    ? const Color(0xFFE8F5EC)
-                                    : Colors.white.withValues(alpha: 0.7),
-                                borderRadius: BorderRadius.circular(40),
-                                border: Border.all(
-                                  color: selected
-                                      ? _kGreenBright.withValues(alpha: 0.5)
-                                      : const Color(0xFFCCDDD3),
-                                  width: selected ? 1.5 : 1,
-                                ),
-                                boxShadow: selected
-                                    ? [BoxShadow(color: _kGreenBright.withValues(alpha: 0.12), blurRadius: 10, offset: const Offset(0, 3))]
-                                    : [],
+                                    ? _kGreenBright
+                                    : _kGreenBright.withValues(alpha: 0.12),
+                                width: selected ? 2 : 1,
                               ),
-                              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                Text(emoji, style: const TextStyle(fontSize: 16)),
-                                const SizedBox(width: 6),
-                                Text(label, style: TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w600,
-                                  color: selected
-                                      ? const Color(0xFF1A3C2A)
-                                      : const Color(0xFF5A7A66))),
-                              ]),
+                              boxShadow: selected
+                                  ? [BoxShadow(
+                                      color: _kGreenBright.withValues(alpha: 0.2),
+                                      blurRadius: 10, offset: const Offset(0, 4))]
+                                  : [BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.03),
+                                      blurRadius: 4, offset: const Offset(0, 2))],
                             ),
-                          );
-                        }).toList();
-                        })(),
-                      ),
-                    ),
+                            child: Row(
+                              children: [
+                                Text(moodLabels[i], style: GoogleFonts.inter(
+                                  fontSize: 15, fontWeight: FontWeight.w600,
+                                  color: selected ? Colors.white : _kGreenDark)),
+                                const Spacer(),
+                                Icon(_moodIcons[i], size: 22,
+                                  color: selected
+                                      ? Colors.white.withValues(alpha: 0.7)
+                                      : _kGreenBright.withValues(alpha: 0.35)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
             ),
 
             _CtaButton(
-              label: AppL10n(Lang.code).avatarCta,
+              label: _fr ? 'Commencer' : 'Get started',
               onPressed: widget.onNext,
             ),
           ],
@@ -4393,556 +4838,462 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// STEP — StepCoachChat (conversation-style onboarding)
 // ══════════════════════════════════════════════════════════════════════════════
-
-enum _ChatPhase { goal, fitness, equipment, location, frequency, done }
-
-class _Msg {
-  final bool isCoach;
-  final String text;
-  const _Msg.coach(this.text) : isCoach = true;
-  const _Msg.user(this.text) : isCoach = false;
-}
-
-class StepCoachChat extends StatefulWidget {
-  final OnboardingData data;
+// STEP — StepLocation
+// ══════════════════════════════════════════════════════════════════════════════
+class StepLocation extends StatelessWidget {
+  final String? selected;
   final VoidCallback? onBack;
-  final VoidCallback onDone;
-  final ValueChanged<String> onGoalSelected;
-  final ValueChanged<String> onFitnessChanged;
-  final ValueChanged<String> onEquipmentToggled;
-  final ValueChanged<String> onLocationChanged;
-  final ValueChanged<String> onFrequencyChanged;
+  final ValueChanged<String> onSelected;
 
-  const StepCoachChat({
+  const StepLocation({
     super.key,
-    required this.data,
+    this.selected,
     this.onBack,
-    required this.onDone,
-    required this.onGoalSelected,
-    required this.onFitnessChanged,
-    required this.onEquipmentToggled,
-    required this.onLocationChanged,
-    required this.onFrequencyChanged,
+    required this.onSelected,
   });
 
+  static const _locIcons = [
+    LucideIcons.building2,
+    LucideIcons.home,
+    LucideIcons.repeat2,
+  ];
+
   @override
-  State<StepCoachChat> createState() => _StepCoachChatState();
+  Widget build(BuildContext context) {
+    final _fr = Lang.code == 'fr';
+    final l10n = AppL10n(Lang.code);
+    final locations = [
+      ('gym', l10n.locationGym, _fr ? 'Accès à une salle de sport' : 'Access to a gym'),
+      ('home', l10n.locationHome, _fr ? 'Entraînement chez toi' : 'Train at home'),
+      ('both', l10n.locationBoth, _fr ? 'Un mix des deux' : 'A mix of both'),
+    ];
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(
+          children: [
+            _OnboardingTopBar(step: 4, total: 8, onBack: onBack),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _StepHeader(
+                title: _fr ? 'Où préfères-tu\nt\'entraîner ?' : 'Where do you\nprefer to train?',
+                subtitle: l10n.locationSubtitle,
+              ),
+            ),
+            const Spacer(flex: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: List.generate(locations.length, (i) {
+                  final loc = locations[i];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _QuickTapCard(
+                      icon: _locIcons[i],
+                      label: loc.$2,
+                      sublabel: loc.$3,
+                      selected: selected == loc.$1,
+                      onTap: () => onSelected(loc.$1),
+                    ),
+                  );
+                }),
+              ),
+            ),
+            const Spacer(flex: 2),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _StepCoachChatState extends State<StepCoachChat>
-    with TickerProviderStateMixin {
-  final ScrollController _scrollCtrl = ScrollController();
-  final List<_Msg> _messages = [];
-  _ChatPhase _phase = _ChatPhase.goal;
-  bool _typing = false;
-  bool _showReplies = false;
+// ══════════════════════════════════════════════════════════════════════════════
+// STEP — StepFrequency
+// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
+// STEP — StepResults (motivational chart — "With FitEva" vs "Without")
+// ══════════════════════════════════════════════════════════════════════════════
+class StepResults extends StatelessWidget {
+  final VoidCallback? onBack;
+  final VoidCallback onNext;
+
+  const StepResults({super.key, this.onBack, required this.onNext});
+
+  static bool get _fr => Lang.code == 'fr';
+
+  @override
+  Widget build(BuildContext context) {
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: onBack,
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(LucideIcons.chevronLeft, size: 24,
+                        color: Color(0xFF1A3C2A)),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    Text(
+                      _fr
+                          ? 'FitEva va t\'aider à devenir plus forte, confiante et atteindre tes objectifs.'
+                          : 'FitEva will help you get strong, feel confident & achieve results that last.',
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: _kGreenDark,
+                        height: 1.3,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Expanded(child: _ResultsChart()),
+                    const SizedBox(height: 20),
+                    Text(
+                      _fr
+                          ? 'Des entraînements fun et dynamiques, des fonctionnalités faciles et une communauté bienveillante pour t\'aider à atteindre tes objectifs.'
+                          : 'Fun & dynamic workouts, easy-to-use features and a supportive community will challenge you to achieve your goals.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF5A7A66),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+            _CtaButton(
+              label: _fr ? 'Continuer' : 'Continue',
+              onPressed: onNext,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Results comparison chart (with FitEva vs without) ───────────────────────
+class _ResultsChart extends StatefulWidget {
+  @override
+  State<_ResultsChart> createState() => _ResultsChartState();
+}
+
+class _ResultsChartState extends State<_ResultsChart>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _anim;
 
   @override
   void initState() {
     super.initState();
-    _startConversation();
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..forward();
   }
 
   @override
-  void dispose() {
-    _scrollCtrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _anim.dispose(); super.dispose(); }
 
-  Future<void> _startConversation() async {
-    await _coachSays('Salut ! 👋 Je suis ton coach FitEva.');
-    await _coachSays('On va créer ton programme en quelques taps. C\'est parti !');
-    await _coachSays('Quel est ton objectif principal ?');
-    _showQuickReplies();
-  }
-
-  Future<void> _coachSays(String text) async {
-    setState(() { _typing = true; _showReplies = false; });
-    _scrollToBottom();
-    await Future.delayed(Duration(milliseconds: 500 + text.length * 8));
-    if (!mounted) return;
-    setState(() {
-      _typing = false;
-      _messages.add(_Msg.coach(text));
-    });
-    _scrollToBottom();
-  }
-
-  void _userSays(String text) {
-    HapticFeedback.lightImpact();
-    setState(() {
-      _showReplies = false;
-      _messages.add(_Msg.user(text));
-    });
-    _scrollToBottom();
-  }
-
-  void _showQuickReplies() {
-    setState(() => _showReplies = true);
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollCtrl.hasClients) {
-        _scrollCtrl.animateTo(
-          _scrollCtrl.position.maxScrollExtent + 80,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
-  // ── Goal ──────────────────────────────────────────────────────────────────
-  Future<void> _onGoal(String key, String label) async {
-    widget.onGoalSelected(key);
-    _userSays(label);
-    await _coachSays('Super choix ! 💪');
-    await _coachSays('Et ton niveau actuel ?');
-    setState(() => _phase = _ChatPhase.fitness);
-    _showQuickReplies();
-  }
-
-  // ── Fitness ───────────────────────────────────────────────────────────────
-  Future<void> _onFitness(String key, String label) async {
-    widget.onFitnessChanged(key);
-    _userSays(label);
-    await _coachSays('Noté ! 📝');
-    await _coachSays('Quel matériel as-tu ? (tu peux en choisir plusieurs)');
-    setState(() => _phase = _ChatPhase.equipment);
-    _showQuickReplies();
-  }
-
-  // ── Equipment (multi-select) ──────────────────────────────────────────────
-  void _onEquipmentTap(String key, String label) {
-    widget.onEquipmentToggled(key);
-    setState(() {});
-  }
-
-  Future<void> _onEquipmentDone() async {
-    final items = widget.data.equipment;
-    _userSays(items.join(', '));
-    await _coachSays('Parfait ! 🏠');
-    await _coachSays('Où préfères-tu t\'entraîner ?');
-    setState(() => _phase = _ChatPhase.location);
-    _showQuickReplies();
-  }
-
-  // ── Location ──────────────────────────────────────────────────────────────
-  Future<void> _onLocation(String key, String label) async {
-    widget.onLocationChanged(key);
-    _userSays(label);
-    await _coachSays('Top ! ⏱️');
-    await _coachSays('Combien de fois par semaine veux-tu t\'entraîner ?');
-    setState(() => _phase = _ChatPhase.frequency);
-    _showQuickReplies();
-  }
-
-  // ── Frequency ─────────────────────────────────────────────────────────────
-  Future<void> _onFrequency(String key, String label) async {
-    widget.onFrequencyChanged(key);
-    _userSays(label);
-    await _coachSays('Excellent ! On a tout ce qu\'il faut 🎉');
-    await _coachSays('Encore quelques détails et on lance ton programme !');
-    setState(() => _phase = _ChatPhase.done);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) widget.onDone();
-  }
-
-  // ── Build — full-screen question/answer flow ────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE8F5EC),
-              Color(0xFFF0FAF3),
-              Color(0xFFFCFDFC),
-            ],
-            stops: [0.0, 0.45, 1.0],
-          ),
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => CustomPaint(
+        painter: _ResultsChartPainter(
+          progress: Curves.easeOutCubic.transform(_anim.value),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                child: Row(
-                  children: [
-                    if (widget.onBack != null)
-                      GestureDetector(
-                        onTap: widget.onBack,
-                        child: Container(
-                          width: 36, height: 36,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.7),
-                            border: Border.all(color: const Color(0xFFCCDDD3), width: 1),
-                          ),
-                          child: const Icon(LucideIcons.arrowLeft, size: 18,
-                              color: Color(0xFF1A3C2A)),
-                        ),
-                      ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _kGreenBright.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _phaseLabel(),
-                        style: GoogleFonts.inter(
-                          fontSize: 12, fontWeight: FontWeight.w700, color: _kGreenBright),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Question + replies
-              Expanded(
-                child: _typing
-                    ? Center(child: _BouncingDots())
-                    : _buildQuestionView(),
-              ),
-            ],
-          ),
-        ),
+        size: Size.infinite,
       ),
-    );
-  }
-
-  String _phaseLabel() {
-    switch (_phase) {
-      case _ChatPhase.goal: return '1 of 5';
-      case _ChatPhase.fitness: return '2 of 5';
-      case _ChatPhase.equipment: return '3 of 5';
-      case _ChatPhase.location: return '4 of 5';
-      case _ChatPhase.frequency: return '5 of 5';
-      case _ChatPhase.done: return 'Done';
-    }
-  }
-
-  Widget _buildQuestionView() {
-    final lastCoachMsg = _messages.lastWhere(
-      (m) => m.isCoach, orElse: () => _Msg.coach(''));
-
-    return TweenAnimationBuilder<double>(
-      key: ValueKey(_phase),
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOutCubic,
-      builder: (_, value, child) => Opacity(
-        opacity: value,
-        child: Transform.translate(
-          offset: Offset(0, 20 * (1 - value)),
-          child: child,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: Column(
-          children: [
-            const Spacer(flex: 2),
-
-            Text(
-              lastCoachMsg.text,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1A3C2A),
-                height: 1.2,
-                letterSpacing: -0.5,
-              ),
-            ),
-
-            const SizedBox(height: 40),
-
-            if (_showReplies) _buildReplyOptions(),
-
-            const Spacer(flex: 3),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReplyOptions() {
-    switch (_phase) {
-      case _ChatPhase.goal:
-        return _replyWrap([
-          _ReplyPill('🔥 Perte de poids', () => _onGoal('Perte de poids', 'Perte de poids 🔥')),
-          _ReplyPill('⚖️ Maintien', () => _onGoal('Maintien', 'Maintien ⚖️')),
-          _ReplyPill('💪 Prise de masse', () => _onGoal('Prise de masse', 'Prise de masse 💪')),
-        ]);
-
-      case _ChatPhase.fitness:
-        final l10n = AppL10n(Lang.code);
-        return _replyWrap([
-          _ReplyPill('🌱 ${l10n.fitnessLevelBeginner}', () => _onFitness('Débutant', '${l10n.fitnessLevelBeginner} 🌱')),
-          _ReplyPill('⚡ ${l10n.fitnessLevelIntermediate}', () => _onFitness('Intermédiaire', '${l10n.fitnessLevelIntermediate} ⚡')),
-          _ReplyPill('🏆 ${l10n.fitnessLevelAdvanced}', () => _onFitness('Avancé', '${l10n.fitnessLevelAdvanced} 🏆')),
-        ]);
-
-      case _ChatPhase.equipment:
-        final l10n = AppL10n(Lang.code);
-        final labels = [
-          l10n.equipmentNone, l10n.equipmentDumbbells, l10n.equipmentBarbell,
-          l10n.equipmentMachines, l10n.equipmentBands, l10n.equipmentYogaMat,
-        ];
-        const emojis = ['🚫', '🏋️', '🔩', '⚙️', '🪢', '🧘'];
-        const keys = ['Aucun matériel', 'Haltères', 'Barre & poids', 'Machines', 'Résistances', 'Tapis de yoga'];
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Wrap(
-              spacing: 8, runSpacing: 8,
-              children: List.generate(keys.length, (i) {
-                final sel = widget.data.equipment.contains(keys[i]);
-                return _ReplyChip(
-                  label: '${emojis[i]} ${labels[i]}',
-                  selected: sel,
-                  onTap: () => _onEquipmentTap(keys[i], labels[i]),
-                );
-              }),
-            ),
-            if (widget.data.equipment.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: _onEquipmentDone,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1B5E3B), Color(0xFF276E4A)]),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF1B5E3B).withValues(alpha: 0.3),
-                        blurRadius: 12, offset: const Offset(0, 4)),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text('Continuer', style: GoogleFonts.inter(
-                      fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        );
-
-      case _ChatPhase.location:
-        final l10n = AppL10n(Lang.code);
-        return _replyWrap([
-          _ReplyPill('🏋️ ${l10n.locationGym}', () => _onLocation('gym', '${l10n.locationGym} 🏋️')),
-          _ReplyPill('🏠 ${l10n.locationHome}', () => _onLocation('home', '${l10n.locationHome} 🏠')),
-          _ReplyPill('💪 ${l10n.locationBoth}', () => _onLocation('both', '${l10n.locationBoth} 💪')),
-        ]);
-
-      case _ChatPhase.frequency:
-        return _replyWrap([
-          _ReplyPill('2x', () => _onFrequency('2 jours', '2 jours par semaine')),
-          _ReplyPill('3x', () => _onFrequency('3 jours', '3 jours par semaine')),
-          _ReplyPill('4x', () => _onFrequency('4 jours', '4 jours par semaine')),
-          _ReplyPill('5x', () => _onFrequency('5 jours', '5 jours par semaine')),
-          _ReplyPill('6x', () => _onFrequency('6 jours', '6 jours par semaine')),
-        ]);
-
-      case _ChatPhase.done:
-        return const SizedBox.shrink();
-    }
-  }
-
-  Widget _replyWrap(List<Widget> children) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: children.map((c) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: c,
-      )).toList(),
     );
   }
 }
 
-// ── Reply pill button ────────────────────────────────────────────────────────
-class _ReplyPill extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _ReplyPill(this.label, this.onTap);
+class _ResultsChartPainter extends CustomPainter {
+  final double progress;
+  const _ResultsChartPainter({required this.progress});
 
   @override
-  State<_ReplyPill> createState() => _ReplyPillState();
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final chartTop = h * 0.08;
+    final chartBottom = h * 0.75;
+    final chartH = chartBottom - chartTop;
+    final chartLeft = 0.0;
+    final chartRight = w;
+
+    // "WITH FITEVA" curve — rises steeply
+    final withPath = Path();
+    withPath.moveTo(chartLeft, chartBottom);
+    final cp1x = chartRight * 0.35 * progress;
+    final cp1y = chartBottom - chartH * 0.15 * progress;
+    final cp2x = chartRight * 0.55 * progress;
+    final cp2y = chartTop + chartH * 0.1;
+    final endX = chartRight * progress;
+    final endY = chartTop + chartH * 0.05;
+    withPath.cubicTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
+
+    final withPaint = Paint()
+      ..color = _kGreenBright
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(withPath, withPaint);
+
+    // "WITHOUT" curve — rises slowly, plateaus lower
+    final withoutPath = Path();
+    withoutPath.moveTo(chartLeft, chartBottom);
+    final wo_cp1x = chartRight * 0.4 * progress;
+    final wo_cp1y = chartBottom - chartH * 0.05 * progress;
+    final wo_cp2x = chartRight * 0.7 * progress;
+    final wo_cp2y = chartBottom - chartH * 0.35;
+    final wo_endX = chartRight * progress;
+    final wo_endY = chartBottom - chartH * 0.30;
+    withoutPath.cubicTo(wo_cp1x, wo_cp1y, wo_cp2x, wo_cp2y, wo_endX, wo_endY);
+
+    final withoutPaint = Paint()
+      ..color = const Color(0xFFB0C4B8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(withoutPath, withoutPaint);
+
+    if (progress > 0.7) {
+      final labelOpacity = ((progress - 0.7) / 0.3).clamp(0.0, 1.0);
+
+      // "WITH FITEVA" label
+      _drawLabel(canvas, _fr ? 'AVEC FITEVA' : 'WITH FITEVA', _kGreenBright,
+          Offset(endX - 20, endY - 28), labelOpacity);
+
+      // "WITHOUT FITEVA" label
+      _drawLabel(canvas, _fr ? 'SANS FITEVA' : 'WITHOUT FITEVA', const Color(0xFFB0C4B8),
+          Offset(wo_endX - 30, wo_endY + 12), labelOpacity);
+
+      // Side labels
+      final sideLabels = [
+        (_fr ? 'FORME' : 'FITNESS LEVEL', chartTop + chartH * 0.20),
+        (_fr ? 'CONFIANCE' : 'CONFIDENCE', chartTop + chartH * 0.35),
+        (_fr ? 'ÉNERGIE' : 'ENERGY', chartTop + chartH * 0.50),
+      ];
+
+      for (final entry in sideLabels) {
+        _drawPill(canvas, entry.$1, Offset(0, entry.$2), labelOpacity);
+      }
+    }
+  }
+
+  static bool get _fr => Lang.code == 'fr';
+
+  void _drawLabel(Canvas canvas, String text, Color color, Offset pos, double opacity) {
+    final bg = Paint()
+      ..color = color.withValues(alpha: 0.9 * opacity)
+      ..style = PaintingStyle.fill;
+    final tp = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Colors.white.withValues(alpha: opacity),
+          letterSpacing: 1.2,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(pos.dx, pos.dy, tp.width + 16, tp.height + 10),
+      const Radius.circular(6),
+    );
+    canvas.drawRRect(rect, bg);
+    tp.paint(canvas, Offset(pos.dx + 8, pos.dy + 5));
+  }
+
+  void _drawPill(Canvas canvas, String text, Offset pos, double opacity) {
+    final bg = Paint()
+      ..color = _kGreenBright.withValues(alpha: 0.12 * opacity)
+      ..style = PaintingStyle.fill;
+    final border = Paint()
+      ..color = _kGreenBright.withValues(alpha: 0.3 * opacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final tp = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: _kGreenDark.withValues(alpha: opacity),
+          letterSpacing: 1.5,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(pos.dx, pos.dy, tp.width + 18, tp.height + 12),
+      const Radius.circular(8),
+    );
+    canvas.drawRRect(rect, bg);
+    canvas.drawRRect(rect, border);
+    tp.paint(canvas, Offset(pos.dx + 9, pos.dy + 6));
+  }
+
+  @override
+  bool shouldRepaint(_ResultsChartPainter old) => old.progress != progress;
 }
 
-class _ReplyPillState extends State<_ReplyPill>
+// ── Selection card — WeGLOW style: fills green, emoji right ─────────────────
+class _SelectionCard extends StatefulWidget {
+  final String label;
+  final String emoji;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SelectionCard({
+    required this.label,
+    required this.emoji,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  State<_SelectionCard> createState() => _SelectionCardState();
+}
+
+class _SelectionCardState extends State<_SelectionCard>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
+  late final AnimationController _scaleCtrl;
   late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
+    _scaleCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 80),
       reverseDuration: const Duration(milliseconds: 200),
     );
-    _scale = Tween(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _scale = Tween(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _scaleCtrl, curve: Curves.easeOut),
+    );
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() { _scaleCtrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
+    final sel = widget.selected;
     return GestureDetector(
-      onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) { _ctrl.reverse(); widget.onTap(); },
-      onTapCancel: () => _ctrl.reverse(),
+      onTapDown: (_) => _scaleCtrl.forward(),
+      onTapUp: (_) { _scaleCtrl.reverse(); widget.onTap(); },
+      onTapCancel: () => _scaleCtrl.reverse(),
       child: ScaleTransition(
         scale: _scale,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.85),
+            color: sel ? _kGreenBright : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF000000).withValues(alpha: 0.04),
-                blurRadius: 10, offset: const Offset(0, 3),
+            border: Border.all(
+              color: sel ? _kGreenBright : _kGreenBright.withValues(alpha: 0.12),
+              width: sel ? 2 : 1,
+            ),
+            boxShadow: sel
+                ? [BoxShadow(
+                    color: _kGreenBright.withValues(alpha: 0.2),
+                    blurRadius: 12, offset: const Offset(0, 4))]
+                : [BoxShadow(
+                    color: const Color(0xFF000000).withValues(alpha: 0.03),
+                    blurRadius: 6, offset: const Offset(0, 2))],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(widget.label, style: GoogleFonts.inter(
+                  fontSize: 16, fontWeight: FontWeight.w600,
+                  color: sel ? Colors.white : _kGreenDark)),
               ),
+              const SizedBox(width: 12),
+              Text(widget.emoji, style: const TextStyle(fontSize: 24)),
             ],
           ),
-          child: Text(widget.label, textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 16, fontWeight: FontWeight.w600,
-              color: const Color(0xFF1A3C2A))),
         ),
       ),
     );
   }
 }
 
-// ── Reply chip (toggleable for multi-select) ─────────────────────────────────
-class _ReplyChip extends StatelessWidget {
+// ── Selection chip — for multi-select (equipment) ───────────────────────────
+class _SelectionChip extends StatelessWidget {
   final String label;
+  final String emoji;
   final bool selected;
   final VoidCallback onTap;
-  const _ReplyChip({required this.label, required this.selected, required this.onTap});
+
+  const _SelectionChip({
+    required this.label,
+    required this.emoji,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () { HapticFeedback.selectionClick(); onTap(); },
+      onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFFE8F5EC)
-              : Colors.white.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(12),
+          color: selected ? _kGreenBright : Colors.white,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected
-                ? _kGreenBright.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.6),
-            width: 1,
+                ? _kGreenBright
+                : _kGreenBright.withValues(alpha: 0.12),
+            width: selected ? 2 : 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: selected
-                  ? const Color(0xFF1B5E3B).withValues(alpha: 0.1)
-                  : const Color(0xFF000000).withValues(alpha: 0.03),
-              blurRadius: 8, offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: selected
+              ? [BoxShadow(
+                  color: _kGreenBright.withValues(alpha: 0.2),
+                  blurRadius: 8, offset: const Offset(0, 3))]
+              : [BoxShadow(
+                  color: const Color(0xFF000000).withValues(alpha: 0.03),
+                  blurRadius: 4, offset: const Offset(0, 2))],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (selected) ...[
-              Icon(Icons.check_rounded, size: 16, color: _kGreenBright),
-              const SizedBox(width: 6),
-            ],
+            Text(emoji, style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
             Text(label, style: GoogleFonts.inter(
               fontSize: 14, fontWeight: FontWeight.w600,
-              color: selected
-                  ? _kGreenBright
-                  : const Color(0xFF1A3C2A))),
+              color: selected ? Colors.white : _kGreenDark)),
           ],
         ),
       ),
-    );
-  }
-}
-
-// ── Bouncing dots typing indicator ───────────────────────────────────────────
-class _BouncingDots extends StatefulWidget {
-  @override
-  State<_BouncingDots> createState() => _BouncingDotsState();
-}
-
-class _BouncingDotsState extends State<_BouncingDots>
-    with TickerProviderStateMixin {
-  late final List<AnimationController> _ctrls;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrls = List.generate(3, (i) {
-      final ctrl = AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 400),
-      );
-      Future.delayed(Duration(milliseconds: i * 150), () {
-        if (mounted) ctrl.repeat(reverse: true);
-      });
-      return ctrl;
-    });
-  }
-
-  @override
-  void dispose() {
-    for (final c in _ctrls) { c.dispose(); }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(3, (i) {
-        return AnimatedBuilder(
-          animation: _ctrls[i],
-          builder: (_, __) => Container(
-            margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
-            child: Transform.translate(
-              offset: Offset(0, -4 * _ctrls[i].value),
-              child: Container(
-                width: 7, height: 7,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _kGreenMid.withValues(alpha: 0.5 + 0.5 * _ctrls[i].value),
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
     );
   }
 }
@@ -4952,13 +5303,15 @@ class _BouncingDotsState extends State<_BouncingDots>
 // ══════════════════════════════════════════════════════════════════════════════
 class _QuickTapCard extends StatefulWidget {
   final String emoji;
+  final IconData? icon;
   final String label;
   final String sublabel;
   final bool selected;
   final VoidCallback onTap;
 
   const _QuickTapCard({
-    required this.emoji,
+    this.emoji = '',
+    this.icon,
     required this.label,
     required this.sublabel,
     required this.selected,
@@ -5005,66 +5358,47 @@ class _QuickTapCardState extends State<_QuickTapCard>
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           decoration: BoxDecoration(
-            color: sel
-                ? _kGreenDark.withValues(alpha: 0.4)
-                : _kGlassFill,
-            borderRadius: BorderRadius.circular(20),
+            color: sel ? _kGreenBright : Colors.white,
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: sel
-                  ? _kGreenBright.withValues(alpha: 0.5)
-                  : _kGlassBorder,
-              width: sel ? 1.5 : 0.5,
+              color: sel ? _kGreenBright : _kGreenBright.withValues(alpha: 0.12),
+              width: sel ? 2 : 1,
             ),
             boxShadow: sel
                 ? [BoxShadow(
-                    color: _kGreenBright.withValues(alpha: 0.12),
-                    blurRadius: 20, offset: const Offset(0, 6))]
-                : [],
+                    color: _kGreenBright.withValues(alpha: 0.2),
+                    blurRadius: 12, offset: const Offset(0, 4))]
+                : [BoxShadow(
+                    color: const Color(0xFF000000).withValues(alpha: 0.03),
+                    blurRadius: 6, offset: const Offset(0, 2))],
           ),
           child: Row(
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                  color: sel
-                      ? _kGreenBright.withValues(alpha: 0.12)
-                      : _kWhite.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Center(
-                  child: Text(widget.emoji, style: const TextStyle(fontSize: 24)),
-                ),
-              ),
-              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(widget.label, style: GoogleFonts.outfit(
-                      fontSize: 16, fontWeight: FontWeight.w700,
-                      color: sel ? _kWhite : _kTextDark)),
-                    const SizedBox(height: 3),
-                    Text(widget.sublabel, style: GoogleFonts.inter(
-                      fontSize: 13, color: sel ? _kGreenMid : _kTextMuted,
-                      fontWeight: FontWeight.w400, height: 1.3)),
+                      fontSize: 17, fontWeight: FontWeight.w700,
+                      color: sel ? Colors.white : _kGreenDark)),
+                    if (widget.sublabel.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(widget.sublabel, style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: sel ? Colors.white.withValues(alpha: 0.8) : _kTextMuted,
+                        fontWeight: FontWeight.w400, height: 1.3)),
+                    ],
                   ],
                 ),
               ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                width: 24, height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: sel ? _kGreenBright : Colors.transparent,
-                  border: Border.all(
-                    color: sel ? _kGreenBright : _kWhite.withValues(alpha: 0.15),
-                    width: sel ? 0 : 1.5),
-                ),
-                child: sel
-                    ? const Icon(Icons.check_rounded, size: 14, color: _kBgDark)
-                    : null,
-              ),
+              const SizedBox(width: 12),
+              if (widget.icon != null)
+                Icon(widget.icon, size: 32,
+                  color: sel
+                      ? Colors.white.withValues(alpha: 0.7)
+                      : _kGreenBright.withValues(alpha: 0.35))
+              else if (widget.emoji.isNotEmpty)
+                Text(widget.emoji, style: const TextStyle(fontSize: 28)),
             ],
           ),
         ),
@@ -5127,21 +5461,19 @@ class _QuickTapTileState extends State<_QuickTapTile>
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            color: sel
-                ? _kGreenDark.withValues(alpha: 0.4)
-                : _kGlassFill,
-            borderRadius: BorderRadius.circular(18),
+            color: sel ? _kGreenBright : Colors.white,
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: sel
-                  ? _kGreenBright.withValues(alpha: 0.5)
-                  : _kGlassBorder,
-              width: sel ? 1.5 : 0.5,
+              color: sel ? _kGreenBright : _kGreenBright.withValues(alpha: 0.12),
+              width: sel ? 2 : 1,
             ),
             boxShadow: sel
                 ? [BoxShadow(
-                    color: _kGreenBright.withValues(alpha: 0.1),
-                    blurRadius: 16, offset: const Offset(0, 4))]
-                : [],
+                    color: _kGreenBright.withValues(alpha: 0.2),
+                    blurRadius: 12, offset: const Offset(0, 4))]
+                : [BoxShadow(
+                    color: const Color(0xFF000000).withValues(alpha: 0.03),
+                    blurRadius: 6, offset: const Offset(0, 2))],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -5155,19 +5487,8 @@ class _QuickTapTileState extends State<_QuickTapTile>
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
                   fontSize: 13, fontWeight: FontWeight.w600,
-                  color: sel ? _kWhite : _kTextDark, height: 1.2),
+                  color: sel ? Colors.white : _kGreenDark, height: 1.2),
               ),
-              if (sel) ...[
-                const SizedBox(height: 6),
-                Container(
-                  width: 20, height: 20,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _kGreenBright,
-                  ),
-                  child: const Icon(Icons.check_rounded, size: 12, color: _kBgDark),
-                ),
-              ],
             ],
           ),
         ),
@@ -5195,18 +5516,28 @@ class StepBuildingPlan extends StatefulWidget {
 
 class _StepBuildingPlanState extends State<StepBuildingPlan>
     with TickerProviderStateMixin {
-  late final AnimationController _mainCtrl;
+  late final AnimationController _ringCtrl;
   late final AnimationController _pulseCtrl;
 
   int _currentStep = 0;
   bool _showSummary = false;
 
-  static const _buildSteps = [
-    ('🎯', 'Analyse de tes objectifs...'),
-    ('📊', 'Calcul de ton profil nutritionnel...'),
-    ('🏋️', 'Création de ton programme...'),
-    ('📅', 'Planification de tes séances...'),
-    ('✨', 'Ton plan est prêt !'),
+  static bool get _fr => Lang.code == 'fr';
+
+  static const _stepIcons = [
+    LucideIcons.target,
+    LucideIcons.chartBar,
+    LucideIcons.dumbbell,
+    LucideIcons.calendarCheck,
+    LucideIcons.sparkles,
+  ];
+
+  List<(String, String)> get _buildSteps => [
+    (_fr ? 'Analyse de tes objectifs' : 'Analyzing your goals', ''),
+    (_fr ? 'Calcul de ton profil nutritionnel' : 'Calculating your nutrition profile', ''),
+    (_fr ? 'Création de ton programme' : 'Creating your program', ''),
+    (_fr ? 'Planification de tes séances' : 'Planning your sessions', ''),
+    (_fr ? 'Ton plan est prêt !' : 'Your plan is ready!', ''),
   ];
 
   @override
@@ -5214,12 +5545,12 @@ class _StepBuildingPlanState extends State<StepBuildingPlan>
     super.initState();
     _pulseCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
 
-    _mainCtrl = AnimationController(
+    _ringCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 4000),
+      duration: const Duration(milliseconds: 3500),
     )..forward();
 
     _runSequence();
@@ -5227,11 +5558,11 @@ class _StepBuildingPlanState extends State<StepBuildingPlan>
 
   Future<void> _runSequence() async {
     for (int i = 0; i < _buildSteps.length; i++) {
-      await Future.delayed(Duration(milliseconds: i == 0 ? 400 : 700));
+      await Future.delayed(Duration(milliseconds: i == 0 ? 500 : 800));
       if (!mounted) return;
       setState(() => _currentStep = i);
     }
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
     setState(() => _showSummary = true);
     await Future.delayed(const Duration(milliseconds: 1200));
@@ -5241,13 +5572,15 @@ class _StepBuildingPlanState extends State<StepBuildingPlan>
 
   @override
   void dispose() {
-    _mainCtrl.dispose();
+    _ringCtrl.dispose();
     _pulseCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final progress = (_currentStep + 1) / _buildSteps.length;
+
     return _stepBackground(
       child: SafeArea(
         child: Padding(
@@ -5256,27 +5589,43 @@ class _StepBuildingPlanState extends State<StepBuildingPlan>
             children: [
               const Spacer(flex: 2),
 
-              // Pulsing logo
+              // Animated progress ring
               AnimatedBuilder(
                 animation: _pulseCtrl,
                 builder: (_, child) {
-                  final scale = 1.0 + _pulseCtrl.value * 0.08;
+                  final scale = 1.0 + _pulseCtrl.value * 0.05;
                   return Transform.scale(scale: scale, child: child);
                 },
-                child: Container(
-                  width: 72, height: 72,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _kGreenBright.withValues(alpha: 0.12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _kGreenBright.withValues(alpha: 0.2),
-                        blurRadius: 24, spreadRadius: 4,
+                child: SizedBox(
+                  width: 88, height: 88,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 88, height: 88,
+                        child: CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 4,
+                          backgroundColor: _kGreenBright.withValues(alpha: 0.1),
+                          valueColor: const AlwaysStoppedAnimation(_kGreenBright),
+                          strokeCap: StrokeCap.round,
+                        ),
+                      ),
+                      Container(
+                        width: 64, height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _kGreenBright.withValues(alpha: 0.08),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            _showSummary ? LucideIcons.check : _stepIcons[_currentStep],
+                            size: 28,
+                            color: _kGreenBright,
+                          ),
+                        ),
                       ),
                     ],
-                  ),
-                  child: const Center(
-                    child: Text('✦', style: TextStyle(fontSize: 32, color: _kGreenBright)),
                   ),
                 ),
               ),
@@ -5284,12 +5633,14 @@ class _StepBuildingPlanState extends State<StepBuildingPlan>
               const SizedBox(height: 32),
 
               Text(
-                _showSummary ? 'C\'est parti !' : 'On prépare ton plan...',
+                _showSummary
+                    ? (_fr ? 'C\'est parti !' : 'Let\'s go!')
+                    : (_fr ? 'On prépare ton plan...' : 'Building your plan...'),
                 style: GoogleFonts.outfit(
-                  fontSize: 26,
+                  fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A3C2A),
-                  letterSpacing: -0.5,
+                  color: _kGreenDark,
+                  letterSpacing: -0.3,
                 ),
               ),
 
@@ -5297,11 +5648,11 @@ class _StepBuildingPlanState extends State<StepBuildingPlan>
 
               Text(
                 _showSummary
-                    ? 'Ton programme personnalisé est prêt'
-                    : 'Quelques secondes...',
+                    ? (_fr ? 'Ton programme personnalisé est prêt' : 'Your personalized program is ready')
+                    : (_fr ? 'Quelques secondes...' : 'Just a moment...'),
                 style: GoogleFonts.inter(
                   fontSize: 15,
-                  color: const Color(0xFF5A7A66),
+                  color: _kGreenMid,
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -5320,39 +5671,39 @@ class _StepBuildingPlanState extends State<StepBuildingPlan>
                     duration: const Duration(milliseconds: 400),
                     curve: Curves.easeOutCubic,
                     child: Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.only(bottom: 18),
                       child: Row(
                         children: [
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
-                            width: 32, height: 32,
+                            width: 40, height: 40,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(12),
                               color: done
-                                  ? _kGreenBright.withValues(alpha: 0.12)
-                                  : Colors.white.withValues(alpha: 0.6),
+                                  ? _kGreenBright
+                                  : _kGreenBright.withValues(alpha: 0.08),
                               boxShadow: done ? [
                                 BoxShadow(
-                                  color: _kGreenBright.withValues(alpha: 0.15),
-                                  blurRadius: 8),
+                                  color: _kGreenBright.withValues(alpha: 0.25),
+                                  blurRadius: 10, offset: const Offset(0, 3)),
                               ] : null,
                             ),
                             child: Center(
-                              child: done
-                                  ? const Icon(Icons.check_rounded, size: 16, color: _kGreenBright)
-                                  : Text(_buildSteps[i].$1, style: const TextStyle(fontSize: 14)),
+                              child: Icon(
+                                done ? LucideIcons.check : _stepIcons[i],
+                                size: 18,
+                                color: done ? Colors.white : _kGreenMid,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
                             child: Text(
-                              _buildSteps[i].$2,
+                              _buildSteps[i].$1,
                               style: GoogleFonts.inter(
-                                fontSize: 14,
+                                fontSize: 15,
                                 fontWeight: done ? FontWeight.w600 : FontWeight.w400,
-                                color: done
-                                    ? const Color(0xFF1A3C2A)
-                                    : const Color(0xFF5A7A66),
+                                color: done ? _kGreenDark : _kGreenMid,
                               ),
                             ),
                           ),
@@ -5365,7 +5716,7 @@ class _StepBuildingPlanState extends State<StepBuildingPlan>
 
               const Spacer(flex: 1),
 
-              // Summary cards (appear after build)
+              // Summary cards
               if (_showSummary)
                 AnimatedOpacity(
                   opacity: _showSummary ? 1.0 : 0.0,
@@ -5373,12 +5724,12 @@ class _StepBuildingPlanState extends State<StepBuildingPlan>
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFCCDDD3)),
+                      border: Border.all(color: _kGreenBright.withValues(alpha: 0.12)),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF000000).withValues(alpha: 0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 12, offset: const Offset(0, 4)),
                       ],
                     ),
@@ -5387,19 +5738,21 @@ class _StepBuildingPlanState extends State<StepBuildingPlan>
                       children: [
                         _SummaryItem(
                           value: widget.data.frequency ?? '3x',
-                          label: 'par semaine',
+                          label: _fr ? 'par semaine' : 'per week',
                         ),
-                        Container(width: 1, height: 36, color: const Color(0xFFCCDDD3)),
+                        Container(width: 1, height: 36,
+                            color: _kGreenBright.withValues(alpha: 0.12)),
                         _SummaryItem(
                           value: widget.data.goals.isNotEmpty
                               ? widget.data.goals.first.split(' ').first
                               : 'Fitness',
-                          label: 'objectif',
+                          label: _fr ? 'objectif' : 'goal',
                         ),
-                        Container(width: 1, height: 36, color: const Color(0xFFCCDDD3)),
+                        Container(width: 1, height: 36,
+                            color: _kGreenBright.withValues(alpha: 0.12)),
                         _SummaryItem(
-                          value: widget.data.fitnessLevel ?? 'Débutant',
-                          label: 'niveau',
+                          value: widget.data.fitnessLevel ?? (_fr ? 'Débutant' : 'Beginner'),
+                          label: _fr ? 'niveau' : 'level',
                         ),
                       ],
                     ),
@@ -5429,7 +5782,7 @@ class _SummaryItem extends StatelessWidget {
           color: _kGreenBright)),
         const SizedBox(height: 4),
         Text(label, style: GoogleFonts.inter(
-          fontSize: 11, color: const Color(0xFF5A7A66),
+          fontSize: 11, color: _kGreenMid,
           fontWeight: FontWeight.w400)),
       ],
     );

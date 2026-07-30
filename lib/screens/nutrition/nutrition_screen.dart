@@ -222,17 +222,28 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
                           plateColor: cs.surfaceContainerHighest.withOpacity(0.4),
                           plateRimColor: cs.outline.withOpacity(0.08),
                           isDark: Theme.of(context).brightness == Brightness.dark),
-                        child: Center(child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('${totals.calories}', style: GoogleFonts.outfit(
-                              fontSize: 28, fontWeight: FontWeight.w800,
-                              color: cs.onSurface, height: 1)),
-                            const SizedBox(height: 2),
-                            Text('kcal', style: GoogleFonts.inter(
-                              fontSize: 11, fontWeight: FontWeight.w500,
-                              color: cs.onSurface.withOpacity(0.4))),
-                          ]))))),
+                        child: Center(child: totals.calories == 0
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.utensils, size: 22,
+                                  color: cs.primary.withOpacity(0.3)),
+                                const SizedBox(height: 4),
+                                Text('0 kcal', style: GoogleFonts.inter(
+                                  fontSize: 12, fontWeight: FontWeight.w600,
+                                  color: cs.onSurface.withOpacity(0.3))),
+                              ])
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('${totals.calories}', style: GoogleFonts.outfit(
+                                  fontSize: 28, fontWeight: FontWeight.w800,
+                                  color: cs.onSurface, height: 1)),
+                                const SizedBox(height: 2),
+                                Text('kcal', style: GoogleFonts.inter(
+                                  fontSize: 11, fontWeight: FontWeight.w500,
+                                  color: cs.onSurface.withOpacity(0.4))),
+                              ]))))),
 
                   const SizedBox(height: 16),
 
@@ -266,12 +277,15 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
                   const SizedBox(height: 14),
 
                   // Macros row
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    _CompactMacro('P', totals.protein, profile.dailyProtein, cs),
-                    const SizedBox(width: 16),
-                    _CompactMacro('G', totals.carbs, profile.dailyCarbs, cs),
-                    const SizedBox(width: 16),
-                    _CompactMacro('L', totals.fat, profile.dailyFat, cs),
+                  Row(children: [
+                    _CompactMacro('Protéines', totals.protein, profile.dailyProtein, cs,
+                      barColor: const Color(0xFF5BAE8A)),
+                    const SizedBox(width: 12),
+                    _CompactMacro('Glucides', totals.carbs, profile.dailyCarbs, cs,
+                      barColor: const Color(0xFF6B8FD4)),
+                    const SizedBox(width: 12),
+                    _CompactMacro('Lipides', totals.fat, profile.dailyFat, cs,
+                      barColor: const Color(0xFFF4A940)),
                   ]),
 
                   const SizedBox(height: 14),
@@ -344,13 +358,14 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
             SliverToBoxAdapter(child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 36, 20, 16),
               child: Row(children: [
-                Container(width: 28, height: 2,
+                Container(
+                  width: 3, height: 14,
                   decoration: BoxDecoration(
                     color: cs.primary, borderRadius: BorderRadius.circular(2))),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Text(l10n.nutritionRecipesEyebrow, style: GoogleFonts.inter(
-                  fontSize: 9, fontWeight: FontWeight.w700,
-                  color: cs.primary, letterSpacing: 3)),
+                  fontSize: 10, fontWeight: FontWeight.w700,
+                  color: cs.primary, letterSpacing: 2)),
               ]))),
 
             SliverToBoxAdapter(child: Padding(
@@ -487,23 +502,37 @@ class _CompactMacro extends StatelessWidget {
   final String label;
   final int consumed, goal;
   final ColorScheme cs;
-  const _CompactMacro(this.label, this.consumed, this.goal, this.cs);
+  final Color barColor;
+  const _CompactMacro(this.label, this.consumed, this.goal, this.cs, {this.barColor = const Color(0xFF5BAE8A)});
 
   @override
   Widget build(BuildContext context) {
     final pct = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
-    final good = pct >= 0.8;
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Text(label, style: GoogleFonts.inter(
-        fontSize: 10, fontWeight: FontWeight.w700,
-        color: cs.onSurface.withOpacity(0.35))),
-      const SizedBox(width: 4),
-      Text('${consumed}', style: GoogleFonts.inter(
-        fontSize: 11, fontWeight: FontWeight.w700,
-        color: good ? cs.primary : cs.onSurface.withOpacity(0.7))),
-      Text('/${goal}g', style: GoogleFonts.inter(
-        fontSize: 9, color: cs.onSurface.withOpacity(0.3))),
-    ]);
+    return Expanded(child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Text(label, style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: FontWeight.w700,
+            color: cs.onSurface.withOpacity(0.35))),
+          const Spacer(),
+          Text('$consumed', style: GoogleFonts.inter(
+            fontSize: 11, fontWeight: FontWeight.w700,
+            color: cs.onSurface.withOpacity(0.7))),
+          Text('/${goal}g', style: GoogleFonts.inter(
+            fontSize: 9, color: cs.onSurface.withOpacity(0.3))),
+        ]),
+        const SizedBox(height: 5),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: SizedBox(
+            height: 4,
+            child: LinearProgressIndicator(
+              value: pct,
+              backgroundColor: cs.surfaceContainerHighest.withOpacity(0.3),
+              valueColor: AlwaysStoppedAnimation(barColor)))),
+      ],
+    ));
   }
 }
 
@@ -526,7 +555,7 @@ class _ChefBadge extends StatefulWidget {
 }
 
 class _ChefBadgeState extends State<_ChefBadge> {
-  bool _showTip = false;
+  late bool _showTip = widget.calories == 0;
 
   static String _currentMealId() {
     final h = DateTime.now().hour;
@@ -622,40 +651,48 @@ class _ChefBadgeState extends State<_ChefBadge> {
     final advice = _advice;
     final hasSuggestions = advice.suggestions.isNotEmpty;
 
+    final isEmpty = widget.calories == 0;
+
     return GestureDetector(
       onTap: hasSuggestions
           ? () { HapticFeedback.lightImpact(); setState(() => _showTip = !_showTip); }
           : null,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Inline tip row
-          Row(children: [
-            Container(
-              width: 28, height: 28,
-              decoration: BoxDecoration(
-                color: advice.color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8)),
-              child: Icon(LucideIcons.chefHat, size: 13, color: advice.color)),
-            const SizedBox(width: 10),
-            Expanded(child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(advice.title, style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w700,
-                  color: cs.onSurface)),
-                if (advice.missing.isNotEmpty)
-                  Text(advice.missing.join(' · '), style: GoogleFonts.inter(
-                    fontSize: 10, color: cs.onSurface.withOpacity(0.45))),
-              ])),
-            if (hasSuggestions)
-              AnimatedRotation(
-                turns: _showTip ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: Icon(LucideIcons.chevronDown, size: 14,
-                  color: cs.onSurface.withOpacity(0.25))),
-          ]),
+      child: Container(
+        padding: isEmpty ? const EdgeInsets.all(12) : EdgeInsets.zero,
+        decoration: isEmpty ? BoxDecoration(
+          color: advice.color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: advice.color.withOpacity(0.12)),
+        ) : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(children: [
+              Container(
+                width: isEmpty ? 34 : 28, height: isEmpty ? 34 : 28,
+                decoration: BoxDecoration(
+                  color: advice.color.withOpacity(isEmpty ? 0.15 : 0.1),
+                  borderRadius: BorderRadius.circular(isEmpty ? 10 : 8)),
+                child: Icon(LucideIcons.chefHat, size: isEmpty ? 16 : 13, color: advice.color)),
+              const SizedBox(width: 10),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(advice.title, style: GoogleFonts.inter(
+                    fontSize: isEmpty ? 14 : 12, fontWeight: FontWeight.w700,
+                    color: cs.onSurface)),
+                  if (advice.missing.isNotEmpty)
+                    Text(advice.missing.join(' · '), style: GoogleFonts.inter(
+                      fontSize: 10, color: cs.onSurface.withOpacity(0.45))),
+                ])),
+              if (hasSuggestions)
+                AnimatedRotation(
+                  turns: _showTip ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(LucideIcons.chevronDown, size: 14,
+                    color: cs.onSurface.withOpacity(0.25))),
+            ]),
 
           // Expandable suggestions
           AnimatedCrossFade(
@@ -698,7 +735,8 @@ class _ChefBadgeState extends State<_ChefBadge> {
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 200)),
-        ],
+          ],
+        ),
       ),
     );
   }

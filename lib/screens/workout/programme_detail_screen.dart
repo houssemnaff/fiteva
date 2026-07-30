@@ -574,34 +574,31 @@ class _AboutSliver extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Quick stats grid ───────────────────────────────────────
-              Row(children: [
-                Expanded(
-                    child: _QuickStat(
-                        icon: LucideIcons.calendarDays,
-                        value: program.weeks.isNotEmpty
-                            ? '${program.weeks.length}'
-                            : '1',
-                        label: l10n.progWeeks)),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _QuickStat(
-                        icon: LucideIcons.layers,
-                        value: '${program.workouts.length}',
-                        label: l10n.progSessions)),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _QuickStat(
-                        icon: LucideIcons.flame,
-                        value: '~350',
-                        label: l10n.progCalPerSession)),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _QuickStat(
-                        icon: LucideIcons.zap,
-                        value: '${program.totalPoints}',
-                        label: l10n.progPtsUnit)),
-              ]),
+              // ── Quick stats pills ────────────────────────────────────
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _QuickStatPill(
+                      icon: LucideIcons.calendarDays,
+                      value: program.weeks.isNotEmpty
+                          ? '${program.weeks.length}'
+                          : '1',
+                      label: l10n.progWeeks),
+                  _QuickStatPill(
+                      icon: LucideIcons.layers,
+                      value: '${program.workouts.length}',
+                      label: l10n.progSessions),
+                  _QuickStatPill(
+                      icon: LucideIcons.flame,
+                      value: '~350',
+                      label: l10n.progCalPerSession),
+                  _QuickStatPill(
+                      icon: LucideIcons.zap,
+                      value: '${program.totalPoints}',
+                      label: l10n.progPtsUnit),
+                ],
+              ),
               const SizedBox(height: 28),
 
               // ── Description ────────────────────────────────────────────
@@ -656,72 +653,64 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final accent = cs.primary;
     return Row(children: [
       Container(
-          width: 4,
-          height: 18,
+          width: 3,
+          height: 15,
           decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(4))),
-      const SizedBox(width: 10),
+              color: accent,
+              borderRadius: BorderRadius.circular(3))),
+      const SizedBox(width: 9),
       Text(label,
           style: GoogleFonts.outfit(
               color: cs.onSurface,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4)),
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3)),
     ]);
   }
 }
 
-class _QuickStat extends StatelessWidget {
+class _QuickStatPill extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
-  const _QuickStat(
+  const _QuickStatPill(
       {required this.icon, required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final accent = Theme.of(context).colorScheme.primary;
+    final accent = cs.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: dark ? const Color(0xFF1A1A1A) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: dark ? 0.25 : 0.05),
-              blurRadius: 12,
+              color: Colors.black.withValues(alpha: dark ? 0.20 : 0.04),
+              blurRadius: 10,
               offset: const Offset(0, 3))
         ],
       ),
-      child: Column(children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.10),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 16, color: accent),
-        ),
-        const SizedBox(height: 8),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13, color: accent),
+        const SizedBox(width: 8),
         Text(value,
             style: GoogleFonts.outfit(
                 color: cs.onSurface,
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.3)),
-        const SizedBox(height: 2),
+        const SizedBox(width: 5),
         Text(label,
-            textAlign: TextAlign.center,
             style: GoogleFonts.inter(
                 color: cs.onSurface.withValues(alpha: 0.45),
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: FontWeight.w500)),
       ]),
     );
@@ -744,7 +733,6 @@ class _CoachCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
     const gold = Color(0xFFD4A853);
-    final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
 
     final name = (coach?.name.isNotEmpty ?? false)
         ? coach!.name
@@ -767,13 +755,16 @@ class _CoachCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: cardBg,
+          color: dark
+              ? accent.withValues(alpha: 0.08)
+              : accent.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: accent.withValues(alpha: 0.15)),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: dark ? 0.25 : 0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 4))
+                color: Colors.black.withValues(alpha: dark ? 0.15 : 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 3))
           ],
         ),
         child: Row(children: [
@@ -828,8 +819,9 @@ class _CoachCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.1),
+              color: Colors.transparent,
               shape: BoxShape.circle,
+              border: Border.all(color: accent.withValues(alpha: 0.25)),
             ),
             child: Icon(LucideIcons.chevronRight, size: 16, color: accent),
           ),
@@ -1096,7 +1088,7 @@ class _SessionsSliverState extends State<_SessionsSliver> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (hasWeeks) ...[
+                if (hasWeeks && weeks.length > 1) ...[
                   _WeekNavBar(
                     weeks: weeks,
                     selected: weekIdx,
@@ -1337,52 +1329,13 @@ class _SessionCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(14),
               child: Row(children: [
-                // ── Number badge ─────────────────────────────────────────
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: isDone
-                        ? accent
-                        : isCurrent
-                            ? accent.withValues(alpha: 0.12)
-                            : cs.surfaceContainerHighest,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDone
-                          ? accent
-                          : isCurrent
-                              ? accent.withValues(alpha: 0.40)
-                              : cs.outline.withValues(alpha: 0.15),
-                    ),
-                  ),
-                  child: Center(
-                    child: isDone
-                        ? const Icon(LucideIcons.check,
-                            color: Colors.white, size: 16)
-                        : locked
-                            ? Icon(LucideIcons.lock,
-                                size: 14,
-                                color: cs.onSurface.withValues(alpha: 0.45))
-                            : Text('${index + 1}',
-                                style: GoogleFonts.outfit(
-                                    color: isCurrent
-                                        ? accent
-                                        : cs.onSurface
-                                            .withValues(alpha: 0.45),
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w900)),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // ── Thumbnail ────────────────────────────────────────────
+                // ── Thumbnail with number overlay ────────────────────────
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   child: Stack(children: [
                     SizedBox(
-                      width: 68,
-                      height: 68,
+                      width: 80,
+                      height: 80,
                       child: workout.imageUrl.startsWith('http')
                           ? Image.network(workout.imageUrl,
                               fit: BoxFit.cover,
@@ -1393,16 +1346,58 @@ class _SessionCard extends StatelessWidget {
                               errorBuilder: (_, __, ___) =>
                                   Container(color: accent.withValues(alpha: 0.12))),
                     ),
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.0),
+                              Colors.black.withValues(alpha: 0.50),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 8,
+                      bottom: 6,
+                      child: isDone
+                          ? Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: accent,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(LucideIcons.check,
+                                  color: Colors.white, size: 12),
+                            )
+                          : locked
+                              ? Icon(LucideIcons.lock,
+                                  size: 14,
+                                  color: Colors.white.withValues(alpha: 0.85))
+                              : Text('${index + 1}',
+                                  style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black.withValues(alpha: 0.50),
+                                          blurRadius: 6,
+                                        ),
+                                      ])),
+                    ),
                     if (isDone)
                       Positioned.fill(
                           child: Container(
-                        color: accent.withValues(alpha: 0.65),
-                        child: const Icon(LucideIcons.check,
-                            color: Colors.white, size: 22),
+                        color: accent.withValues(alpha: 0.45),
                       )),
                   ]),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
 
                 // ── Info ─────────────────────────────────────────────────
                 Expanded(
@@ -1530,7 +1525,7 @@ class _BottomCta extends StatelessWidget {
       right: 0,
       child: Container(
         padding: EdgeInsets.fromLTRB(
-            20, 14, 20, MediaQuery.of(context).padding.bottom + 18),
+            20, 16, 20, MediaQuery.of(context).padding.bottom + 24),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,

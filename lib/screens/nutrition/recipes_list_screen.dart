@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:async';
 import 'package:fiteva/core/nutrition/favorites_provider.dart';
 import 'package:fiteva/screens/nutrition/recipe_author_screen.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'models/models.dart';
 import 'recette_detail_screen.dart';
 import 'recipe_video_screen.dart';
 import '../../services/recipe_service.dart';
+import '../../services/spoonacular_service.dart';
 
 // ── Phase helper ──────────────────────────────────────────────────────────────
 class PhaseInfo {
@@ -100,8 +102,13 @@ VideoRecipe _videoFromApp(AppRecipe r) => VideoRecipe(
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 final imageRecipesProvider = FutureProvider<List<RealRecipe>>((ref) async {
-  final all = await RecipeService.fetchAppRecipes();
-  return all.map(_fromApp).toList();
+  final results = await Future.wait([
+    RecipeService.fetchAppRecipes(),
+    SpoonacularRecipeApi.getRandomRecipes(number: 20),
+  ]);
+  final supabase = results[0].map(_fromApp).toList();
+  final spoon = results[1].map(_fromApp).toList();
+  return [...supabase, ...spoon];
 });
 
 final videoRecipesProvider = FutureProvider<List<VideoRecipe>>((ref) async {
@@ -135,9 +142,33 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
   int _phase = 0;
   String _q = '';
   final _ctrl = TextEditingController();
+  List<RealRecipe> _apiResults = [];
+  bool _apiSearching = false;
+  Timer? _debounce;
+
+  void _onSearchChanged(String v) {
+    setState(() => _q = v);
+    _debounce?.cancel();
+    if (v.length >= 3) {
+      _debounce = Timer(const Duration(milliseconds: 600), () => _searchApi(v));
+    } else {
+      setState(() { _apiResults = []; _apiSearching = false; });
+    }
+  }
+
+  Future<void> _searchApi(String query) async {
+    setState(() => _apiSearching = true);
+    final results = await SpoonacularRecipeApi.searchRecipes(query, number: 10);
+    if (mounted && _q == query) {
+      setState(() {
+        _apiResults = results.map(_fromApp).toList();
+        _apiSearching = false;
+      });
+    }
+  }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() { _debounce?.cancel(); _ctrl.dispose(); super.dispose(); }
 
   List<RealRecipe> _filter(List<RealRecipe> all) {
     var list = all.toList();
@@ -175,7 +206,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
     final videosAsync = ref.watch(videoRecipesProvider);
     final recipes = recipesAsync.asData?.value ?? [];
     final videos = videosAsync.asData?.value ?? [];
-    final filtered = _filter(recipes);
+    final filtered = [..._filter(recipes), ..._apiResults];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
@@ -236,7 +267,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                     const SizedBox(width: 10),
                     Expanded(child: TextField(
                       controller: _ctrl,
-                      onChanged: (v) => setState(() => _q = v),
+                      onChanged: _onSearchChanged,
                       style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
                       decoration: InputDecoration(
                         hintText: 'Rechercher…',
@@ -334,7 +365,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
               SliverToBoxAdapter(child: Padding(
                 padding: const EdgeInsets.only(top: 14),
                 child: SizedBox(
-                  height: 155,
+                  height: 175,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -359,7 +390,7 @@ class _RecipesListScreenState extends ConsumerState<RecipesListScreen> {
                   color: cs.onSurface.withOpacity(0.3))))),
 
             // ── Loading ───────────────────────────────────────────────
-            if (recipesAsync.isLoading)
+            if (recipesAsync.isLoading || _apiSearching)
               SliverToBoxAdapter(child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 60),
                 child: Center(child: CircularProgressIndicator(
@@ -418,13 +449,14 @@ class _VideoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final pi = PhaseInfo.from(recipe.phase);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 200,
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: cs.outline.withOpacity(0.08))),
         clipBehavior: Clip.antiAlias,
         child: Column(children: [
@@ -433,35 +465,64 @@ class _VideoTile extends StatelessWidget {
               Image.network(recipe.imageUrl, fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   color: cs.primary.withOpacity(0.04))),
-              Container(decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.35)]))),
-              Center(child: Container(
-                width: 32, height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9), shape: BoxShape.circle),
-                child: Icon(LucideIcons.play, color: cs.primary, size: 12))),
-              Positioned(bottom: 6, left: 6,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              Positioned(bottom: 0, left: 0, right: 0,
+                child: Container(height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.45),
-                    borderRadius: BorderRadius.circular(5)),
-                  child: Text(recipe.duration, style: GoogleFonts.inter(
-                    fontSize: 9, color: Colors.white, fontWeight: FontWeight.w600)))),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black.withOpacity(0.35)])))),
+              Center(child: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9), shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 6)]),
+                child: Icon(LucideIcons.play, color: cs.primary, size: 13))),
+              Positioned(bottom: 7, left: 7, right: 7,
+                child: Row(children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(6)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(LucideIcons.clock, size: 9, color: Colors.white70),
+                      const SizedBox(width: 3),
+                      Text(recipe.duration, style: GoogleFonts.inter(
+                        fontSize: 9, color: Colors.white, fontWeight: FontWeight.w600)),
+                    ])),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: pi.color.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(5)),
+                    child: Text(pi.label, style: GoogleFonts.inter(
+                      fontSize: 8, fontWeight: FontWeight.w700,
+                      color: Colors.white))),
+                ])),
             ])),
           Padding(
-            padding: const EdgeInsets.fromLTRB(9, 7, 9, 8),
+            padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(recipe.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700,
+                  style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700,
                     color: cs.onSurface, height: 1.2)),
-                const SizedBox(height: 3),
-                Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
-                  fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary)),
+                const SizedBox(height: 6),
+                Row(children: [
+                  Text('${recipe.kcal} kcal', style: GoogleFonts.inter(
+                    fontSize: 10.5, fontWeight: FontWeight.w700,
+                    color: cs.primary)),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    width: 3, height: 3,
+                    decoration: BoxDecoration(
+                      color: cs.onSurface.withOpacity(0.15),
+                      shape: BoxShape.circle)),
+                  Text(recipe.difficulty, style: GoogleFonts.inter(
+                    fontSize: 10, color: cs.onSurface.withOpacity(0.35))),
+                ]),
               ])),
         ]),
       ),

@@ -236,11 +236,38 @@ class _QrFeedTabState extends State<QrFeedTab> {
           const SizedBox(height: 16),
           // Categories
           _buildCategoryChips(context),
-          const SizedBox(height: 12),
-          // Filters
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _buildFilters(context),
+          const SizedBox(height: 10),
+          // Inline filter pills
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: _Filter.values.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final f = _Filter.values[i];
+                final active = _filter == f;
+                return GestureDetector(
+                  onTap: () => setState(() => _filter = f),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: active
+                        ? _C.accent(context).withOpacity(0.12)
+                        : _C.t1(context).withOpacity(0.04),
+                      borderRadius: BorderRadius.circular(20),
+                      border: active
+                        ? Border.all(color: _C.accent(context).withOpacity(0.3))
+                        : null),
+                    child: Text(f.label, style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                      color: active ? _C.accent(context) : _C.t2(context))),
+                  ),
+                );
+              },
+            ),
           ),
           const SizedBox(height: 16),
           // Content
@@ -267,26 +294,28 @@ class _QrFeedTabState extends State<QrFeedTab> {
       ),
       // FAB
       Positioned(
-        bottom: 24, left: 20, right: 20,
-        child: GestureDetector(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => QrAskScreen(onSubmit: widget.onSubmit)),
-          ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: _C.accent(context),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: _C.main.withOpacity(0.25), blurRadius: 20, offset: const Offset(0, 6)),
-              ],
+        bottom: 24, left: 0, right: 0,
+        child: Center(
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => QrAskScreen(onSubmit: widget.onSubmit)),
             ),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(LucideIcons.penLine, size: 16, color: Colors.white),
-              const SizedBox(width: 10),
-              Text('Poser une question anonyme', style: GoogleFonts.inter(
-                fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-            ]),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              decoration: BoxDecoration(
+                color: _C.accent(context),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(color: _C.main.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
+                ],
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(LucideIcons.penLine, size: 15, color: Colors.white),
+                const SizedBox(width: 8),
+                Text('Poser une question', style: GoogleFonts.inter(
+                  fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+              ]),
+            ),
           ),
         ),
       ),
@@ -294,11 +323,12 @@ class _QrFeedTabState extends State<QrFeedTab> {
   }
 
   Widget _buildSearch(BuildContext context) {
+    final dk = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      height: 44,
+      height: 46,
       decoration: BoxDecoration(
-        color: _C.field(context),
-        borderRadius: BorderRadius.circular(14)),
+        color: dk ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(24)),
       child: TextField(
         controller: _searchCtrl,
         onChanged: (v) => setState(() => _searching = v.isNotEmpty),
@@ -307,12 +337,12 @@ class _QrFeedTabState extends State<QrFeedTab> {
           hintText: 'Rechercher une question…',
           hintStyle: GoogleFonts.inter(fontSize: 14, color: _C.t3(context)),
           prefixIcon: Padding(
-            padding: const EdgeInsets.only(left: 14, right: 10),
-            child: Icon(LucideIcons.search, size: 18, color: _C.t3(context)),
+            padding: const EdgeInsets.only(left: 16, right: 10),
+            child: Icon(LucideIcons.search, size: 17, color: _C.t3(context)),
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12)),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14)),
       ),
     );
   }
@@ -465,44 +495,57 @@ class _QuestionCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: _C.card(context),
+          color: dk ? const Color(0xFF1A1A1A) : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _C.border(context)),
-          boxShadow: _C.cardShadow(context)),
+          boxShadow: dk ? null : [
+            BoxShadow(color: Colors.black.withOpacity(0.04),
+              blurRadius: 12, offset: const Offset(0, 3)),
+          ]),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Top row: category + time
+          // Top row: category icon + category + time
           Row(children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              width: 32, height: 32,
               decoration: BoxDecoration(
-                color: catColor.withOpacity(dk ? 0.15 : 0.08),
+                color: catColor.withOpacity(dk ? 0.18 : 0.10),
                 borderRadius: BorderRadius.circular(10)),
+              child: Icon(_catIcon(q.category), size: 14, color: catColor),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(q.category, style: GoogleFonts.inter(
+                fontSize: 12, fontWeight: FontWeight.w600, color: catColor)),
+              Text(q.postedAgo, style: GoogleFonts.inter(
+                fontSize: 10, color: _C.t3(context))),
+            ])),
+            // Vote pill
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: _C.t1(context).withOpacity(0.04),
+                borderRadius: BorderRadius.circular(20)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Container(width: 6, height: 6,
-                  decoration: BoxDecoration(color: catColor, shape: BoxShape.circle)),
-                const SizedBox(width: 6),
-                Text(q.category, style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w600, color: catColor)),
+                Icon(LucideIcons.arrowBigUp, size: 14, color: _C.t2(context)),
+                const SizedBox(width: 4),
+                Text('${q.votes}', style: GoogleFonts.inter(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: _C.t2(context))),
               ]),
             ),
-            const Spacer(),
-            Text(q.postedAgo, style: GoogleFonts.inter(
-              fontSize: 11, color: _C.t3(context))),
           ]),
 
           const SizedBox(height: 14),
 
           // Question
-          Text(q.question, style: GoogleFonts.inter(
-            fontSize: 15, fontWeight: FontWeight.w600,
-            color: _C.t1(context), height: 1.45),
+          Text(q.question, style: GoogleFonts.outfit(
+            fontSize: 15.5, fontWeight: FontWeight.w700,
+            color: _C.t1(context), height: 1.4),
             maxLines: 3, overflow: TextOverflow.ellipsis),
 
           // Doctor answer preview
           if (q.hasAnswer) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -510,35 +553,28 @@ class _QuestionCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14)),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  // Doctor avatar
                   Container(
-                    width: 28, height: 28,
+                    width: 30, height: 30,
                     decoration: BoxDecoration(
                       color: _C.accent(context).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8)),
+                      shape: BoxShape.circle),
                     child: Center(child: Text(
                       _initial(q.answers.first.doctorName),
-                      style: GoogleFonts.inter(
-                        fontSize: 11, fontWeight: FontWeight.w700,
+                      style: GoogleFonts.outfit(
+                        fontSize: 12, fontWeight: FontWeight.w700,
                         color: _C.accent(context)))),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        Flexible(child: Text(q.answers.first.doctorName,
-                          style: GoogleFonts.inter(
-                            fontSize: 12, fontWeight: FontWeight.w600,
-                            color: _C.accent(context)),
-                          overflow: TextOverflow.ellipsis)),
-                        const SizedBox(width: 4),
-                        Icon(LucideIcons.badgeCheck, size: 12,
-                          color: _C.accent(context)),
-                      ]),
-                      Text(q.answers.first.specialty, style: GoogleFonts.inter(
-                        fontSize: 11, color: _C.t3(context))),
-                    ],
-                  )),
+                  Expanded(child: Row(children: [
+                    Flexible(child: Text(q.answers.first.doctorName,
+                      style: GoogleFonts.inter(
+                        fontSize: 12.5, fontWeight: FontWeight.w600,
+                        color: _C.accent(context)),
+                      overflow: TextOverflow.ellipsis)),
+                    const SizedBox(width: 5),
+                    Icon(LucideIcons.badgeCheck, size: 13,
+                      color: _C.accent(context)),
+                  ])),
                 ]),
                 const SizedBox(height: 10),
                 Text(q.answers.first.answer, style: GoogleFonts.inter(
@@ -548,40 +584,55 @@ class _QuestionCard extends StatelessWidget {
             ),
           ] else ...[
             const SizedBox(height: 12),
-            Row(children: [
-              Container(
-                width: 6, height: 6,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFBBF24), shape: BoxShape.circle)),
-              const SizedBox(width: 6),
-              Text('En attente de réponse', style: GoogleFonts.inter(
-                fontSize: 12, color: _C.t3(context), fontStyle: FontStyle.italic)),
-            ]),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBBF24).withOpacity(dk ? 0.12 : 0.08),
+                borderRadius: BorderRadius.circular(10)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(LucideIcons.clock, size: 12, color: Color(0xFFF59E0B)),
+                const SizedBox(width: 5),
+                Text('En attente de réponse', style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w500, color: const Color(0xFFF59E0B))),
+              ]),
+            ),
           ],
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+          Container(height: 1, color: _C.t1(context).withOpacity(0.05)),
+          const SizedBox(height: 12),
 
           // Footer
           Row(children: [
-            Icon(LucideIcons.arrowBigUp, size: 16, color: _C.t3(context)),
-            const SizedBox(width: 4),
-            Text('${q.votes}', style: GoogleFonts.inter(
-              fontSize: 12, fontWeight: FontWeight.w500, color: _C.t3(context))),
-            const SizedBox(width: 16),
-            Icon(LucideIcons.messageCircle, size: 14, color: _C.t3(context)),
-            const SizedBox(width: 4),
-            Text('${q.replyCount}', style: GoogleFonts.inter(
-              fontSize: 12, fontWeight: FontWeight.w500, color: _C.t3(context))),
+            Icon(LucideIcons.messageCircle, size: 14, color: _C.t2(context)),
+            const SizedBox(width: 5),
+            Text(q.hasAnswer
+              ? '${q.replyCount} réponse${q.replyCount > 1 ? 's' : ''}'
+              : 'Pas encore de réponse',
+              style: GoogleFonts.inter(
+                fontSize: 12, fontWeight: FontWeight.w500, color: _C.t2(context))),
             const Spacer(),
-            Text('Voir', style: GoogleFonts.inter(
-              fontSize: 12, fontWeight: FontWeight.w500, color: _C.accent(context))),
-            const SizedBox(width: 2),
+            Text('Lire', style: GoogleFonts.inter(
+              fontSize: 12, fontWeight: FontWeight.w600, color: _C.accent(context))),
+            const SizedBox(width: 3),
             Icon(LucideIcons.chevronRight, size: 14, color: _C.accent(context)),
           ]),
         ]),
       ),
     );
   }
+
+  static IconData _catIcon(String c) => switch (c) {
+    'Cycle'     => LucideIcons.moon,
+    'Grossesse' => LucideIcons.baby,
+    'Nutrition' => LucideIcons.apple,
+    'SOPK'      => LucideIcons.ribbon,
+    'Hormones'  => LucideIcons.activity,
+    'Mental'    => LucideIcons.brain,
+    'Fitness'   => LucideIcons.dumbbell,
+    'Sommeil'   => LucideIcons.bedDouble,
+    _           => LucideIcons.layoutGrid,
+  };
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

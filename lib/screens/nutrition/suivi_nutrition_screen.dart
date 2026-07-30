@@ -540,9 +540,48 @@ class _MealGroupCard extends StatelessWidget {
 
         if (entries.isEmpty)
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            child: Text(l10n.nutritionNoFood,
-              style: GoogleFonts.inter(fontSize: 11, color: nc.text2))),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: GestureDetector(
+              onTap: onAdd,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  color: nc.mintBg.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: nc.greenFg.withOpacity(0.15),
+                    strokeAlign: BorderSide.strokeAlignInside),
+                ),
+                child: Column(children: [
+                  Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(
+                      color: nc.mintBg,
+                      borderRadius: BorderRadius.circular(12)),
+                    child: Icon(_icon, size: 18,
+                      color: nc.greenFg.withOpacity(0.5))),
+                  const SizedBox(height: 8),
+                  Text(l10n.nutritionNoFood, style: GoogleFonts.inter(
+                    fontSize: 12, color: nc.text2)),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: nc.greenFg.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(LucideIcons.plus, size: 12, color: nc.greenFg),
+                      const SizedBox(width: 5),
+                      Text('Ajouter', style: GoogleFonts.inter(
+                        fontSize: 12, fontWeight: FontWeight.w700,
+                        color: nc.greenFg)),
+                    ]),
+                  ),
+                ]),
+              ),
+            ),
+          ),
 
         const SizedBox(height: 10),
       ]),

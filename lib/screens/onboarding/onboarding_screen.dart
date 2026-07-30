@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
@@ -71,7 +72,12 @@ enum OStep {
   languageChoice,
   intro,
   welcome,
-  coachChat,
+  goals,
+  fitness,
+  equipment,
+  location,
+  frequency,
+  results,
   healthProfile,
   cycleAndPregnancy,
   buildingPlan,
@@ -111,7 +117,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     OStep.intro,
     OStep.welcome,
     OStep.languageChoice,
-    OStep.coachChat,
+    OStep.goals,
+    OStep.fitness,
+    OStep.equipment,
+    OStep.location,
+    OStep.frequency,
+    OStep.results,
     OStep.healthProfile,
     OStep.cycleAndPregnancy,
     OStep.buildingPlan,
@@ -119,14 +130,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   ];
 
   static const List<OStep> _progressSteps = [
-    OStep.intro,
-    OStep.welcome,
-    OStep.languageChoice,
-    OStep.coachChat,
+    OStep.goals,
+    OStep.fitness,
+    OStep.equipment,
+    OStep.location,
+    OStep.frequency,
     OStep.healthProfile,
     OStep.cycleAndPregnancy,
-    OStep.buildingPlan,
-    OStep.avatar,
   ];
 
   // ── Navigation ────────────────────────────────────────────────────────────
@@ -135,8 +145,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     switch (current) {
       case OStep.intro:             return OStep.welcome;
       case OStep.welcome:           return OStep.languageChoice;
-      case OStep.languageChoice:    return OStep.coachChat;
-      case OStep.coachChat:         return OStep.healthProfile;
+      case OStep.languageChoice:    return OStep.goals;
+      case OStep.goals:             return OStep.fitness;
+      case OStep.fitness:           return OStep.equipment;
+      case OStep.equipment:         return OStep.location;
+      case OStep.location:          return OStep.frequency;
+      case OStep.frequency:         return OStep.results;
+      case OStep.results:           return OStep.healthProfile;
       case OStep.healthProfile:     return OStep.cycleAndPregnancy;
       case OStep.cycleAndPregnancy: return OStep.buildingPlan;
       case OStep.buildingPlan:      return OStep.avatar;
@@ -338,10 +353,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             children:     _buildPages(),
           ),
 
-          // ── Progress bar — cachée sur l'intro et buildingPlan ────────────
-          if (_current != OStep.intro &&
-              _current != OStep.welcome &&
-              _current != OStep.buildingPlan)
+          // ── Step counter — only on question steps ────────────
+          if (_progressSteps.contains(_current))
             _ProgressBar(
               currentStep: _progressSteps.indexOf(_current) + 1,
               totalSteps: _progressSteps.length,
@@ -387,16 +400,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       },
     ),
 
-    // 3 — Coach Chat (goals + fitness + equipment + location + frequency)
-    StepCoachChat(
-      data: _data,
+    // 3 — Goals
+    StepGoals(
+      selectedGoals: _data.goals,
       onBack: _goBack,
-      onGoalSelected: (g) => setState(() {
+      onToggleGoal: (g) => setState(() {
         _data.goals.clear();
         _data.goals.add(g);
       }),
-      onFitnessChanged: (v) => setState(() => _data.fitnessLevel = v),
-      onEquipmentToggled: (item) => setState(() {
+      onNext: _goNext,
+    ),
+
+    // 4 — Fitness level
+    StepFitnessLevel(
+      selectedLevel: _data.fitnessLevel,
+      onBack: _goBack,
+      onChanged: (v) => setState(() => _data.fitnessLevel = v),
+      onNext: _goNext,
+    ),
+
+    // 5 — Equipment
+    StepEquipment(
+      selectedEquipment: _data.equipment,
+      onBack: _goBack,
+      onToggleEquipment: (item) => setState(() {
         if (item == 'Aucun matériel') {
           _data.equipment.clear();
           _data.equipment.add(item);
@@ -407,9 +434,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               : _data.equipment.add(item);
         }
       }),
-      onLocationChanged: (v) => setState(() => _data.trainingLocation = v),
-      onFrequencyChanged: (v) => setState(() => _data.frequency = v),
-      onDone: _goNext,
+      onNext: _goNext,
+    ),
+
+    // 6 — Location
+    StepLocation(
+      selected: _data.trainingLocation,
+      onBack: _goBack,
+      onSelected: (v) {
+        setState(() => _data.trainingLocation = v);
+        _goNext();
+      },
+    ),
+
+    // 7 — Frequency
+    StepFrequency(
+      selectedFrequency: _data.frequency,
+      onBack: _goBack,
+      onChanged: (v) => setState(() => _data.frequency = v),
+      onNext: _goNext,
+    ),
+
+    // 8 — Results (motivational chart)
+    StepResults(
+      onBack: _goBack,
+      onNext: _goNext,
     ),
 
     // 4 — Health profile (height / weight / age)
@@ -458,7 +507,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Quick Setup progress bar — smooth animated bar + branding
+// Step counter — simple "3 / 8" text
 // ─────────────────────────────────────────────────────────────────────────────
 class _ProgressBar extends StatelessWidget {
   final int currentStep;
@@ -473,28 +522,15 @@ class _ProgressBar extends StatelessWidget {
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-          child: Row(
-            children: [
-              const Text(
-                'Quick setup',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF8E8E93),
-                ),
+          child: Center(
+            child: Text(
+              '$currentStep / $totalSteps',
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF276E4A),
               ),
-              const SizedBox(width: 8),
-              Text(
-                '$currentStep / $totalSteps',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2D8B55),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

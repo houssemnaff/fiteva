@@ -215,8 +215,8 @@ class _ZoneTile extends StatelessWidget {
       wc.maison,       // Haut du corps
       wc.dance,        // Bas du corps
       wc.zone,         // Full body
-      wc.recuperation, // Yoga
-      wc.grossesse,    // Méditation
+      Color.lerp(wc.recuperation, Colors.white, 0.15)!, // Yoga — lighter
+      Color.lerp(wc.grossesse, Colors.white, 0.10)!,    // Méditation — softer
     ][index];
     final dark = Color.lerp(base, Colors.black, 0.45)!;
 

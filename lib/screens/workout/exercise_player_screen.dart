@@ -328,7 +328,6 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     final bg = dark ? const Color(0xFF0A0A0A) : Colors.white;
     final t1 = dark ? Colors.white : const Color(0xFF1A1A1A);
     final t2 = dark ? Colors.white.withValues(alpha: 0.45) : const Color(0xFF8E8E93);
-    final divider = dark ? const Color(0xFF1E1E1E) : const Color(0xFFF0F0F0);
 
     final video = widget.video;
     final steps = video != null && video.techniqueSteps.isNotEmpty
@@ -413,32 +412,45 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                         color: t1, height: 1.05, letterSpacing: -0.8)),
                 const SizedBox(height: 20),
 
-                // ── Stat coins — horizontal scroll, minimal ──
-                SizedBox(
-                  height: 56,
-                  child: Row(children: [
-                    _StatCoin(value: '${video?.sets ?? 3}', label: 'Sets', accent: accent),
-                    const SizedBox(width: 20),
-                    _StatCoin(value: '${video?.workSeconds ?? 45}s', label: 'Work', accent: accent),
-                    const SizedBox(width: 20),
-                    _StatCoin(value: '${video?.restSeconds ?? 15}s', label: 'Rest', accent: accent),
-                    const SizedBox(width: 20),
-                    _StatCoin(value: '$pts', label: 'Pts', accent: accent),
+                // ── Stat pills row ──
+                Row(children: [
+                  Expanded(child: _StatPill(value: '${video?.sets ?? 3}', label: 'Sets', icon: LucideIcons.repeat, accent: accent)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _StatPill(value: '${video?.workSeconds ?? 45}s', label: 'Work', icon: LucideIcons.timer, accent: accent)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _StatPill(value: '${video?.restSeconds ?? 15}s', label: 'Rest', icon: LucideIcons.pause, accent: accent)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _StatPill(value: '$pts', label: 'Pts', icon: LucideIcons.zap, accent: accent)),
+                ]),
+
+                const SizedBox(height: 24),
+
+                // ── Technique card ──
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: dark ? accent.withValues(alpha: 0.06) : accent.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: accent.withValues(alpha: 0.12)),
+                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Icon(LucideIcons.bookOpen, size: 14, color: accent),
+                      const SizedBox(width: 8),
+                      Text('Technique', style: GoogleFonts.outfit(
+                          fontSize: 13, fontWeight: FontWeight.w700, color: accent)),
+                    ]),
+                    const SizedBox(height: 12),
+                    Text(description,
+                        style: GoogleFonts.inter(fontSize: 14, color: t2, height: 1.75, letterSpacing: -0.1)),
                   ]),
                 ),
 
                 const SizedBox(height: 28),
-                Container(height: 1, color: divider),
-                const SizedBox(height: 28),
-
-                // ── Technique ──
-                Text(description,
-                    style: GoogleFonts.inter(fontSize: 15, color: t2, height: 1.75, letterSpacing: -0.1)),
-
-                const SizedBox(height: 28),
 
                 // ── Key steps — connected timeline ──
-                _SectionLabel(label: 'Étapes clés', t1: t1),
+                _SectionLabel(label: 'Étapes clés', t1: t1, accent: accent),
                 const SizedBox(height: 16),
                 ...List.generate(steps.length, (i) {
                   final isLast = i == steps.length - 1;
@@ -481,69 +493,100 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                 }),
 
                 const SizedBox(height: 32),
-                Container(height: 1, color: divider),
-                const SizedBox(height: 28),
 
                 // ── Muscles ──
-                _SectionLabel(label: 'Muscles ciblés', t1: t1),
+                _SectionLabel(label: 'Muscles ciblés', t1: t1, accent: accent),
                 const SizedBox(height: 16),
-                ...muscles.map((m) => Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: Row(children: [
-                    Icon(m.icon, size: 14, color: accent),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [
-                          Text(m.name, style: GoogleFonts.inter(
-                              fontSize: 13, fontWeight: FontWeight.w600, color: t1)),
-                          const Spacer(),
-                          Text('${(m.level * 100).toInt()}%',
-                              style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: accent)),
-                        ]),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(3),
-                          child: LinearProgressIndicator(
-                            value: m.level, minHeight: 4,
-                            backgroundColor: divider,
-                            valueColor: AlwaysStoppedAnimation(accent)),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: dark ? const Color(0xFF141414) : Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [BoxShadow(
+                      color: Colors.black.withValues(alpha: dark ? 0.20 : 0.04),
+                      blurRadius: 12, offset: const Offset(0, 4))],
+                  ),
+                  child: Column(children: [
+                    ...muscles.map((m) => Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Row(children: [
+                        Container(
+                          width: 30, height: 30,
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: Icon(m.icon, size: 13, color: accent),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              Text(m.name, style: GoogleFonts.inter(
+                                  fontSize: 13, fontWeight: FontWeight.w600, color: t1)),
+                              const Spacer(),
+                              Text('${(m.level * 100).toInt()}%',
+                                  style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: accent)),
+                            ]),
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: m.level, minHeight: 5,
+                                backgroundColor: dark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),
+                                valueColor: AlwaysStoppedAnimation(accent)),
+                            ),
+                          ]),
                         ),
                       ]),
-                    ),
+                    )),
+                    if (secondary.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Wrap(spacing: 8, runSpacing: 8,
+                        children: secondary.map((m) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.06),
+                            border: Border.all(color: accent.withValues(alpha: 0.15)),
+                            borderRadius: BorderRadius.circular(20)),
+                          child: Text(m, style: GoogleFonts.inter(fontSize: 12, color: t2, fontWeight: FontWeight.w500)),
+                        )).toList()),
+                    ],
                   ]),
-                )),
-                if (secondary.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Wrap(spacing: 8, runSpacing: 8,
-                    children: secondary.map((m) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: divider),
-                        borderRadius: BorderRadius.circular(20)),
-                      child: Text(m, style: GoogleFonts.inter(fontSize: 12, color: t2, fontWeight: FontWeight.w500)),
-                    )).toList()),
-                ],
+                ),
 
                 const SizedBox(height: 32),
-                Container(height: 1, color: divider),
-                const SizedBox(height: 28),
 
                 // ── Tips ──
-                _SectionLabel(label: 'Conseils', t1: t1),
+                _SectionLabel(label: 'Conseils', t1: t1, accent: accent),
                 const SizedBox(height: 16),
-                ...tips.map((c) => Padding(
-                  padding: const EdgeInsets.only(bottom: 18),
+                ...tips.map((c) => Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: dark ? const Color(0xFF141414) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(
+                      color: Colors.black.withValues(alpha: dark ? 0.20 : 0.04),
+                      blurRadius: 10, offset: const Offset(0, 3))],
+                  ),
                   child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Icon(c.icon, size: 18, color: accent),
+                    Container(
+                      width: 34, height: 34,
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(c.icon, size: 15, color: accent),
+                    ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(c.title, style: GoogleFonts.outfit(
-                            fontSize: 15, fontWeight: FontWeight.w700, color: t1)),
+                            fontSize: 14, fontWeight: FontWeight.w700, color: t1)),
                         const SizedBox(height: 4),
                         Text(c.tip, style: GoogleFonts.inter(
-                            fontSize: 13.5, color: t2, height: 1.6)),
+                            fontSize: 13, color: t2, height: 1.55)),
                       ]),
                     ),
                   ]),
@@ -561,7 +604,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
 
       // ── Bottom bar ──
       bottomNavigationBar: Container(
-        padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
+        padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 20),
         decoration: BoxDecoration(
           color: bg,
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: dark ? 0.35 : 0.05),
@@ -575,14 +618,18 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
               onTap: effectivelyDone ? null : _complete,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                height: 54,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: effectivelyDone ? Colors.green.shade600
-                      : _videoUnavailable ? t2 : accent,
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    colors: effectivelyDone
+                        ? [Colors.green.shade600, Colors.green.shade700]
+                        : _videoUnavailable ? [t2, t2]
+                        : [accent, Color.lerp(accent, Colors.black, 0.18)!],
+                  ),
+                  borderRadius: BorderRadius.circular(50),
                   boxShadow: [BoxShadow(
-                    color: (effectivelyDone ? Colors.green : accent).withValues(alpha: 0.3),
-                    blurRadius: 16, offset: const Offset(0, 6))],
+                    color: (effectivelyDone ? Colors.green : accent).withValues(alpha: 0.35),
+                    blurRadius: 20, offset: const Offset(0, 8))],
                 ),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Icon(effectivelyDone ? LucideIcons.checkCircle
@@ -607,24 +654,33 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
 // MINIMAL WIDGETS
 // ══════════════════════════════════════════════════════════════════════════════
 
-class _StatCoin extends StatelessWidget {
+class _StatPill extends StatelessWidget {
   final String value, label;
+  final IconData icon;
   final Color accent;
-  const _StatCoin({required this.value, required this.label, required this.accent});
+  const _StatPill({required this.value, required this.label, required this.icon, required this.accent});
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final t1 = dark ? Colors.white : const Color(0xFF1A1A1A);
     final t2 = dark ? Colors.white.withValues(alpha: 0.4) : const Color(0xFF8E8E93);
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(value, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900,
-            color: accent, height: 1)),
-        const SizedBox(height: 4),
-        Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500,
-            color: t2, letterSpacing: 0.5)),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF141414) : const Color(0xFFF8F8F6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: dark ? const Color(0xFF2A2A2A) : const Color(0xFFEDEDEB)),
+      ),
+      child: Column(children: [
+        Icon(icon, size: 13, color: accent),
+        const SizedBox(height: 6),
+        Text(value, style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w900,
+            color: t1, height: 1)),
+        const SizedBox(height: 3),
+        Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500,
+            color: t2, letterSpacing: 0.3)),
+      ]),
     );
   }
 }
@@ -632,12 +688,22 @@ class _StatCoin extends StatelessWidget {
 class _SectionLabel extends StatelessWidget {
   final String label;
   final Color t1;
-  const _SectionLabel({required this.label, required this.t1});
+  final Color accent;
+  const _SectionLabel({required this.label, required this.t1, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    return Text(label, style: GoogleFonts.outfit(fontSize: 18,
-        fontWeight: FontWeight.w800, color: t1, letterSpacing: -0.3));
+    return Row(children: [
+      Container(
+        width: 3, height: 16,
+        decoration: BoxDecoration(
+          color: accent,
+          borderRadius: BorderRadius.circular(3)),
+      ),
+      const SizedBox(width: 9),
+      Text(label, style: GoogleFonts.outfit(fontSize: 16,
+          fontWeight: FontWeight.w700, color: t1, letterSpacing: -0.3)),
+    ]);
   }
 }
 

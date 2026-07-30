@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+﻿// ignore_for_file: deprecated_member_use
 
 
 import 'package:chewie/chewie.dart';
@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:video_player/video_player.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/sante_service.dart';
@@ -37,12 +39,14 @@ class _Doctor {
   final Color color;
   final double rating;
   final int consultations;
+  final double lat, lng;
   const _Doctor({
     required this.name, required this.specialty, required this.location,
     required this.hospital, required this.phone, required this.email,
     required this.initials, required this.color,
     this.photoAsset,
     this.rating = 4.8, this.consultations = 120,
+    this.lat = 36.8065, this.lng = 10.1815,
   });
 }
 
@@ -107,27 +111,32 @@ const _doctors = [
     location: 'Tunis', hospital: 'Clinique El Manar',
     phone: '+216 71 000 001', email: 's.mansouri@manar.tn',
     initials: 'SM', color: Color(0xFF1C4D30), rating: 4.9, consultations: 342,
-    photoAsset: 'assets/images/gynecologue.jpg'),
-  _Doctor(name: 'Dr. Karim Belhadj', specialty: 'Endocrinologie',
+    photoAsset: 'assets/images/gynecologue.jpg',
+    lat: 36.8065, lng: 10.1815),
+  _Doctor(name: 'Dr. Myriam Belhadj', specialty: 'Endocrinologie',
     location: 'Sousse', hospital: 'CHU Farhat Hached',
     phone: '+216 73 000 002', email: 'k.belhadj@chu-sousse.tn',
     initials: 'KB', color: Color(0xFF2563EB), rating: 4.7, consultations: 215,
-    photoAsset: 'assets/images/medecin3.jpg'),
+    photoAsset: 'assets/images/medecin3.jpg',
+    lat: 35.8256, lng: 10.6369),
   _Doctor(name: 'Dr. Nadia Trabelsi', specialty: 'Médecine du Sport',
     location: 'Sfax', hospital: 'Centre Médical Sportif',
     phone: '+216 74 000 003', email: 'n.trabelsi@cms-sfax.tn',
     initials: 'NT', color: Color(0xFF7C3AED), rating: 4.8, consultations: 178,
-    photoAsset: 'assets/images/medecin4.jpg'),
-  _Doctor(name: 'Dr. Amine Chokri', specialty: 'Nutrition',
+    photoAsset: 'assets/images/medecin4.jpg',
+    lat: 34.7406, lng: 10.7603),
+  _Doctor(name: 'Dr. Kmar bey Annabi', specialty: 'Nutrition',
     location: 'Ariana', hospital: 'Cabinet Privé',
     phone: '+216 70 000 004', email: 'a.chokri@nutrition.tn',
     initials: 'AC', color: Color(0xFFB45309), rating: 4.6, consultations: 290,
-    photoAsset: 'assets/images/cover_nutrition.jpg'),
+    photoAsset: 'assets/images/cover_nutrition.jpg',
+    lat: 36.8625, lng: 10.1956),
   _Doctor(name: 'Dr. Leila Gharbi', specialty: 'Psychiatrie',
     location: 'Tunis', hospital: 'Hôpital Razi',
     phone: '+216 71 000 005', email: 'l.gharbi@razi.tn',
     initials: 'LG', color: Color(0xFF0369A1), rating: 4.9, consultations: 401,
-    photoAsset: 'assets/images/medecin5.jpg'),
+    photoAsset: 'assets/images/medecin5.jpg',
+    lat: 36.8333, lng: 10.1500),
 ];
 
 final _conseils = [
@@ -335,6 +344,8 @@ _Doctor _doctorFromRow(Map<String, dynamic> r) {
     rating: (r['rating'] as num? ?? 4.8).toDouble(),
     consultations: (r['consultations'] as num? ?? 0).toInt(),
     photoAsset: r['photo_asset'] as String?,
+    lat: (r['lat'] as num? ?? 36.8065).toDouble(),
+    lng: (r['lng'] as num? ?? 10.1815).toDouble(),
   );
 }
 
@@ -404,11 +415,6 @@ final _videoSeries = [
     ]),
 ];
 
-const _doctorPositions = [
-  (x: 0.52, y: 0.28), (x: 0.55, y: 0.45), (x: 0.54, y: 0.62),
-  (x: 0.50, y: 0.22), (x: 0.52, y: 0.28),
-];
-
 const _cats   = ['Tout', 'Nutrition', 'Sport', 'Sommeil', 'Mental', 'Hormones'];
 const _specs  = ['Toutes', 'Gynécologie', 'Endocrinologie', 'Sport', 'Nutrition', 'Psychiatrie'];
 
@@ -446,6 +452,7 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
     final questions    = ref.watch(_santeQuestionsProvider).asData?.value ?? _questions;
     final videoSeries  = ref.watch(_santeVideosProvider).asData?.value    ?? _videoSeries;
 
+    final accent = _T.accent(context);
     return Scaffold(
       backgroundColor: _T.bg(context),
       body: NestedScrollView(
@@ -453,40 +460,37 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
           SharedAppHeader.sliver(
             eyebrow: l10n.santeSanteEyebrow,
             title: l10n.santeMySpace,
-            accentColor: _T.accent(context),
+            accentColor: accent,
             bgColor: _T.bg(context),
-            actions: [
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    color: _T.accent(context).withOpacity(0.10),
-                    shape: BoxShape.circle),
-                  child: Icon(LucideIcons.bookmark, size: 17, color: _T.accent(context)))),
-            ],
+            actions: const [],
           ),
 
           SliverToBoxAdapter(
             child: Container(
               color: _T.bg(context),
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
               child: TabBar(
                 controller: _tab,
-                isScrollable: false,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                labelStyle: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600),
-                unselectedLabelStyle: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w400),
-                labelColor: _T.accent(context),
-                unselectedLabelColor: _T.t3(context),
-                indicatorColor: _T.accent(context),
+                labelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
+                unselectedLabelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500),
+                labelColor: Colors.white,
+                unselectedLabelColor: _T.t2(context),
+                indicator: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(24)),
                 indicatorSize: TabBarIndicatorSize.tab,
-                indicatorWeight: 2,
                 dividerColor: Colors.transparent,
-                tabs: const [
-                  Tab(icon: Icon(LucideIcons.stethoscope, size: 14), text: 'Conseils'),
-                  Tab(icon: Icon(LucideIcons.video, size: 14), text: 'Ressources'),
-                  Tab(icon: Icon(LucideIcons.messageCircleQuestion, size: 14), text: 'Q & R'),
-                  Tab(icon: Icon(LucideIcons.userRound, size: 14), text: 'Médecins'),
+                splashFactory: NoSplash.splashFactory,
+                overlayColor: WidgetStateProperty.all(Colors.transparent),
+                tabs: [
+                  _pillTab(LucideIcons.stethoscope, 'Conseils'),
+                  _pillTab(LucideIcons.video, 'Ressources'),
+                  _pillTab(LucideIcons.messageCircleQuestion, 'Q & R'),
+                  _pillTab(LucideIcons.userRound, 'Médecins'),
                 ],
               ),
             ),
@@ -536,6 +540,17 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
     );
   }
 
+  Widget _pillTab(IconData icon, String label) => Tab(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13),
+        const SizedBox(width: 5),
+        Text(label),
+      ]),
+    ),
+  );
+
   void _sheet(BuildContext ctx, Widget child) => showModalBottomSheet(
     context: ctx, isScrollControlled: true, backgroundColor: Colors.transparent,
     builder: (_) => child,
@@ -584,51 +599,6 @@ class _ConseisTab extends StatelessWidget {
   List<_Conseil> get _list => cat == 'Tout'
       ? _conseils : _conseils.where((c) => c.category == cat).toList();
 
-  void _showFilterSheet(BuildContext context, Color accent) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: BoxDecoration(
-          color: _T.bg(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 8),
-          Container(width: 36, height: 4,
-            decoration: BoxDecoration(
-              color: _T.t3(context), borderRadius: BorderRadius.circular(2))),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Row(children: [
-              Text('Filtrer par catégorie', style: GoogleFonts.outfit(
-                fontSize: 17, fontWeight: FontWeight.w700, color: _T.t1(context))),
-            ])),
-          ...List.generate(_cats.length, (i) {
-            final c = _cats[i];
-            final active = c == cat;
-            final color = c == 'Tout' ? accent : _catColor(c);
-            return ListTile(
-              leading: Container(
-                width: 34, height: 34,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(active ? 0.15 : 0.08),
-                  shape: BoxShape.circle),
-                child: Icon(_catIcon(c), size: 15, color: color)),
-              title: Text(c, style: GoogleFonts.inter(
-                fontSize: 14, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                color: active ? color : _T.t1(context))),
-              trailing: active
-                ? Icon(LucideIcons.check, size: 16, color: color)
-                : null,
-              onTap: () { onCat(c); Navigator.pop(context); },
-            );
-          }),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
-        ]),
-      ),
-    );
-  }
-
   static Color _catColor(String c) => switch (c) {
     'Sport'    => const Color(0xFF4A6FA5),
     'Nutrition'=> const Color(0xFFB8860B),
@@ -652,38 +622,38 @@ class _ConseisTab extends StatelessWidget {
     final accent = _T.accent(context);
     return CustomScrollView(
       slivers: [
-        // ── Filter button ──
+        // ── Horizontal pill filter bar ──
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-            child: Row(children: [
-              GestureDetector(
-                onTap: () => _showFilterSheet(context, accent),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: cat != 'Tout' ? accent : accent.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(20)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(LucideIcons.slidersHorizontal, size: 13,
-                      color: cat != 'Tout' ? Colors.white : accent),
-                    const SizedBox(width: 6),
-                    Text(cat == 'Tout' ? 'Filtres' : cat,
-                      style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600,
-                        color: cat != 'Tout' ? Colors.white : accent)),
-                    if (cat != 'Tout') ...[
+          child: SizedBox(
+            height: 48,
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
+              scrollDirection: Axis.horizontal,
+              itemCount: _cats.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final c = _cats[i];
+                final active = c == cat;
+                final color = c == 'Tout' ? accent : _catColor(c);
+                return GestureDetector(
+                  onTap: () => onCat(c),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: active ? color : color.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(20)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(_catIcon(c), size: 13,
+                        color: active ? Colors.white : color),
                       const SizedBox(width: 6),
-                      GestureDetector(
-                        onTap: () => onCat('Tout'),
-                        child: const Icon(LucideIcons.x, size: 12, color: Colors.white)),
-                    ],
-                  ])),
-              ),
-              const Spacer(),
-              Text('${_list.length} conseil${_list.length != 1 ? 's' : ''}',
-                style: GoogleFonts.inter(fontSize: 11,
-                  color: _T.t3(context), fontWeight: FontWeight.w500)),
-            ]),
+                      Text(c, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600,
+                        color: active ? Colors.white : color)),
+                    ]),
+                  ),
+                );
+              },
+            ),
           ),
         ),
         SliverPadding(
@@ -732,111 +702,95 @@ class _ConseilTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final doc   = conseil.doctor;
     final color = _catColor(conseil.category);
-    final cardBg = Theme.of(context).colorScheme.surfaceContainerLow;
-    final borderColor = Theme.of(context).colorScheme.outline;
+    final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
 
     return Container(
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: dark ? null : [
           BoxShadow(color: Colors.black.withOpacity(0.04),
             blurRadius: 12, offset: const Offset(0, 3)),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: IntrinsicHeight(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            // ── Colored left bar ──
-            Container(width: 4, color: color),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
-            // ── Content ──
+          // Top row: category icon container + category pill + posted time
+          Row(children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: color.withOpacity(dark ? 0.18 : 0.10),
+                borderRadius: BorderRadius.circular(12)),
+              child: Icon(_catIcon(conseil.category), size: 16, color: color),
+            ),
+            const SizedBox(width: 10),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
-                  // Top row: category pill + time
-                  Row(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(20)),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(_catIcon(conseil.category), size: 11, color: color),
-                        const SizedBox(width: 4),
-                        Text(conseil.category, style: GoogleFonts.inter(
-                          fontSize: 11, fontWeight: FontWeight.w700, color: color)),
-                      ]),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(20)),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(LucideIcons.clock, size: 10, color: _T.t3(context)),
-                        const SizedBox(width: 3),
-                        Text('${conseil.readMin} min', style: GoogleFonts.inter(
-                          fontSize: 11, color: _T.t2(context))),
-                      ]),
-                    ),
-                    const Spacer(),
-                    Text(conseil.postedAgo, style: GoogleFonts.inter(
-                      fontSize: 11, color: _T.t3(context))),
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: onLike,
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(isLiked ? LucideIcons.heartHandshake : LucideIcons.heart,
-                          size: 14, color: isLiked ? const Color(0xFFE53935) : _T.t3(context)),
-                        const SizedBox(width: 4),
-                        Text('${conseil.likes + (isLiked ? 1 : 0)}',
-                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600,
-                            color: isLiked ? const Color(0xFFE53935) : _T.t2(context))),
-                      ]),
-                    ),
-                  ]),
-
-                  const SizedBox(height: 12),
-
-                  // Title
-                  Text(conseil.title, style: GoogleFonts.outfit(
-                    fontSize: 16, fontWeight: FontWeight.w700,
-                    color: _T.t1(context), height: 1.3)),
-
-                  const SizedBox(height: 7),
-
-                  // Body
-                  Text(conseil.body, style: GoogleFonts.inter(
-                    fontSize: 13.5, color: _T.t2(context), height: 1.6),
-                    maxLines: 3, overflow: TextOverflow.ellipsis),
-
-                  const SizedBox(height: 14),
-
-                  // Footer: doctor only (le like a été déplacé en haut avec la date)
-                  GestureDetector(
-                    onTap: onDoctor,
-                    child: Row(children: [
-                      _Ava(initials: doc.initials, color: doc.color, size: 28, photoAsset: doc.photoAsset),
-                      const SizedBox(width: 8),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(doc.name, style: GoogleFonts.inter(
-                          fontSize: 12, fontWeight: FontWeight.w600, color: _T.t1(context))),
-                        Text(doc.specialty, style: GoogleFonts.inter(
-                          fontSize: 11, color: _T.t2(context))),
-                      ]),
-                    ]),
-                  ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(conseil.category, style: GoogleFonts.inter(
+                  fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+                Text('${conseil.readMin} min · ${conseil.postedAgo}', style: GoogleFonts.inter(
+                  fontSize: 11, color: _T.t3(context))),
+              ]),
+            ),
+            GestureDetector(
+              onTap: onLike,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isLiked
+                    ? const Color(0xFFE53935).withOpacity(0.10)
+                    : _T.t1(context).withOpacity(0.04),
+                  borderRadius: BorderRadius.circular(20)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(LucideIcons.heart, size: 13,
+                    color: isLiked ? const Color(0xFFE53935) : _T.t3(context)),
+                  const SizedBox(width: 4),
+                  Text('${conseil.likes + (isLiked ? 1 : 0)}',
+                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                      color: isLiked ? const Color(0xFFE53935) : _T.t2(context))),
                 ]),
               ),
             ),
           ]),
-        ),
+
+          const SizedBox(height: 14),
+
+          Text(conseil.title, style: GoogleFonts.outfit(
+            fontSize: 17, fontWeight: FontWeight.w700,
+            color: _T.t1(context), height: 1.3)),
+
+          const SizedBox(height: 8),
+
+          Text(conseil.body, style: GoogleFonts.inter(
+            fontSize: 13.5, color: _T.t2(context), height: 1.6),
+            maxLines: 3, overflow: TextOverflow.ellipsis),
+
+          const SizedBox(height: 14),
+
+          Container(height: 1, color: _T.t1(context).withOpacity(0.06)),
+
+          const SizedBox(height: 12),
+
+          GestureDetector(
+            onTap: onDoctor,
+            child: Row(children: [
+              _Ava(initials: doc.initials, color: doc.color, size: 30, photoAsset: doc.photoAsset),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(doc.name, style: GoogleFonts.inter(
+                    fontSize: 12.5, fontWeight: FontWeight.w600, color: _T.t1(context))),
+                  Text(doc.specialty, style: GoogleFonts.inter(
+                    fontSize: 11, color: _T.t2(context))),
+                ]),
+              ),
+              Icon(LucideIcons.chevronRight, size: 14, color: _T.t3(context)),
+            ]),
+          ),
+        ]),
       ),
     );
   }
@@ -904,7 +858,7 @@ class _RessourcesTab extends StatelessWidget {
           child: Column(
             children: articles.asMap().entries.map((e) =>
               Padding(
-                padding: EdgeInsets.only(bottom: e.key < articles.length - 1 ? 10 : 0),
+                padding: EdgeInsets.only(bottom: e.key < articles.length - 1 ? 14 : 0),
                 child: GestureDetector(
                   onTap: () => onArticleTap?.call(e.value),
                   child: _ArticleCard(article: e.value, dark: dark),
@@ -961,24 +915,31 @@ class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title, required this.subtitle,
     required this.icon, required this.dark});
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20),
-    child: Row(children: [
-      Container(
-        width: 36, height: 36,
-        decoration: BoxDecoration(
-          color: _T.accent(context).withOpacity(0.10),
-          borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, size: 16, color: _T.accent(context)),
-      ),
-      const SizedBox(width: 10),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: GoogleFonts.outfit(
-          fontSize: 17, fontWeight: FontWeight.w700, color: _T.t1(context))),
-        Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: _T.t2(context))),
+  Widget build(BuildContext context) {
+    final accent = _T.accent(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(children: [
+        Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+              colors: [accent.withOpacity(0.14), accent.withOpacity(0.06)]),
+            borderRadius: BorderRadius.circular(12)),
+          child: Icon(icon, size: 17, color: accent),
+        ),
+        const SizedBox(width: 12),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: GoogleFonts.outfit(
+            fontSize: 18, fontWeight: FontWeight.w700, color: _T.t1(context),
+            letterSpacing: -0.2)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: _T.t2(context))),
+        ]),
       ]),
-    ]),
-  );
+    );
+  }
 }
 
 // ── Series card ───────────────────────────────────────────────────────────────
@@ -1092,24 +1053,22 @@ class _ArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardBg = Theme.of(context).colorScheme.surfaceContainerLow;
-    final border = Theme.of(context).colorScheme.outline;
+    final cardBg = dark ? const Color(0xFF1A1A1A) : Colors.white;
     return Container(
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: dark ? null : [
-          BoxShadow(color: Colors.black.withOpacity(0.04),
-            blurRadius: 10, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.black.withOpacity(0.05),
+            blurRadius: 12, offset: const Offset(0, 3)),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Row(children: [
           // Thumbnail — photo or colored fallback
           SizedBox(
-            width: 90, height: 100,
+            width: 100, height: 110,
             child: Stack(fit: StackFit.expand, children: [
               if (article.photoAsset != null)
                 Image.asset(article.photoAsset!, fit: BoxFit.cover,
@@ -1120,12 +1079,11 @@ class _ArticleCard extends StatelessWidget {
                 Container(
                   color: article.color.withOpacity(dark ? 0.25 : 0.12),
                   child: Icon(LucideIcons.fileText, size: 28, color: article.color)),
-              // read-time badge bottom-right
               Positioned(bottom: 6, right: 6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.55),
+                    color: Colors.black.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(8)),
                   child: Text('${article.readMin} min', style: GoogleFonts.inter(
                     fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
@@ -1138,16 +1096,16 @@ class _ArticleCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                   decoration: BoxDecoration(
-                    color: article.color.withOpacity(0.10),
+                    color: article.color.withOpacity(dark ? 0.18 : 0.10),
                     borderRadius: BorderRadius.circular(12)),
                   child: Text(article.category, style: GoogleFonts.inter(
                     fontSize: 10, fontWeight: FontWeight.w700, color: article.color)),
                 ),
-                const SizedBox(height: 7),
+                const SizedBox(height: 8),
                 Text(article.title, style: GoogleFonts.outfit(
-                  fontSize: 14, fontWeight: FontWeight.w700,
+                  fontSize: 14.5, fontWeight: FontWeight.w700,
                   color: _T.t1(context), height: 1.3),
                   maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 5),
@@ -1270,69 +1228,156 @@ class _DoctorsTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 110),
       children: [
         // Map
-        ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: SizedBox(
-            height: 240,
-            child: GestureDetector(
-              onTapUp: (d) {
-                final box = context.findRenderObject() as RenderBox?;
-                if (box == null) return;
-                final mw = box.size.width - 48;
-                final lp = d.localPosition;
-                for (int i = 0; i < doctors.length; i++) {
-                  final p = _doctorPositions[i < _doctorPositions.length ? i : 0];
-                  final cx = p.x * mw; final cy = p.y * 240 + (i == 4 ? 18 : 0);
-                  if ((lp.dx - cx).abs() < 22 && (lp.dy - cy).abs() < 22) {
-                    onMarker(i); return;
-                  }
-                }
-                onMarker(-1);
-              },
-              child: CustomPaint(
-                painter: _MapPainter(dark: dark, marker: marker, indexes: idx, doctors: doctors),
-                child: Stack(children: [
-                  Positioned(top: 12, left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: (dark ? const Color(0xFF1A1A1A) : Colors.white).withOpacity(0.92),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: _T.border(context))),
-                      child: Text(l10n.santeSpecialistsCount(doctors.length),
-                        style: GoogleFonts.inter(fontSize: 11, color: _T.t2(context))))),
-                  if (marker != null && marker! >= 0 && marker! < doctors.length)
-                    _MapPopup(doctor: doctors[marker!],
-                      pos: _doctorPositions[marker! < _doctorPositions.length ? marker! : 0],
-                      idx: marker!, dark: dark,
-                      onTap: () => onDoctor(doctors[marker!])),
-                ]),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: dark ? null : [
+              BoxShadow(color: Colors.black.withOpacity(0.06),
+                blurRadius: 18, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              height: 260,
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: LatLng(35.8, 10.18),
+                  initialZoom: 6.3,
+                  interactionOptions: InteractionOptions(
+                    flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
+                  ),
+                  onTap: (_, __) => onMarker(-1),
+                ),
+                children: [
+                  if (!dark)
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.fiteva.app',
+                    )
+                  else
+                    ColorFiltered(
+                      colorFilter: const ColorFilter.matrix([
+                        -0.8, 0, 0, 0, 200,
+                        0, -0.8, 0, 0, 200,
+                        0, 0, -0.8, 0, 200,
+                        0, 0, 0, 1, 0,
+                      ]),
+                      child: TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.fiteva.app',
+                      ),
+                    ),
+                  MarkerLayer(
+                    markers: List.generate(doctors.length, (i) {
+                      final doc = doctors[i];
+                      final sel = marker == i;
+                      final filt = idx.contains(i);
+                      return Marker(
+                        point: LatLng(doc.lat, doc.lng),
+                        width: sel ? 52 : 40,
+                        height: sel ? 52 : 40,
+                        child: GestureDetector(
+                          onTap: () => onMarker(i),
+                          child: AnimatedScale(
+                            scale: sel ? 1.0 : 0.85,
+                            duration: const Duration(milliseconds: 200),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: filt ? doc.color : doc.color.withOpacity(0.3),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: sel ? 3 : 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: doc.color.withOpacity(sel ? 0.4 : 0.2),
+                                    blurRadius: sel ? 12 : 6,
+                                    offset: const Offset(0, 2)),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(doc.initials,
+                                  style: GoogleFonts.inter(
+                                    fontSize: sel ? 12 : 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
               ),
             ),
           ),
         ),
+        if (marker != null && marker! >= 0 && marker! < doctors.length)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: GestureDetector(
+              onTap: () => onDoctor(doctors[marker!]),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: dark ? const Color(0xFF1A1A1A) : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _T.accent(context).withOpacity(0.2)),
+                  boxShadow: dark ? null : [
+                    BoxShadow(color: Colors.black.withOpacity(0.06),
+                      blurRadius: 10, offset: const Offset(0, 2)),
+                  ],
+                ),
+                child: Row(children: [
+                  _Ava(initials: doctors[marker!].initials,
+                    color: doctors[marker!].color, size: 40,
+                    photoAsset: doctors[marker!].photoAsset),
+                  const SizedBox(width: 10),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(doctors[marker!].name, style: GoogleFonts.outfit(
+                      fontSize: 14, fontWeight: FontWeight.w700,
+                      color: _T.t1(context))),
+                    const SizedBox(height: 2),
+                    Text('${doctors[marker!].specialty} · ${doctors[marker!].location}',
+                      style: GoogleFonts.inter(fontSize: 12, color: _T.t2(context))),
+                  ])),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _T.accent(context),
+                      borderRadius: BorderRadius.circular(20)),
+                    child: Text('Voir', style: GoogleFonts.inter(
+                      fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                  ),
+                ]),
+              ),
+            ),
+          ),
         const SizedBox(height: 20),
         // Spec filter
         SizedBox(
-          height: 32,
+          height: 36,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _specs.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 6),
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (_, i) {
               final s = _specs[i]; final active = s == spec;
+              final accent = _T.accent(context);
               return GestureDetector(
                 onTap: () => onSpec(s),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                   decoration: BoxDecoration(
-                    color: active ? _T.accent(context) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: active ? _T.accent(context) : _T.border(context))),
-                  child: Text(s, style: GoogleFonts.inter(fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: active ? _T.onAccent(context) : _T.t2(context))),
+                    color: active ? accent : accent.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Text(s, style: GoogleFonts.inter(fontSize: 12.5,
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                    color: active ? Colors.white : _T.t2(context))),
                 ),
               );
             },
@@ -1341,40 +1386,64 @@ class _DoctorsTab extends StatelessWidget {
         const SizedBox(height: 20),
         ...idx.map((i) {
           final doc = doctors[i]; final sel = marker == i;
+          final cardBg = sel
+            ? _T.accent(context).withOpacity(dark ? 0.12 : 0.06)
+            : (dark ? const Color(0xFF1A1A1A) : Colors.white);
           return Padding(
-            padding: const EdgeInsets.only(bottom: 1),
+            padding: const EdgeInsets.only(bottom: 10),
             child: GestureDetector(
               onTap: () => onDoctor(doc),
-              child: Column(children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  child: Row(children: [
-                    _Ava(initials: doc.initials, color: doc.color, size: 46,
-                      bordered: sel, photoAsset: doc.photoAsset),
-                    const SizedBox(width: 14),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(doc.name, style: GoogleFonts.inter(
-                        fontSize: 14, fontWeight: FontWeight.w600, color: _T.t1(context))),
-                      const SizedBox(height: 2),
-                      Text(doc.specialty, style: GoogleFonts.inter(
-                        fontSize: 13, color: _T.t2(context))),
-                      const SizedBox(height: 4),
-                      Row(children: [
-                        Icon(LucideIcons.mapPin, size: 11, color: _T.t3(context)),
-                        const SizedBox(width: 3),
-                        Text(doc.location, style: GoogleFonts.inter(fontSize: 12, color: _T.t3(context))),
-                        const SizedBox(width: 10),
-                        Icon(LucideIcons.star, size: 11, color: const Color(0xFFF59E0B)),
-                        const SizedBox(width: 3),
-                        Text('${doc.rating}', style: GoogleFonts.inter(
-                          fontSize: 12, color: _T.t3(context))),
-                      ]),
-                    ])),
-                    Icon(LucideIcons.chevronRight, size: 16, color: _T.t3(context)),
-                  ]),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: sel ? _T.accent(context).withOpacity(0.3) : _T.t1(context).withOpacity(0.06)),
+                  boxShadow: dark ? null : [
+                    BoxShadow(color: Colors.black.withOpacity(0.03),
+                      blurRadius: 8, offset: const Offset(0, 2)),
+                  ],
                 ),
-                Divider(height: 1, color: _T.border(context)),
-              ]),
+                child: Row(children: [
+                  _Ava(initials: doc.initials, color: doc.color, size: 50,
+                    bordered: sel, photoAsset: doc.photoAsset),
+                  const SizedBox(width: 14),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(doc.name, style: GoogleFonts.outfit(
+                      fontSize: 14.5, fontWeight: FontWeight.w700, color: _T.t1(context))),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: doc.color.withOpacity(dark ? 0.15 : 0.08),
+                        borderRadius: BorderRadius.circular(8)),
+                      child: Text(doc.specialty, style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w600, color: doc.color)),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      Icon(LucideIcons.mapPin, size: 11, color: _T.t3(context)),
+                      const SizedBox(width: 3),
+                      Text(doc.location, style: GoogleFonts.inter(fontSize: 12, color: _T.t3(context))),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(LucideIcons.star, size: 10, color: Color(0xFFF59E0B)),
+                          const SizedBox(width: 3),
+                          Text('${doc.rating}', style: GoogleFonts.inter(
+                            fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFF59E0B))),
+                        ]),
+                      ),
+                    ]),
+                  ])),
+                  Icon(LucideIcons.chevronRight, size: 16, color: _T.t3(context)),
+                ]),
+              ),
             ),
           );
         }),
@@ -1383,85 +1452,7 @@ class _DoctorsTab extends StatelessWidget {
   }
 }
 
-class _MapPainter extends CustomPainter {
-  final bool dark; final int? marker; final List<int> indexes; final List<_Doctor> doctors;
-  _MapPainter({required this.dark, required this.marker, required this.indexes, required this.doctors});
-
-  @override
-  void paint(Canvas c, Size s) {
-    final w = s.width; final h = s.height;
-    c.drawRect(Rect.fromLTWH(0,0,w,h),
-      Paint()..color = dark ? const Color(0xFF0F180F) : const Color(0xFFEDF7F0));
-    final land = Paint()..color = dark ? const Color(0xFF1A3020) : const Color(0xFFCCE8D5);
-    final border = Paint()..color = dark ? const Color(0xFF2E5040) : const Color(0xFF3DA85A)
-      ..style = PaintingStyle.stroke ..strokeWidth = 1.2;
-    final path = Path();
-    final pts = [(0.38,.05),(0.48,.04),(0.56,.08),(0.64,.06),(0.70,.10),(0.72,.16),
-      (0.68,.22),(0.72,.28),(0.74,.35),(0.70,.42),(0.66,.48),(0.68,.55),(0.65,.62),
-      (0.60,.68),(0.58,.76),(0.55,.84),(0.52,.90),(0.48,.95),(0.42,.97),(0.36,.94),
-      (0.30,.88),(0.26,.80),(0.24,.72),(0.22,.62),(0.20,.52),(0.22,.44),(0.26,.36),
-      (0.28,.28),(0.30,.20),(0.32,.13),(0.36,.07),(0.38,.05)];
-    path.moveTo(pts[0].$1*w, pts[0].$2*h);
-    for (final p in pts.skip(1)) path.lineTo(p.$1*w, p.$2*h);
-    path.close();
-    c.drawPath(path, land); c.drawPath(path, border);
-    for (int i = 0; i < doctors.length && i < _doctorPositions.length; i++) {
-      final p = _doctorPositions[i];
-      final cx = p.x*w; final cy = p.y*h+(i==4?20:i==3?-18:0);
-      final sel = marker==i; final filt = indexes.contains(i);
-      final col = doctors[i].color;
-      if (sel) c.drawCircle(Offset(cx,cy), 20, Paint()..color=col.withOpacity(0.15));
-      c.drawCircle(Offset(cx,cy), sel?15:10, Paint()..color=col.withOpacity(filt?1:.2));
-      c.drawCircle(Offset(cx,cy), sel?15:10, Paint()
-        ..color=Colors.white.withOpacity(sel ? 0.85 : 0.5)
-        ..style=PaintingStyle.stroke ..strokeWidth=sel?2:1.5);
-      c.drawCircle(Offset(cx,cy), sel?5:3, Paint()..color=Colors.white);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_MapPainter old) =>
-    old.marker != marker || old.dark != dark || old.indexes.length != indexes.length
-    || old.doctors.length != doctors.length;
-}
-
-class _MapPopup extends StatelessWidget {
-  final _Doctor doctor;
-  final ({double x, double y}) pos;
-  final int idx; final bool dark; final VoidCallback onTap;
-  const _MapPopup({required this.doctor, required this.pos, required this.idx,
-    required this.dark, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: (_, c) {
-    final cx = pos.x * c.maxWidth;
-    final cy = pos.y * 240.0 + (idx==4?20:idx==3?-18:0);
-    const pw = 170.0;
-    final left = (cx - pw/2).clamp(8.0, c.maxWidth - pw - 8);
-    final top  = (cy - 85).clamp(8.0, 160.0);
-    return Positioned(left: left, top: top,
-      child: GestureDetector(onTap: onTap,
-        child: Container(width: pw, padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: dark ? const Color(0xFF1A1A1A) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _T.border(context)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 14, offset: const Offset(0,4))]),
-          child: Row(children: [
-            _Ava(initials: doctor.initials, color: doctor.color, size: 32, photoAsset: doctor.photoAsset),
-            const SizedBox(width: 8),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(doctor.name, style: GoogleFonts.inter(fontSize: 11,
-                fontWeight: FontWeight.w600, color: _T.t1(context)),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-              Text(doctor.specialty, style: GoogleFonts.inter(fontSize: 10, color: _T.t2(context))),
-            ])),
-          ]),
-        ),
-      ),
-    );
-  });
-}
+// (Map now uses FlutterMap + OpenStreetMap tiles)
 
 // ─── Tab 5 · Carnet ───────────────────────────────────────────────────────────
 
@@ -1474,67 +1465,114 @@ class _DoctorSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _T.accent(context);
     return Container(
       decoration: BoxDecoration(
-        color: _T.card(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+        color: dark ? const Color(0xFF141414) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 24),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 12),
-        Container(width: 36, height: 4, decoration: BoxDecoration(
-          color: _T.border(context), borderRadius: BorderRadius.circular(2))),
-        const SizedBox(height: 28),
-        _Ava(initials: doctor.initials, color: doctor.color, size: 70, photoAsset: doctor.photoAsset),
-        const SizedBox(height: 14),
+        Container(width: 40, height: 4, decoration: BoxDecoration(
+          color: _T.t3(context), borderRadius: BorderRadius.circular(2))),
+        const SizedBox(height: 24),
+
+        // Avatar with accent ring
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: accent.withOpacity(0.3), width: 2)),
+          child: _Ava(initials: doctor.initials, color: doctor.color, size: 72, photoAsset: doctor.photoAsset),
+        ),
+        const SizedBox(height: 16),
         Text(doctor.name, style: GoogleFonts.outfit(
-          fontSize: 20, fontWeight: FontWeight.w800, color: _T.t1(context))),
+          fontSize: 22, fontWeight: FontWeight.w800, color: _T.t1(context),
+          letterSpacing: -0.3)),
         const SizedBox(height: 4),
-        Text(doctor.specialty, style: GoogleFonts.inter(fontSize: 14, color: _T.t2(context))),
-        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: accent.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(20)),
+          child: Text(doctor.specialty, style: GoogleFonts.inter(
+            fontSize: 12, fontWeight: FontWeight.w600, color: accent)),
+        ),
+        const SizedBox(height: 14),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(LucideIcons.star, size: 13, color: const Color(0xFFF59E0B)),
-          const SizedBox(width: 4),
-          Text('${doctor.rating}', style: GoogleFonts.inter(
-            fontSize: 13, fontWeight: FontWeight.w600, color: _T.t1(context))),
-          const SizedBox(width: 12),
-          Text('·', style: GoogleFonts.inter(color: _T.t3(context))),
-          const SizedBox(width: 12),
-          Text(l10n.santeConsultationsCount(doctor.consultations), style: GoogleFonts.inter(
-            fontSize: 13, color: _T.t2(context))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B).withOpacity(0.10),
+              borderRadius: BorderRadius.circular(12)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(LucideIcons.star, size: 13, color: Color(0xFFF59E0B)),
+              const SizedBox(width: 4),
+              Text('${doctor.rating}', style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFFF59E0B))),
+            ]),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _T.t1(context).withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12)),
+            child: Text(l10n.santeConsultationsCount(doctor.consultations), style: GoogleFonts.inter(
+              fontSize: 12, fontWeight: FontWeight.w500, color: _T.t2(context))),
+          ),
         ]),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(children: [
-            _InfoRow2(icon: LucideIcons.building2, label: doctor.hospital, dark: dark),
-            _InfoRow2(icon: LucideIcons.mapPin, label: doctor.location, dark: dark),
-            _InfoRow2(icon: LucideIcons.phone, label: doctor.phone, dark: dark),
-            _InfoRow2(icon: LucideIcons.mail, label: doctor.email, dark: dark),
-            const SizedBox(height: 20),
-            Row(children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: _T.border(context)),
-                      borderRadius: BorderRadius.circular(14)),
-                    child: Center(child: Text(l10n.santeCall, style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.w600, color: _T.t1(context)))))),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: _T.t1(context), borderRadius: BorderRadius.circular(14)),
-                    child: Center(child: Text(l10n.santeAppointment, style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.w600, color: _T.card(context)))))),
-              ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _T.t1(context).withOpacity(0.03),
+              borderRadius: BorderRadius.circular(16)),
+            child: Column(children: [
+              _InfoRow2(icon: LucideIcons.building2, label: doctor.hospital, dark: dark),
+              _InfoRow2(icon: LucideIcons.mapPin, label: doctor.location, dark: dark),
+              _InfoRow2(icon: LucideIcons.phone, label: doctor.phone, dark: dark),
+              _InfoRow2(icon: LucideIcons.mail, label: doctor.email, dark: dark),
             ]),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: accent.withOpacity(0.3)),
+                    borderRadius: BorderRadius.circular(28)),
+                  child: Center(child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(LucideIcons.phone, size: 14, color: accent),
+                    const SizedBox(width: 8),
+                    Text(l10n.santeCall, style: GoogleFonts.inter(
+                      fontSize: 14, fontWeight: FontWeight.w600, color: accent)),
+                  ])))),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(28)),
+                  child: Center(child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(LucideIcons.calendarCheck, size: 14, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(l10n.santeAppointment, style: GoogleFonts.inter(
+                      fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                  ])))),
+            ),
           ]),
         ),
       ]),
@@ -2100,6 +2138,14 @@ class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
     super.dispose();
   }
 
+  _Doctor? _findDoctor(String authorName) {
+    try {
+      return _doctors.firstWhere((d) => d.name == authorName);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final a = widget.article;
@@ -2107,6 +2153,7 @@ class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
     final top = MediaQuery.of(context).padding.top;
     final bot = MediaQuery.of(context).padding.bottom;
     final bg = dark ? const Color(0xFF0A0A0A) : Colors.white;
+    final doc = _findDoctor(a.author);
 
     final paragraphs = a.body.split('\n\n').where((p) => p.trim().isNotEmpty).toList();
 
@@ -2121,7 +2168,7 @@ class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
               child: Stack(children: [
                 SizedBox(
                   width: double.infinity,
-                  height: 300,
+                  height: 280,
                   child: a.photoAsset != null
                     ? Image.asset(a.photoAsset!, fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _coloredFallback(a, dark))
@@ -2133,14 +2180,36 @@ class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter, end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.15),
-                          Colors.black.withOpacity(0.02),
-                          bg.withOpacity(0.6),
+                          Colors.black.withOpacity(0.25),
+                          Colors.black.withOpacity(0.05),
+                          bg.withOpacity(0.5),
+                          bg.withOpacity(0.85),
                           bg,
                         ],
-                        stops: const [0.0, 0.35, 0.8, 1.0],
+                        stops: const [0.0, 0.3, 0.65, 0.85, 1.0],
                       ),
                     ),
+                  ),
+                ),
+                // Category pill on top of hero
+                Positioned(
+                  bottom: 50, left: 24,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: a.color,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(
+                        color: a.color.withOpacity(0.3),
+                        blurRadius: 8, offset: const Offset(0, 2))],
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(_categoryIcon(a.category), size: 11, color: Colors.white),
+                      const SizedBox(width: 5),
+                      Text(a.category, style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w700,
+                        color: Colors.white, letterSpacing: 0.3)),
+                    ]),
                   ),
                 ),
               ]),
@@ -2148,74 +2217,65 @@ class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
 
             // ── Title block ──
             SliverToBoxAdapter(
-              child: Transform.translate(
-                offset: const Offset(0, -32),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    // Category pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: a.color,
-                        borderRadius: BorderRadius.circular(20)),
-                      child: Text(a.category, style: GoogleFonts.inter(
-                        fontSize: 11, fontWeight: FontWeight.w700,
-                        color: Colors.white, letterSpacing: 0.3)),
-                    ),
-                    const SizedBox(height: 16),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     // Title
                     Text(a.title, style: GoogleFonts.outfit(
-                      fontSize: 26, fontWeight: FontWeight.w800,
-                      color: _T.t1(context), height: 1.2, letterSpacing: -0.5)),
-                    const SizedBox(height: 16),
+                      fontSize: 22, fontWeight: FontWeight.w800,
+                      color: _T.t1(context), height: 1.25, letterSpacing: -0.4)),
+                    const SizedBox(height: 14),
                     // Excerpt / lede
                     Text(a.excerpt, style: GoogleFonts.inter(
-                      fontSize: 15, fontWeight: FontWeight.w400,
+                      fontSize: 14.5, fontWeight: FontWeight.w400,
                       color: _T.t2(context), height: 1.55)),
-                    const SizedBox(height: 20),
-                    // Author row
-                    Row(children: [
-                      Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(
-                          color: a.color.withOpacity(dark ? 0.25 : 0.10),
-                          borderRadius: BorderRadius.circular(12)),
-                        child: Center(
-                          child: Text(
-                            a.author.split(' ').last[0].toUpperCase(),
-                            style: GoogleFonts.outfit(
-                              fontSize: 16, fontWeight: FontWeight.w700, color: a.color)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(a.author, style: GoogleFonts.inter(
-                            fontSize: 13, fontWeight: FontWeight.w600,
-                            color: _T.t1(context))),
-                          const SizedBox(height: 2),
-                          Row(children: [
-                            Icon(LucideIcons.clock, size: 11,
-                              color: _T.t2(context)),
-                            const SizedBox(width: 4),
-                            Text('${a.readMin} min de lecture', style: GoogleFonts.inter(
-                              fontSize: 11, color: _T.t2(context))),
+                    const SizedBox(height: 18),
+                    // Author card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _T.t1(context).withOpacity(0.03),
+                        borderRadius: BorderRadius.circular(16)),
+                      child: Row(children: [
+                        // Doctor photo or colored avatar
+                        if (doc?.photoAsset != null)
+                          ClipOval(
+                            child: SizedBox(
+                              width: 42, height: 42,
+                              child: Image.asset(doc!.photoAsset!, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _authorAvatar(a, doc, dark)),
+                            ),
+                          )
+                        else
+                          _authorAvatar(a, doc, dark),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(a.author, style: GoogleFonts.inter(
+                              fontSize: 13.5, fontWeight: FontWeight.w600,
+                              color: _T.t1(context))),
+                            const SizedBox(height: 3),
+                            Row(children: [
+                              if (doc != null) ...[
+                                Text(doc.specialty, style: GoogleFonts.inter(
+                                  fontSize: 11, color: _T.t2(context))),
+                                Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                                  width: 3, height: 3,
+                                  decoration: BoxDecoration(
+                                    color: _T.t3(context), shape: BoxShape.circle)),
+                              ],
+                              Icon(LucideIcons.clock, size: 11, color: _T.t3(context)),
+                              const SizedBox(width: 3),
+                              Text('${a.readMin} min', style: GoogleFonts.inter(
+                                fontSize: 11, color: _T.t3(context))),
+                            ]),
                           ]),
-                        ]),
-                      ),
-                      // Bookmark button
-                      Container(
-                        width: 38, height: 38,
-                        decoration: BoxDecoration(
-                          color: _T.t1(context).withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(12)),
-                        child: Icon(LucideIcons.bookmark, size: 18,
-                          color: _T.t2(context)),
-                      ),
-                    ]),
+                        ),
+                      ]),
+                    ),
                     const SizedBox(height: 20),
-                    // Thin accent divider
+                    // Accent divider
                     Container(
                       height: 3, width: 40,
                       decoration: BoxDecoration(
@@ -2224,7 +2284,6 @@ class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
                     ),
                   ]),
                 ),
-              ),
             ),
 
             // ── Body paragraphs ──
@@ -2370,16 +2429,16 @@ class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
           ],
         ),
 
-        // ── Top bar: back + share + progress ──
+        // ── Top bar: back + share ──
         Positioned(
           top: 0, left: 0, right: 0,
           child: Container(
-            padding: EdgeInsets.fromLTRB(16, top + 8, 16, 10),
+            padding: EdgeInsets.fromLTRB(16, top + 8, 16, 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter, end: Alignment.bottomCenter,
                 colors: [
-                  bg.withOpacity(0.95),
+                  bg.withOpacity(0.92),
                   bg.withOpacity(0.0),
                 ]),
             ),
@@ -2390,8 +2449,8 @@ class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
                   child: Container(
                     width: 38, height: 38,
                     decoration: BoxDecoration(
-                      color: _T.t1(context).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12)),
+                      color: (dark ? Colors.white : Colors.black).withOpacity(0.08),
+                      shape: BoxShape.circle),
                     child: Icon(LucideIcons.chevronLeft,
                       size: 20, color: _T.t1(context)),
                   ),
@@ -2401,20 +2460,20 @@ class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
                   child: Container(
                     width: 38, height: 38,
                     decoration: BoxDecoration(
-                      color: _T.t1(context).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12)),
+                      color: (dark ? Colors.white : Colors.black).withOpacity(0.08),
+                      shape: BoxShape.circle),
                     child: Icon(LucideIcons.share2,
-                      size: 17, color: _T.t1(context)),
+                      size: 16, color: _T.t1(context)),
                   ),
                 ),
               ]),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               // Reading progress bar
               ClipRRect(
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(3),
                 child: LinearProgressIndicator(
                   value: _progress,
-                  minHeight: 2.5,
+                  minHeight: 3,
                   backgroundColor: _T.t1(context).withOpacity(0.06),
                   valueColor: AlwaysStoppedAnimation(a.color),
                 ),
@@ -2423,6 +2482,31 @@ class _ArticleDetailScreenState extends State<_ArticleDetailScreen> {
           ),
         ),
       ]),
+    );
+  }
+
+  static IconData _categoryIcon(String c) => switch (c) {
+    'Sport'     => LucideIcons.dumbbell,
+    'Nutrition' => LucideIcons.salad,
+    'Sommeil'   => LucideIcons.moon,
+    'Mental'    => LucideIcons.brain,
+    'Hormones'  => LucideIcons.activity,
+    _           => LucideIcons.sparkles,
+  };
+
+  Widget _authorAvatar(_Article a, _Doctor? doc, bool dark) {
+    return Container(
+      width: 42, height: 42,
+      decoration: BoxDecoration(
+        color: (doc?.color ?? a.color).withOpacity(dark ? 0.25 : 0.12),
+        shape: BoxShape.circle),
+      child: Center(
+        child: Text(
+          doc?.initials ?? a.author.split(' ').last[0].toUpperCase(),
+          style: GoogleFonts.outfit(
+            fontSize: 15, fontWeight: FontWeight.w700,
+            color: doc?.color ?? a.color)),
+      ),
     );
   }
 

@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:async';
 import 'dart:math';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -61,6 +62,15 @@ extension FloSymptomX on FloSymptom {
       case FloSymptom.mood:   return Icons.sentiment_satisfied_outlined;
       case FloSymptom.energy: return Icons.bolt_outlined;
       case FloSymptom.cramps: return Icons.favorite_border_rounded;
+    }
+  }
+
+  Color get tint {
+    switch (this) {
+      case FloSymptom.flow:   return const Color(0xFF4FC3F7);
+      case FloSymptom.mood:   return const Color(0xFFFFCA28);
+      case FloSymptom.energy: return const Color(0xFFFF8A65);
+      case FloSymptom.cramps: return const Color(0xFFEF9A9A);
     }
   }
 }
@@ -375,46 +385,24 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
             ),
           ),
 
-          // 2. Daily insight card
+          // Cycle stats — prominent position right under the timeline
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: _DailyInsightCard(phase: phase, theme: theme, cc: cc, currentDay: _currentDay, cycleDays: profile.cycleDays),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+            child: _CycleStatsCard(profile: profile, currentDay: _currentDay, theme: theme, cc: cc, l10n: l10n),
           ),
 
           const SizedBox(height: 24),
           _buildSectionLabel(l10n.cycleHowDoYouFeel, theme.primary),
           const SizedBox(height: 14),
 
-          // 3. Symptom sliders
+          // 3. Symptom sliders (mood emoji picker is inline under Humeur)
           _buildSymptomSliders(cc, theme, l10n),
-          const SizedBox(height: 16),
-
-          // 5. Weekly mood chart
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _WeeklyMoodChart(
-              moodIndex: _moodIndex,
-              theme: theme, cc: cc, l10n: l10n,
-              onSelectMood: (i) {
-                HapticFeedback.lightImpact();
-                setState(() => _moodIndex = i);
-                CycleLogService.saveMood(_today, i);
-              },
-            ),
-          ),
 
           const SizedBox(height: 24),
 
-          // 4. Phase card (kept but refined)
-          _PhaseCard(phase: phase, theme: theme, cc: cc, l10n: l10n),
-
-          const SizedBox(height: 16),
-
-          // 6. Swipeable phase tips carousel
+          // Phase tips carousel with integrated phase banner
           _PhaseTipsCarousel(phase: phase, theme: theme, cc: cc, l10n: l10n),
 
-          const SizedBox(height: 16),
-          _CycleStatsCard(profile: profile, currentDay: _currentDay, theme: theme, cc: cc, l10n: l10n),
           const SizedBox(height: 48),
         ],
       ),
@@ -802,7 +790,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
           ],
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
@@ -816,7 +804,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
             theme: theme, phase: phase, cc: cc, l10n: l10n,
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 14),
       ]),
     );
   }
@@ -830,12 +818,18 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
     );
   }
 
+  static const _moodEmojis = ['😊', '🙂', '😐', '😔', '🧘'];
+  static const _moodLabels = ['Super', 'Bien', 'Moyen', 'Bas', 'Calme'];
+
   Widget _buildSymptomSliders(CycleColors cc, CycleTheme theme, AppL10n l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: FloSymptom.values.map((s) {
           final logged = _logged.contains(s);
+          final isMood = s == FloSymptom.mood;
+          final moodExpanded = isMood && logged;
+
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: GestureDetector(
@@ -844,9 +838,13 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
                 final wasLogged = _logged.contains(s);
                 setState(() {
                   wasLogged ? _logged.remove(s) : _logged.add(s);
+                  if (isMood && wasLogged) _moodIndex = -1;
                 });
                 CycleLogService.saveSymptoms(
                   _today, _logged.map((e) => e.name).toSet());
+                if (isMood && wasLogged) {
+                  CycleLogService.saveMood(_today, -1);
+                }
                 if (!wasLogged) {
                   ref.read(pointsProvider.notifier).rewardSymptomAdded().then((_) {
                     if (context.mounted) maybeShowLevelUpToast(context, ref);
@@ -859,7 +857,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: EdgeInsets.fromLTRB(16, 14, 16, moodExpanded ? 6 : 14),
                 decoration: BoxDecoration(
                   color: logged
                       ? theme.primary.withOpacity(0.10)
@@ -869,34 +867,91 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
                     color: logged ? theme.primary.withOpacity(0.4) : cc.border,
                     width: 1.2),
                 ),
-                child: Row(children: [
-                  Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(
-                      color: logged
-                          ? theme.primary.withOpacity(0.15)
-                          : cc.surface2,
-                      borderRadius: BorderRadius.circular(10)),
-                    child: Icon(s.icon, size: 18,
-                      color: logged ? theme.primary : cc.muted),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(s.labelFor(l10n), style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600,
-                      color: logged ? theme.primary : cc.text)),
-                  ),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: logged
-                        ? Icon(Icons.check_circle_rounded,
-                            key: const ValueKey('check'),
-                            size: 22, color: theme.primary)
-                        : Icon(Icons.circle_outlined,
-                            key: const ValueKey('circle'),
-                            size: 22, color: cc.border),
-                  ),
-                ]),
+                child: Column(
+                  children: [
+                    Row(children: [
+                      Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: logged
+                              ? theme.primary.withOpacity(0.15)
+                              : s.tint.withOpacity(cc.isDark ? 0.12 : 0.10),
+                          borderRadius: BorderRadius.circular(10)),
+                        child: Icon(s.icon, size: 18,
+                          color: logged ? theme.primary : s.tint),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(s.labelFor(l10n), style: GoogleFonts.inter(
+                              fontSize: 13, fontWeight: FontWeight.w600,
+                              color: logged ? theme.primary : cc.text)),
+                            if (isMood && _moodIndex >= 0)
+                              Text(_moodLabels[_moodIndex], style: GoogleFonts.inter(
+                                fontSize: 10, color: cc.muted)),
+                          ],
+                        ),
+                      ),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: logged
+                            ? Icon(Icons.check_circle_rounded,
+                                key: const ValueKey('check'),
+                                size: 22, color: theme.primary)
+                            : Icon(Icons.circle_outlined,
+                                key: const ValueKey('circle'),
+                                size: 22, color: cc.border),
+                      ),
+                    ]),
+                    // Inline mood emoji picker
+                    AnimatedCrossFade(
+                      duration: const Duration(milliseconds: 250),
+                      crossFadeState: moodExpanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      firstChild: const SizedBox.shrink(),
+                      secondChild: Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: List.generate(_moodEmojis.length, (i) {
+                            final selected = _moodIndex == i;
+                            return GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                setState(() => _moodIndex = i);
+                                CycleLogService.saveMood(_today, i);
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 220),
+                                width: 52, height: 62,
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? theme.primary.withOpacity(0.15)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: selected ? theme.primary.withOpacity(0.4) : cc.border.withOpacity(0.5),
+                                    width: selected ? 1.5 : 1),
+                                ),
+                                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                  Text(_moodEmojis[i], style: TextStyle(
+                                    fontSize: selected ? 22 : 18)),
+                                  const SizedBox(height: 3),
+                                  Text(_moodLabels[i], style: GoogleFonts.inter(
+                                    fontSize: 9, fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                    color: selected ? theme.primary : cc.muted)),
+                                ]),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -1155,84 +1210,7 @@ class _LateInfoTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  PHASE CARD
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _PhaseCard extends StatelessWidget {
-  final CyclePhase phase;
-  final CycleTheme theme;
-  final CycleColors cc;
-  final AppL10n l10n;
-
-  const _PhaseCard({required this.phase, required this.theme, required this.cc, required this.l10n});
-
-  static const _emojis = {
-    'Règles': '🌸', 'Folliculaire': '🌱', 'Ovulation': '✨', 'Lutéale': '🍂',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final desc  = l10n.cyclePhaseDesc(phase.name);
-    final emoji = _emojis[phase.name] ?? '🌙';
-    final gradOpacity = cc.isDark ? 0.22 : 0.18;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              theme.gradient[0].withOpacity(gradOpacity),
-              theme.gradient[2].withOpacity(gradOpacity * 0.4),
-            ],
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: theme.primary.withOpacity(0.22)),
-          boxShadow: [BoxShadow(
-            color: theme.primary.withOpacity(cc.isDark ? 0.12 : 0.08),
-            blurRadius: 20, offset: const Offset(0, 6),
-          )],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 58, height: 58,
-              decoration: BoxDecoration(
-                color: theme.primary.withOpacity(0.15),
-                shape: BoxShape.circle),
-              child: Center(child: Text(emoji,
-                  style: const TextStyle(fontSize: 26))),
-            ),
-            const SizedBox(width: 18),
-            Expanded(child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.primary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10)),
-                  child: Text('Phase ${phase.name}', style: GoogleFonts.inter(
-                    fontSize: 11, fontWeight: FontWeight.w700,
-                    color: theme.primary)),
-                ),
-                const SizedBox(height: 9),
-                Text(desc, style: GoogleFonts.inter(
-                  fontSize: 13, color: cc.body)),
-              ],
-            )),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  PHASE TIPS CARD
+//  PHASE TIPS & INFO CARD (combined)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _PhaseTipsCarousel extends StatefulWidget {
@@ -1252,6 +1230,17 @@ class _PhaseTipsCarousel extends StatefulWidget {
 class _PhaseTipsCarouselState extends State<_PhaseTipsCarousel> {
   int _current = 0;
   late final PageController _pageCtrl;
+  late final _autoTimer = _startAutoSwipe();
+
+  Timer _startAutoSwipe() {
+    return Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || !_pageCtrl.hasClients) return;
+      final next = (_current + 1) % 3;
+      _pageCtrl.animateToPage(next,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut);
+    });
+  }
 
   @override
   void initState() {
@@ -1261,6 +1250,7 @@ class _PhaseTipsCarouselState extends State<_PhaseTipsCarousel> {
 
   @override
   void dispose() {
+    _autoTimer.cancel();
     _pageCtrl.dispose();
     super.dispose();
   }
@@ -1271,7 +1261,6 @@ class _PhaseTipsCarouselState extends State<_PhaseTipsCarousel> {
     Icons.spa_outlined,
   ];
   static const _tipLabels = ['Entraînement', 'Nutrition', 'Bien-être'];
-
   List<String> _tipsForPhase() {
     final tip = widget.l10n.cyclePhaseTips(widget.phase.name);
     final wellnessTips = {
@@ -1286,6 +1275,7 @@ class _PhaseTipsCarouselState extends State<_PhaseTipsCarousel> {
   @override
   Widget build(BuildContext context) {
     final tips = _tipsForPhase();
+
     return Column(children: [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1305,17 +1295,18 @@ class _PhaseTipsCarouselState extends State<_PhaseTipsCarousel> {
           itemCount: tips.length,
           onPageChanged: (i) => setState(() => _current = i),
           itemBuilder: (_, i) {
+            final active = _current == i;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               margin: const EdgeInsets.symmetric(horizontal: 6),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: _current == i
+                color: active
                     ? widget.theme.primary.withOpacity(widget.cc.isDark ? 0.18 : 0.10)
                     : widget.cc.surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: _current == i
+                  color: active
                       ? widget.theme.primary.withOpacity(0.3)
                       : widget.cc.border),
               ),
@@ -1459,8 +1450,8 @@ class _StatCell extends StatelessWidget {
         child: Icon(icon, size: 17, color: color),
       ),
       const SizedBox(height: 8),
-      Text(value, style: GoogleFonts.inter(
-        fontSize: 15, fontWeight: FontWeight.w800, color: cc.text)),
+      Text(value, style: GoogleFonts.outfit(
+        fontSize: 17, fontWeight: FontWeight.w800, color: cc.text, letterSpacing: -0.3)),
       const SizedBox(height: 3),
       Text(label, textAlign: TextAlign.center,
           style: GoogleFonts.inter(fontSize: 10, color: cc.muted)),
@@ -1522,9 +1513,9 @@ class _CycleTimelineBanner extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Phase bar
         ClipRRect(
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(7),
           child: SizedBox(
-            height: 12,
+            height: 14,
             child: Row(
               children: phases.map((p) {
                 final fraction = p.days.length / cycleDays;
@@ -1532,18 +1523,24 @@ class _CycleTimelineBanner extends StatelessWidget {
                 final isCurrent = p.days.contains(currentDay);
                 return Expanded(
                   flex: (fraction * 100).round().clamp(1, 100),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
                     margin: const EdgeInsets.symmetric(horizontal: 1),
                     decoration: BoxDecoration(
-                      color: isCurrent ? color : color.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(6)),
+                      color: isCurrent ? color : color.withOpacity(0.20),
+                      borderRadius: BorderRadius.circular(7),
+                      boxShadow: isCurrent ? [BoxShadow(
+                        color: color.withOpacity(0.35),
+                        blurRadius: 8, offset: const Offset(0, 1),
+                      )] : null,
+                    ),
                   ),
                 );
               }).toList(),
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
 
         // Phase labels
         Row(
@@ -1557,8 +1554,8 @@ class _CycleTimelineBanner extends StatelessWidget {
                 p.name.substring(0, p.name.length > 4 ? 4 : p.name.length),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                  fontSize: 8, fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                  color: isCurrent ? color : cc.muted),
+                  fontSize: 9, fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
+                  color: isCurrent ? color : cc.muted.withOpacity(0.6)),
               ),
             );
           }).toList(),
@@ -1567,15 +1564,33 @@ class _CycleTimelineBanner extends StatelessWidget {
 
         // Info row
         Row(children: [
-          _TimelineInfo(
-            icon: Icons.water_drop_outlined, color: _pink,
-            label: l10n.cycleNextPeriod, value: periodLabel, cc: cc),
-          const SizedBox(width: 16),
-          Container(width: 1, height: 36, color: cc.border),
-          const SizedBox(width: 16),
-          _TimelineInfo(
-            icon: Icons.spa_outlined, color: theme.primary,
-            label: l10n.cycleOvulation, value: ovLabel, cc: cc),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: _pink.withOpacity(cc.isDark ? 0.10 : 0.06),
+                borderRadius: BorderRadius.circular(14),
+                border: Border(left: BorderSide(color: _pink, width: 3)),
+              ),
+              child: _TimelineInfo(
+                icon: Icons.water_drop_outlined, color: _pink,
+                label: l10n.cycleNextPeriod, value: periodLabel, cc: cc),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: theme.primary.withOpacity(cc.isDark ? 0.10 : 0.06),
+                borderRadius: BorderRadius.circular(14),
+                border: Border(left: BorderSide(color: theme.primary, width: 3)),
+              ),
+              child: _TimelineInfo(
+                icon: Icons.spa_outlined, color: theme.primary,
+                label: l10n.cycleOvulation, value: ovLabel, cc: cc),
+            ),
+          ),
         ]),
       ]),
     );
@@ -1595,175 +1610,23 @@ class _TimelineInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Row(children: [
-        Container(
-          width: 32, height: 32,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(9)),
-          child: Icon(icon, size: 15, color: color),
-        ),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: GoogleFonts.inter(
-            fontSize: 9, color: cc.muted, fontWeight: FontWeight.w500)),
-          Text(value, style: GoogleFonts.inter(
-            fontSize: 13, fontWeight: FontWeight.w700, color: cc.text)),
-        ])),
-      ]),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  DAILY INSIGHT CARD
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _DailyInsightCard extends StatelessWidget {
-  final CyclePhase phase;
-  final CycleTheme theme;
-  final CycleColors cc;
-  final int currentDay, cycleDays;
-
-  const _DailyInsightCard({
-    required this.phase, required this.theme, required this.cc,
-    required this.currentDay, required this.cycleDays,
-  });
-
-  static const _insights = {
-    'Règles': [
-      '🌸 Ton corps se régénère — hydrate-toi bien et privilégie le repos.',
-      '💧 Le fer est ton allié cette semaine. Pense aux lentilles et épinards.',
-      '🧘 Des étirements doux peuvent soulager les tensions. Écoute ton corps.',
-    ],
-    'Folliculaire': [
-      '🌱 Ton énergie monte ! C\'est le moment idéal pour un entraînement intense.',
-      '⚡ Tes œstrogènes grimpent — ta peau brille et ta motivation aussi.',
-      '🏃‍♀️ Essaie du HIIT ou de la musculation, ton corps récupère vite.',
-    ],
-    'Ovulation': [
-      '✨ Pic d\'énergie et de confiance ! Profite de cette période pour te dépasser.',
-      '💪 Ton corps est au maximum de ses capacités. Sois ambitieuse dans tes objectifs.',
-      '🧠 Clarté mentale optimale — idéal pour les décisions importantes.',
-    ],
-    'Lutéale': [
-      '🍂 Ton corps se prépare — augmente les glucides complexes pour stabiliser l\'humeur.',
-      '🫖 Envies de sucre ? C\'est normal. Opte pour du chocolat noir et des fruits.',
-      '😴 Priorise le sommeil, ton corps en a besoin pour se recharger.',
-    ],
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final tips = _insights[phase.name] ?? _insights['Lutéale']!;
-    final tip = tips[currentDay % tips.length];
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.primary.withOpacity(cc.isDark ? 0.20 : 0.10),
-            theme.primary.withOpacity(cc.isDark ? 0.08 : 0.03),
-          ],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.primary.withOpacity(0.18)),
+    return Row(children: [
+      Container(
+        width: 30, height: 30,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(9)),
+        child: Icon(icon, size: 14, color: color),
       ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: theme.primary.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12)),
-          child: Icon(Icons.auto_awesome_rounded, size: 20, color: theme.primary),
-        ),
-        const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Insight du jour', style: GoogleFonts.inter(
-            fontSize: 10, fontWeight: FontWeight.w700,
-            color: theme.primary, letterSpacing: 1)),
-          const SizedBox(height: 6),
-          Text(tip, style: GoogleFonts.inter(
-            fontSize: 13, color: cc.body, height: 1.5)),
-        ])),
-      ]),
-    );
+      const SizedBox(width: 10),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: GoogleFonts.inter(
+          fontSize: 9, color: cc.muted, fontWeight: FontWeight.w500)),
+        Text(value, style: GoogleFonts.inter(
+          fontSize: 13, fontWeight: FontWeight.w700, color: cc.text)),
+      ])),
+    ]);
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  WEEKLY MOOD CHART
-// ─────────────────────────────────────────────────────────────────────────────
 
-class _WeeklyMoodChart extends StatelessWidget {
-  final int moodIndex;
-  final CycleTheme theme;
-  final CycleColors cc;
-  final AppL10n l10n;
-  final void Function(int) onSelectMood;
-
-  const _WeeklyMoodChart({
-    required this.moodIndex, required this.theme,
-    required this.cc, required this.l10n, required this.onSelectMood,
-  });
-
-  static const _moodEmojis = ['😊', '🙂', '😐', '😔', '🧘'];
-  static const _moodLabels = ['Super', 'Bien', 'Moyen', 'Bas', 'Calme'];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cc.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: cc.border),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(width: 8, height: 8,
-            decoration: BoxDecoration(color: theme.primary, shape: BoxShape.circle)),
-          const SizedBox(width: 8),
-          Text('Humeur', style: GoogleFonts.outfit(
-            fontSize: 14, fontWeight: FontWeight.w700, color: theme.primary)),
-        ]),
-        const SizedBox(height: 14),
-
-        // Mood selector row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(_moodEmojis.length, (i) {
-            final selected = moodIndex == i;
-            return GestureDetector(
-              onTap: () => onSelectMood(i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                width: 54, height: 68,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? theme.primary.withOpacity(0.12)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: selected ? theme.primary.withOpacity(0.4) : cc.border,
-                    width: selected ? 1.5 : 1),
-                ),
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(_moodEmojis[i], style: TextStyle(
-                    fontSize: selected ? 24 : 20)),
-                  const SizedBox(height: 4),
-                  Text(_moodLabels[i], style: GoogleFonts.inter(
-                    fontSize: 9, fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected ? theme.primary : cc.muted)),
-                ]),
-              ),
-            );
-          }),
-        ),
-      ]),
-    );
-  }
-}

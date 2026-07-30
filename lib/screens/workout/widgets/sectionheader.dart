@@ -70,9 +70,9 @@ Widget buildSectionHeader({
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.09),
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withValues(alpha: 0.18))),
+                  border: Border.all(color: color.withValues(alpha: 0.35))),
                 child: Text(l10n.sectionVoirTout, style: GoogleFonts.inter(
                   color: color, fontSize: 11, fontWeight: FontWeight.w700))));
           }),
