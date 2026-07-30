@@ -10,7 +10,8 @@
       "PowerShell(flutter analyze lib/screens/community/widgets/events lib/screens/community/model/event_model.dart lib/services/comuniter_service.dart lib/l10n/app_localizations.dart --no-pub)",
       "PowerShell(flutter analyze lib/models/program_week_model.dart lib/models/home_program_model.dart lib/services/program_service.dart lib/screens/workout/programme_detail_screen.dart 2>$null)",
       "PowerShell(flutter analyze lib/providers/chat_provider.dart lib/models/home_program_model.dart lib/services/program_service.dart lib/screens/workout/workout_screen.dart lib/screens/workout/weekly_plan_screen.dart lib/screens/workout/favorites_screen.dart lib/screens/home/home_screen.dart lib/screens/home/programs_bottom_sheet.dart lib/screens/home/favorites_bottom_sheet.dart lib/screens/workout/widgets/SalleSection.dart lib/screens/workout/widgets/MaisonSection.dart lib/screens/workout/widgets/GrossesseSection.dart 2>$null)",
-      "PowerShell(flutter analyze lib/screens/workout lib/theme lib/main.dart 2>$null)"
+      "PowerShell(flutter analyze lib/screens/workout lib/theme lib/main.dart 2>$null)",
+      "Bash(dart analyze *)"
     ]
   }
 }

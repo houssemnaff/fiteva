@@ -472,9 +472,10 @@ class _StepLanguageChoiceState extends State<StepLanguageChoice>
                                 color: const Color(0xFF1B5E3B).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Center(
-                                child: Text('🌿',
-                                    style: TextStyle(fontSize: 32)),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: Image.asset('assets/images/logfiteva.jpeg',
+                                    fit: BoxFit.cover),
                               ),
                             ),
                           ),

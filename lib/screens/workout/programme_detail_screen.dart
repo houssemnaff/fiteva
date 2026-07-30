@@ -110,7 +110,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen>
     final p = widget.program;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final l10n = ref.watch(l10nProvider);
-    final isFav = ref.watch(favoritesProvider).contains(p.id);
+    final isFav = ref.watch(favoritesProvider).contains('prog:${p.id}');
 
     return Scaffold(
       backgroundColor: dark ? const Color(0xFF0D0D0D) : const Color.fromARGB(255, 255, 255, 255),
@@ -306,10 +306,11 @@ class _HeroBg extends StatelessWidget {
               child: Row(children: [
               //  _CircleBtn(icon: LucideIcons.arrowLeft, onTap: onBack),
                 const Spacer(),
-                _CircleBtn(icon: LucideIcons.share2, onTap: onShare),
+                _CircleBtn(icon: LucideIcons.copy, onTap: onShare),
                 const SizedBox(width: 10),
                 _CircleBtn(
-                  icon: isFav ? LucideIcons.bookmarkCheck : LucideIcons.bookmark,
+                  icon: LucideIcons.heart,
+                  iconColor: isFav ? const Color(0xFFE53935) : Colors.white,
                   onTap: onBookmark,
                 ),
               ]),
@@ -369,7 +370,8 @@ class _HeroBg extends StatelessWidget {
 class _CircleBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _CircleBtn({required this.icon, required this.onTap});
+  final Color? iconColor;
+  const _CircleBtn({required this.icon, required this.onTap, this.iconColor});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -385,7 +387,7 @@ class _CircleBtn extends StatelessWidget {
               border:
                   Border.all(color: Colors.white.withValues(alpha: 0.25)),
             ),
-            child: Icon(icon, color: Colors.white, size: 18),
+            child: Icon(icon, color: iconColor ?? Colors.white, size: 18),
           ),
         ),
       );
@@ -1546,7 +1548,7 @@ class _BottomCta extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: done
-                        ? [gold.withValues(alpha: 0.70), gold]
+                        ? [const Color.fromARGB(255, 8, 54, 9).withValues(alpha: 0.70), Color.fromARGB(255, 8, 54, 9)]
                         : [accent, const Color(0xFF2E7D52)],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
@@ -1554,7 +1556,7 @@ class _BottomCta extends StatelessWidget {
                   borderRadius: BorderRadius.circular(50),
                   boxShadow: [
                     BoxShadow(
-                      color: (done ? gold : accent).withValues(alpha: 0.40),
+                      color: (done ? Color.fromARGB(255, 8, 54, 9) : accent).withValues(alpha: 0.40),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     )

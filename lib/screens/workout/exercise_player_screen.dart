@@ -330,24 +330,13 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     final t2 = dark ? Colors.white.withValues(alpha: 0.45) : const Color(0xFF8E8E93);
 
     final video = widget.video;
-    final steps = video != null && video.techniqueSteps.isNotEmpty
-        ? video.techniqueSteps : [l10n.exTip1, l10n.exTip2, l10n.exTip3];
-    final description = video != null && video.techniqueDescription.isNotEmpty
-        ? video.techniqueDescription : l10n.exTechniqueDesc;
+    final steps = video?.techniqueSteps ?? const <String>[];
+    final description = video?.techniqueDescription ?? '';
     final dbPrimary = video?.musclesPrimary ?? const [];
-    final muscles = dbPrimary.isNotEmpty
-        ? [for (final m in dbPrimary) (icon: _muscleIcon(m.name), name: m.name, level: m.level)]
-        : [(icon: LucideIcons.zap, name: 'Quadriceps', level: 1.0),
-           (icon: LucideIcons.activity, name: 'Fessiers', level: 0.85),
-           (icon: LucideIcons.zap, name: 'Ischio-jambiers', level: 0.60)];
-    final dbSecondary = video?.musclesSecondary ?? const [];
-    final secondary = dbSecondary.isNotEmpty ? dbSecondary : const ['Mollets', 'Abdominaux', 'Lombaires'];
+    final muscles = [for (final m in dbPrimary) (icon: _muscleIcon(m.name), name: m.name, level: m.level)];
+    final secondary = video?.musclesSecondary ?? const [];
     final dbTips = video?.tips ?? const [];
-    final tips = dbTips.isNotEmpty
-        ? [for (final t in dbTips) (icon: _tipIcon(t.title), title: t.title, tip: t.tip)]
-        : [(icon: LucideIcons.eye, title: 'Regard', tip: l10n.exTip1),
-           (icon: LucideIcons.wind, title: 'Respiration', tip: l10n.exTip2),
-           (icon: LucideIcons.moveVertical, title: 'Amplitude', tip: l10n.exTip3)];
+    final tips = [for (final t in dbTips) (icon: _tipIcon(t.title), title: t.title, tip: t.tip)];
 
     return Scaffold(
       backgroundColor: bg,
@@ -442,8 +431,10 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                           fontSize: 13, fontWeight: FontWeight.w700, color: accent)),
                     ]),
                     const SizedBox(height: 12),
-                    Text(description,
-                        style: GoogleFonts.inter(fontSize: 14, color: t2, height: 1.75, letterSpacing: -0.1)),
+                    description.isEmpty
+                        ? _NoDataInline(t2: t2)
+                        : Text(description,
+                            style: GoogleFonts.inter(fontSize: 14, color: t2, height: 1.75, letterSpacing: -0.1)),
                   ]),
                 ),
 
@@ -452,7 +443,10 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                 // ── Key steps — connected timeline ──
                 _SectionLabel(label: 'Étapes clés', t1: t1, accent: accent),
                 const SizedBox(height: 16),
-                ...List.generate(steps.length, (i) {
+                if (steps.isEmpty)
+                  _NoDataCard(dark: dark, t2: t2)
+                else
+                  ...List.generate(steps.length, (i) {
                   final isLast = i == steps.length - 1;
                   return IntrinsicHeight(
                     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -497,7 +491,9 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                 // ── Muscles ──
                 _SectionLabel(label: 'Muscles ciblés', t1: t1, accent: accent),
                 const SizedBox(height: 16),
-                Container(
+                (muscles.isEmpty && secondary.isEmpty)
+                    ? _NoDataCard(dark: dark, t2: t2)
+                    : Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: dark ? const Color(0xFF141414) : Colors.white,
@@ -560,7 +556,10 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                 // ── Tips ──
                 _SectionLabel(label: 'Conseils', t1: t1, accent: accent),
                 const SizedBox(height: 16),
-                ...tips.map((c) => Container(
+                if (tips.isEmpty)
+                  _NoDataCard(dark: dark, t2: t2)
+                else
+                  ...tips.map((c) => Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -683,6 +682,47 @@ class _StatPill extends StatelessWidget {
       ]),
     );
   }
+}
+
+class _NoDataInline extends StatelessWidget {
+  final Color t2;
+  const _NoDataInline({required this.t2});
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+    Icon(LucideIcons.info, size: 14, color: t2),
+    const SizedBox(width: 8),
+    Expanded(
+      child: Text('Pas encore de données pour le moment.',
+          style: GoogleFonts.inter(fontSize: 13, color: t2, height: 1.5,
+              fontStyle: FontStyle.italic)),
+    ),
+  ]);
+}
+
+class _NoDataCard extends StatelessWidget {
+  final bool dark;
+  final Color t2;
+  const _NoDataCard({required this.dark, required this.t2});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+    decoration: BoxDecoration(
+      color: dark ? const Color(0xFF141414) : const Color(0xFFF8F8F6),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: dark ? const Color(0xFF2A2A2A) : const Color(0xFFEDEDEB)),
+    ),
+    child: Column(children: [
+      Icon(LucideIcons.info, size: 20, color: t2),
+      const SizedBox(height: 8),
+      Text('Pas encore de données pour le moment.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(fontSize: 13, color: t2, height: 1.5,
+              fontStyle: FontStyle.italic)),
+    ]),
+  );
 }
 
 class _SectionLabel extends StatelessWidget {

@@ -705,23 +705,6 @@ class _PostCardState extends ConsumerState<_PostCard>
                 ]),
               ),
 
-              const SizedBox(width: 22),
-
-              // Share
-              GestureDetector(
-                onTap: () {},
-                child: Icon(CupertinoIcons.paperplane,
-                    size: 20, color: cs.onSurface.withValues(alpha: 0.45)),
-              ),
-
-              const Spacer(),
-
-              // Bookmark
-              GestureDetector(
-                onTap: () {},
-                child: Icon(CupertinoIcons.bookmark,
-                    size: 20, color: cs.onSurface.withValues(alpha: 0.45)),
-              ),
             ]),
           ),
         ],
