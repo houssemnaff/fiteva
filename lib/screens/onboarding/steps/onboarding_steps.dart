@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 
 import 'package:fiteva/screens/onboarding/widgets/shared_onboarding_widgets.dart';
