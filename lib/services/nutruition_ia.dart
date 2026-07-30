@@ -27,7 +27,7 @@ class NutritionIaService {
   // TODO: remplir avec une vraie clé API OpenRouter avant de mettre en prod.
   // Génère une clé sur https://openrouter.ai/keys
   // ───────────────────────────────────────────────────────────────────────
-  static const String _apiKey = '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';
+  static const String _apiKey = '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';
 
   // Modèle vision capable de sortie JSON structurée (pas un modèle de rerank —
   // nvidia/llama-nemotron-rerank-vl-1b-v2 ne fonctionne pas sur /chat/completions).
@@ -126,7 +126,7 @@ Base tes estimations sur des valeurs nutritionnelles réalistes.
       'model': _model,
       // Cap la sortie — le JSON attendu est court, et sans cette limite
       // le modèle réserve jusqu'à 65k tokens de budget (402 "insufficient credits").
-      'max_tokens': 1024,
+      'max_tokens': 200,
       'messages': [
         {
           'role': 'user',
