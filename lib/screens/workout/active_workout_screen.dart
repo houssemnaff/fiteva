@@ -394,7 +394,16 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen>
                   duration: const Duration(milliseconds: 300),
                   height: 56,
                   decoration: BoxDecoration(
-                    color: progress >= 1.0 ? Colors.green.shade600 : accent,
+
+
+ gradient: LinearGradient(
+                    colors:  progress >= 1.0
+                        ? [const Color.fromARGB(255, 17, 63, 18).withValues(alpha: 0.70), Color.fromARGB(255, 17, 63, 18)]
+                        : [accent, const Color(0xFF2E7D52)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(

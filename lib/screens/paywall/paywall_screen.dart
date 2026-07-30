@@ -125,26 +125,6 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
             ),
           ),
 
-          // ── Skip ──────────────────────────────────────────────
-          if (widget.showSkip)
-            Positioned(
-              top: top + 12,
-              right: 20,
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(false),
-                child: Container(
-                  width: 36, height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
-                  ),
-                  child: Icon(Icons.close_rounded,
-                    size: 20,
-                    color: Colors.white.withValues(alpha: 0.85)),
-                ),
-              ),
-            ),
-
           // ── Scrollable content ────────────────────────────────
           Positioned.fill(
             child: SafeArea(
@@ -276,6 +256,26 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               ),
             ),
           ),
+
+          // ── Skip ──────────────────────────────────────────────
+          if (widget.showSkip)
+            Positioned(
+              top: top + 12,
+              right: 20,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(false),
+                child: Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                  child: Icon(Icons.close_rounded,
+                    size: 20,
+                    color: Colors.white.withValues(alpha: 0.85)),
+                ),
+              ),
+            ),
         ],
       ),
     );
