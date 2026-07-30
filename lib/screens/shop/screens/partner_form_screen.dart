@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ── Colors ───────────────────────────────────────────────────────────────────
 // L'accent de marque vient du ColorScheme du thème actif (palette Pro) —
@@ -150,7 +151,7 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(l10n.formDevenirPart,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
+                        style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800,
                             color: ink, letterSpacing: -0.4)),
                   ],
                 ),
@@ -175,8 +176,8 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Devenez marque partenaire',
-                                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
+                            Text('Devenez marque partenaire',
+                                style: GoogleFonts.outfit(fontSize: 13.5, fontWeight: FontWeight.w700,
                                     color: Colors.white, letterSpacing: -0.2)),
                             const SizedBox(height: 2),
                             Text('50K+ utilisatrices · 4.8★ · mise en ligne <1 sem.',
@@ -242,12 +243,16 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                         return GestureDetector(
                           onTap: () => setState(() => _cat = cat.key),
                           child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 160),
-                            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                             decoration: BoxDecoration(
                               color: sel ? accent : cs.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: sel ? accent : line, width: 1),
+                              boxShadow: sel ? [
+                                BoxShadow(color: accent.withValues(alpha: 0.2),
+                                  blurRadius: 8, offset: const Offset(0, 3)),
+                              ] : null,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -255,7 +260,7 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                                 Icon(cat.icon, size: 14, color: sel ? Colors.white : muted),
                                 const SizedBox(width: 6),
                                 Text(cat.label,
-                                    style: TextStyle(fontSize: 12.5,
+                                    style: GoogleFonts.inter(fontSize: 12.5,
                                         fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
                                         color: sel ? Colors.white : ink)),
                               ],
@@ -313,7 +318,7 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                       backgroundColor: accent,
                       disabledBackgroundColor: accent.withValues(alpha: 0.5),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(27)),
                       elevation: 0,
                     ),
                     child: _loading
@@ -322,7 +327,7 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(l10n.formEnvoyer, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                              Text(l10n.formEnvoyer, style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700)),
                               const SizedBox(width: 8),
                               const Icon(CupertinoIcons.arrow_right, size: 16),
                             ],
@@ -433,7 +438,7 @@ class _SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: surf,
         borderRadius: BorderRadius.circular(18),
@@ -446,15 +451,15 @@ class _SectionCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 28, height: 28,
-                decoration: BoxDecoration(color: accent.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
-                child: Icon(icon, size: 14, color: accent),
+                width: 32, height: 32,
+                decoration: BoxDecoration(color: accent.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, size: 15, color: accent),
               ),
               const SizedBox(width: 10),
-              Text(title, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: ink)),
+              Text(title, style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           ...children,
         ],
       ),
@@ -533,7 +538,7 @@ class _SuccessSheetState extends ConsumerState<_SuccessSheet>
             const SizedBox(height: 20),
 
             Text(l10n.formCandidature,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: ink, letterSpacing: -0.5)),
+                style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800, color: ink, letterSpacing: -0.5)),
             const SizedBox(height: 8),
             Text(l10n.formRecontact,
                 textAlign: TextAlign.center,
@@ -574,11 +579,11 @@ class _SuccessSheetState extends ConsumerState<_SuccessSheet>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: widget.accent,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
                   elevation: 0,
                 ),
                 child: Text(l10n.formParfait,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                    style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700)),
               ),
             ),
           ],

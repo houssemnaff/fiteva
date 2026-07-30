@@ -740,25 +740,31 @@ class _SortLink extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(CupertinoIcons.arrow_up_arrow_down, size: 12, color: active ? c.accent : c.inkMuted),
-          const SizedBox(width: 5),
-          Text(l10n.boutiqueTrier,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: active ? c.accent : c.inkMuted,
-                decoration: TextDecoration.underline,
-                decorationColor: active ? c.accent : c.inkMuted,
-              )),
-          if (active) ...[
-            const SizedBox(width: 4),
-            Container(width: 5, height: 5,
-                decoration: const BoxDecoration(color: _C.gold, shape: BoxShape.circle)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? c.accent.withValues(alpha: 0.1) : c.chipBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: active ? c.accent.withValues(alpha: 0.3) : c.divider),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(CupertinoIcons.arrow_up_arrow_down, size: 13, color: active ? c.accent : c.inkMuted),
+            const SizedBox(width: 6),
+            Text(l10n.boutiqueTrier,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: active ? c.accent : c.inkMuted,
+                )),
+            if (active) ...[
+              const SizedBox(width: 5),
+              Container(width: 6, height: 6,
+                  decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle)),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -784,29 +790,36 @@ class _CatAvatar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: 42, height: 42,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            width: 46, height: 46,
             decoration: BoxDecoration(
               color: isSelected ? c.accent : c.chipBg,
               shape: BoxShape.circle,
-              border: isSelected ? Border.all(color: _C.gold, width: 1.6) : null,
+              border: Border.all(
+                color: isSelected ? c.accent : c.divider,
+                width: isSelected ? 2.2 : 1),
+              boxShadow: isSelected ? [
+                BoxShadow(color: c.accent.withValues(alpha: 0.25),
+                  blurRadius: 10, offset: const Offset(0, 3)),
+              ] : null,
             ),
-            child: Icon(icon, size: 18, color: isSelected ? Colors.white : c.inkMuted),
+            child: Icon(icon, size: 19, color: isSelected ? Colors.white : c.inkMuted),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 5),
           SizedBox(
-            width: 54,
-            height: 13,
+            width: 58,
+            height: 14,
             child: Text(label,
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.clip,
                 softWrap: false,
                 style: TextStyle(
-                  fontSize: 10.5,
+                  fontSize: 11,
                   height: 1.0,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? c.ink : c.inkSubtle,
+                  color: isSelected ? c.accent : c.inkSubtle,
                 )),
           ),
         ],
@@ -1074,14 +1087,18 @@ class _WishButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 28, height: 28,
+        width: 30, height: 30,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
+          color: Colors.white.withValues(alpha: 0.95),
           shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 6, offset: const Offset(0, 2)),
+          ],
         ),
         child: Icon(
           isActive ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
-          size: 13,
+          size: 14,
           color: isActive ? _C.wishRed : c.inkSubtle,
         ),
       ),
@@ -1112,13 +1129,14 @@ class _RedeemedTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: c.accentSoft, borderRadius: BorderRadius.circular(8)),
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(color: c.accentSoft, borderRadius: BorderRadius.circular(13)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.check_circle_rounded, size: 11, color: c.accent),
-        const SizedBox(width: 4),
+        Icon(Icons.check_circle_rounded, size: 12, color: c.accent),
+        const SizedBox(width: 5),
         Flexible(child: Text(label, overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: c.accent, fontSize: 10.5, fontWeight: FontWeight.w700))),
+            style: TextStyle(color: c.accent, fontSize: 11, fontWeight: FontWeight.w700))),
       ]),
     );
   }
@@ -1135,12 +1153,13 @@ class _DiamondBadge extends StatelessWidget {
     final bgColor = canAfford ? (c.isDark ? _C.diamond.withValues(alpha: 0.16) : const Color(0xFFE8F1FB)) : c.chipBg;
     final fgColor = canAfford ? _C.diamond : c.inkSubtle;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(13)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(LucideIcons.gem, size: 10, color: fgColor),
+          Icon(LucideIcons.gem, size: 11, color: fgColor),
           const SizedBox(width: 5),
           Text('$diamonds', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: fgColor)),
         ],

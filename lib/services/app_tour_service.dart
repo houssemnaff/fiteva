@@ -1,23 +1,29 @@
+// ignore_for_file: deprecated_member_use
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 const _mascotUrl =
     'https://res.cloudinary.com/dmzvbqocs/image/upload/v1785371674/preview-removebg-preview_i39b7w.png';
-const _accent = Color(0xFF5CD57A);
+const _green = Color(0xFF1B5E3B);
 
 class GuidedTourStep {
   final int tabIndex;
   final String title;
   final String description;
   final IconData icon;
+  final Color color;
 
   const GuidedTourStep({
     required this.tabIndex,
     required this.title,
     required this.description,
     required this.icon,
+    this.color = _green,
   });
 }
 
@@ -60,35 +66,25 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay>
     with SingleTickerProviderStateMixin {
   int _current = 0;
   late AnimationController _anim;
-  late Animation<double> _fadeIn;
-  late Animation<Offset> _slideIn;
 
   @override
   void initState() {
     super.initState();
     _anim = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
-    _fadeIn = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
-    _slideIn = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic));
+      vsync: this, duration: const Duration(milliseconds: 500));
     _anim.forward();
   }
 
   @override
-  void dispose() {
-    _anim.dispose();
-    super.dispose();
-  }
+  void dispose() { _anim.dispose(); super.dispose(); }
 
   void _next() async {
+    HapticFeedback.lightImpact();
     if (_current >= widget.steps.length - 1) {
       await AppTourService.markTourDone();
       widget.onFinish();
       return;
     }
-
     await _anim.reverse();
     setState(() => _current++);
     widget.onNavigateToTab(widget.steps[_current].tabIndex);
@@ -96,7 +92,18 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay>
     _anim.forward();
   }
 
+  void _prev() async {
+    if (_current <= 0) return;
+    HapticFeedback.lightImpact();
+    await _anim.reverse();
+    setState(() => _current--);
+    widget.onNavigateToTab(widget.steps[_current].tabIndex);
+    await Future.delayed(const Duration(milliseconds: 350));
+    _anim.forward();
+  }
+
   void _skip() async {
+    HapticFeedback.mediumImpact();
     await AppTourService.markTourDone();
     widget.onFinish();
   }
@@ -104,175 +111,258 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay>
   @override
   Widget build(BuildContext context) {
     final step = widget.steps[_current];
-    final bottom = MediaQuery.of(context).padding.bottom;
+    final bot = MediaQuery.of(context).padding.bottom;
+    final isFirst = _current == 0;
+    final isLast = _current == widget.steps.length - 1;
+    final accent = step.color;
 
     return Material(
       color: Colors.transparent,
-      child: Stack(
-        children: [
-          // Dark overlay
-          GestureDetector(
-            onTap: () {},
-            child: AnimatedOpacity(
-              opacity: 1.0,
-              duration: const Duration(milliseconds: 300),
-              child: Container(color: Colors.black.withValues(alpha: 0.7)),
+      child: AnimatedBuilder(
+        animation: _anim,
+        builder: (_, __) {
+          final t = CurvedAnimation(
+            parent: _anim, curve: Curves.easeOutCubic).value;
+
+          return Stack(children: [
+            // Dark overlay
+            GestureDetector(
+              onTap: () {},
+              child: Container(
+                color: Colors.black.withOpacity(0.75 * t),
+              ),
             ),
-          ),
 
-          // Content
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: bottom + 100,
-            child: FadeTransition(
-              opacity: _fadeIn,
-              child: SlideTransition(
-                position: _slideIn,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Mascot — full character, no circle crop
-                    CachedNetworkImage(
-                      imageUrl: _mascotUrl,
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.contain,
-                      placeholder: (_, __) => const SizedBox(
-                        width: 120, height: 120,
-                      ),
-                      errorWidget: (_, __, ___) => Container(
-                        width: 80, height: 80,
-                        decoration: const BoxDecoration(
-                          color: _accent, shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                            child: Text('💪', style: TextStyle(fontSize: 32))),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Card
-                    Container(
-                      padding: const EdgeInsets.all(24),
+            // Mascot — floating above card
+            Positioned(
+              left: 0, right: 0,
+              bottom: bot + 300,
+              child: Opacity(
+                opacity: t,
+                child: Transform.translate(
+                  offset: Offset(0, (1 - t) * 40),
+                  child: CachedNetworkImage(
+                    imageUrl: _mascotUrl,
+                    width: 150, height: 150,
+                    fit: BoxFit.contain,
+                    placeholder: (_, __) => const SizedBox(width: 150, height: 150),
+                    errorWidget: (_, __, ___) => Container(
+                      width: 70, height: 70,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 30,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Step indicator dots
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(
-                              widget.steps.length,
-                              (i) => Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 3),
-                                width: i == _current ? 22 : 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: i == _current
-                                      ? _accent
-                                      : const Color(0xFFE5E7EB),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Icon
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: _accent.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(step.icon, color: _accent, size: 26),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Title
-                          Text(
-                            step.title,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.outfit(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF1A1A1A),
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Description
-                          Text(
-                            step.description,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: const Color(0xFF6B7280),
-                              height: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // CTA
-                          GestureDetector(
-                            onTap: _next,
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1A1A1A),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  _current == widget.steps.length - 1
-                                      ? 'C\'est parti !'
-                                      : 'Suivant',
-                                  style: GoogleFonts.outfit(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-
-                          // Skip
-                          GestureDetector(
-                            onTap: _skip,
-                            child: Text(
-                              'Passer le guide',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: const Color(0xFF9CA3AF),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        color: accent.withOpacity(0.15),
+                        shape: BoxShape.circle),
+                      child: Icon(step.icon, size: 32, color: accent),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+
+            // Bottom glass card
+            Positioned(
+              left: 0, right: 0, bottom: 0,
+              child: Opacity(
+                opacity: t,
+                child: Transform.translate(
+                  offset: Offset(0, (1 - t) * 80),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(32)),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                      child: Container(
+                        padding: EdgeInsets.fromLTRB(24, 20, 24, bot + 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.93),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(32)),
+                          border: Border(
+                            top: BorderSide(
+                              color: Colors.white.withOpacity(0.5), width: 1)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 40,
+                              offset: const Offset(0, -8)),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Handle
+                            Container(
+                              width: 36, height: 4,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD0D8D3),
+                                borderRadius: BorderRadius.circular(2)),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Icon + title row
+                            Row(children: [
+                              Container(
+                                width: 48, height: 48,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      accent.withOpacity(0.15),
+                                      accent.withOpacity(0.06),
+                                    ]),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: accent.withOpacity(0.12)),
+                                ),
+                                child: Icon(step.icon, size: 22, color: accent),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(step.title, style: GoogleFonts.outfit(
+                                    fontSize: 20, fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF1A1A1A),
+                                    letterSpacing: -0.3, height: 1.2)),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Étape ${_current + 1} sur ${widget.steps.length}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12, fontWeight: FontWeight.w500,
+                                      color: accent)),
+                                ],
+                              )),
+                              // Skip X
+                              if (!isLast)
+                                GestureDetector(
+                                  onTap: _skip,
+                                  child: Container(
+                                    width: 34, height: 34,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Color(0xFFF0F2F1)),
+                                    child: const Icon(LucideIcons.x, size: 16,
+                                      color: Color(0xFF8B9990)),
+                                  ),
+                                ),
+                            ]),
+                            const SizedBox(height: 14),
+
+                            // Description
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(step.description,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14.5,
+                                  color: const Color(0xFF5A6B62),
+                                  height: 1.55,
+                                  fontWeight: FontWeight.w400)),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Progress bar
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: SizedBox(
+                                height: 5,
+                                child: Stack(children: [
+                                  Container(color: const Color(0xFFE8EDE9)),
+                                  AnimatedFractionallySizedBox(
+                                    duration: const Duration(milliseconds: 400),
+                                    curve: Curves.easeOutCubic,
+                                    widthFactor:
+                                        (_current + 1) / widget.steps.length,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(colors: [
+                                          accent,
+                                          accent.withOpacity(0.7),
+                                        ]),
+                                        borderRadius: BorderRadius.circular(3)),
+                                    ),
+                                  ),
+                                ]),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Buttons
+                            Row(children: [
+                              if (!isFirst)
+                                GestureDetector(
+                                  onTap: _prev,
+                                  child: Container(
+                                    width: 50, height: 50,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(25),
+                                      color: const Color(0xFFF0F2F1),
+                                      border: Border.all(
+                                        color: const Color(0xFFE2E8E4))),
+                                    child: const Icon(LucideIcons.chevronLeft,
+                                      size: 18, color: Color(0xFF5A6B62)),
+                                  ),
+                                ),
+                              if (!isFirst) const SizedBox(width: 10),
+
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: _next,
+                                  child: Container(
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          accent,
+                                          accent.withOpacity(0.8),
+                                        ]),
+                                      borderRadius: BorderRadius.circular(25),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: accent.withOpacity(0.3),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 6)),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          isLast
+                                              ? 'C\'est parti !'
+                                              : (isFirst
+                                                  ? 'Commencer'
+                                                  : 'Suivant'),
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Icon(
+                                          isLast
+                                              ? LucideIcons.rocket
+                                              : LucideIcons.arrowRight,
+                                          size: 16,
+                                          color: Colors.white.withOpacity(0.9)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ]),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ]);
+        },
       ),
     );
   }

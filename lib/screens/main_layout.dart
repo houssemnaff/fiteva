@@ -295,24 +295,28 @@ class _MainLayoutState extends ConsumerState<MainLayout>
                   title: 'Bienvenue sur FitEva !',
                   description: 'Ton programme personnalisé selon ton cycle, tes objectifs et ton niveau. C\'est ici que tout commence.',
                   icon: Icons.home_rounded,
+                  color: Color(0xFF1B5E3B),
                 ),
                 GuidedTourStep(
                   tabIndex: 2,
                   title: 'Tes workouts',
                   description: 'Salle, maison, danse, récupération… explore les catégories et trouve le workout parfait pour toi.',
                   icon: Icons.fitness_center_rounded,
+                  color: Color(0xFF4AADE8),
                 ),
                 GuidedTourStep(
                   tabIndex: 3,
                   title: 'Ta nutrition',
                   description: 'Ajoute tes repas, scanne un produit ou cherche un aliment. Suis tes calories et macros au quotidien.',
                   icon: Icons.restaurant_rounded,
+                  color: Color(0xFFE8A44A),
                 ),
                 GuidedTourStep(
                   tabIndex: -1,
                   title: 'Boutique, Santé & Communauté',
                   description: 'Appuie sur le bouton + en bas pour découvrir la boutique, ton espace santé et la communauté FitEva.',
                   icon: Icons.add_circle_rounded,
+                  color: Color(0xFF1B5E3B),
                 ),
               ],
               onNavigateToTab: (tabIndex) {

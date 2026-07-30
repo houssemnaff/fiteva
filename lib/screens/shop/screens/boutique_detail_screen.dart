@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:fiteva/core/shop/shop_provider.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/cupertino.dart';
@@ -5,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../models/boutique_item.dart';
 import 'package:fiteva/screens/shop/widgets/promo_modal.dart';
 
@@ -218,10 +221,15 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
         padding: const EdgeInsets.only(left: 16),
         child: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.28), shape: BoxShape.circle),
-            child: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 17),
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.22), shape: BoxShape.circle),
+                child: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 17),
+              ),
+            ),
           ),
         ),
       ),
@@ -286,10 +294,10 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(item.brand.toUpperCase(),
-            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: p.inkSubtle, letterSpacing: 1.4)),
+            style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: p.inkSubtle, letterSpacing: 1.4)),
         const SizedBox(height: 5),
         Text(item.title.isEmpty ? 'Offre partenaire' : item.title,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: p.ink, letterSpacing: -0.6, height: 1.15)),
+            style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w800, color: p.ink, letterSpacing: -0.6, height: 1.15)),
       ],
     );
   }
@@ -307,7 +315,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(l10n.detailResume,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: p.ink)),
+              style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700, color: p.ink)),
           const SizedBox(height: 18),
 
           Row(
@@ -425,7 +433,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.detailAPropos, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: p.ink)),
+          Text(l10n.detailAPropos, style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700, color: p.ink)),
           const SizedBox(height: 12),
           Text(desc, style: TextStyle(fontSize: 14, color: p.inkMuted, height: 1.6)),
         ],
@@ -440,7 +448,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.detailComment, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: p.ink)),
+          Text(l10n.detailComment, style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700, color: p.ink)),
           const SizedBox(height: 16),
           _StepRow(p: p, number: '01', text: l10n.detailStep1, isLast: false),
           _StepRow(p: p, number: '02', text: l10n.detailStep2, isLast: false),
@@ -471,7 +479,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 decoration: BoxDecoration(
-                    color: p.accent.withValues(alpha: p.isDark ? 0.18 : 0.10), borderRadius: BorderRadius.circular(10)),
+                    color: p.accent.withValues(alpha: p.isDark ? 0.18 : 0.10), borderRadius: BorderRadius.circular(14)),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -491,7 +499,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 decoration: BoxDecoration(
-                    color: _P.warning.withValues(alpha: p.isDark ? 0.18 : 0.10), borderRadius: BorderRadius.circular(10)),
+                    color: _P.warning.withValues(alpha: p.isDark ? 0.18 : 0.10), borderRadius: BorderRadius.circular(14)),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -518,7 +526,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                 height: 54,
                 decoration: BoxDecoration(
                   color: ctaActive ? p.accent : p.chipBg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(27),
                   boxShadow: ctaActive
                       ? [BoxShadow(color: p.accent.withValues(alpha: 0.30), blurRadius: 16, offset: const Offset(0, 6))]
                       : [],
@@ -529,7 +537,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                     Icon(
                       redeemed
                           ? Icons.check_circle_rounded
-                          : ctaActive ? CupertinoIcons.sparkles : CupertinoIcons.lock_fill,
+                          : ctaActive ? LucideIcons.sparkles : CupertinoIcons.lock_fill,
                       color: ctaActive ? Colors.white : p.inkSubtle, size: 18,
                     ),
                     const SizedBox(width: 10),
@@ -537,7 +545,7 @@ class _BoutiqueDetailScreenState extends ConsumerState<BoutiqueDetailScreen>
                       redeemed
                           ? l10n.detailDejaEchangeBtn
                           : ctaActive ? l10n.detailEchangerDiamonds(widget.item.diamonds) : l10n.detailDiamondsInsuff,
-                      style: TextStyle(
+                      style: GoogleFonts.outfit(
                           color: ctaActive ? Colors.white : p.inkSubtle,
                           fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.3),
                     ),
@@ -642,9 +650,9 @@ class _StepRow extends StatelessWidget {
           children: [
             Container(
               width: 28, height: 28,
-              decoration: BoxDecoration(color: p.accent, borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: p.accent, borderRadius: BorderRadius.circular(14)),
               child: Center(
-                child: Text(number, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                child: Text(number, style: GoogleFonts.inter(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
               ),
             ),
             if (!isLast) Container(width: 1, height: 24, color: p.divider),

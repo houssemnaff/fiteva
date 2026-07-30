@@ -3,6 +3,8 @@ import 'package:fiteva/services/shop_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 
@@ -79,7 +81,7 @@ class _RedemptionHistoryScreenState extends ConsumerState<RedemptionHistoryScree
                   ),
                   const SizedBox(width: 14),
                   Text('Mon activité',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
+                      style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800,
                           color: p.ink, letterSpacing: -0.4)),
                 ],
               ),
@@ -87,9 +89,9 @@ class _RedemptionHistoryScreenState extends ConsumerState<RedemptionHistoryScree
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
               child: Container(
-                height: 40,
+                height: 42,
                 padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(color: p.chipBg, borderRadius: BorderRadius.circular(11)),
+                decoration: BoxDecoration(color: p.chipBg, borderRadius: BorderRadius.circular(21)),
                 child: Row(
                   children: [
                     _TabButton(p: p, label: 'Échanges', selected: _tab == _Tab.redemptions,
@@ -125,14 +127,18 @@ class _TabButton extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: const Duration(milliseconds: 180),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? p.accent : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: selected ? [
+              BoxShadow(color: p.accent.withValues(alpha: 0.2),
+                blurRadius: 6, offset: const Offset(0, 2)),
+            ] : null,
           ),
           child: Text(label,
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected ? Colors.white : p.inkMuted,
@@ -212,15 +218,15 @@ class _HistoryRow extends StatelessWidget {
         child: Row(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               child: SizedBox(
-                width: 56, height: 56,
+                width: 62, height: 62,
                 child: item != null && item!.imageUrl.isNotEmpty
                     ? Image.network(item!.imageUrl, fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(color: p.surfaceAlt,
-                            child: Icon(CupertinoIcons.bag, size: 20, color: p.inkSubtle)))
+                            child: Icon(CupertinoIcons.bag, size: 22, color: p.inkSubtle)))
                     : Container(color: p.surfaceAlt,
-                        child: Icon(CupertinoIcons.bag, size: 20, color: p.inkSubtle)),
+                        child: Icon(CupertinoIcons.bag, size: 22, color: p.inkSubtle)),
               ),
             ),
             const SizedBox(width: 14),
@@ -230,29 +236,30 @@ class _HistoryRow extends StatelessWidget {
                 children: [
                   Text(item?.title ?? 'Article indisponible',
                       maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: p.ink)),
+                      style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.w700, color: p.ink)),
                   const SizedBox(height: 3),
                   Text(_fmtDate(entry.redeemedAt),
-                      style: TextStyle(fontSize: 11.5, color: p.inkMuted)),
+                      style: GoogleFonts.inter(fontSize: 11.5, color: p.inkMuted)),
                   if (entry.promoCode.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text('Code : ${entry.promoCode}',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.accent)),
+                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: p.accent)),
                   ],
                 ],
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              height: 26,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
                 color: p.isDark ? _P.gold.withValues(alpha: 0.16) : const Color(0xFFF6EFDF),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(13),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(CupertinoIcons.star_fill, size: 10, color: _P.gold),
+                const Icon(LucideIcons.gem, size: 11, color: _P.gold),
                 const SizedBox(width: 5),
                 Text('-${entry.pointsSpent}',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _P.gold)),
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _P.gold)),
               ]),
             ),
           ],
@@ -336,9 +343,9 @@ class _RequestRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(color: p.chipBg, borderRadius: BorderRadius.circular(12)),
-            child: Icon(Icons.handshake_rounded, size: 19, color: p.inkMuted),
+            width: 46, height: 46,
+            decoration: BoxDecoration(color: p.chipBg, borderRadius: BorderRadius.circular(23)),
+            child: Icon(Icons.handshake_rounded, size: 20, color: p.inkMuted),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -347,17 +354,23 @@ class _RequestRow extends StatelessWidget {
               children: [
                 Text(entry.brand.isEmpty ? 'Marque' : entry.brand,
                     maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: p.ink)),
+                    style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.w700, color: p.ink)),
                 const SizedBox(height: 3),
                 Text('${entry.category.isEmpty ? '—' : entry.category} · ${_fmtDate(entry.createdAt)}',
-                    style: TextStyle(fontSize: 11.5, color: p.inkMuted)),
+                    style: GoogleFonts.inter(fontSize: 11.5, color: p.inkMuted)),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-            child: Text(label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: fg)),
+            height: 26,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(13)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: fg)),
+              ],
+            ),
           ),
           const SizedBox(width: 8),
           Icon(CupertinoIcons.chevron_right, size: 14, color: p.inkSubtle),
@@ -475,12 +488,13 @@ class _RequestDetailSheetState extends ConsumerState<_RequestDetailSheet> {
                 children: [
                   Expanded(
                     child: Text(entry.brand.isEmpty ? 'Marque' : entry.brand,
-                        style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: p.ink, letterSpacing: -0.4)),
+                        style: GoogleFonts.outfit(fontSize: 19, fontWeight: FontWeight.w800, color: p.ink, letterSpacing: -0.4)),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-                    child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: fg)),
+                    height: 28,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+                    child: Center(child: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: fg))),
                   ),
                 ],
               ),
@@ -506,7 +520,7 @@ class _RequestDetailSheetState extends ConsumerState<_RequestDetailSheet> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFC24A4A),
                       side: const BorderSide(color: Color(0xFFC24A4A)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                     ),
                     child: _deleting
                         ? const SizedBox(width: 18, height: 18,
@@ -545,11 +559,11 @@ class _EmptyState extends StatelessWidget {
             child: Icon(icon, size: 30, color: p.inkSubtle),
           ),
           const SizedBox(height: 20),
-          Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: p.ink)),
+          Text(title, style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w700, color: p.ink)),
           const SizedBox(height: 8),
           Text(subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13.5, color: p.inkMuted, height: 1.5)),
+              style: GoogleFonts.inter(fontSize: 13.5, color: p.inkMuted, height: 1.5)),
         ],
       ),
     );

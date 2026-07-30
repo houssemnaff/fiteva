@@ -3,6 +3,8 @@ import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 
@@ -223,7 +225,7 @@ class _Header extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Text(l10n.allPartPartenaires,
-                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: p.ink, letterSpacing: -0.4)),
+                  style: GoogleFonts.outfit(fontSize: 19, fontWeight: FontWeight.w800, color: p.ink, letterSpacing: -0.4)),
             ],
           ),
         ),
@@ -297,16 +299,20 @@ class _CatPill extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 15),
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isSelected ? p.accent : Colors.transparent,
           borderRadius: BorderRadius.circular(17),
           border: Border.all(color: isSelected ? p.accent : p.divider, width: 1.2),
+          boxShadow: isSelected ? [
+            BoxShadow(color: p.accent.withValues(alpha: 0.2),
+              blurRadius: 8, offset: const Offset(0, 3)),
+          ] : null,
         ),
         child: Text(label,
-            style: TextStyle(
+            style: GoogleFonts.inter(
               fontSize: 12.5,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: isSelected ? Colors.white : p.inkMuted,
@@ -349,9 +355,9 @@ class _PartnerRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               child: SizedBox(
-                width: 68, height: 68,
+                width: 72, height: 72,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -369,27 +375,46 @@ class _PartnerRow extends StatelessWidget {
                 children: [
                   Text(item.brand.toUpperCase(),
                       maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                      style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w700,
                           color: p.inkSubtle, letterSpacing: 1.2)),
                   const SizedBox(height: 3),
                   Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: p.ink)),
-                  const SizedBox(height: 6),
+                      style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.w700, color: p.ink)),
+                  const SizedBox(height: 7),
                   Row(children: [
                     if (item.discount.isNotEmpty) ...[
-                      Text(item.discount,
-                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: p.accent)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: p.accent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(item.discount,
+                            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: p.accent)),
+                      ),
                       const SizedBox(width: 8),
                       Container(width: 3, height: 3, decoration: BoxDecoration(color: p.divider, shape: BoxShape.circle)),
                       const SizedBox(width: 8),
                     ],
                     isRedeemed
-                        ? Text('Échangé', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: p.inkMuted))
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: p.accentSoft,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              Icon(Icons.check_circle_rounded, size: 11, color: p.accent),
+                              const SizedBox(width: 4),
+                              Text('Échangé', style: GoogleFonts.inter(
+                                  fontSize: 11, fontWeight: FontWeight.w700, color: p.accent)),
+                            ]),
+                          )
                         : Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(CupertinoIcons.star_fill, size: 10, color: canAfford ? _P.gold : p.inkSubtle),
+                            Icon(LucideIcons.gem, size: 11, color: canAfford ? _P.gold : p.inkSubtle),
                             const SizedBox(width: 4),
                             Text('${item.diamonds} pts',
-                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
+                                style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600,
                                     color: canAfford ? p.ink : p.inkSubtle)),
                           ]),
                   ]),
@@ -400,8 +425,15 @@ class _PartnerRow extends StatelessWidget {
             GestureDetector(
               onTap: onWish,
               behavior: HitTestBehavior.opaque,
-              child: Icon(isWishlisted ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
-                  size: 19, color: isWishlisted ? _P.wishRed : p.inkSubtle),
+              child: Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color: p.chipBg,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(isWishlisted ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+                    size: 16, color: isWishlisted ? _P.wishRed : p.inkSubtle),
+              ),
             ),
           ],
         ),

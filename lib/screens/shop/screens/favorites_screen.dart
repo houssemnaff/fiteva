@@ -2,6 +2,9 @@ import 'package:fiteva/core/shop/shop_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 
@@ -95,20 +98,20 @@ class FavoritesScreen extends ConsumerWidget {
             child: Row(
               children: [
                 Container(
-                  width: 32, height: 32,
+                  width: 34, height: 34,
                   decoration: BoxDecoration(
                     color: cs.primary.withValues(alpha: cs.brightness == Brightness.dark ? 0.2 : 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(CupertinoIcons.heart_fill, size: 15, color: cs.primary),
+                  child: Icon(CupertinoIcons.heart_fill, size: 16, color: cs.primary),
                 ),
                 const SizedBox(width: 10),
                 Text(
                   'Mes favoris',
-                  style: TextStyle(
+                  style: GoogleFonts.outfit(
                     color: _ink(cs),
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: -0.4,
                   ),
                 ),
@@ -174,9 +177,9 @@ class FavoritesScreen extends ConsumerWidget {
             const SizedBox(height: 20),
             Text(
               'Aucun favori',
-              style: TextStyle(
+              style: GoogleFonts.outfit(
                 fontSize: 20,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: _ink(cs),
                 letterSpacing: -0.4,
               ),
@@ -185,7 +188,7 @@ class FavoritesScreen extends ConsumerWidget {
             Text(
               'Ajoutez des partenaires à vos favoris\nen appuyant sur le coeur.',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _inkMuted(cs),
                 height: 1.5,
@@ -270,19 +273,19 @@ class _FavoriteCard extends StatelessWidget {
                   children: [
                     Text(
                       item.brand.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
+                      style: GoogleFonts.inter(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
                         color: inkSubtle,
-                        letterSpacing: 1.8,
+                        letterSpacing: 1.4,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       item.title,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
                         color: ink,
                         height: 1.3,
                       ),
@@ -334,14 +337,16 @@ class _FavoriteCard extends StatelessWidget {
       child: Stack(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: SizedBox(
               width: 90,
               height: 90,
-              child: Image.network(
-                item.imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: item.imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                memCacheWidth: 300,
+                placeholder: (_, __) => Container(color: chipBg),
+                errorWidget: (_, __, ___) => Container(
                   color: chipBg,
                   child: Icon(
                     Icons.shopping_bag_outlined,
@@ -358,14 +363,14 @@ class _FavoriteCard extends StatelessWidget {
               left: 6,
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2.5),
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111110),
-                  borderRadius: BorderRadius.circular(5),
+                  color: const Color(0xFF16211A),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   item.discount,
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w700,
@@ -402,32 +407,33 @@ class _StarsBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: goldSurface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(13),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (!canAfford)
             Padding(
-              padding: const EdgeInsets.only(right: 3),
+              padding: const EdgeInsets.only(right: 4),
               child: Icon(
                 CupertinoIcons.lock_fill,
-                size: 9,
+                size: 10,
                 color: inkSubtle,
               ),
             ),
           Icon(
-            Icons.star_rounded,
-            size: 10,
+            LucideIcons.gem,
+            size: 11,
             color: canAfford ? _gold : inkSubtle,
           ),
-          const SizedBox(width: 3),
+          const SizedBox(width: 5),
           Text(
             '$diamonds',
-            style: TextStyle(
+            style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: canAfford ? _gold : inkSubtle,
