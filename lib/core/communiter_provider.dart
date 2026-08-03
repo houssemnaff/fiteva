@@ -185,6 +185,7 @@ class EventsNotifier extends StateNotifier<List<EventModel>> {
   }
 
   Future<void> toggleJoin(String id) async {
+    final event = state.firstWhere((e) => e.id == id);
     final wasJoined = _joined.contains(id);
     // Mise à jour optimiste immédiate
     if (wasJoined) {
@@ -206,7 +207,12 @@ class EventsNotifier extends StateNotifier<List<EventModel>> {
     if (wasJoined) {
       await CommunityService.leaveEvent(id);
     } else {
-      await CommunityService.joinEvent(id);
+      await CommunityService.joinEvent(
+        id,
+        organizerId: event.organizerId,
+        eventTitle: event.title,
+        actorUsername: _ref.read(userProfileProvider).username,
+      );
     }
   }
 
@@ -360,7 +366,7 @@ class PartnerRequestsState {
 }
 
 class PartnerRequestsNotifier extends StateNotifier<PartnerRequestsState> {
-  PartnerRequestsNotifier() : super(const PartnerRequestsState()) {
+  PartnerRequestsNotifier(this._ref) : super(const PartnerRequestsState()) {
     refresh();
 
     // Écoute Realtime — dès qu'une demande est créée (côté owner) ou que son
@@ -376,6 +382,7 @@ class PartnerRequestsNotifier extends StateNotifier<PartnerRequestsState> {
         .subscribe();
   }
 
+  final Ref _ref;
   late final RealtimeChannel _channel;
 
   Future<void> refresh() async {
@@ -388,9 +395,17 @@ class PartnerRequestsNotifier extends StateNotifier<PartnerRequestsState> {
       state.myStatusByPartnerId[partnerId] ?? 'none';
 
   /// Envoie une demande pour rejoindre un partenaire (liste d'attente).
-  Future<void> join({required String partnerId, required String ownerId}) async {
+  Future<void> join({
+    required String partnerId,
+    required String ownerId,
+    required String partnerLabel,
+  }) async {
     final result = await CommunityService.sendPartnerJoinRequest(
-      partnerId: partnerId, ownerId: ownerId);
+      partnerId: partnerId,
+      ownerId: ownerId,
+      requesterUsername: _ref.read(userProfileProvider).username,
+      partnerLabel: partnerLabel,
+    );
     if (result == null) return;
     state = state.copyWith(myStatusByPartnerId: {
       ...state.myStatusByPartnerId,
@@ -400,8 +415,14 @@ class PartnerRequestsNotifier extends StateNotifier<PartnerRequestsState> {
 
   /// Accepte ou refuse une demande reçue, puis rafraîchit la liste des demandes.
   Future<void> respond({required String requestId, required bool accept}) async {
+    final req = state.incoming.firstWhere((r) => r.id == requestId);
     final ok = await CommunityService.respondToPartnerRequest(
-      requestId: requestId, accept: accept);
+      requestId: requestId,
+      accept: accept,
+      requesterId: req.requesterId,
+      partnerLabel: req.partnerGoal,
+      actorUsername: _ref.read(userProfileProvider).username,
+    );
     if (!ok) return;
     state = state.copyWith(
       incoming: state.incoming.where((r) => r.id != requestId).toList(),
@@ -417,4 +438,4 @@ class PartnerRequestsNotifier extends StateNotifier<PartnerRequestsState> {
 
 final partnerRequestsProvider =
     StateNotifierProvider<PartnerRequestsNotifier, PartnerRequestsState>(
-        (_) => PartnerRequestsNotifier());
+        (ref) => PartnerRequestsNotifier(ref));

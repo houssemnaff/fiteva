@@ -8,8 +8,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../providers/mascot_provider.dart';
 import '../providers/user_profile_provider.dart';
 import '../providers/points_provider.dart';
+import '../providers/notifications_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/mascot_widget.dart';
+import '../screens/home/notifications_sheet.dart';
+import '../screens/home/streak_rewards_sheet.dart';
 
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key});
@@ -106,41 +109,59 @@ class HomeHeader extends ConsumerWidget {
             // Streak = jours CONSÉCUTIFS (flamme) — recalculé côté serveur
             // (trigger fn_track_login_day), fiable même au premier frame.
             if (xp.streak > 0) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(LucideIcons.flame, size: 14, color: Color(0xFFFFB067)),
-                  const SizedBox(width: 4),
-                  Text('${xp.streak}', style: GoogleFonts.outfit(
-                    fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
-                ]),
+              GestureDetector(
+                onTap: () => showStreakRewardsSheet(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(LucideIcons.flame, size: 14, color: Color(0xFFFFB067)),
+                    const SizedBox(width: 4),
+                    Text('${xp.streak}', style: GoogleFonts.outfit(
+                      fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
+                  ]),
+                ),
               ),
               Container(width: 1, height: 18, color: Colors.white.withOpacity(0.18)),
             ],
             // Total de jours de connexion (distincts, pas forcément consécutifs)
             if (xp.totalLoginDays > 0) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(LucideIcons.calendarDays, size: 13, color: Color(0xFF9CC8F5)),
-                  const SizedBox(width: 4),
-                  Text('${xp.totalLoginDays}j', style: GoogleFonts.outfit(
-                    fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
-                ]),
+              GestureDetector(
+                onTap: () => showStreakRewardsSheet(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(LucideIcons.calendarDays, size: 13, color: Color(0xFF9CC8F5)),
+                    const SizedBox(width: 4),
+                    Text('${xp.totalLoginDays}j', style: GoogleFonts.outfit(
+                      fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
+                  ]),
+                ),
               ),
               Container(width: 1, height: 18, color: Colors.white.withOpacity(0.18)),
             ],
             GestureDetector(
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Notifications bientôt disponibles'),
-                  duration: Duration(seconds: 2),
-                ),
-              ),
+              onTap: () => showNotificationsSheet(context),
               child: Container(
                 width: 32, height: 32,
                 alignment: Alignment.center,
-                child: Icon(LucideIcons.bell, color: Colors.white.withOpacity(0.9), size: 17),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(LucideIcons.bell, color: Colors.white.withOpacity(0.9), size: 17),
+                    if (ref.watch(notificationsUnreadCountProvider) > 0)
+                      Positioned(
+                        top: -2, right: -3,
+                        child: Container(
+                          width: 8, height: 8,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black.withOpacity(0.3), width: 1.5),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ]),

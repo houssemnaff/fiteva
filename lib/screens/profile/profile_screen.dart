@@ -19,6 +19,8 @@ import '../../providers/theme_provider.dart';
 import '../../providers/mascot_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/subscription_provider.dart';
+import '../../providers/notifications_provider.dart';
+import '../../core/communiter_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/mascot_widget.dart';
 import '../../widgets/paywall_sheet.dart';
@@ -90,13 +92,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final l10n       = ref.watch(l10nProvider);
     final diamonds   = ref.watch(diamondsProvider);
     final xp         = ref.watch(pointsProvider);
+    final mascot     = ref.watch(mascotProvider);
     final d          = isDarkMode;
 
     final displayName  = profile.username.isNotEmpty ? profile.username : 'User';
     final displayEmail = profile.email.isNotEmpty ? profile.email : '';
-    final initials = displayName.isNotEmpty
-        ? displayName.trim().split(' ').map((w) => w.isNotEmpty ? w[0].toUpperCase() : '').take(2).join()
-        : 'U';
 
     final bg    = _P.bg(d);
     final ink   = _P.t1(d);
@@ -213,20 +213,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(children: [
-                    Container(
-                      width: 60, height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft, end: Alignment.bottomRight,
-                          colors: [accent, accent.withValues(alpha: 0.7)]),
+                    Stack(children: [
+                      Container(
+                        width: 60, height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: accent.withValues(alpha: 0.10),
+                          border: Border.all(color: accent.withValues(alpha: 0.25), width: 2),
+                        ),
+                        child: ClipOval(child: MascotWidget(
+                          type: mascot.type, mood: mascot.mood, size: 56)),
                       ),
-                      child: Center(
-                        child: Text(initials,
-                          style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w600,
-                            color: Colors.white)),
-                      ),
-                    ),
+                      Positioned(right: 0, bottom: 0,
+                        child: Container(
+                          width: 20, height: 20,
+                          decoration: BoxDecoration(
+                            color: accent, shape: BoxShape.circle,
+                            border: Border.all(color: surf, width: 2)),
+                          child: const Icon(Icons.edit_rounded,
+                            size: 10, color: Colors.white))),
+                    ]),
                     const SizedBox(width: 14),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
@@ -588,6 +594,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Navigator.of(ctx).pop();
               await AuthService.signOut();
               ref.read(onboardingProvider.notifier).reset();
+              // Ferme tout l'état par-compte en mémoire — sinon le prochain
+              // login (même appareil, autre compte) réafficherait ces
+              // données jusqu'au hot restart (avatar, streak, notifs...).
+              ref.invalidate(userProfileProvider);
+              ref.invalidate(mascotProvider);
+              ref.invalidate(pointsProvider);
+              ref.invalidate(postsNotifierProvider);
+              ref.invalidate(eventsNotifierProvider);
+              ref.invalidate(partnersNotifierProvider);
+              ref.invalidate(partnerRequestsProvider);
+              ref.invalidate(notificationsProvider);
               if (context.mounted) context.go('/onboarding');
             },
             child: const Text('Déconnecter',

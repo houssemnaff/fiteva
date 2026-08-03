@@ -4,6 +4,7 @@ import '../models/post_model.dart';
 import '../screens/community/model/event_model.dart';
 import '../screens/community/model/partner_model.dart';
 import 'cloudinary_config.dart';
+import 'notification_service.dart';
 import 'supabase_config.dart';
 
 /// Service communauté — posts, likes, commentaires, événements, partenaires
@@ -528,11 +529,24 @@ class CommunityService {
     }
   }
 
-  static Future<void> joinEvent(String eventId) async {
+  static Future<void> joinEvent(
+    String eventId, {
+    required String organizerId,
+    required String eventTitle,
+    required String actorUsername,
+  }) async {
     if (_uid == null) return;
     try {
       await SupabaseConfig.table('event_participants')
           .insert({'user_id': _uid, 'event_id': eventId});
+      await NotificationService.create(
+        userId: organizerId,
+        actorId: _uid!,
+        type: 'event_joined',
+        title: 'Nouveau participant',
+        body: '$actorUsername a rejoint « $eventTitle »',
+        data: {'event_id': eventId},
+      );
     } catch (_) {}
   }
 
@@ -714,6 +728,8 @@ class CommunityService {
   static Future<String?> sendPartnerJoinRequest({
     required String partnerId,
     required String ownerId,
+    required String requesterUsername,
+    required String partnerLabel,
   }) async {
     if (_uid == null) return null;
     try {
@@ -723,6 +739,14 @@ class CommunityService {
         'owner_id':     ownerId,
         'status':       'pending',
       }, onConflict: 'partner_id,requester_id');
+      await NotificationService.create(
+        userId: ownerId,
+        actorId: _uid!,
+        type: 'partner_request_received',
+        title: 'Nouvelle demande',
+        body: '$requesterUsername veut rejoindre « $partnerLabel »',
+        data: {'partner_id': partnerId},
+      );
       return 'pending';
     } catch (e) {
       debugPrint('[CommunityService] sendPartnerJoinRequest error: $e');
@@ -820,11 +844,26 @@ class CommunityService {
   static Future<bool> respondToPartnerRequest({
     required String requestId,
     required bool accept,
+    required String requesterId,
+    required String partnerLabel,
+    required String actorUsername,
   }) async {
+    final uid = _uid;
+    if (uid == null) return false;
     try {
       await SupabaseConfig.table('partner_join_requests').update({
         'status': accept ? 'accepted' : 'declined',
       }).eq('id', requestId);
+      if (accept) {
+        await NotificationService.create(
+          userId: requesterId,
+          actorId: uid,
+          type: 'partner_request_accepted',
+          title: 'Demande acceptée',
+          body: '$actorUsername a accepté ta demande pour « $partnerLabel »',
+          data: {'request_id': requestId},
+        );
+      }
       return true;
     } catch (e) {
       debugPrint('[CommunityService] respondToPartnerRequest error: $e');

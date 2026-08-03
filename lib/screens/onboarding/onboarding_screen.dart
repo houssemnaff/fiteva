@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' show User;
 import '../../providers/onboarding_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../providers/mascot_provider.dart';
+import '../../providers/points_provider.dart';
+import '../../providers/notifications_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../core/communiter_provider.dart';
 import '../../services/storage_service.dart';
@@ -213,7 +215,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await ref.read(onboardingProvider.notifier).completeOnboarding();
     await StorageService.clearOnboardingData();
     ref.read(userProfileProvider.notifier).reload();
-    ref.read(mascotProvider.notifier).reload();
+    ref.invalidate(mascotProvider);
+    ref.read(pointsProvider.notifier).reload();
+    ref.invalidate(postsNotifierProvider);
+    ref.invalidate(eventsNotifierProvider);
+    ref.invalidate(partnersNotifierProvider);
+    ref.invalidate(partnerRequestsProvider);
+    ref.invalidate(notificationsProvider);
     if (!mounted) return;
     context.go('/');
   }
@@ -239,9 +247,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
     StorageService.setOnboardingCompleted(true);
     ref.read(userProfileProvider.notifier).reload();
+    ref.invalidate(mascotProvider);
+    ref.read(pointsProvider.notifier).reload();
     ref.invalidate(postsNotifierProvider);
     ref.invalidate(eventsNotifierProvider);
     ref.invalidate(partnersNotifierProvider);
+    ref.invalidate(partnerRequestsProvider);
+    ref.invalidate(notificationsProvider);
     context.go('/');
   }
 
@@ -286,9 +298,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
     StorageService.setOnboardingCompleted(true);
     ref.read(userProfileProvider.notifier).reload();
+    ref.invalidate(mascotProvider);
+    ref.read(pointsProvider.notifier).reload();
     ref.invalidate(postsNotifierProvider);
     ref.invalidate(eventsNotifierProvider);
     ref.invalidate(partnersNotifierProvider);
+    ref.invalidate(partnerRequestsProvider);
+    ref.invalidate(notificationsProvider);
     context.go('/');
   }
 
@@ -315,9 +331,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     StorageService.setOnboardingCompleted(true);
     ref.read(userProfileProvider.notifier).reload();
+    ref.invalidate(mascotProvider);
+    ref.read(pointsProvider.notifier).reload();
     ref.invalidate(postsNotifierProvider);
     ref.invalidate(eventsNotifierProvider);
     ref.invalidate(partnersNotifierProvider);
+    ref.invalidate(partnerRequestsProvider);
+    ref.invalidate(notificationsProvider);
     context.go('/');
     return null;
   }
