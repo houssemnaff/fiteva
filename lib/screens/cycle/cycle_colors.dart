@@ -30,23 +30,23 @@ class CycleColors {
 
   static final _light = CycleColors._(
     isDark:   false,
-    bg:       const Color(0xFFFFFFFF),
+    bg:       const Color(0xFFFCFBFB),
     surface:  const Color(0xFFFFFFFF),
-    surface2: const Color(0xFFF7F5F6),
-    border:   const Color(0xFFEDEAEB),
-    text:     const Color(0xFF2D1B20),
-    muted:    const Color(0xFF9E8A93),
-    body:     const Color(0xFF6B5760),
+    surface2: const Color(0xFFF5F5F5),
+    border:   const Color(0xFFE8E8E8),
+    text:     const Color(0xFF1A1A2E),
+    muted:    const Color(0xFF8E8E9A),
+    body:     const Color(0xFF5C5C6E),
   );
 
   static final _dark = CycleColors._(
     isDark:   true,
-    bg:       const Color(0xFF0D0D0D),
-    surface:  const Color(0xFF1A1A1A),
-    surface2: const Color(0xFF242424),
-    border:   const Color(0xFF2E2828),
-    text:     const Color(0xFFF5F0F2),
-    muted:    const Color(0xFF9CA3AF),
-    body:     const Color(0xFFC4B0BA),
+    bg:       const Color(0xFF111114),
+    surface:  const Color(0xFF1C1C22),
+    surface2: const Color(0xFF26262E),
+    border:   const Color(0xFF32323A),
+    text:     const Color(0xFFF0F0F4),
+    muted:    const Color(0xFF8A8A96),
+    body:     const Color(0xFFB0B0BC),
   );
 }

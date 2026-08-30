@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:fiteva/models/points_model.dart';
 import 'package:fiteva/providers/diamonds_provider.dart';
@@ -7,6 +8,7 @@ import 'package:fiteva/services/auth_service.dart';
 import 'package:fiteva/services/storage_service.dart';
 import 'package:fiteva/services/local_reminder_service.dart';
 import 'package:fiteva/services/privacy_service.dart';
+import 'package:fiteva/services/health_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData, HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,12 +24,16 @@ import '../../providers/subscription_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/mascot_widget.dart';
 import '../../widgets/paywall_sheet.dart';
+import 'body_tracking_screen.dart';
 import 'rewards_screen.dart';
 import 'notification_settings_screen.dart';
 import 'stripe_integration.dart';
 import 'theme_screen.dart';
 import 'trends_screen.dart';
 import 'workout_history_screen.dart';
+import '../../services/app_tour_service.dart';
+import '../../l10n/lang.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class _P {
   _P._();
@@ -55,6 +61,7 @@ final chatbotVisibilityProvider = StateProvider<bool>(
 final remindersEnabledProvider = StateProvider<bool>(
   (ref) => LocalReminderService.remindersEnabled,
 );
+final healthSyncEnabledProvider = StateProvider<bool>((ref) => false);
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -64,12 +71,72 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final _keyProfileCard = GlobalKey();
+  final _keyStats       = GlobalKey();
+  final _keyGeneral     = GlobalKey();
+  final _keyPreferences = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       ref.read(pointsProvider.notifier).reload();
       ref.read(diamondsProvider.notifier).loadDiamonds();
+      HealthService.isEnabled.then((v) =>
+        ref.read(healthSyncEnabledProvider.notifier).state = v);
+    });
+    _showTutorial();
+  }
+
+  void _showTutorial() {
+    final isFr = Lang.code == 'fr';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        AppTourService.showSectionTutorial(context,
+          section: 'profile',
+          steps: [
+            SpotlightStep(
+              key: _keyProfileCard,
+              icon: LucideIcons.user,
+              color: const Color(0xFF2E9E6B),
+              title: isFr ? 'Ton Profil' : 'Your Profile',
+              description: isFr
+                  ? 'Modifie ton poids, ta taille et tes objectifs a tout moment.'
+                  : 'Update your weight, height and goals anytime.',
+            ),
+            SpotlightStep(
+              key: _keyStats,
+              icon: LucideIcons.trophy,
+              color: const Color(0xFFFF9800),
+              title: isFr ? 'Stats & Niveau' : 'Stats & Level',
+              description: isFr
+                  ? 'Suis ta serie, ton niveau et tes diamants gagnes.'
+                  : 'Track your streak, level and earned diamonds.',
+            ),
+            SpotlightStep(
+              key: _keyGeneral,
+              icon: LucideIcons.ruler,
+              color: const Color(0xFF1E88E5),
+              title: isFr ? 'General' : 'General',
+              description: isFr
+                  ? 'Recompenses, historique, suivi corporel et tendances.'
+                  : 'Rewards, history, body tracking and trends.',
+              contentAlign: ContentAlign.top,
+            ),
+            SpotlightStep(
+              key: _keyPreferences,
+              icon: LucideIcons.settings,
+              color: const Color(0xFF607D8B),
+              title: isFr ? 'Preferences' : 'Preferences',
+              description: isFr
+                  ? 'Theme, langue, notifications et assistant IA.'
+                  : 'Theme, language, notifications and AI assistant.',
+              contentAlign: ContentAlign.top,
+            ),
+          ],
+        );
+      });
     });
   }
 
@@ -203,6 +270,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // ── Profile card (Apple-style) ────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
+              key: _keyProfileCard,
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
               child: GestureDetector(
                 onTap: () => _showEditProfile(context, ref, profile, cs),
@@ -213,20 +281,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(children: [
-                    Container(
-                      width: 60, height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft, end: Alignment.bottomRight,
-                          colors: [accent, accent.withValues(alpha: 0.7)]),
-                      ),
-                      child: Center(
-                        child: Text(initials,
-                          style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w600,
-                            color: Colors.white)),
-                      ),
-                    ),
+                    Builder(builder: (_) {
+                      final photoPath = StorageService.getString('profile_photo_path');
+                      final hasPhoto = photoPath != null && File(photoPath).existsSync();
+                      return Container(
+                        width: 60, height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: hasPhoto ? null : LinearGradient(
+                            begin: Alignment.topLeft, end: Alignment.bottomRight,
+                            colors: [accent, accent.withValues(alpha: 0.7)]),
+                          image: hasPhoto ? DecorationImage(
+                            image: FileImage(File(photoPath)),
+                            fit: BoxFit.cover) : null,
+                        ),
+                        child: hasPhoto ? null : Center(
+                          child: Text(initials,
+                            style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w600,
+                              color: Colors.white)),
+                        ),
+                      );
+                    }),
                     const SizedBox(width: 14),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
@@ -270,6 +345,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // ── Stats row ──────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
+              key: _keyStats,
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Row(children: [
                 _StatPill(value: '${xp.streak}', label: l10n.isFrench ? 'Série' : 'Streak',
@@ -296,6 +372,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // ── General ────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
+              key: _keyGeneral,
               padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Padding(
@@ -315,6 +392,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     iconBg: const Color(0xFF30D158),
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen())),
+                  ),
+                  buildRow(
+                    icon: LucideIcons.ruler, label: 'Mon Corps',
+                    iconBg: const Color(0xFF64D2FF),
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const BodyTrackingScreen())),
                   ),
                   Consumer(builder: (_, ref2, __) {
                     final isPro = ref2.watch(isProProvider);
@@ -358,6 +441,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => const NotificationSettingsScreen())),
                   ),
+                  if (HealthService.isSupported)
+                    Consumer(builder: (_, ref2, __) {
+                      final enabled = ref2.watch(healthSyncEnabledProvider);
+                      return buildRow(
+                        icon: LucideIcons.heartPulse,
+                        label: l10n.connectedHealth,
+                        iconBg: const Color(0xFFFF2D55),
+                        trailing: buildToggle(enabled, () async {
+                          final newVal = !enabled;
+                          if (newVal) {
+                            final granted = await HealthService.requestAuthorization();
+                            if (!granted) return;
+                          }
+                          await HealthService.setEnabled(newVal);
+                          ref2.read(healthSyncEnabledProvider.notifier).state = newVal;
+                        }),
+                      );
+                    }),
                 ]),
               ]),
             ),
@@ -366,6 +467,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // ── Preferences ────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
+              key: _keyPreferences,
               padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Padding(

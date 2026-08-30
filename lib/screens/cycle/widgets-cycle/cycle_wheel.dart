@@ -7,11 +7,10 @@ import 'package:flutter/services.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 abstract class CycleColors {
-  // Menstrual — soft muted coral (warm but still natural)
-static const menstrual  = Color(0xFFE58F8A); // rose doux
-static const follicular = Color(0xFF7ABB98); // vert frais
-static const ovulation  = Color(0xFF1C4D30); // vert profond signature
-static const luteal     = Color(0xFFA7B8AD); // gris-vert calme
+  static const menstrual  = Color(0xFFE88B8B); // soft rose
+  static const follicular = Color(0xFF7EB6E6); // soft blue
+  static const ovulation  = Color(0xFFE8AD6E); // soft peach
+  static const luteal     = Color(0xFFA99ED4); // soft lavender
 
   // Surface
   static const bg          = Color.fromARGB(255, 255, 255, 255);   // near-black
@@ -115,10 +114,6 @@ const List<CyclePhase> kPhases = [
 /// jours et donnaient des phases systématiquement fausses pour tout cycle
 /// plus court (ex. 21j) ou plus long (ex. 35j).
 List<CyclePhase> phasesForCycleDays(int cycleDays, {Color? accent}) {
-  final a = accent ?? CycleColors.follicular;
-  final deep = Color.lerp(a, Colors.black, 0.35)!;
-  final muted = Color.lerp(a, Colors.grey, 0.5)!;
-
   if (cycleDays == 28 && accent == null) return kPhases;
   final safeCycle = cycleDays.clamp(15, 45);
 
@@ -141,19 +136,19 @@ List<CyclePhase> phasesForCycleDays(int cycleDays, {Color? accent}) {
     CyclePhase(
       name: 'Folliculaire',
       description: 'Énergie en hausse · Peau lumineuse',
-      color: a,
+      color: CycleColors.follicular,
       days: days28 ? const [6, 7, 8, 9, 10, 11, 12, 13] : [for (var d = menstrualLen + 1; d <= follicularEnd; d++) d],
     ),
     CyclePhase(
       name: 'Ovulation',
       description: 'Pic d\'énergie · Clarté mentale',
-      color: deep,
+      color: CycleColors.ovulation,
       days: days28 ? const [14, 15, 16] : [for (var d = ovulationStart; d <= ovulationEnd; d++) d],
     ),
     CyclePhase(
       name: 'Lutéale',
       description: 'Corps se prépare · Écoute tes besoins',
-      color: muted,
+      color: CycleColors.luteal,
       days: days28 ? const [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30] : [for (var d = lutealStart; d <= safeCycle; d++) d],
     ),
   ];

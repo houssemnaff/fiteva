@@ -40,6 +40,17 @@ class OnboardingData {
   String avatarBg    = 'b6e3f4';
   String mascotType  = 'blob';
   String? trainingLocation;
+  String? profilePhotoPath;
+  String? bodyPhotoFront;
+  String? bodyPhotoLeft;
+  String? bodyPhotoRight;
+  String? bodyPhotoBack;
+  double? bodyFatPct;
+  double? waistCm;
+  double? hipsCm;
+  double? chestCm;
+  double? thighsCm;
+  double? armsCm;
 
   Map<String, dynamic> toMap() => {
     'username':           username,
@@ -62,6 +73,17 @@ class OnboardingData {
     'mascot_mood':        'happy',
     'avatar_seed':        avatarSeed,
     'avatar_style':       avatarStyle,
+    'profile_photo_path': profilePhotoPath,
+    'body_photo_front':   bodyPhotoFront,
+    'body_photo_left':    bodyPhotoLeft,
+    'body_photo_right':   bodyPhotoRight,
+    'body_photo_back':    bodyPhotoBack,
+    'body_fat_pct':       bodyFatPct,
+    'waist_cm':           waistCm,
+    'hips_cm':            hipsCm,
+    'chest_cm':           chestCm,
+    'thighs_cm':          thighsCm,
+    'arms_cm':            armsCm,
   };
 }
 
@@ -77,11 +99,13 @@ enum OStep {
   equipment,
   location,
   frequency,
-  results,
   healthProfile,
   cycleAndPregnancy,
+  profilePhoto,
+  bodyPhotos,
+  bodyComposition,
+  bodyMeasurements,
   buildingPlan,
-  avatar,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,11 +146,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     OStep.equipment,
     OStep.location,
     OStep.frequency,
-    OStep.results,
-    OStep.healthProfile,
     OStep.cycleAndPregnancy,
+    OStep.healthProfile,
+    OStep.profilePhoto,
+    OStep.bodyPhotos,
+    OStep.bodyComposition,
+    OStep.bodyMeasurements,
     OStep.buildingPlan,
-    OStep.avatar,
   ];
 
   static const List<OStep> _progressSteps = [
@@ -135,8 +161,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     OStep.equipment,
     OStep.location,
     OStep.frequency,
-    OStep.healthProfile,
     OStep.cycleAndPregnancy,
+    OStep.healthProfile,
+    OStep.profilePhoto,
+    OStep.bodyPhotos,
+    OStep.bodyComposition,
+    OStep.bodyMeasurements,
   ];
 
   // ── Navigation ────────────────────────────────────────────────────────────
@@ -150,12 +180,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       case OStep.fitness:           return OStep.equipment;
       case OStep.equipment:         return OStep.location;
       case OStep.location:          return OStep.frequency;
-      case OStep.frequency:         return OStep.results;
-      case OStep.results:           return OStep.healthProfile;
-      case OStep.healthProfile:     return OStep.cycleAndPregnancy;
-      case OStep.cycleAndPregnancy: return OStep.buildingPlan;
-      case OStep.buildingPlan:      return OStep.avatar;
-      case OStep.avatar:            return OStep.avatar;
+      case OStep.frequency:         return OStep.cycleAndPregnancy;
+      case OStep.cycleAndPregnancy: return OStep.healthProfile;
+      case OStep.healthProfile:     return OStep.profilePhoto;
+      case OStep.profilePhoto:      return OStep.bodyPhotos;
+      case OStep.bodyPhotos:        return OStep.bodyComposition;
+      case OStep.bodyComposition:   return OStep.bodyMeasurements;
+      case OStep.bodyMeasurements:  return OStep.buildingPlan;
+      case OStep.buildingPlan:      return OStep.buildingPlan;
     }
   }
 
@@ -163,7 +195,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _syncDataFromControllers();
     await StorageService.saveOnboardingData(_data.toMap());
 
-    if (_current == OStep.avatar) {
+    if (_current == OStep.buildingPlan) {
       await _finish();
       return;
     }
@@ -192,6 +224,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _finish() async {
     await StorageService.saveOnboardingData(_data.toMap());
+
+    if (_data.profilePhotoPath != null) {
+      await StorageService.setString('profile_photo_path', _data.profilePhotoPath!);
+    }
 
     // ── Authentification Supabase ──────────────────────────────────────────
     if (_data.email.isNotEmpty && _data.password.isNotEmpty) {
@@ -443,8 +479,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onBack: _goBack,
       onSelected: (v) {
         setState(() => _data.trainingLocation = v);
-        _goNext();
       },
+      onNext: _goNext,
     ),
 
     // 7 — Frequency
@@ -455,25 +491,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onNext: _goNext,
     ),
 
-    // 8 — Results (motivational chart)
-    StepResults(
-      onBack: _goBack,
-      onNext: _goNext,
-    ),
-
-    // 4 — Health profile (height / weight / age)
-    StepHealthProfile(
-      onNext:            _goNext,
-      onBack:            _goBack,
-      initialHeightCm:   _data.heightCm,
-      initialWeightKg:   _data.weightKg,
-      initialAge:        _data.age,
-      onHeightChanged:   (v) => setState(() => _data.heightCm = v),
-      onWeightChanged:   (v) => setState(() => _data.weightKg = v),
-      onAgeChanged:      (v) => setState(() => _data.age = v),
-    ),
-
-    // 8 — Cycle & pregnancy
+    // 8 — Cycle & pregnancy (avant les mesures corporelles)
     StepCycleAndPregnancy(
       onNext:  _goNext,
       onBack:  _goBack,
@@ -485,23 +503,63 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onPpDurationChanged:    (v) => setState(() => _data.ppDuration    = v),
     ),
 
-    // 9 — Building plan animation
+    // 9 — Health profile (height / weight / age)
+    StepHealthProfile(
+      onNext:            _goNext,
+      onBack:            _goBack,
+      initialHeightCm:   _data.heightCm,
+      initialWeightKg:   _data.weightKg,
+      initialAge:        _data.age,
+      onHeightChanged:   (v) => setState(() => _data.heightCm = v),
+      onWeightChanged:   (v) => setState(() => _data.weightKg = v),
+      onAgeChanged:      (v) => setState(() => _data.age = v),
+    ),
+
+    // 9 — Profile photo
+    StepProfilePhoto(
+      onBack: _goBack,
+      onNext: _goNext,
+      onPhotoSelected: (path) => setState(() => _data.profilePhotoPath = path),
+    ),
+
+    // 10 — Body photos (front, left, right, back)
+    StepBodyPhotos(
+      onBack: _goBack,
+      onNext: _goNext,
+      onPhotoFront:  (p) => setState(() => _data.bodyPhotoFront = p),
+      onPhotoLeft:   (p) => setState(() => _data.bodyPhotoLeft  = p),
+      onPhotoRight:  (p) => setState(() => _data.bodyPhotoRight = p),
+      onPhotoBack:   (p) => setState(() => _data.bodyPhotoBack  = p),
+    ),
+
+    // 11 — Body composition (body fat %)
+    StepBodyComposition(
+      onBack: _goBack,
+      onNext: _goNext,
+      initialBodyFat: _data.bodyFatPct,
+      onBodyFatChanged: (v) => setState(() => _data.bodyFatPct = v),
+    ),
+
+    // 12 — Body measurements (waist, hips, etc.)
+    StepBodyMeasurements(
+      onBack: _goBack,
+      onNext: _goNext,
+      initialWaist:  _data.waistCm,
+      initialHips:   _data.hipsCm,
+      initialChest:  _data.chestCm,
+      initialThighs: _data.thighsCm,
+      initialArms:   _data.armsCm,
+      onWaistChanged:  (v) => setState(() => _data.waistCm  = v),
+      onHipsChanged:   (v) => setState(() => _data.hipsCm   = v),
+      onChestChanged:  (v) => setState(() => _data.chestCm  = v),
+      onThighsChanged: (v) => setState(() => _data.thighsCm = v),
+      onArmsChanged:   (v) => setState(() => _data.armsCm   = v),
+    ),
+
+    // 13 — Building plan animation (last step)
     StepBuildingPlan(
       data: _data,
       onDone: _goNext,
-    ),
-
-    // 10 — Mascotte
-    StepAvatar(
-      userName: _data.username.isNotEmpty ? _data.username : 'fiteva',
-      onBack:   _goBack,
-      onNext:   _goNext,
-      onAvatarChanged: (seed, style, bg) => setState(() {
-        _data.avatarSeed  = seed;
-        _data.avatarStyle = style;
-        _data.avatarBg    = bg;
-        _data.mascotType  = seed; // seed = type.name from StepAvatar
-      }),
     ),
   ];
 }

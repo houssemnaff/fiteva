@@ -19,6 +19,9 @@ import 'recipes_list_screen.dart';
 import 'ajout_rapide_screen.dart';
 import 'recette_detail_screen.dart';
 import 'recipe_video_screen.dart';
+import 'hydration_screen.dart';
+import '../../services/app_tour_service.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 // ── Meal accent palette ──────────────────────────────────────────────────────
 const _kMealColorsLight = [Color(0xFFE8A87C), Color(0xFF85CDCA), Color(0xFFD4A5D0), Color(0xFF7FB5D5)];
@@ -44,12 +47,72 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
   late Animation<double> _anim;
   DateTime _selectedDate = DateTime.now();
 
+  final _keyCalories = GlobalKey();
+  final _keyMeals = GlobalKey();
+  final _keyHydration = GlobalKey();
+  final _keyRecipes = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     _animCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
     _anim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic);
     _animCtrl.forward();
+    _showTutorial();
+  }
+
+  void _showTutorial() {
+    final isFr = Lang.code == 'fr';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        AppTourService.showSectionTutorial(context,
+          section: 'nutrition',
+          steps: [
+            SpotlightStep(
+              key: _keyCalories,
+              icon: LucideIcons.pieChart,
+              color: const Color(0xFF2E9E6B),
+              title: isFr ? 'Suivi Calories' : 'Calorie Tracking',
+              description: isFr
+                  ? 'Appuie ici pour voir le detail de tes calories et macros du jour. Tu verras ta progression en un coup d\'oeil.'
+                  : 'Tap here to see your daily calories and macros breakdown at a glance.',
+            ),
+            SpotlightStep(
+              key: _keyMeals,
+              icon: LucideIcons.utensils,
+              color: const Color(0xFFE8A87C),
+              title: isFr ? 'Tes Repas' : 'Your Meals',
+              description: isFr
+                  ? 'Appuie sur un repas pour ajouter des aliments. Tu peux chercher un aliment ou scanner un code-barres.'
+                  : 'Tap a meal to add foods. You can search for a food or scan a barcode.',
+              contentAlign: ContentAlign.top,
+            ),
+            SpotlightStep(
+              key: _keyHydration,
+              icon: LucideIcons.droplets,
+              color: const Color(0xFF1E88E5),
+              title: isFr ? 'Hydratation' : 'Hydration',
+              description: isFr
+                  ? 'Suis ta consommation d\'eau ici. Appuie pour ajouter des verres et voir ton objectif quotidien.'
+                  : 'Track your water intake here. Tap to add glasses and see your daily goal.',
+              contentAlign: ContentAlign.top,
+            ),
+            SpotlightStep(
+              key: _keyRecipes,
+              icon: LucideIcons.chefHat,
+              color: const Color(0xFF5B6ABF),
+              title: isFr ? 'Recettes' : 'Recipes',
+              description: isFr
+                  ? 'Appuie ici pour decouvrir des recettes saines avec les macros deja calculees.'
+                  : 'Tap here to discover healthy recipes with pre-calculated macros.',
+              shape: ShapeLightFocus.Circle,
+              contentAlign: ContentAlign.bottom,
+            ),
+          ],
+        );
+      });
+    });
   }
 
   @override
@@ -169,6 +232,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
               }),
               const SizedBox(width: 8),
               GestureDetector(
+                key: _keyRecipes,
                 onTap: _goToRecipes,
                 child: Container(
                   width: 40, height: 40,
@@ -193,7 +257,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
           // ══════════════════════════════════════════════════════════
           // PLATE SUMMARY
           // ══════════════════════════════════════════════════════════
-          SliverToBoxAdapter(child: Padding(
+          SliverToBoxAdapter(key: _keyCalories, child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
             child: GestureDetector(
               onTap: () => Navigator.push(context,
@@ -335,7 +399,7 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
               fontSize: 15, fontWeight: FontWeight.w800,
               color: cs.onSurface, letterSpacing: -0.3)))),
 
-          SliverToBoxAdapter(child: Padding(
+          SliverToBoxAdapter(key: _keyMeals, child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: List.generate(categories.length, (i) {
@@ -349,6 +413,15 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
                 ));
               }),
             ),
+          )),
+
+          // ══════════════════════════════════════════════════════════
+          // HYDRATION
+          // ══════════════════════════════════════════════════════════
+          SliverToBoxAdapter(key: _keyHydration, child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: _HydrationMiniCard(onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const HydrationScreen()))),
           )),
 
           // ══════════════════════════════════════════════════════════
@@ -1391,6 +1464,67 @@ class _FavoritesScreen extends ConsumerWidget {
                 })),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _HydrationMiniCard extends ConsumerWidget {
+  final VoidCallback onTap;
+  const _HydrationMiniCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final currentMl = ref.watch(waterProvider);
+    final goalMl = ref.watch(userProfileProvider).waterGoalMl;
+    final pct = goalMl > 0 ? (currentMl / goalMl).clamp(0.0, 1.0) : 0.0;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEBF5FF).withOpacity(
+            Theme.of(context).brightness == Brightness.dark ? 0.08 : 1.0),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF378ADD).withOpacity(0.15))),
+        child: Row(children: [
+          Container(
+            width: 42, height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFF378ADD).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12)),
+            child: const Icon(LucideIcons.droplets, size: 20,
+              color: Color(0xFF378ADD))),
+          const SizedBox(width: 14),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Hydratation', style: GoogleFonts.outfit(
+                fontSize: 14, fontWeight: FontWeight.w700,
+                color: cs.onSurface)),
+              const SizedBox(height: 3),
+              Text('${(currentMl / 1000).toStringAsFixed(1)} L / ${(goalMl / 1000).toStringAsFixed(1)} L',
+                style: GoogleFonts.inter(fontSize: 12,
+                  color: cs.onSurface.withOpacity(0.5))),
+            ])),
+          SizedBox(
+            width: 36, height: 36,
+            child: Stack(alignment: Alignment.center, children: [
+              CircularProgressIndicator(
+                value: pct, strokeWidth: 3,
+                backgroundColor: const Color(0xFF378ADD).withOpacity(0.12),
+                valueColor: const AlwaysStoppedAnimation(Color(0xFF378ADD))),
+              Text('${(pct * 100).round()}%', style: GoogleFonts.inter(
+                fontSize: 9, fontWeight: FontWeight.w700,
+                color: const Color(0xFF378ADD))),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          Icon(LucideIcons.chevronRight, size: 16,
+            color: cs.onSurface.withOpacity(0.3)),
+        ]),
       ),
     );
   }

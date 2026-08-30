@@ -6,6 +6,7 @@ import 'package:fiteva/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'hydration_screen.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  DESIGN TOKENS
@@ -646,7 +647,10 @@ class WaterTrackerCard extends ConsumerWidget {
             ? 'À continuer'
             : 'Bois plus d\'eau';
 
-    return _Card(
+    return GestureDetector(
+      onTap: () => Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const HydrationScreen())),
+      child: _Card(
       eyebrow: 'HYDRATATION',
       title: 'Suivi de l\'eau',
       trailing: _StatusPill(statusText, statusColor, statusColor.withOpacity(0.10)),
@@ -724,7 +728,7 @@ class WaterTrackerCard extends ConsumerWidget {
           }, minus: false),
         ]),
       ]),
-    );
+    ));
   }
 }
 

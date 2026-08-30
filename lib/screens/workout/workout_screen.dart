@@ -1,3 +1,5 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fiteva/models/coach_model.dart';
 import 'package:fiteva/models/home_program_model.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:fiteva/screens/workout/widgets/DanceSection.dart';
@@ -24,6 +26,9 @@ import 'programme_detail_screen.dart';
 import 'active_workout_screen.dart';
 import 'exercise_player_screen.dart';
 import 'weekly_plan_screen.dart';
+import '../../services/app_tour_service.dart';
+import '../../l10n/lang.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 // ── Filtre étendu : les 4 phases du cycle + grossesse + post-partum ─────────
 enum _FilterKind { menstruation, follicular, ovulation, luteal, pregnancy, postpartum }
@@ -91,12 +96,73 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     with SingleTickerProviderStateMixin {
   int _selectedChip = 0;
   _FilterKind? _selectedPhase;
+  String? _selectedCoachId;
   final _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() => ref.read(favoritesProvider.notifier).reload());
+    _showTutorial();
+  }
+
+  void _showTutorial() {
+    final isFr = Lang.code == 'fr';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        AppTourService.showSectionTutorial(context,
+          section: 'workout',
+          steps: [
+            SpotlightStep(
+              key: _keySalle,
+              icon: LucideIcons.dumbbell,
+              color: const Color(0xFFE85D3A),
+              title: isFr ? 'Seances en Salle' : 'Gym Workouts',
+              description: isFr
+                  ? 'Tes programmes en salle sont ici. Appuie sur une seance pour voir les exercices guides par video.'
+                  : 'Your gym programs are here. Tap a session to see video-guided exercises.',
+            ),
+            SpotlightStep(
+              key: _keyMaison,
+              icon: LucideIcons.house,
+              color: const Color(0xFF2E9E6B),
+              title: isFr ? 'Seances Maison' : 'Home Workouts',
+              description: isFr
+                  ? 'Pas besoin de materiel ! Appuie ici pour des seances efficaces a faire chez toi.'
+                  : 'No equipment needed! Tap here for effective sessions you can do at home.',
+            ),
+            SpotlightStep(
+              key: _keyDance,
+              icon: LucideIcons.music,
+              color: const Color(0xFF7C4DFF),
+              title: isFr ? 'Danse & Cardio' : 'Dance & Cardio',
+              description: isFr
+                  ? 'Des seances fun de danse pour bruler des calories en s\'amusant.'
+                  : 'Fun dance sessions to burn calories while having fun.',
+            ),
+            SpotlightStep(
+              key: _keyRecup,
+              icon: LucideIcons.wind,
+              color: const Color(0xFF1E88E5),
+              title: isFr ? 'Recuperation' : 'Recovery',
+              description: isFr
+                  ? 'Yoga, stretching et recuperation. Essentiels apres tes seances intensives.'
+                  : 'Yoga, stretching and recovery. Essential after intense sessions.',
+            ),
+            SpotlightStep(
+              key: _keyGrossesse,
+              icon: LucideIcons.heart,
+              color: const Color(0xFFE91E63),
+              title: isFr ? 'Special Grossesse' : 'Pregnancy Safe',
+              description: isFr
+                  ? 'Des exercices securises et adaptes pour chaque trimestre de grossesse.'
+                  : 'Safe exercises adapted for each trimester of pregnancy.',
+            ),
+          ],
+        );
+      });
+    });
   }
 
   final _keySalle     = GlobalKey();
@@ -252,21 +318,24 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     final recuperationVideos  = ref.watch(recuperationVideosProvider);
     final favorites = ref.watch(favoritesProvider);
     final profile   = ref.watch(userProfileProvider);
+    final coaches   = ref.watch(coachesProvider);
 
     final screenH  = MediaQuery.of(context).size.height;
     final bottomGap = screenH < 700 ? 80.0 : 110.0;
 
-    // Grossesse/post-partum ne filtrent pas par tag "phases" (pas de sens
-    // pour ces programmes) — ils contrôlent plutôt quelles sections
-    // s'affichent (voir showCycleSections/showGrossesse/showRecuperation).
     bool matchesPhase(String phases) {
       final cp = _selectedPhase?.cyclePhase;
       if (cp == null) return true;
       return parseCyclePhases(phases).contains(cp);
     }
 
+    bool matchesCoach(HomeProgramModel p) {
+      if (_selectedCoachId == null) return true;
+      return p.coach?.id == _selectedCoachId;
+    }
+
     List<HomeProgramModel> fp(List<HomeProgramModel> list) =>
-        list.where((p) => matchesPhase(p.phases)).toList();
+        list.where((p) => matchesPhase(p.phases) && matchesCoach(p)).toList();
     List<VideoModel> fpv(List<VideoModel> list) =>
         list.where((v) => matchesPhase(v.phases)).toList();
 
@@ -289,7 +358,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
       case 'Ovulation':    currentPhase = CyclePhase.ovulation;    break;
       case 'Lutéale':      currentPhase = CyclePhase.luteal;       break;
     }
-    final List<HomeProgramModel> recommendedPrograms;
+    List<HomeProgramModel> recommendedPrograms;
     if (profile.healthStatus == 'pregnant') {
       recommendedPrograms = grossessePrograms;
     } else if (profile.healthStatus == 'postpartum') {
@@ -299,6 +368,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
       recommendedPrograms = currentPhase == null
           ? all
           : all.where((p) => parseCyclePhases(p.phases).contains(currentPhase)).toList();
+    }
+    if (_selectedCoachId != null) {
+      recommendedPrograms = recommendedPrograms.where((p) => p.coach?.id == _selectedCoachId).toList();
     }
 
     final chips = [
@@ -428,6 +500,17 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                   setState(() => _selectedPhase = _selectedPhase == p ? null : p),
               l10n: l10n,
             ),
+
+            const SizedBox(height: 14),
+
+            // ── Coach filter ─────────────────────────────────────────────
+            if (coaches.isNotEmpty)
+              _CoachFilterRow(
+                coaches: coaches,
+                selectedCoachId: _selectedCoachId,
+                onSelect: (id) => setState(() =>
+                    _selectedCoachId = _selectedCoachId == id ? null : id),
+              ),
 
             const SizedBox(height: 8),
 
@@ -991,6 +1074,81 @@ class _PhaseFilterSheet extends StatelessWidget {
           }).toList(),
         ),
       ]),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// COACH FILTER ROW
+// ══════════════════════════════════════════════════════════════════════════════
+class _CoachFilterRow extends StatelessWidget {
+  final List<CoachModel> coaches;
+  final String? selectedCoachId;
+  final void Function(String) onSelect;
+  const _CoachFilterRow({
+    required this.coaches, required this.selectedCoachId, required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final accent = cs.primary;
+    return SizedBox(
+      height: 46,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: coaches.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) {
+          final coach = coaches[i];
+          final isSel = selectedCoachId == coach.id;
+          return GestureDetector(
+            onTap: () => onSelect(coach.id),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.fromLTRB(4, 4, 14, 4),
+              decoration: BoxDecoration(
+                color: isSel
+                    ? accent.withValues(alpha: 0.12)
+                    : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(23),
+                border: isSel
+                    ? Border.all(color: accent.withValues(alpha: 0.4))
+                    : Border.all(color: cs.outline.withValues(alpha: 0.15)),
+                boxShadow: isSel ? [BoxShadow(
+                  color: accent.withValues(alpha: 0.15),
+                  blurRadius: 8, offset: const Offset(0, 2))] : [],
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                CircleAvatar(
+                  radius: 19,
+                  backgroundColor: accent.withValues(alpha: 0.15),
+                  backgroundImage: coach.avatarUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(coach.avatarUrl)
+                      : null,
+                  child: coach.avatarUrl.isEmpty
+                      ? Text(
+                          coach.name.isNotEmpty ? coach.name[0].toUpperCase() : '?',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14, fontWeight: FontWeight.w700, color: accent),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  coach.name.split(' ').first,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
+                    color: isSel ? accent : cs.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+              ]),
+            ),
+          );
+        },
+      ),
     );
   }
 }

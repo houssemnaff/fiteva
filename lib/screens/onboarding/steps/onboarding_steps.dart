@@ -1,6 +1,10 @@
 ﻿import 'dart:async';
+import 'dart:io';
 import 'dart:math';
+import 'dart:ui';
 
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:fiteva/screens/onboarding/widgets/shared_onboarding_widgets.dart';
 import 'package:fiteva/services/tick_sound_service.dart';
 import 'package:fiteva/widgets/custom_date_picker.dart';
@@ -351,249 +355,115 @@ class StepLanguageChoice extends StatefulWidget {
   State<StepLanguageChoice> createState() => _StepLanguageChoiceState();
 }
 
-class _StepLanguageChoiceState extends State<StepLanguageChoice>
-    with TickerProviderStateMixin {
+class _StepLanguageChoiceState extends State<StepLanguageChoice> {
   String? _selected;
-  late final AnimationController _enterCtrl;
-  late final AnimationController _leafCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _enterCtrl = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1200))..forward();
-    _leafCtrl = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 700))..forward();
-  }
-
-  @override
-  void dispose() {
-    _enterCtrl.dispose();
-    _leafCtrl.dispose();
-    super.dispose();
-  }
 
   void _pick(String lang) {
-    HapticFeedback.mediumImpact();
+    HapticFeedback.lightImpact();
     setState(() => _selected = lang);
   }
 
-  void _onContinue() {
-    if (_selected == null) return;
-    widget.onNext(Locale(_selected!));
+  Widget _langCard(String code, String flag, String label, String sub) {
+    final sel = _selected == code;
+    final dim = _selected != null && !sel;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _pick(code),
+        child: AnimatedScale(
+          scale: sel ? 1.0 : (dim ? 0.95 : 1.0),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            decoration: BoxDecoration(
+              color: sel ? _kGreenDark : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: sel ? _kGreenBright : (dim ? Colors.transparent : _kGreenBright.withValues(alpha: 0.1)),
+                width: sel ? 2.5 : 1.5),
+              boxShadow: [BoxShadow(
+                color: sel
+                    ? _kGreenDark.withValues(alpha: 0.25)
+                    : Colors.black.withValues(alpha: dim ? 0.02 : 0.05),
+                blurRadius: sel ? 20 : 10,
+                offset: const Offset(0, 5))],
+            ),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: dim ? 0.45 : 1.0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(flag, style: const TextStyle(fontSize: 32)),
+                  const SizedBox(height: 10),
+                  Text(label, style: GoogleFonts.outfit(
+                    fontSize: 18, fontWeight: FontWeight.w800,
+                    color: sel ? Colors.white : _kGreenDark)),
+                  const SizedBox(height: 2),
+                  Text(sub, textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: sel ? Colors.white.withValues(alpha: 0.7) : _kGreenMid)),
+                  const SizedBox(height: 10),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 26, height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: sel ? Colors.white : Colors.transparent,
+                      border: Border.all(
+                        color: sel ? Colors.white : _kGreenMid.withValues(alpha: 0.25),
+                        width: 2)),
+                    child: AnimatedScale(
+                      scale: sel ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOutBack,
+                      child: const Icon(Icons.check_rounded, size: 16, color: _kGreenDark),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final leafGrow = CurvedAnimation(parent: _leafCtrl,
-        curve: Curves.elasticOut);
-    final logoFade = CurvedAnimation(parent: _enterCtrl,
-        curve: const Interval(0.0, 0.35, curve: Curves.easeOut));
-    final titleSlide = CurvedAnimation(parent: _enterCtrl,
-        curve: const Interval(0.15, 0.45, curve: Curves.easeOut));
-    final cards = CurvedAnimation(parent: _enterCtrl,
-        curve: const Interval(0.35, 0.65, curve: Curves.easeOut));
-
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE8F5EC),   // soft mint top
-              Color(0xFFF0FAF3),   // lighter mid
-              Color(0xFFFCFDFC),   // almost white bottom
-            ],
-            stops: [0.0, 0.45, 1.0],
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(children: [
+          const SizedBox(height: 60),
+          Icon(LucideIcons.globe, size: 44, color: _kGreenBright),
+          const SizedBox(height: 20),
+          Text('Choose your language',
+            style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w800,
+              color: _kGreenDark)),
+          const SizedBox(height: 4),
+          Text('Choisissez votre langue',
+            style: GoogleFonts.inter(fontSize: 13, color: _kGreenMid)),
+          const SizedBox(height: 36),
+          // ── 2-column cards ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(children: [
+              _langCard('fr', '\u{1F1EB}\u{1F1F7}', 'Francais', 'Continuer en francais'),
+              const SizedBox(width: 14),
+              _langCard('en', '\u{1F1EC}\u{1F1E7}', 'English', 'Continue in English'),
+            ]),
           ),
-        ),
-        child: Stack(
-          children: [
-            // Decorative floating blobs
-            Positioned(
-              top: -40, right: -30,
-              child: FadeTransition(
-                opacity: logoFade,
-                child: Container(
-                  width: 160, height: 160,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF1B5E3B).withValues(alpha: 0.07),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 120, left: -50,
-              child: FadeTransition(
-                opacity: titleSlide,
-                child: Container(
-                  width: 100, height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF6DC88F).withValues(alpha: 0.08),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 80, right: -20,
-              child: FadeTransition(
-                opacity: cards,
-                child: Container(
-                  width: 120, height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF1B5E3B).withValues(alpha: 0.05),
-                  ),
-                ),
-              ),
-            ),
-
-            // Main content
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 60),
-
-                    // Logo — leaf grows in, text fades
-                    FadeTransition(
-                      opacity: logoFade,
-                      child: Column(
-                        children: [
-                          ScaleTransition(
-                            scale: leafGrow,
-                            child: Container(
-                              width: 64, height: 64,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1B5E3B).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: Image.asset('assets/images/logfiteva.jpeg',
-                                    fit: BoxFit.cover),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text('FITEVA', style: GoogleFonts.outfit(
-                            fontSize: 22, fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1A3C2A), letterSpacing: 5)),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // Greeting — slides up
-                    SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.3),
-                        end: Offset.zero,
-                      ).animate(titleSlide),
-                      child: FadeTransition(
-                        opacity: titleSlide,
-                        child: Column(
-                          children: [
-                            Text('Welcome to FITEVA', style: GoogleFonts.outfit(
-                              fontSize: 26, fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1A3C2A), letterSpacing: -0.5)),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Set up your personalized fitness\njourney in under 2 minutes.",
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                fontSize: 15, color: const Color(0xFF5A7A66), height: 1.5),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Section label
-                    FadeTransition(
-                      opacity: cards,
-                      child: Row(
-                        children: [
-                          Icon(LucideIcons.globe, size: 16,
-                              color: const Color(0xFF5A7A66)),
-                          const SizedBox(width: 8),
-                          Text('Choose your language', style: GoogleFonts.inter(
-                            fontSize: 13, fontWeight: FontWeight.w600,
-                            color: const Color(0xFF5A7A66), letterSpacing: 0.3)),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // Language cards
-                    FadeTransition(
-                      opacity: cards,
-                      child: Column(
-                        children: [
-                          _LangOption(
-                            flag: '🇫🇷', label: 'Français',
-                            isSelected: _selected == 'fr',
-                            onTap: () => _pick('fr'),
-                          ),
-                          const SizedBox(height: 10),
-                          _LangOption(
-                            flag: '🇬🇧', label: 'English',
-                            isSelected: _selected == 'en',
-                            onTap: () => _pick('en'),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // Continue button — WeGLOW style
-                    AnimatedSlide(
-                      offset: _selected != null
-                          ? Offset.zero
-                          : const Offset(0, 0.3),
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.easeOutCubic,
-                      child: AnimatedOpacity(
-                        opacity: _selected != null ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: GestureDetector(
-                            onTap: _onContinue,
-                            child: Container(
-                              width: double.infinity,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: _kGreenBright,
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              child: Center(
-                                child: Text('Continue', style: GoogleFonts.inter(
-                                  fontSize: 17, fontWeight: FontWeight.w700,
-                                  color: Colors.white)),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 36),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          const Spacer(),
+          _CtaButton(
+            label: _selected == 'fr' ? 'Continuer' : 'Continue',
+            onPressed: _selected != null
+                ? () => widget.onNext(Locale(_selected!))
+                : null,
+          ),
+        ]),
       ),
     );
   }
@@ -1715,13 +1585,18 @@ class _StepGoalsState extends State<StepGoals>
     if (!widget.selectedGoals.contains(label)) {
       widget.onToggleGoal(label);
     }
-    Future.delayed(const Duration(milliseconds: 300), widget.onNext);
   }
 
   static const _goalIcons = [
     LucideIcons.flame,
     LucideIcons.scale,
     LucideIcons.dumbbell,
+  ];
+
+  static const _goalColors = [
+    Color(0xFFE85D3A),
+    Color(0xFF2E9E6B),
+    Color(0xFF5B6ABF),
   ];
 
   @override
@@ -1737,6 +1612,7 @@ class _StepGoalsState extends State<StepGoals>
       _fr ? 'Garde la forme et reste en équilibre' : 'Stay fit and maintain your balance',
       _fr ? 'Construis du muscle et gagne en force' : 'Build muscle and gain strength',
     ];
+    final hasSel = widget.selectedGoals.isNotEmpty;
 
     return _stepBackground(
       child: SafeArea(
@@ -1747,8 +1623,10 @@ class _StepGoalsState extends State<StepGoals>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: _StepHeader(
-                title: _fr ? 'Quel est ton objectif\nprincipal ?' : 'What is your main\ngoal?',
-                subtitle: _fr ? 'Choisis ton objectif' : 'Choose your goal',
+                title: _fr ? 'Quel est ton objectif principal ?' : 'What is your main goal?',
+                subtitle: _fr
+                    ? 'On personnalise ton plan selon ton choix'
+                    : 'We\'ll personalize your plan',
               ),
             ),
             const Spacer(flex: 1),
@@ -1758,15 +1636,19 @@ class _StepGoalsState extends State<StepGoals>
                 children: List.generate(_goals.length, (i) {
                   final key = _goals[i].label;
                   final isSel = widget.selectedGoals.contains(key);
+                  final isDim = hasSel && !isSel;
+                  final accent = _goalColors[i];
                   return FadeTransition(
                     opacity: _fades[i],
                     child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _QuickTapCard(
+                      padding: EdgeInsets.only(bottom: i < _goals.length - 1 ? 14 : 0),
+                      child: _GlassCard(
+                        selected: isSel,
+                        dimmed: isDim,
+                        accent: accent,
                         icon: _goalIcons[i],
                         label: goalLabels[i],
                         sublabel: goalSubs[i],
-                        selected: isSel,
                         onTap: () => _select(key),
                       ),
                     ),
@@ -1775,6 +1657,19 @@ class _StepGoalsState extends State<StepGoals>
               ),
             ),
             const Spacer(flex: 2),
+            AnimatedOpacity(
+              opacity: hasSel ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: AnimatedSlide(
+                offset: hasSel ? Offset.zero : const Offset(0, 0.3),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                child: _CtaButton(
+                  label: Lang.code == 'fr' ? 'Continuer' : 'Continue',
+                  onPressed: hasSel ? widget.onNext : null,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -1934,13 +1829,18 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
 
   void _select(String label) {
     widget.onChanged(label);
-    Future.delayed(const Duration(milliseconds: 300), widget.onNext);
   }
 
   static const _levelIcons = [
     LucideIcons.sprout,
     LucideIcons.zap,
     LucideIcons.trophy,
+  ];
+
+  static const _levelColors = [
+    Color(0xFF4CAF50),
+    Color(0xFFFF9800),
+    Color(0xFFE53935),
   ];
 
   @override
@@ -1957,6 +1857,7 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
       _fr ? 'Tu connais les bases, on monte d\'un cran' : 'You know the basics, time to level up',
       _fr ? 'Prête pour des défis intenses' : 'Ready for intense challenges',
     ];
+    final hasSel = widget.selectedLevel != null;
 
     return _stepBackground(
       child: SafeArea(
@@ -1967,8 +1868,8 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: _StepHeader(
-                title: _fr ? 'Quel est ton niveau\nde forme actuel ?' : 'What is your current\nfitness level?',
-                subtitle: _fr ? 'Choisis le niveau qui te correspond' : 'Choose the level that fits you',
+                title: _fr ? 'Quel est ton niveau de forme actuel ?' : 'What is your current fitness level?',
+                subtitle: _fr ? 'On adapte l\'intensité pour toi' : 'We\'ll adapt the intensity for you',
               ),
             ),
             const Spacer(flex: 1),
@@ -1978,15 +1879,19 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
                 children: List.generate(_levels.length, (i) {
                   final key = _levels[i];
                   final isSel = widget.selectedLevel == key;
+                  final isDim = hasSel && !isSel;
+                  final accent = _levelColors[i];
                   return FadeTransition(
                     opacity: _fades[i],
                     child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _QuickTapCard(
+                      padding: EdgeInsets.only(bottom: i < _levels.length - 1 ? 14 : 0),
+                      child: _GlassCard(
+                        selected: isSel,
+                        dimmed: isDim,
+                        accent: accent,
                         icon: _levelIcons[i],
                         label: levelLabels[i],
                         sublabel: levelSubs[i],
-                        selected: isSel,
                         onTap: () => _select(key),
                       ),
                     ),
@@ -1995,6 +1900,19 @@ class _StepFitnessLevelState extends State<StepFitnessLevel>
               ),
             ),
             const Spacer(flex: 2),
+            AnimatedOpacity(
+              opacity: hasSel ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: AnimatedSlide(
+                offset: hasSel ? Offset.zero : const Offset(0, 0.3),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                child: _CtaButton(
+                  label: Lang.code == 'fr' ? 'Continuer' : 'Continue',
+                  onPressed: hasSel ? widget.onNext : null,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -2161,6 +2079,15 @@ class _StepEquipmentState extends State<StepEquipment>
     LucideIcons.accessibility,
   ];
 
+  static const _equipColors = [
+    Color(0xFF78909C),
+    Color(0xFFE85D3A),
+    Color(0xFF5B6ABF),
+    Color(0xFF607D8B),
+    Color(0xFF26A69A),
+    Color(0xFFAB47BC),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final count = widget.selectedEquipment.length;
@@ -2192,37 +2119,47 @@ class _StepEquipmentState extends State<StepEquipment>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: _StepHeader(
-                title: _fr ? 'Quel matériel\nas-tu ?' : 'What equipment\ndo you have?',
-                subtitle: _fr ? 'Sélectionne tout ce qui te correspond' : 'Select all that apply',
+                title: _fr ? 'Quel matériel as-tu ?' : 'What equipment do you have?',
+                subtitle: _fr ? 'On adapte tes exercices en fonction' : 'We\'ll tailor exercises to your gear',
               ),
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: ListView.builder(
+              child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 itemCount: _equipments.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (_, i) {
                   final key = _equipments[i];
                   final isSel = widget.selectedEquipment.contains(key);
+                  final accent = _equipColors[i];
                   return FadeTransition(
                     opacity: _fades[i],
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _QuickTapCard(
-                        icon: _equipIcons[i],
-                        label: equipLabels[i],
-                        sublabel: equipSubs[i],
-                        selected: isSel,
-                        onTap: () => _handleEquipmentTap(key),
-                      ),
+                    child: _GlassCard(
+                      selected: isSel,
+                      dimmed: false,
+                      accent: accent,
+                      icon: _equipIcons[i],
+                      label: equipLabels[i],
+                      sublabel: equipSubs[i],
+                      onTap: () => _handleEquipmentTap(key),
                     ),
                   );
                 },
               ),
             ),
-            _CtaButton(
-              label: count > 0 ? '${l10n.equipmentContinue} ($count)' : l10n.equipmentSelectAtLeastOne,
-              onPressed: count > 0 ? widget.onNext : null,
+            AnimatedOpacity(
+              opacity: count > 0 ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: AnimatedSlide(
+                offset: count > 0 ? Offset.zero : const Offset(0, 0.3),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                child: _CtaButton(
+                  label: count > 0 ? '${l10n.equipmentContinue} ($count)' : l10n.equipmentSelectAtLeastOne,
+                  onPressed: count > 0 ? widget.onNext : null,
+                ),
+              ),
             ),
           ],
         ),
@@ -2283,6 +2220,14 @@ class _StepFrequencyState extends State<StepFrequency> {
     LucideIcons.calendarHeart,
   ];
 
+  static const _freqColors = [
+    Color(0xFF4CAF50),
+    Color(0xFF2E9E6B),
+    Color(0xFF1E88E5),
+    Color(0xFFFF9800),
+    Color(0xFFE53935),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final _fr = Lang.code == 'fr';
@@ -2293,6 +2238,7 @@ class _StepFrequencyState extends State<StepFrequency> {
       _fr ? 'Engagement sérieux' : 'Serious commitment',
       _fr ? 'Athlète confirmée' : 'Dedicated athlete',
     ];
+    final hasSel = _hasInteracted;
 
     return _stepBackground(
       child: SafeArea(
@@ -2303,33 +2249,44 @@ class _StepFrequencyState extends State<StepFrequency> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: _StepHeader(
-                title: _fr ? 'Combien de fois\npar semaine ?' : 'How many times\nper week?',
-                subtitle: _fr ? 'Choisis ta fréquence idéale' : 'Choose your ideal frequency',
+                title: _fr ? 'Combien de fois par semaine ?' : 'How many times per week?',
+                subtitle: _fr ? 'On planifie tes séances idéales' : 'We\'ll plan your ideal schedule',
               ),
             ),
-            const Spacer(flex: 1),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: List.generate(_labels.length, (i) {
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                itemCount: _labels.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (_, i) {
                   final isSel = _index == i && _hasInteracted;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _QuickTapCard(
-                      icon: _freqIcons[i],
-                      label: _labels[i] + (_fr ? ' / semaine' : ' / week'),
-                      sublabel: freqSubs[i],
-                      selected: isSel,
-                      onTap: () => _select(i),
-                    ),
+                  final isDim = hasSel && !isSel;
+                  final accent = _freqColors[i];
+                  return _GlassCard(
+                    selected: isSel,
+                    dimmed: isDim,
+                    accent: accent,
+                    icon: _freqIcons[i],
+                    label: _labels[i] + (_fr ? ' / semaine' : ' / week'),
+                    sublabel: freqSubs[i],
+                    onTap: () => _select(i),
                   );
-                }),
+                },
               ),
             ),
-            const Spacer(flex: 2),
-            _CtaButton(
-              label: AppL10n(Lang.code).frequencyNext,
-              onPressed: _hasInteracted ? widget.onNext : null,
+            AnimatedOpacity(
+              opacity: _hasInteracted ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: AnimatedSlide(
+                offset: _hasInteracted ? Offset.zero : const Offset(0, 0.3),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                child: _CtaButton(
+                  label: AppL10n(Lang.code).frequencyNext,
+                  onPressed: _hasInteracted ? widget.onNext : null,
+                ),
+              ),
             ),
           ],
         ),
@@ -2572,6 +2529,9 @@ class _StepHeightState extends State<StepHeight> {
   late final FixedExtentScrollController _ctrl;
   late int _idx;
   bool _useMetric = true;
+  bool _isEditing = false;
+  late final TextEditingController _textCtrl;
+  final FocusNode _focusNode = FocusNode();
 
   int get _heightCm => _minCm + _idx;
 
@@ -2581,11 +2541,43 @@ class _StepHeightState extends State<StepHeight> {
     _useMetric = Lang.code == 'fr';
     _idx = (widget.initialHeightCm - _minCm).clamp(0, _maxCm - _minCm);
     _ctrl = FixedExtentScrollController(initialItem: _idx);
+    _textCtrl = TextEditingController();
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus && _isEditing) _commitEdit();
+    });
     TickSoundService.instance.init();
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    _textCtrl.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _startEditing() {
+    setState(() {
+      _isEditing = true;
+      _textCtrl.text = _useMetric ? '$_heightCm' : '${(_heightCm / 2.54).round()}';
+      _textCtrl.selection = TextSelection(baseOffset: 0, extentOffset: _textCtrl.text.length);
+    });
+    Future.microtask(() => _focusNode.requestFocus());
+  }
+
+  void _commitEdit() {
+    final text = _textCtrl.text.trim();
+    final parsed = int.tryParse(text);
+    if (parsed != null) {
+      int targetCm = _useMetric ? parsed : (parsed * 2.54).round();
+      targetCm = targetCm.clamp(_minCm, _maxCm);
+      final newIdx = targetCm - _minCm;
+      setState(() => _idx = newIdx);
+      _ctrl.jumpToItem(newIdx);
+      widget.onHeightChanged?.call(_heightCm);
+    }
+    setState(() => _isEditing = false);
+  }
 
   String _displayValue() {
     if (_useMetric) return '$_heightCm';
@@ -2596,6 +2588,14 @@ class _StepHeightState extends State<StepHeight> {
   }
 
   String _displayUnit() => _useMetric ? 'CM' : 'FT, IN';
+
+  String _conversionText() {
+    if (_useMetric) {
+      final totalIn = (_heightCm / 2.54).round();
+      return '= ${totalIn ~/ 12}\'${totalIn % 12}"';
+    }
+    return '= $_heightCm cm';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2608,91 +2608,177 @@ class _StepHeightState extends State<StepHeight> {
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _fr ? 'Quelle est ta taille ?' : 'What is your height?',
-                  style: GoogleFonts.outfit(
-                    fontSize: 24, fontWeight: FontWeight.w700, color: _kGreenDark),
-                ),
+              child: _StepHeader(
+                title: _fr ? 'Quelle est ta taille ?' : 'What is your height?',
+                subtitle: _fr
+                    ? 'On adapte tes exercices a ta morphologie'
+                    : 'We\'ll adapt exercises to your body',
               ),
             ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    // Ruler picker on left
-                    SizedBox(
-                      width: 160,
-                      child: _RulerPicker(
-                        controller: _ctrl,
-                        selectedIndex: _idx,
-                        itemCount: _maxCm - _minCm + 1,
-                        labelFor: (i) {
-                          final cm = _minCm + i;
-                          if (_useMetric) return '$cm cm';
-                          final totalIn = (cm / 2.54).round();
-                          return '${totalIn ~/ 12}\'${totalIn % 12}"';
-                        },
-                        onChanged: (i) {
-                          setState(() => _idx = i);
-                          widget.onHeightChanged?.call(_heightCm);
-                        },
+            const SizedBox(height: 20),
+
+            // ── Glass preview card ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7FC077).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _kGreenBright.withValues(alpha: 0.3),
+                        width: 1.5,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    // Big number display on right
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 12, offset: const Offset(0, 4))],
-                        ),
-                        child: Center(
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: _isEditing ? null : _startEditing,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.baseline,
                             textBaseline: TextBaseline.alphabetic,
                             children: [
-                              Text(_displayValue(), style: GoogleFonts.outfit(
-                                fontSize: 48, fontWeight: FontWeight.w800, color: _kGreenDark)),
-                              const SizedBox(width: 6),
+                              _isEditing
+                                  ? SizedBox(
+                                      width: 100,
+                                      child: TextField(
+                                        controller: _textCtrl,
+                                        focusNode: _focusNode,
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 56, fontWeight: FontWeight.w800, color: _kGreenDark),
+                                        decoration: const InputDecoration(
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.zero,
+                                          isDense: true,
+                                        ),
+                                        onSubmitted: (_) => _commitEdit(),
+                                      ),
+                                    )
+                                  : AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 200),
+                                      child: Text(
+                                        _displayValue(),
+                                        key: ValueKey('${_displayValue()}_$_useMetric'),
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 56, fontWeight: FontWeight.w800, color: _kGreenDark),
+                                      ),
+                                    ),
+                              const SizedBox(width: 8),
                               Text(_displayUnit(), style: GoogleFonts.inter(
-                                fontSize: 18, fontWeight: FontWeight.w500, color: _kGreenMid)),
+                                fontSize: 20, fontWeight: FontWeight.w500, color: _kGreenMid)),
                             ],
                           ),
                         ),
-                      ),
+                        if (!_isEditing) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _fr ? 'Appuie pour modifier' : 'Tap to edit',
+                            style: GoogleFonts.inter(
+                              fontSize: 12, fontWeight: FontWeight.w400, color: _kTextMuted.withValues(alpha: 0.6)),
+                          ),
+                        ],
+                        const SizedBox(height: 6),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Text(
+                            _conversionText(),
+                            key: ValueKey('conv_${_heightCm}_$_useMetric'),
+                            style: GoogleFonts.inter(
+                              fontSize: 14, fontWeight: FontWeight.w400, color: _kTextMuted),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Segmented toggle ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 60),
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: _kGreenBright.withValues(alpha: 0.08),
+                ),
+                child: Row(
+                  children: [
+                    _segmentBtn('ft, in', !_useMetric, () => setState(() => _useMetric = false)),
+                    _segmentBtn('cm', _useMetric, () => setState(() => _useMetric = true)),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            // Unit toggle
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: _UnitToggle(
-                leftLabel: _fr ? 'ft, in' : 'ft, in',
-                rightLabel: 'cm',
-                isRight: _useMetric,
-                onToggle: (v) => setState(() => _useMetric = v),
+
+            const SizedBox(height: 16),
+
+            // ── Scroll picker ──
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: _AgePicker(
+                  controller: _ctrl,
+                  selectedIndex: _idx,
+                  itemCount: _maxCm - _minCm + 1,
+                  labelFor: (i) {
+                    final cm = _minCm + i;
+                    if (_useMetric) return '$cm';
+                    final totalIn = (cm / 2.54).round();
+                    return '${totalIn ~/ 12}\'${totalIn % 12}"';
+                  },
+                  onChanged: (i) {
+                    setState(() => _idx = i);
+                    widget.onHeightChanged?.call(_heightCm);
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            // Privacy notice
+
+            const SizedBox(height: 4),
             _PrivacyNotice(isFr: _fr),
-            const SizedBox(height: 12),
             _CtaButton(
               label: _fr ? 'Continuer' : 'Continue',
               onPressed: widget.onNext,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _segmentBtn(String label, bool active, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: active ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: active
+                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6, offset: const Offset(0, 2))]
+                : null,
+          ),
+          child: Center(
+            child: Text(label, style: GoogleFonts.inter(
+              fontSize: 15, fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+              color: active ? _kGreenDark : _kTextMuted,
+            )),
+          ),
         ),
       ),
     );
@@ -2725,6 +2811,9 @@ class _StepWeightState extends State<StepWeight> {
   late final FixedExtentScrollController _ctrl;
   late int _idx;
   bool _useMetric = true;
+  bool _isEditing = false;
+  late final TextEditingController _textCtrl;
+  final FocusNode _focusNode = FocusNode();
 
   double get _weightKg => _kgList[_idx];
 
@@ -2735,11 +2824,48 @@ class _StepWeightState extends State<StepWeight> {
     final nearest = _kgList.indexWhere((w) => w >= widget.initialWeightKg);
     _idx = nearest < 0 ? 50 : nearest;
     _ctrl = FixedExtentScrollController(initialItem: _idx);
+    _textCtrl = TextEditingController();
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus && _isEditing) _commitEdit();
+    });
     TickSoundService.instance.init();
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    _textCtrl.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _startEditing() {
+    setState(() {
+      _isEditing = true;
+      _textCtrl.text = _displayValue();
+      _textCtrl.selection = TextSelection(baseOffset: 0, extentOffset: _textCtrl.text.length);
+    });
+    Future.microtask(() => _focusNode.requestFocus());
+  }
+
+  void _commitEdit() {
+    final text = _textCtrl.text.trim();
+    final parsed = double.tryParse(text);
+    if (parsed != null) {
+      double targetKg = _useMetric ? parsed : parsed / 2.205;
+      targetKg = targetKg.clamp(35.0, 150.0);
+      int bestIdx = 0;
+      double bestDiff = double.infinity;
+      for (int i = 0; i < _kgList.length; i++) {
+        final diff = (_kgList[i] - targetKg).abs();
+        if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+      }
+      setState(() => _idx = bestIdx);
+      _ctrl.jumpToItem(bestIdx);
+      widget.onWeightChanged?.call(_weightKg);
+    }
+    setState(() => _isEditing = false);
+  }
 
   String _displayValue() {
     if (_useMetric) {
@@ -2753,6 +2879,8 @@ class _StepWeightState extends State<StepWeight> {
   @override
   Widget build(BuildContext context) {
     final _fr = Lang.code == 'fr';
+    final lbsValue = (_weightKg * 2.205).round();
+
     return _stepBackground(
       child: SafeArea(
         child: Column(
@@ -2761,88 +2889,180 @@ class _StepWeightState extends State<StepWeight> {
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _fr ? 'Quel est ton poids ?' : 'What is your weight?',
-                  style: GoogleFonts.outfit(
-                    fontSize: 24, fontWeight: FontWeight.w700, color: _kGreenDark),
-                ),
+              child: _StepHeader(
+                title: _fr ? 'Quel est ton poids ?' : 'What is your weight?',
+                subtitle: _fr
+                    ? 'On calcule tes besoins caloriques'
+                    : 'We\'ll calculate your calorie needs',
               ),
             ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 160,
-                      child: _RulerPicker(
-                        controller: _ctrl,
-                        selectedIndex: _idx,
-                        itemCount: _kgList.length,
-                        labelFor: (i) {
-                          final w = _kgList[i];
-                          if (_useMetric) {
-                            return w % 1 == 0 ? '${w.toInt()} kg' : '${w.toStringAsFixed(1)} kg';
-                          }
-                          return '${(w * 2.205).round()} lbs';
-                        },
-                        onChanged: (i) {
-                          setState(() => _idx = i);
-                          widget.onWeightChanged?.call(_weightKg);
-                        },
+            const SizedBox(height: 20),
+
+            // ── Glass preview card ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7FC077).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _kGreenBright.withValues(alpha: 0.3),
+                        width: 1.5,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 12, offset: const Offset(0, 4))],
-                        ),
-                        child: Center(
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: _isEditing ? null : _startEditing,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.baseline,
                             textBaseline: TextBaseline.alphabetic,
                             children: [
-                              Text(_displayValue(), style: GoogleFonts.outfit(
-                                fontSize: 48, fontWeight: FontWeight.w800, color: _kGreenDark)),
-                              const SizedBox(width: 6),
+                              _isEditing
+                                  ? SizedBox(
+                                      width: 120,
+                                      child: TextField(
+                                        controller: _textCtrl,
+                                        focusNode: _focusNode,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 56, fontWeight: FontWeight.w800, color: _kGreenDark),
+                                        decoration: InputDecoration(
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.zero,
+                                          isDense: true,
+                                        ),
+                                        onSubmitted: (_) => _commitEdit(),
+                                      ),
+                                    )
+                                  : AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 200),
+                                      child: Text(
+                                        _displayValue(),
+                                        key: ValueKey('${_displayValue()}_$_useMetric'),
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 56, fontWeight: FontWeight.w800, color: _kGreenDark),
+                                      ),
+                                    ),
+                              const SizedBox(width: 8),
                               Text(_displayUnit(), style: GoogleFonts.inter(
-                                fontSize: 18, fontWeight: FontWeight.w500, color: _kGreenMid)),
+                                fontSize: 20, fontWeight: FontWeight.w500, color: _kGreenMid)),
                             ],
                           ),
                         ),
-                      ),
+                        if (!_isEditing) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _fr ? 'Appuie pour modifier' : 'Tap to edit',
+                            style: GoogleFonts.inter(
+                              fontSize: 12, fontWeight: FontWeight.w400, color: _kTextMuted.withValues(alpha: 0.6)),
+                          ),
+                        ],
+                        const SizedBox(height: 6),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Text(
+                            _useMetric
+                                ? '= $lbsValue lbs'
+                                : '= ${_weightKg % 1 == 0 ? '${_weightKg.toInt()}' : _weightKg.toStringAsFixed(1)} kg',
+                            key: ValueKey('conv_${_weightKg}_$_useMetric'),
+                            style: GoogleFonts.inter(
+                              fontSize: 14, fontWeight: FontWeight.w400, color: _kTextMuted),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Segmented toggle ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 60),
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: _kGreenBright.withValues(alpha: 0.08),
+                ),
+                child: Row(
+                  children: [
+                    _segmentBtn('lbs', !_useMetric, () => setState(() => _useMetric = false)),
+                    _segmentBtn('kg', _useMetric, () => setState(() => _useMetric = true)),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: _UnitToggle(
-                leftLabel: 'lbs',
-                rightLabel: 'kg',
-                isRight: _useMetric,
-                onToggle: (v) => setState(() => _useMetric = v),
+
+            const SizedBox(height: 16),
+
+            // ── Scroll picker ──
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: _AgePicker(
+                  controller: _ctrl,
+                  selectedIndex: _idx,
+                  itemCount: _kgList.length,
+                  labelFor: (i) {
+                    final w = _kgList[i];
+                    if (_useMetric) {
+                      return w % 1 == 0 ? '${w.toInt()}' : w.toStringAsFixed(1);
+                    }
+                    return '${(w * 2.205).round()}';
+                  },
+                  onChanged: (i) {
+                    setState(() => _idx = i);
+                    widget.onWeightChanged?.call(_weightKg);
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 4),
             _PrivacyNotice(isFr: _fr),
-            const SizedBox(height: 12),
             _CtaButton(
               label: _fr ? 'Continuer' : 'Continue',
               onPressed: widget.onNext,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _segmentBtn(String label, bool active, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: active ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: active
+                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6, offset: const Offset(0, 2))]
+                : null,
+          ),
+          child: Center(
+            child: Text(label, style: GoogleFonts.inter(
+              fontSize: 15, fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+              color: active ? _kGreenDark : _kTextMuted,
+            )),
+          ),
         ),
       ),
     );
@@ -2874,6 +3094,9 @@ class _StepAgeState extends State<StepAge> {
   static const int _minAge = 15, _maxAge = 70;
   late final FixedExtentScrollController _ctrl;
   late int _idx;
+  bool _isEditing = false;
+  late final TextEditingController _textCtrl;
+  final FocusNode _focusNode = FocusNode();
 
   int get _age => _minAge + _idx;
 
@@ -2882,11 +3105,42 @@ class _StepAgeState extends State<StepAge> {
     super.initState();
     _idx = (widget.initialAge - _minAge).clamp(0, _maxAge - _minAge);
     _ctrl = FixedExtentScrollController(initialItem: _idx);
+    _textCtrl = TextEditingController();
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus && _isEditing) _commitEdit();
+    });
     TickSoundService.instance.init();
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    _textCtrl.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _startEditing() {
+    setState(() {
+      _isEditing = true;
+      _textCtrl.text = '$_age';
+      _textCtrl.selection = TextSelection(baseOffset: 0, extentOffset: _textCtrl.text.length);
+    });
+    Future.microtask(() => _focusNode.requestFocus());
+  }
+
+  void _commitEdit() {
+    final text = _textCtrl.text.trim();
+    final parsed = int.tryParse(text);
+    if (parsed != null) {
+      final clamped = parsed.clamp(_minAge, _maxAge);
+      final newIdx = clamped - _minAge;
+      setState(() => _idx = newIdx);
+      _ctrl.jumpToItem(newIdx);
+      widget.onAgeChanged?.call(_age);
+    }
+    setState(() => _isEditing = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2899,70 +3153,104 @@ class _StepAgeState extends State<StepAge> {
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _fr ? 'Quel est ton âge ?' : 'How old are you?',
-                  style: GoogleFonts.outfit(
-                    fontSize: 24, fontWeight: FontWeight.w700, color: _kGreenDark),
-                ),
+              child: _StepHeader(
+                title: _fr ? 'Quel est ton âge ?' : 'How old are you?',
+                subtitle: _fr
+                    ? 'On adapte l\'intensité selon ton profil'
+                    : 'We\'ll adapt intensity to your profile',
               ),
             ),
             const SizedBox(height: 24),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 160,
-                      child: _RulerPicker(
-                        controller: _ctrl,
-                        selectedIndex: _idx,
-                        itemCount: _maxAge - _minAge + 1,
-                        labelFor: (i) {
-                          final age = _minAge + i;
-                          return _fr ? '$age ans' : '$age yrs';
-                        },
-                        onChanged: (i) {
-                          setState(() => _idx = i);
-                          widget.onAgeChanged?.call(_age);
-                        },
+
+            // ── Big preview card ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 28),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7FC077).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _kGreenBright.withValues(alpha: 0.3),
+                        width: 1.5,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 12, offset: const Offset(0, 4))],
-                        ),
-                        child: Center(
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: _isEditing ? null : _startEditing,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.baseline,
                             textBaseline: TextBaseline.alphabetic,
                             children: [
-                              Text('$_age', style: GoogleFonts.outfit(
-                                fontSize: 48, fontWeight: FontWeight.w800, color: _kGreenDark)),
-                              const SizedBox(width: 6),
-                              Text(_fr ? 'ANS' : 'YRS', style: GoogleFonts.inter(
-                                fontSize: 18, fontWeight: FontWeight.w500, color: _kGreenMid)),
+                              _isEditing
+                                  ? SizedBox(
+                                      width: 80,
+                                      child: TextField(
+                                        controller: _textCtrl,
+                                        focusNode: _focusNode,
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 64, fontWeight: FontWeight.w800, color: _kGreenDark),
+                                        decoration: const InputDecoration(
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.zero,
+                                          isDense: true,
+                                        ),
+                                        onSubmitted: (_) => _commitEdit(),
+                                      ),
+                                    )
+                                  : Text('$_age', style: GoogleFonts.outfit(
+                                      fontSize: 64, fontWeight: FontWeight.w800, color: _kGreenDark)),
+                              const SizedBox(width: 8),
+                              Text(_fr ? 'ans' : 'yrs', style: GoogleFonts.inter(
+                                fontSize: 22, fontWeight: FontWeight.w500, color: _kGreenMid)),
                             ],
                           ),
                         ),
-                      ),
+                        if (!_isEditing) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _fr ? 'Appuie pour modifier' : 'Tap to edit',
+                            style: GoogleFonts.inter(
+                              fontSize: 12, fontWeight: FontWeight.w400, color: _kTextMuted.withValues(alpha: 0.6)),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 24),
+
+            // ── Scroll wheel ──
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: _AgePicker(
+                  controller: _ctrl,
+                  selectedIndex: _idx,
+                  itemCount: _maxAge - _minAge + 1,
+                  labelFor: (i) => '${_minAge + i}',
+                  onChanged: (i) {
+                    setState(() => _idx = i);
+                    widget.onAgeChanged?.call(_age);
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
             _PrivacyNotice(isFr: _fr),
-            const SizedBox(height: 12),
             _CtaButton(
               label: _fr ? 'Continuer' : 'Continue',
               onPressed: widget.onNext,
@@ -2974,7 +3262,121 @@ class _StepAgeState extends State<StepAge> {
   }
 }
 
-// ── Ruler Picker (WeGLOW-style scrollable ruler with indicator line) ────────
+// ── Age Picker (glassmorphic center indicator, horizontal scroll feel) ───────
+class _AgePicker extends StatelessWidget {
+  final FixedExtentScrollController controller;
+  final int selectedIndex;
+  final int itemCount;
+  final String Function(int) labelFor;
+  final ValueChanged<int> onChanged;
+
+  const _AgePicker({
+    required this.controller,
+    required this.selectedIndex,
+    required this.itemCount,
+    required this.labelFor,
+    required this.onChanged,
+  });
+
+  static const double _kItemH = 60.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // ── Glassmorphic selection strip ──
+        Positioned(
+          left: 0, right: 0,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                height: _kItemH + 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7FC077).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _kGreenBright.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        // ── Scroll list ──
+        ListWheelScrollView.useDelegate(
+          controller: controller,
+          itemExtent: _kItemH,
+          perspective: 0.003,
+          diameterRatio: 1.8,
+          squeeze: 1.0,
+          physics: const FixedExtentScrollPhysics(),
+          onSelectedItemChanged: (i) {
+            HapticFeedback.selectionClick();
+            TickSoundService.instance.tick();
+            onChanged(i);
+          },
+          childDelegate: ListWheelChildBuilderDelegate(
+            childCount: itemCount,
+            builder: (_, i) {
+              final sel = i == selectedIndex;
+              return Center(
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 150),
+                  style: GoogleFonts.outfit(
+                    fontSize: sel ? 32 : 20,
+                    fontWeight: sel ? FontWeight.w800 : FontWeight.w500,
+                    color: sel ? _kGreenDark : _kTextMuted.withValues(alpha: 0.6),
+                  ),
+                  child: Text(labelFor(i)),
+                ),
+              );
+            },
+          ),
+        ),
+        // Top fade
+        Positioned(
+          top: 0, left: 0, right: 0, height: 70,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFFE6F2EA),
+                    const Color(0xFFE6F2EA).withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Bottom fade
+        Positioned(
+          bottom: 0, left: 0, right: 0, height: 70,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                  colors: [
+                    const Color(0xFFF5FAF7),
+                    const Color(0xFFF5FAF7).withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Ruler Picker (shared by Height/Weight steps) ────────────────────────────
 class _RulerPicker extends StatelessWidget {
   final FixedExtentScrollController controller;
   final int selectedIndex;
@@ -3005,15 +3407,10 @@ class _RulerPicker extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Selection indicator line
           Positioned(
             left: 0, right: 0,
-            child: Container(
-              height: 2,
-              color: _kGreenDark,
-            ),
+            child: Container(height: 2, color: _kGreenDark),
           ),
-          // Tick marks on the right
           Positioned(
             right: 12, top: 0, bottom: 0,
             child: Column(
@@ -3065,7 +3462,6 @@ class _RulerPicker extends StatelessWidget {
               },
             ),
           ),
-          // Top fade
           Positioned(
             top: 0, left: 0, right: 0, height: 60,
             child: IgnorePointer(
@@ -3080,7 +3476,6 @@ class _RulerPicker extends StatelessWidget {
               ),
             ),
           ),
-          // Bottom fade
           Positioned(
             bottom: 0, left: 0, right: 0, height: 60,
             child: IgnorePointer(
@@ -3610,96 +4005,195 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
   }
 
   // ── BUILD ──────────────────────────────────────────────────────────────────
+
+  static final _pathData = [
+    {'key': 'cycle',      'icon': LucideIcons.moon,     'color': Color(0xFF7ABB98),
+     'fr': 'Cycle regulier',       'en': 'Regular cycle',
+     'frSub': 'Sync ton entrainement\navec ton cycle menstruel',
+     'enSub': 'Sync your training\nwith your menstrual cycle',
+     'frTag': 'Le plus populaire', 'enTag': 'Most popular'},
+    {'key': 'pregnant',   'icon': LucideIcons.heart,    'color': Color(0xFFE8A0B4),
+     'fr': 'Enceinte',             'en': 'Pregnant',
+     'frSub': 'Programme prenatal adapte\na chaque trimestre',
+     'enSub': 'Prenatal program adapted\nto each trimester',
+     'frTag': 'Prenatal',          'enTag': 'Prenatal'},
+    {'key': 'postpartum', 'icon': LucideIcons.baby,     'color': Color(0xFFA7B8CD),
+     'fr': 'Post-partum',          'en': 'Postpartum',
+     'frSub': 'Recuperation douce\net progressive',
+     'enSub': 'Gentle and\nprogressive recovery',
+     'frTag': 'Recuperation',      'enTag': 'Recovery'},
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final _fr = Lang.code == 'fr';
+    final fr = Lang.code == 'fr';
     return _stepBackground(
       child: SafeArea(
         child: Column(
           children: [
             _OnboardingTopBar(step: 7, total: 7, onBack: widget.onBack),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: _StepHeader(
-                title: _fr ? 'Santé féminine' : 'Women\'s health',
-                subtitle: _fr
-                    ? 'Pour adapter ton plan à ta réalité du moment'
-                    : 'To adapt your plan to your current reality',
-              ),
+              child: Column(children: [
+                Text(fr ? 'Ton parcours' : 'Your journey',
+                  style: GoogleFonts.outfit(fontSize: 26, fontWeight: FontWeight.w700,
+                    color: _kGreenDark)),
+                const SizedBox(height: 6),
+                Text(fr ? 'Choisis ce qui te correspond' : 'Choose what fits you',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 14, color: _kGreenMid)),
+              ]),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // ── Vertical accordion options ──
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ── 3 status cards — full-width ──
-                    _QuickTapCard(
-                      icon: LucideIcons.moon,
-                      label: _fr ? 'Cycle régulier' : 'Regular cycle',
-                      sublabel: _fr ? 'Sync ton entraînement avec ton cycle' : 'Sync your training with your cycle',
-                      selected: _status == 'cycle',
-                      onTap: () {
-                        setState(() => _status = 'cycle');
-                        widget.onHealthStatusChanged?.call('cycle');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _QuickTapCard(
-                      icon: LucideIcons.sparkles,
-                      label: _fr ? 'Je suis enceinte' : 'I\'m pregnant',
-                      sublabel: _fr ? 'Programme prénatal adapté' : 'Adapted prenatal program',
-                      selected: _status == 'pregnant',
-                      onTap: () {
-                        setState(() => _status = 'pregnant');
-                        widget.onHealthStatusChanged?.call('pregnant');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _QuickTapCard(
-                      icon: LucideIcons.baby,
-                      label: _fr ? 'Après grossesse' : 'Postpartum',
-                      sublabel: _fr ? 'Récupération post-partum' : 'Post-partum recovery',
-                      selected: _status == 'postpartum',
-                      onTap: () {
-                        setState(() => _status = 'postpartum');
-                        widget.onHealthStatusChanged?.call('postpartum');
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    // ── Conditional content ──
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder: (child, anim) => FadeTransition(
-                        opacity: anim,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.05),
-                            end: Offset.zero,
-                          ).animate(anim),
-                          child: child,
+                  children: List.generate(_pathData.length, (i) {
+                    final d = _pathData[i];
+                    final key = d['key'] as String;
+                    final sel = _status == key;
+                    final otherSel = _status != null && !sel;
+                    final color = d['color'] as Color;
+                    final icon = d['icon'] as IconData;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          setState(() => _status = _status == key ? null : key);
+                          if (_status == key) widget.onHealthStatusChanged?.call(key);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeOutCubic,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(
+                              color: sel ? color : Colors.transparent,
+                              width: 2),
+                            boxShadow: [BoxShadow(
+                              color: sel
+                                  ? color.withValues(alpha: 0.15)
+                                  : Colors.black.withValues(alpha: otherSel ? 0.02 : 0.04),
+                              blurRadius: sel ? 16 : 8,
+                              offset: const Offset(0, 4))],
+                          ),
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 300),
+                            opacity: otherSel ? 0.5 : 1.0,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // ── Header row ──
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Row(children: [
+                                    Container(
+                                      width: 44, height: 44,
+                                      decoration: BoxDecoration(
+                                        gradient: sel
+                                            ? LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [color, color.withValues(alpha: 0.7)])
+                                            : null,
+                                        color: sel ? null : color.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(14)),
+                                      child: Icon(icon, size: 20,
+                                        color: sel ? Colors.white : color),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          fr ? d['fr'] as String : d['en'] as String,
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 16, fontWeight: FontWeight.w700,
+                                            color: _kGreenDark)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          (fr ? d['frSub'] as String : d['enSub'] as String)
+                                              .replaceAll('\n', ' '),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12, color: _kGreenMid,
+                                            height: 1.3)),
+                                      ],
+                                    )),
+                                    const SizedBox(width: 8),
+                                    // Checkmark when selected, chevron otherwise
+                                    sel
+                                        ? Container(
+                                            width: 26, height: 26,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: color),
+                                            child: const Icon(Icons.check_rounded,
+                                              size: 16, color: Colors.white),
+                                          )
+                                        : AnimatedRotation(
+                                            turns: 0,
+                                            duration: const Duration(milliseconds: 300),
+                                            child: Icon(LucideIcons.chevronDown,
+                                              size: 20,
+                                              color: otherSel
+                                                  ? _kGreenMid.withValues(alpha: 0.4)
+                                                  : _kGreenMid),
+                                          ),
+                                  ]),
+                                ),
+
+                                // ── Expanded content ──
+                                AnimatedCrossFade(
+                                  firstChild: const SizedBox.shrink(),
+                                  secondChild: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        child: Divider(height: 1,
+                                          color: color.withValues(alpha: 0.15)),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+                                        child: key == 'cycle'
+                                            ? _cycleWidget()
+                                            : key == 'pregnant'
+                                                ? _pregnancyWidget()
+                                                : _postpartumWidget(),
+                                      ),
+                                    ],
+                                  ),
+                                  crossFadeState: sel
+                                      ? CrossFadeState.showSecond
+                                      : CrossFadeState.showFirst,
+                                  duration: const Duration(milliseconds: 350),
+                                  sizeCurve: Curves.easeOutCubic,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                      child: _status == null
-                          ? const SizedBox.shrink(key: ValueKey('empty'))
-                          : _status == 'cycle'
-                              ? _cycleWidget()
-                              : _status == 'pregnant'
-                                  ? _pregnancyWidget()
-                                  : _postpartumWidget(),
-                    ),
-                  ],
+                    );
+                  }),
                 ),
               ),
             ),
+
             _CtaButton(
-              label: _fr ? 'Continuer' : 'Continue',
+              label: fr ? 'Continuer' : 'Continue',
               onPressed: _status != null
-                  ? (_status == 'postpartum'
-                      ? (_ppDuration != null ? widget.onNext : null)
-                      : widget.onNext)
+                  ? (_status == 'cycle'
+                      ? widget.onNext
+                      : _status == 'pregnant'
+                          ? widget.onNext
+                          : (_ppDuration != null ? widget.onNext : null))
                   : null,
             ),
           ],
@@ -3710,342 +4204,405 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
 
   // ── CYCLE content ──────────────────────────────────────────────────────────
   Widget _cycleWidget() {
-    final _fr = Lang.code == 'fr';
+    final fr = Lang.code == 'fr';
+    final cycleDays = int.tryParse(_cycleDuration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 28;
+    final diff = _nextPeriod.difference(DateTime.now()).inDays;
+
     return Column(
       key: const ValueKey('cycle'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _phaseStrip(),
-        const SizedBox(height: 20),
-        Text(_fr ? 'Durée du cycle' : 'Cycle duration',
-            style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700,
-                color: _kGreenDark)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8, runSpacing: 8,
-          children: _durations.map((d) {
-            final sel = _cycleDuration == d;
-            return GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                setState(() => _cycleDuration = d);
-                widget.onCycleDurationChanged?.call(d);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+        // ── Duration — horizontal scroll selector ──
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12, offset: const Offset(0, 4))],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: sel ? _kGreenBright : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: sel ? _kGreenBright : _kGreenBright.withValues(alpha: 0.12),
-                    width: sel ? 2 : 1,
-                  ),
-                  boxShadow: sel
-                      ? [BoxShadow(color: _kGreenBright.withValues(alpha: 0.2),
-                          blurRadius: 8, offset: const Offset(0, 3))]
-                      : [],
-                ),
-                child: Text(d, style: GoogleFonts.inter(
-                    color: sel ? Colors.white : _kGreenDark,
-                    fontWeight: FontWeight.w600, fontSize: 14)),
+                  color: const Color(0xFFE8F5EC),
+                  borderRadius: BorderRadius.circular(10)),
+                child: const Icon(LucideIcons.timer, size: 18, color: _kGreenBright),
               ),
-            );
-          }).toList(),
+              const SizedBox(width: 12),
+              Text(fr ? 'Duree du cycle' : 'Cycle duration',
+                style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700,
+                  color: _kGreenDark)),
+            ]),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 52,
+              child: Row(
+                children: _durations.map((d) {
+                  final sel = _cycleDuration == d;
+                  final num = d.replaceAll(RegExp(r'[^0-9]'), '');
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _cycleDuration = d);
+                        widget.onCycleDurationChanged?.call(d);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        decoration: BoxDecoration(
+                          gradient: sel ? const LinearGradient(
+                            begin: Alignment.topLeft, end: Alignment.bottomRight,
+                            colors: [Color(0xFF1B5E3B), Color(0xFF2E8B57)]) : null,
+                          color: sel ? null : const Color(0xFFF5F8F6),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(num, style: GoogleFonts.outfit(
+                              fontSize: 18, fontWeight: FontWeight.w800,
+                              color: sel ? Colors.white : _kGreenDark)),
+                            Text(fr ? 'j' : 'd', style: GoogleFonts.inter(
+                              fontSize: 10, fontWeight: FontWeight.w600,
+                              color: sel ? Colors.white.withValues(alpha: 0.7) : _kGreenMid)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ]),
         ),
-        const SizedBox(height: 20),
-        Text(_fr ? 'Dernières règles' : 'Last period',
-            style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700,
-                color: _kGreenDark)),
-        const SizedBox(height: 12),
+
+        const SizedBox(height: 14),
+
+        // ── Last period — date card ──
         GestureDetector(
           onTap: _pickDate,
           child: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _kGreenBright.withValues(alpha: 0.12)),
-              boxShadow: [BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 6, offset: const Offset(0, 2))],
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12, offset: const Offset(0, 4))],
             ),
             child: Row(children: [
-              Icon(LucideIcons.calendarDays,
-                  size: 20, color: _kGreenMid),
-              const SizedBox(width: 12),
-              Text(_fmt(_lastPeriod),
-                  style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16, color: _kGreenDark)),
-              const Spacer(),
-              Icon(LucideIcons.chevronRight,
-                  color: _kGreenMid, size: 20),
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFCE4EC),
+                  borderRadius: BorderRadius.circular(16)),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('${_lastPeriod.day}',
+                      style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800,
+                        color: const Color(0xFFD94F6B))),
+                    Text(_fmtMonth(_lastPeriod),
+                      style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700,
+                        color: const Color(0xFFD94F6B).withValues(alpha: 0.7))),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(fr ? 'Dernieres regles' : 'Last period',
+                    style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700,
+                      color: _kGreenDark)),
+                  const SizedBox(height: 2),
+                  Text(_fmt(_lastPeriod),
+                    style: GoogleFonts.inter(fontSize: 13, color: _kGreenMid)),
+                ],
+              )),
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F8F6),
+                  borderRadius: BorderRadius.circular(10)),
+                child: const Icon(LucideIcons.calendarDays, size: 16, color: _kGreenMid),
+              ),
             ]),
           ),
         ),
-        const SizedBox(height: 12),
-        _nextPeriodPill(),
+
+        const SizedBox(height: 14),
+
+        // ── Next period + phase overview ──
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12, offset: const Offset(0, 4))],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5EC),
+                  borderRadius: BorderRadius.circular(10)),
+                child: const Icon(LucideIcons.moon, size: 16, color: _kGreenBright),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(fr ? 'Prochaines regles' : 'Next period',
+                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700,
+                      color: _kGreenDark)),
+                  Text(diff > 0
+                      ? '${fr ? 'dans' : 'in'} $diff ${fr ? 'jours' : 'days'} · ${_fmt(_nextPeriod)}'
+                      : _fmt(_nextPeriod),
+                    style: GoogleFonts.inter(fontSize: 12, color: _kGreenMid)),
+                ],
+              )),
+            ]),
+            const SizedBox(height: 16),
+            _buildPhaseBar(cycleDays),
+          ]),
+        ),
+
+        const SizedBox(height: 10),
+
+        // ── Context note ──
+        Row(children: [
+          Icon(LucideIcons.info, size: 13,
+            color: _kGreenMid.withValues(alpha: 0.5)),
+          const SizedBox(width: 6),
+          Text(fr ? 'Base sur tes donnees' : 'Based on your data',
+            style: GoogleFonts.inter(fontSize: 11,
+              color: _kGreenMid.withValues(alpha: 0.5))),
+        ]),
       ],
     );
   }
 
-  Widget _phaseStrip() {
-    final days =
-        int.tryParse(_cycleDuration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 28;
-    final follDays = max(1, (days * 0.32).round() - 2);
-    final lutDays = max(1, days - 5 - follDays - 2);
-    final l10n = AppL10n(Lang.code);
-    final phases = [
-      _CyclePhase(l10n.cyclePhaseMenstruation, 5, const Color(0xFFE8A0A0)),
-      _CyclePhase(l10n.cyclePhaseFollicular, follDays, const Color(0xFFEDD07A)),
-      _CyclePhase(l10n.cyclePhaseOvulation, 2, const Color(0xFF7AC998)),
-      _CyclePhase(l10n.cyclePhaseLuteal, lutDays, const Color(0xFFB8A8D4)),
-    ];
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kGlassBorder),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(AppL10n(Lang.code).cycleAtAGlance,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                color: _kTextMuted, letterSpacing: 0.4)),
-        const SizedBox(height: 10),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Row(
-            children: phases.map((p) => Expanded(
-              flex: p.days,
-              child: Container(height: 10, color: p.color),
-            )).toList(),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: phases.map((p) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 6, height: 6,
-                  decoration: BoxDecoration(
-                      color: p.color, shape: BoxShape.circle)),
-              const SizedBox(width: 3),
-              Text(p.name, style: const TextStyle(
-                  fontSize: 9.5, color: _kTextMuted,
-                  fontWeight: FontWeight.w500)),
-            ],
-          )).toList(),
-        ),
-      ]),
-    );
+  String _fmtMonth(DateTime d) {
+    const m = ['JAN','FEV','MAR','AVR','MAI','JUN','JUL','AOU','SEP','OCT','NOV','DEC'];
+    return m[d.month - 1];
   }
 
-  Widget _nextPeriodPill() {
-    final diff = _nextPeriod.difference(DateTime.now()).inDays;
-    final l10n = AppL10n(Lang.code);
-    final label = diff > 0
-        ? '${l10n.cycleNextPeriodIn} $diff ${l10n.cycleNextPeriodDays} · ${_fmt(_nextPeriod)}'
-        : diff == 0
-            ? '${l10n.cycleNextPeriodToday} · ${_fmt(_nextPeriod)}'
-            : '${l10n.cycleNextPeriodExpected} · ${_fmt(_nextPeriod)}';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: _kGlassBorder),
-      ),
-      child: Row(children: [
-        const Icon(LucideIcons.moon, size: 13, color: _kGreenMid),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(label, style: const TextStyle(
-              fontSize: 12, color: _kTextMuted,
-              fontWeight: FontWeight.w500)),
+  Widget _buildPhaseBar(int days) {
+    final follDays = max(1, (days * 0.32).round() - 2);
+    final lutDays = max(1, days - 5 - follDays - 2);
+    final fr = Lang.code == 'fr';
+    final phases = [
+      (fr ? 'Regles' : 'Period', 5, const Color(0xFFE8A0A0)),
+      (fr ? 'Folliculaire' : 'Follicular', follDays, const Color(0xFFEDD07A)),
+      (fr ? 'Ovulation' : 'Ovulation', 2, const Color(0xFF7AC998)),
+      (fr ? 'Luteale' : 'Luteal', lutDays, const Color(0xFFB8A8D4)),
+    ];
+    return Column(children: [
+      ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Row(
+          children: phases.map((p) => Expanded(
+            flex: p.$2,
+            child: Container(height: 8, color: p.$3),
+          )).toList(),
         ),
-      ]),
-    );
+      ),
+      const SizedBox(height: 8),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: phases.map((p) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 6, height: 6,
+              decoration: BoxDecoration(color: p.$3, shape: BoxShape.circle)),
+            const SizedBox(width: 3),
+            Text(p.$1, style: GoogleFonts.inter(fontSize: 9, color: _kGreenMid,
+              fontWeight: FontWeight.w500)),
+          ],
+        )).toList(),
+      ),
+    ]);
   }
 
   // ── PREGNANCY content ──────────────────────────────────────────────────────
   Widget _pregnancyWidget() {
-    final _fr = Lang.code == 'fr';
+    final fr = Lang.code == 'fr';
+    final l10n = AppL10n(Lang.code);
+    final trimColors = [const Color(0xFF7AC998), const Color(0xFFEDD07A), const Color(0xFFE8A0A0)];
+    final trimLabels = [
+      l10n.cycleTrimester1Label,
+      l10n.cycleTrimester2Label,
+      l10n.cycleTrimester3Label,
+    ];
+
     return Column(
       key: const ValueKey('pregnancy'),
       children: [
-        SizedBox(
-          height: 280,
-          child: Row(
-            children: [
-              SizedBox(
-                width: 140,
-                child: _RulerPicker(
-                  controller: _weekCtrl,
-                  selectedIndex: _weekIdx,
-                  itemCount: 42,
-                  labelFor: (i) => _fr ? '${i + 1} SA' : 'W ${i + 1}',
-                  onChanged: (i) {
-                    setState(() => _weekIdx = i);
-                    widget.onPregnancyWeekChanged?.call(i + 1);
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 12, offset: const Offset(0, 4))],
-                  ),
-                  child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text('$_weekSA', style: GoogleFonts.outfit(
-                          fontSize: 48, fontWeight: FontWeight.w800, color: _kGreenDark)),
-                        const SizedBox(width: 6),
-                        Text('SA', style: GoogleFonts.inter(
-                          fontSize: 18, fontWeight: FontWeight.w500, color: _kGreenMid)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+        // ── Week selector card ──
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12, offset: const Offset(0, 4))],
           ),
+          child: Column(children: [
+            Row(children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFCE4EC),
+                  borderRadius: BorderRadius.circular(14)),
+                child: const Icon(LucideIcons.heart, size: 20, color: Color(0xFFE8A0B4)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(fr ? 'Semaine de grossesse' : 'Pregnancy week',
+                    style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700,
+                      color: _kGreenDark)),
+                  Text(fr ? 'Trimestre $_trimester' : 'Trimester $_trimester',
+                    style: GoogleFonts.inter(fontSize: 12, color: _kGreenMid)),
+                ],
+              )),
+              Text('$_weekSA', style: GoogleFonts.outfit(
+                fontSize: 36, fontWeight: FontWeight.w800, color: _kGreenDark)),
+              const SizedBox(width: 4),
+              Text(fr ? 'SA' : 'W', style: GoogleFonts.inter(
+                fontSize: 14, fontWeight: FontWeight.w600, color: _kGreenMid)),
+            ]),
+            const SizedBox(height: 16),
+            SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: trimColors[_trimester - 1],
+                inactiveTrackColor: trimColors[_trimester - 1].withValues(alpha: 0.15),
+                thumbColor: trimColors[_trimester - 1],
+                overlayColor: trimColors[_trimester - 1].withValues(alpha: 0.1),
+                trackHeight: 6,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+              ),
+              child: Slider(
+                value: _weekIdx.toDouble(),
+                min: 0, max: 41,
+                divisions: 41,
+                onChanged: (v) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _weekIdx = v.round());
+                  widget.onPregnancyWeekChanged?.call(_weekIdx + 1);
+                },
+              ),
+            ),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text(fr ? '1 SA' : 'W 1', style: GoogleFonts.inter(
+                fontSize: 11, color: _kGreenMid)),
+              Text(fr ? '42 SA' : 'W 42', style: GoogleFonts.inter(
+                fontSize: 11, color: _kGreenMid)),
+            ]),
+          ]),
         ),
-        const SizedBox(height: 16),
-        _trimesterBar(),
-        const SizedBox(height: 12),
-        _adviceCard(),
-      ],
-    );
-  }
 
-  Widget _trimesterBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kGlassBorder),
-      ),
-      child: Column(children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Row(
-            children: List.generate(3, (i) {
-              final t = i + 1;
-              final active = _trimester == t;
-              final passed = _trimester > t;
-              return Expanded(child: Container(
-                height: 8,
-                color: active
-                    ? _kGreenDark
-                    : passed
-                        ? _kGreenMid.withValues(alpha: 0.45)
-                        : _kGlassBorder,
-              ));
-            }),
-          ),
-        ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
+
+        // ── Trimester tabs ──
         Row(children: List.generate(3, (i) {
           final t = i + 1;
           final active = _trimester == t;
-          return Expanded(child: Column(children: [
-            Text(
-              t == 1 ? 'S1–S13' : t == 2 ? 'S14–S27' : 'S28–S42',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 10.5,
-                color: active ? _kGreenDark : _kTextMuted,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+          return Expanded(child: Padding(
+            padding: EdgeInsets.only(right: i < 2 ? 8 : 0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: active ? trimColors[i] : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8, offset: const Offset(0, 2))],
               ),
+              child: Column(children: [
+                Text('T$t', style: GoogleFonts.outfit(
+                  fontSize: 16, fontWeight: FontWeight.w800,
+                  color: active ? Colors.white : _kGreenDark)),
+                const SizedBox(height: 2),
+                Text(t == 1 ? 'S1-13' : t == 2 ? 'S14-27' : 'S28-42',
+                  style: GoogleFonts.inter(fontSize: 10,
+                    color: active ? Colors.white.withValues(alpha: 0.8) : _kGreenMid)),
+              ]),
             ),
-            Text('T$t', textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: active ? _kTextDark : _kTextMuted,
-                fontWeight: active ? FontWeight.w800 : FontWeight.w400,
-              )),
-          ]));
+          ));
         })),
-      ]),
-    );
-  }
 
-  Widget _adviceCard() {
-    final l10n = AppL10n(Lang.code);
-    final label = _trimester == 1
-        ? l10n.cycleTrimester1Label
-        : _trimester == 2
-            ? l10n.cycleTrimester2Label
-            : l10n.cycleTrimester3Label;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _kGlassFill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kGlassBorder),
-      ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SizedBox(height: 12),
+
+        // ── Advice card ──
         Container(
-          width: 34, height: 34,
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _kGreenDark.withValues(alpha: 0.09),
-            shape: BoxShape.circle,
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8, offset: const Offset(0, 2))],
           ),
-          child: const Icon(Icons.favorite_outline,
-              size: 16, color: _kGreenDark),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 34, height: 34,
+              decoration: BoxDecoration(
+                color: trimColors[_trimester - 1].withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10)),
+              child: Icon(LucideIcons.sparkles, size: 16,
+                color: trimColors[_trimester - 1]),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(trimLabels[_trimester - 1], style: GoogleFonts.outfit(
+                  fontSize: 13, fontWeight: FontWeight.w700, color: _kGreenDark)),
+                const SizedBox(height: 4),
+                Text(_trimesterAdvice, style: GoogleFonts.inter(
+                  fontSize: 12, color: _kGreenMid, height: 1.5)),
+              ],
+            )),
+          ]),
         ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w700, color: _kTextDark)),
-            const SizedBox(height: 4),
-            Text(_trimesterAdvice, style: const TextStyle(
-                fontSize: 12.5, color: _kTextMuted, height: 1.5)),
-          ],
-        )),
-      ]),
+
+        const SizedBox(height: 10),
+
+        // ── Due date estimate ──
+        Row(children: [
+          Icon(LucideIcons.calendar, size: 13,
+            color: _kGreenMid.withValues(alpha: 0.5)),
+          const SizedBox(width: 6),
+          Builder(builder: (_) {
+            final dueDate = DateTime.now().add(Duration(days: (40 - _weekSA) * 7));
+            return Text(
+              fr
+                  ? 'Date prevue : ${_fmt(dueDate)}'
+                  : 'Due date: ${_fmt(dueDate)}',
+              style: GoogleFonts.inter(fontSize: 11,
+                color: _kGreenMid.withValues(alpha: 0.5)));
+          }),
+        ]),
+      ],
     );
   }
 
   // ── POST-PARTUM content ────────────────────────────────────────────────────
   Widget _postpartumWidget() {
+    final fr = Lang.code == 'fr';
     final weeks = _birthDate != null
         ? DateTime.now().difference(_birthDate!).inDays ~/ 7
         : null;
 
     return Column(
       key: const ValueKey('postpartum'),
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
-        const SizedBox(height: 4),
-
-        // ── Titre + sous-titre ────────────────────────────────────────────
-        Text(AppL10n(Lang.code).ppWhenDidYouGiveBirth,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextDark)),
-        const SizedBox(height: 4),
-        Text(AppL10n(Lang.code).ppAutoCalculate,
-          style: const TextStyle(fontSize: 12, color: _kTextMuted)),
-        const SizedBox(height: 14),
-
-        // ── Date picker card ──────────────────────────────────────────────
+        // ── Birth date card ──
         GestureDetector(
           onTap: () async {
             final picked = await showCustomDatePicker(
@@ -4056,7 +4613,7 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
               title: AppL10n(Lang.code).datePickerBirthTitle,
               subtitle: AppL10n(Lang.code).datePickerBirthSub,
               icon: Icons.child_care_rounded,
-              accentColor: const Color(0xFF2D4A2D),
+              accentColor: const Color(0xFFA7B8CD),
             );
             if (picked != null && mounted) {
               final w = DateTime.now().difference(picked).inDays ~/ 7;
@@ -4070,112 +4627,97 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
               widget.onPpDurationChanged?.call(dur);
             }
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Container(
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _birthDate != null
-                  ? _kGlassFill
-                  : _kGlassFill,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: _birthDate != null ? _kGreenDark : _kGlassBorder,
-                width: 1.5),
-              boxShadow: _birthDate != null
-                  ? [BoxShadow(color: _kGreenDark.withValues(alpha: 0.12),
-                      blurRadius: 14, offset: const Offset(0, 4))]
-                  : [],
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12, offset: const Offset(0, 4))],
             ),
             child: Row(children: [
               Container(
-                width: 40, height: 40,
+                width: 52, height: 52,
                 decoration: BoxDecoration(
-                  color: _birthDate != null
-                      ? _kGreenDark.withValues(alpha: 0.12)
-                      : _kGlassFill,
-                  shape: BoxShape.circle),
-                child: Icon(Icons.calendar_today_rounded,
-                  size: 19,
-                  color: _birthDate != null ? _kGreenDark : _kTextMuted),
+                  color: const Color(0xFFE8EDF3),
+                  borderRadius: BorderRadius.circular(16)),
+                child: _birthDate != null
+                    ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Text('${_birthDate!.day}', style: GoogleFonts.outfit(
+                          fontSize: 20, fontWeight: FontWeight.w800,
+                          color: const Color(0xFF6B89A8))),
+                        Text(_fmtMonth(_birthDate!), style: GoogleFonts.inter(
+                          fontSize: 9, fontWeight: FontWeight.w700,
+                          color: const Color(0xFF6B89A8).withValues(alpha: 0.7))),
+                      ])
+                    : const Icon(LucideIcons.baby, size: 22, color: Color(0xFF6B89A8)),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _birthDate == null
-                  ? Text(AppL10n(Lang.code).ppSelectBirthDate,
-                      style: const TextStyle(fontSize: 13.5, color: _kTextMuted))
-                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(
-                        '${_birthDate!.day.toString().padLeft(2,'0')} / '
-                        '${_birthDate!.month.toString().padLeft(2,'0')} / '
-                        '${_birthDate!.year}',
-                        style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700, color: _kTextDark)),
-                      const SizedBox(height: 2),
-                      Text(
-                        weeks == 0
+              const SizedBox(width: 16),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(fr ? 'Date de naissance' : 'Birth date',
+                    style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700,
+                      color: _kGreenDark)),
+                  const SizedBox(height: 2),
+                  Text(_birthDate != null
+                      ? (weeks == 0
                           ? AppL10n(Lang.code).ppLessThanOneWeek
-                          : '$weeks ${weeks == 1 ? (AppL10n(Lang.code).isFrench ? 'semaine' : 'week') : (AppL10n(Lang.code).isFrench ? 'semaines' : 'weeks')} ${AppL10n(Lang.code).ppWeeksSince}',
-                        style: TextStyle(fontSize: 12, color: _kGreenDark.withValues(alpha: 0.75))),
-                    ]),
+                          : '$weeks ${weeks == 1 ? (fr ? 'semaine' : 'week') : (fr ? 'semaines' : 'weeks')} ${AppL10n(Lang.code).ppWeeksSince}')
+                      : (fr ? 'Quand bebe est-il ne ?' : 'When was baby born?'),
+                    style: GoogleFonts.inter(fontSize: 12, color: _kGreenMid)),
+                ],
+              )),
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F8F6),
+                  borderRadius: BorderRadius.circular(10)),
+                child: const Icon(LucideIcons.calendarDays, size: 16, color: _kGreenMid),
               ),
-              if (_birthDate != null)
-                const Icon(Icons.edit_calendar_rounded, color: _kGreenDark, size: 18)
-              else
-                Icon(Icons.chevron_right_rounded, color: _kTextMuted, size: 22),
             ]),
           ),
         ),
 
-        // ── Barre de progression semaines ─────────────────────────────────
+        // ── Recovery progress ──
         if (_birthDate != null && weeks != null) ...[
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           _BirthWeekBar(weeks: weeks),
         ],
 
-        // ── Programme assigné ─────────────────────────────────────────────
+        // ── Program card ──
         if (_ppProgram.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  _ppProgramColor.withValues(alpha: 0.08),
-                  _ppProgramColor.withValues(alpha: 0.04),
-                ],
-                begin: Alignment.topLeft, end: Alignment.bottomRight),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: _ppProgramColor.withValues(alpha: 0.30)),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Row(children: [
               Container(
-                width: 42, height: 42,
+                width: 38, height: 38,
                 decoration: BoxDecoration(
-                  color: _ppProgramColor.withValues(alpha: 0.14),
-                  shape: BoxShape.circle),
-                child: Icon(LucideIcons.heartPulse, size: 20, color: _ppProgramColor),
+                  color: _ppProgramColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12)),
+                child: Icon(LucideIcons.heartPulse, size: 18, color: _ppProgramColor),
               ),
               const SizedBox(width: 12),
               Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    Text('${AppL10n(Lang.code).ppProgramLabel} ', style: TextStyle(
-                      fontSize: 11.5, color: _ppProgramColor, fontWeight: FontWeight.w500)),
-                    Text(_ppProgram, style: TextStyle(
-                      fontSize: 15, color: _ppProgramColor, fontWeight: FontWeight.w800,
-                      letterSpacing: 0.3)),
-                  ]),
-                  const SizedBox(height: 3),
-                  Text(_ppProgramDesc, style: const TextStyle(
-                    fontSize: 11.5, color: _kTextMuted, height: 1.4)),
+                  Text(_ppProgram, style: GoogleFonts.outfit(
+                    fontSize: 14, fontWeight: FontWeight.w700, color: _kGreenDark)),
+                  const SizedBox(height: 2),
+                  Text(_ppProgramDesc, style: GoogleFonts.inter(
+                    fontSize: 11, color: _kGreenMid, height: 1.4)),
                 ],
               )),
             ]),
           ),
         ],
-        const SizedBox(height: 8),
       ],
     );
   }
@@ -4253,13 +4795,6 @@ class _BirthWeekBar extends StatelessWidget {
   }
 }
 
-// Data holder for cycle phase strip
-class _CyclePhase {
-  final String name;
-  final int days;
-  final Color color;
-  const _CyclePhase(this.name, this.days, this.color);
-}
 
 // ── Post-partum progressive phase card ────────────────────────────────────────
 enum _PpStatus { unselected, current, next }
@@ -4419,7 +4954,1364 @@ class _PpPhaseCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Step 8 — Mascotte
+// Step — Profile Photo (selfie / gallery)
+// ─────────────────────────────────────────────────────────────────────────────
+class StepProfilePhoto extends StatefulWidget {
+  final VoidCallback onBack;
+  final VoidCallback onNext;
+  final ValueChanged<String?> onPhotoSelected;
+
+  const StepProfilePhoto({
+    super.key,
+    required this.onBack,
+    required this.onNext,
+    required this.onPhotoSelected,
+  });
+
+  @override
+  State<StepProfilePhoto> createState() => _StepProfilePhotoState();
+}
+
+class _StepProfilePhotoState extends State<StepProfilePhoto>
+    with SingleTickerProviderStateMixin {
+  String? _photoPath;
+  late final AnimationController _enterCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _enterCtrl = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 800))..forward();
+  }
+
+  @override
+  void dispose() { _enterCtrl.dispose(); super.dispose(); }
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      if (picked == null || !mounted) return;
+
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = 'profile_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final savedFile = await File(picked.path).copy('${appDir.path}/$fileName');
+
+      setState(() => _photoPath = savedFile.path);
+      widget.onPhotoSelected(savedFile.path);
+    } catch (e) {
+      debugPrint('[ProfilePhoto] pick error: $e');
+    }
+  }
+
+  void _showSourcePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20)),
+        child: SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const SizedBox(height: 8),
+            Container(width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD1D5DB),
+                borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text(Lang.code == 'fr' ? 'Choisir une source' : 'Choose source',
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700,
+                color: _kGreenDark)),
+            const SizedBox(height: 20),
+            _PhotoSourceOption(
+              icon: LucideIcons.camera,
+              label: Lang.code == 'fr' ? 'Prendre un selfie' : 'Take a selfie',
+              onTap: () { Navigator.pop(ctx); _pickPhoto(ImageSource.camera); },
+            ),
+            const SizedBox(height: 10),
+            _PhotoSourceOption(
+              icon: LucideIcons.image,
+              label: Lang.code == 'fr' ? 'Choisir de la galerie' : 'Choose from gallery',
+              onTap: () { Navigator.pop(ctx); _pickPhoto(ImageSource.gallery); },
+            ),
+            const SizedBox(height: 20),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  static bool get _fr => Lang.code == 'fr';
+
+  @override
+  @override
+  Widget build(BuildContext context) {
+    final fade = CurvedAnimation(parent: _enterCtrl, curve: Curves.easeOut);
+
+    return _stepBackground(
+      child: SafeArea(
+        child: FadeTransition(
+          opacity: fade,
+          child: Column(children: [
+            _OnboardingTopBar(step: 1, total: 1, onBack: widget.onBack),
+            const SizedBox(height: 12),
+
+            Text(_fr ? 'Ta photo de profil' : 'Your profile photo',
+              style: GoogleFonts.outfit(fontSize: 30, fontWeight: FontWeight.w800,
+                color: _kGreenDark)),
+            const SizedBox(height: 4),
+            Text(_fr ? 'Elle sera visible sur ton profil' : 'Visible on your profile',
+              style: GoogleFonts.inter(fontSize: 13, color: _kGreenMid)),
+
+            const SizedBox(height: 28),
+
+            // ── Avatar area ──
+            GestureDetector(
+              onTap: _showSourcePicker,
+              child: SizedBox(
+                width: 160, height: 160,
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _kGreenBright.withValues(alpha: 0.12), width: 3)),
+                    )),
+                    Center(child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      width: 140, height: 140,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _photoPath != null ? Colors.transparent : Colors.white,
+                        boxShadow: [BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 20, offset: const Offset(0, 6))],
+                        image: _photoPath != null
+                            ? DecorationImage(
+                                image: FileImage(File(_photoPath!)),
+                                fit: BoxFit.cover)
+                            : null,
+                      ),
+                      child: _photoPath == null
+                          ? Icon(LucideIcons.user, size: 40,
+                              color: _kGreenBright.withValues(alpha: 0.2))
+                          : null,
+                    )),
+                    Positioned(bottom: 2, right: 2, child: Container(
+                      width: 42, height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft, end: Alignment.bottomRight,
+                          colors: [Color(0xFF2E7D4F), Color(0xFF1B5E3B)]),
+                        boxShadow: [BoxShadow(
+                          color: _kGreenDark.withValues(alpha: 0.3),
+                          blurRadius: 8, offset: const Offset(0, 3))],
+                      ),
+                      child: Icon(
+                        _photoPath != null ? LucideIcons.refreshCw : LucideIcons.plus,
+                        size: 18, color: Colors.white),
+                    )),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ── Primary: Selfie ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: GestureDetector(
+                onTap: () => _pickPhoto(ImageSource.camera),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      colors: [Color(0xFF1B5E3B), Color(0xFF2E8B57)]),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [BoxShadow(
+                      color: _kGreenDark.withValues(alpha: 0.25),
+                      blurRadius: 16, offset: const Offset(0, 6))],
+                  ),
+                  child: Row(children: [
+                    Container(
+                      width: 48, height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(14)),
+                      child: const Icon(LucideIcons.camera, size: 22, color: Colors.white),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_fr ? 'Prendre un selfie' : 'Take a selfie',
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+                        const SizedBox(height: 2),
+                        Text(_fr ? 'Face bien visible, bonne lumiere' : 'Face visible, good lighting',
+                          style: GoogleFonts.inter(fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.7))),
+                      ],
+                    )),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(LucideIcons.sparkles, size: 12, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(_fr ? 'Recommande' : 'Best',
+                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                            color: Colors.white)),
+                      ]),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // ── Secondary: Gallery ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: GestureDetector(
+                onTap: () => _pickPhoto(ImageSource.gallery),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _kGreenBright.withValues(alpha: 0.1))),
+                  child: Row(children: [
+                    Icon(LucideIcons.image, size: 18, color: _kGreenMid),
+                    const SizedBox(width: 12),
+                    Text(_fr ? 'Ou choisir de la galerie' : 'Or choose from gallery',
+                      style: GoogleFonts.inter(fontSize: 14, color: _kGreenMid)),
+                    const Spacer(),
+                    Icon(LucideIcons.chevronRight, size: 16, color: _kGreenMid.withValues(alpha: 0.5)),
+                  ]),
+                ),
+              ),
+            ),
+
+            const Spacer(),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Column(children: [
+                _CtaButton(
+                  label: _fr ? 'Continuer' : 'Continue',
+                  onPressed: widget.onNext,
+                ),
+                if (_photoPath == null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: GestureDetector(
+                      onTap: () {
+                        widget.onPhotoSelected(null);
+                        widget.onNext();
+                      },
+                      child: Text(
+                        _fr ? 'Passer cette etape' : 'Skip this step',
+                        style: GoogleFonts.inter(fontSize: 13,
+                          color: _kGreenMid.withValues(alpha: 0.4))),
+                    ),
+                  ),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoActionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _PhotoActionTile({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _kGreenBright.withValues(alpha: 0.12))),
+        child: Row(children: [
+          Container(
+            width: 42, height: 42,
+            decoration: BoxDecoration(
+              color: _kGreenBright.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, size: 20, color: _kGreenBright)),
+          const SizedBox(width: 14),
+          Expanded(child: Text(label,
+            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600,
+              color: _kGreenDark))),
+          Icon(LucideIcons.chevronRight, size: 18,
+            color: _kGreenMid.withValues(alpha: 0.4)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _PhotoSourceOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _PhotoSourceOption({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: _kGreenBright.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _kGreenBright.withValues(alpha: 0.12))),
+          child: Row(children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: _kGreenBright.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, size: 20, color: _kGreenBright)),
+            const SizedBox(width: 14),
+            Expanded(child: Text(label,
+              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600,
+                color: _kGreenDark))),
+            Icon(LucideIcons.chevronRight, size: 18,
+              color: _kGreenMid.withValues(alpha: 0.4)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Health Status Card (cycle / pregnant / postpartum) ──────────────────────
+
+class _HealthStatusCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _HealthStatusCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: selected ? _kGreenDark : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? _kGreenDark : _kGreenBright.withValues(alpha: 0.12),
+            width: selected ? 2 : 1),
+          boxShadow: [BoxShadow(
+            color: selected
+                ? _kGreenDark.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: selected ? 16 : 8,
+            offset: const Offset(0, 4))],
+        ),
+        child: Row(children: [
+          Container(
+            width: 52, height: 52,
+            decoration: BoxDecoration(
+              color: selected ? Colors.white.withValues(alpha: 0.15) : color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16)),
+            child: Icon(icon, size: 24,
+              color: selected ? Colors.white : color),
+          ),
+          const SizedBox(width: 16),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w700,
+                color: selected ? Colors.white : _kGreenDark)),
+              const SizedBox(height: 3),
+              Text(subtitle, style: GoogleFonts.inter(fontSize: 13,
+                color: selected ? Colors.white.withValues(alpha: 0.7) : _kGreenMid)),
+            ],
+          )),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 24, height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selected ? Colors.white : Colors.white.withValues(alpha: 0.6),
+              border: Border.all(
+                color: selected ? Colors.white : const Color(0xFFCDD5CF), width: 2),
+            ),
+            child: selected
+                ? const Icon(Icons.check_rounded, size: 16, color: _kGreenDark)
+                : null,
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Step — Body Photos (front, left, right, back)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class StepBodyPhotos extends StatefulWidget {
+  final VoidCallback onBack;
+  final VoidCallback onNext;
+  final ValueChanged<String?> onPhotoFront;
+  final ValueChanged<String?> onPhotoLeft;
+  final ValueChanged<String?> onPhotoRight;
+  final ValueChanged<String?> onPhotoBack;
+
+  const StepBodyPhotos({
+    super.key,
+    required this.onBack,
+    required this.onNext,
+    required this.onPhotoFront,
+    required this.onPhotoLeft,
+    required this.onPhotoRight,
+    required this.onPhotoBack,
+  });
+
+  @override
+  State<StepBodyPhotos> createState() => _StepBodyPhotosState();
+}
+
+class _StepBodyPhotosState extends State<StepBodyPhotos>
+    with SingleTickerProviderStateMixin {
+  final Map<String, String?> _photos = {
+    'front': null,
+    'left': null,
+    'right': null,
+    'back': null,
+  };
+  late final AnimationController _enterCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _enterCtrl = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 800))..forward();
+  }
+
+  @override
+  void dispose() { _enterCtrl.dispose(); super.dispose(); }
+
+  static bool get _fr => Lang.code == 'fr';
+
+  ValueChanged<String?> _callbackFor(String key) {
+    switch (key) {
+      case 'front': return widget.onPhotoFront;
+      case 'left':  return widget.onPhotoLeft;
+      case 'right': return widget.onPhotoRight;
+      case 'back':  return widget.onPhotoBack;
+      default:      return (_) {};
+    }
+  }
+
+  String _labelFor(String key) {
+    if (_fr) {
+      switch (key) {
+        case 'front': return 'Face';
+        case 'left':  return 'Gauche';
+        case 'right': return 'Droite';
+        case 'back':  return 'Dos';
+      }
+    } else {
+      switch (key) {
+        case 'front': return 'Front';
+        case 'left':  return 'Left';
+        case 'right': return 'Right';
+        case 'back':  return 'Back';
+      }
+    }
+    return key;
+  }
+
+  String _tipFor(String key) {
+    if (_fr) {
+      switch (key) {
+        case 'front': return 'Debout, bras le long du corps';
+        case 'left':  return 'Profil gauche complet';
+        case 'right': return 'Profil droit complet';
+        case 'back':  return 'Montrer la silhouette';
+      }
+    } else {
+      switch (key) {
+        case 'front': return 'Stand straight, arms relaxed';
+        case 'left':  return 'Full left profile';
+        case 'right': return 'Full right profile';
+        case 'back':  return 'Show your silhouette';
+      }
+    }
+    return '';
+  }
+
+  bool _isRequired(String key) => key == 'front' || key == 'back';
+
+  IconData _iconFor(String key) {
+    switch (key) {
+      case 'front': return LucideIcons.user;
+      case 'left':  return LucideIcons.arrowLeft;
+      case 'right': return LucideIcons.arrowRight;
+      case 'back':  return LucideIcons.userX;
+      default:      return LucideIcons.camera;
+    }
+  }
+
+  Future<void> _pickPhoto(String key, ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source, maxWidth: 1200, maxHeight: 1200, imageQuality: 85);
+      if (picked == null || !mounted) return;
+
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = 'body_${key}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final savedFile = await File(picked.path).copy('${appDir.path}/$fileName');
+
+      setState(() => _photos[key] = savedFile.path);
+      _callbackFor(key)(savedFile.path);
+    } catch (e) {
+      debugPrint('[BodyPhotos] pick error: $e');
+    }
+  }
+
+  void _showSourcePicker(String key) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20)),
+        child: SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const SizedBox(height: 8),
+            Container(width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD1D5DB),
+                borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text('${_labelFor(key)} — ${_fr ? 'Choisir une source' : 'Choose source'}',
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700,
+                color: _kGreenDark)),
+            const SizedBox(height: 20),
+            _PhotoSourceOption(
+              icon: LucideIcons.camera,
+              label: _fr ? 'Prendre une photo' : 'Take a photo',
+              onTap: () { Navigator.pop(ctx); _pickPhoto(key, ImageSource.camera); },
+            ),
+            const SizedBox(height: 10),
+            _PhotoSourceOption(
+              icon: LucideIcons.image,
+              label: _fr ? 'Choisir de la galerie' : 'Choose from gallery',
+              onTap: () { Navigator.pop(ctx); _pickPhoto(key, ImageSource.gallery); },
+            ),
+            const SizedBox(height: 20),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fade = CurvedAnimation(parent: _enterCtrl, curve: Curves.easeOut);
+    final hasAny = _photos.values.any((p) => p != null);
+    final count = _photos.values.where((p) => p != null).length;
+    final keys = ['front', 'left', 'right', 'back'];
+
+    return _stepBackground(
+      child: SafeArea(
+        child: FadeTransition(
+          opacity: fade,
+          child: Column(children: [
+            _OnboardingTopBar(step: 1, total: 1, onBack: widget.onBack),
+            const SizedBox(height: 8),
+
+            Text(
+              _fr ? 'Photos de progression' : 'Progress photos',
+              style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w800,
+                color: _kGreenDark)),
+            const SizedBox(height: 4),
+            Text(
+              _fr ? 'Suis ton evolution mois apres mois' : 'Track your transformation month by month',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 13, color: _kGreenMid)),
+
+            const SizedBox(height: 6),
+
+            // ── Progress dots ──
+            Row(mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(4, (i) {
+                final done = _photos[keys[i]] != null;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: done ? 28 : 8, height: 8,
+                    decoration: BoxDecoration(
+                      color: done ? _kGreenBright : _kGreenBright.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4)),
+                  ),
+                );
+              }),
+            ),
+
+            const SizedBox(height: 14),
+
+            // ── 2x2 grid ──
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(children: [
+                  Expanded(child: Row(children: [
+                    _photoCell(keys[0], 1),
+                    const SizedBox(width: 10),
+                    _photoCell(keys[1], 2),
+                  ])),
+                  const SizedBox(height: 10),
+                  Expanded(child: Row(children: [
+                    _photoCell(keys[2], 3),
+                    const SizedBox(width: 10),
+                    _photoCell(keys[3], 4),
+                  ])),
+                ]),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Column(children: [
+                _CtaButton(
+                  label: _fr ? 'Continuer' : 'Continue',
+                  onPressed: hasAny ? widget.onNext : null,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: GestureDetector(
+                    onTap: widget.onNext,
+                    child: Text(
+                      _fr ? 'Passer cette etape' : 'Skip this step',
+                      style: GoogleFonts.inter(fontSize: 13,
+                        color: _kGreenMid.withValues(alpha: 0.4))),
+                  ),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _photoCell(String key, int index) {
+    final path = _photos[key];
+    final required_ = _isRequired(key);
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _showSourcePicker(key),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: path != null ? Colors.transparent : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: path != null
+                  ? _kGreenBright
+                  : (required_ ? _kGreenBright.withValues(alpha: 0.2) : _kGreenBright.withValues(alpha: 0.08)),
+              width: path != null ? 2.5 : 1.5),
+            boxShadow: [BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10, offset: const Offset(0, 3))],
+            image: path != null
+                ? DecorationImage(image: FileImage(File(path)), fit: BoxFit.cover)
+                : null,
+          ),
+          child: path == null
+              ? Stack(children: [
+                  // Step number
+                  Positioned(top: 10, left: 10, child: Container(
+                    width: 22, height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _kGreenBright.withValues(alpha: 0.08)),
+                    child: Center(child: Text('$index',
+                      style: GoogleFonts.inter(fontSize: 11,
+                        fontWeight: FontWeight.w700, color: _kGreenBright))),
+                  )),
+                  // Required / Optional badge
+                  Positioned(top: 10, right: 10, child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: required_
+                          ? _kGreenDark.withValues(alpha: 0.08)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8)),
+                    child: Text(
+                      required_
+                          ? (_fr ? 'Requis' : 'Required')
+                          : (_fr ? 'Optionnel' : 'Optional'),
+                      style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600,
+                        color: required_ ? _kGreenDark : _kGreenMid.withValues(alpha: 0.5))),
+                  )),
+                  // Center content
+                  Center(child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 44, height: 44,
+                        decoration: BoxDecoration(
+                          color: _kGreenBright.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(14)),
+                        child: Icon(_iconFor(key), size: 20, color: _kGreenBright),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_labelFor(key), style: GoogleFonts.outfit(
+                        fontSize: 15, fontWeight: FontWeight.w700, color: _kGreenDark)),
+                      const SizedBox(height: 2),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(_tipFor(key), textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(fontSize: 10, color: _kGreenMid, height: 1.3)),
+                      ),
+                    ],
+                  )),
+                  // Add button at bottom
+                  Positioned(left: 0, right: 0, bottom: 10, child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: _kGreenBright.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(LucideIcons.plus, size: 12, color: _kGreenBright),
+                          const SizedBox(width: 4),
+                          Text(_fr ? 'Ajouter' : 'Add', style: GoogleFonts.inter(
+                            fontSize: 11, fontWeight: FontWeight.w600, color: _kGreenBright)),
+                        ]),
+                      ),
+                    ],
+                  )),
+                ])
+              : Stack(children: [
+                  // Checkmark
+                  Positioned(top: 8, right: 8, child: Container(
+                    width: 26, height: 26,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle, color: _kGreenBright),
+                    child: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                  )),
+                  // Step number on photo
+                  Positioned(top: 8, left: 8, child: Container(
+                    width: 22, height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withValues(alpha: 0.4)),
+                    child: Center(child: Text('$index',
+                      style: GoogleFonts.inter(fontSize: 11,
+                        fontWeight: FontWeight.w700, color: Colors.white))),
+                  )),
+                  // Label at bottom
+                  Positioned(left: 0, right: 0, bottom: 0, child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                        colors: [Colors.black.withValues(alpha: 0.5), Colors.transparent]),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(18), bottomRight: Radius.circular(18))),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      const Icon(Icons.check_rounded, size: 12, color: Colors.white),
+                      const SizedBox(width: 4),
+                      Text(_fr ? 'Ajoutee' : 'Added', textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(fontSize: 12,
+                          fontWeight: FontWeight.w700, color: Colors.white)),
+                    ]),
+                  )),
+                ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Step — Body Composition (body fat %)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class StepBodyComposition extends StatefulWidget {
+  final VoidCallback onNext;
+  final VoidCallback? onBack;
+  final double? initialBodyFat;
+  final ValueChanged<double>? onBodyFatChanged;
+
+  const StepBodyComposition({
+    super.key,
+    required this.onNext,
+    this.onBack,
+    this.initialBodyFat,
+    this.onBodyFatChanged,
+  });
+
+  @override
+  State<StepBodyComposition> createState() => _StepBodyCompositionState();
+}
+
+class _StepBodyCompositionState extends State<StepBodyComposition> {
+  late double _bodyFat;
+  int? _selectedVisual;
+
+  static const _ranges = [
+    (label: '10-14%', value: 12.0, desc: 'Tres sec', descEn: 'Very lean', fill: 0.15, color: Color(0xFF2E7D4F)),
+    (label: '15-20%', value: 17.5, desc: 'Fitness / Sec', descEn: 'Fitness / Lean', fill: 0.30, color: Color(0xFF4CAF50)),
+    (label: '21-25%', value: 23.0, desc: 'Fitness', descEn: 'Fitness', fill: 0.50, color: Color(0xFF8BC34A)),
+    (label: '26-31%', value: 28.5, desc: 'Normal', descEn: 'Average', fill: 0.70, color: Color(0xFFFFA726)),
+    (label: '32%+',   value: 35.0, desc: 'Au-dessus', descEn: 'Above avg', fill: 0.90, color: Color(0xFFEF5350)),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _bodyFat = widget.initialBodyFat ?? 23.0;
+    for (int i = 0; i < _ranges.length; i++) {
+      if ((_bodyFat - _ranges[i].value).abs() < 3) {
+        _selectedVisual = i;
+        break;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fr = Lang.code == 'fr';
+    final hasSel = _selectedVisual != null;
+
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(children: [
+          _OnboardingTopBar(step: 8, total: 10, onBack: widget.onBack),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: _StepHeader(
+              title: fr ? 'Estime ta masse grasse' : 'Estimate your body fat',
+              subtitle: fr ? 'On adapte ton plan nutritionnel' : 'We\'ll tailor your nutrition plan',
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: _ranges.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (_, i) {
+                final r = _ranges[i];
+                final sel = _selectedVisual == i;
+                final isDim = hasSel && !sel;
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    setState(() { _selectedVisual = i; _bodyFat = r.value; });
+                    widget.onBodyFatChanged?.call(r.value);
+                  },
+                  child: AnimatedOpacity(
+                    opacity: isDim ? 0.45 : 1.0,
+                    duration: const Duration(milliseconds: 250),
+                    child: AnimatedScale(
+                      scale: isDim ? 0.96 : 1.0,
+                      duration: const Duration(milliseconds: 250),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: BackdropFilter(
+                          filter: sel
+                              ? ImageFilter.blur(sigmaX: 12, sigmaY: 12)
+                              : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: sel
+                                  ? const Color(0xFF7FC077).withValues(alpha: 0.15)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: sel
+                                    ? r.color.withValues(alpha: 0.4)
+                                    : _kGlassBorder,
+                                width: sel ? 1.5 : 1.0,
+                              ),
+                              boxShadow: [
+                                if (sel)
+                                  BoxShadow(
+                                    color: r.color.withValues(alpha: 0.15),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 6),
+                                  )
+                                else
+                                  BoxShadow(
+                                    color: const Color(0xFF000000).withValues(alpha: 0.04),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                              ],
+                            ),
+                            child: Row(children: [
+                              SizedBox(
+                                width: 50, height: 50,
+                                child: Stack(alignment: Alignment.center, children: [
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    width: 50, height: 50,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: sel
+                                          ? r.color.withValues(alpha: 0.18)
+                                          : r.color.withValues(alpha: 0.08),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 40, height: 40,
+                                    child: CircularProgressIndicator(
+                                      value: r.fill,
+                                      strokeWidth: 4,
+                                      backgroundColor: r.color.withValues(alpha: 0.12),
+                                      valueColor: AlwaysStoppedAnimation(r.color),
+                                    ),
+                                  ),
+                                  Text('${r.value.round()}',
+                                    style: GoogleFonts.outfit(fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: r.color)),
+                                ]),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(r.label, style: GoogleFonts.outfit(
+                                    fontSize: 17, fontWeight: FontWeight.w700,
+                                    color: sel ? _kGreenDark : _kTextDark)),
+                                  const SizedBox(height: 3),
+                                  Text(fr ? r.desc : r.descEn, style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                    color: _kTextMuted,
+                                    height: 1.3)),
+                                ],
+                              )),
+                              const SizedBox(width: 12),
+                              AnimatedScale(
+                                scale: sel ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutBack,
+                                child: Container(
+                                  width: 28, height: 28,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: r.color,
+                                  ),
+                                  child: const Icon(LucideIcons.check,
+                                    size: 16, color: Colors.white),
+                                ),
+                              ),
+                            ]),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          AnimatedOpacity(
+            opacity: hasSel ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: AnimatedSlide(
+              offset: hasSel ? Offset.zero : const Offset(0, 0.3),
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                child: Column(children: [
+                  _CtaButton(
+                    label: fr ? 'Continuer' : 'Continue',
+                    onPressed: hasSel ? widget.onNext : null,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: GestureDetector(
+                      onTap: widget.onNext,
+                      child: Text(fr ? 'Passer cette etape' : 'Skip this step',
+                        style: GoogleFonts.inter(fontSize: 13,
+                          color: _kGreenMid.withValues(alpha: 0.4))),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Step — Body Measurements (waist, hips, chest, thighs, arms)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class StepBodyMeasurements extends StatefulWidget {
+  final VoidCallback onNext;
+  final VoidCallback? onBack;
+  final double? initialWaist, initialHips, initialChest, initialThighs, initialArms;
+  final ValueChanged<double>? onWaistChanged, onHipsChanged, onChestChanged,
+      onThighsChanged, onArmsChanged;
+
+  const StepBodyMeasurements({
+    super.key,
+    required this.onNext,
+    this.onBack,
+    this.initialWaist, this.initialHips, this.initialChest,
+    this.initialThighs, this.initialArms,
+    this.onWaistChanged, this.onHipsChanged, this.onChestChanged,
+    this.onThighsChanged, this.onArmsChanged,
+  });
+
+  @override
+  State<StepBodyMeasurements> createState() => _StepBodyMeasurementsState();
+}
+
+class _StepBodyMeasurementsState extends State<StepBodyMeasurements> {
+  late final TextEditingController _waistCtrl;
+  late final TextEditingController _hipsCtrl;
+  late final TextEditingController _chestCtrl;
+  late final TextEditingController _thighsCtrl;
+  late final TextEditingController _armsCtrl;
+  bool _useMetric = true;
+
+  static const _measureColors = [
+    Color(0xFF1E88E5), // waist — blue
+    Color(0xFFE91E63), // hips — pink
+    Color(0xFFFF9800), // chest — orange
+    Color(0xFF2E9E6B), // thighs — green
+    Color(0xFF7C4DFF), // arms — purple
+  ];
+
+  static const _measureIcons = [
+    LucideIcons.circleDot,
+    LucideIcons.diamond,
+    LucideIcons.heart,
+    LucideIcons.arrowDown,
+    LucideIcons.zap,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _useMetric = Lang.code == 'fr';
+    _waistCtrl  = TextEditingController(text: widget.initialWaist?.toStringAsFixed(0)  ?? '');
+    _hipsCtrl   = TextEditingController(text: widget.initialHips?.toStringAsFixed(0)   ?? '');
+    _chestCtrl  = TextEditingController(text: widget.initialChest?.toStringAsFixed(0)  ?? '');
+    _thighsCtrl = TextEditingController(text: widget.initialThighs?.toStringAsFixed(0) ?? '');
+    _armsCtrl   = TextEditingController(text: widget.initialArms?.toStringAsFixed(0)   ?? '');
+  }
+
+  @override
+  void dispose() {
+    _waistCtrl.dispose();
+    _hipsCtrl.dispose();
+    _chestCtrl.dispose();
+    _thighsCtrl.dispose();
+    _armsCtrl.dispose();
+    super.dispose();
+  }
+
+  void _syncValues() {
+    final factor = _useMetric ? 1.0 : 2.54;
+    final w = double.tryParse(_waistCtrl.text);
+    final h = double.tryParse(_hipsCtrl.text);
+    final c = double.tryParse(_chestCtrl.text);
+    final t = double.tryParse(_thighsCtrl.text);
+    final a = double.tryParse(_armsCtrl.text);
+    if (w != null) widget.onWaistChanged?.call(w * factor);
+    if (h != null) widget.onHipsChanged?.call(h * factor);
+    if (c != null) widget.onChestChanged?.call(c * factor);
+    if (t != null) widget.onThighsChanged?.call(t * factor);
+    if (a != null) widget.onArmsChanged?.call(a * factor);
+  }
+
+  void _convertFields(bool toMetric) {
+    for (final ctrl in [_waistCtrl, _hipsCtrl, _chestCtrl, _thighsCtrl, _armsCtrl]) {
+      final val = double.tryParse(ctrl.text);
+      if (val != null && val > 0) {
+        if (toMetric) {
+          ctrl.text = (val * 2.54).round().toString();
+        } else {
+          ctrl.text = (val / 2.54).round().toString();
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = Lang.code == 'fr';
+    final unit = _useMetric ? 'cm' : 'in';
+
+    final labels = isFr
+        ? ['Tour de taille', 'Hanches', 'Poitrine', 'Cuisses', 'Bras']
+        : ['Waist', 'Hips', 'Chest', 'Thighs', 'Arms'];
+
+    final ctrls = [_waistCtrl, _hipsCtrl, _chestCtrl, _thighsCtrl, _armsCtrl];
+
+    return _stepBackground(
+      child: SafeArea(
+        child: Column(children: [
+          _OnboardingTopBar(step: 9, total: 10, onBack: widget.onBack),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: _StepHeader(
+              title: isFr ? 'Tes mensurations' : 'Your measurements',
+              subtitle: isFr
+                  ? 'Pour suivre ton evolution. Tu pourras les modifier plus tard.'
+                  : 'To track your progress. You can update them later.',
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ── Segmented toggle cm/in ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 60),
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: _kGreenBright.withValues(alpha: 0.08),
+              ),
+              child: Row(
+                children: [
+                  _segmentBtn('in', !_useMetric, () {
+                    if (_useMetric) {
+                      _convertFields(false);
+                      setState(() => _useMetric = false);
+                    }
+                  }),
+                  _segmentBtn('cm', _useMetric, () {
+                    if (!_useMetric) {
+                      _convertFields(true);
+                      setState(() => _useMetric = true);
+                    }
+                  }),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Measurement fields ──
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: 5,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (_, i) {
+                final ctrl = ctrls[i];
+                final hasValue = ctrl.text.trim().isNotEmpty;
+                final color = _measureColors[i];
+
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: BackdropFilter(
+                    filter: hasValue
+                        ? ImageFilter.blur(sigmaX: 12, sigmaY: 12)
+                        : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: hasValue
+                            ? const Color(0xFF7FC077).withValues(alpha: 0.15)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: hasValue ? color.withValues(alpha: 0.4) : _kBorderLight,
+                          width: hasValue ? 1.5 : 1.0,
+                        ),
+                        boxShadow: hasValue
+                            ? [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))]
+                            : [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
+                      ),
+                      child: Row(children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: hasValue ? 0.15 : 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(_measureIcons[i], size: 22, color: color),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: TextField(
+                            controller: ctrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: GoogleFonts.outfit(
+                              fontSize: 18, fontWeight: FontWeight.w600, color: _kTextDark),
+                            decoration: InputDecoration(
+                              labelText: '${labels[i]} ($unit)',
+                              labelStyle: GoogleFonts.inter(
+                                fontSize: 14, fontWeight: FontWeight.w400, color: _kTextMuted),
+                              floatingLabelStyle: GoogleFonts.inter(
+                                fontSize: 13, fontWeight: FontWeight.w500, color: color),
+                              suffixText: unit,
+                              suffixStyle: GoogleFonts.inter(
+                                fontSize: 14, fontWeight: FontWeight.w500, color: _kTextMuted),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            onChanged: (_) {
+                              setState(() {});
+                              _syncValues();
+                            },
+                          ),
+                        ),
+                        if (hasValue)
+                          AnimatedScale(
+                            scale: 1.0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutBack,
+                            child: Container(
+                              width: 26, height: 26,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(LucideIcons.check, size: 14, color: Colors.white),
+                            ),
+                          ),
+                      ]),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // ── Skip + Continue ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+            child: Column(children: [
+              _CtaButton(
+                label: isFr ? 'Continuer' : 'Continue',
+                onPressed: () {
+                  _syncValues();
+                  widget.onNext();
+                },
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: widget.onNext,
+                child: Text(isFr ? 'Mesurer plus tard' : 'Measure later',
+                  style: GoogleFonts.inter(fontSize: 13,
+                    fontWeight: FontWeight.w500, color: _kTextMuted)),
+              ),
+              const SizedBox(height: 8),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _segmentBtn(String label, bool active, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: active ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: active
+                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6, offset: const Offset(0, 2))]
+                : null,
+          ),
+          child: Center(
+            child: Text(label, style: GoogleFonts.inter(
+              fontSize: 15, fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+              color: active ? _kGreenDark : _kTextMuted,
+            )),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Step 8 — Mascotte (kept but no longer in flow)
 // ─────────────────────────────────────────────────────────────────────────────
 class StepAvatar extends StatefulWidget {
   final String   userName;
@@ -4686,7 +6578,8 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
   late final List<Animation<double>> _fades;
 
   static const _optionValues = ['gym', 'home', 'both'];
-  static const _optionEmojis = ['🏋️', '🏠', '💪'];
+  static const _optionIcons = [LucideIcons.building2, LucideIcons.home, LucideIcons.repeat2];
+  static const _optionColors = [Color(0xFF5B6ABF), Color(0xFF2E9E6B), Color(0xFFFF9800)];
 
   @override
   void initState() {
@@ -4717,123 +6610,149 @@ class _StepTrainingLocationState extends State<StepTrainingLocation>
 
   @override
   Widget build(BuildContext context) {
+    final _fr = Lang.code == 'fr';
+    final l10n = AppL10n(Lang.code);
+    final _locLabels = [l10n.locationGym, l10n.locationHome, l10n.locationBoth];
+    final _locSubs = [l10n.locationGymDetail, l10n.locationHomeDetail, l10n.locationBothDetail];
+    final hasSel = _selected != null;
+
     return _stepBackground(
       child: SafeArea(
         child: Column(
           children: [
-              _OnboardingTopBar(step: 4, total: 8, onBack: widget.onBack),
-
-              const SizedBox(height: 10),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const _StepIcon(Icons.location_on_outlined),
-                  const SizedBox(height: 12),
-                  _StepHeader(
-                    title: AppL10n(Lang.code).locationTitle,
-                    subtitle: AppL10n(Lang.code).locationSubtitle,
-                  ),
-                ]),
+            _OnboardingTopBar(step: 4, total: 8, onBack: widget.onBack),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _StepHeader(
+                title: AppL10n(Lang.code).locationTitle,
+                subtitle: _fr
+                    ? 'On adapte tes séances à ton lieu'
+                    : 'We\'ll adapt workouts to your space',
               ),
-
-              const Spacer(flex: 1),
-
-              // ── Cards ─────────────────────────────────────────────────────
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: context.rs(24)),
-                child: Column(
-                  children: List.generate(_optionValues.length, (i) {
-                    final l10n = AppL10n(Lang.code);
-                    final _locLabels = [l10n.locationGym, l10n.locationHome, l10n.locationBoth];
-                    final _locSubs = [l10n.locationGymDetail, l10n.locationHomeDetail, l10n.locationBothDetail];
-                    final value = _optionValues[i];
-                    final emoji = _optionEmojis[i];
-                    final label = _locLabels[i];
-                    final sub = _locSubs[i];
-                    final sel = _selected == value;
-                    return FadeTransition(
-                      opacity: _fades[i],
+            ),
+            const Spacer(flex: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: List.generate(_optionValues.length, (i) {
+                  final value = _optionValues[i];
+                  final sel = _selected == value;
+                  final isDim = hasSel && !sel;
+                  final accent = _optionColors[i];
+                  return FadeTransition(
+                    opacity: _fades[i],
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: i < _optionValues.length - 1 ? 14 : 0),
                       child: GestureDetector(
                         onTap: () => _select(value),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOut,
-                          margin: EdgeInsets.only(bottom: context.rv(12)),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: context.rs(18),
-                            vertical: context.rv(14)),
-                          decoration: BoxDecoration(
-                            color: sel
-                                ? _kGreenDark.withValues(alpha: 0.4)
-                                : _kGlassFill,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: sel
-                                  ? _kGreenMid.withValues(alpha: 0.6)
-                                  : _kGlassBorder,
-                              width: sel ? 1.5 : 0.5,
+                        child: AnimatedOpacity(
+                          opacity: isDim ? 0.45 : 1.0,
+                          duration: const Duration(milliseconds: 250),
+                          child: AnimatedScale(
+                            scale: isDim ? 0.96 : 1.0,
+                            duration: const Duration(milliseconds: 250),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                              decoration: BoxDecoration(
+                                color: sel ? _kGreenDark : Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: sel ? accent : _kGlassBorder,
+                                  width: sel ? 2.0 : 1.0,
+                                ),
+                                boxShadow: [
+                                  if (sel)
+                                    BoxShadow(
+                                      color: accent.withValues(alpha: 0.25),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 6),
+                                    )
+                                  else
+                                    BoxShadow(
+                                      color: const Color(0xFF000000).withValues(alpha: 0.04),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: sel
+                                          ? Colors.white.withValues(alpha: 0.15)
+                                          : accent.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Icon(
+                                      _optionIcons[i],
+                                      size: 26,
+                                      color: sel ? Colors.white : accent,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(_locLabels[i], style: GoogleFonts.outfit(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w700,
+                                          color: sel ? Colors.white : _kTextDark,
+                                        )),
+                                        const SizedBox(height: 3),
+                                        Text(_locSubs[i], style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w400,
+                                          color: sel
+                                              ? Colors.white.withValues(alpha: 0.75)
+                                              : _kTextMuted,
+                                          height: 1.3,
+                                        )),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  AnimatedScale(
+                                    scale: sel ? 1.0 : 0.0,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutBack,
+                                    child: Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: accent,
+                                      ),
+                                      child: const Icon(
+                                        LucideIcons.check,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            boxShadow: sel
-                                ? [BoxShadow(color: _kGreenMid.withValues(alpha: 0.15), blurRadius: 18, offset: const Offset(0, 6))]
-                                : [],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: context.rs(48), height: context.rs(48),
-                                decoration: BoxDecoration(
-                                  color: sel ? Colors.white.withValues(alpha:0.2) : _kGlassFill,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Center(
-                                  child: Text(emoji,
-                                    style: TextStyle(fontSize: context.rs(24))),
-                                ),
-                              ),
-                              SizedBox(width: context.rs(14)),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      label,
-                                      style: TextStyle(
-                                        fontSize: context.rs(15),
-                                        fontWeight: FontWeight.w700,
-                                        color: sel ? Colors.white : _kTextDark,
-                                      ),
-                                    ),
-                                    SizedBox(height: context.rv(3)),
-                                    Text(
-                                      sub,
-                                      style: TextStyle(
-                                        fontSize: context.rs(12),
-                                        height: 1.4,
-                                        color: sel ? Colors.white.withValues(alpha: 0.75) : _kTextMuted,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              AnimatedOpacity(
-                                opacity: sel ? 1 : 0,
-                                duration: const Duration(milliseconds: 200),
-                                child: const Icon(Icons.check_circle, color: Colors.white, size: 22),
-                              ),
-                            ],
                           ),
                         ),
                       ),
-                    );
-                  }),
-                ),
+                    ),
+                  );
+                }),
               ),
-
-              const Spacer(),
-            ],
-          ),
+            ),
+            const Spacer(flex: 2),
+          ],
         ),
+      ),
     );
   }
 }
@@ -4846,18 +6765,26 @@ class StepLocation extends StatelessWidget {
   final String? selected;
   final VoidCallback? onBack;
   final ValueChanged<String> onSelected;
+  final VoidCallback? onNext;
 
   const StepLocation({
     super.key,
     this.selected,
     this.onBack,
     required this.onSelected,
+    this.onNext,
   });
 
   static const _locIcons = [
     LucideIcons.building2,
     LucideIcons.home,
     LucideIcons.repeat2,
+  ];
+
+  static const _locColors = [
+    Color(0xFF5B6ABF),
+    Color(0xFF2E9E6B),
+    Color(0xFFFF9800),
   ];
 
   @override
@@ -4869,6 +6796,8 @@ class StepLocation extends StatelessWidget {
       ('home', l10n.locationHome, _fr ? 'Entraînement chez toi' : 'Train at home'),
       ('both', l10n.locationBoth, _fr ? 'Un mix des deux' : 'A mix of both'),
     ];
+    final hasSel = selected != null;
+
     return _stepBackground(
       child: SafeArea(
         child: Column(
@@ -4878,8 +6807,10 @@ class StepLocation extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: _StepHeader(
-                title: _fr ? 'Où préfères-tu\nt\'entraîner ?' : 'Where do you\nprefer to train?',
-                subtitle: l10n.locationSubtitle,
+                title: _fr ? 'Où préfères-tu t\'entraîner ?' : 'Where do you prefer to train?',
+                subtitle: _fr
+                    ? 'On adapte tes séances à ton lieu'
+                    : 'We\'ll adapt workouts to your space',
               ),
             ),
             const Spacer(flex: 1),
@@ -4888,13 +6819,18 @@ class StepLocation extends StatelessWidget {
               child: Column(
                 children: List.generate(locations.length, (i) {
                   final loc = locations[i];
+                  final isSel = selected == loc.$1;
+                  final isDim = hasSel && !isSel;
+                  final accent = _locColors[i];
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _QuickTapCard(
+                    padding: EdgeInsets.only(bottom: i < locations.length - 1 ? 14 : 0),
+                    child: _GlassCard(
+                      selected: isSel,
+                      dimmed: isDim,
+                      accent: accent,
                       icon: _locIcons[i],
                       label: loc.$2,
                       sublabel: loc.$3,
-                      selected: selected == loc.$1,
                       onTap: () => onSelected(loc.$1),
                     ),
                   );
@@ -4902,6 +6838,19 @@ class StepLocation extends StatelessWidget {
               ),
             ),
             const Spacer(flex: 2),
+            AnimatedOpacity(
+              opacity: hasSel ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: AnimatedSlide(
+                offset: hasSel ? Offset.zero : const Offset(0, 0.3),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                child: _CtaButton(
+                  label: _fr ? 'Continuer' : 'Continue',
+                  onPressed: hasSel ? onNext : null,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -5293,6 +7242,139 @@ class _SelectionChip extends StatelessWidget {
               fontSize: 14, fontWeight: FontWeight.w600,
               color: selected ? Colors.white : _kGreenDark)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SHARED — Glass Card (glassmorphic selection card with backdrop blur)
+// ══════════════════════════════════════════════════════════════════════════════
+class _GlassCard extends StatelessWidget {
+  final bool selected;
+  final bool dimmed;
+  final Color accent;
+  final IconData icon;
+  final String label;
+  final String sublabel;
+  final VoidCallback onTap;
+
+  const _GlassCard({
+    required this.selected,
+    required this.dimmed,
+    required this.accent,
+    required this.icon,
+    required this.label,
+    required this.sublabel,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        opacity: dimmed ? 0.45 : 1.0,
+        duration: const Duration(milliseconds: 250),
+        child: AnimatedScale(
+          scale: dimmed ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 250),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: BackdropFilter(
+              filter: selected
+                  ? ImageFilter.blur(sigmaX: 12, sigmaY: 12)
+                  : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? const Color(0xFF7FC077).withValues(alpha: 0.15)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: selected
+                        ? accent.withValues(alpha: 0.4)
+                        : _kGlassBorder,
+                    width: selected ? 1.5 : 1.0,
+                  ),
+                  boxShadow: [
+                    if (selected)
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      )
+                    else
+                      BoxShadow(
+                        color: const Color(0xFF000000).withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? accent.withValues(alpha: 0.18)
+                            : accent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(icon, size: 26, color: accent),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(label, style: GoogleFonts.outfit(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: selected ? _kGreenDark : _kTextDark,
+                          )),
+                          const SizedBox(height: 3),
+                          Text(sublabel, style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            color: _kTextMuted,
+                            height: 1.3,
+                          )),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    AnimatedScale(
+                      scale: selected ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutBack,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: accent,
+                        ),
+                        child: const Icon(
+                          LucideIcons.check,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

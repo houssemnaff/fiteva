@@ -229,6 +229,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
         backgroundColor: const Color(0xFF5CD57A),
         onPressed: () async {
           await AppTourService.resetTour();
+          await AppTourService.resetAllSectionTours();
           _selectMain(0);
           await Future.delayed(const Duration(milliseconds: 300));
           if (mounted) setState(() => _showTour = true);

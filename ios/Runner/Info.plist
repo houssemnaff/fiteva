@@ -66,6 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- HealthKit -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>FitEva reads your step count and activity data to track your daily progress.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>FitEva saves your completed workouts to Apple Health so all your fitness data stays in one place.</string>
 	<!-- Pedometer & Motion Permission -->
 	<key>NSMotionUsageDescription</key>
 	<string>FitEva needs access to your motion data to count your steps accurately.</string>

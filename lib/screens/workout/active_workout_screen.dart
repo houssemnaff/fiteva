@@ -9,6 +9,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/workout_model.dart';
 import '../../services/workout_progress_service.dart';
+import '../../services/health_service.dart';
 import 'exercise_player_screen.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
@@ -109,6 +110,14 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen>
     if (_completedExercises >= widget.workout.exerciseCount && !_workoutMarkedComplete) {
       _workoutMarkedComplete = true;
       await WorkoutProgressService.markWorkoutComplete(widget.workout.id);
+      final w = widget.workout;
+      final mins = int.tryParse(w.duration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 30;
+      final cals = int.tryParse(w.calories.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+      HealthService.syncWorkout(
+        workoutTitle: w.title,
+        durationMinutes: mins,
+        caloriesBurned: cals,
+      );
     }
   }
 

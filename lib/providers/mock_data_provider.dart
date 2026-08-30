@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/coach_model.dart';
 import '../models/home_program_model.dart';
 import '../models/user_model.dart';
 import '../models/video_model.dart';
@@ -97,6 +98,20 @@ final grossesseProgramsProvider = Provider.autoDispose<List<HomeProgramModel>>((
     data: (all) => all.where((p) => p.category == 'grossesse').toList(),
     orElse: () => [],
   );
+});
+
+// ─── Coaches uniques extraits des programmes ─────────────────────────────────
+
+final coachesProvider = Provider.autoDispose<List<CoachModel>>((ref) {
+  final all = ref.watch(allProgramsProvider);
+  final seen = <String>{};
+  final coaches = <CoachModel>[];
+  for (final p in all) {
+    if (p.coach != null && p.coach!.name.isNotEmpty && seen.add(p.coach!.id)) {
+      coaches.add(p.coach!);
+    }
+  }
+  return coaches;
 });
 
 // ─── Dérivés ──────────────────────────────────────────────────────────────────

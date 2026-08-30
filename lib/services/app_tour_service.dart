@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 const _mascotUrl =
     'https://res.cloudinary.com/dmzvbqocs/image/upload/v1785371674/preview-removebg-preview_i39b7w.png';
@@ -43,6 +44,196 @@ class AppTourService {
   static Future<void> resetTour() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);
+  }
+
+  // ── Per-section tutorials ──
+
+  static String _sectionKey(String section) => 'section_tour_$section';
+
+  static Future<bool> shouldShowSectionTour(String section) async {
+    final prefs = await SharedPreferences.getInstance();
+    return !(prefs.getBool(_sectionKey(section)) ?? false);
+  }
+
+  static Future<void> markSectionTourDone(String section) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_sectionKey(section), true);
+  }
+
+  static Future<void> resetSectionTour(String section) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sectionKey(section));
+  }
+
+  static Future<void> resetAllSectionTours() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((k) => k.startsWith('section_tour_'));
+    for (final k in keys) { await prefs.remove(k); }
+  }
+
+  static void showSectionTutorial(BuildContext context, {
+    required String section,
+    required List<SpotlightStep> steps,
+  }) async {
+    if (!await shouldShowSectionTour(section)) return;
+    if (!context.mounted) return;
+
+    final targets = <TargetFocus>[];
+    for (int i = 0; i < steps.length; i++) {
+      final s = steps[i];
+      targets.add(TargetFocus(
+        identify: '${section}_$i',
+        keyTarget: s.key,
+        alignSkip: Alignment.topRight,
+        enableOverlayTab: true,
+        enableTargetTab: true,
+        shape: s.shape,
+        radius: s.spotlightRadius,
+        paddingFocus: s.spotlightPadding,
+        contents: [
+          TargetContent(
+            align: s.contentAlign,
+            builder: (ctx, ctrl) => _SpotlightCard(
+              title: s.title,
+              description: s.description,
+              icon: s.icon,
+              color: s.color,
+              stepIndex: i,
+              totalSteps: steps.length,
+            ),
+          ),
+        ],
+      ));
+    }
+
+    final tutorial = TutorialCoachMark(
+      targets: targets,
+      colorShadow: const Color(0xFF1A1A1A),
+      opacityShadow: 0.75,
+      textSkip: '',
+      hideSkip: true,
+      onFinish: () => markSectionTourDone(section),
+      onSkip: () { markSectionTourDone(section); return true; },
+    )..show(context: context);
+  }
+}
+
+class SpotlightStep {
+  final GlobalKey key;
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final ContentAlign contentAlign;
+  final ShapeLightFocus shape;
+  final double spotlightRadius;
+  final double spotlightPadding;
+
+  const SpotlightStep({
+    required this.key,
+    required this.title,
+    required this.description,
+    required this.icon,
+    this.color = _green,
+    this.contentAlign = ContentAlign.bottom,
+    this.shape = ShapeLightFocus.RRect,
+    this.spotlightRadius = 16,
+    this.spotlightPadding = 8,
+  });
+}
+
+class _SpotlightCard extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final int stepIndex;
+  final int totalSteps;
+
+  const _SpotlightCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+    required this.stepIndex,
+    required this.totalSteps,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isLast = stepIndex == totalSteps - 1;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 20, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: GoogleFonts.outfit(
+                      fontSize: 17, fontWeight: FontWeight.w800,
+                      color: const Color(0xFF1A1A1A), height: 1.2)),
+                    const SizedBox(height: 2),
+                    Text('${stepIndex + 1} / $totalSteps',
+                      style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+                  ],
+                ),
+              ),
+            ]),
+            const SizedBox(height: 12),
+            Text(description, style: GoogleFonts.inter(
+              fontSize: 13.5, color: const Color(0xFF5A6B62),
+              height: 1.5, fontWeight: FontWeight.w400)),
+            const SizedBox(height: 14),
+            Row(children: [
+              // Progress dots
+              ...List.generate(totalSteps, (i) => Container(
+                width: i == stepIndex ? 18 : 6,
+                height: 6,
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  color: i == stepIndex ? color : color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              )),
+              const Spacer(),
+              Text(
+                isLast ? 'Compris !' : 'Appuie pour continuer',
+                style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w500,
+                  color: const Color(0xFF8B9990)),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -1,5 +1,4 @@
 // ignore_for_file: deprecated_member_use
-import 'dart:math' as math;
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/cycle/pregnancy/PregnancyInsightRepository.dart';
 import 'package:fiteva/screens/cycle/pregnancy/daily_insight_model.dart';
@@ -16,13 +15,23 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:fiteva/widgets/shared_app_header.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
 
-// ── Brand colors (theme-aware helpers) ───────────────────────────────────────
-Color _primary(BuildContext c) => Theme.of(c).colorScheme.primary;
-Color _accent(BuildContext c)  => Theme.of(c).colorScheme.secondary;
-// ── Data ─────────────────────────────────────────────────────────────────────
+
+// ── Premium palette ─────────────────────────────────────────────────────────
+const _coral     = Color(0xFFE07A5F);
+const _peach     = Color(0xFFF2A977);
+const _warmMint  = Color(0xFF5BA88C);
+const _deepMint  = Color(0xFF3D8B6E);
+const _lavender  = Color(0xFF8B7EC8);
+const _gold      = Color(0xFFD4A44C);
+
+Color _bg(bool d)    => d ? const Color(0xFF0E0E11) : const Color(0xFFFAF7F4);
+Color _text(bool d)  => d ? const Color(0xFFF5F0EB) : const Color(0xFF1E1A17);
+Color _sub(bool d)   => d ? const Color(0xFF9A9498) : const Color(0xFF6D6166);
+Color _faint(bool d) => d ? Colors.white.withOpacity(0.05) : const Color(0xFFF0EBE6);
+
+// ── Data ────────────────────────────────────────────────────────────────────
 const _months = ['janv.','févr.','mars','avr.','mai','juin',
   'juil.','août','sept.','oct.','nov.','déc.'];
 
@@ -40,6 +49,69 @@ const _fruit = <int, String>{
   41:'pastèque', 42:'pastèque géante',
 };
 
+
+const _babySize = <int, String>{
+  4:'~1mm', 5:'~2mm', 6:'~5mm', 7:'~1cm', 8:'~1.6cm', 9:'~2.3cm',
+  10:'~3cm', 11:'~4cm', 12:'~5.5cm', 13:'~7cm', 14:'~8.5cm',
+  15:'~10cm', 16:'~11.5cm', 17:'~13cm', 18:'~14cm', 19:'~15cm',
+  20:'~16.5cm', 21:'~27cm', 22:'~28cm', 23:'~29cm', 24:'~30cm',
+  25:'~35cm', 26:'~36cm', 27:'~37cm', 28:'~38cm', 29:'~39cm',
+  30:'~40cm', 31:'~41cm', 32:'~42.5cm', 33:'~44cm', 34:'~45cm',
+  35:'~46cm', 36:'~47cm', 37:'~48cm', 38:'~49cm', 39:'~50cm',
+  40:'~51cm', 41:'~51cm', 42:'~51cm',
+};
+
+const _babyWeight = <int, String>{
+  8:'~1g', 9:'~2g', 10:'~4g', 11:'~7g', 12:'~14g', 13:'~23g',
+  14:'~43g', 15:'~70g', 16:'~100g', 17:'~140g', 18:'~190g', 19:'~240g',
+  20:'~300g', 21:'~360g', 22:'~430g', 23:'~500g', 24:'~600g',
+  25:'~660g', 26:'~760g', 27:'~875g', 28:'~1kg', 29:'~1.15kg',
+  30:'~1.3kg', 31:'~1.5kg', 32:'~1.7kg', 33:'~1.9kg', 34:'~2.15kg',
+  35:'~2.4kg', 36:'~2.6kg', 37:'~2.85kg', 38:'~3.1kg', 39:'~3.3kg',
+  40:'~3.5kg', 41:'~3.6kg', 42:'~3.7kg',
+};
+
+const _babyDev = <int, String>{
+  4: 'Le cœur commence à battre',
+  5: 'Le tube neural se forme',
+  6: 'Les bourgeons des bras apparaissent',
+  7: 'Le visage commence à se dessiner',
+  8: 'Les doigts et orteils se forment',
+  9: 'Les organes vitaux sont en place',
+  10: 'Les ongles commencent à pousser',
+  11: 'Bébé commence à bouger',
+  12: 'Les réflexes se développent',
+  13: 'Les empreintes digitales se forment',
+  14: 'Les expressions faciales apparaissent',
+  15: 'Bébé perçoit la lumière',
+  16: 'Le squelette se renforce',
+  17: 'La graisse commence à se déposer',
+  18: 'Bébé bâille et s\'étire',
+  19: 'Les sens se développent',
+  20: 'Bébé entend votre voix',
+  21: 'Les mouvements sont plus forts',
+  22: 'Les sourcils se dessinent',
+  23: 'La peau se pigmente',
+  24: 'Les poumons se développent',
+  25: 'Bébé réagit aux sons',
+  26: 'Les yeux s\'ouvrent',
+  27: 'Le cerveau se développe rapidement',
+  28: 'Bébé rêve pendant son sommeil',
+  29: 'Les muscles se renforcent',
+  30: 'La moelle osseuse produit les globules',
+  31: 'Les cinq sens fonctionnent',
+  32: 'Bébé prend du poids rapidement',
+  33: 'Les os du crâne restent souples',
+  34: 'Le système immunitaire se forme',
+  35: 'Les poumons sont presque matures',
+  36: 'Bébé descend dans le bassin',
+  37: 'Bébé est considéré à terme',
+  38: 'Les organes sont prêts',
+  39: 'Bébé continue de prendre du poids',
+  40: 'Prêt pour la naissance !',
+  41: 'Bébé attend le grand jour',
+  42: 'Bébé est prêt !',
+};
 
 const _fitData = <int, (String, String)>{
   1:  ('Marche douce',        '20 à 30 min par jour, ton corps sait ce dont il a besoin.'),
@@ -61,6 +133,8 @@ String _fitTip(int w) {
   return _fitData[k]!.$2;
 }
 
+Color _triAccent(int tri) => tri == 1 ? _coral : tri == 2 ? _lavender : _warmMint;
+
 // ─────────────────────────────────────────────────────────────────────────────
 class PregnancyHubScreen extends ConsumerStatefulWidget {
   const PregnancyHubScreen({super.key});
@@ -70,7 +144,7 @@ class PregnancyHubScreen extends ConsumerStatefulWidget {
 
 class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
     with SingleTickerProviderStateMixin {
-  int? _mood;
+  int? _feeling;
   bool _switching = false;
 
   late final AnimationController _switchAnim = AnimationController(
@@ -87,17 +161,14 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
   }
 
   @override
-  void dispose() {
-    _switchAnim.dispose();
-    super.dispose();
-  }
+  void dispose() { _switchAnim.dispose(); super.dispose(); }
 
+  bool get _dark => Theme.of(context).brightness == Brightness.dark;
+
+  // ── Mode switches ──
   Future<void> _switchToCycle() async {
     final l10n = ref.read(l10nProvider);
-    final ok = await _confirm(
-      l10n.pregQuitter,
-      l10n.pregQuitterSub,
-    );
+    final ok = await _confirm(l10n.pregQuitter, l10n.pregQuitterSub);
     if (ok != true || !mounted) return;
     setState(() => _switching = true);
     await _switchAnim.forward();
@@ -117,11 +188,11 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
       title: l10n.pregDateAccouch,
       subtitle: l10n.pregQuandNe,
       icon: Icons.child_care_rounded,
-      accentColor: _primary(context),
+      accentColor: Theme.of(context).colorScheme.primary,
     );
     if (birthDate == null || !mounted) return;
     final weeks = DateTime.now().difference(birthDate).inDays ~/ 7;
-    final ppDuration = weeks < 2 ? '0-2' : weeks < 6 ? '2-6'
+    final ppDur = weeks < 2 ? '0-2' : weeks < 6 ? '2-6'
         : weeks < 12 ? '6-12' : weeks < 26 ? '3-6m' : '6m+';
     final ok = await _confirm(
       l10n.pregPostPartum,
@@ -133,36 +204,40 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
     if (!mounted) return;
     final n = ref.read(userProfileProvider.notifier);
     await n.updateField('health_status', 'postpartum');
-    await n.updateField('pp_duration', ppDuration);
-    // La vraie date est maintenant sauvegardée (pas seulement le bucket
-    // ppDuration) — sinon le décompte post-partum se figeait indéfiniment
-    // au lieu d'avancer avec le temps réel.
+    await n.updateField('pp_duration', ppDur);
     await n.updateField('pp_birth_date', birthDate.toIso8601String());
     await n.updateField('pregnancy_week', null);
   }
 
   Future<bool?> _confirm(String title, String body) => showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 17)),
-          content: Text(body, style: GoogleFonts.inter(fontSize: 13, height: 1.6,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(ref.read(l10nProvider).pregAnnuler)),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(ref.read(l10nProvider).pregConfirmer)),
-          ],
-        ),
-      );
+    context: context,
+    builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 17)),
+      content: Text(body, style: GoogleFonts.inter(fontSize: 13, height: 1.6,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(ref.read(l10nProvider).pregAnnuler)),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(ref.read(l10nProvider).pregConfirmer)),
+      ],
+    ),
+  );
 
+  Route _fadeTo(Widget p) => PageRouteBuilder(
+    pageBuilder: (_, a, __) => p,
+    transitionsBuilder: (_, a, __, c) =>
+        FadeTransition(opacity: CurvedAnimation(parent: a, curve: Curves.easeInOut), child: c),
+    transitionDuration: const Duration(milliseconds: 260),
+  );
+
+  // ── BUILD ──
   @override
   Widget build(BuildContext context) {
     final l10n    = ref.watch(l10nProvider);
-    final cs      = Theme.of(context).colorScheme;
     final profile = ref.watch(userProfileProvider);
     final week    = (profile.currentPregnancyWeek ?? profile.pregnancyWeekSA ?? 1).clamp(1, 42);
     final insight = ref.watch(pregnancyInsightProvider(week)).asData?.value
@@ -171,443 +246,253 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
     final left    = due.difference(DateTime.now()).inDays.clamp(0, 300);
     final fmtDue  = '${due.day} ${_months[due.month - 1]} ${due.year}';
     final tri     = week <= 13 ? 1 : week <= 26 ? 2 : 3;
+    final dark    = _dark;
+    final accent  = _triAccent(tri);
 
     return Scaffold(
-      backgroundColor: cs.surface,
+      backgroundColor: _bg(dark),
       body: FadeTransition(
         opacity: _fadeOut,
-        child: CustomScrollView(
+        child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          slivers: [
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
 
-            // ── Shared header (same as cycle screen) ─────────────────────
-            SharedAppHeader.sliver(
-              eyebrow: l10n.pregTitle,
-              title: l10n.pregMonSuivi,
-              accentColor: _accent(context),
-              bgColor: cs.surface,
-              actions: [
-                PopupMenuButton<String>(
-                  enabled: !_switching,
-                  onSelected: (v) {
-                    if (v == 'cycle') _switchToCycle();
-                    if (v == 'postpartum') _switchToPostpartum();
-                  },
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  color: cs.surfaceContainerHighest,
-                  offset: const Offset(0, 44),
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: 'postpartum',
-                      child: Text(l10n.pregPostPartumBtn,
-                        style: GoogleFonts.inter(
-                          fontSize: 13, fontWeight: FontWeight.w500,
-                          color: cs.onSurface))),
-                    PopupMenuItem(
-                      value: 'cycle',
-                      child: Text(l10n.pregMonCycle,
-                        style: GoogleFonts.inter(
-                          fontSize: 13, fontWeight: FontWeight.w500,
-                          color: _accent(context)))),
-                  ],
-                  child: Container(
-                    width: 38, height: 38,
-                    decoration: BoxDecoration(
-                      color: _accent(context).withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.more_horiz_rounded,
-                        size: 18, color: _primary(context)),
-                  ),
+            // ═══════════════════════════════════════════════════════════════
+            //  HERO — week ring + baby
+            // ═══════════════════════════════════════════════════════════════
+            _HeroSection(
+              week: week, tri: tri, accent: accent,
+              due: fmtDue, left: left, dark: dark, l10n: l10n,
+              onMenu: (v) {
+                if (v == 'cycle') _switchToCycle();
+                if (v == 'postpartum') _switchToPostpartum();
+              },
+              switching: _switching,
+            ),
+
+            // ═══════════════════════════════════════════════════════════════
+            //  BABY DEVELOPMENT — big prominent card
+            // ═══════════════════════════════════════════════════════════════
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              child: Transform.translate(
+                offset: const Offset(0, -24),
+                child: _BabyDevCard(
+                  week: week, tri: tri, accent: accent,
+                  insight: insight, dark: dark, l10n: l10n,
+                  onTap: () => Navigator.push(context,
+                    _fadeTo(BabyStoryScreen(currentWeek: week))),
                 ),
-              ],
-            ),
-
-            // ── Baby growth ring hero ────────────────────────────────────
-            SliverToBoxAdapter(
-              child: _BabyRingHero(
-                week: week, tri: tri,
-                fruit: _fruit[week] ?? 'fruit',
-                l10n: l10n,
               ),
             ),
 
-            // ── Body ────────────────────────────────────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-
-                  // Countdown strip (3 key numbers)
-                  _CountdownStrip(week: week, left: left, fmtDue: fmtDue, fruit: _fruit[week] ?? 'fruit'),
-                  const SizedBox(height: 20),
-
-                  // Progress strip (3 trimesters)
-                  _ProgressStrip(week: week, labels: [l10n.pregTrim1Short, l10n.pregTrim2Short, l10n.pregTrim3Short]),
-                  const SizedBox(height: 24),
-
-                  // Mood check-in (5 emojis)
-                  _SectionLabel(l10n.pregCommentTuTeSens),
-                  const SizedBox(height: 10),
-                  _MoodRow5(selected: _mood, onSelect: (i) {
-                    HapticFeedback.lightImpact();
-                    setState(() => _mood = i);
-                  }),
-
-                  // Mood response
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 320),
-                    curve: Curves.easeOutCubic,
-                    child: _mood == null
-                        ? const SizedBox.shrink()
-                        : Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: _MoodResponse(mood: _mood!, week: week),
-                          ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // Week insight (two separate cards)
-                  _SectionLabel(l10n.pregSemaineN(week)),
-                  const SizedBox(height: 10),
-                  _BabyInsightCard(insight: insight, cs: cs),
-                  const SizedBox(height: 10),
-                  _MomInsightCard(insight: insight, cs: cs),
-                  const SizedBox(height: 10),
-                  if (insight.poeticLine.isNotEmpty)
-                    _PoeticCard(text: insight.poeticLine, cs: cs),
-                  const SizedBox(height: 24),
-
-                  // Weekly tip carousel
-                  _PregnancyTipsCarousel(week: week, cs: cs),
-                  const SizedBox(height: 24),
-
-                  // Fitness
-                  _FitCard(week: week, cs: cs),
-                  const SizedBox(height: 28),
-
-                  // Navigation (2x2 grid)
-                  _SectionLabel(l10n.pregExplorer),
-                  const SizedBox(height: 10),
-                  _NavGrid(week: week, cs: cs, l10n: l10n),
-
-                  // Born CTA
-                  if (week >= 37) ...[
-                    const SizedBox(height: 16),
-                    _BornBanner(cs: cs, l10n: l10n),
-                  ],
-
-                  SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
-                ]),
-              ),
+            // ═══════════════════════════════════════════════════════════════
+            //  TRIMESTER JOURNEY
+            // ═══════════════════════════════════════════════════════════════
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+              child: _TrimesterJourney(week: week, tri: tri, dark: dark, l10n: l10n),
             ),
-          ],
+
+            // ═══════════════════════════════════════════════════════════════
+            //  FEELING CHECK-IN (pregnancy-specific)
+            // ═══════════════════════════════════════════════════════════════
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+              child: _buildFeelingSection(week, dark, l10n),
+            ),
+
+            // ═══════════════════════════════════════════════════════════════
+            //  DAILY TIP
+            // ═══════════════════════════════════════════════════════════════
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+              child: _DailyTipCard(insight: insight, week: week, dark: dark, l10n: l10n),
+            ),
+
+            // ═══════════════════════════════════════════════════════════════
+            //  EXPLORE — asymmetric grid
+            // ═══════════════════════════════════════════════════════════════
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+              child: _buildExploreGrid(week, dark, l10n),
+            ),
+
+            // ═══════════════════════════════════════════════════════════════
+            //  BORN CTA (week 37+)
+            // ═══════════════════════════════════════════════════════════════
+            if (week >= 37) Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildBornBanner(dark, l10n),
+            ),
+
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 80),
+          ]),
         ),
       ),
     );
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SECTION LABEL
-// ─────────────────────────────────────────────────────────────────────────────
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
+  // ── FEELING CHECK-IN ──
+  Widget _buildFeelingSection(int week, bool dark, AppL10n l10n) {
+    final items = <(IconData, String, Color)>[
+      (LucideIcons.zap,       l10n.isFrench ? 'Énergie'   : 'Energy',   _gold),
+      (LucideIcons.cloudRain, l10n.isFrench ? 'Nausées'   : 'Nausea',   _coral),
+      (LucideIcons.moon,      l10n.isFrench ? 'Sommeil'   : 'Sleep',    _lavender),
+      (LucideIcons.cookie,    l10n.isFrench ? 'Envies'    : 'Cravings', _peach),
+      (LucideIcons.heart,     l10n.isFrench ? 'Humeur'    : 'Mood',     _warmMint),
+    ];
 
-  @override
-  Widget build(BuildContext context) => Text(text,
-    style: GoogleFonts.outfit(
-      fontSize: 18, fontWeight: FontWeight.w700,
-      color: Theme.of(context).colorScheme.onSurface));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  PROGRESS STRIP  (3 trimesters, minimal)
-// ─────────────────────────────────────────────────────────────────────────────
-class _ProgressStrip extends StatelessWidget {
-  final int week;
-  final List<String> labels;
-  const _ProgressStrip({required this.week, required this.labels});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs  = Theme.of(context).colorScheme;
-    final tri = week <= 13 ? 0 : week <= 26 ? 1 : 2;
-    final subtitles = ['S1–S13', 'S14–S26', 'S27–S42'];
-
-    return Row(children: List.generate(3, (i) {
-      final active = i == tri;
-      final done   = i < tri;
-      return Expanded(
-        child: Container(
-          margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-          decoration: BoxDecoration(
-            color: active
-                ? _primary(context)
-                : done
-                    ? _primary(context).withOpacity(0.08)
-                    : cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: active
-                  ? _primary(context)
-                  : done
-                      ? _primary(context).withOpacity(0.2)
-                      : cs.outline,
-              width: 1,
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(
+        l10n.isFrench ? 'Comment tu te sens ?' : 'How are you feeling?',
+        style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700, color: _text(dark)),
+      ),
+      const SizedBox(height: 12),
+      Row(children: List.generate(5, (i) {
+        final (icon, label, color) = items[i];
+        final sel = _feeling == i;
+        return Expanded(child: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() => _feeling = _feeling == i ? null : i);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            margin: EdgeInsets.only(right: i < 4 ? 6 : 0),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              gradient: sel ? LinearGradient(
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                colors: [color, color.withOpacity(0.7)],
+              ) : null,
+              color: sel ? null : _faint(dark),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: sel ? [BoxShadow(
+                color: color.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4),
+              )] : null,
             ),
-          ),
-          child: Column(children: [
-            Text(
-              done ? '✓' : '${i + 1}',
-              style: GoogleFonts.outfit(
-                fontSize: 15, fontWeight: FontWeight.w800,
-                color: active
-                    ? Colors.white
-                    : done
-                        ? _primary(context)
-                        : cs.onSurface.withOpacity(0.35)),
-            ),
-            const SizedBox(height: 3),
-            Text(labels[i], style: GoogleFonts.inter(
-              fontSize: 9, fontWeight: FontWeight.w700,
-              color: active ? Colors.white : done ? _primary(context) : cs.onSurface.withOpacity(0.45),
-              letterSpacing: 0.2),
-              textAlign: TextAlign.center),
-            Text(subtitles[i], style: GoogleFonts.inter(
-              fontSize: 9,
-              color: active ? Colors.white54 : cs.onSurface.withOpacity(0.3)),
-              textAlign: TextAlign.center),
-          ]),
-        ),
-      );
-    }));
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  MOOD RESPONSE
-// ─────────────────────────────────────────────────────────────────────────────
-class _MoodResponse extends StatefulWidget {
-  final int mood, week;
-  const _MoodResponse({required this.mood, required this.week});
-  @override
-  State<_MoodResponse> createState() => _MoodResponseState();
-}
-
-class _MoodResponseState extends State<_MoodResponse>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
-  late final Animation<double> _fade =
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-  late final Animation<Offset> _slide =
-      Tween(begin: const Offset(0, 0.05), end: Offset.zero)
-          .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
-
-  @override
-  void initState() { super.initState(); _ctrl.forward(); }
-
-  @override
-  void didUpdateWidget(_MoodResponse old) {
-    super.didUpdateWidget(old);
-    if (old.mood != widget.mood) _ctrl.forward(from: 0);
-  }
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  (String, String) _content() {
-    final tri = widget.week <= 13 ? 1 : widget.week <= 26 ? 2 : 3;
-    switch (widget.mood) {
-      case 0:
-        return tri == 1
-            ? ('Tu traverses le 1er trimestre avec sérénité.',
-               'Profite de cette énergie pour une marche de 20 min.')
-            : tri == 2
-            ? ('Ton corps et ton bébé sont en harmonie.',
-               'Moment idéal pour un cours de yoga prénatal.')
-            : ('Être en forme à la semaine ${ widget.week }, c\'est une vraie force.',
-               'Une marche douce le matin prépare ton corps naturellement.');
-      case 1:
-        return tri == 1
-            ? ('La fatigue du 1er trimestre est normale — ton corps construit tout.',
-               'Une sieste aujourd\'hui, c\'est du soin, pas de la paresse.')
-            : tri == 2
-            ? ('Une fatigue au 2e trimestre peut signaler une croissance rapide.',
-               'Vérifie ton apport en fer et en protéines.')
-            : ('À la semaine ${ widget.week }, ton corps se prépare activement.',
-               'Surélève les pieds 20 min ce soir.');
-      case 2:
-        return tri == 1
-            ? ('Cette joie est un beau cadeau en ce début de grossesse.',
-               'Note ce moment dans un journal — tu seras heureuse de le relire.')
-            : tri == 2
-            ? ('Ta joie rayonne — bébé la perçoit vraiment.',
-               'Mets de la musique et danse doucement avec bébé.')
-            : ('Cette joie à l\'approche du grand jour est la plus belle des préparations.',
-               'Partage ce moment avec quelqu\'un que tu aimes.');
-      case 3:
-        return tri == 1
-            ? ('L\'anxiété du 1er trimestre est fréquente — tu n\'es pas seule.',
-               'Essaie 5 min de cohérence cardiaque pour calmer le mental.')
-            : tri == 2
-            ? ('L\'anxiété peut surgir même quand tout va bien.',
-               'Parle à quelqu\'un de confiance — exprimer aide toujours.')
-            : ('L\'anxiété pré-accouchement est naturelle et partagée par beaucoup.',
-               'Prépare ton sac de maternité — l\'action calme l\'esprit.');
-      default:
-        return tri == 1
-            ? ('Les nausées du 1er trimestre sont un signe que tout fonctionne.',
-               'Gingembre, petits repas fréquents, et repos.')
-            : tri == 2
-            ? ('Des nausées au 2e trimestre peuvent arriver — écoute ton corps.',
-               'Évite les odeurs fortes et mange ce qui te fait envie.')
-            : ('Les nausées tardives sont rares mais pas anormales.',
-               'Parles-en à ta sage-femme si elles persistent.');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final (message, tip) = _content();
-    return FadeTransition(
-      opacity: _fade,
-      child: SlideTransition(
-        position: _slide,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _primary(context).withOpacity(0.06),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _primary(context).withOpacity(0.12)),
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(message, style: GoogleFonts.outfit(
-              fontSize: 14, height: 1.6,
-              color: cs.onSurface, fontStyle: FontStyle.italic)),
-            const SizedBox(height: 10),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(width: 3, height: 36,
-                margin: const EdgeInsets.only(right: 10, top: 2),
-                decoration: BoxDecoration(
-                  color: _accent(context),
-                  borderRadius: BorderRadius.circular(2))),
-              Expanded(child: Text(tip, style: GoogleFonts.inter(
-                fontSize: 12, height: 1.6,
-                color: cs.onSurface.withOpacity(0.6)))),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(icon, size: sel ? 22 : 18,
+                color: sel ? Colors.white : _sub(dark)),
+              const SizedBox(height: 6),
+              Text(label, style: GoogleFonts.inter(
+                fontSize: 9, fontWeight: FontWeight.w700,
+                color: sel ? Colors.white.withOpacity(0.9) : _sub(dark),
+                letterSpacing: 0.2),
+                textAlign: TextAlign.center),
             ]),
-          ]),
+          ),
+        ));
+      })),
+      if (_feeling != null) ...[
+        const SizedBox(height: 14),
+        _FeelingResponse(feeling: _feeling!, week: week, dark: dark),
+      ],
+    ]);
+  }
+
+  // ── EXPLORE GRID — asymmetric ──
+  Widget _buildExploreGrid(int week, bool dark, AppL10n l10n) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(l10n.pregExplorer, style: GoogleFonts.outfit(
+        fontSize: 18, fontWeight: FontWeight.w700, color: _text(dark))),
+      const SizedBox(height: 12),
+
+      // Top row: Bébé (tall) + Symptômes stacked with Corps
+      SizedBox(
+        height: 190,
+        child: Row(children: [
+          // LEFT — Baby (tall, prominent)
+          Expanded(flex: 5, child: _ExploreCard(
+            label: l10n.pregVotreBebe,
+            subtitle: l10n.isFrench ? 'Semaine $week' : 'Week $week',
+            icon: LucideIcons.baby,
+            gradient: const [_warmMint, _deepMint],
+            dark: dark, tall: true,
+            onTap: () => Navigator.push(context,
+              _fadeTo(BabyStoryScreen(currentWeek: week))),
+          )),
+          const SizedBox(width: 8),
+          // RIGHT — two stacked
+          Expanded(flex: 4, child: Column(children: [
+            Expanded(child: _ExploreCard(
+              label: l10n.pregSymptomes,
+              icon: LucideIcons.heartPulse,
+              gradient: [_coral, _coral.withOpacity(0.7)],
+              dark: dark,
+              onTap: () => Navigator.push(context,
+                _fadeTo(SymptomsHomeScreen(currentWeek: week))),
+            )),
+            const SizedBox(height: 8),
+            Expanded(child: _ExploreCard(
+              label: l10n.pregVotreCorps,
+              icon: LucideIcons.sparkles,
+              gradient: [_lavender, _lavender.withOpacity(0.7)],
+              dark: dark,
+              onTap: () => Navigator.push(context,
+                _fadeTo(PregnancyBodyScreen(currentWeek: week))),
+            )),
+          ])),
+        ]),
+      ),
+      const SizedBox(height: 8),
+
+      // Bottom — Checklist (wide)
+      SizedBox(
+        height: 64,
+        child: _ExploreCard(
+          label: l10n.pregMaChecklist,
+          icon: LucideIcons.clipboardCheck,
+          gradient: [_gold, _gold.withOpacity(0.7)],
+          dark: dark, wide: true,
+          onTap: () => Navigator.push(context,
+            _fadeTo(PregnancyChecklistScreen(currentWeek: week))),
         ),
       ),
-    );
+    ]);
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  FITNESS CARD
-// ─────────────────────────────────────────────────────────────────────────────
-class _FitCard extends StatelessWidget {
-  final int week;
-  final ColorScheme cs;
-  const _FitCard({required this.week, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cs.outline),
-      ),
-      child: Row(children: [
-        Container(
-          width: 48, height: 48,
-          decoration: BoxDecoration(
-            color: _primary(context),
-            borderRadius: BorderRadius.circular(14)),
-          child: const Center(
-            child: Icon(LucideIcons.activity, size: 22, color: Colors.white)),
-        ),
-        const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('MOUVEMENT', style: GoogleFonts.inter(
-            fontSize: 9, fontWeight: FontWeight.w700,
-            color: _accent(context), letterSpacing: 1.8)),
-          const SizedBox(height: 3),
-          Text(_fitLabel(week), style: GoogleFonts.outfit(
-            fontSize: 15, fontWeight: FontWeight.w700,
-            color: cs.onSurface)),
-          const SizedBox(height: 2),
-          Text(_fitTip(week), style: GoogleFonts.inter(
-            fontSize: 12, color: cs.onSurface.withOpacity(0.55), height: 1.5)),
-        ])),
-      ]),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  BORN BANNER  (week 37+)
-// ─────────────────────────────────────────────────────────────────────────────
-class _BornBanner extends ConsumerWidget {
-  final ColorScheme cs;
-  final AppL10n l10n;
-  const _BornBanner({required this.cs, required this.l10n});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  // ── BORN BANNER ──
+  Widget _buildBornBanner(bool dark, AppL10n l10n) {
     return GestureDetector(
       onTap: () async {
         HapticFeedback.mediumImpact();
-        // Ce raccourci n'enregistrait jamais le passage en post-partum
-        // (health_status restait 'pregnant') — il ne faisait que naviguer
-        // vers l'écran, qui se réinitialisait donc à chaque réouverture.
         final birthDate = DateTime.now();
         final n = ref.read(userProfileProvider.notifier);
         await n.updateField('health_status', 'postpartum');
         await n.updateField('pp_duration', '0-2');
         await n.updateField('pp_birth_date', birthDate.toIso8601String());
         await n.updateField('pregnancy_week', null);
-        if (!context.mounted) return;
-        Navigator.push(context, PageRouteBuilder(
-          pageBuilder: (_, a, __) =>
-              PostpartumHubScreen(birthDate: birthDate),
-          transitionsBuilder: (_, a, __, c) => FadeTransition(
-            opacity: CurvedAnimation(parent: a, curve: Curves.easeInOut),
-            child: c),
-          transitionDuration: const Duration(milliseconds: 260),
-        ));
+        if (!mounted) return;
+        Navigator.push(context, _fadeTo(PostpartumHubScreen(birthDate: birthDate)));
       },
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: _primary(context),
-          borderRadius: BorderRadius.circular(18),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [_coral, _peach],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(
+            color: _coral.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 8))],
         ),
         child: Row(children: [
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(l10n.pregBabyBorn, style: GoogleFonts.outfit(
-              fontSize: 16, fontWeight: FontWeight.w700,
-              color: Colors.white)),
-            const SizedBox(height: 2),
+              fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
+            const SizedBox(height: 4),
             Text(l10n.pregPasserSuivi, style: GoogleFonts.inter(
-              fontSize: 12, color: Colors.white60)),
+              fontSize: 12, color: Colors.white70)),
           ])),
           Container(
-            width: 36, height: 36,
+            width: 40, height: 40,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
+              color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12)),
-            child: const Icon(Icons.arrow_forward_rounded,
-                size: 16, color: Colors.white),
+            child: const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
           ),
         ]),
       ),
@@ -615,532 +500,646 @@ class _BornBanner extends ConsumerWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  BABY RING HERO  (circular progress ring with fruit emoji center)
-// ─────────────────────────────────────────────────────────────────────────────
-class _BabyRingHero extends StatelessWidget {
-  final int week, tri;
-  final String fruit;
+// ═════════════════════════════════════════════════════════════════════════════
+//  HERO SECTION — timeline bar + stats
+// ═════════════════════════════════════════════════════════════════════════════
+class _HeroSection extends StatelessWidget {
+  final int week, tri, left;
+  final Color accent;
+  final String due;
+  final bool dark, switching;
   final AppL10n l10n;
+  final void Function(String) onMenu;
 
-  const _BabyRingHero({
-    required this.week, required this.tri,
-    required this.fruit, required this.l10n,
+  const _HeroSection({
+    required this.week, required this.tri, required this.accent,
+    required this.due, required this.left, required this.dark,
+    required this.l10n, required this.onMenu, required this.switching,
   });
-
-  static const _fruitEmoji = <int, String>{
-    1:'🌱', 2:'🫘', 3:'🫘', 4:'🫘', 5:'🫘', 6:'🫘',
-    7:'🫐', 8:'🫐', 9:'🫒', 10:'🫒', 11:'🍇', 12:'🍑',
-    13:'🍑', 14:'🍋', 15:'🍎', 16:'🥑', 17:'🍐', 18:'🫑',
-    19:'🍅', 20:'🍌', 21:'🥕', 22:'🥭', 23:'🥭', 24:'🌽',
-    25:'🥦', 26:'🥬', 27:'🥬', 28:'🍆', 29:'🎃', 30:'🥬',
-    31:'🍍', 32:'🍍', 33:'🍈', 34:'🍈', 35:'🍈', 36:'🥬',
-    37:'🥬', 38:'🎃', 39:'🍉', 40:'🍉', 41:'🍉', 42:'🍉',
-  };
 
   @override
   Widget build(BuildContext context) {
     final progress = (week / 42).clamp(0.0, 1.0);
-    final cs = Theme.of(context).colorScheme;
-    final triLabel = tri == 1 ? '1ER TRIMESTRE' : tri == 2 ? '2E TRIMESTRE' : '3E TRIMESTRE';
-    final emoji = _fruitEmoji[week] ?? '🌱';
+    final pct = (progress * 100).round();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: Column(children: [
-        SizedBox(
-          width: 180, height: 180,
-          child: CustomPaint(
-            painter: _BabyRingPainter(
-              progress: progress,
-              trackColor: _primary(context).withOpacity(0.12),
-              fillColor: _primary(context),
-              accentColor: _accent(context),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(emoji, style: const TextStyle(fontSize: 40)),
-                  const SizedBox(height: 4),
-                  Text('S$week', style: GoogleFonts.outfit(
-                    fontSize: 28, fontWeight: FontWeight.w900,
-                    color: cs.onSurface)),
-                ],
-              ),
-            ),
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: dark
+              ? [const Color(0xFF1A1218), const Color(0xFF151015), _bg(true)]
+              : [const Color(0xFFFCEDE6), const Color(0xFFF8E4DA), const Color(0xFFFAF3EE), _bg(false)],
         ),
-        const SizedBox(height: 12),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(width: 20, height: 2, color: _accent(context)),
-          const SizedBox(width: 8),
-          Text(triLabel, style: GoogleFonts.inter(
-            fontSize: 10, fontWeight: FontWeight.w700,
-            color: _accent(context), letterSpacing: 2.5)),
-          const SizedBox(width: 8),
-          Container(width: 20, height: 2, color: _accent(context)),
-        ]),
-        const SizedBox(height: 6),
-        Text(l10n.pregCommeFruit(fruit), style: GoogleFonts.inter(
-          fontSize: 13, color: cs.onSurface.withOpacity(0.5))),
-      ]),
-    );
-  }
-}
-
-class _BabyRingPainter extends CustomPainter {
-  final double progress;
-  final Color trackColor, fillColor, accentColor;
-
-  _BabyRingPainter({
-    required this.progress, required this.trackColor,
-    required this.fillColor, required this.accentColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 12;
-    const strokeWidth = 10.0;
-    const startAngle = -math.pi / 2;
-
-    final trackPaint = Paint()
-      ..color = trackColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final fillPaint = Paint()
-      ..color = fillColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawCircle(center, radius, trackPaint);
-
-    final sweepAngle = 2 * math.pi * progress;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      startAngle, sweepAngle, false, fillPaint,
-    );
-
-    final dotAngle = startAngle + sweepAngle;
-    final dotX = center.dx + radius * _cos(dotAngle);
-    final dotY = center.dy + radius * _sin(dotAngle);
-    canvas.drawCircle(Offset(dotX, dotY), 7,
-      Paint()..color = Colors.white..style = PaintingStyle.fill);
-    canvas.drawCircle(Offset(dotX, dotY), 5,
-      Paint()..color = accentColor..style = PaintingStyle.fill);
-  }
-
-  double _cos(double a) => math.cos(a);
-  double _sin(double a) => math.sin(a);
-
-  @override
-  bool shouldRepaint(_BabyRingPainter old) =>
-      old.progress != progress || old.fillColor != fillColor;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  COUNTDOWN STRIP  (3 key numbers)
-// ─────────────────────────────────────────────────────────────────────────────
-class _CountdownStrip extends StatelessWidget {
-  final int week, left;
-  final String fmtDue, fruit;
-  const _CountdownStrip({
-    required this.week, required this.left,
-    required this.fmtDue, required this.fruit,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final items = [
-      ('$week', 'Semaines', _primary(context)),
-      ('$left', 'Jours restants', _accent(context)),
-      (fmtDue, 'Terme estimé', cs.onSurface.withOpacity(0.6)),
-    ];
-
-    return Row(children: List.generate(items.length, (idx) {
-      final (value, label, color) = items[idx];
-      return Expanded(
-        child: Container(
-          margin: EdgeInsets.only(right: idx < items.length - 1 ? 8 : 0),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: cs.outline),
-          ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 16, 36),
           child: Column(children: [
-            Text(value, style: GoogleFonts.outfit(
-              fontSize: value.length > 4 ? 13 : 26,
-              fontWeight: FontWeight.w800,
-              color: color)),
-            const SizedBox(height: 4),
-            Text(label, style: GoogleFonts.inter(
-              fontSize: 10, color: cs.onSurface.withOpacity(0.45)),
-              textAlign: TextAlign.center),
-          ]),
-        ),
-      );
-    }));
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  MOOD ROW 5  (5 emoji moods)
-// ─────────────────────────────────────────────────────────────────────────────
-class _MoodRow5 extends StatelessWidget {
-  final int? selected;
-  final void Function(int) onSelect;
-  const _MoodRow5({required this.selected, required this.onSelect});
-
-  static const _emojis  = ['😊', '😴', '🥰', '😰', '🤢'];
-  static const _labels  = ['Bien', 'Fatiguée', 'Joyeuse', 'Anxieuse', 'Nauséeuse'];
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Row(children: List.generate(5, (i) {
-      final sel = selected == i;
-      return Expanded(
-        child: GestureDetector(
-          onTap: () => onSelect(i),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: EdgeInsets.only(right: i < 4 ? 6 : 0),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: sel ? _primary(context) : cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: sel ? _primary(context) : cs.outline, width: 1),
-            ),
-            child: Column(children: [
-              Text(_emojis[i], style: TextStyle(fontSize: sel ? 22 : 18)),
-              const SizedBox(height: 4),
-              Text(_labels[i], style: GoogleFonts.inter(
-                fontSize: 9, fontWeight: FontWeight.w600,
-                color: sel ? Colors.white : cs.onSurface.withOpacity(0.6)),
-                textAlign: TextAlign.center),
+            // Header
+            Row(children: [
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.pregTitle, style: GoogleFonts.inter(
+                    fontSize: 10, fontWeight: FontWeight.w600,
+                    letterSpacing: 1.5, color: _sub(dark))),
+                  const SizedBox(height: 2),
+                  Text(l10n.pregMonSuivi, style: GoogleFonts.outfit(
+                    fontSize: 22, fontWeight: FontWeight.w700, color: _text(dark))),
+                ],
+              )),
+              PopupMenuButton<String>(
+                enabled: !switching,
+                onSelected: onMenu,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 4,
+                color: dark ? const Color(0xFF1E1E1E) : Colors.white,
+                offset: const Offset(0, 44),
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 'postpartum',
+                    child: Text(l10n.pregPostPartumBtn, style: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w500, color: _text(dark)))),
+                  PopupMenuItem(value: 'cycle',
+                    child: Text(l10n.pregMonCycle, style: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w500, color: accent))),
+                ],
+                child: Icon(Icons.more_horiz_rounded, size: 22,
+                  color: _text(dark).withOpacity(0.6)),
+              ),
             ]),
-          ),
-        ),
-      );
-    }));
-  }
-}
+            const SizedBox(height: 28),
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  BABY INSIGHT CARD (green accent)
-// ─────────────────────────────────────────────────────────────────────────────
-class _BabyInsightCard extends StatelessWidget {
-  final DailyInsight insight;
-  final ColorScheme cs;
-  const _BabyInsightCard({required this.insight, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _primary(context).withOpacity(0.06),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _primary(context).withOpacity(0.15)),
-      ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: _primary(context).withOpacity(0.12),
-            borderRadius: BorderRadius.circular(10)),
-          child: Icon(Icons.child_care_rounded, size: 18,
-            color: _primary(context)),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('VOTRE BÉBÉ', style: GoogleFonts.inter(
-            fontSize: 9, fontWeight: FontWeight.w700,
-            color: _primary(context), letterSpacing: 1.8)),
-          const SizedBox(height: 5),
-          Text(insight.babyInsight, style: GoogleFonts.inter(
-            fontSize: 13, height: 1.6,
-            color: cs.onSurface.withOpacity(0.85))),
-        ])),
-      ]),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  MOM INSIGHT CARD (sage accent)
-// ─────────────────────────────────────────────────────────────────────────────
-class _MomInsightCard extends StatelessWidget {
-  final DailyInsight insight;
-  final ColorScheme cs;
-  const _MomInsightCard({required this.insight, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _accent(context).withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _accent(context).withOpacity(0.2)),
-      ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: _accent(context).withOpacity(0.15),
-            borderRadius: BorderRadius.circular(10)),
-          child: Icon(Icons.self_improvement_rounded, size: 18,
-            color: _accent(context)),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('POUR VOUS', style: GoogleFonts.inter(
-            fontSize: 9, fontWeight: FontWeight.w700,
-            color: _accent(context), letterSpacing: 1.8)),
-          const SizedBox(height: 5),
-          Text(insight.momTip, style: GoogleFonts.inter(
-            fontSize: 13, height: 1.6,
-            color: cs.onSurface.withOpacity(0.85))),
-        ])),
-      ]),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  POETIC CARD
-// ─────────────────────────────────────────────────────────────────────────────
-class _PoeticCard extends StatelessWidget {
-  final String text;
-  final ColorScheme cs;
-  const _PoeticCard({required this.text, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outline),
-      ),
-      child: Row(children: [
-        const Text('✨', style: TextStyle(fontSize: 18)),
-        const SizedBox(width: 12),
-        Expanded(child: Text('"$text"',
-          style: GoogleFonts.outfit(
-            fontSize: 13, fontStyle: FontStyle.italic,
-            color: cs.onSurface.withOpacity(0.5), height: 1.7))),
-      ]),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  NAV GRID (2×2 cards)
-// ─────────────────────────────────────────────────────────────────────────────
-class _NavGrid extends StatelessWidget {
-  final int week;
-  final ColorScheme cs;
-  final AppL10n l10n;
-  const _NavGrid({required this.week, required this.cs, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    Route fadeTo(Widget p) => PageRouteBuilder(
-      pageBuilder: (_, a, __) => p,
-      transitionsBuilder: (_, a, __, c) =>
-          FadeTransition(opacity: CurvedAnimation(parent: a, curve: Curves.easeInOut), child: c),
-      transitionDuration: const Duration(milliseconds: 260),
-    );
-
-    final items = [
-      (l10n.pregSymptomes,   Icons.favorite_border_rounded,
-        const Color(0xFFE58F8A),
-        () => Navigator.push(context, fadeTo(SymptomsHomeScreen(currentWeek: week)))),
-      (l10n.pregVotreBebe,   Icons.child_care_rounded,
-        _primary(context),
-        () => Navigator.push(context, fadeTo(BabyStoryScreen(currentWeek: week)))),
-      (l10n.pregVotreCorps,  Icons.self_improvement_rounded,
-        _accent(context),
-        () => Navigator.push(context, fadeTo(PregnancyBodyScreen(currentWeek: week)))),
-      (l10n.pregMaChecklist, Icons.check_circle_outline_rounded,
-        Color.lerp(_primary(context), Colors.grey, 0.5)!,
-        () => Navigator.push(context, fadeTo(PregnancyChecklistScreen(currentWeek: week)))),
-    ];
-
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.6,
-      children: items.map((item) {
-        final (title, icon, color, onTap) = item;
-        return GestureDetector(
-          onTap: () { HapticFeedback.lightImpact(); onTap(); },
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: color.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Big week number
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
               children: [
-                Container(
-                  width: 36, height: 36,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(10)),
-                  child: Icon(icon, size: 18, color: color),
-                ),
-                Text(title, style: GoogleFonts.outfit(
-                  fontSize: 13, fontWeight: FontWeight.w700,
-                  color: cs.onSurface)),
+                Text(l10n.isFrench ? 'Semaine ' : 'Week ',
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: _sub(dark))),
+                Text('$week', style: GoogleFonts.outfit(
+                  fontSize: 52, fontWeight: FontWeight.w900, color: _text(dark), height: 1)),
+                Text(' / 42', style: GoogleFonts.outfit(
+                  fontSize: 18, fontWeight: FontWeight.w600, color: _sub(dark))),
               ],
             ),
-          ),
-        );
-      }).toList(),
+            const SizedBox(height: 16),
+
+            // Timeline bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                height: 14,
+                child: Stack(children: [
+                  // Track
+                  Container(
+                    decoration: BoxDecoration(
+                      color: dark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  // Fill with gradient
+                  FractionallySizedBox(
+                    widthFactor: progress,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [_coral, _peach]),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [BoxShadow(
+                          color: _coral.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))],
+                      ),
+                    ),
+                  ),
+                  // Trimester markers
+                  Positioned(
+                    left: MediaQuery.of(context).size.width * 0.30 * (13 / 42) - 20,
+                    top: 0, bottom: 0,
+                    child: Center(child: Container(width: 1.5, height: 14,
+                      color: dark ? Colors.white.withOpacity(0.15) : Colors.black.withOpacity(0.12))),
+                  ),
+                  Positioned(
+                    left: MediaQuery.of(context).size.width * 0.30 * (26 / 42) + (MediaQuery.of(context).size.width * 0.55 * (26 / 42)) - 20,
+                    top: 0, bottom: 0,
+                    child: Center(child: Container(width: 1.5, height: 14,
+                      color: dark ? Colors.white.withOpacity(0.15) : Colors.black.withOpacity(0.12))),
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Percentage + labels
+            Row(children: [
+              Text('$pct% ${l10n.isFrench ? 'complété' : 'complete'}',
+                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: _coral)),
+              const Spacer(),
+              Text('T1', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600,
+                color: tri == 1 ? _coral : _sub(dark).withOpacity(0.4))),
+              const SizedBox(width: 8),
+              Text('T2', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600,
+                color: tri == 2 ? _lavender : _sub(dark).withOpacity(0.4))),
+              const SizedBox(width: 8),
+              Text('T3', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600,
+                color: tri == 3 ? _warmMint : _sub(dark).withOpacity(0.4))),
+            ]),
+            const SizedBox(height: 18),
+
+            // Stats row
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              decoration: BoxDecoration(
+                color: dark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(children: [
+                _HeroStat(value: '$left', label: l10n.isFrench ? 'jours restants' : 'days left',
+                  icon: LucideIcons.clock, color: _peach),
+                Container(width: 1, height: 28,
+                  color: dark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
+                _HeroStat(value: due, label: l10n.isFrench ? 'terme estimé' : 'due date',
+                  icon: LucideIcons.calendar, color: _sub(dark)),
+              ]),
+            ),
+          ]),
+        ),
+      ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  PREGNANCY TIPS CAROUSEL
-// ─────────────────────────────────────────────────────────────────────────────
-class _PregnancyTipsCarousel extends StatefulWidget {
-  final int week;
-  final ColorScheme cs;
-  const _PregnancyTipsCarousel({required this.week, required this.cs});
-
-  @override
-  State<_PregnancyTipsCarousel> createState() => _PregnancyTipsCarouselState();
-}
-
-class _PregnancyTipsCarouselState extends State<_PregnancyTipsCarousel> {
-  final _controller = PageController();
-  int _page = 0;
-
-  static List<(String, IconData, Color)> _categoriesOf(Color accent) {
-    final deep = Color.lerp(accent, Colors.black, 0.35)!;
-    final muted = Color.lerp(accent, Colors.grey, 0.5)!;
-    return [
-      ('Nutrition', LucideIcons.apple, accent),
-      ('Exercice', LucideIcons.dumbbell, deep),
-      ('Bien-être', LucideIcons.heart, const Color(0xFFE58F8A)),
-      ('Sommeil', LucideIcons.moon, muted),
-    ];
-  }
-
-  static const _tips = <int, List<List<String>>>{
-    1: [
-      ['Privilégiez l\'acide folique dans votre alimentation.',
-       'Des étirements doux suffisent pour le 1er trimestre.',
-       'Écoutez votre corps — la fatigue est normale.',
-       'Dormez sur le côté gauche dès maintenant.'],
-    ],
-    2: [
-      ['Augmentez les protéines et le fer.',
-       'Yoga prénatal et natation sont idéaux maintenant.',
-       'Prenez du temps pour vous, massages et méditation.',
-       'Un oreiller de grossesse change la vie.'],
-    ],
-    3: [
-      ['Petits repas fréquents contre les brûlures.',
-       'Marche quotidienne et exercices du périnée.',
-       'Pratiquez la respiration pour l\'accouchement.',
-       'Surélevez les jambes avant de dormir.'],
-    ],
-  };
-
-  List<String> _tipsForTrimester() {
-    final tri = widget.week <= 13 ? 1 : widget.week <= 26 ? 2 : 3;
-    return _tips[tri]![0];
-  }
-
-  @override
-  void dispose() { _controller.dispose(); super.dispose(); }
+class _HeroStat extends StatelessWidget {
+  final String value, label;
+  final Color color;
+  final IconData icon;
+  const _HeroStat({required this.value, required this.label, required this.color, required this.icon});
 
   @override
   Widget build(BuildContext context) {
-    final cs = widget.cs;
-    final tips = _tipsForTrimester();
-    final categories = _categoriesOf(Theme.of(context).colorScheme.primary);
+    return Expanded(child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 6),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text(value, style: GoogleFonts.outfit(
+            fontSize: value.length > 5 ? 12 : 15, fontWeight: FontWeight.w800, color: color)),
+          Text(label, style: GoogleFonts.inter(fontSize: 9, color: color.withOpacity(0.7))),
+        ]),
+      ],
+    ));
+  }
+}
 
-    return Column(children: [
-      SizedBox(
-        height: 120,
-        child: PageView.builder(
-          controller: _controller,
-          itemCount: categories.length,
-          onPageChanged: (i) => setState(() => _page = i),
-          itemBuilder: (context, i) {
-            final (name, icon, color) = categories[i];
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: color.withOpacity(0.2)),
-              ),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12)),
-                  child: Icon(icon, size: 20, color: color),
-                ),
-                const SizedBox(width: 14),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name.toUpperCase(), style: GoogleFonts.inter(
-                      fontSize: 9, fontWeight: FontWeight.w700,
-                      color: color, letterSpacing: 1.8)),
-                    const SizedBox(height: 6),
-                    Expanded(child: Text(tips[i], style: GoogleFonts.inter(
-                      fontSize: 13, height: 1.5,
-                      color: cs.onSurface.withOpacity(0.75)),
-                      maxLines: 3, overflow: TextOverflow.ellipsis)),
-                  ],
-                )),
-              ]),
-            );
-          },
-        ),
+// ═════════════════════════════════════════════════════════════════════════════
+//  BABY DEVELOPMENT CARD
+// ═════════════════════════════════════════════════════════════════════════════
+class _BabyDevCard extends StatelessWidget {
+  final int week, tri;
+  final Color accent;
+  final DailyInsight insight;
+  final bool dark;
+  final AppL10n l10n;
+  final VoidCallback onTap;
+
+  const _BabyDevCard({
+    required this.week, required this.tri, required this.accent,
+    required this.insight, required this.dark, required this.l10n,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = _babySize[week] ?? '';
+    final weight = _babyWeight[week] ?? '';
+    final dev = _babyDev[week] ?? insight.babyInsight;
+    final fruitName = _fruit[week] ?? 'fruit';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF1A1820) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(
+          color: accent.withOpacity(dark ? 0.15 : 0.08),
+          blurRadius: 24, offset: const Offset(0, 8),
+        )],
       ),
-      const SizedBox(height: 10),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(categories.length, (i) =>
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: _page == i ? 18 : 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: _page == i
-                  ? _primary(context)
-                  : _primary(context).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(3)),
+      child: Column(children: [
+        Container(
+          height: 3,
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [accent, accent.withOpacity(0.3)]),
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(3)),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  l10n.isFrench ? 'VOTRE BÉBÉ' : 'YOUR BABY',
+                  style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800,
+                    color: accent, letterSpacing: 1.5)),
+              ),
+              const Spacer(),
+              Text(
+                l10n.isFrench ? 'Comme une $fruitName' : 'Like a $fruitName',
+                style: GoogleFonts.inter(fontSize: 11, color: _sub(dark))),
+            ]),
+            const SizedBox(height: 14),
+
+            // Size + Weight chips
+            if (size.isNotEmpty || weight.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Row(children: [
+                  if (size.isNotEmpty)
+                    Expanded(child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _faint(dark),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(children: [
+                        Icon(LucideIcons.ruler, size: 16, color: accent),
+                        const SizedBox(height: 4),
+                        Text(size, style: GoogleFonts.outfit(
+                          fontSize: 18, fontWeight: FontWeight.w800, color: _text(dark))),
+                        Text(l10n.isFrench ? 'taille' : 'size', style: GoogleFonts.inter(
+                          fontSize: 9, color: _sub(dark))),
+                      ]),
+                    )),
+                  if (size.isNotEmpty && weight.isNotEmpty) const SizedBox(width: 10),
+                  if (weight.isNotEmpty)
+                    Expanded(child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _faint(dark),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(children: [
+                        Icon(LucideIcons.weight, size: 16, color: _peach),
+                        const SizedBox(height: 4),
+                        Text(weight, style: GoogleFonts.outfit(
+                          fontSize: 18, fontWeight: FontWeight.w800, color: _text(dark))),
+                        Text(l10n.isFrench ? 'poids' : 'weight', style: GoogleFonts.inter(
+                          fontSize: 9, color: _sub(dark))),
+                      ]),
+                    )),
+                ]),
+              ),
+
+            // Development text
+            Text(dev, style: GoogleFonts.inter(
+              fontSize: 14, fontWeight: FontWeight.w500,
+              height: 1.5, color: _text(dark))),
+            const SizedBox(height: 6),
+            Text(insight.babyInsight, style: GoogleFonts.inter(
+              fontSize: 12, height: 1.5, color: _sub(dark)),
+              maxLines: 3, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 14),
+
+            // CTA
+            GestureDetector(
+              onTap: () { HapticFeedback.lightImpact(); onTap(); },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text(
+                    l10n.isFrench ? "Voir l'histoire de bébé" : "See baby's story",
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: accent)),
+                  const SizedBox(width: 4),
+                  Icon(Icons.arrow_forward_rounded, size: 14, color: accent),
+                ]),
+              ),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  TRIMESTER JOURNEY
+// ═════════════════════════════════════════════════════════════════════════════
+class _TrimesterJourney extends StatelessWidget {
+  final int week, tri;
+  final bool dark;
+  final AppL10n l10n;
+  const _TrimesterJourney({
+    required this.week, required this.tri, required this.dark, required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final data = [
+      (l10n.pregTrim1Short, 'S1–13',  _coral,    l10n.isFrench ? 'Fondations' : 'Foundations'),
+      (l10n.pregTrim2Short, 'S14–26', _lavender,  l10n.isFrench ? 'Croissance' : 'Growth'),
+      (l10n.pregTrim3Short, 'S27–42', _warmMint,  l10n.isFrench ? 'Préparation' : 'Preparation'),
+    ];
+
+    return Row(children: List.generate(3, (i) {
+      final (label, range, color, milestone) = data[i];
+      final active = i + 1 == tri;
+      final done = i + 1 < tri;
+      final triWeeks = i == 0 ? 13 : i == 1 ? 13 : 16;
+      final triStart = i == 0 ? 1 : i == 1 ? 14 : 27;
+      final localProgress = active
+          ? ((week - triStart + 1) / triWeeks).clamp(0.0, 1.0)
+          : done ? 1.0 : 0.0;
+
+      return Expanded(child: Container(
+        margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: active ? color.withOpacity(0.08) : _faint(dark),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: active ? color.withOpacity(0.3) : Colors.transparent,
+            width: active ? 1.5 : 0,
+          ),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            if (done)
+              Icon(Icons.check_circle_rounded, size: 14, color: color)
+            else
+              Container(width: 14, height: 14, decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: active ? color : Colors.transparent,
+                border: Border.all(color: active ? color : _sub(dark).withOpacity(0.3), width: 1.5),
+              )),
+            const SizedBox(width: 6),
+            Expanded(child: Text(label, style: GoogleFonts.inter(
+              fontSize: 10, fontWeight: FontWeight.w700,
+              color: active || done ? color : _sub(dark)),
+              overflow: TextOverflow.ellipsis)),
+          ]),
+          const SizedBox(height: 6),
+          // Mini progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: SizedBox(height: 3, child: LinearProgressIndicator(
+              value: localProgress,
+              backgroundColor: dark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
+              valueColor: AlwaysStoppedAnimation(color),
+            )),
+          ),
+          const SizedBox(height: 6),
+          Text(milestone, style: GoogleFonts.inter(
+            fontSize: 9, fontWeight: FontWeight.w600,
+            color: active || done ? color.withOpacity(0.8) : _sub(dark).withOpacity(0.5))),
+          Text(range, style: GoogleFonts.inter(fontSize: 9, color: _sub(dark).withOpacity(0.5))),
+        ]),
+      ));
+    }));
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  FEELING RESPONSE
+// ═════════════════════════════════════════════════════════════════════════════
+class _FeelingResponse extends StatefulWidget {
+  final int feeling, week;
+  final bool dark;
+  const _FeelingResponse({required this.feeling, required this.week, required this.dark});
+  @override
+  State<_FeelingResponse> createState() => _FeelingResponseState();
+}
+
+class _FeelingResponseState extends State<_FeelingResponse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
+  late final Animation<double> _fade =
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+
+  @override
+  void initState() { super.initState(); _ctrl.forward(); }
+
+  @override
+  void didUpdateWidget(_FeelingResponse old) {
+    super.didUpdateWidget(old);
+    if (old.feeling != widget.feeling) _ctrl.forward(from: 0);
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  static const _responses = <int, (String, String, Color)>{
+    0: ('Ton énergie est précieuse — profites-en pour une activité douce.',
+        'Une marche de 20 min ou du yoga prénatal serait idéal.', _gold),
+    1: ('Les nausées font partie du parcours — ton corps travaille fort.',
+        'Gingembre frais, petits repas fréquents, et repos.', _coral),
+    2: ('Un bon sommeil est le meilleur cadeau pour toi et bébé.',
+        'Essaie un oreiller de grossesse et du magnésium le soir.', _lavender),
+    3: ('Les envies de grossesse sont normales — écoute ton corps.',
+        'Privilégie des alternatives saines quand c\'est possible.', _peach),
+    4: ('Tes émotions sont un signal, pas un problème.',
+        'Parle à quelqu\'un de confiance ou note tes pensées.', _warmMint),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final (msg, tip, color) = _responses[widget.feeling] ?? _responses[0]!;
+    return FadeTransition(
+      opacity: _fade,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 3, height: 44,
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(msg, style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w500,
+              height: 1.5, color: _text(widget.dark))),
+            const SizedBox(height: 6),
+            Text(tip, style: GoogleFonts.inter(
+              fontSize: 12, height: 1.5, color: _sub(widget.dark))),
+          ])),
+        ]),
       ),
-    ]);
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  DAILY TIP CARD
+// ═════════════════════════════════════════════════════════════════════════════
+class _DailyTipCard extends StatelessWidget {
+  final DailyInsight insight;
+  final int week;
+  final bool dark;
+  final AppL10n l10n;
+  const _DailyTipCard({
+    required this.insight, required this.week, required this.dark, required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fitLabel = _fitLabel(week);
+    final fitTip = _fitTip(week);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: dark
+              ? [const Color(0xFF1A1820), const Color(0xFF151518)]
+              : [Colors.white, const Color(0xFFFCF9F6)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withOpacity(dark ? 0.3 : 0.04),
+          blurRadius: 16, offset: const Offset(0, 4))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Mom insight
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                width: 28, height: 28,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [_lavender, Color(0xFF6B5FA0)]),
+                  borderRadius: BorderRadius.circular(8)),
+                child: const Icon(LucideIcons.lightbulb, size: 14, color: Colors.white),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                l10n.isFrench ? 'Astuce du jour' : 'Daily tip',
+                style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700, color: _text(dark))),
+            ]),
+            const SizedBox(height: 10),
+            Text(insight.momTip, style: GoogleFonts.inter(
+              fontSize: 13, height: 1.6, color: _text(dark).withOpacity(0.85))),
+          ]),
+        ),
+
+        // Divider
+        Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 18),
+          color: _faint(dark)),
+
+        // Fitness tip
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
+          child: Row(children: [
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [_warmMint, _deepMint]),
+                borderRadius: BorderRadius.circular(8)),
+              child: const Icon(LucideIcons.activity, size: 14, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(fitLabel, style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w700, color: _text(dark))),
+              Text(fitTip, style: GoogleFonts.inter(
+                fontSize: 11, height: 1.5, color: _sub(dark)),
+                maxLines: 2, overflow: TextOverflow.ellipsis),
+            ])),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  EXPLORE CARD
+// ═════════════════════════════════════════════════════════════════════════════
+class _ExploreCard extends StatelessWidget {
+  final String label;
+  final String? subtitle;
+  final IconData icon;
+  final List<Color> gradient;
+  final bool dark;
+  final bool tall;
+  final bool wide;
+  final VoidCallback onTap;
+
+  const _ExploreCard({
+    required this.label, this.subtitle, required this.icon,
+    required this.gradient, required this.dark, required this.onTap,
+    this.tall = false, this.wide = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () { HapticFeedback.lightImpact(); onTap(); },
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: gradient,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(
+            color: gradient.first.withOpacity(0.25),
+            blurRadius: 12, offset: const Offset(0, 4))],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(wide ? 14 : tall ? 16 : 12),
+          child: wide
+              ? Row(children: [
+                  Icon(icon, size: 20, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text(label, style: GoogleFonts.outfit(
+                    fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                  const Spacer(),
+                  Icon(Icons.arrow_forward_rounded, size: 16, color: Colors.white70),
+                ])
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: tall
+                      ? MainAxisAlignment.spaceBetween
+                      : MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: tall ? 40 : 32, height: tall ? 40 : 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10)),
+                      child: Icon(icon, size: tall ? 20 : 16, color: Colors.white),
+                    ),
+                    if (tall) ...[
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        if (subtitle != null)
+                          Text(subtitle!, style: GoogleFonts.inter(
+                            fontSize: 10, color: Colors.white70)),
+                        Text(label, style: GoogleFonts.outfit(
+                          fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                      ]),
+                    ] else ...[
+                      const SizedBox(height: 6),
+                      Text(label, style: GoogleFonts.outfit(
+                        fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                    ],
+                  ],
+                ),
+        ),
+      ),
+    );
   }
 }

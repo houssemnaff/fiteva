@@ -17,6 +17,7 @@ class CommunityTabBar extends StatelessWidget {
     (icon: LucideIcons.layoutList, label: 'Feed'),
     (icon: LucideIcons.calendarDays, label: 'Événements'),
     (icon: LucideIcons.users, label: 'Partenaires'),
+    (icon: LucideIcons.trophy, label: 'Défis'),
   ];
 
   @override

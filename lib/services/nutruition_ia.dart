@@ -126,7 +126,7 @@ Base tes estimations sur des valeurs nutritionnelles réalistes.
       'model': _model,
       // Cap la sortie — le JSON attendu est court, et sans cette limite
       // le modèle réserve jusqu'à 65k tokens de budget (402 "insufficient credits").
-      'max_tokens': 1024,
+      'max_tokens': 512,
       'messages': [
         {
           'role': 'user',
@@ -163,9 +163,14 @@ Base tes estimations sur des valeurs nutritionnelles réalistes.
       throw NutritionIaException('Erreur réseau pendant l\'analyse : $e');
     }
 
+    if (response.statusCode == 402) {
+      throw NutritionIaException(
+          'Le service d\'analyse est temporairement indisponible. Réessaie plus tard ou ajoute l\'aliment manuellement.');
+    }
+
     if (response.statusCode != 200) {
       throw NutritionIaException(
-          'Échec de l\'analyse IA (${response.statusCode}) : ${response.body}');
+          'Analyse impossible : une erreur est survenue (${response.statusCode}). Réessaie ou ajoute l\'aliment manuellement.');
     }
 
     final Map<String, dynamic> decoded;
