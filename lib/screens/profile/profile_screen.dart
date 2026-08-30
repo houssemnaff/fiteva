@@ -21,6 +21,8 @@ import '../../providers/theme_provider.dart';
 import '../../providers/mascot_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/subscription_provider.dart';
+import '../../providers/notifications_provider.dart';
+import '../../core/communiter_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/mascot_widget.dart';
 import '../../widgets/paywall_sheet.dart';
@@ -157,13 +159,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final l10n       = ref.watch(l10nProvider);
     final diamonds   = ref.watch(diamondsProvider);
     final xp         = ref.watch(pointsProvider);
+    final mascot     = ref.watch(mascotProvider);
     final d          = isDarkMode;
 
     final displayName  = profile.username.isNotEmpty ? profile.username : 'User';
     final displayEmail = profile.email.isNotEmpty ? profile.email : '';
-    final initials = displayName.isNotEmpty
-        ? displayName.trim().split(' ').map((w) => w.isNotEmpty ? w[0].toUpperCase() : '').take(2).join()
-        : 'U';
 
     final bg    = _P.bg(d);
     final ink   = _P.t1(d);
@@ -690,6 +690,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Navigator.of(ctx).pop();
               await AuthService.signOut();
               ref.read(onboardingProvider.notifier).reset();
+              // Ferme tout l'état par-compte en mémoire — sinon le prochain
+              // login (même appareil, autre compte) réafficherait ces
+              // données jusqu'au hot restart (avatar, streak, notifs...).
+              ref.invalidate(userProfileProvider);
+              ref.invalidate(mascotProvider);
+              ref.invalidate(pointsProvider);
+              ref.invalidate(postsNotifierProvider);
+              ref.invalidate(eventsNotifierProvider);
+              ref.invalidate(partnersNotifierProvider);
+              ref.invalidate(partnerRequestsProvider);
+              ref.invalidate(notificationsProvider);
               if (context.mounted) context.go('/onboarding');
             },
             child: const Text('Déconnecter',

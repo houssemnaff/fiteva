@@ -176,8 +176,8 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                 stops: const [0.0, 0.35, 0.75, 1.0],
                 colors: [
                   Colors.transparent,
-                  Colors.black.withValues(alpha: 0.2),
-                  cs.surface.withValues(alpha: 0.7),
+                  Colors.black.withValues(alpha: 0.4),
+                  Colors.black.withValues(alpha: 0.6),
                   cs.surface,
                 ],
               ),
@@ -192,9 +192,9 @@ class _HeroSectionState extends ConsumerState<_HeroSection> {
                 stops: const [0.0, 0.5, 0.85, 1.0],
                 colors: [
                   Colors.transparent,
-                  Colors.black.withValues(alpha: 0.15),
-                  Colors.black.withValues(alpha: 0.5),
+                  Colors.black.withValues(alpha: 0.6),
                   Colors.black.withValues(alpha: 0.7),
+                  Colors.black.withValues(alpha: 0.8),
                 ],
               ),
             ),

@@ -18,6 +18,12 @@ class PointsAmounts {
   static const streak3DaysBonus    = 20;
   static const streak7DaysBonus    = 50;
   static const streak30DaysBonus   = 100;
+  // 5 jours de connexion consécutifs, dans la même semaine calendaire.
+  static const streak5SameWeekBonus = 50;
+  // Total de jours de connexion distincts (pas forcément consécutifs).
+  static const totalDays10Bonus    = 50;
+  static const totalDays20Bonus    = 100;
+  static const totalDays30Bonus    = 150;
   static const pregnancyWeek       = 10;
   static const postpartumTask      = 10;
   static const dailyCheckin        = 5;
@@ -169,6 +175,17 @@ class PointsNotifier extends StateNotifier<PointsModel> {
       bonusPts += PointsAmounts.streak30DaysBonus;
       badges.add('streak30');
     }
+    // 5 jours consécutifs, tous dans la même semaine calendaire (lundi-dimanche).
+    // Dérivé de lastActiveDate + streak (pas de champ dédié) : le premier jour
+    // du streak en cours est today - (newStreak - 1) jours.
+    if (newStreak >= 5 && !badges.contains('streak5week')) {
+      final todayDate    = DateTime.parse(today);
+      final streakStart  = todayDate.subtract(Duration(days: newStreak - 1));
+      if (_mondayOf(streakStart) == _mondayOf(todayDate)) {
+        bonusPts += PointsAmounts.streak5SameWeekBonus;
+        badges.add('streak5week');
+      }
+    }
 
     state = state.copyWith(
       streak: newStreak,
@@ -201,6 +218,35 @@ class PointsNotifier extends StateNotifier<PointsModel> {
     // Le streak et total_login_days sont recalculés côté serveur par le
     // trigger fn_track_login_day — on recharge pour afficher LEURS valeurs.
     await reload();
+    await _checkTotalDaysMilestones();
+  }
+
+  /// Paliers sur le total de jours de connexion DISTINCTS (pas forcément
+  /// consécutifs) — à appeler après [reload] pour lire la valeur fraîche
+  /// calculée côté serveur (total_login_days).
+  Future<void> _checkTotalDaysMilestones() async {
+    final total  = state.totalLoginDays;
+    var badges   = List<String>.from(state.badges);
+    int bonusPts = 0;
+
+    if (total >= 10 && !badges.contains('totalDays10')) {
+      bonusPts += PointsAmounts.totalDays10Bonus;
+      badges.add('totalDays10');
+    }
+    if (total >= 20 && !badges.contains('totalDays20')) {
+      bonusPts += PointsAmounts.totalDays20Bonus;
+      badges.add('totalDays20');
+    }
+    if (total >= 30 && !badges.contains('totalDays30')) {
+      bonusPts += PointsAmounts.totalDays30Bonus;
+      badges.add('totalDays30');
+    }
+
+    if (bonusPts > 0) {
+      state = state.copyWith(badges: badges);
+      await _addPoints(bonusPts);
+      await _save();
+    }
   }
 
   /// Récompense un repas loggé — plafonnée à [_maxMealLoggedRewardsPerDay]
@@ -323,6 +369,10 @@ class PointsNotifier extends StateNotifier<PointsModel> {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
+
+  /// Lundi de la semaine calendaire de [d] (DateTime.weekday : 1 = lundi).
+  static DateTime _mondayOf(DateTime d) =>
+      DateTime(d.year, d.month, d.day).subtract(Duration(days: d.weekday - 1));
 }
 
 final pointsProvider = StateNotifierProvider<PointsNotifier, PointsModel>((ref) {

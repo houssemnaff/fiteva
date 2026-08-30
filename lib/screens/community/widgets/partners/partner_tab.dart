@@ -586,7 +586,7 @@ class _CardCta extends ConsumerWidget {
       onTap: () {
         HapticFeedback.selectionClick();
         ref.read(partnerRequestsProvider.notifier)
-            .join(partnerId: partner.id, ownerId: partner.userId);
+            .join(partnerId: partner.id, ownerId: partner.userId, partnerLabel: partner.goal);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
@@ -1086,7 +1086,7 @@ class _DetailCta extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
-        ref.read(partnerRequestsProvider.notifier).join(partnerId: partner.id, ownerId: partner.userId);
+        ref.read(partnerRequestsProvider.notifier).join(partnerId: partner.id, ownerId: partner.userId, partnerLabel: partner.goal);
       },
       child: Container(
         width: double.infinity,
