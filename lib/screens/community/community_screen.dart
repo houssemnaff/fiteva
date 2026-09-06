@@ -15,7 +15,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../l10n/app_localizations.dart';
-import '../../providers/user_profile_provider.dart';
 import '../../services/app_tour_service.dart';
 import '../../l10n/lang.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -86,7 +85,6 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
     final tabIndex = ref.watch(communityTabProvider);
     final cs = Theme.of(context).colorScheme;
     final l10n = ref.watch(l10nProvider);
-    final profile = ref.watch(userProfileProvider);
 
     final actions = [
       // Create button
@@ -133,7 +131,6 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
             accentColor: cs.secondary,
             bgColor: cs.surface,
             actions: actions,
-            avatarInitial: profile.username.isNotEmpty ? profile.username.substring(0, 1).toUpperCase() : 'Y',
           ),
           // Tab bar as bottom of SliverAppBar
           SliverToBoxAdapter(

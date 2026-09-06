@@ -6,25 +6,19 @@ import 'supabase_config.dart';
 class RecipeAuthor {
   final String id;
   final String username;
-  final String avatarSeed;
-  final String avatarStyle;
-  final String avatarBgColor;
+  final String imageUrl;
 
   const RecipeAuthor({
     required this.id,
     required this.username,
-    this.avatarSeed = '',
-    this.avatarStyle = 'lorelei',
-    this.avatarBgColor = '#E0F2F1',
+    this.imageUrl = '',
   });
 
   factory RecipeAuthor.fromJson(Map<String, dynamic> json) {
     return RecipeAuthor(
       id: json['id'] as String? ?? '',
       username: json['username'] as String? ?? '',
-      avatarSeed: json['avatar_seed'] as String? ?? '',
-      avatarStyle: json['avatar_style'] as String? ?? 'lorelei',
-      avatarBgColor: json['avatar_bg_color'] as String? ?? '#E0F2F1',
+      imageUrl: json['image_url'] as String? ?? '',
     );
   }
 }
@@ -225,7 +219,7 @@ class RecipeService {
   static Future<List<AppRecipe>> fetchAppRecipes() async {
     try {
       final rows = await SupabaseConfig.table('recipes')
-          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, avatar_seed, avatar_style, avatar_bg_color)')
+          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, image_url)')
           .order('created_at', ascending: false) as List;
       return rows
           .cast<Map<String, dynamic>>()
@@ -240,7 +234,7 @@ class RecipeService {
   static Future<List<AppRecipe>> fetchRecipesByUser(String userId) async {
     try {
       final rows = await SupabaseConfig.table('recipes')
-          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, avatar_seed, avatar_style, avatar_bg_color)')
+          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, image_url)')
           .eq('user_id', userId)
           .order('created_at', ascending: false) as List;
       return rows
@@ -255,7 +249,7 @@ class RecipeService {
   static Future<List<AppRecipe>> fetchRecipesByPhase(String phase) async {
     try {
       final rows = await SupabaseConfig.table('recipes')
-          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, avatar_seed, avatar_style, avatar_bg_color)')
+          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, image_url)')
           .or('phase.eq.$phase,phase.eq.all')
           .order('created_at', ascending: false) as List;
       return rows
@@ -270,7 +264,7 @@ class RecipeService {
   static Future<List<AppRecipe>> fetchFeaturedRecipes() async {
     try {
       final rows = await SupabaseConfig.table('recipes')
-          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, avatar_seed, avatar_style, avatar_bg_color)')
+          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, image_url)')
           .eq('is_featured', true)
           .order('created_at', ascending: false) as List;
       return rows
@@ -285,7 +279,7 @@ class RecipeService {
   static Future<AppRecipe?> fetchAppRecipeById(String id) async {
     try {
       final row = await SupabaseConfig.table('recipes')
-          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, avatar_seed, avatar_style, avatar_bg_color)')
+          .select('*, user_profiles!recipes_user_id_profiles_fkey(id, username, image_url)')
           .eq('id', id)
           .maybeSingle();
       if (row == null) return null;
@@ -298,7 +292,7 @@ class RecipeService {
   static Future<RecipeAuthor?> fetchAuthor(String userId) async {
     try {
       final row = await SupabaseConfig.table('user_profiles')
-          .select('id, username, avatar_seed, avatar_style, avatar_bg_color')
+          .select('id, username, image_url')
           .eq('id', userId)
           .maybeSingle();
       if (row == null) return null;

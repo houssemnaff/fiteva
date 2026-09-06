@@ -61,7 +61,14 @@ class HomeHeader extends ConsumerWidget {
               border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
             ),
             child: ClipOval(
-              child: MascotWidget(type: mascot.type, mood: mascot.mood, size: 44),
+              child: profile.imageUrl.isNotEmpty
+                  ? Image.network(
+                      profile.imageUrl,
+                      width: 44, height: 44, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          MascotWidget(type: mascot.type, mood: mascot.mood, size: 44),
+                    )
+                  : MascotWidget(type: mascot.type, mood: mascot.mood, size: 44),
             ),
           ),
         ),

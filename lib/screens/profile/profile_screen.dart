@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'package:fiteva/models/points_model.dart';
 import 'package:fiteva/providers/diamonds_provider.dart';
@@ -9,6 +8,8 @@ import 'package:fiteva/services/storage_service.dart';
 import 'package:fiteva/services/local_reminder_service.dart';
 import 'package:fiteva/services/privacy_service.dart';
 import 'package:fiteva/services/health_service.dart';
+import 'package:fiteva/services/avatar_service.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData, HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,7 +25,6 @@ import '../../providers/subscription_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../core/communiter_provider.dart';
 import '../../l10n/app_localizations.dart';
-import '../../widgets/mascot_widget.dart';
 import '../../widgets/paywall_sheet.dart';
 import 'body_tracking_screen.dart';
 import 'rewards_screen.dart';
@@ -159,7 +159,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final l10n       = ref.watch(l10nProvider);
     final diamonds   = ref.watch(diamondsProvider);
     final xp         = ref.watch(pointsProvider);
-    final mascot     = ref.watch(mascotProvider);
     final d          = isDarkMode;
 
     final displayName  = profile.username.isNotEmpty ? profile.username : 'User';
@@ -282,8 +281,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   child: Row(children: [
                     Builder(builder: (_) {
-                      final photoPath = StorageService.getString('profile_photo_path');
-                      final hasPhoto = photoPath != null && File(photoPath).existsSync();
+                      final hasPhoto = profile.imageUrl.isNotEmpty;
                       return Container(
                         width: 60, height: 60,
                         decoration: BoxDecoration(
@@ -292,11 +290,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             begin: Alignment.topLeft, end: Alignment.bottomRight,
                             colors: [accent, accent.withValues(alpha: 0.7)]),
                           image: hasPhoto ? DecorationImage(
-                            image: FileImage(File(photoPath)),
+                            image: NetworkImage(profile.imageUrl),
                             fit: BoxFit.cover) : null,
                         ),
                         child: hasPhoto ? null : Center(
-                          child: Text(initials,
+                          child: Text(displayName.substring(0, 1).toUpperCase(),
                             style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w600,
                               color: Colors.white)),
                         ),
@@ -814,6 +812,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late TextEditingController _weightCtrl;
   late TextEditingController _ageCtrl;
   bool _saving = false;
+  bool _uploadingPhoto = false;
+  String? _avatarUrlOverride;
   int  _focusIndex = -1;
 
   @override
@@ -834,6 +834,83 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _weightCtrl.dispose();
     _ageCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadPhoto(ImageSource source) async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      if (picked == null || !mounted) return;
+
+      setState(() => _uploadingPhoto = true);
+      final url = await AvatarService.uploadAvatar(picked);
+      if (!mounted) return;
+
+      if (url == null) {
+        setState(() => _uploadingPhoto = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(widget.ref.read(l10nProvider).isFrench
+              ? 'Impossible de charger la photo. Réessaie.'
+              : 'Could not load the photo. Please try again.'),
+        ));
+        return;
+      }
+
+      setState(() {
+        _avatarUrlOverride = url;
+        _uploadingPhoto = false;
+      });
+      await widget.ref.read(userProfileProvider.notifier).updateField('image_url', url);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _uploadingPhoto = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(widget.ref.read(l10nProvider).isFrench
+              ? 'Impossible de charger la photo. Réessaie.'
+              : 'Could not load the photo. Please try again.'),
+        ));
+      }
+    }
+  }
+
+  void _showPhotoSourcePicker() {
+    final isFr = widget.ref.read(l10nProvider).isFrench;
+    final cs = Theme.of(context).colorScheme;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(20)),
+        child: SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const SizedBox(height: 8),
+            Container(width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: cs.onSurface.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: Icon(LucideIcons.camera, color: cs.primary),
+              title: Text(isFr ? 'Prendre une photo' : 'Take a photo'),
+              onTap: () { Navigator.pop(ctx); _pickAndUploadPhoto(ImageSource.camera); },
+            ),
+            ListTile(
+              leading: Icon(LucideIcons.image, color: cs.primary),
+              title: Text(isFr ? 'Choisir dans la galerie' : 'Choose from gallery'),
+              onTap: () { Navigator.pop(ctx); _pickAndUploadPhoto(ImageSource.gallery); },
+            ),
+            const SizedBox(height: 8),
+          ]),
+        ),
+      ),
+    );
   }
 
   Future<void> _save() async {
@@ -884,7 +961,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     final muted = dark ? const Color(0xFF888886) : const Color(0xFF6B6B68);
     final div   = dark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0EE);
     final l10n  = widget.ref.read(l10nProvider);
-    final mascot = widget.ref.read(mascotProvider);
+    final avatarUrl = _avatarUrlOverride ?? widget.profile.imageUrl;
+    final initial = widget.profile.username.isNotEmpty
+        ? widget.profile.username[0].toUpperCase() : '?';
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -906,24 +985,37 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
             // ── Avatar + Title row ───────────────────────────────────────
             Row(children: [
-              Stack(children: [
-                Container(
-                  width: 56, height: 56,
-                  decoration: BoxDecoration(
-                    color: green.withValues(alpha: 0.10),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: green.withValues(alpha: 0.25), width: 2)),
-                  child: ClipOval(child: MascotWidget(
-                    type: mascot.type, mood: mascot.mood, size: 52))),
-                Positioned(right: 0, bottom: 0,
-                  child: Container(
-                    width: 20, height: 20,
+              GestureDetector(
+                onTap: _uploadingPhoto ? null : _showPhotoSourcePicker,
+                child: Stack(children: [
+                  Container(
+                    width: 56, height: 56,
                     decoration: BoxDecoration(
-                      color: green, shape: BoxShape.circle,
-                      border: Border.all(color: surf, width: 2)),
-                    child: const Icon(Icons.edit_rounded,
-                      size: 10, color: Colors.white))),
-              ]),
+                      color: green.withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: green.withValues(alpha: 0.25), width: 2)),
+                    child: ClipOval(child: _uploadingPhoto
+                        ? Center(child: SizedBox(width: 20, height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: green)))
+                        : (avatarUrl.isNotEmpty
+                            ? Image.network(avatarUrl, width: 52, height: 52, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Center(child: Text(initial,
+                                    style: GoogleFonts.outfit(fontSize: 20,
+                                        fontWeight: FontWeight.w700, color: green))))
+                            : Center(child: Text(initial,
+                                style: GoogleFonts.outfit(fontSize: 20,
+                                    fontWeight: FontWeight.w700, color: green))))),
+                  ),
+                  Positioned(right: 0, bottom: 0,
+                    child: Container(
+                      width: 20, height: 20,
+                      decoration: BoxDecoration(
+                        color: green, shape: BoxShape.circle,
+                        border: Border.all(color: surf, width: 2)),
+                      child: const Icon(Icons.edit_rounded,
+                        size: 10, color: Colors.white))),
+                ]),
+              ),
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

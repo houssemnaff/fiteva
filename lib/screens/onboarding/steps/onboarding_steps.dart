@@ -18,6 +18,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../l10n/lang.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/avatar_service.dart';
 import '../onboarding_screen.dart' show OnboardingData;
 
 // ─── Responsive helpers ────────────────────────────────────────────────────
@@ -4974,7 +4975,8 @@ class StepProfilePhoto extends StatefulWidget {
 
 class _StepProfilePhotoState extends State<StepProfilePhoto>
     with SingleTickerProviderStateMixin {
-  String? _photoPath;
+  String? _photoUrl;
+  bool _uploading = false;
   late final AnimationController _enterCtrl;
 
   @override
@@ -4998,14 +5000,32 @@ class _StepProfilePhotoState extends State<StepProfilePhoto>
       );
       if (picked == null || !mounted) return;
 
-      final appDir = await getApplicationDocumentsDirectory();
-      final fileName = 'profile_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final savedFile = await File(picked.path).copy('${appDir.path}/$fileName');
+      setState(() => _uploading = true);
+      final url = await AvatarService.uploadAvatar(picked);
+      if (!mounted) return;
+      setState(() => _uploading = false);
 
-      setState(() => _photoPath = savedFile.path);
-      widget.onPhotoSelected(savedFile.path);
+      if (url == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_fr
+              ? 'Impossible de charger la photo. Reessaie.'
+              : 'Could not load the photo. Please try again.'),
+        ));
+        return;
+      }
+
+      setState(() => _photoUrl = url);
+      widget.onPhotoSelected(url);
     } catch (e) {
       debugPrint('[ProfilePhoto] pick error: $e');
+      if (mounted) {
+        setState(() => _uploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_fr
+              ? 'Impossible de charger la photo. Reessaie.'
+              : 'Could not load the photo. Please try again.'),
+        ));
+      }
     }
   }
 
@@ -5090,20 +5110,22 @@ class _StepProfilePhotoState extends State<StepProfilePhoto>
                       width: 140, height: 140,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: _photoPath != null ? Colors.transparent : Colors.white,
+                        color: _photoUrl != null ? Colors.transparent : Colors.white,
                         boxShadow: [BoxShadow(
                           color: Colors.black.withValues(alpha: 0.08),
                           blurRadius: 20, offset: const Offset(0, 6))],
-                        image: _photoPath != null
+                        image: _photoUrl != null
                             ? DecorationImage(
-                                image: FileImage(File(_photoPath!)),
+                                image: NetworkImage(_photoUrl!),
                                 fit: BoxFit.cover)
                             : null,
                       ),
-                      child: _photoPath == null
-                          ? Icon(LucideIcons.user, size: 40,
-                              color: _kGreenBright.withValues(alpha: 0.2))
-                          : null,
+                      child: _uploading
+                          ? const CircularProgressIndicator(strokeWidth: 2.5)
+                          : (_photoUrl == null
+                              ? Icon(LucideIcons.user, size: 40,
+                                  color: _kGreenBright.withValues(alpha: 0.2))
+                              : null),
                     )),
                     Positioned(bottom: 2, right: 2, child: Container(
                       width: 42, height: 42,
@@ -5117,7 +5139,7 @@ class _StepProfilePhotoState extends State<StepProfilePhoto>
                           blurRadius: 8, offset: const Offset(0, 3))],
                       ),
                       child: Icon(
-                        _photoPath != null ? LucideIcons.refreshCw : LucideIcons.plus,
+                        _photoUrl != null ? LucideIcons.refreshCw : LucideIcons.plus,
                         size: 18, color: Colors.white),
                     )),
                   ],
@@ -5216,7 +5238,7 @@ class _StepProfilePhotoState extends State<StepProfilePhoto>
                   label: _fr ? 'Continuer' : 'Continue',
                   onPressed: widget.onNext,
                 ),
-                if (_photoPath == null)
+                if (_photoUrl == null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: GestureDetector(

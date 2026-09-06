@@ -1,6 +1,6 @@
 // ignore_for_file: deprecated_member_use
-import 'package:fiteva/providers/mascot_provider.dart';
-import 'package:fiteva/widgets/mascot_widget.dart';
+import 'package:fiteva/providers/user_profile_provider.dart';
+import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,15 +28,6 @@ class SharedAppHeader extends StatelessWidget {
   /// Actions supplémentaires affichées à droite (avant l'avatar).
   final List<Widget> actions;
 
-  /// Initiale affichée dans l'avatar (ex. 'Y' pour Yassine).
-  final String avatarInitial;
-
-  /// Badge rouge sur la cloche (0 = pas de badge).
- 
-
-  /// Callback notif.
- 
-
   /// Callback avatar.
   final VoidCallback? onAvatarTap;
 
@@ -50,7 +41,6 @@ class SharedAppHeader extends StatelessWidget {
     required this.accentColor,
     this.bgColor         = Colors.white,
     this.actions         = const [],
-    this.avatarInitial   = 'S',
     this.onAvatarTap,
     this.onBack,
   });
@@ -64,9 +54,6 @@ class SharedAppHeader extends StatelessWidget {
     required Color  accentColor,
     Color    bgColor            = Colors.white,
     List<Widget> actions        = const [],
-    String   avatarInitial      = 'S',
-   
-    
     VoidCallback? onAvatarTap,
   }) {
     return _SharedSliverAppHeader(
@@ -75,8 +62,6 @@ class SharedAppHeader extends StatelessWidget {
       accentColor:       accentColor,
       bgColor:           bgColor,
       actions:           actions,
-      avatarInitial:     avatarInitial,
-      
       onAvatarTap:       onAvatarTap,
     );
   }
@@ -92,7 +77,6 @@ class SharedAppHeader extends StatelessWidget {
       accentColor:   accentColor,
       bgColor:       bgColor,
       actions:       actions,
-      avatarInitial: avatarInitial,
       onAvatarTap:   onAvatarTap,
       onBack:        onBack,
       topPadding:    top,
@@ -110,7 +94,6 @@ class _HeaderContent extends ConsumerWidget {
   final Color  accentColor;
   final Color  bgColor;
   final List<Widget> actions;
-  final String avatarInitial;
   final VoidCallback? onAvatarTap;
   final VoidCallback? onBack;
   final double topPadding;
@@ -121,7 +104,6 @@ class _HeaderContent extends ConsumerWidget {
     required this.accentColor,
     required this.bgColor,
     required this.actions,
-    required this.avatarInitial,
     required this.topPadding,
     this.onAvatarTap,
     this.onBack,
@@ -133,7 +115,6 @@ class _HeaderContent extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final resolvedBg    = isDark ? cs.surface : bgColor;
     final resolvedText1 = cs.onSurface;
-    final mascot = ref.watch(mascotProvider);
     return Container(
       color: resolvedBg,
       padding: EdgeInsets.fromLTRB(20, topPadding + 10, 20, 6),
@@ -200,15 +181,13 @@ class _HeaderContent extends ConsumerWidget {
 
           const SizedBox(width: 10),
 
-          // ── Mascotte → profil ─────────────────────────────────────────────
+          // ── Avatar → profil ────────────────────────────────────────────────
           GestureDetector(
             onTap: () => context.push('/profile'),
-            child: ClipOval(
-              child: MascotWidget(
-                type: mascot.type,
-                mood: mascot.mood,
-                size: 38,
-              ),
+            child: CommunityAvatar(
+              avatarUrl: ref.watch(userProfileProvider).imageUrl,
+              name: ref.watch(userProfileProvider).username,
+              radius: 19,
             ),
           ),
         ],
@@ -227,9 +206,6 @@ class _SharedSliverAppHeader extends StatelessWidget {
   final Color  accentColor;
   final Color  bgColor;
   final List<Widget> actions;
-  final String avatarInitial;
- 
-  
   final VoidCallback? onAvatarTap;
 
   const _SharedSliverAppHeader({
@@ -238,9 +214,6 @@ class _SharedSliverAppHeader extends StatelessWidget {
     required this.accentColor,
     required this.bgColor,
     required this.actions,
-    required this.avatarInitial,
-    
-    
     this.onAvatarTap,
   });
 
@@ -254,7 +227,6 @@ class _SharedSliverAppHeader extends StatelessWidget {
         accentColor:   accentColor,
         bgColor:       bgColor,
         actions:       actions,
-        avatarInitial: avatarInitial,
         topPadding:    top,
         onAvatarTap:   onAvatarTap,
       ),

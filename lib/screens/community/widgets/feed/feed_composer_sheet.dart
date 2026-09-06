@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:fiteva/models/post_model.dart';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/providers/community_providers.dart';
+import 'package:fiteva/screens/community/widgets/community_avatar.dart';
 import 'package:fiteva/services/cloudinary_config.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -262,7 +263,6 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
     final bottom  = MediaQuery.of(context).viewInsets.bottom;
     final screenH = MediaQuery.of(context).size.height;
     final displayName = _resolvedName(ref);
-    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
 
     return SlideTransition(
       position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
@@ -283,11 +283,10 @@ class _FeedComposerSheetState extends ConsumerState<FeedComposerSheet>
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
               child: Row(children: [
-                CircleAvatar(
+                CommunityAvatar(
+                  avatarUrl: ref.watch(userProfileProvider).imageUrl,
+                  name: displayName,
                   radius: 18,
-                  backgroundColor: cs.primary.withValues(alpha: 0.15),
-                  child: Text(initial, style: TextStyle(
-                    color: cs.primary, fontWeight: FontWeight.w700, fontSize: 14)),
                 ),
                 const SizedBox(width: 10),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

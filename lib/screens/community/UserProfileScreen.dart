@@ -7,7 +7,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:fiteva/models/points_model.dart';
 import 'package:fiteva/providers/diamonds_provider.dart';
-import 'package:fiteva/providers/mascot_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/user_profile_provider.dart'
     hide UserProfile;
@@ -24,8 +23,7 @@ class UserProfile {
   final String id;
   final String name;
   final String username;
-  final String mascotType;
-  final String mascotMood;
+  final String avatarUrl;
   final String? bio;
   final String niveau;
   final int niveauXp;
@@ -43,8 +41,7 @@ class UserProfile {
     required this.id,
     required this.name,
     required this.username,
-    this.mascotType = 'blob',
-    this.mascotMood = 'happy',
+    this.avatarUrl = '',
     this.bio,
     required this.niveau,
     required this.niveauXp,
@@ -176,7 +173,6 @@ final communityUserProfileProvider =
   if (isSelf) {
     // Own profile: bio/points/diamonds from local providers (no extra request).
     final localUser = ref.read(userProfileProvider);
-    final mascot    = ref.read(mascotProvider);
     final pts       = ref.read(pointsProvider);
     final diamonds  = ref.read(diamondsProvider);
     final name      = localUser.username.isNotEmpty ? localUser.username : 'User';
@@ -184,8 +180,7 @@ final communityUserProfileProvider =
       id:            userId,
       name:          name,
       username:      '@${name.toLowerCase().replaceAll(' ', '')}',
-      mascotType:    mascot.type.name,
-      mascotMood:    mascot.mood.name,
+      avatarUrl:     localUser.imageUrl,
       niveau:        '${pts.level}',
       niveauXp:      pts.totalPoints,
       niveauMaxXp:   pts.pointsForNextLevel,
@@ -221,8 +216,7 @@ final communityUserProfileProvider =
     id:            data['id'] as String,
     name:          name,
     username:      '@${name.toLowerCase().replaceAll(' ', '')}',
-    mascotType:    data['mascot_type'] as String? ?? 'blob',
-    mascotMood:    data['mascot_mood'] as String? ?? 'happy',
+    avatarUrl:     data['image_url'] as String? ?? '',
     niveau:        '${remotePts.level}',
     niveauXp:      remotePts.totalPoints,
     niveauMaxXp:   remotePts.pointsForNextLevel,
@@ -489,11 +483,9 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
                     color: cs.surface,
                   ),
                   child: CommunityAvatar(
-                    avatarUrl: '',
+                    avatarUrl: profile.avatarUrl,
                     name: profile.name,
                     radius: 40,
-                    mascotType: profile.mascotType,
-                    mascotMood: profile.mascotMood,
                   ),
                 ),
               ),
@@ -889,11 +881,9 @@ class _ProfileCardHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
       child: Row(children: [
         CommunityAvatar(
-          avatarUrl: '',
+          avatarUrl: owner.avatarUrl,
           name: owner.name,
           radius: 18,
-          mascotType: owner.mascotType,
-          mascotMood: owner.mascotMood,
         ),
         const SizedBox(width: 10),
         Expanded(child: Column(

@@ -443,7 +443,6 @@ class _PartnerCard extends ConsumerWidget {
                 tag: 'partner_avatar_${p.userId.isNotEmpty ? p.userId : p.id}',
                 child: CommunityAvatar(
                   avatarUrl: p.avatar, name: p.name, radius: 30,
-                  mascotType: p.mascotType, mascotMood: p.mascotMood,
                 ),
               ),
             ),
@@ -855,7 +854,6 @@ class PartnerDetailSheet extends ConsumerWidget {
                               tag: 'partner_avatar_${p.userId.isNotEmpty ? p.userId : p.id}',
                               child: CommunityAvatar(
                                 avatarUrl: p.avatar, name: p.name, radius: 44,
-                                mascotType: p.mascotType, mascotMood: p.mascotMood,
                               ),
                             ),
                           ),

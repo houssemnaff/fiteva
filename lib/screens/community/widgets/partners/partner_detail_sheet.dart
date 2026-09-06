@@ -97,8 +97,6 @@ class _PartnerDetailSheetState extends ConsumerState<PartnerDetailSheet> {
                             avatarUrl: p.avatar,
                             name: p.name,
                             radius: 44,
-                            mascotType: p.mascotType,
-                            mascotMood: p.mascotMood,
                           ),
                         ),
                       ),

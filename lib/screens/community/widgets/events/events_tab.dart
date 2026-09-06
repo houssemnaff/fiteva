@@ -268,8 +268,6 @@ class EventCard extends StatelessWidget {
                   avatarUrl: event.organizerAvatar,
                   name: event.organizer,
                   radius: 18,
-                  mascotType: event.organizerMascotType,
-                  mascotMood: event.organizerMascotMood,
                 ),
               ),
             ),

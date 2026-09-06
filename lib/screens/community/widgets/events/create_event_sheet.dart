@@ -306,7 +306,7 @@ class _CreateEventSheetState extends ConsumerState<CreateEventSheet>
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
               child: Row(children: [
                 CommunityAvatar(
-                  avatarUrl: '',
+                  avatarUrl: ref.watch(userProfileProvider).imageUrl,
                   name: _resolvedName(),
                   radius: 18,
                 ),

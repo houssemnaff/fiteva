@@ -169,9 +169,7 @@ class _RequestRowState extends ConsumerState<_RequestRow> {
         ),
         child: Row(children: [
           CommunityAvatar(
-            avatarUrl: '', name: request.requesterName, radius: 20,
-            mascotType: request.requesterMascotType,
-            mascotMood: request.requesterMascotMood,
+            avatarUrl: request.requesterAvatarUrl, name: request.requesterName, radius: 20,
           ),
           const SizedBox(width: 10),
           Expanded(

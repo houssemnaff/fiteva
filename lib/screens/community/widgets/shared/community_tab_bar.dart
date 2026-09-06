@@ -54,16 +54,20 @@ class CommunityTabBar extends StatelessWidget {
                                   : cs.onSurface.withValues(alpha: 0.3),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              tab.label,
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight:
-                                    selected ? FontWeight.w700 : FontWeight.w500,
-                                color: selected
-                                    ? cs.onSurface
-                                    : cs.onSurface.withValues(alpha: 0.35),
-                                letterSpacing: -0.1,
+                            Flexible(
+                              child: Text(
+                                tab.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight:
+                                      selected ? FontWeight.w700 : FontWeight.w500,
+                                  color: selected
+                                      ? cs.onSurface
+                                      : cs.onSurface.withValues(alpha: 0.35),
+                                  letterSpacing: -0.1,
+                                ),
                               ),
                             ),
                           ],

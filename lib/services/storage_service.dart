@@ -61,6 +61,7 @@ class StorageService {
         'id':              uid,
         'username':        data['username'] ?? '',
         'language':        data['language'] ?? 'fr',
+        if (data['image_url'] != null) 'image_url': data['image_url'],
         'onboarding_done': true,
         'updated_at':      DateTime.now().toIso8601String(),
       });

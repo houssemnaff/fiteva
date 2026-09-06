@@ -37,12 +37,9 @@ class OnboardingData {
   String? ppDuration;       // '0-2' | '2-6' | '6-12' | '3-6m' | '6m+'
   String? cycleDuration;
   DateTime? lastPeriod = DateTime.now().subtract(const Duration(days: 14));
-  String avatarSeed  = 'fiteva';
-  String avatarStyle = 'lorelei';
-  String avatarBg    = 'b6e3f4';
   String mascotType  = 'blob';
   String? trainingLocation;
-  String? profilePhotoPath;
+  String? profilePhotoUrl;
   String? bodyPhotoFront;
   String? bodyPhotoLeft;
   String? bodyPhotoRight;
@@ -73,9 +70,7 @@ class OnboardingData {
     'last_period':        lastPeriod?.toIso8601String(),
     'mascot_type':        mascotType,
     'mascot_mood':        'happy',
-    'avatar_seed':        avatarSeed,
-    'avatar_style':       avatarStyle,
-    'profile_photo_path': profilePhotoPath,
+    'image_url':          profilePhotoUrl,
     'body_photo_front':   bodyPhotoFront,
     'body_photo_left':    bodyPhotoLeft,
     'body_photo_right':   bodyPhotoRight,
@@ -226,10 +221,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _finish() async {
     await StorageService.saveOnboardingData(_data.toMap());
-
-    if (_data.profilePhotoPath != null) {
-      await StorageService.setString('profile_photo_path', _data.profilePhotoPath!);
-    }
 
     // ── Authentification Supabase ──────────────────────────────────────────
     if (_data.email.isNotEmpty && _data.password.isNotEmpty) {
@@ -539,7 +530,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     StepProfilePhoto(
       onBack: _goBack,
       onNext: _goNext,
-      onPhotoSelected: (path) => setState(() => _data.profilePhotoPath = path),
+      onPhotoSelected: (url) => setState(() => _data.profilePhotoUrl = url),
     ),
 
     // 10 — Body photos (front, left, right, back)

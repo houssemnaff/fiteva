@@ -38,9 +38,7 @@ CREATE TABLE user_profiles (
   id               UUID         PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username         TEXT         NOT NULL DEFAULT '',
   email            TEXT         NOT NULL DEFAULT '',
-  avatar_seed      TEXT         NOT NULL DEFAULT '',
-  avatar_style     TEXT         NOT NULL DEFAULT 'lorelei',
-  avatar_bg_color  TEXT         NOT NULL DEFAULT '#E0F2F1',
+  image_url        TEXT         NOT NULL DEFAULT '',
   mascot_type      TEXT         NOT NULL DEFAULT 'default',
   mascot_mood      TEXT         NOT NULL DEFAULT 'happy',
   language         TEXT         NOT NULL DEFAULT 'fr',
@@ -1077,7 +1075,7 @@ CREATE POLICY "own_user_profiles" ON user_profiles FOR ALL
 -- après la section 13.
 CREATE OR REPLACE VIEW public_profiles AS
   SELECT
-    p.id, p.username, p.avatar_seed, p.avatar_style, p.avatar_bg_color,
+    p.id, p.username, p.image_url,
     p.mascot_type, p.mascot_mood,
     COALESCE(
       s.plan <> 'free' AND s.status IN ('active', 'trialing', 'canceling'),

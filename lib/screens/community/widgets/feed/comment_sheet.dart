@@ -9,8 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../providers/mascot_provider.dart';
-import '../../../../widgets/mascot_widget.dart';
+import '../../../../providers/user_profile_provider.dart';
 import '../community_avatar.dart';
 
 class CommentSheet extends ConsumerStatefulWidget {
@@ -26,8 +25,7 @@ typedef _Comment = ({
   String text,
   String author,
   DateTime createdAt,
-  String mascotType,
-  String mascotMood,
+  String avatarUrl,
 });
 
 class _CommentSheetState extends ConsumerState<CommentSheet> {
@@ -58,8 +56,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
         text: comment.text,
         author: comment.author,
         createdAt: comment.createdAt,
-        mascotType: comment.mascotType,
-        mascotMood: comment.mascotMood,
+        avatarUrl: comment.avatarUrl,
       )).toList();
       _loading = false;
     });
@@ -74,7 +71,6 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
     await ref.read(postsNotifierProvider.notifier).incrementComments(widget.postId);
     _ctrl.clear();
     if (mounted) {
-      final myMascot = ref.read(mascotProvider);
       setState(() {
         _comments = [
           ..._comments,
@@ -82,8 +78,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
             text: createdComment?.text ?? text,
             author: createdComment?.author ?? 'Vous',
             createdAt: createdComment?.createdAt ?? DateTime.now(),
-            mascotType: createdComment?.mascotType ?? myMascot.type.name,
-            mascotMood: createdComment?.mascotMood ?? myMascot.mood.name,
+            avatarUrl: createdComment?.avatarUrl ?? ref.read(userProfileProvider).imageUrl,
           ),
         ];
         _sending = false;
@@ -187,8 +182,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                           text: _comments[i].text,
                           author: _comments[i].author,
                           createdAt: _comments[i].createdAt,
-                          mascotType: _comments[i].mascotType,
-                          mascotMood: _comments[i].mascotMood,
+                          avatarUrl: _comments[i].avatarUrl,
                           cs: cs,
                           isLast: i == _comments.length - 1,
                         ),
@@ -207,21 +201,12 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
               ),
             ),
             child: Row(children: [
-              // Mascot avatar
-              Consumer(builder: (_, ref2, __) {
-                final mascot = ref2.watch(mascotProvider);
-                return Container(
-                  width: 34, height: 34,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: cs.primary.withValues(alpha: 0.10),
-                  ),
-                  child: ClipOval(
-                    child: MascotWidget(
-                      type: mascot.type, mood: mascot.mood, size: 34),
-                  ),
-                );
-              }),
+              // My avatar
+              CommunityAvatar(
+                avatarUrl: ref.watch(userProfileProvider).imageUrl,
+                name: ref.watch(userProfileProvider).username,
+                radius: 17,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Container(
@@ -327,31 +312,18 @@ class _CommentSkeleton extends StatelessWidget {
   }
 }
 
-// ─── Avatar Colors ───────────────────────────────────────────
-const _kAvatarColors = [
-  Color(0xFFFF6B6B),
-  Color(0xFF6C5CE7),
-  Color(0xFF00B894),
-  Color(0xFFFDA085),
-  Color(0xFF4A90D9),
-  Color(0xFFA55EEA),
-  Color(0xFFFF9FF3),
-  Color(0xFF2ED573),
-];
-
 // ─── Comment Row ─────────────────────────────────────────────
-class _CommentRow extends ConsumerWidget {
+class _CommentRow extends StatelessWidget {
   final String text;
   final String author;
   final DateTime createdAt;
-  final String mascotType;
-  final String mascotMood;
+  final String avatarUrl;
   final ColorScheme cs;
   final bool isLast;
   const _CommentRow({
     required this.text, required this.author,
     required this.createdAt, required this.cs,
-    this.mascotType = 'blob', this.mascotMood = 'happy',
+    this.avatarUrl = '',
     this.isLast = false,
   });
 
@@ -365,7 +337,7 @@ class _CommentRow extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 4),
       child: Row(
@@ -373,11 +345,9 @@ class _CommentRow extends ConsumerWidget {
         children: [
           // Author's mascot avatar
           CommunityAvatar(
-            avatarUrl: '',
+            avatarUrl: avatarUrl,
             name: author,
             radius: 17,
-            mascotType: mascotType,
-            mascotMood: mascotMood,
           ),
           const SizedBox(width: 12),
 

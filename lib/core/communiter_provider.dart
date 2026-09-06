@@ -1,5 +1,4 @@
 import 'package:fiteva/models/post_model.dart';
-import 'package:fiteva/providers/mascot_provider.dart';
 import 'package:fiteva/providers/user_profile_provider.dart';
 import 'package:fiteva/screens/community/model/event_model.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
@@ -11,17 +10,17 @@ import 'package:supabase_flutter/supabase_flutter.dart' show PostgresChangeEvent
 
 // ─── Live profile sync ────────────────────────────────────────────────────────
 // Les posts/événements/partenaires sont des instantanés chargés une seule
-// fois depuis Supabase : chaque modèle embarque le nom + la mascotte de son
-// auteur au moment du chargement. Si l'utilisateur change son avatar ou son
+// fois depuis Supabase : chaque modèle embarque le nom + la photo de son
+// auteur au moment du chargement. Si l'utilisateur change sa photo ou son
 // nom dans son profil, ce helper patche en direct les entrées qui lui
 // appartiennent déjà en mémoire (sinon il faudrait un pull-to-refresh dans
 // chaque onglet pour voir le changement).
-void _listenOwnProfile(Ref ref, void Function({String? username, String? mascotType, String? mascotMood}) patch) {
-  ref.listen<MascotState>(mascotProvider, (_, next) {
-    patch(mascotType: next.type.name, mascotMood: next.mood.name);
-  });
+void _listenOwnProfile(Ref ref, void Function({String? username, String? avatarUrl}) patch) {
   ref.listen<UserProfile>(userProfileProvider, (_, next) {
-    if (next.username.isNotEmpty) patch(username: next.username);
+    patch(
+      username: next.username.isNotEmpty ? next.username : null,
+      avatarUrl: next.imageUrl,
+    );
   });
 }
 
@@ -48,7 +47,7 @@ class PostsNotifier extends StateNotifier<List<PostModel>> {
     state = posts;
     _ref.read(postsLoadingProvider.notifier).state = false;
 
-    _listenOwnProfile(_ref, ({username, mascotType, mascotMood}) {
+    _listenOwnProfile(_ref, ({username, avatarUrl}) {
       final uid = SupabaseConfig.userId;
       if (uid == null) return;
       state = [
@@ -56,8 +55,7 @@ class PostsNotifier extends StateNotifier<List<PostModel>> {
           if (p.userId == uid)
             p.copyWith(
               username: username,
-              mascotType: mascotType,
-              mascotMood: mascotMood,
+              userAvatarUrl: avatarUrl,
             )
           else
             p,
@@ -155,7 +153,7 @@ class EventsNotifier extends StateNotifier<List<EventModel>> {
       for (final e in events) e.copyWith(isJoined: _joined.contains(e.id)),
     ];
 
-    _listenOwnProfile(_ref, ({username, mascotType, mascotMood}) {
+    _listenOwnProfile(_ref, ({username, avatarUrl}) {
       final uid = SupabaseConfig.userId;
       if (uid == null) return;
       state = [
@@ -163,8 +161,7 @@ class EventsNotifier extends StateNotifier<List<EventModel>> {
           if (e.organizerId == uid)
             e.copyWith(
               organizer: username,
-              organizerMascotType: mascotType,
-              organizerMascotMood: mascotMood,
+              organizerAvatar: avatarUrl,
             )
           else
             e,
@@ -283,7 +280,7 @@ class PartnersNotifier extends StateNotifier<List<PartnerModel>> {
         )
         .subscribe();
 
-    _listenOwnProfile(_ref, ({username, mascotType, mascotMood}) {
+    _listenOwnProfile(_ref, ({username, avatarUrl}) {
       final uid = SupabaseConfig.userId;
       if (uid == null) return;
       state = [
@@ -291,8 +288,7 @@ class PartnersNotifier extends StateNotifier<List<PartnerModel>> {
           if (p.userId == uid)
             p.copyWith(
               name: username,
-              mascotType: mascotType,
-              mascotMood: mascotMood,
+              avatar: avatarUrl,
             )
           else
             p,

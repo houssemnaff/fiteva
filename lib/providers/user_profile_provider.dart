@@ -90,6 +90,7 @@ class NutritionTargets {
 class UserProfile {
   final String username;
   final String email;
+  final String imageUrl;
   final List<String> goals;
   final String? fitnessLevel;
   final String? frequency;
@@ -123,6 +124,7 @@ class UserProfile {
   const UserProfile({
     required this.username,
     required this.email,
+    this.imageUrl = '',
     required this.goals,
     required this.fitnessLevel,
     required this.frequency,
@@ -193,6 +195,7 @@ class UserProfile {
     return UserProfile(
       username:        m['username'] as String? ?? '',
       email:           m['email'] as String? ?? '',
+      imageUrl:        m['image_url'] as String? ?? '',
       goals:           goals,
       fitnessLevel:    m['fitness_level'] as String?,
       frequency:       freq,
@@ -309,7 +312,7 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
     try {
       // Profil principal
       final profile = await SupabaseConfig.table('user_profiles')
-          .select('username, email, language')
+          .select('username, email, language, image_url')
           .eq('id', uid)
           .maybeSingle();
 
@@ -331,8 +334,9 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
       final merged = <String, dynamic>{
         ...StorageService.getOnboardingData(),
         if (profile != null) ...{
-          'username': profile['username'],
-          'email':    profile['email'],
+          'username':  profile['username'],
+          'email':     profile['email'],
+          'image_url': profile['image_url'],
         },
         if (bio != null) ...{
           'height_cm':    bio['height_cm'],
@@ -433,8 +437,9 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
     // user_profiles
     SupabaseConfig.table('user_profiles').upsert({
       'id':         uid,
-      if (data['username'] != null) 'username': data['username'],
-      if (data['email']    != null) 'email':    data['email'],
+      if (data['username']  != null) 'username':   data['username'],
+      if (data['email']     != null) 'email':      data['email'],
+      if (data['image_url'] != null) 'image_url':  data['image_url'],
       'updated_at': DateTime.now().toIso8601String(),
     }).catchError((_) {});
 
@@ -489,7 +494,7 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
 
   // ── Helpers de mapping clés locales → colonnes Supabase ──────────────────
 
-  static const _profileKeys = {'username', 'email'};
+  static const _profileKeys = {'username', 'email', 'image_url'};
   static const _bioKeys     = {'height_cm', 'weight_kg', 'age', 'fitness_level', 'goals', 'equipment', 'frequency', 'training_location'};
   // pregnancy_week/pp_recovery/pp_duration manquaient ici : updateField()
   // les enregistrait bien en local (StorageService) mais _syncFieldToSupabase

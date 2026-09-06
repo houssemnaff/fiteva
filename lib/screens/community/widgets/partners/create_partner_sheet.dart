@@ -140,8 +140,6 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
         userId:      p.userId,
         name:        p.name,
         avatar:      p.avatar,
-        mascotType:  p.mascotType,
-        mascotMood:  p.mascotMood,
         goal:        _selectedGoal,
         level:       _selectedLevel,
         region:      _selectedRegion,
@@ -256,7 +254,9 @@ class _CreatePartnerSheetState extends ConsumerState<CreatePartnerSheet>
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(children: [
-                  CommunityAvatar(avatarUrl: '', name: displayName, radius: 18),
+                  CommunityAvatar(
+                    avatarUrl: ref.watch(userProfileProvider).imageUrl,
+                    name: displayName, radius: 18),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
