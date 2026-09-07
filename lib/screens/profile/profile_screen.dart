@@ -359,6 +359,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
 
+          // ── Progress photos ──────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _ProgressPhotosCard(profile: profile, dark: d),
+          ),
+
           // ── Subscription ──────────────────────────────────────────────
           const SliverToBoxAdapter(
             child: Padding(
@@ -716,6 +721,227 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _EditProfileSheet(profile: profile, ref: ref),
+    );
+  }
+}
+
+// ─── Progress Photos Card ────────────────────────────────────────────────────
+class _ProgressPhotosCard extends ConsumerStatefulWidget {
+  final UserProfile profile;
+  final bool dark;
+  const _ProgressPhotosCard({required this.profile, required this.dark});
+
+  @override
+  ConsumerState<_ProgressPhotosCard> createState() => _ProgressPhotosCardState();
+}
+
+class _ProgressPhotosCardState extends ConsumerState<_ProgressPhotosCard> {
+  final Set<String> _uploading = {};
+
+  static const _slots = [
+    ('front', 'body_photo_front'),
+    ('left',  'body_photo_left'),
+    ('right', 'body_photo_right'),
+    ('back',  'body_photo_back'),
+  ];
+
+  String _urlFor(String key) {
+    switch (key) {
+      case 'front': return widget.profile.bodyPhotoFront;
+      case 'left':  return widget.profile.bodyPhotoLeft;
+      case 'right': return widget.profile.bodyPhotoRight;
+      case 'back':  return widget.profile.bodyPhotoBack;
+      default:      return '';
+    }
+  }
+
+  String _labelFor(String key, bool fr) {
+    if (fr) {
+      switch (key) {
+        case 'front': return 'Face';
+        case 'left':  return 'Gauche';
+        case 'right': return 'Droite';
+        case 'back':  return 'Dos';
+      }
+    } else {
+      switch (key) {
+        case 'front': return 'Front';
+        case 'left':  return 'Left';
+        case 'right': return 'Right';
+        case 'back':  return 'Back';
+      }
+    }
+    return key;
+  }
+
+  void _showError(bool fr) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(fr
+          ? 'Impossible de charger la photo. Réessaie.'
+          : 'Could not load the photo. Please try again.'),
+    ));
+  }
+
+  Future<void> _pickAndUpload(String key, String fieldKey, ImageSource source) async {
+    final fr = ref.read(l10nProvider).isFrench;
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: source, maxWidth: 1200, maxHeight: 1200, imageQuality: 85);
+      if (picked == null || !mounted) return;
+
+      setState(() => _uploading.add(key));
+      final url = await AvatarService.uploadAvatar(picked);
+      if (!mounted) return;
+      setState(() => _uploading.remove(key));
+
+      if (url == null) {
+        _showError(fr);
+        return;
+      }
+      await ref.read(userProfileProvider.notifier).updateField(fieldKey, url);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _uploading.remove(key));
+        _showError(fr);
+      }
+    }
+  }
+
+  void _removePhoto(String fieldKey) {
+    ref.read(userProfileProvider.notifier).updateField(fieldKey, '');
+  }
+
+  void _showSourcePicker(String key, String fieldKey) {
+    final fr = ref.read(l10nProvider).isFrench;
+    final cs = Theme.of(context).colorScheme;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(20)),
+        child: SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 8),
+          Container(width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: cs.onSurface.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 12),
+          ListTile(
+            leading: Icon(LucideIcons.camera, color: cs.primary),
+            title: Text(fr ? 'Prendre une photo' : 'Take a photo'),
+            onTap: () { Navigator.pop(ctx); _pickAndUpload(key, fieldKey, ImageSource.camera); },
+          ),
+          ListTile(
+            leading: Icon(LucideIcons.image, color: cs.primary),
+            title: Text(fr ? 'Choisir dans la galerie' : 'Choose from gallery'),
+            onTap: () { Navigator.pop(ctx); _pickAndUpload(key, fieldKey, ImageSource.gallery); },
+          ),
+          const SizedBox(height: 8),
+        ])),
+      ),
+    );
+  }
+
+  void _openViewer(String key, String fieldKey, String url) {
+    final fr = ref.read(l10nProvider).isFrench;
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.9),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.network(url, fit: BoxFit.contain),
+          ),
+          const SizedBox(height: 16),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            TextButton.icon(
+              onPressed: () { Navigator.pop(ctx); _showSourcePicker(key, fieldKey); },
+              icon: const Icon(LucideIcons.refreshCw, color: Colors.white, size: 16),
+              label: Text(fr ? 'Remplacer' : 'Replace',
+                style: const TextStyle(color: Colors.white)),
+            ),
+            const SizedBox(width: 12),
+            TextButton.icon(
+              onPressed: () { Navigator.pop(ctx); _removePhoto(fieldKey); },
+              icon: const Icon(LucideIcons.trash2, color: Color(0xFFFF6B6B), size: 16),
+              label: Text(fr ? 'Supprimer' : 'Remove',
+                style: const TextStyle(color: Color(0xFFFF6B6B))),
+            ),
+          ]),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(fr ? 'Fermer' : 'Close',
+              style: const TextStyle(color: Colors.white70)),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n   = ref.watch(l10nProvider);
+    final fr     = l10n.isFrench;
+    final d      = widget.dark;
+    final accent = Theme.of(context).colorScheme.primary;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 6),
+          child: Text(fr ? 'PHOTOS DE PROGRESSION' : 'PROGRESS PHOTOS',
+            style: GoogleFonts.outfit(fontSize: 13, color: _P.t2(d))),
+        ),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: _P.card(d), borderRadius: BorderRadius.circular(12)),
+          child: Row(children: _slots.map((s) {
+            final key      = s.$1;
+            final fieldKey = s.$2;
+            final url      = _urlFor(key);
+            final uploading = _uploading.contains(key);
+            return Expanded(child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: GestureDetector(
+                onTap: uploading ? null : (url.isNotEmpty
+                    ? () => _openViewer(key, fieldKey, url)
+                    : () => _showSourcePicker(key, fieldKey)),
+                child: Column(children: [
+                  AspectRatio(
+                    aspectRatio: 0.8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: accent.withValues(alpha: url.isNotEmpty ? 0.3 : 0.15)),
+                        image: url.isNotEmpty
+                            ? DecorationImage(image: NetworkImage(url), fit: BoxFit.cover)
+                            : null,
+                      ),
+                      child: uploading
+                          ? const Center(child: SizedBox(width: 18, height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2)))
+                          : (url.isEmpty
+                              ? Icon(LucideIcons.plus, size: 18, color: accent.withValues(alpha: 0.5))
+                              : null),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(_labelFor(key, fr),
+                    style: GoogleFonts.inter(fontSize: 10, color: _P.t2(d))),
+                ]),
+              ),
+            ));
+          }).toList()),
+        ),
+      ]),
     );
   }
 }

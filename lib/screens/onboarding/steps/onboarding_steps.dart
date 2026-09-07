@@ -1,10 +1,8 @@
 ﻿import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:fiteva/screens/onboarding/widgets/shared_onboarding_widgets.dart';
 import 'package:fiteva/services/tick_sound_service.dart';
 import 'package:fiteva/widgets/custom_date_picker.dart';
@@ -5449,6 +5447,7 @@ class _StepBodyPhotosState extends State<StepBodyPhotos>
     'right': null,
     'back': null,
   };
+  final Set<String> _uploadingKeys = {};
   late final AnimationController _enterCtrl;
 
   @override
@@ -5530,14 +5529,32 @@ class _StepBodyPhotosState extends State<StepBodyPhotos>
         source: source, maxWidth: 1200, maxHeight: 1200, imageQuality: 85);
       if (picked == null || !mounted) return;
 
-      final appDir = await getApplicationDocumentsDirectory();
-      final fileName = 'body_${key}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final savedFile = await File(picked.path).copy('${appDir.path}/$fileName');
+      setState(() => _uploadingKeys.add(key));
+      final url = await AvatarService.uploadAvatar(picked);
+      if (!mounted) return;
+      setState(() => _uploadingKeys.remove(key));
 
-      setState(() => _photos[key] = savedFile.path);
-      _callbackFor(key)(savedFile.path);
+      if (url == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_fr
+              ? 'Impossible de charger la photo. Reessaie.'
+              : 'Could not load the photo. Please try again.'),
+        ));
+        return;
+      }
+
+      setState(() => _photos[key] = url);
+      _callbackFor(key)(url);
     } catch (e) {
       debugPrint('[BodyPhotos] pick error: $e');
+      if (mounted) {
+        setState(() => _uploadingKeys.remove(key));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_fr
+              ? 'Impossible de charger la photo. Reessaie.'
+              : 'Could not load the photo. Please try again.'),
+        ));
+      }
     }
   }
 
@@ -5694,10 +5711,11 @@ class _StepBodyPhotosState extends State<StepBodyPhotos>
               color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10, offset: const Offset(0, 3))],
             image: path != null
-                ? DecorationImage(image: FileImage(File(path)), fit: BoxFit.cover)
+                ? DecorationImage(image: NetworkImage(path), fit: BoxFit.cover)
                 : null,
           ),
-          child: path == null
+          child: Stack(children: [
+            path == null
               ? Stack(children: [
                   // Step number
                   Positioned(top: 10, left: 10, child: Container(
@@ -5801,6 +5819,16 @@ class _StepBodyPhotosState extends State<StepBodyPhotos>
                     ]),
                   )),
                 ]),
+            if (_uploadingKeys.contains(key))
+              Positioned.fill(child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(20)),
+                child: const Center(child: SizedBox(
+                  width: 22, height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))),
+              )),
+          ]),
         ),
       ),
     );

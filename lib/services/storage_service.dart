@@ -62,6 +62,10 @@ class StorageService {
         'username':        data['username'] ?? '',
         'language':        data['language'] ?? 'fr',
         if (data['image_url'] != null) 'image_url': data['image_url'],
+        if (data['body_photo_front'] != null) 'body_photo_front': data['body_photo_front'],
+        if (data['body_photo_left']  != null) 'body_photo_left':  data['body_photo_left'],
+        if (data['body_photo_right'] != null) 'body_photo_right': data['body_photo_right'],
+        if (data['body_photo_back']  != null) 'body_photo_back':  data['body_photo_back'],
         'onboarding_done': true,
         'updated_at':      DateTime.now().toIso8601String(),
       });

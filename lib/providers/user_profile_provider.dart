@@ -91,6 +91,10 @@ class UserProfile {
   final String username;
   final String email;
   final String imageUrl;
+  final String bodyPhotoFront;
+  final String bodyPhotoLeft;
+  final String bodyPhotoRight;
+  final String bodyPhotoBack;
   final List<String> goals;
   final String? fitnessLevel;
   final String? frequency;
@@ -125,6 +129,10 @@ class UserProfile {
     required this.username,
     required this.email,
     this.imageUrl = '',
+    this.bodyPhotoFront = '',
+    this.bodyPhotoLeft = '',
+    this.bodyPhotoRight = '',
+    this.bodyPhotoBack = '',
     required this.goals,
     required this.fitnessLevel,
     required this.frequency,
@@ -196,6 +204,10 @@ class UserProfile {
       username:        m['username'] as String? ?? '',
       email:           m['email'] as String? ?? '',
       imageUrl:        m['image_url'] as String? ?? '',
+      bodyPhotoFront:  m['body_photo_front'] as String? ?? '',
+      bodyPhotoLeft:   m['body_photo_left'] as String? ?? '',
+      bodyPhotoRight:  m['body_photo_right'] as String? ?? '',
+      bodyPhotoBack:   m['body_photo_back'] as String? ?? '',
       goals:           goals,
       fitnessLevel:    m['fitness_level'] as String?,
       frequency:       freq,
@@ -312,7 +324,8 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
     try {
       // Profil principal
       final profile = await SupabaseConfig.table('user_profiles')
-          .select('username, email, language, image_url')
+          .select('username, email, language, image_url, '
+              'body_photo_front, body_photo_left, body_photo_right, body_photo_back')
           .eq('id', uid)
           .maybeSingle();
 
@@ -337,6 +350,10 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
           'username':  profile['username'],
           'email':     profile['email'],
           'image_url': profile['image_url'],
+          'body_photo_front': profile['body_photo_front'],
+          'body_photo_left':  profile['body_photo_left'],
+          'body_photo_right': profile['body_photo_right'],
+          'body_photo_back':  profile['body_photo_back'],
         },
         if (bio != null) ...{
           'height_cm':    bio['height_cm'],
@@ -440,6 +457,10 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
       if (data['username']  != null) 'username':   data['username'],
       if (data['email']     != null) 'email':      data['email'],
       if (data['image_url'] != null) 'image_url':  data['image_url'],
+      if (data['body_photo_front'] != null) 'body_photo_front': data['body_photo_front'],
+      if (data['body_photo_left']  != null) 'body_photo_left':  data['body_photo_left'],
+      if (data['body_photo_right'] != null) 'body_photo_right': data['body_photo_right'],
+      if (data['body_photo_back']  != null) 'body_photo_back':  data['body_photo_back'],
       'updated_at': DateTime.now().toIso8601String(),
     }).catchError((_) {});
 
@@ -494,7 +515,10 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
 
   // ── Helpers de mapping clés locales → colonnes Supabase ──────────────────
 
-  static const _profileKeys = {'username', 'email', 'image_url'};
+  static const _profileKeys = {
+    'username', 'email', 'image_url',
+    'body_photo_front', 'body_photo_left', 'body_photo_right', 'body_photo_back',
+  };
   static const _bioKeys     = {'height_cm', 'weight_kg', 'age', 'fitness_level', 'goals', 'equipment', 'frequency', 'training_location'};
   // pregnancy_week/pp_recovery/pp_duration manquaient ici : updateField()
   // les enregistrait bien en local (StorageService) mais _syncFieldToSupabase
