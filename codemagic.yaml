@@ -13,6 +13,7 @@ workflows:
       - name: Install CocoaPods
         script: |
           cd ios
+          sed -i '' "1s/^/platform :ios, '16.0'\n/" Podfile 2>/dev/null || true
           pod install
       - name: Set up code signing
         script: xcode-project use-profiles
