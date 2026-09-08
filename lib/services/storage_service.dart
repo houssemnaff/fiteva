@@ -85,7 +85,7 @@ class StorageService {
       };
       await SupabaseConfig.table('user_biometrics').upsert(bio, onConflict: 'user_id');
 
-      // Statut santé (cycle / grossesse / post-partum)
+      // Statut santé (cycle)
       if (data['health_status'] != null) {
         await SupabaseConfig.table('user_cycle_settings').upsert({
           'user_id':          uid,
@@ -94,6 +94,53 @@ class StorageService {
           'last_period_date': data['last_period'],
           'updated_at':       DateTime.now().toIso8601String(),
         }, onConflict: 'user_id');
+      }
+
+      // Grossesse — table dédiée (pas de colonnes pregnancy_week* sur
+      // user_cycle_settings, contrairement à ce que faisait cette fonction
+      // avant : la semaine de grossesse saisie à l'onboarding n'atteignait
+      // jamais Supabase).
+      if (data['pregnancy_week'] != null) {
+        await SupabaseConfig.table('user_pregnancy').upsert({
+          'user_id':          uid,
+          'is_pregnant':      true,
+          'pregnancy_week_sa': data['pregnancy_week'],
+          'updated_at':       DateTime.now().toIso8601String(),
+        }, onConflict: 'user_id');
+      }
+
+      // Post-partum — table dédiée (même souci que pour la grossesse).
+      if (data['pp_recovery'] != null || data['pp_duration'] != null || data['pp_birth_date'] != null) {
+        await SupabaseConfig.table('user_postpartum').upsert({
+          'user_id': uid,
+          if (data['pp_recovery']   != null) 'recovery_type': data['pp_recovery'],
+          if (data['pp_duration']   != null) 'pp_duration':   data['pp_duration'],
+          if (data['pp_birth_date'] != null) 'birth_date':    data['pp_birth_date'],
+          'updated_at': DateTime.now().toIso8601String(),
+        }, onConflict: 'user_id');
+      }
+
+      // Journal corporel — même table que l'écran "Mon Corps"
+      // (body_tracking_provider.dart, onConflict user_id+date). Sans ceci,
+      // la composition corporelle et les mensurations saisies à
+      // l'onboarding n'étaient jamais persistées nulle part (ni Supabase,
+      // ni local — StorageService.clearOnboardingData() les effaçait juste
+      // après ce sync).
+      final bodyLog = <String, dynamic>{
+        'user_id': uid,
+        'date': DateTime.now().toIso8601String().split('T').first,
+        if (data['weight_kg']    != null) 'weight_kg':    data['weight_kg'],
+        if (data['body_fat_pct'] != null) 'body_fat_pct': data['body_fat_pct'],
+        if (data['waist_cm']     != null) 'waist_cm':     data['waist_cm'],
+        if (data['hips_cm']      != null) 'hips_cm':      data['hips_cm'],
+        if (data['chest_cm']     != null) 'chest_cm':     data['chest_cm'],
+        if (data['thighs_cm']    != null) 'thighs_cm':    data['thighs_cm'],
+        if (data['arms_cm']      != null) 'arms_cm':      data['arms_cm'],
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      if (bodyLog.length > 3) {
+        await SupabaseConfig.table('user_body_logs')
+            .upsert(bodyLog, onConflict: 'user_id,date');
       }
     } catch (_) {}
   }

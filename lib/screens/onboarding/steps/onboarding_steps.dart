@@ -3870,6 +3870,7 @@ class StepCycleAndPregnancy extends StatefulWidget {
   final ValueChanged<int>? onPregnancyWeekChanged;
   final ValueChanged<String>? onPpRecoveryChanged;
   final ValueChanged<String>? onPpDurationChanged;
+  final ValueChanged<DateTime>? onPpBirthDateChanged;
 
   const StepCycleAndPregnancy({
     super.key,
@@ -3881,6 +3882,7 @@ class StepCycleAndPregnancy extends StatefulWidget {
     this.onPregnancyWeekChanged,
     this.onPpRecoveryChanged,
     this.onPpDurationChanged,
+    this.onPpBirthDateChanged,
   });
 
   @override
@@ -4064,7 +4066,21 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
                         onTap: () {
                           HapticFeedback.mediumImpact();
                           setState(() => _status = _status == key ? null : key);
-                          if (_status == key) widget.onHealthStatusChanged?.call(key);
+                          if (_status == key) {
+                            widget.onHealthStatusChanged?.call(key);
+                            // Pousse la valeur par défaut affichée à l'écran
+                            // (durée de cycle, dernières règles, semaine de
+                            // grossesse) même si l'utilisatrice ne touche pas
+                            // le contrôle correspondant avant de continuer —
+                            // sinon la valeur visible n'était jamais réellement
+                            // enregistrée dans _data.
+                            if (key == 'cycle') {
+                              widget.onCycleDurationChanged?.call(_cycleDuration);
+                              widget.onLastPeriodChanged?.call(_lastPeriod);
+                            } else if (key == 'pregnant') {
+                              widget.onPregnancyWeekChanged?.call(_weekSA);
+                            }
+                          }
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 350),
@@ -4624,6 +4640,7 @@ class _StepCycleAndPregnancyState extends State<StepCycleAndPregnancy> {
               else             dur = '6m+';
               setState(() { _birthDate = picked; _ppDuration = dur; });
               widget.onPpDurationChanged?.call(dur);
+              widget.onPpBirthDateChanged?.call(picked);
             }
           },
           child: Container(

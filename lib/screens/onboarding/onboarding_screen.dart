@@ -35,6 +35,7 @@ class OnboardingData {
   int?    pregnancyWeekSA;
   String? ppRecovery;       // 'recent' | 'slowly' | 'active'
   String? ppDuration;       // '0-2' | '2-6' | '6-12' | '3-6m' | '6m+'
+  DateTime? ppBirthDate;
   String? cycleDuration;
   DateTime? lastPeriod = DateTime.now().subtract(const Duration(days: 14));
   String mascotType  = 'blob';
@@ -66,6 +67,7 @@ class OnboardingData {
     'pregnancy_week':     pregnancyWeekSA,
     'pp_recovery':        ppRecovery,
     'pp_duration':        ppDuration,
+    'pp_birth_date':      ppBirthDate?.toIso8601String(),
     'cycle_duration':     cycleDuration,
     'last_period':        lastPeriod?.toIso8601String(),
     'mascot_type':        mascotType,
@@ -512,6 +514,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onPregnancyWeekChanged: (v) => setState(() => _data.pregnancyWeekSA = v),
       onPpRecoveryChanged:    (v) => setState(() => _data.ppRecovery    = v),
       onPpDurationChanged:    (v) => setState(() => _data.ppDuration    = v),
+      onPpBirthDateChanged:   (v) => setState(() => _data.ppBirthDate   = v),
     ),
 
     // 9 — Health profile (height / weight / age)

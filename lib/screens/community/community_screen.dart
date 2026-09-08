@@ -5,7 +5,6 @@ import 'package:fiteva/screens/community/widgets/events/events_tab.dart';
 import 'package:fiteva/screens/community/widgets/feed/feed_composer_sheet.dart';
 import 'package:fiteva/screens/community/widgets/feed/feed_tab.dart';
 import 'package:fiteva/screens/community/widgets/partners/create_partner_sheet.dart';
-import 'package:fiteva/screens/community/widgets/challenges/challenges_tab.dart';
 import 'package:fiteva/screens/community/widgets/partners/partner_tab.dart';
 import 'package:fiteva/screens/community/widgets/shared/community_tab_bar.dart';
 import 'package:fiteva/widgets/shared_app_header.dart';
@@ -60,8 +59,8 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
               color: const Color(0xFFE85D3A),
               title: isFr ? 'Les onglets' : 'Tabs',
               description: isFr
-                  ? 'Navigue entre le fil, les evenements, les partenaires et les defis.'
-                  : 'Navigate between feed, events, partners and challenges.',
+                  ? 'Navigue entre le fil, les evenements et les partenaires.'
+                  : 'Navigate between feed, events and partners.',
               contentAlign: ContentAlign.bottom,
             ),
             SpotlightStep(
@@ -147,7 +146,6 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
             PrimaryScrollController.none(child: FeedTab()),
             PrimaryScrollController.none(child: EventsTab()),
             PrimaryScrollController.none(child: PartnerTab()),
-            PrimaryScrollController.none(child: ChallengesTab()),
           ],
         ),
       ),

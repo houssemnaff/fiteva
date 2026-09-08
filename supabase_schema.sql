@@ -69,6 +69,23 @@ CREATE TABLE user_biometrics (
   updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
+-- ── 2.2b  Journal corporel (poids / composition / mensurations dans le temps) ─
+-- Alimenté par l'onboarding (1re entrée) et par l'écran "Mon Corps"
+-- (body_tracking_provider.dart, upsert onConflict user_id+date).
+CREATE TABLE user_body_logs (
+  user_id      UUID         NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  date         DATE         NOT NULL,
+  weight_kg    NUMERIC(5,1) CHECK (weight_kg BETWEEN 20 AND 300),
+  body_fat_pct NUMERIC(4,1) CHECK (body_fat_pct BETWEEN 3 AND 70),
+  waist_cm     NUMERIC(5,1),
+  hips_cm      NUMERIC(5,1),
+  chest_cm     NUMERIC(5,1),
+  thighs_cm    NUMERIC(5,1),
+  arms_cm      NUMERIC(5,1),
+  updated_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, date)
+);
+
 -- ── 2.3  Objectifs nutritionnels calculés (TDEE) ────────────────────────────
 CREATE TABLE user_nutrition_targets (
   user_id          UUID         PRIMARY KEY REFERENCES user_profiles(id) ON DELETE CASCADE,
@@ -833,6 +850,7 @@ $$;
 
 CREATE TRIGGER trg_user_profiles_upd     BEFORE UPDATE ON user_profiles       FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_user_biometrics_upd   BEFORE UPDATE ON user_biometrics      FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER trg_user_body_logs_upd    BEFORE UPDATE ON user_body_logs       FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_nutrition_targets_upd BEFORE UPDATE ON user_nutrition_targets FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_user_xp_upd           BEFORE UPDATE ON user_xp             FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_posts_upd             BEFORE UPDATE ON posts                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -1024,6 +1042,7 @@ CREATE TRIGGER trg_track_login_day
 -- Tables privées (chaque user voit seulement ses données)
 ALTER TABLE user_profiles              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_biometrics            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_body_logs             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_nutrition_targets     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_xp                    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_challenge_progress    ENABLE ROW LEVEL SECURITY;
@@ -1095,7 +1114,7 @@ DO $$
 DECLARE tbl TEXT;
 BEGIN
   FOR tbl IN SELECT unnest(ARRAY[
-    'user_biometrics','user_nutrition_targets','user_xp',
+    'user_biometrics','user_body_logs','user_nutrition_targets','user_xp',
     'user_challenge_progress','points_progress_history',
     'user_video_completions','user_workout_completions','user_program_completions',
     'user_joined_programs','user_workout_favorites','user_program_favorites',

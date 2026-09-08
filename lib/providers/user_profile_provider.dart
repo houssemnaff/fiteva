@@ -341,6 +341,20 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
           .eq('user_id', uid)
           .maybeSingle();
 
+      // Grossesse — table dédiée (pas de colonnes pregnancy_week* sur
+      // user_cycle_settings). updated_at (auto) tient lieu d'horodatage pour
+      // currentPregnancyWeek.
+      final pregnancy = await SupabaseConfig.table('user_pregnancy')
+          .select('pregnancy_week_sa, updated_at')
+          .eq('user_id', uid)
+          .maybeSingle();
+
+      // Post-partum — table dédiée (pas de colonnes pp_* sur user_cycle_settings).
+      final postpartum = await SupabaseConfig.table('user_postpartum')
+          .select('recovery_type, pp_duration, birth_date')
+          .eq('user_id', uid)
+          .maybeSingle();
+
       if (profile == null && bio == null) return;
 
       // Fusionne les données Supabase dans la map locale et met à jour
@@ -364,11 +378,20 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
           'goals':        bio['goals'] ?? [],
           'equipment':    bio['equipment'] ?? [],
           'training_location': bio['training_location'],
-          'health_status': cycle?['health_status'],
-          'cycle_duration': cycle?['cycle_duration'] != null ? '${cycle?['cycle_duration']} jours' : null,
-          'last_period':   cycle?['last_period_date'],
-          'streak':        cycle?['streak'],
-          'level':           cycle?['level'],
+        },
+        if (cycle != null) ...{
+          'health_status': cycle['health_status'],
+          'cycle_duration': cycle['cycle_duration'] != null ? '${cycle['cycle_duration']} jours' : null,
+          'last_period':   cycle['last_period_date'],
+        },
+        if (pregnancy != null) ...{
+          'pregnancy_week':        pregnancy['pregnancy_week_sa'],
+          'pregnancy_week_set_at': pregnancy['updated_at'],
+        },
+        if (postpartum != null) ...{
+          'pp_recovery':   postpartum['recovery_type'],
+          'pp_duration':   postpartum['pp_duration'],
+          'pp_birth_date': postpartum['birth_date'],
         },
       };
 
@@ -435,14 +458,36 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
       SupabaseConfig.table('user_cycle_settings').upsert({
         'user_id':    uid,
         _toCycleKey(key): value,
-        // La semaine de grossesse doit avancer avec le temps réel
-        // (currentPregnancyWeek) — on horodate donc chaque saisie manuelle
-        // pour pouvoir calculer les semaines écoulées depuis.
-        if (key == 'pregnancy_week')
-          'pregnancy_week_set_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id').catchError((e) {
         debugPrint('[UserProfile] cycle sync error ($key): $e');
+      });
+    } else if (key == 'pregnancy_week') {
+      // Colonne dédiée sur user_pregnancy — PAS user_cycle_settings, qui n'a
+      // pas de colonne pregnancy_week/pregnancy_week_sa. L'upsert y échouait
+      // silencieusement (catchError) depuis l'introduction de ce champ : la
+      // semaine de grossesse restait uniquement en local, jamais sur le
+      // serveur, donc perdue à la réinstallation ou sur un autre appareil.
+      // updated_at (auto, trigger set_updated_at) sert d'horodatage pour
+      // currentPregnancyWeek, à la place d'une colonne pregnancy_week_set_at
+      // qui n'existe pas non plus sur cette table.
+      SupabaseConfig.table('user_pregnancy').upsert({
+        'user_id':          uid,
+        'is_pregnant':      value != null,
+        'pregnancy_week_sa': value,
+        'updated_at':       DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id').catchError((e) {
+        debugPrint('[UserProfile] pregnancy sync error: $e');
+      });
+    } else if (_postpartumKeys.contains(key)) {
+      // Colonnes dédiées sur user_postpartum — même bug que pregnancy_week :
+      // ces clés visaient user_cycle_settings qui ne les a pas.
+      SupabaseConfig.table('user_postpartum').upsert({
+        'user_id':    uid,
+        _toPostpartumKey(key): value,
+        'updated_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id').catchError((e) {
+        debugPrint('[UserProfile] postpartum sync error ($key): $e');
       });
     }
   }
@@ -520,15 +565,9 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
     'body_photo_front', 'body_photo_left', 'body_photo_right', 'body_photo_back',
   };
   static const _bioKeys     = {'height_cm', 'weight_kg', 'age', 'fitness_level', 'goals', 'equipment', 'frequency', 'training_location'};
-  // pregnancy_week/pp_recovery/pp_duration manquaient ici : updateField()
-  // les enregistrait bien en local (StorageService) mais _syncFieldToSupabase
-  // les ignorait silencieusement (aucun des 3 ensembles de clés ne les
-  // contenait) — ces champs n'étaient donc jamais persistés côté serveur, et
-  // se perdaient à la réinstallation de l'app ou sur un autre appareil.
-  static const _cycleKeys   = {
-    'health_status', 'cycle_duration', 'last_period',
-    'pregnancy_week', 'pp_recovery', 'pp_duration', 'pp_birth_date',
-  };
+  static const _cycleKeys   = {'health_status', 'cycle_duration', 'last_period'};
+  // pregnancy_week est géré à part (table user_pregnancy, avec is_pregnant en plus).
+  static const _postpartumKeys = {'pp_recovery', 'pp_duration', 'pp_birth_date'};
 
   static String _toBioKey(String k) => switch (k) {
     'frequency' => 'frequency_days',
@@ -539,6 +578,12 @@ class UserProfileNotifier extends StateNotifier<UserProfile> {
     'last_period'    => 'last_period_date',
     'cycle_duration' => 'cycle_duration',
     _                => k,
+  };
+
+  static String _toPostpartumKey(String k) => switch (k) {
+    'pp_recovery'  => 'recovery_type',
+    'pp_birth_date' => 'birth_date',
+    _              => k,
   };
 
   static int _freqToDays(dynamic freq) {

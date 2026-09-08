@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/user_profile_provider.dart';
+import '../../providers/body_tracking_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/mascot_provider.dart';
 import '../../providers/onboarding_provider.dart';
@@ -852,10 +853,16 @@ class _ProgressPhotosCardState extends ConsumerState<_ProgressPhotosCard> {
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(20),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.network(url, fit: BoxFit.contain),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.7,
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Flexible(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(url, fit: BoxFit.contain),
+            ),
           ),
           const SizedBox(height: 16),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -878,7 +885,8 @@ class _ProgressPhotosCardState extends ConsumerState<_ProgressPhotosCard> {
             child: Text(fr ? 'Fermer' : 'Close',
               style: const TextStyle(color: Colors.white70)),
           ),
-        ]),
+          ]),
+        ),
       ),
     );
   }
@@ -1037,6 +1045,12 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late TextEditingController _heightCtrl;
   late TextEditingController _weightCtrl;
   late TextEditingController _ageCtrl;
+  late TextEditingController _bodyFatCtrl;
+  late TextEditingController _waistCtrl;
+  late TextEditingController _hipsCtrl;
+  late TextEditingController _chestCtrl;
+  late TextEditingController _thighsCtrl;
+  late TextEditingController _armsCtrl;
   bool _saving = false;
   bool _uploadingPhoto = false;
   String? _avatarUrlOverride;
@@ -1050,6 +1064,16 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _heightCtrl = TextEditingController(text: '${widget.profile.heightCm}');
     _weightCtrl = TextEditingController(text: widget.profile.weightKg.toStringAsFixed(1));
     _ageCtrl    = TextEditingController(text: '${widget.profile.age}');
+
+    // Dernière entrée du journal corporel ("Mon Corps") — même source que
+    // l'écran body_tracking_screen.dart, pas de nouvelle table/colonne.
+    final latest = widget.ref.read(bodyTrackingProvider).latest;
+    _bodyFatCtrl = TextEditingController(text: latest?.bodyFatPct?.toStringAsFixed(1) ?? '');
+    _waistCtrl   = TextEditingController(text: latest?.waistCm?.toStringAsFixed(1) ?? '');
+    _hipsCtrl    = TextEditingController(text: latest?.hipsCm?.toStringAsFixed(1) ?? '');
+    _chestCtrl   = TextEditingController(text: latest?.chestCm?.toStringAsFixed(1) ?? '');
+    _thighsCtrl  = TextEditingController(text: latest?.thighsCm?.toStringAsFixed(1) ?? '');
+    _armsCtrl    = TextEditingController(text: latest?.armsCm?.toStringAsFixed(1) ?? '');
   }
 
   @override
@@ -1059,6 +1083,12 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _heightCtrl.dispose();
     _weightCtrl.dispose();
     _ageCtrl.dispose();
+    _bodyFatCtrl.dispose();
+    _waistCtrl.dispose();
+    _hipsCtrl.dispose();
+    _chestCtrl.dispose();
+    _thighsCtrl.dispose();
+    _armsCtrl.dispose();
     super.dispose();
   }
 
@@ -1174,6 +1204,23 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     await notifier.updateField('height_cm', height ?? widget.profile.heightCm);
     await notifier.updateField('weight_kg', weight ?? widget.profile.weightKg);
     await notifier.updateField('age', age ?? widget.profile.age);
+
+    // Composition corporelle / mensurations — journal "Mon Corps"
+    // (body_tracking_provider.dart), pas user_profiles : ça garde un
+    // historique daté au lieu d'écraser la valeur précédente.
+    final bodyFat = double.tryParse(_bodyFatCtrl.text);
+    final waist   = double.tryParse(_waistCtrl.text);
+    final hips    = double.tryParse(_hipsCtrl.text);
+    final chest   = double.tryParse(_chestCtrl.text);
+    final thighs  = double.tryParse(_thighsCtrl.text);
+    final arms    = double.tryParse(_armsCtrl.text);
+    final bodyTracking = widget.ref.read(bodyTrackingProvider.notifier);
+    if (bodyFat != null) await bodyTracking.updateBodyFat(bodyFat);
+    if (waist != null || hips != null || chest != null || thighs != null || arms != null) {
+      await bodyTracking.updateMeasurement(
+        waist: waist, hips: hips, chest: chest, thighs: thighs, arms: arms);
+    }
+
     widget.ref.read(pointsProvider.notifier).rewardProfileCompleted();
     if (mounted) Navigator.pop(context);
   }
@@ -1304,6 +1351,65 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 green: green, ink: ink, muted: muted, focused: _focusIndex == 4,
                 onFocus: (v) => setState(() => _focusIndex = v ? 4 : -1),
                 suffix: 'ans'),
+            ]),
+
+            const SizedBox(height: 20),
+
+            // ── Section: Composition corporelle ──────────────────────────
+            _SectionLabel(label: l10n.isFrench ? 'COMPOSITION CORPORELLE' : 'BODY COMPOSITION', color: muted),
+            const SizedBox(height: 10),
+            _EditCard(dark: dark, surf: surf, div: div, children: [
+              _EditRow(
+                icon: LucideIcons.percent, label: l10n.isFrench ? 'Masse grasse' : 'Body fat',
+                ctrl: _bodyFatCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                green: green, ink: ink, muted: muted, focused: _focusIndex == 5,
+                onFocus: (v) => setState(() => _focusIndex = v ? 5 : -1),
+                suffix: '%'),
+              _Divider(color: div),
+              Row(children: [
+                Expanded(child: _EditRow(
+                  icon: LucideIcons.ruler, label: l10n.isFrench ? 'Taille' : 'Waist',
+                  ctrl: _waistCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  green: green, ink: ink, muted: muted, focused: _focusIndex == 6,
+                  onFocus: (v) => setState(() => _focusIndex = v ? 6 : -1),
+                  suffix: 'cm')),
+                Container(width: 1, height: 56, color: div),
+                Expanded(child: _EditRow(
+                  icon: LucideIcons.ruler, label: l10n.isFrench ? 'Hanches' : 'Hips',
+                  ctrl: _hipsCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  green: green, ink: ink, muted: muted, focused: _focusIndex == 7,
+                  onFocus: (v) => setState(() => _focusIndex = v ? 7 : -1),
+                  suffix: 'cm')),
+              ]),
+              _Divider(color: div),
+              Row(children: [
+                Expanded(child: _EditRow(
+                  icon: LucideIcons.ruler, label: l10n.isFrench ? 'Poitrine' : 'Chest',
+                  ctrl: _chestCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  green: green, ink: ink, muted: muted, focused: _focusIndex == 8,
+                  onFocus: (v) => setState(() => _focusIndex = v ? 8 : -1),
+                  suffix: 'cm')),
+                Container(width: 1, height: 56, color: div),
+                Expanded(child: _EditRow(
+                  icon: LucideIcons.ruler, label: l10n.isFrench ? 'Cuisses' : 'Thighs',
+                  ctrl: _thighsCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  green: green, ink: ink, muted: muted, focused: _focusIndex == 9,
+                  onFocus: (v) => setState(() => _focusIndex = v ? 9 : -1),
+                  suffix: 'cm')),
+              ]),
+              _Divider(color: div),
+              _EditRow(
+                icon: LucideIcons.ruler, label: l10n.isFrench ? 'Bras' : 'Arms',
+                ctrl: _armsCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                green: green, ink: ink, muted: muted, focused: _focusIndex == 10,
+                onFocus: (v) => setState(() => _focusIndex = v ? 10 : -1),
+                suffix: 'cm'),
             ]),
 
             const SizedBox(height: 14),
