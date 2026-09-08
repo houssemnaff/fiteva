@@ -86,7 +86,8 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
               description: isFr
                   ? 'Appuie sur un repas pour ajouter des aliments. Tu peux chercher un aliment ou scanner un code-barres.'
                   : 'Tap a meal to add foods. You can search for a food or scan a barcode.',
-              contentAlign: ContentAlign.top,
+              contentAlign: ContentAlign.bottom,
+              scrollAlignment: 0.2,
             ),
             SpotlightStep(
               key: _keyHydration,
@@ -96,7 +97,8 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
               description: isFr
                   ? 'Suis ta consommation d\'eau ici. Appuie pour ajouter des verres et voir ton objectif quotidien.'
                   : 'Track your water intake here. Tap to add glasses and see your daily goal.',
-              contentAlign: ContentAlign.top,
+              contentAlign: ContentAlign.bottom,
+              scrollAlignment: 0.2,
             ),
             SpotlightStep(
               key: _keyRecipes,
@@ -257,7 +259,8 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
           // ══════════════════════════════════════════════════════════
           // PLATE SUMMARY
           // ══════════════════════════════════════════════════════════
-          SliverToBoxAdapter(key: _keyCalories, child: Padding(
+          SliverToBoxAdapter(child: Padding(
+            key: _keyCalories,
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
             child: GestureDetector(
               onTap: () => Navigator.push(context,
@@ -399,7 +402,8 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
               fontSize: 15, fontWeight: FontWeight.w800,
               color: cs.onSurface, letterSpacing: -0.3)))),
 
-          SliverToBoxAdapter(key: _keyMeals, child: Padding(
+          SliverToBoxAdapter(child: Padding(
+            key: _keyMeals,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: List.generate(categories.length, (i) {
@@ -418,7 +422,8 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
           // ══════════════════════════════════════════════════════════
           // HYDRATION
           // ══════════════════════════════════════════════════════════
-          SliverToBoxAdapter(key: _keyHydration, child: Padding(
+          SliverToBoxAdapter(child: Padding(
+            key: _keyHydration,
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             child: _HydrationMiniCard(onTap: () => Navigator.push(context,
               MaterialPageRoute(builder: (_) => const HydrationScreen()))),

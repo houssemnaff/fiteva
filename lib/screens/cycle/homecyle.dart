@@ -246,9 +246,9 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
               key: _keySymptoms,
               icon: LucideIcons.stethoscope,
               color: const Color(0xFF7C4DFF),
-              title: isFr ? 'Symptomes & Humeur' : 'Symptoms & Mood',
+              title: isFr ? 'Symptômes & Humeur' : 'Symptoms & Mood',
               description: isFr
-                  ? 'Note tes symptomes et ton humeur chaque jour pour des conseils personnalises.'
+                  ? 'Note tes symptômes et ton humeur chaque jour pour des conseils personnalisés.'
                   : 'Log your symptoms and mood daily for personalized advice.',
               contentAlign: ContentAlign.top,
             ),
@@ -518,6 +518,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
 
           // ── Daily insights (glass card) ──
           Padding(
+            key: _keyCoach,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _glassCard(isDark: cc.isDark, child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
@@ -840,16 +841,7 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
                 color: Colors.white,
                 offset: const Offset(0, 44),
                 itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'insights',
-                    child: Row(children: [
-                      Icon(Icons.insights_rounded, size: 17, color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: 10),
-                      Text(l10n.insightsMenuLabel, style: GoogleFonts.inter(
-                        fontSize: 13, fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface)),
-                    ]),
-                  ),
+                 
                   PopupMenuItem(
                     value: 'pregnancy',
                     child: Row(children: [

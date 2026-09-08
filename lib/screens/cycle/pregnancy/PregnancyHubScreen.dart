@@ -16,6 +16,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fiteva/l10n/app_localizations.dart';
+import 'package:fiteva/services/app_tour_service.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 
 // ── Premium palette ─────────────────────────────────────────────────────────
@@ -147,6 +149,12 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
   int? _feeling;
   bool _switching = false;
 
+  // Tutorial keys
+  final _keyTimeline = GlobalKey();
+  final _keyBaby     = GlobalKey();
+  final _keyFeeling  = GlobalKey();
+  final _keyExplore  = GlobalKey();
+
   late final AnimationController _switchAnim = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 500));
   late final Animation<double> _fadeOut =
@@ -158,6 +166,60 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
     super.initState();
     Future.microtask(() =>
       ref.read(pointsProvider.notifier).rewardPregnancyWeek());
+    _showTutorial();
+  }
+
+  void _showTutorial() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        final isFr = ref.read(l10nProvider).isFrench;
+        AppTourService.showSectionTutorial(context,
+          section: 'pregnancy',
+          steps: [
+            SpotlightStep(
+              key: _keyTimeline,
+              icon: LucideIcons.baby,
+              color: _coral,
+              title: isFr ? 'Suivi de Grossesse' : 'Pregnancy Tracking',
+              description: isFr
+                  ? 'Suis ta progression semaine par semaine avec la barre de timeline.'
+                  : 'Track your week-by-week progress with the timeline bar.',
+            ),
+            SpotlightStep(
+              key: _keyBaby,
+              icon: LucideIcons.heart,
+              color: _warmMint,
+              title: isFr ? 'Développement de Bébé' : 'Baby Development',
+              description: isFr
+                  ? 'Découvre la taille, le poids et les étapes clés de bébé chaque semaine.'
+                  : 'See your baby\'s size, weight, and key milestones each week.',
+              contentAlign: ContentAlign.top,
+            ),
+            SpotlightStep(
+              key: _keyFeeling,
+              icon: LucideIcons.smile,
+              color: _lavender,
+              title: isFr ? 'Comment tu te sens ?' : 'How do you feel?',
+              description: isFr
+                  ? 'Note ton humeur et tes symptômes pour un suivi personnalisé.'
+                  : 'Log your mood and symptoms for personalized tracking.',
+              contentAlign: ContentAlign.top,
+            ),
+            SpotlightStep(
+              key: _keyExplore,
+              icon: LucideIcons.compass,
+              color: _deepMint,
+              title: isFr ? 'Explorer' : 'Explore',
+              description: isFr
+                  ? 'Accède à l\'histoire de bébé, tes symptômes, ton corps et ta checklist.'
+                  : 'Access baby\'s story, symptoms, body changes, and your checklist.',
+              contentAlign: ContentAlign.top,
+            ),
+          ],
+        );
+      });
+    });
   }
 
   @override
@@ -260,28 +322,34 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
             // ═══════════════════════════════════════════════════════════════
             //  HERO — week ring + baby
             // ═══════════════════════════════════════════════════════════════
-            _HeroSection(
-              week: week, tri: tri, accent: accent,
-              due: fmtDue, left: left, dark: dark, l10n: l10n,
-              onMenu: (v) {
-                if (v == 'cycle') _switchToCycle();
-                if (v == 'postpartum') _switchToPostpartum();
-              },
-              switching: _switching,
+            KeyedSubtree(
+              key: _keyTimeline,
+              child: _HeroSection(
+                week: week, tri: tri, accent: accent,
+                due: fmtDue, left: left, dark: dark, l10n: l10n,
+                onMenu: (v) {
+                  if (v == 'cycle') _switchToCycle();
+                  if (v == 'postpartum') _switchToPostpartum();
+                },
+                switching: _switching,
+              ),
             ),
 
             // ═══════════════════════════════════════════════════════════════
             //  BABY DEVELOPMENT — big prominent card
             // ═══════════════════════════════════════════════════════════════
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-              child: Transform.translate(
-                offset: const Offset(0, -24),
-                child: _BabyDevCard(
-                  week: week, tri: tri, accent: accent,
-                  insight: insight, dark: dark, l10n: l10n,
-                  onTap: () => Navigator.push(context,
-                    _fadeTo(BabyStoryScreen(currentWeek: week))),
+            KeyedSubtree(
+              key: _keyBaby,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                child: Transform.translate(
+                  offset: const Offset(0, -24),
+                  child: _BabyDevCard(
+                    week: week, tri: tri, accent: accent,
+                    insight: insight, dark: dark, l10n: l10n,
+                    onTap: () => Navigator.push(context,
+                      _fadeTo(BabyStoryScreen(currentWeek: week))),
+                  ),
                 ),
               ),
             ),
@@ -297,9 +365,12 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
             // ═══════════════════════════════════════════════════════════════
             //  FEELING CHECK-IN (pregnancy-specific)
             // ═══════════════════════════════════════════════════════════════
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-              child: _buildFeelingSection(week, dark, l10n),
+            KeyedSubtree(
+              key: _keyFeeling,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                child: _buildFeelingSection(week, dark, l10n),
+              ),
             ),
 
             // ═══════════════════════════════════════════════════════════════
@@ -313,9 +384,12 @@ class _PregnancyHubScreenState extends ConsumerState<PregnancyHubScreen>
             // ═══════════════════════════════════════════════════════════════
             //  EXPLORE — asymmetric grid
             // ═══════════════════════════════════════════════════════════════
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-              child: _buildExploreGrid(week, dark, l10n),
+            KeyedSubtree(
+              key: _keyExplore,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                child: _buildExploreGrid(week, dark, l10n),
+              ),
             ),
 
             // ═══════════════════════════════════════════════════════════════

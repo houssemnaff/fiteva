@@ -78,43 +78,86 @@ class AppTourService {
     if (!await shouldShowSectionTour(section)) return;
     if (!context.mounted) return;
 
-    final targets = <TargetFocus>[];
-    for (int i = 0; i < steps.length; i++) {
-      final s = steps[i];
-      targets.add(TargetFocus(
-        identify: '${section}_$i',
-        keyTarget: s.key,
-        alignSkip: Alignment.topRight,
-        enableOverlayTab: true,
-        enableTargetTab: true,
-        shape: s.shape,
-        radius: s.spotlightRadius,
-        paddingFocus: s.spotlightPadding,
-        contents: [
-          TargetContent(
-            align: s.contentAlign,
-            builder: (ctx, ctrl) => _SpotlightCard(
-              title: s.title,
-              description: s.description,
-              icon: s.icon,
-              color: s.color,
-              stepIndex: i,
-              totalSteps: steps.length,
-            ),
-          ),
-        ],
-      ));
+    _showStepSequence(context, section: section, steps: steps, index: 0);
+  }
+
+  static void _showStepSequence(BuildContext context, {
+    required String section,
+    required List<SpotlightStep> steps,
+    required int index,
+  }) {
+    if (index >= steps.length || !context.mounted) {
+      markSectionTourDone(section);
+      return;
     }
 
-    final tutorial = TutorialCoachMark(
-      targets: targets,
+    final s = steps[index];
+
+    // Scroll target into view first
+    final targetCtx = s.key.currentContext;
+    if (targetCtx != null) {
+      Scrollable.ensureVisible(targetCtx,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+        alignment: s.scrollAlignment,
+      ).then((_) {
+        if (!context.mounted) return;
+        _showSingleStep(context, section: section, steps: steps, index: index);
+      });
+    } else {
+      _showSingleStep(context, section: section, steps: steps, index: index);
+    }
+  }
+
+  static void _showSingleStep(BuildContext context, {
+    required String section,
+    required List<SpotlightStep> steps,
+    required int index,
+  }) {
+    if (!context.mounted) return;
+    final s = steps[index];
+
+    final target = TargetFocus(
+      identify: '${section}_$index',
+      keyTarget: s.key,
+      alignSkip: Alignment.topRight,
+      enableOverlayTab: true,
+      enableTargetTab: true,
+      shape: s.shape,
+      radius: s.spotlightRadius,
+      paddingFocus: s.spotlightPadding,
+      contents: [
+        TargetContent(
+          align: s.contentAlign,
+          builder: (ctx, ctrl) => _SpotlightCard(
+            title: s.title,
+            description: s.description,
+            icon: s.icon,
+            color: s.color,
+            stepIndex: index,
+            totalSteps: steps.length,
+          ),
+        ),
+      ],
+    );
+
+    TutorialCoachMark(
+      targets: [target],
       colorShadow: const Color(0xFF1A1A1A),
       opacityShadow: 0.75,
       textSkip: '',
       hideSkip: true,
-      onFinish: () => markSectionTourDone(section),
+      onClickTarget: (_) {},
+      onClickOverlay: (_) {},
+      onFinish: () {
+        if (index + 1 < steps.length) {
+          _showStepSequence(context, section: section, steps: steps, index: index + 1);
+        } else {
+          markSectionTourDone(section);
+        }
+      },
       onSkip: () { markSectionTourDone(section); return true; },
-    )..show(context: context);
+    ).show(context: context);
   }
 }
 
@@ -128,6 +171,7 @@ class SpotlightStep {
   final ShapeLightFocus shape;
   final double spotlightRadius;
   final double spotlightPadding;
+  final double scrollAlignment;
 
   const SpotlightStep({
     required this.key,
@@ -139,6 +183,7 @@ class SpotlightStep {
     this.shape = ShapeLightFocus.RRect,
     this.spotlightRadius = 16,
     this.spotlightPadding = 8,
+    this.scrollAlignment = 0.5,
   });
 }
 

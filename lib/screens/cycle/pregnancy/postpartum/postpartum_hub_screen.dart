@@ -11,6 +11,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fiteva/services/app_tour_service.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 // ── Premium palette ─────────────────────────────────────────────────────────
 const _sage      = Color(0xFF5BA88C);
@@ -40,6 +42,13 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
   int?  _mood;
   bool  _switching = false;
 
+  // Tutorial keys
+  final _keyHero     = GlobalKey();
+  final _keyRecovery = GlobalKey();
+  final _keyMood     = GlobalKey();
+  final _keyInsights = GlobalKey();
+  final _keyTips     = GlobalKey();
+
   late final AnimationController _switchAnim = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 550));
   late final Animation<double> _fadeOut =
@@ -52,6 +61,73 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
     _birthDate = widget.birthDate;
     Future.microtask(() => ref.read(pointsProvider.notifier).rewardPostpartumTask());
     _loadMood();
+    _showTutorial();
+  }
+
+  void _showTutorial() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        final isFr = ref.read(l10nProvider).isFrench;
+        AppTourService.showSectionTutorial(context,
+          section: 'postpartum',
+          steps: [
+            SpotlightStep(
+              key: _keyHero,
+              icon: LucideIcons.baby,
+              color: _sage,
+              title: isFr ? 'Suivi Post-partum' : 'Postpartum Tracking',
+              description: isFr
+                  ? 'Suis ta progression depuis la naissance avec la timeline.'
+                  : 'Track your progress since birth with the timeline.',
+            ),
+            SpotlightStep(
+              key: _keyRecovery,
+              icon: LucideIcons.heartPulse,
+              color: _deepSage,
+              title: isFr ? 'Phases de Récupération' : 'Recovery Phases',
+              description: isFr
+                  ? 'Visualise les étapes de ta récupération et ta phase actuelle.'
+                  : 'See your recovery stages and current phase.',
+              contentAlign: ContentAlign.top,
+            ),
+            SpotlightStep(
+              key: _keyMood,
+              icon: LucideIcons.smile,
+              color: _lavender,
+              title: isFr ? 'Ton Humeur' : 'Your Mood',
+              description: isFr
+                  ? 'Note comment tu te sens chaque jour pour un suivi personnalisé.'
+                  : 'Log how you feel each day for personalized tracking.',
+              contentAlign: ContentAlign.bottom,
+              scrollAlignment: 0.2,
+            ),
+            SpotlightStep(
+              key: _keyInsights,
+              icon: LucideIcons.lightbulb,
+              color: _amber,
+              title: isFr ? 'Conseils Hebdo' : 'Weekly Insights',
+              description: isFr
+                  ? 'Découvre des conseils adaptés à ta semaine post-partum.'
+                  : 'Get insights tailored to your postpartum week.',
+              contentAlign: ContentAlign.bottom,
+              scrollAlignment: 0.15,
+            ),
+            SpotlightStep(
+              key: _keyTips,
+              icon: LucideIcons.sparkles,
+              color: _warmRose,
+              title: isFr ? 'Astuces Récupération' : 'Recovery Tips',
+              description: isFr
+                  ? 'Des astuces pratiques pour accompagner ta récupération.'
+                  : 'Practical tips to support your recovery journey.',
+              contentAlign: ContentAlign.top,
+              scrollAlignment: 0.6,
+            ),
+          ],
+        );
+      });
+    });
   }
 
   Future<void> _loadMood() async {
@@ -208,7 +284,7 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
             // ═══════════════════════════════════════════════════════════════
             //  HERO — timeline bar + stats
             // ═══════════════════════════════════════════════════════════════
-            _buildHero(dark, l10n, progress, pct),
+            KeyedSubtree(key: _keyHero, child: _buildHero(dark, l10n, progress, pct)),
 
             // ═══════════════════════════════════════════════════════════════
             //  PHASE CARD — overlapping hero
@@ -224,9 +300,12 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
             // ═══════════════════════════════════════════════════════════════
             //  RECOVERY TIMELINE
             // ═══════════════════════════════════════════════════════════════
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-              child: _buildRecoveryTimeline(dark),
+            KeyedSubtree(
+              key: _keyRecovery,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+                child: _buildRecoveryTimeline(dark),
+              ),
             ),
 
             // ═══════════════════════════════════════════════════════════════
@@ -240,25 +319,34 @@ class _PostpartumHubScreenState extends ConsumerState<PostpartumHubScreen>
             // ═══════════════════════════════════════════════════════════════
             //  MOOD CHECK-IN
             // ═══════════════════════════════════════════════════════════════
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-              child: _buildMoodSection(dark, l10n),
+            KeyedSubtree(
+              key: _keyMood,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                child: _buildMoodSection(dark, l10n),
+              ),
             ),
 
             // ═══════════════════════════════════════════════════════════════
             //  WEEKLY INSIGHTS
             // ═══════════════════════════════════════════════════════════════
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-              child: _buildInsights(dark, l10n, insight),
+            KeyedSubtree(
+              key: _keyInsights,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                child: _buildInsights(dark, l10n, insight),
+              ),
             ),
 
             // ═══════════════════════════════════════════════════════════════
             //  RECOVERY TIPS
             // ═══════════════════════════════════════════════════════════════
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-              child: _buildTips(dark),
+            KeyedSubtree(
+              key: _keyTips,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                child: _buildTips(dark),
+              ),
             ),
 
             SizedBox(height: MediaQuery.of(context).padding.bottom + 80),
