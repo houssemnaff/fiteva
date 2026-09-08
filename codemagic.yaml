@@ -15,9 +15,13 @@ workflows:
           cd ios
           sed -i '' "1s/^/platform :ios, '16.0'\n/" Podfile 2>/dev/null || true
           pod install
-      - name: Set up code signing
-        script: xcode-project use-profiles
-      - name: Build IPA
-        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+      - name: Build iOS (no codesign)
+        script: flutter build ios --release --no-codesign
+      - name: Package IPA
+        script: |
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -r -y FitEva.ipa Payload
     artifacts:
-      - build/ios/ipa/*.ipa
+      - build/ios/iphoneos/FitEva.ipa
