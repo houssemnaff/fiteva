@@ -75,6 +75,7 @@ class PostsNotifier extends StateNotifier<List<PostModel>> {
   bool isLiked(String id) => _liked.contains(id);
 
   Future<void> toggleLike(String id) async {
+    final post = state.firstWhere((p) => p.id == id);
     final wasLiked = _liked.contains(id);
     // Mise à jour optimiste immédiate
     if (wasLiked) {
@@ -93,7 +94,12 @@ class PostsNotifier extends StateNotifier<List<PostModel>> {
     if (wasLiked) {
       await CommunityService.unlikePost(id);
     } else {
-      await CommunityService.likePost(id);
+      await CommunityService.likePost(
+        id,
+        postAuthorId: post.userId,
+        postTitle: post.title,
+        actorUsername: _ref.read(userProfileProvider).username,
+      );
     }
   }
 

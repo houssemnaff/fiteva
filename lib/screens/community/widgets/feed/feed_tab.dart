@@ -446,6 +446,8 @@ class _PostCardState extends ConsumerState<_PostCard>
       builder: (_) => CommentSheet(
         postId: widget.post.id,
         postAuthor: widget.post.username,
+        postAuthorId: widget.post.userId,
+        postTitle: widget.post.title,
       ),
     );
   }

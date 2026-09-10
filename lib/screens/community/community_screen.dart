@@ -14,8 +14,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/notifications_provider.dart';
 import '../../services/app_tour_service.dart';
 import '../../l10n/lang.dart';
+import '../home/notifications_sheet.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class CommunityScreen extends ConsumerStatefulWidget {
@@ -107,15 +109,35 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
       ),
       const SizedBox(width: 10),
       // Notification bell
-      Container(
+      GestureDetector(
         key: _keyBell,
-        width: 40, height: 40,
-        decoration: BoxDecoration(
-          color: cs.secondary.withValues(alpha: 0.08),
-          shape: BoxShape.circle,
+        onTap: () => showNotificationsSheet(context),
+        child: Container(
+          width: 40, height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: cs.secondary.withValues(alpha: 0.08),
+            shape: BoxShape.circle,
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(LucideIcons.bell, size: 17, color: cs.secondary),
+              if (ref.watch(notificationsUnreadCountProvider) > 0)
+                Positioned(
+                  top: -2, right: -2,
+                  child: Container(
+                    width: 8, height: 8,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: cs.surface, width: 1.5),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
-        child: Icon(LucideIcons.bell, size: 17,
-            color: cs.secondary),
       ),
       const SizedBox(width: 10),
     ];

@@ -33,6 +33,10 @@ IconData _iconFor(String type) {
       return LucideIcons.userPlus;
     case 'partner_request_accepted':
       return LucideIcons.checkCheck;
+    case 'post_liked':
+      return LucideIcons.heart;
+    case 'post_commented':
+      return LucideIcons.messageCircle;
     default:
       return LucideIcons.bell;
   }

@@ -15,7 +15,15 @@ import '../community_avatar.dart';
 class CommentSheet extends ConsumerStatefulWidget {
   final String postId;
   final String postAuthor;
-  const CommentSheet({super.key, required this.postId, required this.postAuthor});
+  final String postAuthorId;
+  final String postTitle;
+  const CommentSheet({
+    super.key,
+    required this.postId,
+    required this.postAuthor,
+    this.postAuthorId = '',
+    this.postTitle = '',
+  });
 
   @override
   ConsumerState<CommentSheet> createState() => _CommentSheetState();
@@ -67,7 +75,11 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
     if (text.isEmpty) return;
     HapticFeedback.lightImpact();
     setState(() => _sending = true);
-    final createdComment = await CommunityService.addComment(widget.postId, text);
+    final createdComment = await CommunityService.addComment(
+      widget.postId, text,
+      postAuthorId: widget.postAuthorId,
+      postTitle: widget.postTitle,
+    );
     await ref.read(postsNotifierProvider.notifier).incrementComments(widget.postId);
     _ctrl.clear();
     if (mounted) {

@@ -180,11 +180,27 @@ class CommunityService {
     }
   }
 
-  static Future<void> likePost(String postId) async {
+  static Future<void> likePost(
+    String postId, {
+    String? postAuthorId,
+    String? postTitle,
+    String? actorUsername,
+  }) async {
     if (_uid == null) return;
     try {
       await SupabaseConfig.table('post_likes')
           .insert({'user_id': _uid, 'post_id': postId});
+      if (postAuthorId != null && postAuthorId.isNotEmpty) {
+        final label = postTitle != null && postTitle.isNotEmpty ? ' « $postTitle »' : ' ton post';
+        await NotificationService.create(
+          userId: postAuthorId,
+          actorId: _uid!,
+          type: 'post_liked',
+          title: 'Nouveau like',
+          body: '${actorUsername ?? 'Quelqu\'un'} a aimé$label',
+          data: {'post_id': postId},
+        );
+      }
     } catch (_) {}
   }
 
@@ -251,7 +267,12 @@ class CommunityService {
     }
   }
 
-  static Future<CommunityComment?> addComment(String postId, String text) async {
+  static Future<CommunityComment?> addComment(
+    String postId,
+    String text, {
+    String? postAuthorId,
+    String? postTitle,
+  }) async {
     if (_uid == null) return null;
     try {
       final createdAt = DateTime.now();
@@ -263,6 +284,19 @@ class CommunityService {
       }).select('id, content, user_id, created_at').single();
 
       final profile = await _currentUserProfile();
+
+      if (postAuthorId != null && postAuthorId.isNotEmpty) {
+        final label = postTitle != null && postTitle.isNotEmpty ? ' « $postTitle »' : ' ton post';
+        await NotificationService.create(
+          userId: postAuthorId,
+          actorId: _uid!,
+          type: 'post_commented',
+          title: 'Nouveau commentaire',
+          body: '${profile.username} a commenté$label',
+          data: {'post_id': postId},
+        );
+      }
+
       return CommunityComment(
         id: row['id'] as String? ?? '',
         text: row['content'] as String? ?? text,
