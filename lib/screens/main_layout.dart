@@ -65,6 +65,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
 
   bool _plusOpen     = false;
   bool _showTour    = false;
+  bool _tourHighlightPlus = false;
   double _x = -1;
   double _y = -1;
 
@@ -120,7 +121,10 @@ class _MainLayoutState extends ConsumerState<MainLayout>
     if (!show || !mounted) return;
     await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) setState(() => _showTour = false);
-    if (mounted) setState(() => _showTour = true);
+    if (mounted) {
+      AppTourService.mainTourActive = true;
+      setState(() => _showTour = true);
+    }
   }
 
   @override
@@ -232,7 +236,10 @@ class _MainLayoutState extends ConsumerState<MainLayout>
           await AppTourService.resetAllSectionTours();
           _selectMain(0);
           await Future.delayed(const Duration(milliseconds: 300));
-          if (mounted) setState(() => _showTour = true);
+          if (mounted) {
+            AppTourService.mainTourActive = true;
+            setState(() => _showTour = true);
+          }
         },
         child: const Icon(Icons.help_outline, color: Colors.white, size: 20),
       ),
@@ -299,6 +306,13 @@ class _MainLayoutState extends ConsumerState<MainLayout>
                   color: Color(0xFF1B5E3B),
                 ),
                 GuidedTourStep(
+                  tabIndex: 1,
+                  title: 'Ton cycle',
+                  description: 'Suis ton cycle menstruel, tes phases et tes symptômes au jour le jour, adapté à ta situation.',
+                  icon: Icons.favorite_rounded,
+                  color: Color(0xFFE85D8A),
+                ),
+                GuidedTourStep(
                   tabIndex: 2,
                   title: 'Tes workouts',
                   description: 'Salle, maison, danse, récupération… explore les catégories et trouve le workout parfait pour toi.',
@@ -321,13 +335,18 @@ class _MainLayoutState extends ConsumerState<MainLayout>
                 ),
               ],
               onNavigateToTab: (tabIndex) {
+                setState(() => _tourHighlightPlus = tabIndex == -1);
                 if (tabIndex == -1) {
                   return;
                 }
                 _selectMain(tabIndex);
               },
               onFinish: () {
-                setState(() => _showTour = false);
+                AppTourService.mainTourActive = false;
+                setState(() {
+                  _showTour = false;
+                  _tourHighlightPlus = false;
+                });
                 _selectMain(0);
                 Future.delayed(const Duration(milliseconds: 400), () {
                   if (!mounted) return;
@@ -354,6 +373,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
         navItems: mainNavItems,
         onTap: _selectMain,
         plusOpen: _plusOpen,
+        forceHighlightPlus: _tourHighlightPlus,
         plusAnimation: _plusScale,
         onPlusTap: _togglePlus,
       ),
@@ -528,6 +548,7 @@ class _GlassNavBar extends StatelessWidget {
   final List<_NavItem> navItems;
   final ValueChanged<int> onTap;
   final bool plusOpen;
+  final bool forceHighlightPlus;
   final Animation<double> plusAnimation;
   final VoidCallback onPlusTap;
 
@@ -537,6 +558,7 @@ class _GlassNavBar extends StatelessWidget {
     required this.navItems,
     required this.onTap,
     required this.plusOpen,
+    this.forceHighlightPlus = false,
     required this.plusAnimation,
     required this.onPlusTap,
   });
@@ -590,7 +612,7 @@ class _GlassNavBar extends StatelessWidget {
               // Sliding indicator position (only for main tabs 0-3)
               // Tabs map: slot 0=tab0, slot 1=tab1, slot 2=plus, slot 3=tab2, slot 4=tab3
               double indicatorLeft;
-              if (isSecondary || currentIndex < 0) {
+              if (isSecondary || plusOpen || forceHighlightPlus || currentIndex < 0) {
                 indicatorLeft = -slotW; // off-screen
               } else {
                 final slotIdx = currentIndex < 2 ? currentIndex : currentIndex + 1;
@@ -605,7 +627,7 @@ class _GlassNavBar extends StatelessWidget {
                   left: indicatorLeft,
                   top: 8,
                   child: AnimatedOpacity(
-                    opacity: isSecondary ? 0.0 : 1.0,
+                    opacity: (isSecondary || plusOpen || forceHighlightPlus) ? 0.0 : 1.0,
                     duration: const Duration(milliseconds: 200),
                     child: Container(
                       width: 42,
@@ -627,7 +649,7 @@ class _GlassNavBar extends StatelessWidget {
                   // Center "+" button
                   SizedBox(
                     width: slotW,
-                    child: Center(child: _buildPlusButton(accent)),
+                    child: Center(child: _buildPlusButton(accent, active: plusOpen || isSecondary || forceHighlightPlus)),
                   ),
 
                   // Last 2 tabs
@@ -643,7 +665,7 @@ class _GlassNavBar extends StatelessWidget {
   }
 
   Widget _buildTab(int index, _NavItem item, Color unselected, double width, {required Color accent}) {
-    final isSelected = !isSecondary && index == currentIndex;
+    final isSelected = !isSecondary && !plusOpen && !forceHighlightPlus && index == currentIndex;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
@@ -691,24 +713,28 @@ class _GlassNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildPlusButton(Color accent) {
+  Widget _buildPlusButton(Color accent, {required bool active}) {
     return GestureDetector(
       onTap: onPlusTap,
       child: AnimatedBuilder(
         animation: plusAnimation,
         builder: (_, __) => Transform.scale(
           scale: 1.0 + plusAnimation.value * 0.06,
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
             width: 48, height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: plusOpen
+                colors: active
                     ? [Color.lerp(accent, Colors.black, 0.3)!, Color.lerp(accent, Colors.black, 0.5)!]
                     : [accent, Color.lerp(accent, Colors.black, 0.15)!],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
+              border: active
+                  ? Border.all(color: Colors.white.withOpacity(0.5), width: 1.5)
+                  : null,
               boxShadow: [
                 BoxShadow(
                   color: accent.withOpacity(0.45),

@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,6 +31,13 @@ class GuidedTourStep {
 
 class AppTourService {
   static const _key = 'guided_tour_completed';
+
+  /// Vrai pendant que le tour principal (GuidedTourOverlay) est affiché.
+  /// Les tutoriels de section attendent qu'il se termine avant de se
+  /// declencher, pour eviter qu'un onglet pre-charge par le PageView
+  /// (ex. Cycle, adjacent a Home) affiche son propre guide par-dessus
+  /// l'ecran actuellement visible.
+  static bool mainTourActive = false;
 
   static Future<bool> shouldShowTour() async {
     final prefs = await SharedPreferences.getInstance();
@@ -76,9 +84,46 @@ class AppTourService {
     required List<SpotlightStep> steps,
   }) async {
     if (!await shouldShowSectionTour(section)) return;
+    if (!context.mounted || steps.isEmpty) return;
+
+    _waitThenShow(context, section: section, steps: steps, attemptsLeft: 30);
+  }
+
+  /// Attend que le premier element cible soit reellement visible a l'ecran
+  /// (et que le tour principal ne soit pas en cours) avant de lancer la
+  /// sequence. Sans ce garde-fou, un ecran d'onglet monte a l'avance par le
+  /// PageView (celui juste a cote de l'onglet actif) declenche son tutoriel
+  /// alors qu'il n'est pas visible, ce qui melange le guide d'un onglet
+  /// avec l'ecran reellement affiche.
+  static void _waitThenShow(BuildContext context, {
+    required String section,
+    required List<SpotlightStep> steps,
+    required int attemptsLeft,
+  }) {
     if (!context.mounted) return;
 
-    _showStepSequence(context, section: section, steps: steps, index: 0);
+    if (!mainTourActive && _isKeyVisible(steps.first.key)) {
+      _showStepSequence(context, section: section, steps: steps, index: 0);
+      return;
+    }
+
+    if (attemptsLeft <= 0) return;
+
+    Future.delayed(const Duration(milliseconds: 400), () {
+      _waitThenShow(context, section: section, steps: steps,
+        attemptsLeft: attemptsLeft - 1);
+    });
+  }
+
+  static bool _isKeyVisible(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx == null) return false;
+    final box = ctx.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return false;
+    if (box.size.width <= 0 || box.size.height <= 0) return false;
+    final screenSize = MediaQuery.of(ctx).size;
+    final rect = box.localToGlobal(Offset.zero) & box.size;
+    return rect.overlaps(Offset.zero & screenSize);
   }
 
   static void _showStepSequence(BuildContext context, {

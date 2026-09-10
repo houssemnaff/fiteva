@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/lang.dart';
+import '../../../services/app_tour_service.dart';
 import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 import 'favorites_screen.dart';
@@ -117,11 +119,77 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
   Timer? _heroTimer;
   int    _heroCount = 0;
 
+  final _keyDiamonds   = GlobalKey();
+  final _keyWishlist   = GlobalKey();
+  final _keyHero       = GlobalKey();
+  final _keyCategories = GlobalKey();
+  final _keySort       = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     _scrollCtrl.addListener(_onScroll);
     Future.microtask(() => ref.invalidate(shopItemsProvider));
+    _showTutorial();
+  }
+
+  void _showTutorial() {
+    final isFr = Lang.code == 'fr';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        AppTourService.showSectionTutorial(context,
+          section: 'boutique',
+          steps: [
+            SpotlightStep(
+              key: _keyDiamonds,
+              icon: LucideIcons.gem,
+              color: const Color(0xFF4A90D9),
+              title: isFr ? 'Tes Diamants' : 'Your Diamonds',
+              description: isFr
+                  ? 'Gagne des diamants en restant active dans l\'app, puis echange-les contre des recompenses ici.'
+                  : 'Earn diamonds by staying active in the app, then redeem them for rewards here.',
+            ),
+            SpotlightStep(
+              key: _keyWishlist,
+              icon: LucideIcons.heart,
+              color: const Color(0xFFC24A4A),
+              title: isFr ? 'Liste de Souhaits' : 'Wishlist',
+              description: isFr
+                  ? 'Appuie sur le coeur d\'un article pour le sauvegarder ici et le retrouver facilement.'
+                  : 'Tap the heart on an item to save it here and find it easily later.',
+            ),
+            SpotlightStep(
+              key: _keyHero,
+              icon: LucideIcons.sparkles,
+              color: const Color(0xFFB8892F),
+              title: isFr ? 'Offres du Moment' : 'Featured Offers',
+              description: isFr
+                  ? 'Les meilleures offres partenaires defilent ici. Appuie pour voir les details.'
+                  : 'The best partner offers rotate here. Tap to see the details.',
+            ),
+            SpotlightStep(
+              key: _keyCategories,
+              icon: Icons.apps_rounded,
+              color: const Color(0xFF2E9E6B),
+              title: isFr ? 'Categories' : 'Categories',
+              description: isFr
+                  ? 'Filtre les produits par categorie : mamans, baby, sport, vitamines et plus.'
+                  : 'Filter products by category: moms, baby, sport, vitamins and more.',
+            ),
+            SpotlightStep(
+              key: _keySort,
+              icon: CupertinoIcons.arrow_up_arrow_down,
+              color: const Color(0xFF7C4DFF),
+              title: isFr ? 'Trier & Filtrer' : 'Sort & Filter',
+              description: isFr
+                  ? 'Trie les articles par meilleures offres, popularite ou pourcentage de reduction.'
+                  : 'Sort items by best deals, popularity or discount percentage.',
+            ),
+          ],
+        );
+      });
+    });
   }
 
   void _onScroll() {
@@ -257,13 +325,19 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
             accentColor: c.accent,
             bgColor:     c.bg,
             actions: [
-              _DiamondsPill(c: c, diamonds: userPoints),
+              KeyedSubtree(
+                key: _keyDiamonds,
+                child: _DiamondsPill(c: c, diamonds: userPoints),
+              ),
               const SizedBox(width: 8),
-              _CircleIconButton(
-                c: c,
-                icon: LucideIcons.heart,
-                count: wishlist.length,
-                onTap: _openFavorites,
+              KeyedSubtree(
+                key: _keyWishlist,
+                child: _CircleIconButton(
+                  c: c,
+                  icon: LucideIcons.heart,
+                  count: wishlist.length,
+                  onTap: _openFavorites,
+                ),
               ),
               const SizedBox(width: 8),
               _CircleIconButton(
@@ -280,6 +354,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
               child: Builder(builder: (_) {
                 WidgetsBinding.instance.addPostFrameCallback((_) => _startHeroAutoSlide(hero.length));
                 return Padding(
+                  key: _keyHero,
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
                   child: _HeroBanner(
                     c: c,
@@ -305,6 +380,7 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
           const SliverToBoxAdapter(child: SizedBox(height: 18)),
 
           SliverPersistentHeader(
+            key: _keyCategories,
             pinned: true,
             delegate: _ControlBarDelegate(
               cats: _kCats,
@@ -327,7 +403,10 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
                         Text('${filtered.length} ${l10n.boutiquePartenaires.toLowerCase()}',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.inkMuted)),
                         const SizedBox(width: 12),
-                        _SortLink(c: c, l10n: l10n, active: _sort != _Sort.none, onTap: _showSortSheet),
+                        KeyedSubtree(
+                          key: _keySort,
+                          child: _SortLink(c: c, l10n: l10n, active: _sort != _Sort.none, onTap: _showSortSheet),
+                        ),
                         const Spacer(),
                         GestureDetector(
                           onTap: () => Navigator.push(context,

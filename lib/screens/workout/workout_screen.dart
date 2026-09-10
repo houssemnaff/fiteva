@@ -115,49 +115,22 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
           section: 'workout',
           steps: [
             SpotlightStep(
-              key: _keySalle,
+              key: _keyCategoryChips,
               icon: LucideIcons.dumbbell,
               color: const Color(0xFFE85D3A),
-              title: isFr ? 'Seances en Salle' : 'Gym Workouts',
+              title: isFr ? 'Tes categories' : 'Your categories',
               description: isFr
-                  ? 'Tes programmes en salle sont ici. Appuie sur une seance pour voir les exercices guides par video.'
-                  : 'Your gym programs are here. Tap a session to see video-guided exercises.',
+                  ? 'Salle, Maison, Danse, Recuperation, Grossesse : filtre la liste des programmes par categorie en appuyant ici.'
+                  : 'Gym, Home, Dance, Recovery, Pregnancy: filter the program list by category by tapping here.',
             ),
             SpotlightStep(
-              key: _keyMaison,
-              icon: LucideIcons.house,
+              key: _keyProgramCard,
+              icon: LucideIcons.play,
               color: const Color(0xFF2E9E6B),
-              title: isFr ? 'Seances Maison' : 'Home Workouts',
+              title: isFr ? 'Une carte de programme' : 'A program card',
               description: isFr
-                  ? 'Pas besoin de materiel ! Appuie ici pour des seances efficaces a faire chez toi.'
-                  : 'No equipment needed! Tap here for effective sessions you can do at home.',
-            ),
-            SpotlightStep(
-              key: _keyDance,
-              icon: LucideIcons.music,
-              color: const Color(0xFF7C4DFF),
-              title: isFr ? 'Danse & Cardio' : 'Dance & Cardio',
-              description: isFr
-                  ? 'Des seances fun de danse pour bruler des calories en s\'amusant.'
-                  : 'Fun dance sessions to burn calories while having fun.',
-            ),
-            SpotlightStep(
-              key: _keyRecup,
-              icon: LucideIcons.wind,
-              color: const Color(0xFF1E88E5),
-              title: isFr ? 'Recuperation' : 'Recovery',
-              description: isFr
-                  ? 'Yoga, stretching et recuperation. Essentiels apres tes seances intensives.'
-                  : 'Yoga, stretching and recovery. Essential after intense sessions.',
-            ),
-            SpotlightStep(
-              key: _keyGrossesse,
-              icon: LucideIcons.heart,
-              color: const Color(0xFFE91E63),
-              title: isFr ? 'Special Grossesse' : 'Pregnancy Safe',
-              description: isFr
-                  ? 'Des exercices securises et adaptes pour chaque trimestre de grossesse.'
-                  : 'Safe exercises adapted for each trimester of pregnancy.',
+                  ? 'Appuie sur une carte pour voir les exercices guides par video, sur le coeur pour la mettre en favori, et sur le bouton pour demarrer ou reprendre ta progression.'
+                  : 'Tap a card to see the video-guided exercises, tap the heart to favorite it, and tap the button to start or resume your progress.',
             ),
           ],
         );
@@ -171,6 +144,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
   final _keyRecup     = GlobalKey();
   final _keyZones     = GlobalKey();
   final _keyGrossesse = GlobalKey();
+  final _keyCategoryChips = GlobalKey();
+  final _keyProgramCard = GlobalKey();
 
   static const _chipIcons = [
     LucideIcons.layoutGrid,
@@ -483,12 +458,15 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             const SizedBox(height: 22),
 
             // ── Category chips ────────────────────────────────────────────
-            _CategoryChips(
-              chips: chips,
-              icons: _chipIcons,
-              colors: chipColors,
-              selected: _selectedChip,
-              onTap: _onChipTap,
+            KeyedSubtree(
+              key: _keyCategoryChips,
+              child: _CategoryChips(
+                chips: chips,
+                icons: _chipIcons,
+                colors: chipColors,
+                selected: _selectedChip,
+                onTap: _onChipTap,
+              ),
             ),
 
             const SizedBox(height: 18),
@@ -521,6 +499,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
                 child: SalleSection(
                   sallePrograms: filteredSalle,
                   favorites: favorites,
+                  firstCardKey: _keyProgramCard,
                   onToggleFav: (id) => ref.read(favoritesProvider.notifier).toggleFavorite(id),
                   onSeeAll: () => _showProgramsSheet(
                     title: l10n.workoutSalleTitle,

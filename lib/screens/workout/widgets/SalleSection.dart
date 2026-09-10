@@ -18,6 +18,7 @@ class SalleSection extends StatelessWidget {
   final Set<String> favorites;
   final void Function(String) onToggleFav;
   final VoidCallback? onSeeAll;
+  final Key? firstCardKey;
 
   const SalleSection({
     super.key,
@@ -25,6 +26,7 @@ class SalleSection extends StatelessWidget {
     required this.favorites,
     required this.onToggleFav,
     this.onSeeAll,
+    this.firstCardKey,
   });
 
   @override
@@ -52,15 +54,18 @@ class SalleSection extends StatelessWidget {
                   separatorBuilder: (_, __) => const SizedBox(width: 14),
                   itemBuilder: (context, i) {
                     final program = sallePrograms[i];
-                    return _SalleProgramCard(
-                      program: program,
-                      isFav: favorites.contains('prog:${program.id}'),
-                      onToggleFav: () => onToggleFav('prog:${program.id}'),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => WorkoutDetailScreen(
-                            program: program,
+                    return KeyedSubtree(
+                      key: i == 0 ? firstCardKey : null,
+                      child: _SalleProgramCard(
+                        program: program,
+                        isFav: favorites.contains('prog:${program.id}'),
+                        onToggleFav: () => onToggleFav('prog:${program.id}'),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => WorkoutDetailScreen(
+                              program: program,
+                            ),
                           ),
                         ),
                       ),

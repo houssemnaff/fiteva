@@ -11,10 +11,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:video_player/video_player.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/lang.dart';
+import '../../services/app_tour_service.dart';
 import '../../services/sante_service.dart';
 import '../../providers/points_provider.dart';
 import '../../widgets/points_toast.dart';
 import 'qr_screen.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 
@@ -437,10 +440,60 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
   final _bCtrl = TextEditingController();
   final List<Map<String, String>> _history = [];
 
+  final _keyTabBar    = GlobalKey();
+  final _keyFilters   = GlobalKey();
+  final _keyDoctorRow = GlobalKey();
+
   @override
-  void initState() { super.initState(); _tab = TabController(length: 4, vsync: this); }
+  void initState() {
+    super.initState();
+    _tab = TabController(length: 4, vsync: this);
+    _showTutorial();
+  }
   @override
   void dispose() { _tab.dispose(); _wCtrl.dispose(); _bCtrl.dispose(); super.dispose(); }
+
+  void _showTutorial() {
+    final isFr = Lang.code == 'fr';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        AppTourService.showSectionTutorial(context,
+          section: 'sante',
+          steps: [
+            SpotlightStep(
+              key: _keyTabBar,
+              icon: LucideIcons.layoutGrid,
+              color: const Color(0xFF1C4D30),
+              title: isFr ? 'Les 4 espaces sante' : 'The 4 health spaces',
+              description: isFr
+                  ? 'Conseils d\'experts, Ressources (videos, articles), Q & R et Medecins : tout ton suivi sante ici.'
+                  : 'Expert tips, Resources (videos, articles), Q&A and Doctors: all your health tracking here.',
+              contentAlign: ContentAlign.bottom,
+            ),
+            SpotlightStep(
+              key: _keyFilters,
+              icon: LucideIcons.filter,
+              color: const Color(0xFFB8860B),
+              title: isFr ? 'Filtre par theme' : 'Filter by topic',
+              description: isFr
+                  ? 'Affiche uniquement les conseils qui t\'interessent : nutrition, sport, sommeil, mental...'
+                  : 'Show only the tips you care about: nutrition, sport, sleep, mental health...',
+            ),
+            SpotlightStep(
+              key: _keyDoctorRow,
+              icon: LucideIcons.stethoscope,
+              color: const Color(0xFF2563EB),
+              title: isFr ? 'Des vrais medecins' : 'Real doctors',
+              description: isFr
+                  ? 'Chaque conseil vient d\'un medecin verifie. Appuie sur son nom pour voir son profil complet.'
+                  : 'Every tip comes from a verified doctor. Tap their name to see their full profile.',
+            ),
+          ],
+        );
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -470,6 +523,7 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
               color: _T.bg(context),
               padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
               child: TabBar(
+                key: _keyTabBar,
                 controller: _tab,
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
@@ -500,6 +554,8 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
           controller: _tab,
           children: [
             _ConseisTab(dark: dark, cat: _cat, liked: _liked,
+              filtersKey: _keyFilters,
+              doctorRowKey: _keyDoctorRow,
               onCat: (c) => setState(() => _cat = c),
               onLike: (i) => setState(() { if (_liked.contains(i)) _liked.remove(i); else _liked.add(i); }),
               onDoctor: (d) => _sheet(context, _DoctorSheet(doctor: d, dark: dark, l10n: l10n))),
@@ -593,8 +649,11 @@ class _ConseisTab extends StatelessWidget {
   final ValueChanged<String> onCat;
   final ValueChanged<int> onLike;
   final ValueChanged<_Doctor> onDoctor;
+  final Key? filtersKey;
+  final Key? doctorRowKey;
   const _ConseisTab({required this.dark, required this.cat, required this.liked,
-    required this.onCat, required this.onLike, required this.onDoctor});
+    required this.onCat, required this.onLike, required this.onDoctor,
+    this.filtersKey, this.doctorRowKey});
 
   List<_Conseil> get _list => cat == 'Tout'
       ? _conseils : _conseils.where((c) => c.category == cat).toList();
@@ -625,6 +684,7 @@ class _ConseisTab extends StatelessWidget {
         // ── Horizontal pill filter bar ──
         SliverToBoxAdapter(
           child: SizedBox(
+            key: filtersKey,
             height: 48,
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
@@ -665,6 +725,7 @@ class _ConseisTab extends StatelessWidget {
               final c = _list[i]; final idx = _conseils.indexOf(c);
               final isLiked = liked.contains(idx);
               return _ConseilTile(conseil: c, dark: dark, isLiked: isLiked,
+                doctorRowKey: i == 0 ? doctorRowKey : null,
                 onLike: () => onLike(idx), onDoctor: () => onDoctor(c.doctor));
             },
           ),
@@ -678,8 +739,9 @@ class _ConseilTile extends StatelessWidget {
   final _Conseil conseil;
   final bool dark, isLiked;
   final VoidCallback onLike, onDoctor;
+  final Key? doctorRowKey;
   const _ConseilTile({required this.conseil, required this.dark, required this.isLiked,
-    required this.onLike, required this.onDoctor});
+    required this.onLike, required this.onDoctor, this.doctorRowKey});
 
   static Color _catColor(String c) => switch (c) {
     'Sport'    => const Color(0xFF4A6FA5),
@@ -775,6 +837,7 @@ class _ConseilTile extends StatelessWidget {
           const SizedBox(height: 12),
 
           GestureDetector(
+            key: doctorRowKey,
             onTap: onDoctor,
             child: Row(children: [
               _Ava(initials: doc.initials, color: doc.color, size: 30, photoAsset: doc.photoAsset),
