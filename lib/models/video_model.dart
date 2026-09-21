@@ -1,3 +1,5 @@
+import 'package:fiteva/models/coach_model.dart';
+
 class VideoModel {
   final String id;
   final String title;
@@ -7,6 +9,8 @@ class VideoModel {
   final String url; // asset path or network URL — empty = use default cycling
   final String category; // 'dance' | 'cardio' | 'recuperation' — only set for standalone videos
   final String phases; // phases du cycle compatibles — même format que HomeProgramModel.phases
+  final String? coachId;
+  final CoachModel? coach;
 
   // ── Contenu pédagogique de l'écran ExercisePlayerScreen ─────────────────
   // Vide/valeurs par défaut = l'écran retombe sur son contenu générique
@@ -30,6 +34,8 @@ class VideoModel {
     this.url = '',
     this.category = '',
     this.phases = '',
+    this.coachId,
+    this.coach,
     this.techniqueDescription = '',
     this.techniqueSteps = const [],
     this.musclesPrimary = const [],

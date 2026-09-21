@@ -312,7 +312,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     List<HomeProgramModel> fp(List<HomeProgramModel> list) =>
         list.where((p) => matchesPhase(p.phases) && matchesCoach(p)).toList();
     List<VideoModel> fpv(List<VideoModel> list) =>
-        list.where((v) => matchesPhase(v.phases)).toList();
+        list.where((v) => matchesPhase(v.phases) &&
+            (_selectedCoachId == null || v.coach?.id == _selectedCoachId)).toList();
 
     final filteredSalle       = fp(sallePrograms);
     final filteredMaison      = fp(homePrograms);
@@ -493,7 +494,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
             const SizedBox(height: 8),
 
             // ── Sections ──────────────────────────────────────────────────
-            if (showCycleSections) ...[
+            if (showCycleSections && (_selectedCoachId == null || filteredSalle.isNotEmpty)) ...[
               KeyedSubtree(
                 key: _keySalle,
                 child: SalleSection(
@@ -513,7 +514,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (showCycleSections) ...[
+            if (showCycleSections && (_selectedCoachId == null || filteredMaison.isNotEmpty)) ...[
               KeyedSubtree(
                 key: _keyMaison,
                 child: MaisonSection(
@@ -532,7 +533,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (showCycleSections) ...[
+            if (showCycleSections && (_selectedCoachId == null || filteredDanceVideos.isNotEmpty)) ...[
               KeyedSubtree(
                 key: _keyDance,
                 child: DanceSection(
@@ -550,7 +551,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (showRecuperationSection) ...[
+            if (showRecuperationSection && (_selectedCoachId == null || filteredRecuperationVideos.isNotEmpty)) ...[
               KeyedSubtree(
                 key: _keyRecup,
                 child: RecuperationSection(
@@ -568,7 +569,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (showGrossesse) ...[
+            if (showGrossesse && (_selectedCoachId == null || filteredGrossesse.isNotEmpty)) ...[
               KeyedSubtree(
                 key: _keyGrossesse,
                 child: GrossesseSection(
@@ -587,10 +588,11 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            KeyedSubtree(
-              key: _keyZones,
-              child: ZonesSection(bodyZones: bodyZones),
-            ),
+            if (_selectedCoachId == null)
+              KeyedSubtree(
+                key: _keyZones,
+                child: ZonesSection(bodyZones: bodyZones),
+              ),
 
             SizedBox(height: bottomGap),
           ],
@@ -1613,14 +1615,23 @@ class _ProgramTile extends StatelessWidget {
           ClipRRect(
             borderRadius:
                 const BorderRadius.horizontal(left: Radius.circular(18)),
-            child: Image.asset(imageUrl,
-                width: 82,
-                height: 82,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+            child: imageUrl.startsWith('http')
+                ? Image.network(imageUrl,
                     width: 82,
                     height: 82,
-                    color: color.withValues(alpha: 0.12))),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                        width: 82,
+                        height: 82,
+                        color: color.withValues(alpha: 0.12)))
+                : Image.asset(imageUrl,
+                    width: 82,
+                    height: 82,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                        width: 82,
+                        height: 82,
+                        color: color.withValues(alpha: 0.12))),
           ),
           const SizedBox(width: 12),
           Expanded(

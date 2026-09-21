@@ -330,6 +330,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     final t2 = dark ? Colors.white.withValues(alpha: 0.45) : const Color(0xFF8E8E93);
 
     final video = widget.video;
+    final isStandalone = widget.workoutId == null && widget.totalExercises == 1;
     final steps = video?.techniqueSteps ?? const <String>[];
     final description = video?.techniqueDescription ?? '';
     final dbPrimary = video?.musclesPrimary ?? const [];
@@ -337,6 +338,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
     final secondary = video?.musclesSecondary ?? const [];
     final dbTips = video?.tips ?? const [];
     final tips = [for (final t in dbTips) (icon: _tipIcon(t.title), title: t.title, tip: t.tip)];
+    final hasDetailContent = description.isNotEmpty || steps.isNotEmpty || muscles.isNotEmpty || secondary.isNotEmpty || tips.isNotEmpty;
 
     return Scaffold(
       backgroundColor: bg,
@@ -401,6 +403,119 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                         color: t1, height: 1.05, letterSpacing: -0.8)),
                 const SizedBox(height: 20),
 
+                if (isStandalone && !hasDetailContent) ...[
+                  // ── Standalone video — clean layout ──
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          accent.withValues(alpha: dark ? 0.12 : 0.08),
+                          accent.withValues(alpha: dark ? 0.04 : 0.02),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: accent.withValues(alpha: 0.10)),
+                    ),
+                    child: Column(children: [
+                      // Stats row
+                      Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                        _StandaloneStatItem(icon: LucideIcons.clock, value: video?.duration ?? '', label: 'Durée', accent: accent, t1: t1, t2: t2),
+                        Container(width: 1, height: 36, color: accent.withValues(alpha: 0.15)),
+                        _StandaloneStatItem(icon: LucideIcons.zap, value: '$pts', label: 'Points', accent: accent, t1: t1, t2: t2),
+                        Container(width: 1, height: 36, color: accent.withValues(alpha: 0.15)),
+                        _StandaloneStatItem(icon: LucideIcons.flame, value: video?.category ?? '', label: 'Type', accent: accent, t1: t1, t2: t2),
+                      ]),
+                    ]),
+                  ),
+
+                  if (video?.coach != null) ...[
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: () {},
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: dark ? const Color(0xFF141414) : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [BoxShadow(
+                            color: Colors.black.withValues(alpha: dark ? 0.25 : 0.06),
+                            blurRadius: 16, offset: const Offset(0, 4))],
+                        ),
+                        child: Row(children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: accent.withValues(alpha: 0.3), width: 2),
+                            ),
+                            child: CircleAvatar(
+                              radius: 24,
+                              backgroundImage: video!.coach!.avatarUrl.isNotEmpty
+                                  ? NetworkImage(video.coach!.avatarUrl)
+                                  : null,
+                              backgroundColor: accent.withValues(alpha: 0.10),
+                              child: video.coach!.avatarUrl.isEmpty
+                                  ? Icon(LucideIcons.user, size: 20, color: accent)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Avec', style: GoogleFonts.inter(fontSize: 11, color: t2, fontWeight: FontWeight.w500, letterSpacing: 0.5)),
+                              const SizedBox(height: 3),
+                              Text(video.coach!.name, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: t1, letterSpacing: -0.3)),
+                            ],
+                          )),
+                          Container(
+                            width: 36, height: 36,
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(LucideIcons.atSign, size: 18, color: accent),
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  // ── CTA card ──
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+                    decoration: BoxDecoration(
+                      color: accent,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(
+                        color: accent.withValues(alpha: 0.35),
+                        blurRadius: 20, offset: const Offset(0, 8))],
+                    ),
+                    child: Column(children: [
+                      Container(
+                        width: 50, height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.20),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(LucideIcons.play, size: 24, color: Colors.white),
+                      ),
+                      const SizedBox(height: 14),
+                      Text('Lancez la vidéo\net suivez le rythme !',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.outfit(fontSize: 17, color: Colors.white, fontWeight: FontWeight.w700, height: 1.4)),
+                      const SizedBox(height: 6),
+                      Text('Appuyez sur play pour commencer',
+                          style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withValues(alpha: 0.7), fontWeight: FontWeight.w500)),
+                    ]),
+                  ),
+                ] else ...[
                 // ── Stat pills row ──
                 Row(children: [
                   Expanded(child: _StatPill(value: '${video?.sets ?? 3}', label: 'Sets', icon: LucideIcons.repeat, accent: accent)),
@@ -590,6 +705,7 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                     ),
                   ]),
                 )),
+                ], // end of else (program detail sections)
               ]),
             ),
           ),
@@ -652,6 +768,30 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
 // ══════════════════════════════════════════════════════════════════════════════
 // MINIMAL WIDGETS
 // ══════════════════════════════════════════════════════════════════════════════
+
+class _StandaloneStatItem extends StatelessWidget {
+  final IconData icon;
+  final String value, label;
+  final Color accent, t1, t2;
+  const _StandaloneStatItem({required this.icon, required this.value, required this.label, required this.accent, required this.t1, required this.t2});
+  @override
+  Widget build(BuildContext context) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, size: 17, color: accent),
+      ),
+      const SizedBox(height: 8),
+      Text(value, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: t1)),
+      const SizedBox(height: 2),
+      Text(label, style: GoogleFonts.inter(fontSize: 11, color: t2, fontWeight: FontWeight.w500)),
+    ]);
+  }
+}
 
 class _StatPill extends StatelessWidget {
   final String value, label;

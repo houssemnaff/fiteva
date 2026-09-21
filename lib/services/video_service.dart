@@ -1,3 +1,4 @@
+import '../models/coach_model.dart';
 import '../models/video_model.dart';
 import 'supabase_config.dart';
 
@@ -6,13 +7,16 @@ import 'supabase_config.dart';
 class VideoService {
   static Future<List<VideoModel>> fetchStandalone() async {
     final rows = await SupabaseConfig.table('videos')
-        .select()
+        .select('*, coaches!coach_id(*)')
         .isFilter('workout_id', null)
         .order('sort_order', ascending: true);
 
-    return (rows as List)
-        .map((r) => _fromRow(r as Map<String, dynamic>))
-        .toList();
+    final list = rows as List;
+    for (final r in list) {
+      final m = r as Map<String, dynamic>;
+      print('[VideoService] ${m['id']} coach_id=${m['coach_id']} coaches=${m['coaches']}');
+    }
+    return list.map((r) => _fromRow(r as Map<String, dynamic>)).toList();
   }
 
   static VideoModel _fromRow(Map<String, dynamic> r) => VideoModel(
@@ -24,6 +28,10 @@ class VideoService {
         url: r['url'] as String? ?? '',
         category: r['category'] as String? ?? 'dance',
         phases: r['phases'] as String? ?? '',
+        coachId: r['coach_id'] as String?,
+        coach: r['coaches'] == null
+            ? null
+            : CoachModel.fromRow(r['coaches'] as Map<String, dynamic>),
         techniqueDescription: r['technique_description'] as String? ?? '',
         techniqueSteps: List<String>.from(r['technique_steps'] as List? ?? []),
         musclesPrimary: (r['muscles_primary'] as List? ?? [])

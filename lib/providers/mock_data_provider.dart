@@ -111,6 +111,12 @@ final coachesProvider = Provider.autoDispose<List<CoachModel>>((ref) {
       coaches.add(p.coach!);
     }
   }
+  final standaloneVideos = ref.watch(_allStandaloneVideosProvider).asData?.value ?? [];
+  for (final v in standaloneVideos) {
+    if (v.coach != null && v.coach!.name.isNotEmpty && seen.add(v.coach!.id)) {
+      coaches.add(v.coach!);
+    }
+  }
   return coaches;
 });
 

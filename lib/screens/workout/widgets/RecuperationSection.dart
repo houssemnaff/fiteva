@@ -219,12 +219,19 @@ class _RecuperationVideoCard extends ConsumerWidget {
             fit: StackFit.expand,
             children: [
               video.thumbnailUrl.isNotEmpty
-                  ? Image.asset(
-                      video.thumbnailUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          Container(color: color.withValues(alpha: 0.15)),
-                    )
+                  ? (video.thumbnailUrl.startsWith('http')
+                      ? Image.network(
+                          video.thumbnailUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              Container(color: color.withValues(alpha: 0.15)),
+                        )
+                      : Image.asset(
+                          video.thumbnailUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              Container(color: color.withValues(alpha: 0.15)),
+                        ))
                   : Container(
                       color: color.withValues(alpha: 0.15),
                       child: Icon(LucideIcons.wind,
