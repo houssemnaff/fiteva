@@ -19,33 +19,6 @@ int _pointsForExercise(int total, int count, int idx) {
   return idx < total % count ? base + 1 : base;
 }
 
-IconData _muscleIcon(String name) {
-  switch (name) {
-    case 'Quadriceps':
-    case 'Ischio-jambiers':
-    case 'Épaules':      return LucideIcons.zap;
-    case 'Fessiers':
-    case 'Dos':
-    case 'Lombaires':    return LucideIcons.activity;
-    case 'Abdominaux':   return LucideIcons.target;
-    case 'Pectoraux':    return LucideIcons.heart;
-    case 'Biceps':
-    case 'Triceps':      return LucideIcons.dumbbell;
-    default:             return LucideIcons.activity;
-  }
-}
-
-IconData _tipIcon(String title) {
-  switch (title) {
-    case 'Regard':       return LucideIcons.eye;
-    case 'Respiration':  return LucideIcons.wind;
-    case 'Amplitude':    return LucideIcons.moveVertical;
-    case 'Posture':      return LucideIcons.activity;
-    case 'Rythme':       return LucideIcons.timer;
-    default:             return LucideIcons.info;
-  }
-}
-
 // ══════════════════════════════════════════════════════════════════════════════
 class ExercisePlayerScreen extends StatefulWidget {
   final WidgetRef ref;
@@ -331,14 +304,8 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
 
     final video = widget.video;
     final isStandalone = widget.workoutId == null && widget.totalExercises == 1;
-    final steps = video?.techniqueSteps ?? const <String>[];
     final description = video?.techniqueDescription ?? '';
-    final dbPrimary = video?.musclesPrimary ?? const [];
-    final muscles = [for (final m in dbPrimary) (icon: _muscleIcon(m.name), name: m.name, level: m.level)];
-    final secondary = video?.musclesSecondary ?? const [];
-    final dbTips = video?.tips ?? const [];
-    final tips = [for (final t in dbTips) (icon: _tipIcon(t.title), title: t.title, tip: t.tip)];
-    final hasDetailContent = description.isNotEmpty || steps.isNotEmpty || muscles.isNotEmpty || secondary.isNotEmpty || tips.isNotEmpty;
+    final hasDetailContent = description.isNotEmpty;
 
     return Scaffold(
       backgroundColor: bg,
@@ -553,158 +520,6 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                   ]),
                 ),
 
-                const SizedBox(height: 28),
-
-                // ── Key steps — connected timeline ──
-                _SectionLabel(label: 'Étapes clés', t1: t1, accent: accent),
-                const SizedBox(height: 16),
-                if (steps.isEmpty)
-                  _NoDataCard(dark: dark, t2: t2)
-                else
-                  ...List.generate(steps.length, (i) {
-                  final isLast = i == steps.length - 1;
-                  return IntrinsicHeight(
-                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      // Timeline rail
-                      SizedBox(
-                        width: 28,
-                        child: Column(children: [
-                          Container(
-                            width: 28, height: 28,
-                            decoration: BoxDecoration(
-                              color: accent,
-                              borderRadius: BorderRadius.circular(9),
-                            ),
-                            child: Center(child: Text('${i + 1}',
-                                style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w800,
-                                    color: Colors.white))),
-                          ),
-                          if (!isLast)
-                            Expanded(
-                              child: Container(
-                                width: 2,
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                color: accent.withValues(alpha: 0.2),
-                              ),
-                            ),
-                        ]),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.only(bottom: isLast ? 0 : 20, top: 4),
-                          child: Text(steps[i],
-                              style: GoogleFonts.inter(fontSize: 14, color: t1, height: 1.55)),
-                        ),
-                      ),
-                    ]),
-                  );
-                }),
-
-                const SizedBox(height: 32),
-
-                // ── Muscles ──
-                _SectionLabel(label: 'Muscles ciblés', t1: t1, accent: accent),
-                const SizedBox(height: 16),
-                (muscles.isEmpty && secondary.isEmpty)
-                    ? _NoDataCard(dark: dark, t2: t2)
-                    : Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: dark ? const Color(0xFF141414) : Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [BoxShadow(
-                      color: Colors.black.withValues(alpha: dark ? 0.20 : 0.04),
-                      blurRadius: 12, offset: const Offset(0, 4))],
-                  ),
-                  child: Column(children: [
-                    ...muscles.map((m) => Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: Row(children: [
-                        Container(
-                          width: 30, height: 30,
-                          decoration: BoxDecoration(
-                            color: accent.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(9),
-                          ),
-                          child: Icon(m.icon, size: 13, color: accent),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              Text(m.name, style: GoogleFonts.inter(
-                                  fontSize: 13, fontWeight: FontWeight.w600, color: t1)),
-                              const Spacer(),
-                              Text('${(m.level * 100).toInt()}%',
-                                  style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: accent)),
-                            ]),
-                            const SizedBox(height: 6),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: m.level, minHeight: 5,
-                                backgroundColor: dark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),
-                                valueColor: AlwaysStoppedAnimation(accent)),
-                            ),
-                          ]),
-                        ),
-                      ]),
-                    )),
-                    if (secondary.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Wrap(spacing: 8, runSpacing: 8,
-                        children: secondary.map((m) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: accent.withValues(alpha: 0.06),
-                            border: Border.all(color: accent.withValues(alpha: 0.15)),
-                            borderRadius: BorderRadius.circular(20)),
-                          child: Text(m, style: GoogleFonts.inter(fontSize: 12, color: t2, fontWeight: FontWeight.w500)),
-                        )).toList()),
-                    ],
-                  ]),
-                ),
-
-                const SizedBox(height: 32),
-
-                // ── Tips ──
-                _SectionLabel(label: 'Conseils', t1: t1, accent: accent),
-                const SizedBox(height: 16),
-                if (tips.isEmpty)
-                  _NoDataCard(dark: dark, t2: t2)
-                else
-                  ...tips.map((c) => Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: dark ? const Color(0xFF141414) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(
-                      color: Colors.black.withValues(alpha: dark ? 0.20 : 0.04),
-                      blurRadius: 10, offset: const Offset(0, 3))],
-                  ),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Container(
-                      width: 34, height: 34,
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(c.icon, size: 15, color: accent),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(c.title, style: GoogleFonts.outfit(
-                            fontSize: 14, fontWeight: FontWeight.w700, color: t1)),
-                        const SizedBox(height: 4),
-                        Text(c.tip, style: GoogleFonts.inter(
-                            fontSize: 13, color: t2, height: 1.55)),
-                      ]),
-                    ),
-                  ]),
-                )),
                 ], // end of else (program detail sections)
               ]),
             ),
@@ -840,52 +655,6 @@ class _NoDataInline extends StatelessWidget {
   ]);
 }
 
-class _NoDataCard extends StatelessWidget {
-  final bool dark;
-  final Color t2;
-  const _NoDataCard({required this.dark, required this.t2});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-    decoration: BoxDecoration(
-      color: dark ? const Color(0xFF141414) : const Color(0xFFF8F8F6),
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: dark ? const Color(0xFF2A2A2A) : const Color(0xFFEDEDEB)),
-    ),
-    child: Column(children: [
-      Icon(LucideIcons.info, size: 20, color: t2),
-      const SizedBox(height: 8),
-      Text('Pas encore de données pour le moment.',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.inter(fontSize: 13, color: t2, height: 1.5,
-              fontStyle: FontStyle.italic)),
-    ]),
-  );
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  final Color t1;
-  final Color accent;
-  const _SectionLabel({required this.label, required this.t1, required this.accent});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Container(
-        width: 3, height: 16,
-        decoration: BoxDecoration(
-          color: accent,
-          borderRadius: BorderRadius.circular(3)),
-      ),
-      const SizedBox(width: 9),
-      Text(label, style: GoogleFonts.outfit(fontSize: 16,
-          fontWeight: FontWeight.w700, color: t1, letterSpacing: -0.3)),
-    ]);
-  }
-}
 
 class _VideoUnavailable extends StatelessWidget {
   final String? debugDetail;
