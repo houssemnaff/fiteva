@@ -10,6 +10,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../providers/user_profile_provider.dart';
+import '../../UserProfileScreen.dart';
 import '../community_avatar.dart';
 
 class CommentSheet extends ConsumerStatefulWidget {
@@ -34,6 +35,7 @@ typedef _Comment = ({
   String author,
   DateTime createdAt,
   String avatarUrl,
+  String userId,
 });
 
 class _CommentSheetState extends ConsumerState<CommentSheet> {
@@ -65,6 +67,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
         author: comment.author,
         createdAt: comment.createdAt,
         avatarUrl: comment.avatarUrl,
+        userId: comment.userId,
       )).toList();
       _loading = false;
     });
@@ -91,6 +94,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
             author: createdComment?.author ?? 'Vous',
             createdAt: createdComment?.createdAt ?? DateTime.now(),
             avatarUrl: createdComment?.avatarUrl ?? ref.read(userProfileProvider).imageUrl,
+            userId: createdComment?.userId ?? '',
           ),
         ];
         _sending = false;
@@ -195,6 +199,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                           author: _comments[i].author,
                           createdAt: _comments[i].createdAt,
                           avatarUrl: _comments[i].avatarUrl,
+                          userId: _comments[i].userId,
                           cs: cs,
                           isLast: i == _comments.length - 1,
                         ),
@@ -330,14 +335,23 @@ class _CommentRow extends StatelessWidget {
   final String author;
   final DateTime createdAt;
   final String avatarUrl;
+  final String userId;
   final ColorScheme cs;
   final bool isLast;
   const _CommentRow({
     required this.text, required this.author,
     required this.createdAt, required this.cs,
     this.avatarUrl = '',
+    this.userId = '',
     this.isLast = false,
   });
+
+  void _openProfile(BuildContext context) {
+    Navigator.of(context).pop();
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => UserProfileScreen(userId: userId),
+    ));
+  }
 
   String _timeAgo(DateTime date) {
     final diff = DateTime.now().difference(date);
@@ -356,10 +370,13 @@ class _CommentRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Author's mascot avatar
-          CommunityAvatar(
-            avatarUrl: avatarUrl,
-            name: author,
-            radius: 17,
+          GestureDetector(
+            onTap: userId.isNotEmpty ? () => _openProfile(context) : null,
+            child: CommunityAvatar(
+              avatarUrl: avatarUrl,
+              name: author,
+              radius: 17,
+            ),
           ),
           const SizedBox(width: 12),
 
@@ -383,10 +400,13 @@ class _CommentRow extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(author,
-                        style: GoogleFonts.inter(
-                          fontSize: 12.5, fontWeight: FontWeight.w700,
-                          color: cs.onSurface)),
+                      GestureDetector(
+                        onTap: userId.isNotEmpty ? () => _openProfile(context) : null,
+                        child: Text(author,
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5, fontWeight: FontWeight.w700,
+                            color: cs.onSurface)),
+                      ),
                       const SizedBox(height: 3),
                       Text(text,
                         style: GoogleFonts.inter(

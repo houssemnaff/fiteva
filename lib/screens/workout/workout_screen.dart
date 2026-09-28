@@ -26,9 +26,7 @@ import 'programme_detail_screen.dart';
 import 'active_workout_screen.dart';
 import 'exercise_player_screen.dart';
 import 'weekly_plan_screen.dart';
-import '../../services/app_tour_service.dart';
 import '../../l10n/lang.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 // ── Filtre étendu : les 4 phases du cycle + grossesse + post-partum ─────────
 enum _FilterKind { menstruation, follicular, ovulation, luteal, pregnancy, postpartum }
@@ -103,39 +101,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
   void initState() {
     super.initState();
     Future.microtask(() => ref.read(favoritesProvider.notifier).reload());
-    _showTutorial();
-  }
-
-  void _showTutorial() {
-    final isFr = Lang.code == 'fr';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-        AppTourService.showSectionTutorial(context,
-          section: 'workout',
-          steps: [
-            SpotlightStep(
-              key: _keyCategoryChips,
-              icon: LucideIcons.dumbbell,
-              color: const Color(0xFFE85D3A),
-              title: isFr ? 'Tes categories' : 'Your categories',
-              description: isFr
-                  ? 'Salle, Maison, Danse, Recuperation, Grossesse : filtre la liste des programmes par categorie en appuyant ici.'
-                  : 'Gym, Home, Dance, Recovery, Pregnancy: filter the program list by category by tapping here.',
-            ),
-            SpotlightStep(
-              key: _keyProgramCard,
-              icon: LucideIcons.play,
-              color: const Color(0xFF2E9E6B),
-              title: isFr ? 'Une carte de programme' : 'A program card',
-              description: isFr
-                  ? 'Appuie sur une carte pour voir les exercices guides par video, sur le coeur pour la mettre en favori, et sur le bouton pour demarrer ou reprendre ta progression.'
-                  : 'Tap a card to see the video-guided exercises, tap the heart to favorite it, and tap the button to start or resume your progress.',
-            ),
-          ],
-        );
-      });
-    });
   }
 
   final _keySalle     = GlobalKey();

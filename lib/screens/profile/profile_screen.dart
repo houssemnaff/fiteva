@@ -34,9 +34,7 @@ import 'stripe_integration.dart';
 import 'theme_screen.dart';
 import 'trends_screen.dart';
 import 'workout_history_screen.dart';
-import '../../services/app_tour_service.dart';
 import '../../l10n/lang.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class _P {
   _P._();
@@ -45,11 +43,11 @@ class _P {
   static const borderL = Color(0xFFE8ECE9);
   static const t1L    = Color(0xFF1A1A1A);
   static const t2L    = Color(0xFF6B7B73);
-  static const bgD    = Color(0xFF0F1A14);
-  static const cardD  = Color(0xFF162119);
-  static const borderD = Color(0xFF253D2E);
+  static const bgD    = Color(0xFF0A0A0A);
+  static const cardD  = Color(0xFF141414);
+  static const borderD = Color(0xFF2C2C2C);
   static const t1D    = Color(0xFFF0F0EE);
-  static const t2D    = Color(0xFF8A9B92);
+  static const t2D    = Color(0xFF8A8A8A);
   static Color bg(bool d)     => d ? bgD : bgL;
   static Color card(bool d)   => d ? cardD : cardL;
   static Color border(bool d) => d ? borderD : borderL;
@@ -87,59 +85,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ref.read(diamondsProvider.notifier).loadDiamonds();
       HealthService.isEnabled.then((v) =>
         ref.read(healthSyncEnabledProvider.notifier).state = v);
-    });
-    _showTutorial();
-  }
-
-  void _showTutorial() {
-    final isFr = Lang.code == 'fr';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-        AppTourService.showSectionTutorial(context,
-          section: 'profile',
-          steps: [
-            SpotlightStep(
-              key: _keyProfileCard,
-              icon: LucideIcons.user,
-              color: const Color(0xFF2E9E6B),
-              title: isFr ? 'Ton Profil' : 'Your Profile',
-              description: isFr
-                  ? 'Modifie ton poids, ta taille et tes objectifs a tout moment.'
-                  : 'Update your weight, height and goals anytime.',
-            ),
-            SpotlightStep(
-              key: _keyStats,
-              icon: LucideIcons.trophy,
-              color: const Color(0xFFFF9800),
-              title: isFr ? 'Stats & Niveau' : 'Stats & Level',
-              description: isFr
-                  ? 'Suis ta serie, ton niveau et tes diamants gagnes.'
-                  : 'Track your streak, level and earned diamonds.',
-            ),
-            SpotlightStep(
-              key: _keyGeneral,
-              icon: LucideIcons.ruler,
-              color: const Color(0xFF1E88E5),
-              title: isFr ? 'General' : 'General',
-              description: isFr
-                  ? 'Recompenses, historique, suivi corporel et tendances.'
-                  : 'Rewards, history, body tracking and trends.',
-              contentAlign: ContentAlign.top,
-            ),
-            SpotlightStep(
-              key: _keyPreferences,
-              icon: LucideIcons.settings,
-              color: const Color(0xFF607D8B),
-              title: isFr ? 'Preferences' : 'Preferences',
-              description: isFr
-                  ? 'Theme, langue, notifications et assistant IA.'
-                  : 'Theme, language, notifications and AI assistant.',
-              contentAlign: ContentAlign.top,
-            ),
-          ],
-        );
-      });
     });
   }
 
@@ -2089,7 +2034,7 @@ class _LevelsSheet extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft, end: Alignment.bottomRight,
                 colors: d
-                  ? [const Color(0xFF152A1D), const Color(0xFF0F1A14)]
+                  ? [const Color(0xFF1E1E1E), const Color(0xFF141414)]
                   : [const Color(0xFFEEF6F0), const Color(0xFFFFFFFF)]),
               borderRadius: BorderRadius.circular(22),
               border: Border.all(color: accent.withValues(alpha: 0.15)),

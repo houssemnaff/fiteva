@@ -25,7 +25,6 @@ import 'profile/profile_screen.dart';
 import 'walkthrough/app_walkthrough_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../services/storage_service.dart';
-import '../services/app_tour_service.dart';
 import 'paywall/paywall_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -64,8 +63,6 @@ class _MainLayoutState extends ConsumerState<MainLayout>
     with SingleTickerProviderStateMixin {
 
   bool _plusOpen     = false;
-  bool _showTour    = false;
-  bool _tourHighlightPlus = false;
   double _x = -1;
   double _y = -1;
 
@@ -112,19 +109,6 @@ class _MainLayoutState extends ConsumerState<MainLayout>
         vsync: this, duration: const Duration(milliseconds: 280));
     _plusScale     = CurvedAnimation(parent: _plusAnim, curve: Curves.easeOutCubic);
     _pageController = PageController(initialPage: 0);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowTour());
-  }
-
-  Future<void> _maybeShowTour() async {
-    if (!mounted) return;
-    final show = await AppTourService.shouldShowTour();
-    if (!show || !mounted) return;
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) setState(() => _showTour = false);
-    if (mounted) {
-      AppTourService.mainTourActive = true;
-      setState(() => _showTour = true);
-    }
   }
 
   @override
@@ -228,21 +212,6 @@ class _MainLayoutState extends ConsumerState<MainLayout>
 
     return Scaffold(
       extendBody: true,
-      floatingActionButton: FloatingActionButton.small(
-        heroTag: 'tour_test',
-        backgroundColor: const Color(0xFF5CD57A),
-        onPressed: () async {
-          await AppTourService.resetTour();
-          await AppTourService.resetAllSectionTours();
-          _selectMain(0);
-          await Future.delayed(const Duration(milliseconds: 300));
-          if (mounted) {
-            AppTourService.mainTourActive = true;
-            setState(() => _showTour = true);
-          }
-        },
-        child: const Icon(Icons.help_outline, color: Colors.white, size: 20),
-      ),
       body: Stack(
         children: [
           // ── Swipeable main tabs (0-3) ──────────────────────────
@@ -294,77 +263,6 @@ class _MainLayoutState extends ConsumerState<MainLayout>
               );
             }),
 
-          // ── Guided tour overlay ───────────────────────────────
-          if (_showTour)
-            GuidedTourOverlay(
-              steps: const [
-                GuidedTourStep(
-                  tabIndex: 0,
-                  title: 'Bienvenue sur FitEva !',
-                  description: 'Ton programme personnalisé selon ton cycle, tes objectifs et ton niveau. C\'est ici que tout commence.',
-                  icon: Icons.home_rounded,
-                  color: Color(0xFF1B5E3B),
-                ),
-                GuidedTourStep(
-                  tabIndex: 1,
-                  title: 'Ton cycle',
-                  description: 'Suis ton cycle menstruel, tes phases et tes symptômes au jour le jour, adapté à ta situation.',
-                  icon: Icons.favorite_rounded,
-                  color: Color(0xFFE85D8A),
-                ),
-                GuidedTourStep(
-                  tabIndex: 2,
-                  title: 'Tes workouts',
-                  description: 'Salle, maison, danse, récupération… explore les catégories et trouve le workout parfait pour toi.',
-                  icon: Icons.fitness_center_rounded,
-                  color: Color(0xFF4AADE8),
-                ),
-                GuidedTourStep(
-                  tabIndex: 3,
-                  title: 'Ta nutrition',
-                  description: 'Ajoute tes repas, scanne un produit ou cherche un aliment. Suis tes calories et macros au quotidien.',
-                  icon: Icons.restaurant_rounded,
-                  color: Color(0xFFE8A44A),
-                ),
-                GuidedTourStep(
-                  tabIndex: -1,
-                  title: 'Boutique, Santé & Communauté',
-                  description: 'Appuie sur le bouton + en bas pour découvrir la boutique, ton espace santé et la communauté FitEva.',
-                  icon: Icons.add_circle_rounded,
-                  color: Color(0xFF1B5E3B),
-                ),
-              ],
-              onNavigateToTab: (tabIndex) {
-                setState(() => _tourHighlightPlus = tabIndex == -1);
-                if (tabIndex == -1) {
-                  return;
-                }
-                _selectMain(tabIndex);
-              },
-              onFinish: () {
-                AppTourService.mainTourActive = false;
-                setState(() {
-                  _showTour = false;
-                  _tourHighlightPlus = false;
-                });
-                _selectMain(0);
-                Future.delayed(const Duration(milliseconds: 400), () {
-                  if (!mounted) return;
-                  final isPro = ref.read(isProProvider);
-                  if (!isPro) {
-                    Navigator.of(context).push(
-                      PageRouteBuilder(
-                        opaque: true,
-                        pageBuilder: (_, __, ___) => const PaywallScreen(),
-                        transitionsBuilder: (_, anim, __, child) =>
-                            FadeTransition(opacity: anim, child: child),
-                        transitionDuration: const Duration(milliseconds: 500),
-                      ),
-                    );
-                  }
-                });
-              },
-            ),
         ],
       ),
       bottomNavigationBar: _GlassNavBar(
@@ -373,7 +271,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
         navItems: mainNavItems,
         onTap: _selectMain,
         plusOpen: _plusOpen,
-        forceHighlightPlus: _tourHighlightPlus,
+        forceHighlightPlus: false,
         plusAnimation: _plusScale,
         onPlusTap: _togglePlus,
       ),

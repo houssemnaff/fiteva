@@ -12,12 +12,10 @@ import 'package:latlong2/latlong.dart';
 import 'package:video_player/video_player.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/lang.dart';
-import '../../services/app_tour_service.dart';
 import '../../services/sante_service.dart';
 import '../../providers/points_provider.dart';
 import '../../widgets/points_toast.dart';
 import 'qr_screen.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 
@@ -448,52 +446,9 @@ class _SanteScreenState extends ConsumerState<SanteScreen> with SingleTickerProv
   void initState() {
     super.initState();
     _tab = TabController(length: 4, vsync: this);
-    _showTutorial();
   }
   @override
   void dispose() { _tab.dispose(); _wCtrl.dispose(); _bCtrl.dispose(); super.dispose(); }
-
-  void _showTutorial() {
-    final isFr = Lang.code == 'fr';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-        AppTourService.showSectionTutorial(context,
-          section: 'sante',
-          steps: [
-            SpotlightStep(
-              key: _keyTabBar,
-              icon: LucideIcons.layoutGrid,
-              color: const Color(0xFF1C4D30),
-              title: isFr ? 'Les 4 espaces sante' : 'The 4 health spaces',
-              description: isFr
-                  ? 'Conseils d\'experts, Ressources (videos, articles), Q & R et Medecins : tout ton suivi sante ici.'
-                  : 'Expert tips, Resources (videos, articles), Q&A and Doctors: all your health tracking here.',
-              contentAlign: ContentAlign.bottom,
-            ),
-            SpotlightStep(
-              key: _keyFilters,
-              icon: LucideIcons.filter,
-              color: const Color(0xFFB8860B),
-              title: isFr ? 'Filtre par theme' : 'Filter by topic',
-              description: isFr
-                  ? 'Affiche uniquement les conseils qui t\'interessent : nutrition, sport, sommeil, mental...'
-                  : 'Show only the tips you care about: nutrition, sport, sleep, mental health...',
-            ),
-            SpotlightStep(
-              key: _keyDoctorRow,
-              icon: LucideIcons.stethoscope,
-              color: const Color(0xFF2563EB),
-              title: isFr ? 'Des vrais medecins' : 'Real doctors',
-              description: isFr
-                  ? 'Chaque conseil vient d\'un medecin verifie. Appuie sur son nom pour voir son profil complet.'
-                  : 'Every tip comes from a verified doctor. Tap their name to see their full profile.',
-            ),
-          ],
-        );
-      });
-    });
-  }
 
   @override
   Widget build(BuildContext context) {

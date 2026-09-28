@@ -13,6 +13,7 @@ import 'package:fiteva/providers/user_profile_provider.dart'
 import 'package:fiteva/providers/subscription_provider.dart';
 import 'package:fiteva/screens/community/model/partner_model.dart';
 import 'package:fiteva/screens/community/widgets/community_avatar.dart';
+import 'package:fiteva/screens/community/widgets/feed/comment_sheet.dart';
 import 'package:fiteva/services/comuniter_service.dart';
 import 'package:fiteva/services/supabase_config.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -305,19 +306,20 @@ class _ProfileContent extends StatelessWidget {
 
     return NestedScrollView(
       headerSliverBuilder: (context, _) => [
-        // ── App bar ───────────────────────────────────────────
+        // ── App bar (minimal) ────────────────────────────────
         SliverAppBar(
           pinned: true,
           floating: false,
           elevation: 0,
           backgroundColor: cs.surface,
           surfaceTintColor: Colors.transparent,
+          toolbarHeight: 52,
           leading: GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: Container(
               margin: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
                 shape: BoxShape.circle,
               ),
               child: Icon(LucideIcons.arrowLeft,
@@ -330,7 +332,7 @@ class _ProfileContent extends StatelessWidget {
               child: Container(
                 margin: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
+                  color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
                   shape: BoxShape.circle,
                 ),
                 child: Padding(
@@ -341,40 +343,38 @@ class _ProfileContent extends StatelessWidget {
               ),
             ),
           ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                      color: cs.outline.withValues(alpha: 0.5), width: 1),
-                ),
-              ),
-              child: TabBar(
-                controller: tabController,
-                labelColor: cs.primary,
-                unselectedLabelColor: cs.onSurface.withValues(alpha: 0.4),
-                indicator: UnderlineTabIndicator(
-                  borderSide: BorderSide(color: cs.primary, width: 2.5),
-                  insets: const EdgeInsets.symmetric(horizontal: 20),
-                ),
-                labelStyle: GoogleFonts.outfit(
-                    fontSize: 13, fontWeight: FontWeight.w700),
-                unselectedLabelStyle: GoogleFonts.outfit(
-                    fontSize: 13, fontWeight: FontWeight.w500),
-                tabs: [
-                  Tab(text: l10n.profilePosts),
-                  Tab(text: l10n.profileEvenements),
-                  Tab(text: l10n.profilePartenaires),
-                ],
-              ),
-            ),
-          ),
         ),
 
         // ── Header ────────────────────────────────────────────
         SliverToBoxAdapter(
           child: _ProfileHeader(profile: profile, heroTag: heroTag, l10n: l10n),
+        ),
+
+        // ── Tab bar (pinned below header) ─────────────────────
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _TabBarDelegate(
+            tabBar: TabBar(
+              controller: tabController,
+              labelColor: cs.primary,
+              unselectedLabelColor: cs.onSurface.withValues(alpha: 0.4),
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(color: cs.primary, width: 2.5),
+                insets: const EdgeInsets.symmetric(horizontal: 20),
+              ),
+              labelStyle: GoogleFonts.outfit(
+                  fontSize: 13, fontWeight: FontWeight.w700),
+              unselectedLabelStyle: GoogleFonts.outfit(
+                  fontSize: 13, fontWeight: FontWeight.w500),
+              tabs: [
+                Tab(text: l10n.profilePosts),
+                Tab(text: l10n.profileEvenements),
+                Tab(text: l10n.profilePartenaires),
+              ],
+            ),
+            backgroundColor: cs.surface,
+            borderColor: cs.outline.withValues(alpha: 0.5),
+          ),
         ),
       ],
       body: TabBarView(
@@ -431,213 +431,161 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final profile = widget.profile;
+    final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 8),
 
-        // ── Hero band ──────────────────────────────────────────
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Solid primary banner
-            Container(
-              height: 130,
-              width: double.infinity,
-              color: cs.primary,
-              child: Stack(children: [
-                // Subtle geometric overlay
-                Positioned(
-                  top: -30, right: -30,
-                  child: Container(
-                    width: 180, height: 180,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: -20, left: 80,
-                  child: Container(
-                    width: 100, height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.04),
-                    ),
-                  ),
-                ),
-              ]),
-            ),
-
-            // Avatar — overlapping bottom of banner
-            Positioned(
-              bottom: -44,
-              left: 20,
-              child: Hero(
-                tag: widget.heroTag ?? 'avatar_${profile.id}',
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: cs.surface,
-                  ),
-                  child: CommunityAvatar(
-                    avatarUrl: profile.avatarUrl,
-                    name: profile.name,
-                    radius: 40,
-                  ),
-                ),
+        // ── Centered avatar ──────────────────────────────────
+        Hero(
+          tag: widget.heroTag ?? 'avatar_${profile.id}',
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [cs.primary, cs.secondary],
               ),
             ),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cs.surface,
+              ),
+              child: CommunityAvatar(
+                avatarUrl: profile.avatarUrl,
+                name: profile.name,
+                radius: 46,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        // ── Name + badge ─────────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(child: Text(profile.name, overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.outfit(
+                fontSize: 24, fontWeight: FontWeight.w800,
+                color: cs.onSurface, letterSpacing: -0.5, height: 1.1)),
+            ),
+            if (profile.isPro) ...[
+              const SizedBox(width: 7),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.crown, size: 14, color: Color(0xFFF59E0B)),
+              ),
+            ],
           ],
         ),
 
-        const SizedBox(height: 56), // avatar overflow space
+        const SizedBox(height: 4),
+        Text(profile.username, style: GoogleFonts.inter(
+          fontSize: 13, fontWeight: FontWeight.w500,
+          color: cs.onSurface.withValues(alpha: 0.4))),
 
-        // ── Name + follow row ─────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Flexible(child: Text(profile.name, overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.outfit(
-                          fontSize: 24, fontWeight: FontWeight.w800,
-                          color: cs.onSurface, letterSpacing: -0.5, height: 1.1)),
-                      ),
-                      if (profile.isPro) ...[
-                        const SizedBox(width: 6),
-                        const Icon(LucideIcons.crown, size: 18, color: Color(0xFFF59E0B)),
-                      ],
-                    ]),
-                    const SizedBox(height: 2),
-                    Text(profile.username, style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w500,
-                      color: cs.onSurface.withValues(alpha: 0.45))),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _following = !_following);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: _following
-                        ? Colors.transparent
-                        : cs.primary,
-                    borderRadius: BorderRadius.circular(50),
-                    border: Border.all(
-                      color: cs.primary,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Text(
-                    _following ? widget.l10n.profileSuivi : widget.l10n.profileSuivre,
-                    style: GoogleFonts.outfit(
-                      fontSize: 13, fontWeight: FontWeight.w800,
-                      color: _following ? cs.primary : cs.onPrimary,
-                      letterSpacing: 0.1),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        const SizedBox(height: 14),
 
-        const SizedBox(height: 12),
-
-        // ── Bio ───────────────────────────────────────────────
-        if (profile.bio != null)
+        // ── Follow button ────────────────────────────────────
+        if (!profile.isCurrentUser)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(profile.bio!, style: GoogleFonts.inter(
-              fontSize: 14, color: cs.onSurface.withValues(alpha: 0.65),
-              height: 1.55)),
+            padding: const EdgeInsets.only(bottom: 16),
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _following = !_following);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _following ? Colors.transparent : cs.primary,
+                  borderRadius: BorderRadius.circular(50),
+                  border: Border.all(color: cs.primary, width: 1.5),
+                ),
+                child: Text(
+                  _following ? widget.l10n.profileSuivi : widget.l10n.profileSuivre,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13, fontWeight: FontWeight.w800,
+                    color: _following ? cs.primary : cs.onPrimary,
+                    letterSpacing: 0.1),
+                ),
+              ),
+            ),
           ),
 
-        const SizedBox(height: 10),
+        // ── Bio ──────────────────────────────────────────────
+        if (profile.bio != null && profile.bio!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Text(profile.bio!, textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14, color: cs.onSurface.withValues(alpha: 0.6),
+                height: 1.55)),
+          ),
 
-        // ── Meta pills ────────────────────────────────────────
+        // ── Meta pills ───────────────────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Wrap(spacing: 8, runSpacing: 6, children: [
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8, runSpacing: 6, children: [
             if (profile.fitnessLevel != null && profile.fitnessLevel!.isNotEmpty)
-              _MetaPill(
-                icon: LucideIcons.target,
-                label: profile.fitnessLevel!,
-                cs: cs),
+              _MetaPill(icon: LucideIcons.target, label: profile.fitnessLevel!, cs: cs),
             if (profile.frequency != null && profile.frequency!.isNotEmpty)
-              _MetaPill(
-                icon: LucideIcons.dumbbell,
-                label: profile.frequency!,
-                cs: cs),
-            _MetaPill(
-              icon: LucideIcons.star,
-              label: '${profile.niveauXp} pts',
-              cs: cs,
-              highlight: true),
+              _MetaPill(icon: LucideIcons.dumbbell, label: profile.frequency!, cs: cs),
+            _MetaPill(icon: LucideIcons.star, label: '${profile.niveauXp} pts', cs: cs, highlight: true),
           ]),
         ),
 
         const SizedBox(height: 20),
 
-        // ── Stats strip (posts / événements / partenaires) ────
+        // ── Stats row ────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: cs.outline),
-            ),
-            child: Row(children: [
-              Expanded(child: _StripStat(
-                value: '${profile.posts.length}',
-                label: widget.l10n.profilePosts, cs: cs)),
-              _VertDivider(cs: cs),
-              Expanded(child: _StripStat(
-                value: '${profile.events.length}',
-                label: widget.l10n.profileEvenements, cs: cs)),
-              _VertDivider(cs: cs),
-              Expanded(child: _StripStat(
-                value: '${profile.partners.length}',
-                label: widget.l10n.profilePartenaires, cs: cs)),
-            ]),
-          ),
+          child: Row(children: [
+            Expanded(child: _StatCard(
+              value: '${profile.posts.length}',
+              label: widget.l10n.profilePosts,
+              icon: LucideIcons.fileText,
+              cs: cs, dark: dark)),
+            const SizedBox(width: 10),
+            Expanded(child: _StatCard(
+              value: '${profile.events.length}',
+              label: widget.l10n.profileEvenements,
+              icon: LucideIcons.calendarDays,
+              cs: cs, dark: dark)),
+            const SizedBox(width: 10),
+            Expanded(child: _StatCard(
+              value: '${profile.partners.length}',
+              label: widget.l10n.profilePartenaires,
+              icon: LucideIcons.users,
+              cs: cs, dark: dark)),
+          ]),
         ),
 
         const SizedBox(height: 12),
 
-        // ── Points (diamants) ──────────────────────────────────
+        // ── Diamonds + Level in a row ────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: _PointsCard(diamonds: profile.diamonds, l10n: widget.l10n, cs: cs),
-        ),
-
-        const SizedBox(height: 12),
-
-        // ── Level progress ────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: _LevelBar(
+          child: _CompactProgressCard(
+            diamonds: profile.diamonds,
             niveau: profile.niveau,
             xp: profile.niveauXp,
             maxXp: profile.niveauMaxXp,
-            cs: cs,
-            l10n: widget.l10n,
+            cs: cs, dark: dark, l10n: widget.l10n,
           ),
         ),
 
@@ -645,7 +593,162 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
       ],
     );
   }
+}
 
+// ─── Stat card (individual) ──────────────────────────────────
+class _StatCard extends StatelessWidget {
+  final String value, label;
+  final IconData icon;
+  final ColorScheme cs;
+  final bool dark;
+  const _StatCard({
+    required this.value, required this.label, required this.icon,
+    required this.cs, required this.dark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: dark
+            ? cs.surfaceContainerHigh
+            : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.5)),
+      ),
+      child: Column(children: [
+        Text(value, style: GoogleFonts.outfit(
+          fontSize: 22, fontWeight: FontWeight.w800,
+          color: cs.primary, letterSpacing: -0.5)),
+        const SizedBox(height: 3),
+        Text(label, style: GoogleFonts.inter(
+          fontSize: 10, fontWeight: FontWeight.w500,
+          color: cs.onSurface.withValues(alpha: 0.4)),
+          overflow: TextOverflow.ellipsis),
+      ]),
+    );
+  }
+}
+
+// ─── Combined diamonds + level card ──────────────────────────
+class _CompactProgressCard extends StatelessWidget {
+  final int diamonds;
+  final String niveau;
+  final int xp, maxXp;
+  final ColorScheme cs;
+  final bool dark;
+  final AppL10n l10n;
+
+  const _CompactProgressCard({
+    required this.diamonds, required this.niveau,
+    required this.xp, required this.maxXp,
+    required this.cs, required this.dark, required this.l10n,
+  });
+
+  int get _lvl => int.tryParse(niveau) ?? 1;
+
+  Color get _levelColor {
+    if (_lvl <= 2) return const Color(0xFF34D399);
+    if (_lvl <= 4) return const Color(0xFF3B82F6);
+    if (_lvl <= 6) return const Color(0xFFF59E0B);
+    return const Color(0xFFBF5AF2);
+  }
+
+  IconData get _levelIcon {
+    if (_lvl <= 2) return LucideIcons.sprout;
+    if (_lvl <= 4) return LucideIcons.zap;
+    if (_lvl <= 6) return LucideIcons.flame;
+    return LucideIcons.crown;
+  }
+
+  String _levelLabel() {
+    if (_lvl <= 2) return l10n.profileDebutant;
+    if (_lvl <= 4) return l10n.profileInter;
+    if (_lvl <= 6) return l10n.profileAvance;
+    return l10n.profileExpert;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final model = PointsModel(totalPoints: xp);
+    final progress = model.levelProgress;
+    final remaining = (maxXp - xp).clamp(0, maxXp);
+    final lc = _levelColor;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: dark ? cs.surfaceContainerHigh : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.5)),
+      ),
+      child: Column(children: [
+        // Top row: diamonds + level badge
+        Row(children: [
+          // Diamonds
+          Container(
+            width: 34, height: 34,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(LucideIcons.star, size: 16, color: Color(0xFFF59E0B)),
+          ),
+          const SizedBox(width: 10),
+          Text('$diamonds', style: GoogleFonts.outfit(
+            fontSize: 20, fontWeight: FontWeight.w800,
+            color: const Color(0xFFF59E0B), letterSpacing: -0.5)),
+          const SizedBox(width: 4),
+          Text(l10n.profileDiamonds, style: GoogleFonts.inter(
+            fontSize: 11, fontWeight: FontWeight.w600,
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.6))),
+          const Spacer(),
+          // Level badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: lc.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(50),
+              border: Border.all(color: lc.withValues(alpha: 0.25)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(_levelIcon, size: 12, color: lc),
+              const SizedBox(width: 5),
+              Text(_levelLabel(), style: GoogleFonts.outfit(
+                fontSize: 11, fontWeight: FontWeight.w800,
+                color: lc)),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        // Progress bar
+        Row(children: [
+          Expanded(child: ClipRRect(
+            borderRadius: BorderRadius.circular(50),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: lc.withValues(alpha: 0.1),
+              valueColor: AlwaysStoppedAnimation<Color>(lc),
+              minHeight: 6,
+            ),
+          )),
+          const SizedBox(width: 10),
+          Text('$xp/$maxXp', style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: FontWeight.w600,
+            color: cs.onSurface.withValues(alpha: 0.35),
+            fontFeatures: [const FontFeature.tabularFigures()])),
+        ]),
+        const SizedBox(height: 6),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(l10n.profileXPToNext(remaining),
+            style: GoogleFonts.inter(
+              fontSize: 10, color: cs.onSurface.withValues(alpha: 0.35))),
+        ),
+      ]),
+    );
+  }
 }
 
 // ─── Meta pill ────────────────────────────────────────────────
@@ -687,172 +790,38 @@ class _MetaPill extends StatelessWidget {
   }
 }
 
-// ─── Strip stat ───────────────────────────────────────────────
-class _StripStat extends StatelessWidget {
-  final String value, label;
-  final ColorScheme cs;
-  const _StripStat({required this.value, required this.label, required this.cs});
+
+// ─── Tab bar persistent header delegate ──────────────────────
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+  final Color backgroundColor;
+  final Color borderColor;
+
+  const _TabBarDelegate({
+    required this.tabBar,
+    required this.backgroundColor,
+    required this.borderColor,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Column(children: [
-      Text(value, style: GoogleFonts.outfit(
-        fontSize: 22, fontWeight: FontWeight.w800,
-        color: cs.primary, letterSpacing: -0.5)),
-      const SizedBox(height: 2),
-      Text(label, style: GoogleFonts.inter(
-        fontSize: 11, fontWeight: FontWeight.w500,
-        color: cs.onSurface.withValues(alpha: 0.45))),
-    ]);
-  }
-}
-
-class _VertDivider extends StatelessWidget {
-  final ColorScheme cs;
-  const _VertDivider({required this.cs});
+  double get minExtent => tabBar.preferredSize.height;
   @override
-  Widget build(BuildContext context) => Container(
-    width: 1, height: 36,
-    color: cs.outline.withValues(alpha: 0.6));
-}
-
-// ─── Level bar ────────────────────────────────────────────────
-class _LevelBar extends StatelessWidget {
-  final String niveau;
-  final int xp, maxXp;
-  final ColorScheme cs;
-  final AppL10n l10n;
-  const _LevelBar({
-    required this.niveau, required this.xp,
-    required this.maxXp, required this.cs, required this.l10n});
-
-  int get _lvl => int.tryParse(niveau) ?? 1;
-
-  Color get _accent {
-    if (_lvl <= 2) return const Color(0xFF34D399);
-    if (_lvl <= 4) return const Color(0xFF3B82F6);
-    if (_lvl <= 6) return const Color(0xFFF59E0B);
-    return const Color(0xFFBF5AF2);
-  }
-
-  IconData get _icon {
-    if (_lvl <= 2) return LucideIcons.sprout;
-    if (_lvl <= 4) return LucideIcons.zap;
-    if (_lvl <= 6) return LucideIcons.flame;
-    return LucideIcons.crown;
-  }
-
-  String _levelLabel(AppL10n l10n) {
-    if (_lvl <= 2) return l10n.profileDebutant;
-    if (_lvl <= 4) return l10n.profileInter;
-    if (_lvl <= 6) return l10n.profileAvance;
-    return l10n.profileExpert;
-  }
+  double get maxExtent => tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context) {
-    // Progression au sein du niveau courant — même calcul que l'écran Profil
-    // (PointsModel), plus de barème local divergent.
-    final model     = PointsModel(totalPoints: xp);
-    final progress  = model.levelProgress;
-    final remaining = (maxXp - xp).clamp(0, maxXp);
-
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _accent.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _accent.withValues(alpha: 0.2)),
+        color: backgroundColor,
+        border: Border(bottom: BorderSide(color: borderColor, width: 1)),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            width: 28, height: 28,
-            decoration: BoxDecoration(
-              color: _accent.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(_icon, size: 14, color: _accent),
-          ),
-          const SizedBox(width: 10),
-          Text(l10n.profileNiveau(_levelLabel(l10n)), style: GoogleFonts.outfit(
-            fontSize: 14, fontWeight: FontWeight.w800,
-            color: _accent, letterSpacing: -0.2)),
-          const Spacer(),
-          Text('$xp / $maxXp pts', style: GoogleFonts.inter(
-            fontSize: 11, fontWeight: FontWeight.w600,
-            color: cs.onSurface.withValues(alpha: 0.45))),
-        ]),
-        const SizedBox(height: 12),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(50),
-          child: LinearProgressIndicator(
-            value: progress,
-            backgroundColor: _accent.withValues(alpha: 0.12),
-            valueColor: AlwaysStoppedAnimation<Color>(_accent),
-            minHeight: 6,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(l10n.profileXPToNext(remaining),
-          style: GoogleFonts.inter(
-            fontSize: 11, color: cs.onSurface.withValues(alpha: 0.4))),
-      ]),
+      child: tabBar,
     );
   }
-}
-
-// ─── Points card (diamants boutique) ───────────────────────────
-class _PointsCard extends StatelessWidget {
-  final int diamonds;
-  final AppL10n l10n;
-  final ColorScheme cs;
-  const _PointsCard({required this.diamonds, required this.l10n, required this.cs});
-
-  static const _gold = Color(0xFFF59E0B);
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _gold.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _gold.withValues(alpha: 0.25)),
-      ),
-      child: Row(children: [
-        Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: _gold.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(LucideIcons.star, size: 19, color: _gold),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.profileDiamondsLabel, style: GoogleFonts.inter(
-              fontSize: 11, fontWeight: FontWeight.w600,
-              color: cs.onSurface.withValues(alpha: 0.45))),
-            const SizedBox(height: 2),
-            Row(crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text('$diamonds', style: GoogleFonts.outfit(
-                  fontSize: 24, fontWeight: FontWeight.w800,
-                  color: _gold, letterSpacing: -0.5)),
-                const SizedBox(width: 5),
-                Text(l10n.profileDiamonds, style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w600,
-                  color: _gold.withValues(alpha: 0.7))),
-              ]),
-          ],
-        )),
-      ]),
-    );
-  }
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) =>
+      tabBar != oldDelegate.tabBar;
 }
 
 class _SectionTitle extends StatelessWidget {
@@ -1055,20 +1024,35 @@ class _PostCardState extends ConsumerState<_PostCard> {
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: cs.outline.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(50),
+            GestureDetector(
+              onTap: () {
+                showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => CommentSheet(
+                    postId: post.id,
+                    postAuthor: widget.owner.name,
+                    postAuthorId: widget.owner.id,
+                    postTitle: post.title,
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: cs.outline.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(LucideIcons.messageCircle, size: 15,
+                      color: cs.onSurface.withValues(alpha: 0.6)),
+                  const SizedBox(width: 5),
+                  Text('${post.comments}', style: GoogleFonts.inter(
+                    fontSize: 12, fontWeight: FontWeight.w700,
+                    color: cs.onSurface.withValues(alpha: 0.6))),
+                ]),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(LucideIcons.messageCircle, size: 15,
-                    color: cs.onSurface.withValues(alpha: 0.6)),
-                const SizedBox(width: 5),
-                Text('${post.comments}', style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w700,
-                  color: cs.onSurface.withValues(alpha: 0.6))),
-              ]),
             ),
           ]),
         ),

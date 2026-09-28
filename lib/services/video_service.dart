@@ -7,19 +7,38 @@ import 'supabase_config.dart';
 class VideoService {
   static Future<List<VideoModel>> fetchStandalone() async {
     final rows = await SupabaseConfig.table('videos')
-        .select('*, coaches!coach_id(*)')
+        .select()
         .isFilter('workout_id', null)
         .order('sort_order', ascending: true);
 
     final list = rows as List;
+
+    // Collect unique coach IDs to fetch separately
+    final coachIds = <String>{};
     for (final r in list) {
-      final m = r as Map<String, dynamic>;
-      print('[VideoService] ${m['id']} coach_id=${m['coach_id']} coaches=${m['coaches']}');
+      final cid = (r as Map<String, dynamic>)['coach_id'] as String?;
+      if (cid != null && cid.isNotEmpty) coachIds.add(cid);
     }
-    return list.map((r) => _fromRow(r as Map<String, dynamic>)).toList();
+
+    // Fetch coaches in one query
+    final coaches = <String, CoachModel>{};
+    if (coachIds.isNotEmpty) {
+      final coachRows = await SupabaseConfig.table('coaches')
+          .select()
+          .inFilter('id', coachIds.toList());
+      for (final cr in coachRows as List) {
+        final m = cr as Map<String, dynamic>;
+        coaches[m['id'] as String] = CoachModel.fromRow(m);
+      }
+    }
+
+    return list.map((r) {
+      final m = r as Map<String, dynamic>;
+      return _fromRow(m, coaches[m['coach_id'] as String?]);
+    }).toList();
   }
 
-  static VideoModel _fromRow(Map<String, dynamic> r) => VideoModel(
+  static VideoModel _fromRow(Map<String, dynamic> r, CoachModel? coach) => VideoModel(
         id: r['id'] as String,
         title: r['title'] as String,
         duration: r['duration'] as String? ?? '',
@@ -29,9 +48,7 @@ class VideoService {
         category: r['category'] as String? ?? 'dance',
         phases: r['phases'] as String? ?? '',
         coachId: r['coach_id'] as String?,
-        coach: r['coaches'] == null
-            ? null
-            : CoachModel.fromRow(r['coaches'] as Map<String, dynamic>),
+        coach: coach,
         techniqueDescription: r['technique_description'] as String? ?? '',
         techniqueSteps: List<String>.from(r['technique_steps'] as List? ?? []),
         musclesPrimary: (r['muscles_primary'] as List? ?? [])
