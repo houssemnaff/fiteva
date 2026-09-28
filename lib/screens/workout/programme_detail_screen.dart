@@ -1549,7 +1549,7 @@ class _BottomCta extends StatelessWidget {
                   gradient: LinearGradient(
                     colors: done
                         ? [const Color.fromARGB(255, 8, 54, 9).withValues(alpha: 0.70), Color.fromARGB(255, 8, 54, 9)]
-                        : [accent, const Color(0xFF2E7D52)],
+                        : [accent, const Color.fromARGB(255, 247, 247, 248)],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),

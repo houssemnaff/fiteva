@@ -273,8 +273,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen>
                                 value: progress,
                                 strokeWidth: 5,
                                 backgroundColor: accent.withValues(alpha: 0.12),
-                                valueColor: AlwaysStoppedAnimation(
-                                    progress >= 1.0 ? Colors.green : accent),
+                                valueColor: AlwaysStoppedAnimation(accent),
                                 strokeCap: StrokeCap.round,
                               ),
                             ),
@@ -405,18 +404,17 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen>
                   decoration: BoxDecoration(
 
 
- gradient: LinearGradient(
-                    colors:  progress >= 1.0
-                        ? [const Color.fromARGB(255, 17, 63, 18).withValues(alpha: 0.70), Color.fromARGB(255, 17, 63, 18)]
-                        : [accent, const Color(0xFF2E7D52)],
+                  gradient: LinearGradient(
+                    colors: progress >= 1.0
+                        ? [accent.withValues(alpha: 0.70), accent]
+                        : [accent, const Color.fromARGB(255, 246, 246, 246)],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
-
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: (progress >= 1.0 ? Colors.green : accent).withValues(alpha: 0.35),
+                        color: accent.withValues(alpha: 0.35),
                         blurRadius: 18, offset: const Offset(0, 6)),
                     ],
                   ),
@@ -579,11 +577,9 @@ class _ExerciseCardState extends State<_ExerciseCard>
                           Container(
                             width: 28, height: 28,
                             decoration: BoxDecoration(
-                              color: isDone
-                                  ? Colors.green
-                                  : isCurrent
-                                      ? accent
-                                      : Colors.white.withValues(alpha: 0.15),
+                              color: isDone || isCurrent
+                                  ? accent
+                                  : Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(9),
                             ),
                             child: Center(
@@ -618,14 +614,12 @@ class _ExerciseCardState extends State<_ExerciseCard>
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: isDone
-                                    ? Colors.green.withValues(alpha: 0.3)
-                                    : accent.withValues(alpha: 0.3),
+                                color: accent.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
                                 Icon(LucideIcons.zap, size: 10,
-                                    color: isDone ? Colors.green.shade300 : Colors.white.withValues(alpha: 0.9)),
+                                    color: Colors.white.withValues(alpha: 0.9)),
                                 const SizedBox(width: 4),
                                 Text('${widget.points} pts',
                                     style: GoogleFonts.inter(
@@ -639,7 +633,7 @@ class _ExerciseCardState extends State<_ExerciseCard>
                           if (isDone)
                             Text('Terminé',
                                 style: GoogleFonts.inter(
-                                    color: Colors.green.shade300,
+                                    color: accent.withValues(alpha: 0.9),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600))
                           else if (isCurrent)
@@ -690,10 +684,10 @@ class _PlayButton extends StatelessWidget {
       return Container(
         width: 44, height: 44,
         decoration: BoxDecoration(
-          color: Colors.green,
+          color: accent,
           shape: BoxShape.circle,
           boxShadow: [
-            BoxShadow(color: Colors.green.withValues(alpha: 0.4),
+            BoxShadow(color: accent.withValues(alpha: 0.4),
                 blurRadius: 10, offset: const Offset(0, 3)),
           ],
         ),

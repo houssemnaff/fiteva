@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/user_profile_provider.dart';
+import '../../providers/main_tab_provider.dart';
 import '../../providers/body_tracking_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/mascot_provider.dart';
@@ -389,6 +390,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     iconBg: const Color(0xFFFF3B30),
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => const NotificationSettingsScreen())),
+                  ),
+                  buildRow(
+                    icon: LucideIcons.compass,
+                    label: l10n.isFrench ? 'Revoir le guide' : 'Replay the tour',
+                    iconBg: const Color(0xFF5CD57A),
+                    onTap: () async {
+                      HapticFeedback.selectionClick();
+                      await AppTourService.resetTour();
+                      await AppTourService.resetAllSectionTours();
+                      ref.read(mainTabIndexProvider.notifier).set(0);
+                      if (context.mounted) context.go('/');
+                    },
                   ),
                   if (HealthService.isSupported)
                     Consumer(builder: (_, ref2, __) {

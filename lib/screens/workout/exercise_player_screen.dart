@@ -552,13 +552,13 @@ class _ExercisePlayerScreenState extends State<ExercisePlayerScreen>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: effectivelyDone
-                        ? [Colors.green.shade600, Colors.green.shade700]
+                        ? [accent.withValues(alpha: 0.70), accent]
                         : _videoUnavailable ? [t2, t2]
                         : [accent, Color.lerp(accent, Colors.black, 0.18)!],
                   ),
                   borderRadius: BorderRadius.circular(50),
                   boxShadow: [BoxShadow(
-                    color: (effectivelyDone ? Colors.green : accent).withValues(alpha: 0.35),
+                    color: accent.withValues(alpha: 0.35),
                     blurRadius: 20, offset: const Offset(0, 8))],
                 ),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [

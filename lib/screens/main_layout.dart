@@ -259,7 +259,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
                   }),
                   child: GestureDetector(
                     onTap: _openChatbot,
-                    child: const _AiChatButton())),
+                    child: _AiChatButton(accent: cs.primary))),
               );
             }),
 
@@ -659,7 +659,8 @@ class _GlassNavBar extends StatelessWidget {
 // ── Waving Robot ──────────────────────────────────────────────────────────────
 
 class _WavingRobot extends StatefulWidget {
-  const _WavingRobot();
+  final Color accent;
+  const _WavingRobot({required this.accent});
   @override
   State<_WavingRobot> createState() => _WavingRobotState();
 }
@@ -689,7 +690,7 @@ class _WavingRobotState extends State<_WavingRobot>
       animation: _ctrl,
       builder: (_, __) => CustomPaint(
         size: const Size(56, 56),
-        painter: _StarCirclePainter(t: _ctrl.value),
+        painter: _StarCirclePainter(t: _ctrl.value, accent: widget.accent),
       ),
     );
   }
@@ -697,7 +698,8 @@ class _WavingRobotState extends State<_WavingRobot>
 
 class _StarCirclePainter extends CustomPainter {
   final double t;
-  const _StarCirclePainter({required this.t});
+  final Color accent;
+  const _StarCirclePainter({required this.t, required this.accent});
 
   void _drawStar(Canvas canvas, Offset center, double r, Paint p) {
     final path = Path();
@@ -725,10 +727,10 @@ class _StarCirclePainter extends CustomPainter {
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
 
-    // Main circle gradient — uses neutral since CustomPainter can't access theme
+    // Main circle gradient — uses the user's chosen accent color
     final gradient = Paint()
       ..shader = RadialGradient(
-        colors: [const Color(0xFFAAAAAA), const Color(0xFF666666)],
+        colors: [accent, Color.lerp(accent, Colors.black, 0.35)!],
       ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 26));
     canvas.drawCircle(Offset(cx, cy), 26, gradient);
 
@@ -759,17 +761,17 @@ class _StarCirclePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_StarCirclePainter old) => old.t != t;
+  bool shouldRepaint(_StarCirclePainter old) => old.t != t || old.accent != accent;
 }
 
 class _AiChatButton extends StatelessWidget {
-  const _AiChatButton();
+  final Color accent;
+  const _AiChatButton({required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      const SizedBox(width: 85, height: 85, child: _WavingRobot()),
+      SizedBox(width: 85, height: 85, child: _WavingRobot(accent: accent)),
     ]);
   }
 }
