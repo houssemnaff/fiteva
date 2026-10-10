@@ -8,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'supabase_config.dart';
 
 const _mascotUrl =
     'https://res.cloudinary.com/dmzvbqocs/image/upload/v1785371674/preview-removebg-preview_i39b7w.png';
@@ -39,44 +40,109 @@ class AppTourService {
   /// l'ecran actuellement visible.
   static bool mainTourActive = false;
 
-  static Future<bool> shouldShowTour() async {
-    final prefs = await SharedPreferences.getInstance();
-    return !(prefs.getBool(_key) ?? false);
+  /// In-memory cache of Supabase tours_done, loaded once per session.
+  static Map<String, bool>? _remoteCache;
+
+  /// Pull tours_done from Supabase into local SharedPreferences.
+  /// Call once after login / app start.
+  /// For existing users with onboarding_done but no tours_done saved,
+  /// auto-mark all tours as completed so they never see them again.
+  static Future<void> syncFromSupabase() async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      final row = await SupabaseConfig.table('user_profiles')
+          .select('tours_done, onboarding_done')
+          .eq('id', uid)
+          .maybeSingle();
+      if (row == null) return;
+
+      final remote = row['tours_done'] as Map<String, dynamic>? ?? {};
+      final onboardingDone = row['onboarding_done'] as bool? ?? false;
+
+      if (onboardingDone && remote.isEmpty) {
+        // Existing user who already used the app — skip all tours
+        _remoteCache = {_key: true};
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_key, true);
+        _persistToSupabase(_key, true);
+        return;
+      }
+
+      _remoteCache = remote.map((k, v) => MapEntry(k, v == true));
+      final prefs = await SharedPreferences.getInstance();
+      for (final e in _remoteCache!.entries) {
+        if (e.value) await prefs.setBool(e.key, true);
+      }
+    } catch (_) {}
   }
+
+  static Future<void> _persistToSupabase(String key, bool value) async {
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    _remoteCache ??= {};
+    _remoteCache![key] = value;
+    try {
+      final payload = _remoteCache!.map((k, v) => MapEntry(k, v));
+      await SupabaseConfig.table('user_profiles')
+          .update({'tours_done': payload})
+          .eq('id', uid);
+    } catch (_) {}
+  }
+
+  static Future<bool> _isDone(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(key) == true) return true;
+    if (_remoteCache != null && _remoteCache![key] == true) return true;
+    return false;
+  }
+
+  static Future<bool> shouldShowTour() async => !(await _isDone(_key));
 
   static Future<void> markTourDone() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_key, true);
+    _persistToSupabase(_key, true);
   }
 
   static Future<void> resetTour() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);
+    _persistToSupabase(_key, false);
   }
 
   // ── Per-section tutorials ──
 
   static String _sectionKey(String section) => 'section_tour_$section';
 
-  static Future<bool> shouldShowSectionTour(String section) async {
-    final prefs = await SharedPreferences.getInstance();
-    return !(prefs.getBool(_sectionKey(section)) ?? false);
-  }
+  static Future<bool> shouldShowSectionTour(String section) async =>
+      !(await _isDone(_sectionKey(section)));
 
   static Future<void> markSectionTourDone(String section) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_sectionKey(section), true);
+    _persistToSupabase(_sectionKey(section), true);
   }
 
   static Future<void> resetSectionTour(String section) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_sectionKey(section));
+    _persistToSupabase(_sectionKey(section), false);
   }
 
   static Future<void> resetAllSectionTours() async {
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys().where((k) => k.startsWith('section_tour_'));
     for (final k in keys) { await prefs.remove(k); }
+    _remoteCache?.removeWhere((k, _) => k.startsWith('section_tour_'));
+    final uid = SupabaseConfig.userId;
+    if (uid == null) return;
+    try {
+      final payload = _remoteCache ?? {};
+      await SupabaseConfig.table('user_profiles')
+          .update({'tours_done': payload})
+          .eq('id', uid);
+    } catch (_) {}
   }
 
   static void showSectionTutorial(BuildContext context, {

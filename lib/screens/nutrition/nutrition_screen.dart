@@ -20,8 +20,6 @@ import 'ajout_rapide_screen.dart';
 import 'recette_detail_screen.dart';
 import 'recipe_video_screen.dart';
 import 'hydration_screen.dart';
-import '../../services/app_tour_service.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 // ── Meal accent palette ──────────────────────────────────────────────────────
 const _kMealColorsLight = [Color(0xFFE8A87C), Color(0xFF85CDCA), Color(0xFFD4A5D0), Color(0xFF7FB5D5)];
@@ -58,63 +56,6 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen>
     _animCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
     _anim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic);
     _animCtrl.forward();
-    _showTutorial();
-  }
-
-  void _showTutorial() {
-    final isFr = Lang.code == 'fr';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-        AppTourService.showSectionTutorial(context,
-          section: 'nutrition',
-          steps: [
-            SpotlightStep(
-              key: _keyCalories,
-              icon: LucideIcons.pieChart,
-              color: const Color(0xFF2E9E6B),
-              title: isFr ? 'Suivi Calories' : 'Calorie Tracking',
-              description: isFr
-                  ? 'Appuie ici pour voir le detail de tes calories et macros du jour. Tu verras ta progression en un coup d\'oeil.'
-                  : 'Tap here to see your daily calories and macros breakdown at a glance.',
-            ),
-            SpotlightStep(
-              key: _keyMeals,
-              icon: LucideIcons.utensils,
-              color: const Color(0xFFE8A87C),
-              title: isFr ? 'Tes Repas' : 'Your Meals',
-              description: isFr
-                  ? 'Appuie sur un repas pour ajouter des aliments. Tu peux chercher un aliment ou scanner un code-barres.'
-                  : 'Tap a meal to add foods. You can search for a food or scan a barcode.',
-              contentAlign: ContentAlign.bottom,
-              scrollAlignment: 0.2,
-            ),
-            SpotlightStep(
-              key: _keyHydration,
-              icon: LucideIcons.droplets,
-              color: const Color(0xFF1E88E5),
-              title: isFr ? 'Hydratation' : 'Hydration',
-              description: isFr
-                  ? 'Suis ta consommation d\'eau ici. Appuie pour ajouter des verres et voir ton objectif quotidien.'
-                  : 'Track your water intake here. Tap to add glasses and see your daily goal.',
-              contentAlign: ContentAlign.bottom,
-              scrollAlignment: 0.2,
-            ),
-            SpotlightStep(
-              key: _keyRecipes,
-              icon: LucideIcons.chefHat,
-              color: const Color(0xFF5B6ABF),
-              title: isFr ? 'Recettes' : 'Recipes',
-              description: isFr
-                  ? 'Appuie ici pour decouvrir des recettes saines avec les macros deja calculees.'
-                  : 'Tap here to discover healthy recipes with pre-calculated macros.',
-              shape: ShapeLightFocus.Circle,
-              contentAlign: ContentAlign.bottom,
-            ),
-          ],
-        );
-      });
-    });
   }
 
   @override

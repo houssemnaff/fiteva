@@ -9,7 +9,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/lang.dart';
-import '../../../services/app_tour_service.dart';
 import '../models/boutique_item.dart';
 import 'boutique_detail_screen.dart';
 import 'favorites_screen.dart';
@@ -130,66 +129,6 @@ class _BoutiqueScreenState extends ConsumerState<BoutiqueScreen> {
     super.initState();
     _scrollCtrl.addListener(_onScroll);
     Future.microtask(() => ref.invalidate(shopItemsProvider));
-    _showTutorial();
-  }
-
-  void _showTutorial() {
-    final isFr = Lang.code == 'fr';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-        AppTourService.showSectionTutorial(context,
-          section: 'boutique',
-          steps: [
-            SpotlightStep(
-              key: _keyDiamonds,
-              icon: LucideIcons.gem,
-              color: const Color(0xFF4A90D9),
-              title: isFr ? 'Tes Diamants' : 'Your Diamonds',
-              description: isFr
-                  ? 'Gagne des diamants en restant active dans l\'app, puis echange-les contre des recompenses ici.'
-                  : 'Earn diamonds by staying active in the app, then redeem them for rewards here.',
-            ),
-            SpotlightStep(
-              key: _keyWishlist,
-              icon: LucideIcons.heart,
-              color: const Color(0xFFC24A4A),
-              title: isFr ? 'Liste de Souhaits' : 'Wishlist',
-              description: isFr
-                  ? 'Appuie sur le coeur d\'un article pour le sauvegarder ici et le retrouver facilement.'
-                  : 'Tap the heart on an item to save it here and find it easily later.',
-            ),
-            SpotlightStep(
-              key: _keyHero,
-              icon: LucideIcons.sparkles,
-              color: const Color(0xFFB8892F),
-              title: isFr ? 'Offres du Moment' : 'Featured Offers',
-              description: isFr
-                  ? 'Les meilleures offres partenaires defilent ici. Appuie pour voir les details.'
-                  : 'The best partner offers rotate here. Tap to see the details.',
-            ),
-            SpotlightStep(
-              key: _keyCategories,
-              icon: Icons.apps_rounded,
-              color: const Color(0xFF2E9E6B),
-              title: isFr ? 'Categories' : 'Categories',
-              description: isFr
-                  ? 'Filtre les produits par categorie : mamans, baby, sport, vitamines et plus.'
-                  : 'Filter products by category: moms, baby, sport, vitamins and more.',
-            ),
-            SpotlightStep(
-              key: _keySort,
-              icon: CupertinoIcons.arrow_up_arrow_down,
-              color: const Color(0xFF7C4DFF),
-              title: isFr ? 'Trier & Filtrer' : 'Sort & Filter',
-              description: isFr
-                  ? 'Trie les articles par meilleures offres, popularite ou pourcentage de reduction.'
-                  : 'Sort items by best deals, popularity or discount percentage.',
-            ),
-          ],
-        );
-      });
-    });
   }
 
   void _onScroll() {

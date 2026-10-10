@@ -11,13 +11,30 @@ import 'supabase_config.dart';
 class VideoService {
   static Future<List<VideoModel>> fetchStandalone() async {
     final rows = await SupabaseConfig.table('videos')
-        .select('*, coaches!coach_id(*)')
+        .select()
         .isFilter('workout_id', null)
         .order('sort_order', ascending: true);
 
     final list = rows as List;
     final result = <VideoModel>[];
     for (final r in list) {
+      final cid = (r as Map<String, dynamic>)['coach_id'] as String?;
+      if (cid != null && cid.isNotEmpty) coachIds.add(cid);
+    }
+
+    // Fetch coaches in one query
+    final coaches = <String, CoachModel>{};
+    if (coachIds.isNotEmpty) {
+      final coachRows = await SupabaseConfig.table('coaches')
+          .select()
+          .inFilter('id', coachIds.toList());
+      for (final cr in coachRows as List) {
+        final m = cr as Map<String, dynamic>;
+        coaches[m['id'] as String] = CoachModel.fromRow(m);
+      }
+    }
+
+    return list.map((r) {
       final m = r as Map<String, dynamic>;
       try {
         result.add(_fromRow(m));

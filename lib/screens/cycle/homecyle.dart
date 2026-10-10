@@ -18,10 +18,8 @@ import 'package:fiteva/services/cycle_log_service.dart';
 import 'package:fiteva/services/storage_service.dart';
 import 'package:fiteva/screens/cycle/cycle_insights_screen.dart';
 import 'package:fiteva/screens/cycle/cycle_history_screen.dart';
-import '../../services/app_tour_service.dart';
 import '../../l10n/lang.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  TYPOGRAPHY HELPERS (pass colors explicitly — theme-unaware by design)
@@ -221,60 +219,6 @@ class _CycleScreenState extends ConsumerState<CycleScreen>
     _currentDay   = _computeCurrentDay(ref.read(userProfileProvider));
     _lateSnoozed  = StorageService.getBool(_lateSnoozeKey);
     _loadSymptoms();
-    _showTutorial();
-  }
-
-  void _showTutorial() {
-    final isFr = Lang.code == 'fr';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-        AppTourService.showSectionTutorial(context,
-          section: 'cycle',
-          steps: [
-            SpotlightStep(
-              key: _keyCycleWheel,
-              icon: LucideIcons.heartPulse,
-              color: const Color(0xFFE91E63),
-              title: isFr ? 'Suivi du Cycle' : 'Cycle Tracking',
-              description: isFr
-                  ? 'Visualise ou tu en es dans ton cycle avec la roue interactive.'
-                  : 'See where you are in your cycle with the interactive wheel.',
-              shape: ShapeLightFocus.Circle,
-            ),
-            SpotlightStep(
-              key: _keySymptoms,
-              icon: LucideIcons.stethoscope,
-              color: const Color(0xFF7C4DFF),
-              title: isFr ? 'Symptômes & Humeur' : 'Symptoms & Mood',
-              description: isFr
-                  ? 'Note tes symptômes et ton humeur chaque jour pour des conseils personnalisés.'
-                  : 'Log your symptoms and mood daily for personalized advice.',
-              contentAlign: ContentAlign.top,
-            ),
-            SpotlightStep(
-              key: _keyCalendar,
-              icon: LucideIcons.calendarDays,
-              color: const Color(0xFF1E88E5),
-              title: isFr ? 'Calendrier' : 'Calendar',
-              description: isFr
-                  ? 'Consulte ton historique et prevois tes prochaines regles.'
-                  : 'Check your history and predict your next period.',
-            ),
-            SpotlightStep(
-              key: _keyCoach,
-              icon: LucideIcons.lightbulb,
-              color: const Color(0xFFFF9800),
-              title: isFr ? 'Coach IA' : 'AI Coach',
-              description: isFr
-                  ? 'Recois des conseils adaptes a ta phase de cycle actuelle.'
-                  : 'Get tips adapted to your current cycle phase.',
-              contentAlign: ContentAlign.top,
-            ),
-          ],
-        );
-      });
-    });
   }
 
   Future<void> _loadSymptoms() async {

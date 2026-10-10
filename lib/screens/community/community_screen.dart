@@ -15,10 +15,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/notifications_provider.dart';
-import '../../services/app_tour_service.dart';
 import '../../l10n/lang.dart';
 import '../home/notifications_sheet.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class CommunityScreen extends ConsumerStatefulWidget {
   const CommunityScreen({super.key});
@@ -35,50 +33,6 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
   @override
   void initState() {
     super.initState();
-    _showTutorial();
-  }
-
-  void _showTutorial() {
-    final isFr = Lang.code == 'fr';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-        AppTourService.showSectionTutorial(context,
-          section: 'community',
-          steps: [
-            SpotlightStep(
-              key: _keyCreate,
-              icon: LucideIcons.penSquare,
-              color: const Color(0xFF5B6ABF),
-              title: isFr ? 'Creer un post' : 'Create a post',
-              description: isFr
-                  ? 'Partage tes progres, tes photos et tes victoires avec la communaute.'
-                  : 'Share your progress, photos and wins with the community.',
-            ),
-            SpotlightStep(
-              key: _keyTabBar,
-              icon: LucideIcons.layoutGrid,
-              color: const Color(0xFFE85D3A),
-              title: isFr ? 'Les onglets' : 'Tabs',
-              description: isFr
-                  ? 'Navigue entre le fil, les evenements et les partenaires.'
-                  : 'Navigate between feed, events and partners.',
-              contentAlign: ContentAlign.bottom,
-            ),
-            SpotlightStep(
-              key: _keyBell,
-              icon: LucideIcons.bell,
-              color: const Color(0xFF2E9E6B),
-              title: isFr ? 'Notifications' : 'Notifications',
-              description: isFr
-                  ? 'Reste informee des likes, commentaires et nouveaux evenements.'
-                  : 'Stay informed about likes, comments and new events.',
-              shape: ShapeLightFocus.Circle,
-            ),
-          ],
-        );
-      });
-    });
   }
 
   @override

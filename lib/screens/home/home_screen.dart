@@ -800,10 +800,15 @@ class _DayDetailCard extends ConsumerWidget {
                     child: Row(children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(suggestion.imageUrl, width: 40, height: 40, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 40, height: 40, color: cs.surface,
-                            child: Icon(LucideIcons.dumbbell, size: 16, color: cs.primary.withValues(alpha: 0.4)))),
+                        child: suggestion.imageUrl.startsWith('http')
+                          ? Image.network(suggestion.imageUrl, width: 40, height: 40, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 40, height: 40, color: cs.surface,
+                                child: Icon(LucideIcons.dumbbell, size: 16, color: cs.primary.withValues(alpha: 0.4))))
+                          : Image.asset(suggestion.imageUrl, width: 40, height: 40, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 40, height: 40, color: cs.surface,
+                                child: Icon(LucideIcons.dumbbell, size: 16, color: cs.primary.withValues(alpha: 0.4)))),
                       ),
                       const SizedBox(width: 10),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -879,7 +884,21 @@ class _DayDetailCard extends ConsumerWidget {
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(20)),
               child: Stack(children: [
-                Image.asset(
+                p.imageUrl.startsWith('http')
+                ? Image.network(
+                  p.imageUrl,
+                  width: double.infinity,
+                  height: 130,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 130,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: Icon(LucideIcons.dumbbell,
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                        size: 36),
+                  ),
+                )
+                : Image.asset(
                   p.imageUrl,
                   width: double.infinity,
                   height: 130,
@@ -1283,19 +1302,33 @@ class _ProgramPickerSheetState extends ConsumerState<_ProgramPickerSheet> {
                   child: Row(children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(
-                        p.imageUrl,
-                        width: 54,
-                        height: 54,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 54,
-                          height: 54,
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          child: Icon(LucideIcons.dumbbell,
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
-                        ),
-                      ),
+                      child: p.imageUrl.startsWith('http')
+                        ? Image.network(
+                            p.imageUrl,
+                            width: 54,
+                            height: 54,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 54,
+                              height: 54,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              child: Icon(LucideIcons.dumbbell,
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+                            ),
+                          )
+                        : Image.asset(
+                            p.imageUrl,
+                            width: 54,
+                            height: 54,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 54,
+                              height: 54,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              child: Icon(LucideIcons.dumbbell,
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+                            ),
+                          ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1754,12 +1787,19 @@ class _ContinueWorkoutCard extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(fit: StackFit.expand, children: [
-          Image.asset(
-            program.imageUrl, fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: cs.surfaceContainerHighest,
-              child: Icon(LucideIcons.dumbbell, size: 32, color: cs.primary.withValues(alpha: 0.4))),
-          ),
+          program.imageUrl.startsWith('http')
+            ? Image.network(
+                program.imageUrl, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: cs.surfaceContainerHighest,
+                  child: Icon(LucideIcons.dumbbell, size: 32, color: cs.primary.withValues(alpha: 0.4))),
+              )
+            : Image.asset(
+                program.imageUrl, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: cs.surfaceContainerHighest,
+                  child: Icon(LucideIcons.dumbbell, size: 32, color: cs.primary.withValues(alpha: 0.4))),
+              ),
           const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
             stops: [0.0, 0.5, 1.0],

@@ -47,9 +47,9 @@ Widget buildProgramCard({
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          // ── Top image (160px) ─────────────────────────────────
+          // ── Top image ─────────────────────────────────
           SizedBox(
-            height: 150,
+            height: 180,
             child: Stack(fit: StackFit.expand, children: [
               imageUrl.startsWith('http')
                 ? Image.network(imageUrl, fit: BoxFit.cover,
