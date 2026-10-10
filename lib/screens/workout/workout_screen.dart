@@ -312,8 +312,14 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     List<HomeProgramModel> fp(List<HomeProgramModel> list) =>
         list.where((p) => matchesPhase(p.phases) && matchesCoach(p)).toList();
     List<VideoModel> fpv(List<VideoModel> list) =>
-        list.where((v) => matchesPhase(v.phases) &&
-            (_selectedCoachId == null || v.coach?.id == _selectedCoachId)).toList();
+        list.where((v) {
+          if (_selectedPhase == null) return true;
+          final parsed = parseCyclePhases(v.phases);
+          if (parsed.isEmpty) return true;
+          final cp = _selectedPhase!.cyclePhase;
+          if (cp == null) return true;
+          return parsed.contains(cp);
+        }).where((v) => _selectedCoachId == null || v.coach?.id == _selectedCoachId).toList();
 
     final filteredSalle       = fp(sallePrograms);
     final filteredMaison      = fp(homePrograms);
@@ -322,8 +328,11 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
     final filteredRecuperationVideos = fpv(recuperationVideos);
 
     final showCycleSections = _selectedPhase == null || _selectedPhase!.cyclePhase != null;
+    final showDanceSection = _selectedPhase == null || _selectedPhase!.cyclePhase != null;
     final showGrossesse     = _selectedPhase == null || _selectedPhase == _FilterKind.pregnancy;
-    final showRecuperationSection = _selectedPhase == null || _selectedPhase == _FilterKind.postpartum;
+    final showRecuperationSection = _selectedPhase == null ||
+        _selectedPhase == _FilterKind.postpartum ||
+        (_selectedPhase?.cyclePhase != null);
 
     // ── Recommandations selon l'état réel (grossesse / post-partum / phase
     // du cycle) — indépendant du filtre manuel _selectedPhase ci-dessus.
@@ -533,7 +542,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen>
               const SizedBox(height: 4),
             ],
 
-            if (showCycleSections && (_selectedCoachId == null || filteredDanceVideos.isNotEmpty)) ...[
+            if (showDanceSection && (_selectedCoachId == null || filteredDanceVideos.isNotEmpty)) ...[
               KeyedSubtree(
                 key: _keyDance,
                 child: DanceSection(

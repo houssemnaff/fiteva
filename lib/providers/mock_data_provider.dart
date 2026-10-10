@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/coach_model.dart';
 import '../models/home_program_model.dart';
@@ -168,15 +169,51 @@ final _allStandaloneVideosProvider = StreamProvider.autoDispose<List<VideoModel>
 
 final danceVideosProvider = Provider.autoDispose<List<VideoModel>>((ref) {
   return ref.watch(_allStandaloneVideosProvider).maybeWhen(
-    data: (all) => all.where((v) => v.category == 'dance' || v.category == 'cardio').toList(),
-    orElse: () => [],
+    data: (all) {
+      final result = all.where((v) {
+        final c = (v.category).toLowerCase().trim();
+        return c == 'dance' || c == 'cardio';
+      }).toList();
+      debugPrint('[danceVideosProvider] total standalone=${all.length}, dance/cardio=${result.length}');
+      for (final r in result) {
+        //debugPrint('  -> ${r.id} | ${r.category} | workout_id=${r.workoutId ?? 'null'}');
+      }
+      return result;
+    },
+    orElse: () {
+      debugPrint('[danceVideosProvider] orElse -> [] (loading/error state)');
+      return [];
+    },
+    error: (e, st) {
+      debugPrint('[danceVideosProvider] ERROR: $e');
+      debugPrint('[danceVideosProvider] STACK: $st');
+      return <VideoModel>[];
+    },
   );
 });
 
 final recuperationVideosProvider = Provider.autoDispose<List<VideoModel>>((ref) {
   return ref.watch(_allStandaloneVideosProvider).maybeWhen(
-    data: (all) => all.where((v) => v.category == 'recuperation').toList(),
-    orElse: () => [],
+    data: (all) {
+      final result = all.where((v) {
+        final c = (v.category).toLowerCase().trim();
+        return c == 'recuperation' || c == 'recuperacion' || c == 'recovery' || c.contains('recup');
+      }).toList();
+      debugPrint('[recuperationVideosProvider] total standalone=${all.length}, recuperation=${result.length}');
+      for (final r in result) {
+       // debugPrint('  -> ${r.id} | ${r.category} | workout_id=${r.workoutId ?? 'null'}');
+      }
+      return result;
+    },
+    orElse: () {
+      debugPrint('[recuperationVideosProvider] orElse -> [] (loading/error state)');
+      return [];
+    },
+    error: (e, st) {
+      debugPrint('[recuperationVideosProvider] ERROR: $e');
+      debugPrint('[recuperationVideosProvider] STACK: $st');
+      return <VideoModel>[];
+    },
   );
 });
 
