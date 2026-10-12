@@ -3,6 +3,7 @@ import 'package:fiteva/models/points_model.dart';
 import 'package:fiteva/providers/diamonds_provider.dart';
 import 'package:fiteva/providers/points_provider.dart';
 import 'package:fiteva/providers/locale_provider.dart';
+import 'package:fiteva/services/app_tour_service.dart';
 import 'package:fiteva/services/auth_service.dart';
 import 'package:fiteva/services/storage_service.dart';
 import 'package:fiteva/services/local_reminder_service.dart';
